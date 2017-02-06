@@ -44,6 +44,6 @@ set(BUILDSYS_NOBUILD_TARGET_vts-libs ON)
 add_subdirectory(src/vts-libs)
 
 # desktop
-add_subdirectory(src/desktop)
+add_subdirectory(src/renderer)
 
 

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.11)
 include(buildsys/cmake/buildsys.cmake)
 
 # project
-setup_project(desktop "${BUILDSYS_PACKAGE_VERSION}")
+setup_project(renderer "${BUILDSYS_PACKAGE_VERSION}")
 
 find_package(Boost 1.46 REQUIRED COMPONENTS thread program_options filesystem system date_time serialization regex chrono iostreams)
 link_directories(${Boost_LIBRARY_DIRS})

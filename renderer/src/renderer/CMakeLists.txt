@@ -1,15 +1,18 @@
-define_module(BINARY desktop DEPENDS vts-libs-core)
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-find_package(Qt5Widgets REQUIRED)
+# temporarily disable warnings-as-errors
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 
-
-aux_source_directory(. SRC_LIST)
-
+# move final outputs into specific directories
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-add_executable(desktop ${SRC_LIST})
-target_link_libraries(desktop ${MODULE_LIBRARIES})
-qt5_use_modules(desktop Widgets)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
+# add the projects
+add_subdirectory(renderer)
+add_subdirectory(qt)
+
+# trick QtCreator into showing some additional files
+FILE(GLOB_RECURSE HEADERS "include/*.h")
+add_custom_target(headers SOURCES "${HEADERS}")
+FILE(GLOB_RECURSE UIS "qt/*.ui")
+add_custom_target(uis SOURCES "${UIS}")

@@ -1,20 +1,48 @@
 #include "mainwindow.h"
-#include "ui_mainwindow.h"
+#include "glContextImpl.h"
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow), timer(parent)
+#include <renderer/map.h>
+
+MainWindow::MainWindow() : gl(nullptr), glInitialized(false)
 {
-    ui->setupUi(this);
-
-    timer.connect(&timer, &QTimer::timeout, this, &MainWindow::onTimer);
-    timer.start(30);
+    setSurfaceType(QWindow::OpenGLSurface);
+    gl = new Gl(this);
 }
 
 MainWindow::~MainWindow()
+{}
+
+bool MainWindow::event(QEvent *event)
 {
-    delete ui;
+    switch (event->type())
+    {
+    case QEvent::UpdateRequest:
+        tick();
+        return true;
+    default:
+        return QWindow::event(event);
+    }
 }
 
-void MainWindow::onTimer()
+void MainWindow::tick()
 {
-    this->update();
+    requestUpdate();
+    if (!isExposed())
+        return;
+
+    if (glInitialized)
+        gl->makeCurrent(this);
+    else
+    {
+        gl->initialize();
+        glInitialized = true;
+    }
+
+    { // temporarily simulate render by insanely flickering screen
+        gl->glClearColor(qrand() / (float)RAND_MAX, 0, 0, 0);
+        gl->glClear(GL_COLOR_BUFFER_BIT);
+    }
+    map->render();
+
+    gl->swapBuffers(this);
 }

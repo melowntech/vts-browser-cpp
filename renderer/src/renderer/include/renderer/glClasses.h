@@ -33,7 +33,6 @@ namespace melown
     {
     public:
         virtual void draw() = 0;
-
     };
 }
 

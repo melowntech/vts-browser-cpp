@@ -8,18 +8,13 @@
 
 namespace melown
 {
-    class GlShader;
-    class GlTexture;
-    class GlMesh;
-
     class MELOWN_API GlContext
     {
     public:
-        virtual ~GlContext();
-
-        virtual std::shared_ptr<GlShader> createShader() = 0;
-        virtual std::shared_ptr<GlTexture> createTexture() = 0;
-        virtual std::shared_ptr<GlMesh> createMesh() = 0;
+        virtual ~GlContext() {}
+        virtual std::shared_ptr<class GlShader> createShader() = 0;
+        virtual std::shared_ptr<class GlTexture> createTexture() = 0;
+        virtual std::shared_ptr<class GlMesh> createMesh() = 0;
     };
 }
 

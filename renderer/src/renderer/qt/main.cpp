@@ -1,23 +1,33 @@
-#include "glRenderer.h"
-#include "glData.h"
-
 #include "mainwindow.h"
-#include <QApplication>
+#include "datawindow.h"
+#include "glContextImpl.h"
+#include "fetcherImpl.h"
 
-#include <renderer/cache.h>
+#include <QGuiApplication>
+
 #include <renderer/map.h>
 
 int main(int argc, char *argv[])
 {
-    QApplication application(argc, argv);
+    QGuiApplication application(argc, argv);
 
-    MainWindow window;
-    window.show();
-    GlData glData(&window);
-    GlRenderer *glRenderer = window.findChild<GlRenderer*>("rendererContext");
+    MainWindow main;
+    DataWindow data;
+    FetcherImpl fetcher;
 
-    std::shared_ptr<melown::Cache> cache = melown::newDefaultCache();
-    std::shared_ptr<melown::Map> map = std::shared_ptr<melown::Map>(new melown::Map(cache.get(), glRenderer, &glData));
+    melown::MapOptions opt;
+    opt.glRenderer = main.gl;
+    opt.glData = data.gl;
+    opt.fetcher = &fetcher;
+    melown::Map map(opt);
+    main.map = &map;
+    data.map = &map;
+
+    data.runDataThread();
+
+    main.resize(QSize(800, 600));
+    main.show();
+    main.requestUpdate();
 
     return application.exec();
 }

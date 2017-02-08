@@ -2,23 +2,42 @@
 #define MAP_H_jihsefk
 
 #include <string>
+#include <memory>
 
 #include "foundation.h"
 
 namespace melown
 {
-    class MapImpl;
-    class Cache;
-    class GlContext;
+    class MELOWN_API MapOptions
+    {
+    public:
+        MapOptions();
+
+        class GlContext *glRenderer;
+        class GlContext *glData;
+        class Fetcher *fetcher;
+        uint64 cacheHddLimit;
+        uint64 cacheRamLimit;
+        uint64 gpuMemoryLimit;
+    };
+
+    namespace
+    {
+        class MapImpl;
+    }
 
     class MELOWN_API Map
     {
     public:
-        Map(Cache *cache, GlContext *glRenderer, GlContext *glData);
+        Map(const MapOptions &options);
+        ~Map();
+
         void setMapConfig(const std::string &path);
         void setMapConfig(void *buffer, uint32 length);
+        void dataInitialize();
+        bool dataUpdate();
+        void dataFinalize();
         void render();
-        void data();
 
     private:
         MapImpl *impl;

@@ -1,26 +1,27 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QMainWindow>
-#include <QTimer>
+#include "glContextImpl.h"
 
-namespace Ui {
-class MainWindow;
+#include <QWindow>
+
+namespace melown
+{
+    class Map;
 }
 
-class MainWindow : public QMainWindow
+class MainWindow : public QWindow
 {
-    Q_OBJECT
-
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    MainWindow();
     ~MainWindow();
 
-private:
-    Ui::MainWindow *ui;
+    bool event(QEvent *event);
+    void tick();
 
-    QTimer timer;
-    void onTimer();
+    Gl *gl;
+    melown::Map *map;
+    bool glInitialized;
 };
 
-#endif // MAINWINDOW_H
+#endif

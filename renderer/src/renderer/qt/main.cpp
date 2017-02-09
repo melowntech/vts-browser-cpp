@@ -4,8 +4,15 @@
 #include "fetcherImpl.h"
 
 #include <QGuiApplication>
+#include <QDebug>
 
 #include <renderer/map.h>
+
+void fetched(const std::string &name, const char *buffer, melown::uint32 size)
+{
+    qDebug() << "fetched " << name.data() << ", size: " << size;
+    qDebug() << QString::fromUtf8(buffer, size);
+}
 
 int main(int argc, char *argv[])
 {
@@ -14,6 +21,7 @@ int main(int argc, char *argv[])
     MainWindow main;
     DataWindow data;
     FetcherImpl fetcher;
+    fetcher.setCallback(&fetched);
 
     melown::MapOptions opt;
     opt.glRenderer = main.gl;

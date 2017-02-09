@@ -12,8 +12,10 @@ namespace melown
     {
     public:
         typedef std::function<void(const std::string &, const char *, uint32)> Func;
+
         virtual ~Fetcher() {}
-        virtual void fetch(const std::string &name, Func func) = 0;
+        virtual void setCallback(Func func) = 0;
+        virtual void fetch(const std::string &name) = 0;
     };
 }
 

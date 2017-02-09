@@ -35,23 +35,19 @@ namespace melown
 
             void dataInitialize()
             {
-                std::cout << "dataInitialize" << std::endl;
             }
 
             bool dataUpdate()
             {
-                std::cout << "dataUpdate" << std::endl;
                 return false;
             }
 
             void dataFinalize()
             {
-                std::cout << "dataFinalize" << std::endl;
             }
 
             void render()
             {
-                std::cout << "render" << std::endl;
             }
 
             GlContext *glRenderer;

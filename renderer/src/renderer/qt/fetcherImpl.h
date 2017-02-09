@@ -13,7 +13,8 @@ class FetcherImpl : public melown::Fetcher
 public:
     FetcherImpl();
     ~FetcherImpl();
-    void fetch(const std::string &name, Func func) override;
+    void setCallback(Func func) override;
+    void fetch(const std::string &name) override;
 
     FetcherDetail *impl;
 };

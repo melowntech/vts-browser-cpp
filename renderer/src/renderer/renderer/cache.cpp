@@ -20,6 +20,11 @@ namespace melown
 
     }
 
+    void Cache::purgeAll()
+    {
+
+    }
+
     bool Cache::read(const std::string &name, void *&buffer, uint32 &size)
     {
         return false;

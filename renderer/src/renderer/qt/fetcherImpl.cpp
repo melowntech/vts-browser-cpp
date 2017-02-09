@@ -3,27 +3,49 @@
 #include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkRequest>
 #include <QtNetwork/QNetworkReply>
+#include <QtNetwork/QAuthenticator>
 
 namespace
 {
     class FetcherDetail : public QNetworkAccessManager
     {
     public:
-        void fetch(const std::string &name);
+        FetcherDetail()
+        {
+            connect(this, &QNetworkAccessManager::authenticationRequired, this, &FetcherDetail::authentication);
+        }
 
+        void authentication(QNetworkReply *, QAuthenticator *authenticator)
+        {
+            qDebug() << "authentication";
+            authenticator->setUser(QString::fromUtf8(options.username.data(), options.username.size()));
+            authenticator->setPassword(QString::fromUtf8(options.password.data(), options.password.size()));
+        }
+
+        void fetch(melown::FetchType type, const std::string &name);
+
+        FetcherOptions options;
         FetcherImpl::Func func;
     };
 
     class FetchTask : public QObject
     {
     public:
-        FetchTask(FetcherDetail *fetcher, const std::string &name) : name(name), fetcher(fetcher), reply(nullptr), redirections(0)
+        FetchTask(FetcherDetail *fetcher, melown::FetchType type, const std::string &name) : name(name), fetcher(fetcher), reply(nullptr), type(type), redirections(0)
         {}
 
         void finished()
         {
             reply->deleteLater();
             qDebug() << "fetch: " << name.data() << ", finished: " << reply->request().url() << ", status: " << reply->errorString();
+
+            if (reply->error() != QNetworkReply::NoError)
+            {
+                qDebug() << "fetch error";
+                fetcher->func(type, name, nullptr, 0);
+                delete this;
+                return;
+            }
 
             QVariant redirVar = reply->attribute(QNetworkRequest::RedirectionTargetAttribute);
             QUrl redir = redirVar.toUrl();
@@ -32,7 +54,7 @@ namespace
                 if (redirections++ > 5)
                 { // too many redirections
                     qDebug() << "too many redirections";
-                    fetcher->func(name, nullptr, 0);
+                    fetcher->func(type, name, nullptr, 0);
                     delete this;
                     return;
                 }
@@ -43,19 +65,20 @@ namespace
             }
 
             QByteArray arr = reply->readAll();
-            fetcher->func(name, arr.data(), arr.size());
+            fetcher->func(type, name, arr.data(), arr.size());
             delete this;
         }
 
         const std::string name;
         FetcherDetail *fetcher;
         QNetworkReply *reply;
+        const melown::FetchType type;
         melown::uint32 redirections;
     };
 
-    void FetcherDetail::fetch(const std::string &name)
+    void FetcherDetail::fetch(melown::FetchType type, const std::string &name)
     {
-        FetchTask *t = new FetchTask(this, name);
+        FetchTask *t = new FetchTask(this, type, name);
         QUrl url(QString::fromUtf8(name.data(), name.length()));
         QNetworkRequest request(url);
         t->reply = get(request);
@@ -63,9 +86,10 @@ namespace
     }
 }
 
-FetcherImpl::FetcherImpl() : impl(nullptr)
+FetcherImpl::FetcherImpl(const FetcherOptions &options) : impl(nullptr)
 {
     impl = new FetcherDetail();
+    setOptions(options);
 }
 
 FetcherImpl::~FetcherImpl()
@@ -73,12 +97,17 @@ FetcherImpl::~FetcherImpl()
     delete impl;
 }
 
+void FetcherImpl::setOptions(const FetcherOptions &options)
+{
+    impl->options = options;
+}
+
 void FetcherImpl::setCallback(Func func)
 {
     impl->func = func;
 }
 
-void FetcherImpl::fetch(const std::string &name)
+void FetcherImpl::fetch(melown::FetchType type, const std::string &name)
 {
-    return impl->fetch(name);
+    return impl->fetch(type, name);
 }

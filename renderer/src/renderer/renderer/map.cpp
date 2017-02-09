@@ -1,10 +1,13 @@
 #include <renderer/map.h>
 #include <renderer/glContext.h>
 #include <renderer/glClasses.h>
+#include <renderer/fetcher.h>
 
+#include "../../dbglog/dbglog.hpp"
+
+#include "constants.h"
 #include "cache.h"
-
-#include <stdio.h>
+#include "mapConfig.h"
 
 namespace melown
 {
@@ -17,20 +20,42 @@ namespace melown
         class MapImpl
         {
         public:
-            MapImpl(Map *map, const MapOptions &options) : glRenderer(nullptr), glData(nullptr), cache(options)
+            MapImpl(Map *map, const MapOptions &options) : map(map), glRenderer(nullptr), glData(nullptr), fetcher(nullptr), cache(options)
             {
                 glRenderer = options.glRenderer;
                 glData = options.glData;
+                fetcher = options.fetcher;
+                {
+                    Fetcher::Func func = std::bind(&MapImpl::fetchedFile, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+                    fetcher->setCallback(func);
+                }
+            }
+
+            void fetchedFile(FetchType type, const std::string &name, const char *buffer, uint32 size)
+            {
+                if (!buffer)
+                {
+                    LOG(err1) << "fetching file" << name << "failed";
+                    return;
+                }
+                LOG(info1) << "fetched file" << name;
+                switch (type)
+                {
+                case FetchType::MapConfig: return fetchedMapConfig(name, buffer, size);
+                default: throw "invalid fetch type";
+                }
+            }
+
+            void fetchedMapConfig(const std::string &path, const char *buffer, uint32 size)
+            {
+                cache.purgeAll();
+                parseMapConfig(path, buffer, size);
+                LOG(err1) << "map config" << path << "loaded";
             }
 
             void setMapConfig(const std::string &path)
             {
-
-            }
-
-            void setMapConfig(void *buffer, uint32 length)
-            {
-
+                fetcher->fetch(FetchType::MapConfig, path);
             }
 
             void dataInitialize()
@@ -50,8 +75,10 @@ namespace melown
             {
             }
 
+            Map *map;
             GlContext *glRenderer;
             GlContext *glData;
+            Fetcher *fetcher;
             Cache cache;
         };
     }
@@ -69,11 +96,6 @@ namespace melown
     void Map::setMapConfig(const std::string &path)
     {
         impl->setMapConfig(path);
-    }
-
-    void Map::setMapConfig(void *buffer, uint32 length)
-    {
-        impl->setMapConfig(buffer, length);
     }
 
     void Map::dataInitialize()

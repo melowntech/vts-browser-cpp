@@ -2,6 +2,9 @@
 cmake_minimum_required(VERSION 2.8.11)
 include(buildsys/cmake/buildsys.cmake)
 
+#global options
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 # project
 setup_project(renderer "${BUILDSYS_PACKAGE_VERSION}")
 
@@ -43,7 +46,7 @@ add_subdirectory(src/half)
 set(BUILDSYS_NOBUILD_TARGET_vts-libs ON)
 add_subdirectory(src/vts-libs)
 
-# desktop
+# renderer
 add_subdirectory(src/renderer)
 
 

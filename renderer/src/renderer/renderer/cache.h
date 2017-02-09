@@ -11,8 +11,9 @@ namespace melown
         Cache(const class MapOptions &options);
         ~Cache();
 
-        void purge(const std::string &name);
         bool read(const std::string &name, void *&buffer, uint32 &size);
+        void purge(const std::string &name);
+        void purgeAll();
     };
 }
 

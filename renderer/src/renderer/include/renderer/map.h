@@ -33,7 +33,6 @@ namespace melown
         ~Map();
 
         void setMapConfig(const std::string &path);
-        void setMapConfig(void *buffer, uint32 length);
         void dataInitialize();
         bool dataUpdate();
         void dataFinalize();

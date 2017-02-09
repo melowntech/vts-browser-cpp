@@ -6,3 +6,4 @@ target_include_directories(${PROJECT_NAME}-core PRIVATE ../include)
 target_link_libraries(${PROJECT_NAME}-core ${MODULE_LIBRARIES})
 target_compile_definitions(${PROJECT_NAME}-core PRIVATE -DMELOWN_RENDERER_BUILD_SHARED)
 
+

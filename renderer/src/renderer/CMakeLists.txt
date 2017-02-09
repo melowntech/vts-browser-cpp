@@ -12,7 +12,9 @@ add_subdirectory(renderer)
 add_subdirectory(qt)
 
 # trick QtCreator into showing some additional files
-FILE(GLOB_RECURSE HEADERS "include/*.h")
-add_custom_target(headers SOURCES "${HEADERS}")
-FILE(GLOB_RECURSE UIS "qt/*.ui")
-add_custom_target(uis SOURCES "${UIS}")
+file(GLOB_RECURSE ADDITIONAL "*.h" "*.ui")
+add_custom_target(additional SOURCES "${ADDITIONAL}")
+
+#message(STATUS "additional: " ${ADDITIONAL})
+
+

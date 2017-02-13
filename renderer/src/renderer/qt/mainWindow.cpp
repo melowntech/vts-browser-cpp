@@ -1,7 +1,7 @@
-#include "mainwindow.h"
-#include "glContextImpl.h"
+#include "mainWindow.h"
+#include "gpuContext.h"
 
-#include <renderer/map.h>
+#include "../renderer/map.h"
 
 MainWindow::MainWindow() : gl(nullptr), glInitialized(false)
 {
@@ -35,6 +35,7 @@ void MainWindow::tick()
     else
     {
         gl->initialize();
+        map->renderInitialize(gl);
         glInitialized = true;
     }
 
@@ -42,7 +43,7 @@ void MainWindow::tick()
         gl->glClearColor(qrand() / (float)RAND_MAX, 0, 0, 0);
         gl->glClear(GL_COLOR_BUFFER_BIT);
     }
-    map->render();
+    map->renderTick();
 
     gl->swapBuffers(this);
 }

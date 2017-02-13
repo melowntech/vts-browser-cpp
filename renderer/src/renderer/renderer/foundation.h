@@ -17,6 +17,7 @@ namespace melown
     typedef signed long sint64;
 #endif
 
+/*
 #ifdef _MSVC
 #define MELOWN_API_EXPORT _declspec(dllexport)
 #define MELOWN_API_IMPORT _declspec(dllimport)
@@ -32,6 +33,8 @@ namespace melown
 #else
 #define MELOWN_API MELOWN_API_IMPORT
 #endif
+*/
 }
 
 #endif
+

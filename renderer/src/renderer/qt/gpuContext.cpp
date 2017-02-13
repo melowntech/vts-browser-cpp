@@ -1,4 +1,4 @@
-#include "glContextImpl.h"
+#include "gpuContext.h"
 
 #include <QOpenGLDebugLogger>
 #include <QSurface>

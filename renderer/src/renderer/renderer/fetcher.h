@@ -10,7 +10,7 @@ namespace melown
 {
     enum class FetchType;
 
-    class MELOWN_API Fetcher
+    class Fetcher
     {
     public:
         typedef std::function<void(FetchType, const std::string &, const char *, uint32)> Func;

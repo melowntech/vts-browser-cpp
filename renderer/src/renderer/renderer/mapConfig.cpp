@@ -6,11 +6,9 @@
 
 namespace melown
 {
-    vadstena::vts::MapConfig mapConfig;
-
-    void parseMapConfig(const std::string &path, const char *buffer, uint32 size)
+    void parseMapConfig(MapConfig *mapConfig, const std::string &path, const char *buffer, uint32 size)
     {
         std::istringstream is(std::string(buffer, size));
-        vadstena::vts::loadMapConfig(mapConfig, is, path);
+        vadstena::vts::loadMapConfig(*mapConfig, is, path);
     }
 }

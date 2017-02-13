@@ -1,7 +1,7 @@
 #ifndef FETCHERIMPL_H_djghfubhj
 #define FETCHERIMPL_H_djghfubhj
 
-#include <renderer/fetcher.h>
+#include "../renderer/fetcher.h"
 
 namespace
 {
@@ -18,7 +18,7 @@ public:
 class FetcherImpl : public melown::Fetcher
 {
 public:
-    FetcherImpl(const FetcherOptions &options);
+    FetcherImpl();
     ~FetcherImpl();
 
     void setOptions(const FetcherOptions &options);

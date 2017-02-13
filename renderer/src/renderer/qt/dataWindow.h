@@ -1,7 +1,7 @@
 #ifndef DATAWINDOW_H_awfevgbhjk
 #define DATAWINDOW_H_awfevgbhjk
 
-#include "glContextImpl.h"
+#include "gpuContext.h"
 
 #include <QOffscreenSurface>
 
@@ -16,13 +16,8 @@ public:
     DataWindow();
     ~DataWindow();
 
-    void runDataThread();
-
     Gl *gl;
     melown::Map *map;
-
-private:
-    class DataThread *dataThread;
 };
 
 #endif

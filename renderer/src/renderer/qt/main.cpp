@@ -1,39 +1,80 @@
-#include "mainwindow.h"
-#include "datawindow.h"
-#include "glContextImpl.h"
-#include "fetcherImpl.h"
+#include "mainWindow.h"
+#include "dataWindow.h"
+#include "gpuContext.h"
+#include "fetcher.h"
 
 #include <QGuiApplication>
+#include <QSemaphore>
 #include <QDebug>
+#include <QThread>
 
-#include <renderer/map.h>
+#include "../renderer/map.h"
+
+QSemaphore dataStartSem;
+
+class DataThread : public QThread
+{
+public:
+    DataThread() :  stopping(false), window(nullptr), fetcher(nullptr)
+    {}
+
+    void run()
+    {
+        window = new DataWindow;
+        fetcher = new FetcherImpl;
+
+        {
+            FetcherOptions fetcherOptions;
+            fetcher->setOptions(fetcherOptions);
+        }
+
+        dataStartSem.release();
+        window->create();
+        window->gl->initialize();
+        dataStartSem.acquire();
+
+        window->map->dataInitialize(window->gl, fetcher);
+        while(!stopping)
+        {
+            if (!window->map->dataTick())
+                QThread::msleep(10);
+            QGuiApplication::processEvents();
+        }
+
+        window->map->dataFinalize();
+        delete fetcher; fetcher = nullptr;
+        delete window; window = nullptr;
+    }
+
+    DataWindow *window;
+    FetcherImpl *fetcher;
+    volatile bool stopping;
+};
 
 int main(int argc, char *argv[])
 {
     QGuiApplication application(argc, argv);
 
-    MainWindow main;
-    DataWindow data;
+    MainWindow mainWindow;
+    DataThread dataThread;
+    dataThread.start();
 
-    FetcherOptions fetcherOptions;
-    FetcherImpl fetcher(fetcherOptions);
+    mainWindow.map = &map;
 
-    data.gl->setShareContext(main.gl);
+    dataStartSem.acquire();
+    dataThread.window->map = &map;
+    dataStartSem.release();
 
-    melown::MapOptions mapOptions;
-    mapOptions.glRenderer = main.gl;
-    mapOptions.glData = data.gl;
-    mapOptions.fetcher = &fetcher;
-    melown::Map map(mapOptions);
-    main.map = &map;
-    data.map = &map;
+    dataThread.window->gl->setShareContext(mainWindow.gl);
 
+    mainWindow.resize(QSize(800, 600));
+    mainWindow.show();
+    mainWindow.requestUpdate();
 
-    data.runDataThread();
+    auto result = application.exec();
 
-    main.resize(QSize(800, 600));
-    main.show();
-    main.requestUpdate();
+    dataThread.stopping = true;
+    dataThread.wait();
 
-    return application.exec();
+    return result;
 }

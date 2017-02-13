@@ -15,6 +15,3 @@ add_subdirectory(qt)
 file(GLOB_RECURSE ADDITIONAL "*.h" "*.ui")
 add_custom_target(additional SOURCES "${ADDITIONAL}")
 
-#message(STATUS "additional: " ${ADDITIONAL})
-
-

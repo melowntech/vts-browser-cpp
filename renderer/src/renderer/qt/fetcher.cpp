@@ -1,4 +1,4 @@
-#include "fetcherImpl.h"
+#include "fetcher.h"
 
 #include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkRequest>
@@ -86,10 +86,9 @@ namespace
     }
 }
 
-FetcherImpl::FetcherImpl(const FetcherOptions &options) : impl(nullptr)
+FetcherImpl::FetcherImpl() : impl(nullptr)
 {
     impl = new FetcherDetail();
-    setOptions(options);
 }
 
 FetcherImpl::~FetcherImpl()

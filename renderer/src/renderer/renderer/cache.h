@@ -3,17 +3,23 @@
 
 #include <string>
 
+#include "foundation.h"
+
 namespace melown
 {
+    enum class FetchType
+    {
+        MapConfig,
+        Binary,
+    };
+
     class Cache
     {
     public:
-        Cache(const class MapOptions &options);
-        ~Cache();
+        static Cache *create(class Fetcher *fetcher);
 
-        bool read(const std::string &name, void *&buffer, uint32 &size);
-        void purge(const std::string &name);
-        void purgeAll();
+        virtual bool read(const std::string &name, void *&buffer, uint32 &size) = 0;
+        virtual void fetchedFile(FetchType type, const std::string &name, const char *buffer, uint32 size) = 0;
     };
 }
 

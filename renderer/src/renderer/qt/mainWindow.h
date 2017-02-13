@@ -1,7 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "glContextImpl.h"
+#include "gpuContext.h"
 
 #include <QWindow>
 

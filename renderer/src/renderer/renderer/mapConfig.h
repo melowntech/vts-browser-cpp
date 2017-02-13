@@ -1,10 +1,16 @@
-#include <renderer/foundation.h>
+#ifndef MAPCONFIG_H_sdfkjwbhv
+#define MAPCONFIG_H_sdfkjwbhv
+
+#include <string>
+
+#include "foundation.h"
 
 #include "../../vts-libs/vts/mapconfig.hpp"
 
 namespace melown
 {
-	extern vadstena::vts::MapConfig mapConfig;
-
-	void parseMapConfig(const std::string &path, const char *buffer, uint32 size);
+    using vadstena::vts::MapConfig;
+    void parseMapConfig(MapConfig *mapConfig, const std::string &path, const char *buffer, uint32 size);
 }
+
+#endif

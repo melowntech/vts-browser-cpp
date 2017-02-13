@@ -1,120 +1,64 @@
-#include <renderer/map.h>
-#include <renderer/glContext.h>
-#include <renderer/glClasses.h>
-#include <renderer/fetcher.h>
-
 #include "../../dbglog/dbglog.hpp"
 
-#include "constants.h"
-#include "cache.h"
+#include "map.h"
 #include "mapConfig.h"
+#include "cache.h"
+#include "gpuManager.h"
+#include "renderer.h"
+
+#include <boost/thread/mutex.hpp>
 
 namespace melown
 {
-    MapOptions::MapOptions() : glRenderer(nullptr), glData(nullptr), fetcher(nullptr),
-        cacheHddLimit(10000000000), cacheRamLimit(2000000000), gpuMemoryLimit(500000000)
-    {}
-
-    namespace
+    class MapImpl
     {
-        class MapImpl
-        {
-        public:
-            MapImpl(Map *map, const MapOptions &options) : map(map), glRenderer(nullptr), glData(nullptr), fetcher(nullptr), cache(options)
-            {
-                glRenderer = options.glRenderer;
-                glData = options.glData;
-                fetcher = options.fetcher;
-                {
-                    Fetcher::Func func = std::bind(&MapImpl::fetchedFile, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
-                    fetcher->setCallback(func);
-                }
-            }
+    public:
+        boost::mutex *mut;
+    };
 
-            void fetchedFile(FetchType type, const std::string &name, const char *buffer, uint32 size)
-            {
-                if (!buffer)
-                {
-                    LOG(err1) << "fetching file" << name << "failed";
-                    return;
-                }
-                LOG(info1) << "fetched file" << name;
-                switch (type)
-                {
-                case FetchType::MapConfig: return fetchedMapConfig(name, buffer, size);
-                default: throw "invalid fetch type";
-                }
-            }
-
-            void fetchedMapConfig(const std::string &path, const char *buffer, uint32 size)
-            {
-                cache.purgeAll();
-                parseMapConfig(path, buffer, size);
-                LOG(err1) << "map config" << path << "loaded";
-            }
-
-            void setMapConfig(const std::string &path)
-            {
-                fetcher->fetch(FetchType::MapConfig, path);
-            }
-
-            void dataInitialize()
-            {
-            }
-
-            bool dataUpdate()
-            {
-                return false;
-            }
-
-            void dataFinalize()
-            {
-            }
-
-            void render()
-            {
-            }
-
-            Map *map;
-            GlContext *glRenderer;
-            GlContext *glData;
-            Fetcher *fetcher;
-            Cache cache;
-        };
-    }
-
-    Map::Map(const MapOptions &options) : impl(nullptr)
+    Map::Map(const std::string &mapConfigPath) : impl(nullptr), gpuManager(nullptr), renderer(nullptr), mapConfig(nullptr)
     {
-        this->impl = new MapImpl(this, options);
+        impl = new MapImpl;
+        mapConfig = new MapConfig();
+        gpuManager = GpuManager::create(this);
+        renderer = Renderer::create(gpuManager);
     }
 
     Map::~Map()
     {
-        delete this->impl;
+        delete impl;
     }
 
-    void Map::setMapConfig(const std::string &path)
+    void Map::dataInitialize(GpuContext *context, Fetcher *fetcher)
     {
-        impl->setMapConfig(path);
+        gpuManager->dataInitialize(context, fetcher);
     }
 
-    void Map::dataInitialize()
+    bool Map::dataTick()
     {
-        impl->dataInitialize();
-    }
-
-    bool Map::dataUpdate()
-    {
-        return impl->dataUpdate();
+        return gpuManager->dataTick();
     }
 
     void Map::dataFinalize()
     {
-        impl->dataFinalize();
+        gpuManager->dataFinalize();
     }
 
-    void Map::render()
+    void Map::renderInitialize(GpuContext *context)
     {
-        impl->render();
+        renderer->renderInitialize();
+        gpuManager->renderInitialize(context);
+    }
+
+    void Map::renderTick()
+    {
+        renderer->renderTick();
+        gpuManager->renderTick();
+    }
+
+    void Map::renderFinalize()
+    {
+        renderer->renderFinalize();
+        gpuManager->renderFinalize();
     }
 }

@@ -17,11 +17,11 @@ public:
     ~MainWindow();
 
     bool event(QEvent *event);
+    void initialize();
     void tick();
 
     Gl *gl;
     melown::Map *map;
-    bool glInitialized;
 };
 
 #endif

@@ -6,7 +6,7 @@ namespace melown
     class Renderer
     {
     public:
-        static Renderer *create(class GpuManager *gpuManager);
+        static Renderer *create(class Map *map);
 
         Renderer();
         virtual ~Renderer();
@@ -14,8 +14,6 @@ namespace melown
         virtual void renderInitialize() = 0;
         virtual void renderTick() = 0;
         virtual void renderFinalize() = 0;
-
-        class GpuManager *gpuManager;
     };
 }
 

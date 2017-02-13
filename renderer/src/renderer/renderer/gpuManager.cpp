@@ -1,6 +1,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "map.h"
 #include "cache.h"
 #include "gpuManager.h"
 #include "gpuResources.h"
@@ -13,17 +14,20 @@ namespace melown
     class GpuManagerImpl : public GpuManager
     {
     public:
-        GpuManagerImpl(Map *map) : map(map), renderContext(nullptr), dataContext(nullptr)
-        {}
-
         /////////
         /// DATA thread
         /////////
 
+        GpuManagerImpl(Map *map) : map(map), renderContext(nullptr), dataContext(nullptr)
+        {}
+
+        ~GpuManagerImpl()
+        {}
+
         void dataInitialize(GpuContext *context, Fetcher *fetcher) override
         {
             dataContext = context;
-            cache = Cache::create(fetcher);
+            map->cache = Cache::create(map, fetcher);
         }
 
         bool dataTick() override
@@ -37,18 +41,14 @@ namespace melown
                 pending_data.erase(pending_data.begin());
             }
             GpuResource *r = resources[name].get();
+            if (r->ready)
+                return true;
             r->loadToGpu(name, map);
-            if (!r->ready)
-            { // put item back
-                boost::lock_guard<boost::mutex> l(mut);
-                pending_data.insert(name);
-            }
             return r->ready;
         }
 
         void dataFinalize() override
         {
-            delete cache; cache = nullptr;
             dataContext = nullptr;
         }
 
@@ -138,7 +138,7 @@ namespace melown
         GpuContext *dataContext;
     };
 
-    GpuManager::GpuManager() : cache(nullptr)
+    GpuManager::GpuManager()
     {}
 
     GpuManager::~GpuManager()

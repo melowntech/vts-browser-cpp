@@ -5,7 +5,6 @@
 
 #include <QGuiApplication>
 #include <QSemaphore>
-#include <QDebug>
 #include <QThread>
 
 #include "../renderer/map.h"
@@ -65,10 +64,10 @@ int main(int argc, char *argv[])
     dataThread.window->map = &map;
     dataStartSem.release();
 
-    dataThread.window->gl->setShareContext(mainWindow.gl);
-
     mainWindow.resize(QSize(800, 600));
     mainWindow.show();
+    dataThread.window->gl->setShareContext(mainWindow.gl);
+    mainWindow.initialize();
     mainWindow.requestUpdate();
 
     auto result = application.exec();

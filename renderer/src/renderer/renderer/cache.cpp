@@ -4,17 +4,21 @@
 
 #include "cache.h"
 #include "fetcher.h"
+#include "map.h"
+#include "mapConfig.h"
+
+#include "dbglog/dbglog.hpp"
 
 namespace melown
 {
     class Buffer
     {
     public:
+        ~Buffer() { free(data); data = nullptr; }
         Buffer() : data(nullptr), size(0) {}
         Buffer(const Buffer &other) : data(nullptr), size(other.size) { data = malloc(size); memcpy(data, other.data, size); }
-        ~Buffer() { free(data); data = nullptr; }
         Buffer &operator = (const Buffer &other) { if (&other == this) return *this; free(data); size = other.size; data = malloc(size); memcpy(data, other.data, size); }
-        // todo move constructor and move assignment
+        Buffer &operator = (Buffer &&other) { if (&other == this) return *this; free(data); size = other.size; data = other.data; other.data = nullptr; other.size = 0; }
 
         void *data;
         uint32 size;
@@ -23,10 +27,11 @@ namespace melown
     class CacheImpl : public Cache
     {
     public:
-        CacheImpl(Fetcher *fetcher) : fetcher(fetcher)
+        CacheImpl(Map *map, Fetcher *fetcher) : map(map), fetcher(fetcher)
         {
             Fetcher::Func func = std::bind(&CacheImpl::fetchedFile, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
             fetcher->setCallback(func);
+            fetcher->fetch(FetchType::MapConfig, map->mapConfigPath);
         }
 
         ~CacheImpl()
@@ -44,7 +49,6 @@ namespace melown
                 }
                 return false;
             }
-            downloading.erase(name);
             buffer = it->second.data;
             size = it->second.size;
             return true;
@@ -52,6 +56,21 @@ namespace melown
 
         void fetchedFile(FetchType type, const std::string &name, const char *buffer, uint32 size) override
         {
+            LOG(info3) << "downloaded: " << name;
+
+            downloading.erase(name);
+            if (!buffer)
+                throw "download failed";
+            switch (type)
+            {
+            case FetchType::MapConfig:
+            {
+                MapConfig *mc = new MapConfig();
+                parseMapConfig(mc, name, buffer, size);
+                map->mapConfig = mc;
+            } return;
+            default: break;
+            }
             Buffer b;
             b.data = malloc(size);
             memcpy(b.data, buffer, size);
@@ -61,12 +80,13 @@ namespace melown
 
         std::unordered_set<std::string> downloading;
         std::unordered_map<std::string, Buffer> data;
+        Map *map;
         Fetcher *fetcher;
     };
 
-    Cache *Cache::create(Fetcher *fetcher)
+    Cache *Cache::create(Map *map, Fetcher *fetcher)
     {
-        return new CacheImpl(fetcher);
+        return new CacheImpl(map, fetcher);
     }
 
 }

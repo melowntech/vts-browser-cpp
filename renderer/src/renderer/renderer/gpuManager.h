@@ -25,8 +25,6 @@ namespace melown
         virtual class GpuTexture *getTexture(const std::string &name) = 0;
         virtual class GpuSubMesh *getSubMesh(const std::string &name) = 0;
         virtual class GpuMeshAggregate *getMeshAggregate(const std::string &name) = 0;
-
-        class Cache *cache;
     };
 }
 

@@ -17,7 +17,6 @@ namespace
 
         void authentication(QNetworkReply *, QAuthenticator *authenticator)
         {
-            qDebug() << "authentication";
             authenticator->setUser(QString::fromUtf8(options.username.data(), options.username.size()));
             authenticator->setPassword(QString::fromUtf8(options.password.data(), options.password.size()));
         }
@@ -37,11 +36,9 @@ namespace
         void finished()
         {
             reply->deleteLater();
-            qDebug() << "fetch: " << name.data() << ", finished: " << reply->request().url() << ", status: " << reply->errorString();
 
             if (reply->error() != QNetworkReply::NoError)
             {
-                qDebug() << "fetch error";
                 fetcher->func(type, name, nullptr, 0);
                 delete this;
                 return;
@@ -53,7 +50,6 @@ namespace
             { // do redirect
                 if (redirections++ > 5)
                 { // too many redirections
-                    qDebug() << "too many redirections";
                     fetcher->func(type, name, nullptr, 0);
                     delete this;
                     return;

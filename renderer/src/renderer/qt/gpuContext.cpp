@@ -9,12 +9,12 @@ Gl::Gl(QSurface *surface) : surface(surface), logger(nullptr)
 }
 
 Gl::~Gl()
-{}
+{
+    delete logger;
+}
 
 void Gl::initialize()
 {
-    qDebug() << "initializing opengl context";
-
     QSurfaceFormat format;
     format.setVersion(4, 4);
     format.setProfile(QSurfaceFormat::CoreProfile);

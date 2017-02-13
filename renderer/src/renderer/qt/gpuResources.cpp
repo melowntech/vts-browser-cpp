@@ -18,17 +18,17 @@ class GpuShaderImpl : public QOpenGLShaderProgram, public melown::GpuShader
 {
 public:
     GpuShaderImpl()
-    {
-        create();
-    }
+    {}
 
     void bind() override
     {
-        QOpenGLShaderProgram::bind();
+        if (!QOpenGLShaderProgram::bind())
+            throw "failed to bind gpu shader";
     }
 
     void loadShaders(const std::string &vertexShader, const std::string &fragmentShader) override
     {
+        create();
         addShaderFromSourceCode(QOpenGLShader::Vertex, QString::fromUtf8(vertexShader.data(), vertexShader.size()));
         if (!fragmentShader.empty())
             addShaderFromSourceCode(QOpenGLShader::Fragment, QString::fromUtf8(fragmentShader.data(), fragmentShader.size()));
@@ -43,9 +43,7 @@ class GpuTextureImpl : public QOpenGLTexture, public melown::GpuTexture
 {
 public:
     GpuTextureImpl() : QOpenGLTexture(QOpenGLTexture::Target2D)
-    {
-        create();
-    }
+    {}
 
     void bind() override
     {
@@ -54,6 +52,7 @@ public:
 
     void loadTexture(void *buffer, melown::uint32 size) override
     {
+        create();
         QByteArray arr((char*)buffer, size);
         QBuffer buff(&arr);
         QImageReader reader;
@@ -71,10 +70,7 @@ class GpuSubMeshImpl : public QObject, public melown::GpuSubMesh
 {
 public:
     GpuSubMeshImpl() : vertexBuffer(QOpenGLBuffer::VertexBuffer), indexBuffer(QOpenGLBuffer::IndexBuffer)
-    {
-        vertexBuffer.create();
-        indexBuffer.create();
-    }
+    {}
 
     void draw() override
     {
@@ -101,6 +97,8 @@ public:
     void loadSubMesh(const melown::GpuMeshSpec &spec) override
     {
         this->spec = spec;
+        vertexBuffer.create();
+        indexBuffer.create();
         vertexBuffer.allocate(spec.vertexBuffer, spec.vertexSize * spec.vertexCount);
         indexBuffer.allocate(spec.indexBuffer, spec.indexCount * sizeof(melown::uint16));
         memoryCost = spec.vertexSize * spec.vertexCount + spec.indexCount * sizeof(melown::uint16);

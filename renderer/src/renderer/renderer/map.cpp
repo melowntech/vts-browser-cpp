@@ -6,31 +6,33 @@
 #include "gpuManager.h"
 #include "renderer.h"
 
-#include <boost/thread/mutex.hpp>
-
 namespace melown
 {
-    class MapImpl
+    class LogInitializer
     {
     public:
-        boost::mutex *mut;
-    };
+        LogInitializer()
+        {
+            dbglog::log_pid(false);
+        }
+    } logInitializer;
 
-    Map::Map(const std::string &mapConfigPath) : impl(nullptr), gpuManager(nullptr), renderer(nullptr), mapConfig(nullptr)
+    Map::Map(const std::string &mapConfigPath) : gpuManager(nullptr), renderer(nullptr), mapConfig(nullptr), mapConfigPath(mapConfigPath)
     {
-        impl = new MapImpl;
-        mapConfig = new MapConfig();
         gpuManager = GpuManager::create(this);
-        renderer = Renderer::create(gpuManager);
+        renderer = Renderer::create(this);
     }
 
     Map::~Map()
     {
-        delete impl;
+        delete renderer; renderer = nullptr;
+        delete gpuManager; gpuManager = nullptr;
+        delete mapConfig; mapConfig = nullptr;
     }
 
     void Map::dataInitialize(GpuContext *context, Fetcher *fetcher)
     {
+        dbglog::thread_id("data");
         gpuManager->dataInitialize(context, fetcher);
     }
 
@@ -46,6 +48,7 @@ namespace melown
 
     void Map::renderInitialize(GpuContext *context)
     {
+        dbglog::thread_id("render");
         renderer->renderInitialize();
         gpuManager->renderInitialize(context);
     }

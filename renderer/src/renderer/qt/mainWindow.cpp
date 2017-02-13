@@ -3,7 +3,7 @@
 
 #include "../renderer/map.h"
 
-MainWindow::MainWindow() : gl(nullptr), glInitialized(false)
+MainWindow::MainWindow() : gl(nullptr)
 {
     setSurfaceType(QWindow::OpenGLSurface);
     gl = new Gl(this);
@@ -24,20 +24,19 @@ bool MainWindow::event(QEvent *event)
     }
 }
 
+void MainWindow::initialize()
+{
+    gl->initialize();
+    map->renderInitialize(gl);
+}
+
 void MainWindow::tick()
 {
     requestUpdate();
     if (!isExposed())
         return;
 
-    if (glInitialized)
-        gl->makeCurrent(this);
-    else
-    {
-        gl->initialize();
-        map->renderInitialize(gl);
-        glInitialized = true;
-    }
+    gl->makeCurrent(this);
 
     { // temporarily simulate render by insanely flickering screen
         gl->glClearColor(qrand() / (float)RAND_MAX, 0, 0, 0);

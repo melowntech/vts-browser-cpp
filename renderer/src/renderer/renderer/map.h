@@ -31,10 +31,12 @@ namespace melown
         void renderTick();
         void renderFinalize();
 
-        class MapImpl *impl;
+        class Cache *cache;
         class GpuManager *gpuManager;
         class Renderer *renderer;
         class MapConfig *mapConfig;
+
+        std::string mapConfigPath;
     };
 }
 

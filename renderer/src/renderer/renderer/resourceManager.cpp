@@ -3,25 +3,26 @@
 
 #include "map.h"
 #include "cache.h"
-#include "gpuManager.h"
-#include "gpuResources.h"
 #include "gpuContext.h"
+#include "gpuResources.h"
+#include "mapResources.h"
+#include "resourceManager.h"
 
 #include <boost/thread/mutex.hpp>
 
 namespace melown
 {
-    class GpuManagerImpl : public GpuManager
+    class ResourceManagerImpl : public ResourceManager
     {
     public:
         /////////
         /// DATA thread
         /////////
 
-        GpuManagerImpl(Map *map) : map(map), renderContext(nullptr), dataContext(nullptr)
+        ResourceManagerImpl(Map *map) : map(map), renderContext(nullptr), dataContext(nullptr)
         {}
 
-        ~GpuManagerImpl()
+        ~ResourceManagerImpl()
         {}
 
         void dataInitialize(GpuContext *context, Fetcher *fetcher) override
@@ -40,10 +41,10 @@ namespace melown
                 name = *pending_data.begin();
                 pending_data.erase(pending_data.begin());
             }
-            GpuResource *r = resources[name].get();
+            Resource *r = resources[name].get();
             if (r->ready)
                 return true;
-            r->loadToGpu(name, map);
+            r->load(name, map);
             return r->ready;
         }
 
@@ -75,60 +76,67 @@ namespace melown
             renderContext = nullptr;
         }
 
-        void touch(const std::string &name, GpuResource *resource)
+        void touch(const std::string &name, Resource *resource)
         {
-            pending_render.insert(name);
+            if (!resource->ready)
+                pending_render.insert(name);
+        }
+
+        template<class T, std::shared_ptr<Resource>(GpuContext::*F)()> T *getGpuResource(const std::string &name)
+        {
+            auto it = resources.find(name);
+            if (it == resources.end())
+            {
+                resources[name] = (renderContext->*F)();
+                it = resources.find(name);
+            }
+            touch(name, it->second.get());
+            return dynamic_cast<T*>(it->second.get());
         }
 
         GpuShader *getShader(const std::string &name) override
         {
-            auto it = resources.find(name);
-            if (it == resources.end())
-            {
-                resources[name] = renderContext->createShader();
-                it = resources.find(name);
-            }
-            touch(name, it->second.get());
-            return dynamic_cast<GpuShader*>(it->second.get());
+            return getGpuResource<GpuShader, &GpuContext::createShader>(name);
         }
 
         GpuTexture *getTexture(const std::string &name) override
         {
-            auto it = resources.find(name);
-            if (it == resources.end())
-            {
-                resources[name] = renderContext->createTexture();
-                it = resources.find(name);
-            }
-            touch(name, it->second.get());
-            return dynamic_cast<GpuTexture*>(it->second.get());
+            return getGpuResource<GpuTexture, &GpuContext::createTexture>(name);
         }
 
         GpuSubMesh *getSubMesh(const std::string &name) override
         {
-            auto it = resources.find(name);
-            if (it == resources.end())
-            {
-                resources[name] = renderContext->createSubMesh();
-                it = resources.find(name);
-            }
-            touch(name, it->second.get());
-            return dynamic_cast<GpuSubMesh*>(it->second.get());
+            return getGpuResource<GpuSubMesh, &GpuContext::createSubMesh>(name);
         }
 
         GpuMeshAggregate *getMeshAggregate(const std::string &name) override
         {
+            return getGpuResource<GpuMeshAggregate, &GpuContext::createMeshAggregate>(name);
+        }
+
+        template<class T> T *getMapResource(const std::string &name)
+        {
             auto it = resources.find(name);
             if (it == resources.end())
             {
-                resources[name] = renderContext->createMeshAggregate();
+                resources[name] = std::shared_ptr<Resource>(new T());
                 it = resources.find(name);
             }
             touch(name, it->second.get());
-            return dynamic_cast<GpuMeshAggregate*>(it->second.get());
+            return dynamic_cast<T*>(it->second.get());
         }
 
-        std::unordered_map<std::string, std::shared_ptr<GpuResource>> resources;
+        MapConfig *getMapConfig(const std::string &name) override
+        {
+            return getMapResource<MapConfig>(name);
+        }
+
+        MetaTile *getMetaTile(const std::string &name) override
+        {
+            return getMapResource<MetaTile>(name);
+        }
+
+        std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
         std::unordered_set<std::string> pending_render;
         std::unordered_set<std::string> pending_data;
         boost::mutex mut;
@@ -138,14 +146,14 @@ namespace melown
         GpuContext *dataContext;
     };
 
-    GpuManager::GpuManager()
+    ResourceManager::ResourceManager()
     {}
 
-    GpuManager::~GpuManager()
+    ResourceManager::~ResourceManager()
     {}
 
-    GpuManager *GpuManager::create(Map *map)
+    ResourceManager *ResourceManager::create(Map *map)
     {
-        return new GpuManagerImpl(map);
+        return new ResourceManagerImpl(map);
     }
 }

@@ -8,14 +8,16 @@
 
 namespace melown
 {
+    class Resource;
+
     class GpuContext
     {
     public:
         virtual ~GpuContext() {}
-        virtual std::shared_ptr<class GpuResource> createShader() = 0;
-        virtual std::shared_ptr<class GpuResource> createTexture() = 0;
-        virtual std::shared_ptr<class GpuResource> createSubMesh() = 0;
-        virtual std::shared_ptr<class GpuResource> createMeshAggregate() = 0;
+        virtual std::shared_ptr<Resource> createShader() = 0;
+        virtual std::shared_ptr<Resource> createTexture() = 0;
+        virtual std::shared_ptr<Resource> createSubMesh() = 0;
+        virtual std::shared_ptr<Resource> createMeshAggregate() = 0;
     };
 }
 

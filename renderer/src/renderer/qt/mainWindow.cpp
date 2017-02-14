@@ -28,6 +28,9 @@ void MainWindow::initialize()
 {
     gl->initialize();
     map->renderInitialize(gl);
+    GLuint a;
+    gl->glGenVertexArrays(1, &a);
+    gl->glBindVertexArray(a);
 }
 
 void MainWindow::tick()

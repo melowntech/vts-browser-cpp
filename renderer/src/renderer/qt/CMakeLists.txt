@@ -9,3 +9,8 @@ add_executable(${PROJECT_NAME} ${SRC_LIST})
 target_link_libraries(${PROJECT_NAME} ${MODULE_LIBRARIES})
 qt5_use_modules(${PROJECT_NAME} Gui Network)
 
+# trick QtCreator into showing some additional files
+file(GLOB_RECURSE ADDITIONAL "*.h" "*.ui")
+add_custom_target(qtHeaders SOURCES "${ADDITIONAL}")
+
+

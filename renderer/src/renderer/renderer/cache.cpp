@@ -4,8 +4,6 @@
 
 #include "cache.h"
 #include "fetcher.h"
-#include "map.h"
-#include "mapConfig.h"
 
 #include "dbglog/dbglog.hpp"
 
@@ -27,11 +25,10 @@ namespace melown
     class CacheImpl : public Cache
     {
     public:
-        CacheImpl(Map *map, Fetcher *fetcher) : map(map), fetcher(fetcher)
+        CacheImpl(Fetcher *fetcher) : fetcher(fetcher)
         {
             Fetcher::Func func = std::bind(&CacheImpl::fetchedFile, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
             fetcher->setCallback(func);
-            fetcher->fetch(FetchType::MapConfig, map->mapConfigPath);
         }
 
         ~CacheImpl()
@@ -61,16 +58,7 @@ namespace melown
             downloading.erase(name);
             if (!buffer)
                 throw "download failed";
-            switch (type)
-            {
-            case FetchType::MapConfig:
-            {
-                MapConfig *mc = new MapConfig();
-                parseMapConfig(mc, name, buffer, size);
-                map->mapConfig = mc;
-            } return;
-            default: break;
-            }
+
             Buffer b;
             b.data = malloc(size);
             memcpy(b.data, buffer, size);
@@ -80,13 +68,12 @@ namespace melown
 
         std::unordered_set<std::string> downloading;
         std::unordered_map<std::string, Buffer> data;
-        Map *map;
         Fetcher *fetcher;
     };
 
-    Cache *Cache::create(Map *map, Fetcher *fetcher)
+    Cache *Cache::create(class Map *, Fetcher *fetcher)
     {
-        return new CacheImpl(map, fetcher);
+        return new CacheImpl(fetcher);
     }
 
 }

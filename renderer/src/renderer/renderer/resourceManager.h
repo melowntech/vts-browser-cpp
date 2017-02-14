@@ -1,17 +1,17 @@
-#ifndef GPUMANAGER_H_wqioeufhiwgb
-#define GPUMANAGER_H_wqioeufhiwgb
+#ifndef RESOURCEMANAGER_H_wqioeufhiwgb
+#define RESOURCEMANAGER_H_wqioeufhiwgb
 
 #include <string>
 
 namespace melown
 {
-    class GpuManager
+    class ResourceManager
     {
     public:
-        static GpuManager *create(class Map *map);
+        static ResourceManager *create(class Map *map);
 
-        GpuManager();
-        virtual ~GpuManager();
+        ResourceManager();
+        virtual ~ResourceManager();
 
         virtual void dataInitialize(class GpuContext *context, class Fetcher *fetcher) = 0;
         virtual bool dataTick() = 0;
@@ -25,6 +25,9 @@ namespace melown
         virtual class GpuTexture *getTexture(const std::string &name) = 0;
         virtual class GpuSubMesh *getSubMesh(const std::string &name) = 0;
         virtual class GpuMeshAggregate *getMeshAggregate(const std::string &name) = 0;
+
+        virtual class MapConfig *getMapConfig(const std::string &name) = 0;
+        virtual class MetaTile *getMetaTile(const std::string &name) = 0;
     };
 }
 

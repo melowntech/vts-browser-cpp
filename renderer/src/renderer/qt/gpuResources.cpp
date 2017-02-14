@@ -60,7 +60,7 @@ public:
         reader.autoDetectImageFormat();
         QImage img(reader.read());
         setData(img);
-        memoryCost = img.byteCount();
+        gpuMemoryCost = img.byteCount();
         ready = true;
     }
 };
@@ -98,10 +98,12 @@ public:
     {
         this->spec = spec;
         vertexBuffer.create();
-        indexBuffer.create();
+        vertexBuffer.bind();
         vertexBuffer.allocate(spec.vertexBuffer, spec.vertexSize * spec.vertexCount);
+        indexBuffer.create();
+        indexBuffer.bind();
         indexBuffer.allocate(spec.indexBuffer, spec.indexCount * sizeof(melown::uint16));
-        memoryCost = spec.vertexSize * spec.vertexCount + spec.indexCount * sizeof(melown::uint16);
+        gpuMemoryCost = spec.vertexSize * spec.vertexCount + spec.indexCount * sizeof(melown::uint16);
         ready = true;
     }
 
@@ -119,31 +121,31 @@ public:
     void loadMeshAggregate() override
     {
         ready = true;
-        memoryCost = 0;
+        gpuMemoryCost = 0;
         for (auto it : submeshes)
         {
             ready = ready && it->ready;
-            memoryCost += it->memoryCost;
+            gpuMemoryCost += it->gpuMemoryCost;
         }
     }
 };
 
-std::shared_ptr<melown::GpuResource> Gl::createShader()
+std::shared_ptr<melown::Resource> Gl::createShader()
 {
     return std::shared_ptr<melown::GpuShader>(new GpuShaderImpl());
 }
 
-std::shared_ptr<melown::GpuResource> Gl::createTexture()
+std::shared_ptr<melown::Resource> Gl::createTexture()
 {
     return std::shared_ptr<melown::GpuTexture>(new GpuTextureImpl());
 }
 
-std::shared_ptr<melown::GpuResource> Gl::createSubMesh()
+std::shared_ptr<melown::Resource> Gl::createSubMesh()
 {
     return std::shared_ptr<melown::GpuSubMesh>(new GpuSubMeshImpl());
 }
 
-std::shared_ptr<melown::GpuResource> Gl::createMeshAggregate()
+std::shared_ptr<melown::Resource> Gl::createMeshAggregate()
 {
     return std::shared_ptr<melown::GpuMeshAggregate>(new GpuMeshAggregateImpl());
 }

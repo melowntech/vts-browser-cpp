@@ -1,10 +1,9 @@
 #include "../../dbglog/dbglog.hpp"
 
 #include "map.h"
-#include "mapConfig.h"
 #include "cache.h"
-#include "gpuManager.h"
 #include "renderer.h"
+#include "resourceManager.h"
 
 namespace melown
 {
@@ -17,51 +16,50 @@ namespace melown
         }
     } logInitializer;
 
-    Map::Map(const std::string &mapConfigPath) : gpuManager(nullptr), renderer(nullptr), mapConfig(nullptr), mapConfigPath(mapConfigPath)
+    Map::Map(const std::string &mapConfigPath) : resources(nullptr), renderer(nullptr), mapConfigPath(mapConfigPath)
     {
-        gpuManager = GpuManager::create(this);
+        resources = ResourceManager::create(this);
         renderer = Renderer::create(this);
     }
 
     Map::~Map()
     {
         delete renderer; renderer = nullptr;
-        delete gpuManager; gpuManager = nullptr;
-        delete mapConfig; mapConfig = nullptr;
+        delete resources; resources = nullptr;
     }
 
     void Map::dataInitialize(GpuContext *context, Fetcher *fetcher)
     {
         dbglog::thread_id("data");
-        gpuManager->dataInitialize(context, fetcher);
+        resources->dataInitialize(context, fetcher);
     }
 
     bool Map::dataTick()
     {
-        return gpuManager->dataTick();
+        return resources->dataTick();
     }
 
     void Map::dataFinalize()
     {
-        gpuManager->dataFinalize();
+        resources->dataFinalize();
     }
 
     void Map::renderInitialize(GpuContext *context)
     {
         dbglog::thread_id("render");
         renderer->renderInitialize();
-        gpuManager->renderInitialize(context);
+        resources->renderInitialize(context);
     }
 
     void Map::renderTick()
     {
         renderer->renderTick();
-        gpuManager->renderTick();
+        resources->renderTick();
     }
 
     void Map::renderFinalize()
     {
         renderer->renderFinalize();
-        gpuManager->renderFinalize();
+        resources->renderFinalize();
     }
 }

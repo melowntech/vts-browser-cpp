@@ -1,42 +1,28 @@
-#ifndef GLCLASSES_H_jhsegf
-#define GLCLASSES_H_jhsegf
-
-#include <string>
+#ifndef GPURESOURCES_H_jhsegf
+#define GPURESOURCES_H_jhsegf
 
 #include <math/math_all.hpp>
 
-#include "foundation.h"
+#include "resource.h"
 
 namespace melown
 {
-    class GpuResource
-    {
-    public:
-        GpuResource();
-        virtual ~GpuResource();
-
-        virtual void loadToGpu(const std::string &name, class Map *base);
-
-        uint32 memoryCost;
-        bool ready;
-    };
-
-    class GpuShader : public GpuResource
+    class GpuShader : public Resource
     {
     public:
         virtual void bind() = 0;
         virtual void loadShaders(const std::string &vertexShader, const std::string &fragmentShader) = 0;
 
-        void loadToGpu(const std::string &name, class Map *base) override;
+        void load(const std::string &name, class Map *base) override;
     };
 
-    class GpuTexture : public GpuResource
+    class GpuTexture : public Resource
     {
     public:
         virtual void bind() = 0;
         virtual void loadTexture(void *buffer, uint32 size) = 0;
 
-        void loadToGpu(const std::string &name, class Map *base) override;
+        void load(const std::string &name, class Map *base) override;
     };
 
     class GpuMeshSpec
@@ -72,21 +58,23 @@ namespace melown
         } attributes[2];
     };
 
-    class GpuSubMesh : public GpuResource
+    class GpuSubMesh : public Resource
     {
     public:
         virtual void draw() = 0;
         virtual void loadSubMesh(const GpuMeshSpec &spec) = 0;
+
+        void load(const std::string &name, class Map *base) override;
     };
 
-    class GpuMeshAggregate : public GpuResource
+    class GpuMeshAggregate : public Resource
     {
     public:
         std::vector<GpuSubMesh*> submeshes;
 
         virtual void loadMeshAggregate() = 0;
 
-        void loadToGpu(const std::string &name, class Map *base) override;
+        void load(const std::string &name, class Map *base) override;
     };
 }
 

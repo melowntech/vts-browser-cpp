@@ -12,10 +12,10 @@ public:
     Gl(class QSurface *surface);
     ~Gl();
 
-    std::shared_ptr<melown::GpuResource> createShader() override;
-    std::shared_ptr<melown::GpuResource> createTexture() override;
-    std::shared_ptr<melown::GpuResource> createSubMesh() override;
-    std::shared_ptr<melown::GpuResource> createMeshAggregate() override;
+    std::shared_ptr<melown::Resource> createShader() override;
+    std::shared_ptr<melown::Resource> createTexture() override;
+    std::shared_ptr<melown::Resource> createSubMesh() override;
+    std::shared_ptr<melown::Resource> createMeshAggregate() override;
 
     void initialize();
     void onDebugMessage(const class QOpenGLDebugMessage &message);

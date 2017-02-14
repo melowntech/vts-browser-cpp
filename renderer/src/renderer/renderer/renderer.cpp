@@ -1,10 +1,17 @@
 #include "map.h"
 #include "renderer.h"
-#include "gpuManager.h"
+#include "resourceManager.h"
+#include "mapResources.h"
 #include "gpuResources.h"
+
+#include "../../vts-libs/vts/urltemplate.hpp"
+#include "../../dbglog/dbglog.hpp"
 
 namespace melown
 {
+    using namespace vadstena::vts;
+    using namespace vadstena::registry;
+
     class RendererImpl : public Renderer
     {
     public:
@@ -15,15 +22,60 @@ namespace melown
         {
         }
 
+        struct MetaTileTraverse
+        {
+            MetaTileTraverse() : map(nullptr), mapConfig(nullptr), surfConf(nullptr)
+            {}
+
+            std::shared_ptr<UrlTemplate> metaUrlTemplate;
+            std::shared_ptr<UrlTemplate> meshUrlTemplate;
+            Map *map;
+            MapConfig *mapConfig;
+            SurfaceConfig *surfConf;
+            uint32 binaryOrder;
+
+            void traverse(const TileId nodeId)
+            {
+                const TileId tileId(nodeId.lod, (nodeId.x >> binaryOrder) << binaryOrder, (nodeId.y >> binaryOrder) << binaryOrder);
+                const MetaTile *tile = map->resources->getMetaTile((*metaUrlTemplate)(UrlTemplate::Vars(tileId)));
+                if (!tile || !tile->ready)
+                    return;
+                const MetaNode *node = tile->get(nodeId, std::nothrow_t());
+                if (!node)
+                    return;
+
+                LOG(info3) << nodeId.lod << " " << nodeId.x << " " << nodeId.y << " " << node->flags();
+
+                if (node->ulChild() ) traverse(TileId(nodeId.lod + 1, nodeId.x * 2 + 0, nodeId.y * 2 + 0));
+                if (node->urChild() ) traverse(TileId(nodeId.lod + 1, nodeId.x * 2 + 1, nodeId.y * 2 + 0));
+                if (node->llChild() ) traverse(TileId(nodeId.lod + 1, nodeId.x * 2 + 0, nodeId.y * 2 + 1));
+                if (node->lrlChild()) traverse(TileId(nodeId.lod + 1, nodeId.x * 2 + 1, nodeId.y * 2 + 1));
+            }
+
+            void renderTick()
+            {
+                binaryOrder = mapConfig->referenceFrame.metaBinaryOrder;
+                for (auto &&surfConf : mapConfig->surfaces)
+                {
+                    this->surfConf = &surfConf;
+                    metaUrlTemplate = std::shared_ptr<UrlTemplate>(new UrlTemplate(mapConfig->basePath + surfConf.urls3d->meta));
+                    meshUrlTemplate = std::shared_ptr<UrlTemplate>(new UrlTemplate(mapConfig->basePath + surfConf.urls3d->mesh));
+                    traverse(TileId());
+                }
+            }
+        };
+
         void renderTick() override
         {
-            if (!map->mapConfig)
-                return;
+            LOG(info4) << "RENDER FRAME START";
 
-            // test
-            bool ready = map->gpuManager->getTexture("http://m2.mapserver.mapy.cz/ophoto/13_07f58000_081e0000")->ready;
-            bool ready2 = map->gpuManager->getMeshAggregate("https://david.test.mlwn.se/maps/j8.pp/tilesets/jenstejn-hf/12-2036-2017.bin?1")->ready;
+            MetaTileTraverse mtt;
+            mtt.map = map;
+            mtt.mapConfig = map->resources->getMapConfig(map->mapConfigPath);
+            if (mtt.mapConfig && mtt.mapConfig->ready)
+                mtt.renderTick();
 
+            LOG(info4) << "RENDER FRAME DONE";
         }
 
         void renderFinalize() override

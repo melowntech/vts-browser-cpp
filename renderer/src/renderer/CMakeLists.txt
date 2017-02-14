@@ -11,7 +11,3 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 add_subdirectory(renderer)
 add_subdirectory(qt)
 
-# trick QtCreator into showing some additional files
-file(GLOB_RECURSE ADDITIONAL "*.h" "*.ui")
-add_custom_target(additional SOURCES "${ADDITIONAL}")
-

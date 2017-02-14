@@ -5,20 +5,14 @@
 
 #include "map.h"
 #include "cache.h"
-#include "gpuManager.h"
+#include "resourceManager.h"
 #include "gpuResources.h"
 
 #include "../../vts-libs/vts/meshio.hpp"
 
 namespace melown
 {
-    GpuResource::GpuResource() : memoryCost(0), ready(false)
-    {}
-
-    GpuResource::~GpuResource()
-    {}
-
-    void GpuResource::loadToGpu(const std::string &name, Map *base)
+    void GpuSubMesh::load(const std::string &name, Map *base)
     {}
 
     GpuMeshSpec::GpuMeshSpec() : indexBuffer(nullptr), vertexBuffer(nullptr), vertexCount(0), vertexSize(0), indexCount(0), faceMode(FaceMode::Triangles)
@@ -27,7 +21,7 @@ namespace melown
     GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0), components(0), type(Type::Float), enable(false), normalized(false)
     {}
 
-    void GpuShader::loadToGpu(const std::string &name, Map *base)
+    void GpuShader::load(const std::string &name, Map *base)
     {
         void *buffer = nullptr;
         uint32 size = 0;
@@ -44,7 +38,7 @@ namespace melown
         }
     }
 
-    void GpuTexture::loadToGpu(const std::string &name, Map *base)
+    void GpuTexture::load(const std::string &name, Map *base)
     {
         void *buffer = nullptr;
         uint32 size = 0;
@@ -52,16 +46,7 @@ namespace melown
             loadTexture(buffer, size);
     }
 
-    /*
-    template<class Tout, class Tin> void convertPoints(std::vector<Tout> &out, const std::vector<Tin> &in)
-    {
-        out.resize(in.size());
-        for (uint32 i = 0, e = in.size(); i != e; i++)
-            out[i] = in[i];
-    }
-    */
-
-    void GpuMeshAggregate::loadToGpu(const std::string &name, Map *base)
+    void GpuMeshAggregate::load(const std::string &name, Map *base)
     {
         void *buffer = nullptr;
         uint32 size = 0;
@@ -81,7 +66,7 @@ namespace melown
             {
                 char tmp[10];
                 sprintf(tmp, "%d", mi);
-                GpuSubMesh *gm = base->gpuManager->getSubMesh(name + "#" + tmp);
+                GpuSubMesh *gm = base->resources->getSubMesh(name + "#" + tmp);
                 vadstena::vts::SubMesh &m = mesh[mi];
 
                 attributes.clear();

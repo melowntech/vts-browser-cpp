@@ -1,5 +1,6 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLBuffer>
+#include <QOpenGLVertexArrayObject>
 #include <QOpenGLTexture>
 #include <QImage>
 #include <QBuffer>
@@ -32,9 +33,29 @@ public:
         addShaderFromSourceCode(QOpenGLShader::Vertex, QString::fromUtf8(vertexShader.data(), vertexShader.size()));
         if (!fragmentShader.empty())
             addShaderFromSourceCode(QOpenGLShader::Fragment, QString::fromUtf8(fragmentShader.data(), fragmentShader.size()));
-        link();
-        removeAllShaders();
+        if (!link())
+            throw "failed to link shader program";
+        //removeAllShaders();
         ready = true;
+    }
+
+
+    void uniform(melown::uint32 location, const melown::mat3 &v) override
+    {
+        QMatrix3x3 m;
+        for (int j = 0; j < 3; j++)
+        for (int i = 0; i < 3; i++)
+            m(i, j) = v(i, j);
+        setUniformValue(location, m);
+    }
+
+    void uniform(melown::uint32 location, const melown::mat4 &v) override
+    {
+        QMatrix4x4 m;
+        for (int j = 0; j < 4; j++)
+        for (int i = 0; i < 4; i++)
+            m(i, j) = v(i, j);
+        setUniformValue(location, m);
     }
 };
 
@@ -66,7 +87,7 @@ public:
 };
 
 
-class GpuSubMeshImpl : public QObject, public melown::GpuSubMesh
+class GpuSubMeshImpl : public QObject, public melown::GpuMeshRenderable
 {
 public:
     GpuSubMeshImpl() : vertexBuffer(QOpenGLBuffer::VertexBuffer), indexBuffer(QOpenGLBuffer::IndexBuffer)
@@ -74,60 +95,60 @@ public:
 
     void draw() override
     {
-        vertexBuffer.bind();
-        indexBuffer.bind();
         QOpenGLFunctions_4_4_Core *gl = gpuFunctions();
-        for (int i = 0; i < sizeof(melown::GpuMeshSpec::attributes) / sizeof(melown::GpuMeshSpec::VertexAttribute); i++)
+        if (arrayObject.isCreated())
+            arrayObject.bind();
+        else
         {
-            melown::GpuMeshSpec::VertexAttribute &a = spec.attributes[i];
-            if (a.enable)
+            arrayObject.create();
+            arrayObject.bind();
+            vertexBuffer.bind();
+            if (indexBuffer.isCreated())
+                indexBuffer.bind();
+            for (int i = 0; i < sizeof(melown::GpuMeshSpec::attributes) / sizeof(melown::GpuMeshSpec::VertexAttribute); i++)
             {
-                gl->glEnableVertexAttribArray(i);
-                gl->glVertexAttribPointer(i, a.components, (GLenum)a.type, a.normalized ? GL_TRUE : GL_FALSE, a.stride, (void*)a.offset);
+                melown::GpuMeshSpec::VertexAttribute &a = spec.attributes[i];
+                if (a.enable)
+                {
+                    gl->glEnableVertexAttribArray(i);
+                    gl->glVertexAttribPointer(i, a.components, (GLenum)a.type, a.normalized ? GL_TRUE : GL_FALSE, a.stride, (void*)a.offset);
+                }
+                else
+                    gl->glDisableVertexAttribArray(i);
             }
-            else
-                gl->glDisableVertexAttribArray(i);
         }
-        if (spec.indexCount)
+        if (spec.indexCount > 0)
             gl->glDrawElements((GLenum)spec.faceMode, spec.indexCount, GL_UNSIGNED_SHORT, nullptr);
         else
-            gl->glDrawArrays((GLenum)spec.faceMode, 0, spec.indexCount);
+            gl->glDrawArrays((GLenum)spec.faceMode, 0, spec.vertexCount);
+        gl->glBindVertexArray(0);
     }
 
-    void loadSubMesh(const melown::GpuMeshSpec &spec) override
+    void loadMeshRenderable(const melown::GpuMeshSpec &spec) override
     {
         this->spec = spec;
+        arrayObject.create();
+        arrayObject.bind();
         vertexBuffer.create();
         vertexBuffer.bind();
         vertexBuffer.allocate(spec.vertexBuffer, spec.vertexSize * spec.vertexCount);
-        indexBuffer.create();
-        indexBuffer.bind();
-        indexBuffer.allocate(spec.indexBuffer, spec.indexCount * sizeof(melown::uint16));
+        if (spec.indexCount)
+        {
+            indexBuffer.create();
+            indexBuffer.bind();
+            indexBuffer.allocate(spec.indexBuffer, spec.indexCount * sizeof(melown::uint16));
+        }
         gpuMemoryCost = spec.vertexSize * spec.vertexCount + spec.indexCount * sizeof(melown::uint16);
+        arrayObject.destroy();
         ready = true;
+        this->spec.vertexBuffer = nullptr;
+        this->spec.indexBuffer = nullptr;
     }
 
+    QOpenGLVertexArrayObject arrayObject;
     QOpenGLBuffer vertexBuffer;
     QOpenGLBuffer indexBuffer;
     melown::GpuMeshSpec spec;
-};
-
-class GpuMeshAggregateImpl : public QObject, public melown::GpuMeshAggregate
-{
-public:
-    GpuMeshAggregateImpl()
-    {}
-
-    void loadMeshAggregate() override
-    {
-        ready = true;
-        gpuMemoryCost = 0;
-        for (auto it : submeshes)
-        {
-            ready = ready && it->ready;
-            gpuMemoryCost += it->gpuMemoryCost;
-        }
-    }
 };
 
 std::shared_ptr<melown::Resource> Gl::createShader()
@@ -140,12 +161,7 @@ std::shared_ptr<melown::Resource> Gl::createTexture()
     return std::shared_ptr<melown::GpuTexture>(new GpuTextureImpl());
 }
 
-std::shared_ptr<melown::Resource> Gl::createSubMesh()
+std::shared_ptr<melown::Resource> Gl::createMeshRenderable()
 {
-    return std::shared_ptr<melown::GpuSubMesh>(new GpuSubMeshImpl());
-}
-
-std::shared_ptr<melown::Resource> Gl::createMeshAggregate()
-{
-    return std::shared_ptr<melown::GpuMeshAggregate>(new GpuMeshAggregateImpl());
+    return std::shared_ptr<melown::GpuMeshRenderable>(new GpuSubMeshImpl());
 }

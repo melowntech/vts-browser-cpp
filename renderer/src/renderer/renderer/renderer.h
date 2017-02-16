@@ -12,7 +12,7 @@ namespace melown
         virtual ~Renderer();
 
         virtual void renderInitialize() = 0;
-        virtual void renderTick() = 0;
+        virtual void renderTick(uint32 width, uint32 height) = 0;
         virtual void renderFinalize() = 0;
     };
 }

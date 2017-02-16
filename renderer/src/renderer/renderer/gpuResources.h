@@ -1,9 +1,8 @@
 #ifndef GPURESOURCES_H_jhsegf
 #define GPURESOURCES_H_jhsegf
 
-#include <math/math_all.hpp>
-
 #include "resource.h"
+#include "math.h"
 
 namespace melown
 {
@@ -14,6 +13,9 @@ namespace melown
         virtual void loadShaders(const std::string &vertexShader, const std::string &fragmentShader) = 0;
 
         void load(const std::string &name, class Map *base) override;
+
+        virtual void uniform(uint32 location, const mat3 &v) = 0;
+        virtual void uniform(uint32 location, const mat4 &v) = 0;
     };
 
     class GpuTexture : public Resource
@@ -28,12 +30,6 @@ namespace melown
     class GpuMeshSpec
     {
     public:
-        GpuMeshSpec();
-        const uint16 *indexBuffer;
-        void *vertexBuffer;
-        uint32 vertexCount;
-        uint32 vertexSize;
-        uint32 indexCount;
         enum class FaceMode
         {
             Points = 0x0000,
@@ -42,37 +38,39 @@ namespace melown
             Triangles = 0x0004,
             TriangleStrip = 0x0005,
             TriangleFan = 0x0006,
-        } faceMode;
+        };
+
         struct VertexAttribute
         {
+            enum class Type
+            {
+                Float = 0x1406,
+            };
+
             VertexAttribute();
             uint32 offset; // in bytes
             uint32 stride; // in bytes
             uint32 components; // 1, 2, 3 or 4
-            enum class Type
-            {
-                Float = 0x1406,
-            } type;
+            Type type;
             bool enable;
             bool normalized;
-        } attributes[2];
+        };
+
+        GpuMeshSpec();
+        const uint16 *indexBuffer;
+        void *vertexBuffer;
+        uint32 vertexCount;
+        uint32 vertexSize;
+        uint32 indexCount;
+        FaceMode faceMode;
+        VertexAttribute attributes[2];
     };
 
-    class GpuSubMesh : public Resource
+    class GpuMeshRenderable : public Resource
     {
     public:
         virtual void draw() = 0;
-        virtual void loadSubMesh(const GpuMeshSpec &spec) = 0;
-
-        void load(const std::string &name, class Map *base) override;
-    };
-
-    class GpuMeshAggregate : public Resource
-    {
-    public:
-        std::vector<GpuSubMesh*> submeshes;
-
-        virtual void loadMeshAggregate() = 0;
+        virtual void loadMeshRenderable(const GpuMeshSpec &spec) = 0;
 
         void load(const std::string &name, class Map *base) override;
     };

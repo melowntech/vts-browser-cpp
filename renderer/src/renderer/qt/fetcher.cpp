@@ -21,7 +21,7 @@ namespace
             authenticator->setPassword(QString::fromUtf8(options.password.data(), options.password.size()));
         }
 
-        void fetch(melown::FetchType type, const std::string &name);
+        void fetch(const std::string &name);
 
         FetcherOptions options;
         FetcherImpl::Func func;
@@ -30,7 +30,7 @@ namespace
     class FetchTask : public QObject
     {
     public:
-        FetchTask(FetcherDetail *fetcher, melown::FetchType type, const std::string &name) : name(name), fetcher(fetcher), reply(nullptr), type(type), redirections(0)
+        FetchTask(FetcherDetail *fetcher, const std::string &name) : name(name), fetcher(fetcher), reply(nullptr), redirections(0)
         {}
 
         void finished()
@@ -39,7 +39,7 @@ namespace
 
             if (reply->error() != QNetworkReply::NoError)
             {
-                fetcher->func(type, name, nullptr, 0);
+                fetcher->func(name, nullptr, 0);
                 delete this;
                 return;
             }
@@ -50,7 +50,7 @@ namespace
             { // do redirect
                 if (redirections++ > 5)
                 { // too many redirections
-                    fetcher->func(type, name, nullptr, 0);
+                    fetcher->func(name, nullptr, 0);
                     delete this;
                     return;
                 }
@@ -61,20 +61,19 @@ namespace
             }
 
             QByteArray arr = reply->readAll();
-            fetcher->func(type, name, arr.data(), arr.size());
+            fetcher->func(name, arr.data(), arr.size());
             delete this;
         }
 
         const std::string name;
         FetcherDetail *fetcher;
         QNetworkReply *reply;
-        const melown::FetchType type;
         melown::uint32 redirections;
     };
 
-    void FetcherDetail::fetch(melown::FetchType type, const std::string &name)
+    void FetcherDetail::fetch(const std::string &name)
     {
-        FetchTask *t = new FetchTask(this, type, name);
+        FetchTask *t = new FetchTask(this, name);
         QUrl url(QString::fromUtf8(name.data(), name.length()));
         QNetworkRequest request(url);
         t->reply = get(request);
@@ -102,7 +101,7 @@ void FetcherImpl::setCallback(Func func)
     impl->func = func;
 }
 
-void FetcherImpl::fetch(melown::FetchType type, const std::string &name)
+void FetcherImpl::fetch(const std::string &name)
 {
-    return impl->fetch(type, name);
+    return impl->fetch(name);
 }

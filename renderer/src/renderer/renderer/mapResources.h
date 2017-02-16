@@ -1,6 +1,8 @@
 #ifndef MAPRESOURCES_H_hdsgfhjuwebgfj
 #define MAPRESOURCES_H_hdsgfhjuwebgfj
 
+#include <memory>
+
 #include "../../vts-libs/vts/metatile.hpp"
 #include "../../vts-libs/vts/mapconfig.hpp"
 
@@ -21,6 +23,14 @@ namespace melown
     {
     public:
         MetaTile();
+        void load(const std::string &name, class Map *base) override;
+    };
+
+    class MeshAggregate : public Resource
+    {
+    public:
+        std::vector<std::shared_ptr<class GpuMeshRenderable>> submeshes;
+
         void load(const std::string &name, class Map *base) override;
     };
 }

@@ -16,8 +16,7 @@ namespace melown
         virtual ~GpuContext() {}
         virtual std::shared_ptr<Resource> createShader() = 0;
         virtual std::shared_ptr<Resource> createTexture() = 0;
-        virtual std::shared_ptr<Resource> createSubMesh() = 0;
-        virtual std::shared_ptr<Resource> createMeshAggregate() = 0;
+        virtual std::shared_ptr<Resource> createMeshRenderable() = 0;
     };
 }
 

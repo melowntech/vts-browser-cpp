@@ -23,7 +23,7 @@ public:
 
     void setOptions(const FetcherOptions &options);
     void setCallback(Func func) override;
-    void fetch(melown::FetchType type, const std::string &name) override;
+    void fetch(const std::string &name) override;
 
     FetcherDetail *impl;
 };

@@ -8,6 +8,7 @@
 namespace melown
 {
     class Map;
+    class Fetcher;
 }
 
 class MainWindow : public QWindow
@@ -22,6 +23,8 @@ public:
 
     Gl *gl;
     melown::Map *map;
+
+    melown::Fetcher *fetcher;
 };
 
 #endif

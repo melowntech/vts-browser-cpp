@@ -1,6 +1,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <cstring>
+#include <cstdio>
+#include <cstdlib>
 
 #include "cache.h"
 #include "fetcher.h"
@@ -27,12 +29,31 @@ namespace melown
     public:
         CacheImpl(Fetcher *fetcher) : fetcher(fetcher)
         {
-            Fetcher::Func func = std::bind(&CacheImpl::fetchedFile, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+            Fetcher::Func func = std::bind(&CacheImpl::fetchedFile, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
             fetcher->setCallback(func);
         }
 
         ~CacheImpl()
         {}
+
+        void readLocalFile(const std::string &name)
+        {
+            downloading.erase(name);
+
+            // todo rework to asynchronous read
+
+            FILE *f = fopen(name.c_str(), "rb");
+            if (!f)
+                throw "failed to open file";
+            Buffer b;
+            fseek(f, 0, SEEK_END);
+            b.size = ftell(f);
+            fseek(f, 0, SEEK_SET);
+            b.data = malloc(b.size);
+            fread(b.data, b.size, 1, f);
+            fclose(f);
+            data[name] = b;
+        }
 
         bool read(const std::string &name, void *&buffer, uint32 &size) override
         {
@@ -42,7 +63,10 @@ namespace melown
                 if (downloading.find(name) == downloading.end())
                 {
                     downloading.insert(name);
-                    fetcher->fetch(FetchType::Binary, name);
+                    if (name.find("://") == std::string::npos)
+                        readLocalFile(name);
+                    else
+                        fetcher->fetch(name);
                 }
                 return false;
             }
@@ -51,18 +75,18 @@ namespace melown
             return true;
         }
 
-        void fetchedFile(FetchType type, const std::string &name, const char *buffer, uint32 size) override
+        void fetchedFile(const std::string &name, const char *buffer, uint32 size) override
         {
-            LOG(info3) << "downloaded: " << name;
-
-            downloading.erase(name);
             if (!buffer)
-                throw "download failed";
-
+            {
+                LOG(warn3) << "download failed: " + name;
+                return;
+            }
+            downloading.erase(name);
             Buffer b;
+            b.size = size;
             b.data = malloc(size);
             memcpy(b.data, buffer, size);
-            b.size = size;
             data[name] = b;
         }
 

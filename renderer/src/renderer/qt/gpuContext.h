@@ -14,10 +14,11 @@ public:
 
     std::shared_ptr<melown::Resource> createShader() override;
     std::shared_ptr<melown::Resource> createTexture() override;
-    std::shared_ptr<melown::Resource> createSubMesh() override;
-    std::shared_ptr<melown::Resource> createMeshAggregate() override;
+    std::shared_ptr<melown::Resource> createMeshRenderable() override;
 
     void initialize();
+    void current(bool bind = true);
+
     void onDebugMessage(const class QOpenGLDebugMessage &message);
 
     class QOpenGLDebugLogger *logger;

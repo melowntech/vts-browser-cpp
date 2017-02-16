@@ -24,58 +24,95 @@ namespace melown
 
         struct MetaTileTraverse
         {
-            MetaTileTraverse() : map(nullptr), mapConfig(nullptr), surfConf(nullptr)
+            MetaTileTraverse() : map(nullptr), mapConfig(nullptr), surfConf(nullptr), shader(nullptr)
             {}
 
-            std::shared_ptr<UrlTemplate> metaUrlTemplate;
-            std::shared_ptr<UrlTemplate> meshUrlTemplate;
+            UrlTemplate metaUrlTemplate;
+            UrlTemplate meshUrlTemplate;
+            UrlTemplate textureInternalUrlTemplate;
             Map *map;
             MapConfig *mapConfig;
             SurfaceConfig *surfConf;
             uint32 binaryOrder;
+            GpuShader *shader;
+
+            mat4 viewProj;
 
             void traverse(const TileId nodeId)
             {
                 const TileId tileId(nodeId.lod, (nodeId.x >> binaryOrder) << binaryOrder, (nodeId.y >> binaryOrder) << binaryOrder);
-                const MetaTile *tile = map->resources->getMetaTile((*metaUrlTemplate)(UrlTemplate::Vars(tileId)));
+                const MetaTile *tile = map->resources->getMetaTile(metaUrlTemplate(UrlTemplate::Vars(tileId)));
                 if (!tile || !tile->ready)
                     return;
                 const MetaNode *node = tile->get(nodeId, std::nothrow_t());
                 if (!node)
                     return;
 
-                LOG(info3) << nodeId.lod << " " << nodeId.x << " " << nodeId.y << " " << node->flags();
+                { // traverse children
+                    if (node->ulChild() ) traverse(TileId(nodeId.lod + 1, nodeId.x * 2 + 0, nodeId.y * 2 + 0));
+                    if (node->urChild() ) traverse(TileId(nodeId.lod + 1, nodeId.x * 2 + 1, nodeId.y * 2 + 0));
+                    if (node->llChild() ) traverse(TileId(nodeId.lod + 1, nodeId.x * 2 + 0, nodeId.y * 2 + 1));
+                    if (node->lrlChild()) traverse(TileId(nodeId.lod + 1, nodeId.x * 2 + 1, nodeId.y * 2 + 1));
+                }
 
-                if (node->ulChild() ) traverse(TileId(nodeId.lod + 1, nodeId.x * 2 + 0, nodeId.y * 2 + 0));
-                if (node->urChild() ) traverse(TileId(nodeId.lod + 1, nodeId.x * 2 + 1, nodeId.y * 2 + 0));
-                if (node->llChild() ) traverse(TileId(nodeId.lod + 1, nodeId.x * 2 + 0, nodeId.y * 2 + 1));
-                if (node->lrlChild()) traverse(TileId(nodeId.lod + 1, nodeId.x * 2 + 1, nodeId.y * 2 + 1));
+                if (node->geometry())
+                {
+                    MeshAggregate *meshAgg = map->resources->getMeshAggregate(meshUrlTemplate(UrlTemplate::Vars(nodeId)));
+                    if (meshAgg && meshAgg->ready)
+                    {
+                        for (uint32 i = 0, e = meshAgg->submeshes.size(); i != e; i++)
+                        {
+                            GpuMeshRenderable *mesh = meshAgg->submeshes[i].get();
+                            GpuTexture *texture = map->resources->getTexture(textureInternalUrlTemplate(UrlTemplate::Vars(nodeId).addSubmesh(i)));
+                            if (texture && texture->ready)
+                            {
+                                texture->bind();
+                                mat4 mvp = viewProj;
+                                shader->uniform(0, mvp);
+                                mesh->draw();
+                            }
+                        }
+                    }
+                }
             }
 
-            void renderTick()
+            void renderTick(uint32 width, uint32 height)
             {
+                mapConfig = map->resources->getMapConfig(map->mapConfigPath);
+                if (!mapConfig || !mapConfig->ready)
+                    return;
+
+                shader = map->resources->getShader("data/shaders/a");
+                if (!shader || !shader->ready)
+                    return;
+                shader->bind();
+
+                static float angle = 0;
+                angle += 0.02;
+
+                vec3 target = vec3(472800, 5.55472e+06, 232.794);
+                mat4 view = lookAt(target + vec3(sin(angle), cos(angle), 0) * 5000 + vec3(0, 0, 5000), target, vec3(0, 0, 1));
+                mat4 proj = perspectiveMatrix(60, (float)width / (float)height, 100, 10000);
+
+                viewProj = proj * view;
+
                 binaryOrder = mapConfig->referenceFrame.metaBinaryOrder;
                 for (auto &&surfConf : mapConfig->surfaces)
                 {
                     this->surfConf = &surfConf;
-                    metaUrlTemplate = std::shared_ptr<UrlTemplate>(new UrlTemplate(mapConfig->basePath + surfConf.urls3d->meta));
-                    meshUrlTemplate = std::shared_ptr<UrlTemplate>(new UrlTemplate(mapConfig->basePath + surfConf.urls3d->mesh));
+                    metaUrlTemplate.parse(mapConfig->basePath + surfConf.urls3d->meta);
+                    meshUrlTemplate.parse(mapConfig->basePath + surfConf.urls3d->mesh);
+                    textureInternalUrlTemplate.parse(mapConfig->basePath + surfConf.urls3d->texture);
                     traverse(TileId());
                 }
             }
         };
 
-        void renderTick() override
+        void renderTick(uint32 width, uint32 height) override
         {
-            LOG(info4) << "RENDER FRAME START";
-
             MetaTileTraverse mtt;
             mtt.map = map;
-            mtt.mapConfig = map->resources->getMapConfig(map->mapConfigPath);
-            if (mtt.mapConfig && mtt.mapConfig->ready)
-                mtt.renderTick();
-
-            LOG(info4) << "RENDER FRAME DONE";
+            mtt.renderTick(width, height);
         }
 
         void renderFinalize() override

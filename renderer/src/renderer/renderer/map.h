@@ -19,7 +19,7 @@ namespace melown
         void dataFinalize();
 
         void renderInitialize(class GpuContext *context);
-        void renderTick();
+        void renderTick(uint32 width, uint32 height);
         void renderFinalize();
 
         class Cache *cache;

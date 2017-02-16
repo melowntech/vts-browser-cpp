@@ -4,12 +4,37 @@
 #include "fetcher.h"
 
 #include <QGuiApplication>
-#include <QSemaphore>
-#include <QThread>
 
 #include "../renderer/map.h"
 
-QSemaphore dataStartSem;
+/*
+#include <QSemaphore>
+#include <QMutex>
+#include <QWaitCondition>
+#include <QThread>
+
+class BarrierData
+{
+public:
+    BarrierData(int count) : count(count) {}
+
+    void wait()
+    {
+        mutex.lock();
+        --count;
+        if (count > 0)
+            condition.wait(&mutex);
+        else
+            condition.wakeAll();
+        mutex.unlock();
+    }
+
+private:
+    Q_DISABLE_COPY(BarrierData)
+    int count;
+    QMutex mutex;
+    QWaitCondition condition;
+} barrier(2);
 
 class DataThread : public QThread
 {
@@ -27,11 +52,12 @@ public:
             fetcher->setOptions(fetcherOptions);
         }
 
-        dataStartSem.release();
         window->create();
-        window->gl->initialize();
-        dataStartSem.acquire();
 
+        barrier.wait();
+        barrier.wait();
+
+        window->gl->initialize();
         window->map->dataInitialize(window->gl, fetcher);
         while(!stopping)
         {
@@ -49,31 +75,44 @@ public:
     FetcherImpl *fetcher;
     volatile bool stopping;
 };
+*/
 
 int main(int argc, char *argv[])
 {
     QGuiApplication application(argc, argv);
 
     MainWindow mainWindow;
+
+    /*
     DataThread dataThread;
     dataThread.start();
+    */
 
     mainWindow.map = &map;
 
-    dataStartSem.acquire();
+    /*
+    barrier.wait();
     dataThread.window->map = &map;
-    dataStartSem.release();
+    dataThread.window->gl->setShareContext(mainWindow.gl);
+    barrier.wait();
+    */
+
+    {
+        FetcherOptions fetcherOptions;
+        dynamic_cast<FetcherImpl*>(mainWindow.fetcher)->setOptions(fetcherOptions);
+    }
 
     mainWindow.resize(QSize(800, 600));
     mainWindow.show();
-    dataThread.window->gl->setShareContext(mainWindow.gl);
     mainWindow.initialize();
     mainWindow.requestUpdate();
 
     auto result = application.exec();
 
+    /*
     dataThread.stopping = true;
     dataThread.wait();
+    */
 
     return result;
 }

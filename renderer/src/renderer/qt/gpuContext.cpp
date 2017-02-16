@@ -13,18 +13,23 @@ Gl::~Gl()
     delete logger;
 }
 
+void Gl::current(bool bind)
+{
+    if (bind)
+        makeCurrent(surface);
+    else
+        doneCurrent();
+}
+
 void Gl::initialize()
 {
-    QSurfaceFormat format;
-    format.setVersion(4, 4);
-    format.setProfile(QSurfaceFormat::CoreProfile);
-    setFormat(format);
+    setFormat(surface->format());
 
     create();
     if (!isValid())
         throw "unable to create opengl context";
 
-    makeCurrent(surface);
+    current(true);
     initializeOpenGLFunctions();
 
     logger->initialize();

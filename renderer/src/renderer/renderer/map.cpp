@@ -51,9 +51,9 @@ namespace melown
         resources->renderInitialize(context);
     }
 
-    void Map::renderTick()
+    void Map::renderTick(uint32 width, uint32 height)
     {
-        renderer->renderTick();
+        renderer->renderTick(width, height);
         resources->renderTick();
     }
 

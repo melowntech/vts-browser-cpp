@@ -19,7 +19,7 @@ namespace melown
         /// DATA thread
         /////////
 
-        ResourceManagerImpl(Map *map) : map(map), renderContext(nullptr), dataContext(nullptr)
+        ResourceManagerImpl(Map *map) : map(map), takeItemIndex(0)
         {}
 
         ~ResourceManagerImpl()
@@ -36,10 +36,16 @@ namespace melown
             std::string name;
             { // take an item
                 boost::lock_guard<boost::mutex> l(mut);
+                if (!pending_render.empty())
+                {
+                    std::swap(pending_render, pending_data);
+                    pending_render.clear();
+                }
                 if (pending_data.empty())
                     return false;
-                name = *pending_data.begin();
-                pending_data.erase(pending_data.begin());
+                auto it = std::next(pending_data.begin(), takeItemIndex++ % pending_data.size());
+                name = *it;
+                pending_data.erase(it);
             }
             Resource *r = resources[name].get();
             if (r->ready)
@@ -104,14 +110,9 @@ namespace melown
             return getGpuResource<GpuTexture, &GpuContext::createTexture>(name);
         }
 
-        GpuSubMesh *getSubMesh(const std::string &name) override
+        GpuMeshRenderable *getMeshRenderable(const std::string &name) override
         {
-            return getGpuResource<GpuSubMesh, &GpuContext::createSubMesh>(name);
-        }
-
-        GpuMeshAggregate *getMeshAggregate(const std::string &name) override
-        {
-            return getGpuResource<GpuMeshAggregate, &GpuContext::createMeshAggregate>(name);
+            return getGpuResource<GpuMeshRenderable, &GpuContext::createMeshRenderable>(name);
         }
 
         template<class T> T *getMapResource(const std::string &name)
@@ -136,17 +137,21 @@ namespace melown
             return getMapResource<MetaTile>(name);
         }
 
+        MeshAggregate *getMeshAggregate(const std::string &name) override
+        {
+            return getMapResource<MeshAggregate>(name);
+        }
+
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
         std::unordered_set<std::string> pending_render;
         std::unordered_set<std::string> pending_data;
         boost::mutex mut;
 
         Map *map;
-        GpuContext *renderContext;
-        GpuContext *dataContext;
+        uint32 takeItemIndex;
     };
 
-    ResourceManager::ResourceManager()
+    ResourceManager::ResourceManager() : renderContext(nullptr), dataContext(nullptr)
     {}
 
     ResourceManager::~ResourceManager()

@@ -37,14 +37,6 @@ namespace melown
         }
     }
 
-    template<class D, class S> D convert(const S &s)
-    {
-        D d;
-        for (int i = 0; i < s.size(); i++)
-            d(i) = s[i];
-        return d;
-    }
-
     void MeshAggregate::load(const std::string &name, Map *base)
     {
         void *buffer = nullptr;
@@ -85,8 +77,8 @@ namespace melown
                         {
                             VertexAttributes at;
                             uint32 k = m.faces[i][j];
-                            at.vert = convert<vec3>(m.vertices[k]);
-                            at.uv = convert<vec2>(m.etc[k]);
+                            at.vert = vecFromUblas<vec3>(m.vertices[k]);
+                            at.uv = vecFromUblas<vec2>(m.etc[k]);
                             attributes.push_back(at);
                         }
                     }
@@ -98,8 +90,8 @@ namespace melown
                         for (uint32 j = 0; j < 3; j++)
                         {
                             VertexAttributes at;
-                            at.vert = convert<vec3>(m.vertices[m.faces[i][j]]);
-                            at.uv = convert<vec2>(m.tc[m.facesTc[i][j]]);
+                            at.vert = vecFromUblas<vec3>(m.vertices[m.faces[i][j]]);
+                            at.uv = vecFromUblas<vec2>(m.tc[m.facesTc[i][j]]);
                             attributes.push_back(at);
                         }
                     }
@@ -107,20 +99,6 @@ namespace melown
                 default:
                     throw "invalid texture mode";
                 }
-
-                /*
-                { // debug
-                    attributes.clear();
-                    VertexAttributes at;
-                    at.uv = vec2(1, 0);
-                    at.vert = vec3(-10, -10, 0);
-                    attributes.push_back(at);
-                    at.vert = vec3(10, -10, 0);
-                    attributes.push_back(at);
-                    at.vert = vec3(0, 10, 0);
-                    attributes.push_back(at);
-                }
-                */
 
                 GpuMeshSpec spec;
                 spec.vertexBuffer = attributes.data();
@@ -138,20 +116,18 @@ namespace melown
                 spec.attributes[1].components = 2;
                 spec.attributes[1].offset = sizeof(vec3);
 
-                /*
                 { // find real bounding box
                     vec3 a(FLT_MAX, FLT_MAX, FLT_MAX);
                     vec3 b(-a);
                     for (auto &&v : m.vertices)
                     {
-                        a = min(a, convert<vec3>(v));
-                        b = max(b, convert<vec3>(v));
+                        a = min(a, vecFromUblas<vec3>(v));
+                        b = max(b, vecFromUblas<vec3>(v));
                     }
                     LOG(info3) << "bbox: " << a(0) << " " << a(1) << " " << a(2) << " --- " << b(0) << " " << b(1) << " " << b(2);
                     vec3 c = (a + b) * 0.5;
                     LOG(info3) << "center: " << c(0) << " " << c(1) << " " << c(2);
                 }
-                */
 
                 gm->loadMeshRenderable(spec);
 

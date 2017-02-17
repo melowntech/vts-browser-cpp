@@ -7,15 +7,6 @@
 
 namespace melown
 {
-    class LogInitializer
-    {
-    public:
-        LogInitializer()
-        {
-            dbglog::log_pid(false);
-        }
-    } logInitializer;
-
     Map::Map(const std::string &mapConfigPath) : resources(nullptr), renderer(nullptr), mapConfigPath(mapConfigPath)
     {
         resources = ResourceManager::create(this);

@@ -33,6 +33,29 @@ namespace melown
 
     const vec3 min(const vec3 &a, const vec3 &b);
     const vec3 max(const vec3 &a, const vec3 &b);
+
+    template<class T, class U>
+    const T vecFromUblas(const U &u)
+    {
+        T res;
+        for (int i = 0; i < u.size(); i++)
+            res(i) = u[i];
+        return res;
+    }
+
+    template<class U, class T>
+    const U vecToUblas(const T &t)
+    {
+        U res;
+        for (int i = 0; i < res.size(); i++)
+            res[i] = t(i);
+        return res;
+    }
+
+    float degToRad(float angle);
+    float radToDeg(float angle);
+
+    const mat3 upperLeftSubMatrix(const mat4 &mat);
 }
 
 #endif // renderer_math_hpp_included_

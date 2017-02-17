@@ -47,6 +47,11 @@ namespace melown
     }
 
 
+    inline float &at(mat3 &a, uint32 i)
+    {
+        return a(i % 3, i / 3);
+    }
+
     inline float &at(mat4 &a, uint32 i)
     {
         return a(i % 4, i / 4);
@@ -100,12 +105,14 @@ namespace melown
                     0, 1,  0, 0,
                     sa, 0, ca, 0,
                     0, 0,  0, 1).finished();
-        default:
+        case 2:
             return (mat4() <<
                     ca,-sa, 0, 0,
                     sa, ca, 0, 0,
                     0,  0,  1, 0,
                     0,  0,  0, 1).finished();
+        default:
+            throw "invalid rotation matrix axis";
         }
     }
 
@@ -145,5 +152,32 @@ namespace melown
     const vec3 max(const vec3 &a, const vec3 &b)
     {
         return vec3(std::max(a(0), b(0)), std::max(a(1), b(1)), std::max(a(2), b(2)));
+    }
+
+
+    float degToRad(float angle)
+    {
+        return angle * M_PI / 180;
+    }
+
+    float radToDeg(float angle)
+    {
+        return angle * 180 / M_PI;
+    }
+
+    const mat3 upperLeftSubMatrix(const mat4 &m)
+    {
+        mat4 mat(m);
+        mat3 res;
+        at(res, 0) = at(mat, 0);
+        at(res, 1) = at(mat, 1);
+        at(res, 2) = at(mat, 2);
+        at(res, 3) = at(mat, 4);
+        at(res, 4) = at(mat, 5);
+        at(res, 5) = at(mat, 6);
+        at(res, 6) = at(mat, 8);
+        at(res, 7) = at(mat, 9);
+        at(res, 8) = at(mat, 10);
+        return res;
     }
 }

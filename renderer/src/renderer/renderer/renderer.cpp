@@ -35,7 +35,7 @@ namespace melown
             if (!node)
                 return;
 
-            if (nodeId.lod <= 14)
+            if (nodeId.lod <= targetLod)
             { // traverse children
                 if (node->ulChild() ) traverse(TileId(nodeId.lod + 1, nodeId.x * 2 + 0, nodeId.y * 2 + 0));
                 if (node->urChild() ) traverse(TileId(nodeId.lod + 1, nodeId.x * 2 + 1, nodeId.y * 2 + 0));
@@ -43,7 +43,7 @@ namespace melown
                 if (node->lrlChild()) traverse(TileId(nodeId.lod + 1, nodeId.x * 2 + 1, nodeId.y * 2 + 1));
             }
 
-            if (node->geometry() && nodeId.lod == 15)
+            if (node->geometry() && nodeId.lod == targetLod)
             {
                 MeshAggregate *meshAgg = map->resources->getMeshAggregate(meshUrlTemplate(UrlTemplate::Vars(nodeId)));
                 if (meshAgg && meshAgg->state == Resource::State::ready)
@@ -52,14 +52,16 @@ namespace melown
                     {
                         MeshPart &part = meshAgg->submeshes[i];
                         GpuMeshRenderable *mesh = part.renderable.get();
-                        //GpuTexture *texture = map->resources->getTexture(textureInternalUrlTemplate(UrlTemplate::Vars(nodeId).addSubmesh(i)));
-                        //if (texture && texture->ready)
-                        //{
-                        //    texture->bind();
+                        GpuTexture *texture = map->resources->getTexture(textureInternalUrlTemplate(UrlTemplate::Vars(nodeId).addSubmesh(i)));
+                        if (texture && texture->state == Resource::State::errorDownload)
+                            texture = map->resources->getTexture("data/helper.jpg");
+                        if (texture && texture->state == Resource::State::ready)
+                        {
+                            texture->bind();
                             mat4f mvp = (viewProj * part.normToPhys).cast<float>();
                             shader->uniformMat4(0, mvp.data());
                             mesh->draw();
-                        //}
+                        }
                     }
                 }
             }
@@ -125,11 +127,15 @@ namespace melown
                     dir = normalize(dir);
                     up = normalize(up);
                 } break;
+                //case vadstena::registry::Srs::Type::geographic:
+                //{
+                //
+                //} break;
                 default:
                     throw "not implemented navigation srs type";
                 }
 
-                float dist = mapConfig->position.verticalExtent * 0.5f / tan(degToRad(mapConfig->position.verticalFov * 0.5));
+                float dist = mapConfig->position.verticalExtent * 0.5 / tan(degToRad(mapConfig->position.verticalFov * 0.5));
 
                 mat4 view = lookAt(center - dir * dist, center, up);
                 mat4 proj = perspectiveMatrix(mapConfig->position.verticalFov, (double)width / (double)height, dist * 0.1, dist * 10);
@@ -141,6 +147,7 @@ namespace melown
             for (auto &&surfConf : mapConfig->surfaces)
             {
                 this->surfConf = &surfConf;
+                targetLod = (this->surfConf->lodRange.min + this->surfConf->lodRange.max) / 2;
                 metaUrlTemplate.parse(mapConfig->basePath + surfConf.urls3d->meta);
                 meshUrlTemplate.parse(mapConfig->basePath + surfConf.urls3d->mesh);
                 textureInternalUrlTemplate.parse(mapConfig->basePath + surfConf.urls3d->texture);
@@ -162,6 +169,8 @@ namespace melown
         SurfaceConfig *surfConf;
         GpuShader *shader;
         uint32 binaryOrder;
+
+        uint32 targetLod;
     };
 
     Renderer::Renderer()

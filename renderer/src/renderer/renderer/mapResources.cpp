@@ -18,11 +18,18 @@ namespace melown
     {
         void *buffer = nullptr;
         uint32 size = 0;
-        if (base->cache->read(name, buffer, size))
+        switch (base->cache->read(name, buffer, size))
+        {
+        case Cache::Result::ready:
         {
             std::istringstream is(std::string((char*)buffer, size));
             *(vadstena::vts::MetaTile*)this = vadstena::vts::loadMetaTile(is, 5, name);
             state = State::ready;
+            return;
+        }
+        case Cache::Result::error:
+            state = State::errorDownload;
+            return;
         }
     }
 
@@ -44,7 +51,9 @@ namespace melown
     {
         void *buffer = nullptr;
         uint32 size = 0;
-        if (base->cache->read(name, buffer, size))
+        switch (base->cache->read(name, buffer, size))
+        {
+        case Cache::Result::ready:
         {
             struct VertexAttributes
             {
@@ -149,6 +158,11 @@ namespace melown
                 gpuMemoryCost += it.renderable->gpuMemoryCost;
             }
             state = ready ? State::ready : State::errorLoad;
+            return;
+        }
+        case Cache::Result::error:
+            state = State::errorDownload;
+            return;
         }
     }
 }

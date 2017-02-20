@@ -39,13 +39,12 @@ namespace melown
 
         void readLocalFile(const std::string &name)
         {
-            downloading.erase(name);
-
-            // todo rework to asynchronous read
-
             FILE *f = fopen(name.c_str(), "rb");
             if (!f)
-                throw "failed to open file";
+            {
+                states[name] = Result::error;
+                return;
+            }
             Buffer b;
             fseek(f, 0, SEEK_END);
             b.size = ftell(f);
@@ -54,44 +53,48 @@ namespace melown
             fread(b.data, b.size, 1, f);
             fclose(f);
             data[name] = b;
+            states[name] = Result::ready;
         }
 
-        bool read(const std::string &name, void *&buffer, uint32 &size) override
+        Result read(const std::string &name, void *&buffer, uint32 &size) override
         {
-            auto it = data.find(name);
-            if (it == data.end())
+            Result state = states[name];
+            switch (state)
             {
-                if (downloading.find(name) == downloading.end())
-                {
-                    downloading.insert(name);
-                    if (name.find("://") == std::string::npos)
-                        readLocalFile(name);
-                    else
-                        fetcher->fetch(name);
-                }
-                return false;
+            case Result::initialized:
+            {
+                states[name] = Result::downloading;
+                if (name.find("://") == std::string::npos)
+                    readLocalFile(name);
+                else
+                    fetcher->fetch(name);
+            } break;
+            case Result::ready:
+            {
+                Buffer &buf = data[name];
+                buffer = buf.data;
+                size = buf.size;
+            } break;
             }
-            buffer = it->second.data;
-            size = it->second.size;
-            return true;
+            return state;
         }
 
         void fetchedFile(const std::string &name, const char *buffer, uint32 size) override
         {
             if (!buffer)
             {
-                LOG(warn3) << "download failed: " + name;
+                states[name] = Result::error;
                 return;
             }
-            downloading.erase(name);
             Buffer b;
             b.size = size;
             b.data = malloc(size);
             memcpy(b.data, buffer, size);
             data[name] = b;
+            states[name] = Result::ready;
         }
 
-        std::unordered_set<std::string> downloading;
+        std::unordered_map<std::string, Result> states;
         std::unordered_map<std::string, Buffer> data;
         Fetcher *fetcher;
     };

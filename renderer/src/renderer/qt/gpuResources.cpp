@@ -70,7 +70,7 @@ public:
         reader.setDevice(&buff);
         reader.autoDetectImageFormat();
         QImage img(reader.read());
-        setData(img);
+        setData(img.mirrored());
         gpuMemoryCost = img.byteCount();
         state = melown::Resource::State::ready;
     }

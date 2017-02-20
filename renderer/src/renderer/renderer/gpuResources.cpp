@@ -3,20 +3,18 @@
 #include <iostream>
 #include <cstdlib>
 
+#include <renderer/gpuResources.h>
+
 #include "map.h"
 #include "cache.h"
 #include "resourceManager.h"
-#include "gpuResources.h"
 
 namespace melown
 {
-    GpuMeshSpec::GpuMeshSpec() : indexBuffer(nullptr), vertexBuffer(nullptr), vertexCount(0), vertexSize(0), indexCount(0), faceMode(FaceMode::Triangles)
+    GpuShader::GpuShader(const std::string &name) : Resource(name)
     {}
 
-    GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0), components(0), type(Type::Float), enable(false), normalized(false)
-    {}
-
-    void GpuShader::load(const std::string &name, Map *base)
+    void GpuShader::load(MapImpl *base)
     {
         void *buffer = nullptr;
         uint32 size = 0;
@@ -33,7 +31,10 @@ namespace melown
         }
     }
 
-    void GpuTexture::load(const std::string &name, Map *base)
+    GpuTexture::GpuTexture(const std::string &name) : Resource(name)
+    {}
+
+    void GpuTexture::load(MapImpl *base)
     {
         void *buffer = nullptr;
         uint32 size = 0;
@@ -41,6 +42,15 @@ namespace melown
             loadTexture(buffer, size);
     }
 
-    void GpuMeshRenderable::load(const std::string &name, Map *base)
+    GpuMeshSpec::GpuMeshSpec() : indexBufferData(nullptr), vertexBufferData(nullptr), verticesCount(0), vertexBufferSize(0), indicesCount(0), faceMode(FaceMode::Triangles)
+    {}
+
+    GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0), components(0), type(Type::Float), enable(false), normalized(false)
+    {}
+
+    GpuMeshRenderable::GpuMeshRenderable(const std::string &name) : Resource(name)
+    {}
+
+    void GpuMeshRenderable::load(MapImpl *base)
     {}
 }

@@ -5,7 +5,7 @@
 
 #include <QGuiApplication>
 
-#include "../renderer/map.h"
+#include <renderer/map.h>
 
 /*
 #include <QSemaphore>

@@ -60,7 +60,7 @@ namespace melown
         return vecFromUblas<vec3>(impl->physToPub(vecToUblas<math::Point3d>(value)));
     }
 
-
+    /*
     const math::Point3 CsConvertor::navToPhys(const math::Point3 &value)
     {
         return impl->navToPhys(value);
@@ -90,4 +90,5 @@ namespace melown
     {
         return impl->physToPub(value);
     }
+    */
 }

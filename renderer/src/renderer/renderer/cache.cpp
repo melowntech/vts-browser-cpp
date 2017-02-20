@@ -4,8 +4,9 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <renderer/fetcher.h>
+
 #include "cache.h"
-#include "fetcher.h"
 
 #include "dbglog/dbglog.hpp"
 
@@ -95,7 +96,7 @@ namespace melown
         Fetcher *fetcher;
     };
 
-    Cache *Cache::create(class Map *, Fetcher *fetcher)
+    Cache *Cache::create(class MapImpl *, Fetcher *fetcher)
     {
         return new CacheImpl(fetcher);
     }

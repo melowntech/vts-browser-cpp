@@ -10,7 +10,7 @@ namespace melown
     class ResourceManager
     {
     public:
-        static ResourceManager *create(class Map *map);
+        static ResourceManager *create(class MapImpl *map);
 
         ResourceManager();
         virtual ~ResourceManager();

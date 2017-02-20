@@ -1,56 +1,59 @@
 #include "../../dbglog/dbglog.hpp"
 
+#include <renderer/map.h>
+
 #include "map.h"
-#include "cache.h"
 #include "renderer.h"
 #include "resourceManager.h"
 
 namespace melown
 {
-    Map::Map(const std::string &mapConfigPath) : resources(nullptr), renderer(nullptr), mapConfigPath(mapConfigPath)
+    MapFoundation::MapFoundation(const std::string &mapConfigPath)
     {
-        resources = ResourceManager::create(this);
-        renderer = Renderer::create(this);
+        impl = std::shared_ptr<MapImpl>(new MapImpl(mapConfigPath));
     }
 
-    Map::~Map()
-    {
-        delete renderer; renderer = nullptr;
-        delete resources; resources = nullptr;
-    }
+    MapFoundation::~MapFoundation()
+    {}
 
-    void Map::dataInitialize(GpuContext *context, Fetcher *fetcher)
+    void MapFoundation::dataInitialize(GpuContext *context, Fetcher *fetcher)
     {
         dbglog::thread_id("data");
-        resources->dataInitialize(context, fetcher);
+        impl->resources->dataInitialize(context, fetcher);
     }
 
-    bool Map::dataTick()
+    bool MapFoundation::dataTick()
     {
-        return resources->dataTick();
+        return impl->resources->dataTick();
     }
 
-    void Map::dataFinalize()
+    void MapFoundation::dataFinalize()
     {
-        resources->dataFinalize();
+        impl->resources->dataFinalize();
     }
 
-    void Map::renderInitialize(GpuContext *context)
+    void MapFoundation::renderInitialize(GpuContext *context)
     {
         dbglog::thread_id("render");
-        renderer->renderInitialize();
-        resources->renderInitialize(context);
+        impl->renderer->renderInitialize();
+        impl->resources->renderInitialize(context);
     }
 
-    void Map::renderTick(uint32 width, uint32 height)
+    void MapFoundation::renderTick(uint32 width, uint32 height)
     {
-        renderer->renderTick(width, height);
-        resources->renderTick();
+        impl->renderer->renderTick(width, height);
+        impl->resources->renderTick();
     }
 
-    void Map::renderFinalize()
+    void MapFoundation::renderFinalize()
     {
-        renderer->renderFinalize();
-        resources->renderFinalize();
+        impl->renderer->renderFinalize();
+        impl->resources->renderFinalize();
+    }
+
+    MapImpl::MapImpl(const std::string &mapConfigPath) : mapConfigPath(mapConfigPath)
+    {
+        resources = std::shared_ptr<ResourceManager>(ResourceManager::create(this));
+        renderer = std::shared_ptr<Renderer>(Renderer::create(this));
     }
 }

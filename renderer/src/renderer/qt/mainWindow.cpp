@@ -2,7 +2,7 @@
 #include "gpuContext.h"
 #include "fetcher.h"
 
-#include "../renderer/map.h"
+#include <renderer/map.h>
 
 MainWindow::MainWindow() : gl(nullptr)
 {

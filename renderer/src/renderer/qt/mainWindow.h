@@ -7,7 +7,7 @@
 
 namespace melown
 {
-    class Map;
+    class MapFoundation;
     class Fetcher;
 }
 
@@ -22,7 +22,7 @@ public:
     void tick();
 
     Gl *gl;
-    melown::Map *map;
+    melown::MapFoundation *map;
 
     melown::Fetcher *fetcher;
 };

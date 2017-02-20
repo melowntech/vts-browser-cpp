@@ -1,8 +1,10 @@
+#include <renderer/gpuResources.h>
+
 #include "map.h"
+#include "mapConfig.h"
 #include "renderer.h"
 #include "resourceManager.h"
 #include "mapResources.h"
-#include "gpuResources.h"
 #include "csConvertor.h"
 
 #include "../../vts-libs/vts/urltemplate.hpp"
@@ -16,7 +18,7 @@ namespace melown
     class RendererImpl : public Renderer
     {
     public:
-        RendererImpl(Map *map) : map(map), mapConfig(nullptr), surfConf(nullptr), shader(nullptr)
+        RendererImpl(MapImpl *map) : map(map), mapConfig(nullptr), surfConf(nullptr), shader(nullptr)
         {}
 
         void renderInitialize() override
@@ -27,7 +29,7 @@ namespace melown
         {
             const TileId tileId(nodeId.lod, (nodeId.x >> binaryOrder) << binaryOrder, (nodeId.y >> binaryOrder) << binaryOrder);
             const MetaTile *tile = map->resources->getMetaTile(metaUrlTemplate(UrlTemplate::Vars(tileId)));
-            if (!tile || !tile->ready)
+            if (!tile || tile->state != Resource::State::ready)
                 return;
             const MetaNode *node = tile->get(nodeId, std::nothrow_t());
             if (!node)
@@ -44,7 +46,7 @@ namespace melown
             if (node->geometry() && nodeId.lod == 15)
             {
                 MeshAggregate *meshAgg = map->resources->getMeshAggregate(meshUrlTemplate(UrlTemplate::Vars(nodeId)));
-                if (meshAgg && meshAgg->ready)
+                if (meshAgg && meshAgg->state == Resource::State::ready)
                 {
                     for (uint32 i = 0, e = meshAgg->submeshes.size(); i != e; i++)
                     {
@@ -53,8 +55,8 @@ namespace melown
                         //if (texture && texture->ready)
                         //{
                         //    texture->bind();
-                            mat4 mvp = viewProj;
-                            shader->uniform(0, mvp);
+                            mat4f mvp = viewProj.cast<float>();
+                            shader->uniformMat4(0, mvp.data());
                             mesh->draw();
                         //}
                     }
@@ -65,11 +67,11 @@ namespace melown
         void renderTick(uint32 width, uint32 height) override
         {
             mapConfig = map->resources->getMapConfig(map->mapConfigPath);
-            if (!mapConfig || !mapConfig->ready)
+            if (!mapConfig || mapConfig->state != Resource::State::ready)
                 return;
 
             shader = map->resources->getShader("data/shaders/a");
-            if (!shader || !shader->ready)
+            if (!shader || shader->state != Resource::State::ready)
                 return;
             shader->bind();
 
@@ -129,7 +131,7 @@ namespace melown
                 float dist = mapConfig->position.verticalExtent * 0.5f / tan(degToRad(mapConfig->position.verticalFov * 0.5));
 
                 mat4 view = lookAt(center - dir * dist, center, up);
-                mat4 proj = perspectiveMatrix(mapConfig->position.verticalFov, (float)width / (float)height, dist * 0.1, dist * 10);
+                mat4 proj = perspectiveMatrix(mapConfig->position.verticalFov, (double)width / (double)height, dist * 0.1, dist * 10);
 
                 viewProj = proj * view;
             }
@@ -153,12 +155,12 @@ namespace melown
         UrlTemplate metaUrlTemplate;
         UrlTemplate meshUrlTemplate;
         UrlTemplate textureInternalUrlTemplate;
-        Map *map;
+        mat4 viewProj;
+        MapImpl *map;
         MapConfig *mapConfig;
         SurfaceConfig *surfConf;
-        uint32 binaryOrder;
         GpuShader *shader;
-        mat4 viewProj;
+        uint32 binaryOrder;
     };
 
     Renderer::Renderer()
@@ -167,7 +169,7 @@ namespace melown
     Renderer::~Renderer()
     {}
 
-    Renderer *Renderer::create(Map *map)
+    Renderer *Renderer::create(MapImpl *map)
     {
         return new RendererImpl(map);
     }

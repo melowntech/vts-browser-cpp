@@ -1,31 +1,20 @@
+#include <renderer/gpuContext.h>
+#include <renderer/gpuResources.h>
+
 #include "map.h"
 #include "cache.h"
 #include "mapResources.h"
-#include "gpuResources.h"
 #include "resourceManager.h"
-#include "gpuContext.h"
+#include "math.h"
 
 #include "../../vts-libs/vts/meshio.hpp"
 
 namespace melown
 {
-    void MapConfig::load(const std::string &name, class Map *base)
-    {
-        void *buffer = nullptr;
-        uint32 size = 0;
-        if (base->cache->read(name, buffer, size))
-        {
-            std::istringstream is(std::string((char*)buffer, size));
-            vadstena::vts::loadMapConfig(*this, is, name);
-            basePath = name.substr(0, name.find_last_of('/') + 1);
-            ready = true;
-        }
-    }
-
-    MetaTile::MetaTile() : vadstena::vts::MetaTile(vadstena::vts::TileId(), 0)
+    MetaTile::MetaTile(const std::string &name) : Resource(name), vadstena::vts::MetaTile(vadstena::vts::TileId(), 0)
     {}
 
-    void MetaTile::load(const std::string &name, class Map *base)
+    void MetaTile::load(MapImpl *base)
     {
         void *buffer = nullptr;
         uint32 size = 0;
@@ -33,11 +22,14 @@ namespace melown
         {
             std::istringstream is(std::string((char*)buffer, size));
             *(vadstena::vts::MetaTile*)this = vadstena::vts::loadMetaTile(is, 5, name);
-            ready = true;
+            state = State::ready;
         }
     }
 
-    void MeshAggregate::load(const std::string &name, Map *base)
+    MeshAggregate::MeshAggregate(const std::__cxx11::string &name) : Resource(name)
+    {}
+
+    void MeshAggregate::load(MapImpl *base)
     {
         void *buffer = nullptr;
         uint32 size = 0;
@@ -45,8 +37,8 @@ namespace melown
         {
             struct VertexAttributes
             {
-                vec3 vert;
-                vec2 uv;
+                vec3f vert;
+                vec2f uv;
             };
             std::vector<VertexAttributes> attributes;
 
@@ -63,7 +55,7 @@ namespace melown
 
                 char tmp[10];
                 sprintf(tmp, "%d", mi);
-                std::shared_ptr<GpuMeshRenderable> gm = std::dynamic_pointer_cast<GpuMeshRenderable>(base->resources->dataContext->createMeshRenderable());
+                std::shared_ptr<GpuMeshRenderable> gm = std::dynamic_pointer_cast<GpuMeshRenderable>(base->resources->dataContext->createMeshRenderable(name + "#" + tmp));
 
                 attributes.clear();
                 attributes.reserve(m.faces.size());
@@ -77,8 +69,8 @@ namespace melown
                         {
                             VertexAttributes at;
                             uint32 k = m.faces[i][j];
-                            at.vert = vecFromUblas<vec3>(m.vertices[k]);
-                            at.uv = vecFromUblas<vec2>(m.etc[k]);
+                            at.vert = vecFromUblas<vec3f>(m.vertices[k]);
+                            at.uv = vecFromUblas<vec2f>(m.etc[k]);
                             attributes.push_back(at);
                         }
                     }
@@ -90,8 +82,8 @@ namespace melown
                         for (uint32 j = 0; j < 3; j++)
                         {
                             VertexAttributes at;
-                            at.vert = vecFromUblas<vec3>(m.vertices[m.faces[i][j]]);
-                            at.uv = vecFromUblas<vec2>(m.tc[m.facesTc[i][j]]);
+                            at.vert = vecFromUblas<vec3f>(m.vertices[m.faces[i][j]]);
+                            at.uv = vecFromUblas<vec2f>(m.tc[m.facesTc[i][j]]);
                             attributes.push_back(at);
                         }
                     }
@@ -101,9 +93,9 @@ namespace melown
                 }
 
                 GpuMeshSpec spec;
-                spec.vertexBuffer = attributes.data();
-                spec.vertexCount = attributes.size();
-                spec.vertexSize = sizeof(VertexAttributes);
+                spec.vertexBufferData = attributes.data();
+                spec.vertexBufferSize = attributes.size() * sizeof(VertexAttributes);
+                spec.verticesCount = attributes.size();
 
                 // vertex coordinates
                 spec.attributes[0].enable = true;
@@ -114,8 +106,9 @@ namespace melown
                 spec.attributes[1].enable = true;
                 spec.attributes[1].stride = sizeof(VertexAttributes);
                 spec.attributes[1].components = 2;
-                spec.attributes[1].offset = sizeof(vec3);
+                spec.attributes[1].offset = sizeof(vec3f);
 
+                /*
                 { // find real bounding box
                     vec3 a(FLT_MAX, FLT_MAX, FLT_MAX);
                     vec3 b(-a);
@@ -128,6 +121,7 @@ namespace melown
                     vec3 c = (a + b) * 0.5;
                     LOG(info3) << "center: " << c(0) << " " << c(1) << " " << c(2);
                 }
+                */
 
                 gm->loadMeshRenderable(spec);
 
@@ -135,12 +129,13 @@ namespace melown
             }
 
             gpuMemoryCost = 0;
+            bool ready = true;
             for (auto &&it : submeshes)
             {
-                ready = ready && it->ready;
+                ready = ready && it->state == Resource::State::ready;
                 gpuMemoryCost += it->gpuMemoryCost;
             }
-            ready = true;
+            state = ready ? State::ready : State::errorLoad;
         }
     }
 }

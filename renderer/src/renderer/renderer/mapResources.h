@@ -2,36 +2,30 @@
 #define MAPRESOURCES_H_hdsgfhjuwebgfj
 
 #include <memory>
+#include <string>
 
 #include "../../vts-libs/vts/metatile.hpp"
-#include "../../vts-libs/vts/mapconfig.hpp"
 
-#include "foundation.h"
-#include "resource.h"
+#include <renderer/foundation.h>
+#include <renderer/resource.h>
 
 namespace melown
 {
-    class MapConfig : public Resource, public vadstena::vts::MapConfig
-    {
-    public:
-        void load(const std::string &name, class Map *base) override;
-
-        std::string basePath;
-    };
-
     class MetaTile : public Resource, public vadstena::vts::MetaTile
     {
     public:
-        MetaTile();
-        void load(const std::string &name, class Map *base) override;
+        MetaTile(const std::string &name);
+        void load(class MapImpl *base) override;
     };
 
     class MeshAggregate : public Resource
     {
     public:
-        std::vector<std::shared_ptr<class GpuMeshRenderable>> submeshes;
+        MeshAggregate(const std::string &name);
 
-        void load(const std::string &name, class Map *base) override;
+        void load(class MapImpl *base) override;
+
+        std::vector<std::shared_ptr<class GpuMeshRenderable>> submeshes;
     };
 }
 

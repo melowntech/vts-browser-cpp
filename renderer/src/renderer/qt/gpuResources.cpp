@@ -8,7 +8,7 @@
 
 #include "gpuContext.h"
 
-#include "../renderer/gpuResources.h"
+#include <renderer/gpuResources.h>
 
 QOpenGLFunctions_4_4_Core *gpuFunctions()
 {
@@ -18,7 +18,7 @@ QOpenGLFunctions_4_4_Core *gpuFunctions()
 class GpuShaderImpl : public QOpenGLShaderProgram, public melown::GpuShader
 {
 public:
-    GpuShaderImpl()
+    GpuShaderImpl(const std::string &name) : melown::GpuShader(name)
     {}
 
     void bind() override
@@ -36,25 +36,15 @@ public:
         if (!link())
             throw "failed to link shader program";
         //removeAllShaders();
-        ready = true;
+        state = melown::Resource::State::ready;
     }
 
-
-    void uniform(melown::uint32 location, const melown::mat3 &v) override
-    {
-        QMatrix3x3 m;
-        for (int j = 0; j < 3; j++)
-        for (int i = 0; i < 3; i++)
-            m(i, j) = v(i, j);
-        setUniformValue(location, m);
-    }
-
-    void uniform(melown::uint32 location, const melown::mat4 &v) override
+    void uniformMat4(melown::uint32 location, const float *value) override
     {
         QMatrix4x4 m;
         for (int j = 0; j < 4; j++)
         for (int i = 0; i < 4; i++)
-            m(i, j) = v(i, j);
+            m(i, j) = value[j * 4 + i];
         setUniformValue(location, m);
     }
 };
@@ -63,7 +53,7 @@ public:
 class GpuTextureImpl : public QOpenGLTexture, public melown::GpuTexture
 {
 public:
-    GpuTextureImpl() : QOpenGLTexture(QOpenGLTexture::Target2D)
+    GpuTextureImpl(const std::string &name) : melown::GpuTexture(name), QOpenGLTexture(QOpenGLTexture::Target2D)
     {}
 
     void bind() override
@@ -82,7 +72,7 @@ public:
         QImage img(reader.read());
         setData(img);
         gpuMemoryCost = img.byteCount();
-        ready = true;
+        state = melown::Resource::State::ready;
     }
 };
 
@@ -90,7 +80,7 @@ public:
 class GpuSubMeshImpl : public QObject, public melown::GpuMeshRenderable
 {
 public:
-    GpuSubMeshImpl() : vertexBuffer(QOpenGLBuffer::VertexBuffer), indexBuffer(QOpenGLBuffer::IndexBuffer)
+    GpuSubMeshImpl(const std::string &name) : melown::GpuMeshRenderable(name), vertexBuffer(QOpenGLBuffer::VertexBuffer), indexBuffer(QOpenGLBuffer::IndexBuffer)
     {}
 
     void draw() override
@@ -117,10 +107,10 @@ public:
                     gl->glDisableVertexAttribArray(i);
             }
         }
-        if (spec.indexCount > 0)
-            gl->glDrawElements((GLenum)spec.faceMode, spec.indexCount, GL_UNSIGNED_SHORT, nullptr);
+        if (spec.indicesCount > 0)
+            gl->glDrawElements((GLenum)spec.faceMode, spec.indicesCount, GL_UNSIGNED_SHORT, nullptr);
         else
-            gl->glDrawArrays((GLenum)spec.faceMode, 0, spec.vertexCount);
+            gl->glDrawArrays((GLenum)spec.faceMode, 0, spec.verticesCount);
         gl->glBindVertexArray(0);
     }
 
@@ -131,18 +121,18 @@ public:
         arrayObject.bind();
         vertexBuffer.create();
         vertexBuffer.bind();
-        vertexBuffer.allocate(spec.vertexBuffer, spec.vertexSize * spec.vertexCount);
-        if (spec.indexCount)
+        vertexBuffer.allocate(spec.vertexBufferData, spec.vertexBufferSize);
+        if (spec.indicesCount)
         {
             indexBuffer.create();
             indexBuffer.bind();
-            indexBuffer.allocate(spec.indexBuffer, spec.indexCount * sizeof(melown::uint16));
+            indexBuffer.allocate(spec.indexBufferData, spec.indicesCount * sizeof(melown::uint16));
         }
-        gpuMemoryCost = spec.vertexSize * spec.vertexCount + spec.indexCount * sizeof(melown::uint16);
+        gpuMemoryCost = spec.vertexBufferSize + spec.indicesCount * sizeof(melown::uint16);
         arrayObject.destroy();
-        ready = true;
-        this->spec.vertexBuffer = nullptr;
-        this->spec.indexBuffer = nullptr;
+        this->spec.vertexBufferData = nullptr;
+        this->spec.indexBufferData = nullptr;
+        state = melown::Resource::State::ready;
     }
 
     QOpenGLVertexArrayObject arrayObject;
@@ -151,17 +141,17 @@ public:
     melown::GpuMeshSpec spec;
 };
 
-std::shared_ptr<melown::Resource> Gl::createShader()
+std::shared_ptr<melown::Resource> Gl::createShader(const std::string &name)
 {
-    return std::shared_ptr<melown::GpuShader>(new GpuShaderImpl());
+    return std::shared_ptr<melown::GpuShader>(new GpuShaderImpl(name));
 }
 
-std::shared_ptr<melown::Resource> Gl::createTexture()
+std::shared_ptr<melown::Resource> Gl::createTexture(const std::string &name)
 {
-    return std::shared_ptr<melown::GpuTexture>(new GpuTextureImpl());
+    return std::shared_ptr<melown::GpuTexture>(new GpuTextureImpl(name));
 }
 
-std::shared_ptr<melown::Resource> Gl::createMeshRenderable()
+std::shared_ptr<melown::Resource> Gl::createMeshRenderable(const std::string &name)
 {
-    return std::shared_ptr<melown::GpuMeshRenderable>(new GpuSubMeshImpl());
+    return std::shared_ptr<melown::GpuMeshRenderable>(new GpuSubMeshImpl(name));
 }

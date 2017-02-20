@@ -11,12 +11,12 @@ namespace melown
                     );
     }
 
-    float dot(const vec3 &a, const vec3 &b)
+    double dot(const vec3 &a, const vec3 &b)
     {
         return a(0) * b(0) + a(1) * b(1) + a(2) * b(2);
     }
 
-    float length(const vec3 &a)
+    double length(const vec3 &a)
     {
         return sqrtf(dot(a, a));
     }
@@ -26,11 +26,11 @@ namespace melown
         return a / length(a);
     }
 
-    mat4 frustumMatrix(float left, float right, float bottom, float top, float near, float far)
+    mat4 frustumMatrix(double left, double right, double bottom, double top, double near, double far)
     {
-        float w(right - left);
-        float h(top - bottom);
-        float d(far - near);
+        double w(right - left);
+        double h(top - bottom);
+        double d(far - near);
 
         return (mat4() <<
                 2*near/w, 0, (right+left)/w, 0,
@@ -39,20 +39,20 @@ namespace melown
                 0, 0, -1, 0).finished();
     }
 
-    mat4 perspectiveMatrix(float fovy, float aspect, float near, float far)
+    mat4 perspectiveMatrix(double fovy, double aspect, double near, double far)
     {
-        float ymax = near * tanf(fovy * M_PI / 360.0);
-        float xmax = ymax * aspect;
+        double ymax = near * tanf(fovy * M_PI / 360.0);
+        double xmax = ymax * aspect;
         return frustumMatrix(-xmax, xmax, -ymax, ymax, near, far);
     }
 
 
-    inline float &at(mat3 &a, uint32 i)
+    inline double &at(mat3 &a, uint32 i)
     {
         return a(i % 3, i / 3);
     }
 
-    inline float &at(mat4 &a, uint32 i)
+    inline double &at(mat4 &a, uint32 i)
     {
         return a(i % 4, i / 4);
     }
@@ -88,9 +88,9 @@ namespace melown
         return scaleMatrix(1);
     }
 
-    mat4 rotationMatrix(int axis, float angle)
+    mat4 rotationMatrix(int axis, double angle)
     {
-        float ca(cos(angle)), sa(sin(angle));
+        double ca(cos(angle)), sa(sin(angle));
 
         switch (axis) {
         case 0:
@@ -116,7 +116,7 @@ namespace melown
         }
     }
 
-    mat4 scaleMatrix(float sx, float sy, float sz)
+    mat4 scaleMatrix(double sx, double sy, double sz)
     {
         return (mat4() <<
                 sx,  0,  0, 0,
@@ -125,12 +125,12 @@ namespace melown
                 0,  0,  0, 1).finished();
     }
 
-    mat4 scaleMatrix(float s)
+    mat4 scaleMatrix(double s)
     {
         return scaleMatrix(s, s, s);
     }
 
-    mat4 translationMatrix(float tx, float ty, float tz)
+    mat4 translationMatrix(double tx, double ty, double tz)
     {
         return (mat4() <<
                 1, 0, 0, tx,
@@ -155,12 +155,12 @@ namespace melown
     }
 
 
-    float degToRad(float angle)
+    double degToRad(double angle)
     {
         return angle * M_PI / 180;
     }
 
-    float radToDeg(float angle)
+    double radToDeg(double angle)
     {
         return angle * 180 / M_PI;
     }

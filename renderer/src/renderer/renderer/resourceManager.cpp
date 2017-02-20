@@ -1,10 +1,13 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <renderer/gpuContext.h>
+#include <renderer/gpuResources.h>
+#include <renderer/fetcher.h>
+
 #include "map.h"
 #include "cache.h"
-#include "gpuContext.h"
-#include "gpuResources.h"
+#include "mapConfig.h"
 #include "mapResources.h"
 #include "resourceManager.h"
 
@@ -19,7 +22,7 @@ namespace melown
         /// DATA thread
         /////////
 
-        ResourceManagerImpl(Map *map) : map(map), takeItemIndex(0)
+        ResourceManagerImpl(MapImpl *map) : map(map), takeItemIndex(0)
         {}
 
         ~ResourceManagerImpl()
@@ -28,30 +31,24 @@ namespace melown
         void dataInitialize(GpuContext *context, Fetcher *fetcher) override
         {
             dataContext = context;
-            map->cache = Cache::create(map, fetcher);
+            map->cache = std::shared_ptr<Cache>(Cache::create(map, fetcher));
         }
 
         bool dataTick() override
         {
-            std::string name;
+            Resource *res = nullptr;
+            bool empty = false;
             { // take an item
                 boost::lock_guard<boost::mutex> l(mut);
-                if (!pending_render.empty())
-                {
-                    std::swap(pending_render, pending_data);
-                    pending_render.clear();
-                }
                 if (pending_data.empty())
                     return false;
                 auto it = std::next(pending_data.begin(), takeItemIndex++ % pending_data.size());
-                name = *it;
+                res = *it;
                 pending_data.erase(it);
+                empty = pending_data.empty();
             }
-            Resource *r = resources[name].get();
-            if (r->ready)
-                return true;
-            r->load(name, map);
-            return r->ready;
+            res->load(map);
+            return !empty;
         }
 
         void dataFinalize() override
@@ -72,7 +69,8 @@ namespace melown
         {
             { // sync pending
                 boost::lock_guard<boost::mutex> l(mut);
-                pending_data.insert(pending_render.begin(), pending_render.end());
+                std::swap(pending_data, pending_render);
+                //pending_data.insert(pending_render.begin(), pending_render.end());
             }
             pending_render.clear();
         }
@@ -84,16 +82,16 @@ namespace melown
 
         void touch(const std::string &name, Resource *resource)
         {
-            if (!resource->ready)
-                pending_render.insert(name);
+            if (resource->state == Resource::State::initializing)
+                pending_render.insert(resource);
         }
 
-        template<class T, std::shared_ptr<Resource>(GpuContext::*F)()> T *getGpuResource(const std::string &name)
+        template<class T, std::shared_ptr<Resource>(GpuContext::*F)(const std::string &)> T *getGpuResource(const std::string &name)
         {
             auto it = resources.find(name);
             if (it == resources.end())
             {
-                resources[name] = (renderContext->*F)();
+                resources[name] = (renderContext->*F)(name);
                 it = resources.find(name);
             }
             touch(name, it->second.get());
@@ -120,7 +118,7 @@ namespace melown
             auto it = resources.find(name);
             if (it == resources.end())
             {
-                resources[name] = std::shared_ptr<Resource>(new T());
+                resources[name] = std::shared_ptr<Resource>(new T(name));
                 it = resources.find(name);
             }
             touch(name, it->second.get());
@@ -143,11 +141,11 @@ namespace melown
         }
 
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
-        std::unordered_set<std::string> pending_render;
-        std::unordered_set<std::string> pending_data;
+        std::unordered_set<Resource*> pending_render;
+        std::unordered_set<Resource*> pending_data;
         boost::mutex mut;
 
-        Map *map;
+        MapImpl *map;
         uint32 takeItemIndex;
     };
 
@@ -157,7 +155,7 @@ namespace melown
     ResourceManager::~ResourceManager()
     {}
 
-    ResourceManager *ResourceManager::create(Map *map)
+    ResourceManager *ResourceManager::create(MapImpl *map)
     {
         return new ResourceManagerImpl(map);
     }

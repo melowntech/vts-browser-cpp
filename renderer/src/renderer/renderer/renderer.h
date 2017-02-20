@@ -6,7 +6,7 @@ namespace melown
     class Renderer
     {
     public:
-        static Renderer *create(class Map *map);
+        static Renderer *create(class MapImpl *map);
 
         Renderer();
         virtual ~Renderer();

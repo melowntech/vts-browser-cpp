@@ -1,31 +1,19 @@
-#ifndef MAP_H_jihsefk
-#define MAP_H_jihsefk
+#ifndef MAP_H_cvukikljqwdf
+#define MAP_H_cvukikljqwdf
 
 #include <string>
 #include <memory>
 
-#include "foundation.h"
-
 namespace melown
 {
-    class Map
+    class MapImpl
     {
     public:
-        Map(const std::string &mapConfigPath);
-        virtual ~Map();
+        MapImpl(const std::string &mapConfigPath);
 
-        void dataInitialize(class GpuContext *context, class Fetcher *fetcher);
-        bool dataTick();
-        void dataFinalize();
-
-        void renderInitialize(class GpuContext *context);
-        void renderTick(uint32 width, uint32 height);
-        void renderFinalize();
-
-        class Cache *cache;
-        class ResourceManager *resources;
-        class Renderer *renderer;
-
+        std::shared_ptr<class Cache> cache;
+        std::shared_ptr<class ResourceManager> resources;
+        std::shared_ptr<class Renderer> renderer;
         std::string mapConfigPath;
     };
 }

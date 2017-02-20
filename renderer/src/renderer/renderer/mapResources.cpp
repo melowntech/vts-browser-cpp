@@ -26,8 +26,19 @@ namespace melown
         }
     }
 
-    MeshAggregate::MeshAggregate(const std::__cxx11::string &name) : Resource(name)
+    MeshAggregate::MeshAggregate(const std::string &name) : Resource(name)
     {}
+
+    const mat4 findNormToPhys(const math::Extents3 &extents)
+    {
+        vec3 u = vecFromUblas<vec3>(extents.ur);
+        vec3 l = vecFromUblas<vec3>(extents.ll);
+        vec3 d = (u - l) * 0.5;
+        vec3 c = (u + l) * 0.5;
+        mat4 sc = scaleMatrix(d(0), d(1), d(2));
+        mat4 tr = translationMatrix(c);
+        return tr * sc;
+    }
 
     void MeshAggregate::load(MapImpl *base)
     {
@@ -43,15 +54,14 @@ namespace melown
             std::vector<VertexAttributes> attributes;
 
             std::istringstream is(std::string((char*)buffer, size));
-            vadstena::vts::Mesh mesh;
-            vadstena::vts::detail::loadMeshProper(is, name, mesh);
+            vadstena::vts::NormalizedSubMesh::list meshes = vadstena::vts::loadMeshProperNormalized(is, name);
 
             submeshes.clear();
-            submeshes.reserve(mesh.size());
+            submeshes.reserve(meshes.size());
 
-            for (uint32 mi = 0, me = mesh.size(); mi != me; mi++)
+            for (uint32 mi = 0, me = meshes.size(); mi != me; mi++)
             {
-                vadstena::vts::SubMesh &m = mesh[mi];
+                vadstena::vts::SubMesh &m = meshes[mi].submesh;
 
                 char tmp[10];
                 sprintf(tmp, "%d", mi);
@@ -125,15 +135,18 @@ namespace melown
 
                 gm->loadMeshRenderable(spec);
 
-                submeshes.push_back(gm);
+                MeshPart part;
+                part.renderable = gm;
+                part.normToPhys = findNormToPhys(meshes[mi].extents);
+                submeshes.push_back(part);
             }
 
             gpuMemoryCost = 0;
             bool ready = true;
             for (auto &&it : submeshes)
             {
-                ready = ready && it->state == Resource::State::ready;
-                gpuMemoryCost += it->gpuMemoryCost;
+                ready = ready && it.renderable->state == Resource::State::ready;
+                gpuMemoryCost += it.renderable->gpuMemoryCost;
             }
             state = ready ? State::ready : State::errorLoad;
         }

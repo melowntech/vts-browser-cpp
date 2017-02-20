@@ -8,6 +8,8 @@
 
 #include <renderer/foundation.h>
 #include <renderer/resource.h>
+#include <renderer/gpuResources.h>
+#include "math.h"
 
 namespace melown
 {
@@ -18,6 +20,13 @@ namespace melown
         void load(class MapImpl *base) override;
     };
 
+    class MeshPart
+    {
+    public:
+        std::shared_ptr<GpuMeshRenderable> renderable;
+        mat4 normToPhys;
+    };
+
     class MeshAggregate : public Resource
     {
     public:
@@ -25,7 +34,7 @@ namespace melown
 
         void load(class MapImpl *base) override;
 
-        std::vector<std::shared_ptr<class GpuMeshRenderable>> submeshes;
+        std::vector<MeshPart> submeshes;
     };
 }
 

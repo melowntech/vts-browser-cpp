@@ -50,12 +50,13 @@ namespace melown
                 {
                     for (uint32 i = 0, e = meshAgg->submeshes.size(); i != e; i++)
                     {
-                        GpuMeshRenderable *mesh = meshAgg->submeshes[i].get();
+                        MeshPart &part = meshAgg->submeshes[i];
+                        GpuMeshRenderable *mesh = part.renderable.get();
                         //GpuTexture *texture = map->resources->getTexture(textureInternalUrlTemplate(UrlTemplate::Vars(nodeId).addSubmesh(i)));
                         //if (texture && texture->ready)
                         //{
                         //    texture->bind();
-                            mat4f mvp = viewProj.cast<float>();
+                            mat4f mvp = (viewProj * part.normToPhys).cast<float>();
                             shader->uniformMat4(0, mvp.data());
                             mesh->draw();
                         //}

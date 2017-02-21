@@ -24,6 +24,9 @@ namespace melown
         void renderTick(uint32 width, uint32 height);
         void renderFinalize();
 
+        void pan(const double value[3]);
+        void rotate(const double value[3]);
+
     private:
         std::shared_ptr<MapImpl> impl;
     };

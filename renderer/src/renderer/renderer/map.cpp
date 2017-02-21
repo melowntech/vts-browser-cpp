@@ -5,6 +5,7 @@
 #include "map.h"
 #include "renderer.h"
 #include "resourceManager.h"
+#include "mapConfig.h"
 
 namespace melown
 {
@@ -49,6 +50,28 @@ namespace melown
     {
         impl->renderer->renderFinalize();
         impl->resources->renderFinalize();
+    }
+
+    void MapFoundation::pan(const double value[3])
+    {
+        MapConfig *mapConfig = impl->resources->getMapConfig(impl->mapConfigPath);
+        if (mapConfig && mapConfig->state == Resource::State::ready)
+        {
+            vadstena::registry::Position &pos = mapConfig->position;
+            for (uint32 i = 0; i < 3; i++)
+                pos.position(i) += value[i];
+        }
+    }
+
+    void MapFoundation::rotate(const double value[3])
+    {
+        MapConfig *mapConfig = impl->resources->getMapConfig(impl->mapConfigPath);
+        if (mapConfig && mapConfig->state == Resource::State::ready)
+        {
+            vadstena::registry::Position &pos = mapConfig->position;
+            for (uint32 i = 0; i < 3; i++)
+                pos.orientation(i) += value[i];
+        }
     }
 
     MapImpl::MapImpl(const std::string &mapConfigPath) : mapConfigPath(mapConfigPath)

@@ -25,6 +25,15 @@ public:
     melown::MapFoundation *map;
 
     melown::Fetcher *fetcher;
+
+private:
+    void mouseMove(class QMouseEvent *event);
+    void mousePress(class QMouseEvent *event);
+    void mouseRelease(class QMouseEvent *event);
+
+    bool isMouseDetached;
+    QPoint mouseLastPosition;
+    QPoint mouseOriginalPosition;
 };
 
 #endif

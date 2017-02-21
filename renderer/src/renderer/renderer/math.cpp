@@ -180,4 +180,13 @@ namespace melown
         at(res, 8) = at(mat, 10);
         return res;
     }
+
+    const vec3 vec4to3(const vec4 &value)
+    {
+        vec3 res;
+        res(0) = value(0);
+        res(1) = value(1);
+        res(2) = value(2);
+        return res;
+    }
 }

@@ -1,4 +1,6 @@
 #include "../../vts-libs/vts/csconvertor.hpp"
+#include <GeographicLib/Geodesic.hpp>
+#include <ogr_spatialref.h>
 
 #include "csConvertor.h"
 
@@ -14,7 +16,14 @@ namespace melown
             pubToNav (pub, nav , registry),
             pubToPhys(pub, phys, registry),
             physToPub(phys, pub, registry)
-        {}
+        {
+            auto n = registry.srs(nav);
+            if (n.type == vadstena::registry::Srs::Type::geographic)
+            {
+                auto r = registry.srs(nav).srsDef.reference();
+                geodesic.emplace(r.GetSemiMajor(), r.GetInvFlattening());
+            }
+        }
 
         vadstena::vts::CsConvertor navToPhys;
         vadstena::vts::CsConvertor physToNav;
@@ -22,6 +31,7 @@ namespace melown
         vadstena::vts::CsConvertor pubToNav;
         vadstena::vts::CsConvertor pubToPhys;
         vadstena::vts::CsConvertor physToPub;
+        boost::optional<GeographicLib::Geodesic> geodesic;
     };
 
     void CsConvertor::configure(const std::string &phys, const std::string &nav, const std::string &pub, const vadstena::registry::Registry &registry)
@@ -29,6 +39,10 @@ namespace melown
         impl = std::shared_ptr<CsConvertorImpl>(new CsConvertorImpl(phys, nav, pub, registry));
     }
 
+    bool CsConvertor::configured() const
+    {
+        return !!impl;
+    }
 
     const vec3 CsConvertor::navToPhys(const vec3 &value)
     {
@@ -60,35 +74,11 @@ namespace melown
         return vecFromUblas<vec3>(impl->physToPub(vecToUblas<math::Point3d>(value)));
     }
 
-    /*
-    const math::Point3 CsConvertor::navToPhys(const math::Point3 &value)
+    const vec3 CsConvertor::navGeodesicDirect(const vec3 &latLon, double azimuth, double distance)
     {
-        return impl->navToPhys(value);
+        vec3 res;
+        impl->geodesic->Direct(latLon(0), latLon(1), azimuth, distance, res(0), res(1));
+        res(2) = latLon(2);
+        return res;
     }
-
-    const math::Point3 CsConvertor::physToNav(const math::Point3 &value)
-    {
-        return impl->physToNav(value);
-    }
-
-    const math::Point3 CsConvertor::navToPub(const math::Point3 &value)
-    {
-        return impl->navToPub(value);
-    }
-
-    const math::Point3 CsConvertor::pubToNav(const math::Point3 &value)
-    {
-        return impl->pubToNav(value);
-    }
-
-    const math::Point3 CsConvertor::pubToPhys(const math::Point3 &value)
-    {
-        return impl->pubToPhys(value);
-    }
-
-    const math::Point3 CsConvertor::physToPub(const math::Point3 &value)
-    {
-        return impl->physToPub(value);
-    }
-    */
 }

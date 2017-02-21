@@ -127,27 +127,15 @@ namespace melown
                 spec.attributes[1].components = 2;
                 spec.attributes[1].offset = sizeof(vec3f);
 
-                /*
-                { // find real bounding box
-                    vec3 a(FLT_MAX, FLT_MAX, FLT_MAX);
-                    vec3 b(-a);
-                    for (auto &&v : m.vertices)
-                    {
-                        a = min(a, vecFromUblas<vec3>(v));
-                        b = max(b, vecFromUblas<vec3>(v));
-                    }
-                    LOG(info3) << "bbox: " << a(0) << " " << a(1) << " " << a(2) << " --- " << b(0) << " " << b(1) << " " << b(2);
-                    vec3 c = (a + b) * 0.5;
-                    LOG(info3) << "center: " << c(0) << " " << c(1) << " " << c(2);
-                }
-                */
-
                 gm->loadMeshRenderable(spec);
 
                 MeshPart part;
                 part.renderable = gm;
                 part.normToPhys = findNormToPhys(meshes[mi].extents);
                 submeshes.push_back(part);
+
+                //vec4 c = part.normToPhys * vec4(0, 0, 0, 1);
+                //LOG(info3) << "center: " << c(0) << " " << c(1) << " " << c(2);
             }
 
             gpuMemoryCost = 0;

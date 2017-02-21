@@ -1,9 +1,12 @@
+#include <clocale>
+
 #include "mainWindow.h"
 #include "dataWindow.h"
 #include "gpuContext.h"
 #include "fetcher.h"
 
 #include <QGuiApplication>
+#include <QDebug>
 
 #include <renderer/map.h>
 
@@ -80,6 +83,11 @@ public:
 int main(int argc, char *argv[])
 {
     QGuiApplication application(argc, argv);
+
+    { // set locale
+        char *locale = std::setlocale(LC_ALL, "C");
+        qDebug() << locale;
+    }
 
     MainWindow mainWindow;
 

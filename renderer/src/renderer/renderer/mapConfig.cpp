@@ -16,6 +16,7 @@ namespace melown
         case Cache::Result::ready:
         {
             std::istringstream is(std::string((char*)buffer, size));
+            is.imbue(std::locale::classic());
             vadstena::vts::loadMapConfig(*this, is, name);
             basePath = name.substr(0, name.find_last_of('/') + 1);
             state = State::ready;

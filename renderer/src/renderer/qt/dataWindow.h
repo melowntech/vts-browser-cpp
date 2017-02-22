@@ -7,7 +7,7 @@
 
 namespace melown
 {
-    class Map;
+    class MapFoundation;
 }
 
 class DataWindow : public QOffscreenSurface
@@ -17,7 +17,7 @@ public:
     ~DataWindow();
 
     Gl *gl;
-    melown::Map *map;
+    melown::MapFoundation *map;
 };
 
 #endif

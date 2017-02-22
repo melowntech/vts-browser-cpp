@@ -77,7 +77,7 @@ public:
 };
 
 
-class GpuSubMeshImpl : public QObject, public melown::GpuMeshRenderable
+class GpuSubMeshImpl : public melown::GpuMeshRenderable
 {
 public:
     GpuSubMeshImpl(const std::string &name) : melown::GpuMeshRenderable(name), vertexBuffer(QOpenGLBuffer::VertexBuffer), indexBuffer(QOpenGLBuffer::IndexBuffer)

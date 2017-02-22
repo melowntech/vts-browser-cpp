@@ -49,7 +49,7 @@ namespace melown
         ~CacheImpl()
         {}
 
-        const std::string convertNameToPath(const std::string &path)
+        const std::string convertNameToPath(const std::string &path, bool preserveSlashes)
         {
             std::string res;
             res.reserve(path.size());
@@ -60,6 +60,8 @@ namespace melown
                  || (it >= '0' && it <= '9')
                  || (it == '-' || it == '.'))
                     res += it;
+                else if (preserveSlashes && (it == '/' || it == '\\'))
+                    res += '/';
                 else
                     res += '_';
             }
@@ -68,7 +70,11 @@ namespace melown
 
         const std::string convertNameToCache(const std::string &path)
         {
-            return std::string("cache/") + convertNameToPath(path);
+            uint32 p = path.find("://");
+            std::string a = p == std::string::npos ? path : path.substr(p + 3);
+            std::string b = boost::filesystem::path(a).parent_path().string();
+            std::string c = a.substr(b.length() + 1);
+            return std::string("cache/") + convertNameToPath(b, false) + "/" + convertNameToPath(c, false);
         }
 
         Result result(Status status)

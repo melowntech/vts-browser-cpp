@@ -9,7 +9,7 @@
 
 #include <renderer/map.h>
 
-MainWindow::MainWindow() : gl(nullptr), isMouseDetached(false)
+MainWindow::MainWindow() : gl(nullptr), isMouseDetached(false), fetcher(nullptr)
 {
     QSurfaceFormat format;
     format.setVersion(4, 4);
@@ -30,49 +30,25 @@ MainWindow::~MainWindow()
 
 void MainWindow::mouseMove(QMouseEvent *event)
 {
-    //if (isMouseDetached)
-    {
-        QPoint diff = event->globalPos() - mouseLastPosition;
-        if (event->buttons() & Qt::LeftButton)
-        { // pan
-            double value[3] = {diff.x(), diff.y(), 0};
-            map->pan(value);
-        }
-        if (event->buttons() & Qt::MidButton)
-        { // rotate
-            double value[3] = {diff.x(), diff.y(), 0};
-            map->rotate(value);
-        }
-        //QCursor::setPos(mouseLastPosition);
-        mouseLastPosition = event->globalPos();
+    QPoint diff = event->globalPos() - mouseLastPosition;
+    if (event->buttons() & Qt::LeftButton)
+    { // pan
+        double value[3] = {diff.x(), diff.y(), 0};
+        map->pan(value);
     }
+    if (event->buttons() & Qt::RightButton)
+    { // rotate
+        double value[3] = {diff.x(), diff.y(), 0};
+        map->rotate(value);
+    }
+    mouseLastPosition = event->globalPos();
 }
 
 void MainWindow::mousePress(QMouseEvent *event)
-{
-    /*
-    if (!isMouseDetached)
-    {
-        isMouseDetached = true;
-        mouseOriginalPosition = event->globalPos();
-        mouseLastPosition = geometry().center();
-        QGuiApplication::setOverrideCursor(Qt::BlankCursor);
-        QCursor::setPos(mouseLastPosition);
-    }
-    */
-}
+{}
 
 void MainWindow::mouseRelease(QMouseEvent *event)
-{
-    /*
-    if (isMouseDetached)
-    {
-        QCursor::setPos(mouseOriginalPosition);
-        QGuiApplication::setOverrideCursor(Qt::ArrowCursor);
-        isMouseDetached = false;
-    }
-    */
-}
+{}
 
 void MainWindow::mouseWheel(QWheelEvent *event)
 {
@@ -109,7 +85,7 @@ void MainWindow::initialize()
     gl->initialize();
     map->renderInitialize(gl);
 
-    map->dataInitialize(gl, fetcher);
+    map->dataInitialize(gl, fetcher); // todo temporary hack until two opengl contexts are working
 }
 
 void MainWindow::tick()
@@ -132,7 +108,7 @@ void MainWindow::tick()
 
     map->renderTick(size.width(), size.height());
 
-    map->dataTick();
+    map->dataTick(); // todo temporary hack until two opengl contexts are working
 
     gl->swapBuffers(this);
 }

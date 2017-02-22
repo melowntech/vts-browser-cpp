@@ -59,21 +59,28 @@ namespace melown
         if (mapConfig && mapConfig->state == Resource::State::ready && impl->convertor)
         {
             vadstena::registry::Position &pos = mapConfig->position;
-            mat3 rot = upperLeftSubMatrix(rotationMatrix(2, degToRad(pos.orientation(0))));
-            double vertFactor = 1; //abs(sin(pos.orientation(1))) * 0.5 + 0.5;
-            vec3 move = vec3(-value[0], value[1] * vertFactor, 0);
-            move = rot * move * (pos.verticalExtent / 800);
             switch (mapConfig->srs.get(mapConfig->referenceFrame.model.navigationSrs).type)
             {
             case vadstena::registry::Srs::Type::projected:
-                break; // do nothing
+            {
+                mat3 rot = upperLeftSubMatrix(rotationMatrix(2, degToRad(pos.orientation(0))));
+                vec3 move = vec3(-value[0], value[1], 0);
+                move = rot * move * (pos.verticalExtent / 800);
+                pos.position += vecToUblas<math::Point3>(move);
+            } break;
             case vadstena::registry::Srs::Type::geographic:
-                // todo
-                break;
+            {
+                mat3 rot = upperLeftSubMatrix(rotationMatrix(2, degToRad(-pos.orientation(0))));
+                vec3 move = vec3(-value[0], value[1], 0);
+                move = rot * move * (pos.verticalExtent / 800);
+                vec3 p = vecFromUblas<vec3>(pos.position);
+                p = impl->convertor->navGeodesicDirect(p, 0, move(0));
+                p = impl->convertor->navGeodesicDirect(p, 90, move(1));
+                pos.position = vecToUblas<math::Point3>(p);
+            } break;
             default:
                 throw "not implemented navigation srs type";
             }
-            pos.position += vecToUblas<math::Point3>(move);
             pos.verticalExtent *= pow(1.001, -value[2]);
         }
     }
@@ -84,7 +91,18 @@ namespace melown
         if (mapConfig && mapConfig->state == Resource::State::ready)
         {
             vadstena::registry::Position &pos = mapConfig->position;
-            pos.orientation += vecToUblas<math::Point3>(vec3(value[0] * -0.2, value[1] * -0.1, 0));
+            vec3 rot(value[0] * -0.2, value[1] * -0.1, 0);
+            switch (mapConfig->srs.get(mapConfig->referenceFrame.model.navigationSrs).type)
+            {
+            case vadstena::registry::Srs::Type::projected:
+                break; // do nothing
+            case vadstena::registry::Srs::Type::geographic:
+                rot(0) *= -1;
+                break;
+            default:
+                throw "not implemented navigation srs type";
+            }
+            pos.orientation += vecToUblas<math::Point3>(rot);
         }
     }
 

@@ -39,5 +39,8 @@ void Gl::initialize()
 
 void Gl::onDebugMessage(const QOpenGLDebugMessage &message)
 {
+    //qDebug() << message.id() << " " << message.type();
+    if (message.id() == 131185 && message.type() == QOpenGLDebugMessage::OtherType)
+        return;
     qDebug() << message.message();
 }

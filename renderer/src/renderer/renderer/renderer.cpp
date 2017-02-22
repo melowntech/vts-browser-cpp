@@ -53,7 +53,7 @@ namespace melown
                         MeshPart &part = meshAgg->submeshes[i];
                         GpuMeshRenderable *mesh = part.renderable.get();
                         GpuTexture *texture = map->resources->getTexture(textureInternalUrlTemplate(UrlTemplate::Vars(nodeId).addSubmesh(i)));
-                        if (texture && texture->state == Resource::State::errorDownload)
+                        if (!texture || texture->state != Resource::State::ready)
                             texture = map->resources->getTexture("data/helper.jpg");
                         if (texture && texture->state == Resource::State::ready)
                         {
@@ -127,21 +127,16 @@ namespace melown
                 // construct NED coordinate system
                 vec3 d = normalize(cross(n, e));
                 e = normalize(cross(n, d));
-                mat3 tmp = (mat3() << n, e, d).finished();
-                // convert original vectors
+                mat3 tmp = (mat3() << -e, -n, -d).finished();
+                // rotate original vectors
                 dir = tmp * dir;
                 up = tmp * up;
-                // points -> vectors
-                dir = normalize(dir - center);
-                up = normalize(up - center);
+                dir = normalize(dir);
+                up = normalize(up);
             } break;
             default:
                 throw "not implemented navigation srs type";
             }
-
-            //vec3 physPos = convertor.navToPhys(vecFromUblas<vec3>(mapConfig->position.position));
-            //center = avgRenderable;
-            //dir = vec3(0, 0, -1);
 
             double dist = mapConfig->position.verticalExtent * 0.5 / tan(degToRad(mapConfig->position.verticalFov * 0.5));
             mat4 view = lookAt(center - dir * dist, center, up);

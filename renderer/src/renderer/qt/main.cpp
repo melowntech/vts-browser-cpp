@@ -33,7 +33,7 @@ public:
     }
 
 private:
-    Q_DISABLE_COPY(BarrierData)
+    Q_DISABLE_COPY(BarrierData);
     int count;
     QMutex mutex;
     QWaitCondition condition;
@@ -82,6 +82,7 @@ public:
 
 int main(int argc, char *argv[])
 {
+    QGuiApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
     QGuiApplication application(argc, argv);
 
     { // set locale
@@ -108,6 +109,7 @@ int main(int argc, char *argv[])
     {
         FetcherOptions fetcherOptions;
         dynamic_cast<FetcherImpl*>(mainWindow.fetcher)->setOptions(fetcherOptions);
+        //dynamic_cast<FetcherImpl*>(dataThread.fetcher)->setOptions(fetcherOptions);
     }
 
     mainWindow.resize(QSize(800, 600));

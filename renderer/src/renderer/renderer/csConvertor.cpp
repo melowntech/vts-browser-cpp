@@ -6,79 +6,77 @@
 
 namespace melown
 {
-    class CsConvertorImpl
+    class CsConvertorImpl : public CsConvertor
     {
     public:
         CsConvertorImpl(const std::string &phys, const std::string &nav, const std::string &pub, const vadstena::registry::Registry &registry) :
-            navToPhys(nav, phys, registry),
-            physToNav(phys, nav, registry),
-            navToPub (nav, pub , registry),
-            pubToNav (pub, nav , registry),
-            pubToPhys(pub, phys, registry),
-            physToPub(phys, pub, registry)
+            navToPhys_(nav, phys, registry),
+            physToNav_(phys, nav, registry),
+            navToPub_ (nav, pub , registry),
+            pubToNav_ (pub, nav , registry),
+            pubToPhys_(pub, phys, registry),
+            physToPub_(phys, pub, registry)
         {
             auto n = registry.srs(nav);
             if (n.type == vadstena::registry::Srs::Type::geographic)
             {
                 auto r = registry.srs(nav).srsDef.reference();
-                geodesic.emplace(r.GetSemiMajor(), r.GetInvFlattening());
+                geodesic_.emplace(r.GetSemiMajor(), r.GetInvFlattening());
             }
         }
 
-        vadstena::vts::CsConvertor navToPhys;
-        vadstena::vts::CsConvertor physToNav;
-        vadstena::vts::CsConvertor navToPub;
-        vadstena::vts::CsConvertor pubToNav;
-        vadstena::vts::CsConvertor pubToPhys;
-        vadstena::vts::CsConvertor physToPub;
-        boost::optional<GeographicLib::Geodesic> geodesic;
+        const vec3 navToPhys(const vec3 &value) override
+        {
+            return vecFromUblas<vec3>(navToPhys_(vecToUblas<math::Point3d>(value)));
+        }
+
+        const vec3 physToNav(const vec3 &value) override
+        {
+            return vecFromUblas<vec3>(physToNav_(vecToUblas<math::Point3d>(value)));
+        }
+
+        const vec3 navToPub(const vec3 &value) override
+        {
+            return vecFromUblas<vec3>(navToPub_(vecToUblas<math::Point3d>(value)));
+        }
+
+        const vec3 pubToNav(const vec3 &value) override
+        {
+            return vecFromUblas<vec3>(pubToNav_(vecToUblas<math::Point3d>(value)));
+        }
+
+        const vec3 pubToPhys(const vec3 &value) override
+        {
+            return vecFromUblas<vec3>(pubToPhys_(vecToUblas<math::Point3d>(value)));
+        }
+
+        const vec3 physToPub(const vec3 &value) override
+        {
+            return vecFromUblas<vec3>(physToPub_(vecToUblas<math::Point3d>(value)));
+        }
+
+        const vec3 navGeodesicDirect(const vec3 &latLon, double azimuth, double distance) override
+        {
+            vec3 res;
+            geodesic_->Direct(latLon(0), latLon(1), azimuth, distance, res(0), res(1));
+            res(2) = latLon(2);
+            return res;
+        }
+
+        vadstena::vts::CsConvertor navToPhys_;
+        vadstena::vts::CsConvertor physToNav_;
+        vadstena::vts::CsConvertor navToPub_;
+        vadstena::vts::CsConvertor pubToNav_;
+        vadstena::vts::CsConvertor pubToPhys_;
+        vadstena::vts::CsConvertor physToPub_;
+        boost::optional<GeographicLib::Geodesic> geodesic_;
     };
 
-    void CsConvertor::configure(const std::string &phys, const std::string &nav, const std::string &pub, const vadstena::registry::Registry &registry)
+    CsConvertor *CsConvertor::create(const std::string &phys, const std::string &nav, const std::string &pub, const vadstena::registry::Registry &registry)
     {
-        impl = std::shared_ptr<CsConvertorImpl>(new CsConvertorImpl(phys, nav, pub, registry));
+        return new CsConvertorImpl(phys, nav, pub, registry);
     }
 
-    bool CsConvertor::configured() const
-    {
-        return !!impl;
-    }
-
-    const vec3 CsConvertor::navToPhys(const vec3 &value)
-    {
-        return vecFromUblas<vec3>(impl->navToPhys(vecToUblas<math::Point3d>(value)));
-    }
-
-    const vec3 CsConvertor::physToNav(const vec3 &value)
-    {
-        return vecFromUblas<vec3>(impl->physToNav(vecToUblas<math::Point3d>(value)));
-    }
-
-    const vec3 CsConvertor::navToPub(const vec3 &value)
-    {
-        return vecFromUblas<vec3>(impl->navToPub(vecToUblas<math::Point3d>(value)));
-    }
-
-    const vec3 CsConvertor::pubToNav(const vec3 &value)
-    {
-        return vecFromUblas<vec3>(impl->pubToNav(vecToUblas<math::Point3d>(value)));
-    }
-
-    const vec3 CsConvertor::pubToPhys(const vec3 &value)
-    {
-        return vecFromUblas<vec3>(impl->pubToPhys(vecToUblas<math::Point3d>(value)));
-    }
-
-    const vec3 CsConvertor::physToPub(const vec3 &value)
-    {
-        return vecFromUblas<vec3>(impl->physToPub(vecToUblas<math::Point3d>(value)));
-    }
-
-    const vec3 CsConvertor::navGeodesicDirect(const vec3 &latLon, double azimuth, double distance)
-    {
-        vec3 res;
-        impl->geodesic->Direct(latLon(0), latLon(1), azimuth, distance, res(0), res(1));
-        res(2) = latLon(2);
-        return res;
-    }
+    CsConvertor::~CsConvertor()
+    {}
 }

@@ -6,6 +6,7 @@
 #include "renderer.h"
 #include "resourceManager.h"
 #include "mapConfig.h"
+#include "csConvertor.h"
 
 namespace melown
 {
@@ -55,11 +56,25 @@ namespace melown
     void MapFoundation::pan(const double value[3])
     {
         MapConfig *mapConfig = impl->resources->getMapConfig(impl->mapConfigPath);
-        if (mapConfig && mapConfig->state == Resource::State::ready)
+        if (mapConfig && mapConfig->state == Resource::State::ready && impl->convertor)
         {
             vadstena::registry::Position &pos = mapConfig->position;
-            for (uint32 i = 0; i < 3; i++)
-                pos.position(i) += value[i];
+            mat3 rot = upperLeftSubMatrix(rotationMatrix(2, degToRad(pos.orientation(0))));
+            double vertFactor = 1; //abs(sin(pos.orientation(1))) * 0.5 + 0.5;
+            vec3 move = vec3(-value[0], value[1] * vertFactor, 0);
+            move = rot * move * (pos.verticalExtent / 800);
+            switch (mapConfig->srs.get(mapConfig->referenceFrame.model.navigationSrs).type)
+            {
+            case vadstena::registry::Srs::Type::projected:
+                break; // do nothing
+            case vadstena::registry::Srs::Type::geographic:
+                // todo
+                break;
+            default:
+                throw "not implemented navigation srs type";
+            }
+            pos.position += vecToUblas<math::Point3>(move);
+            pos.verticalExtent *= pow(1.001, -value[2]);
         }
     }
 
@@ -69,8 +84,7 @@ namespace melown
         if (mapConfig && mapConfig->state == Resource::State::ready)
         {
             vadstena::registry::Position &pos = mapConfig->position;
-            for (uint32 i = 0; i < 3; i++)
-                pos.orientation(i) += value[i];
+            pos.orientation += vecToUblas<math::Point3>(vec3(value[0] * -0.2, value[1] * -0.1, 0));
         }
     }
 

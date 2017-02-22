@@ -39,9 +39,9 @@ namespace melown
                 0, 0, -1, 0).finished();
     }
 
-    mat4 perspectiveMatrix(double fovy, double aspect, double near, double far)
+    mat4 perspectiveMatrix(double fovyDegs, double aspect, double near, double far)
     {
-        double ymax = near * tanf(fovy * M_PI / 360.0);
+        double ymax = near * tanf(fovyDegs * M_PI / 360.0);
         double xmax = ymax * aspect;
         return frustumMatrix(-xmax, xmax, -ymax, ymax, near, far);
     }
@@ -88,9 +88,9 @@ namespace melown
         return scaleMatrix(1);
     }
 
-    mat4 rotationMatrix(int axis, double angle)
+    mat4 rotationMatrix(int axis, double radians)
     {
-        double ca(cos(angle)), sa(sin(angle));
+        double ca(cos(radians)), sa(sin(radians));
 
         switch (axis) {
         case 0:

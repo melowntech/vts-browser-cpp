@@ -1,5 +1,6 @@
 #include <QGuiApplication>
 #include <QMouseEvent>
+#include <QWheelEvent>
 #include <QDebug>
 
 #include "mainWindow.h"
@@ -29,25 +30,27 @@ MainWindow::~MainWindow()
 
 void MainWindow::mouseMove(QMouseEvent *event)
 {
-    if (isMouseDetached)
+    //if (isMouseDetached)
     {
         QPoint diff = event->globalPos() - mouseLastPosition;
         if (event->buttons() & Qt::LeftButton)
         { // pan
-            double value[3] = {-diff.x(), diff.y(), 0};
+            double value[3] = {diff.x(), diff.y(), 0};
             map->pan(value);
         }
         if (event->buttons() & Qt::MidButton)
         { // rotate
-            double value[3] = {diff.x() * 0.1, diff.y() * -0.1, 0};
+            double value[3] = {diff.x(), diff.y(), 0};
             map->rotate(value);
         }
-        QCursor::setPos(mouseLastPosition);
+        //QCursor::setPos(mouseLastPosition);
+        mouseLastPosition = event->globalPos();
     }
 }
 
 void MainWindow::mousePress(QMouseEvent *event)
 {
+    /*
     if (!isMouseDetached)
     {
         isMouseDetached = true;
@@ -56,16 +59,25 @@ void MainWindow::mousePress(QMouseEvent *event)
         QGuiApplication::setOverrideCursor(Qt::BlankCursor);
         QCursor::setPos(mouseLastPosition);
     }
+    */
 }
 
 void MainWindow::mouseRelease(QMouseEvent *event)
 {
+    /*
     if (isMouseDetached)
     {
         QCursor::setPos(mouseOriginalPosition);
         QGuiApplication::setOverrideCursor(Qt::ArrowCursor);
         isMouseDetached = false;
     }
+    */
+}
+
+void MainWindow::mouseWheel(QWheelEvent *event)
+{
+    double value[3] = {0, 0, event->angleDelta().y()};
+    map->pan(value);
 }
 
 bool MainWindow::event(QEvent *event)
@@ -83,6 +95,9 @@ bool MainWindow::event(QEvent *event)
         return true;
     case QEvent::MouseButtonRelease:
         mouseRelease(dynamic_cast<QMouseEvent*>(event));
+        return true;
+    case QEvent::Wheel:
+        mouseWheel(dynamic_cast<QWheelEvent*>(event));
         return true;
     default:
         return QWindow::event(event);

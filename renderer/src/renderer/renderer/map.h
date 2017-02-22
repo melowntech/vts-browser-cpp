@@ -11,6 +11,7 @@ namespace melown
     public:
         MapImpl(const std::string &mapConfigPath);
 
+        std::shared_ptr<class CsConvertor> convertor;
         std::shared_ptr<class Cache> cache;
         std::shared_ptr<class ResourceManager> resources;
         std::shared_ptr<class Renderer> renderer;

@@ -105,9 +105,9 @@ namespace melown
                 dir += center;
                 up += center;
                 // transform to physical srs
-                center = convertor.navToPhys(center);
-                dir = convertor.navToPhys(dir);
-                up = convertor.navToPhys(up);
+                center = map->convertor->navToPhys(center);
+                dir = map->convertor->navToPhys(dir);
+                up = map->convertor->navToPhys(up);
                 // points -> vectors
                 dir = normalize(dir - center);
                 up = normalize(up - center);
@@ -115,12 +115,12 @@ namespace melown
             case vadstena::registry::Srs::Type::geographic:
             {
                 // find lat-lon coordinates of points moved to north and east respectively
-                vec3 n2 = convertor.navGeodesicDirect(center, 0, 100);
-                vec3 e2 = convertor.navGeodesicDirect(center, 90, 100);
+                vec3 n2 = map->convertor->navGeodesicDirect(center, 0, 100);
+                vec3 e2 = map->convertor->navGeodesicDirect(center, 90, 100);
                 // transform to physical srs
-                center = convertor.navToPhys(center);
-                vec3 n = convertor.navToPhys(n2);
-                vec3 e = convertor.navToPhys(e2);
+                center = map->convertor->navToPhys(center);
+                vec3 n = map->convertor->navToPhys(n2);
+                vec3 e = map->convertor->navToPhys(e2);
                 // points -> vectors
                 n = normalize(n - center);
                 e = normalize(e - center);
@@ -160,14 +160,14 @@ namespace melown
                 return;
             shader->bind();
 
-            if (!convertor.configured())
+            if (!map->convertor)
             {
-                convertor.configure(
+                map->convertor = std::shared_ptr<CsConvertor>(CsConvertor::create(
                     mapConfig->referenceFrame.model.physicalSrs,
                     mapConfig->referenceFrame.model.navigationSrs,
                     mapConfig->referenceFrame.model.publicSrs,
                     *mapConfig
-                );
+                ));
 
                 LOG(info3) << "position: " << mapConfig->position.position;
                 LOG(info3) << "rotation: " << mapConfig->position.orientation;
@@ -195,7 +195,6 @@ namespace melown
         {
         }
 
-        CsConvertor convertor;
         UrlTemplate metaUrlTemplate;
         UrlTemplate meshUrlTemplate;
         UrlTemplate textureInternalUrlTemplate;

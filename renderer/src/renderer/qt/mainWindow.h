@@ -30,6 +30,7 @@ private:
     void mouseMove(class QMouseEvent *event);
     void mousePress(class QMouseEvent *event);
     void mouseRelease(class QMouseEvent *event);
+    void mouseWheel(class QWheelEvent *event);
 
     bool isMouseDetached;
     QPoint mouseLastPosition;

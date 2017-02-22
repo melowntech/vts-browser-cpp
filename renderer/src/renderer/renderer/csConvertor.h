@@ -16,25 +16,21 @@ namespace vadstena
 
 namespace melown
 {
-    class CsConvertorImpl;
-
     class CsConvertor
     {
     public:
-        void configure(const std::string &phys, const std::string &nav, const std::string &pub, const vadstena::registry::Registry &registry);
-        bool configured() const;
+        static CsConvertor *create(const std::string &phys, const std::string &nav, const std::string &pub, const vadstena::registry::Registry &registry);
 
-        const vec3 navToPhys(const vec3 &value);
-        const vec3 physToNav(const vec3 &value);
-        const vec3 navToPub (const vec3 &value);
-        const vec3 pubToNav (const vec3 &value);
-        const vec3 pubToPhys(const vec3 &value);
-        const vec3 physToPub(const vec3 &value);
+        virtual ~CsConvertor();
 
-        const vec3 navGeodesicDirect(const vec3 &latLon, double azimuth, double distance);
+        virtual const vec3 navToPhys(const vec3 &value) = 0;
+        virtual const vec3 physToNav(const vec3 &value) = 0;
+        virtual const vec3 navToPub (const vec3 &value) = 0;
+        virtual const vec3 pubToNav (const vec3 &value) = 0;
+        virtual const vec3 pubToPhys(const vec3 &value) = 0;
+        virtual const vec3 physToPub(const vec3 &value) = 0;
 
-    private:
-        std::shared_ptr<CsConvertorImpl> impl;
+        virtual const vec3 navGeodesicDirect(const vec3 &latLon, double azimuth, double distance) = 0;
     };
 }
 

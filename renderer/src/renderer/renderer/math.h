@@ -27,11 +27,11 @@ namespace melown
     vec3 normalize(const vec3 &a);
 
     mat4 frustumMatrix(double left, double right, double bottom, double top, double near, double far);
-    mat4 perspectiveMatrix(double fovy, double aspect, double near, double far);
+    mat4 perspectiveMatrix(double fovyDegs, double aspect, double near, double far);
     mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up);
 
     mat4 identityMatrix();
-    mat4 rotationMatrix(int axis, double angle);
+    mat4 rotationMatrix(int axis, double radians);
     mat4 scaleMatrix(double sx, double sy, double sz);
     mat4 scaleMatrix(double s);
     mat4 translationMatrix(double tx, double ty, double tz);

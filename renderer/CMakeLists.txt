@@ -8,6 +8,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # project
 setup_project(renderer "${BUILDSYS_PACKAGE_VERSION}")
 
+# 3rd party dependencies
 find_package(Boost 1.46 REQUIRED COMPONENTS thread program_options filesystem system date_time serialization regex chrono iostreams)
 link_directories(${Boost_LIBRARY_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
@@ -30,6 +31,8 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 
 find_package(LibProc REQUIRED)
 include_directories(${LIBPROC_INCLUDE_DIR})
+
+include(glfw.cmake)
 
 # dependencies
 add_subdirectory(src/dbglog)

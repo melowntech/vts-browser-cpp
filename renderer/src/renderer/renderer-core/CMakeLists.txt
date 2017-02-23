@@ -6,6 +6,7 @@ target_link_libraries(${PROJECT_NAME}-core ${MODULE_LIBRARIES})
 target_include_directories(${PROJECT_NAME}-core PUBLIC "../include")
 
 # trick QtCreator into showing some additional files
-file(GLOB_RECURSE ADDITIONAL "*.h" "../include/renderer/*.h" "*.ui")
-add_custom_target(rendererHeaders SOURCES "${ADDITIONAL}")
+file(GLOB_RECURSE ADDITIONAL "*.h" "../include/renderer/*.h")
+add_custom_target(rendererCoreHeaders SOURCES "${ADDITIONAL}")
+
 

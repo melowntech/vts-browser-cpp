@@ -3,15 +3,13 @@
 #include <QOpenGLDebugLogger>
 #include <QSurface>
 
-Gl::Gl(QSurface *surface) : surface(surface), logger(nullptr)
+Gl::Gl(QSurface *surface) : surface(surface)
 {
-    logger = new QOpenGLDebugLogger(this);
+    logger = std::shared_ptr<QOpenGLDebugLogger>(new QOpenGLDebugLogger(this));
 }
 
 Gl::~Gl()
-{
-    delete logger;
-}
+{}
 
 void Gl::current(bool bind)
 {
@@ -33,7 +31,7 @@ void Gl::initialize()
     initializeOpenGLFunctions();
 
     logger->initialize();
-    connect(logger, &QOpenGLDebugLogger::messageLogged, this, &Gl::onDebugMessage);
+    connect(logger.get(), &QOpenGLDebugLogger::messageLogged, this, &Gl::onDebugMessage);
     logger->startLogging();
 }
 

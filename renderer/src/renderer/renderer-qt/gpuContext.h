@@ -1,6 +1,8 @@
 #ifndef GLCONTEXTIMPL_H_jkehrbhejkfn
 #define GLCONTEXTIMPL_H_jkehrbhejkfn
 
+#include <memory>
+
 #include <QOpenGLContext>
 #include <QOpenGLFunctions_4_4_Core>
 
@@ -21,7 +23,7 @@ public:
 
     void onDebugMessage(const class QOpenGLDebugMessage &message);
 
-    class QOpenGLDebugLogger *logger;
+    std::shared_ptr<class QOpenGLDebugLogger> logger;
 
     QSurface *surface;
 };

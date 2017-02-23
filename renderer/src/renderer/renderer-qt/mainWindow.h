@@ -23,8 +23,7 @@ public:
 
     Gl *gl;
     melown::MapFoundation *map;
-
-    melown::Fetcher *fetcher; // todo temporary hack until two opengl contexts are working
+    melown::Fetcher *fetcher;
 
 private:
     void mouseMove(class QMouseEvent *event);

@@ -84,8 +84,7 @@ void MainWindow::initialize()
 {
     gl->initialize();
     map->renderInitialize(gl);
-
-    map->dataInitialize(gl, fetcher); // todo temporary hack until two opengl contexts are working
+    map->dataInitialize(gl, fetcher);
 }
 
 void MainWindow::tick()
@@ -107,8 +106,7 @@ void MainWindow::tick()
     gl->glEnable(GL_DEPTH_TEST);
 
     map->renderTick(size.width(), size.height());
-
-    map->dataTick(); // todo temporary hack until two opengl contexts are working
+    map->dataTick();
 
     gl->swapBuffers(this);
 }

@@ -5,6 +5,10 @@
 #include "glad.h"
 #include <GLFW/glfw3.h>
 
+#include <renderer/map.h>
+
+#include "gpuContext.h"
+
 void errorCallback(int error, const char* description)
 {
     fprintf(stderr, "Error: %s\n", description);
@@ -39,17 +43,38 @@ int main(int argc, char *argv[])
     gladLoadGLLoader((GLADloadproc)&glfwGetProcAddress);
     glfwSwapInterval(1);
 
+    melown::MapFoundation map(argv[1]);
+    GpuContext gpu;
+
+    map.renderInitialize(&gpu);
+    map.dataInitialize(&gpu, nullptr);
+
     while (!glfwWindowShouldClose(window))
     {
-        int width, height;
+        checkGl("frame begin");
+
+        //glClearColor(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, 0);
+        glClearColor(0.2, 0.2, 0.2, 1);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+
+        int width = 800, height = 600;
         glfwGetFramebufferSize(window, &width, &height);
 
-        glClearColor(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, 0);
-        glClear(GL_COLOR_BUFFER_BIT);
+        checkGl("frame");
+        map.renderTick(width, height);
+        checkGl("renderTick");
+        map.dataTick();
+        checkGl("dataTick");
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        checkGl("frame end");
     }
+
+    map.renderFinalize();
+    map.dataFinalize();
 
     glfwDestroyWindow(window);
     glfwTerminate();

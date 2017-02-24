@@ -1,33 +1,18 @@
 #include <unordered_map>
 #include <unordered_set>
-#include <cstring>
 #include <cstdio>
-#include <cstdlib>
 
 #include <boost/filesystem.hpp>
 
 #include <renderer/fetcher.h>
 
 #include "cache.h"
+#include "buffer.h"
 
 #include "dbglog/dbglog.hpp"
 
 namespace melown
 {
-    class Buffer
-    {
-    public:
-        Buffer() : data(nullptr), size(0) {}
-        Buffer(const Buffer &other) : data(nullptr), size(other.size) { data = malloc(size); memcpy(data, other.data, size); }
-        Buffer(Buffer &&other) : data(other.data), size(other.size) { other.data = nullptr; other.size = 0; }
-        ~Buffer() { free(data); data = nullptr; }
-        Buffer &operator = (const Buffer &other) { if (&other == this) return *this; free(data); size = other.size; data = malloc(size); memcpy(data, other.data, size); }
-        Buffer &operator = (Buffer &&other) { if (&other == this) return *this; free(data); size = other.size; data = other.data; other.data = nullptr; other.size = 0; }
-
-        void *data;
-        uint32 size;
-    };
-
     class CacheImpl : public Cache
     {
     public:
@@ -42,6 +27,8 @@ namespace melown
 
         CacheImpl(Fetcher *fetcher) : fetcher(fetcher)
         {
+            if (!fetcher)
+                return;
             Fetcher::Func func = std::bind(&CacheImpl::fetchedFile, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
             fetcher->setCallback(func);
         }

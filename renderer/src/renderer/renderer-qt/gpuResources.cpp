@@ -61,17 +61,23 @@ public:
         QOpenGLTexture::bind();
     }
 
-    void loadTexture(void *buffer, melown::uint32 size) override
+    void loadTexture(const melown::GpuTextureSpec &spec) override
     {
+        QImage::Format format;
+        switch (spec.components)
+        {
+        case 3:
+            format = QImage::Format_RGB888;
+            break;
+        case 4:
+            format = QImage::Format_RGBA8888;
+            break;
+        default:
+            throw "invalid texture components count";
+        }
         create();
-        QByteArray arr((char*)buffer, size);
-        QBuffer buff(&arr);
-        QImageReader reader;
-        reader.setDevice(&buff);
-        reader.autoDetectImageFormat();
-        QImage img(reader.read());
-        setData(img.mirrored());
-        gpuMemoryCost = img.byteCount();
+        setData(QImage((unsigned char*)spec.buffer, spec.width, spec.height, format));
+        gpuMemoryCost = spec.bufferSize;
         state = melown::Resource::State::ready;
     }
 };

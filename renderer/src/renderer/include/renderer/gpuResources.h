@@ -18,13 +18,24 @@ namespace melown
         virtual void uniformMat4(uint32 location, const float *value) = 0;
     };
 
+    class MELOWN_API GpuTextureSpec
+    {
+    public:
+        GpuTextureSpec();
+
+        uint32 width, height;
+        uint32 components; // 1, 2, 3 or 4
+        uint32 bufferSize; // bytes
+        void *buffer;
+    };
+
     class MELOWN_API GpuTexture : public Resource
     {
     public:
         GpuTexture(const std::string &name);
 
         virtual void bind() = 0;
-        virtual void loadTexture(void *buffer, uint32 size) = 0;
+        virtual void loadTexture(const GpuTextureSpec &spec) = 0;
 
         void load(class MapImpl *base) override;
     };

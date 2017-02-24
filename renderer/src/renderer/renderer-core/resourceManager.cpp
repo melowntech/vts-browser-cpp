@@ -54,6 +54,8 @@ namespace melown
         void dataFinalize() override
         {
             dataContext = nullptr;
+            map->cache.reset();
+            pending_data.clear();
         }
 
         /////////
@@ -78,6 +80,8 @@ namespace melown
         void renderFinalize() override
         {
             renderContext = nullptr;
+            pending_render.clear();
+            resources.clear();
         }
 
         void touch(const std::string &name, Resource *resource)

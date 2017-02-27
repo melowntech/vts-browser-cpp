@@ -1,13 +1,14 @@
 #include <cstdio>
-
-#include "glad.h"
-
+#include <glad/glad.h>
 #include "gpuContext.h"
 
 namespace
 {
     void APIENTRY openglErrorCallback(GLenum source, GLenum type, GLenum id, GLenum severity, GLsizei length, const GLchar *message, const void *user)
     {
+        if (id == 131185 && type == GL_DEBUG_TYPE_OTHER)
+            return;
+
         const char *src = nullptr;
         switch (source)
         {
@@ -51,11 +52,15 @@ namespace
         default: sevr = "unknown severity";
         }
 
-        fprintf(stderr, "%s %s %s\n%s\n", src, tp, sevr, message);
+        fprintf(stderr, "%d %s %s %s\t%s\n", id, src, tp, sevr, message);
     }
 }
 
 GpuContext::GpuContext()
+{
+}
+
+void GpuContext::initialize()
 {
     glDebugMessageCallback(&openglErrorCallback, this);
     checkGl("glDebugMessageCallback");

@@ -44,6 +44,8 @@ add_subdirectory(src/jsoncpp)
 add_subdirectory(src/service)
 add_subdirectory(src/geo)
 add_subdirectory(src/half)
+add_subdirectory(src/http)
+add_subdirectory(src/glad)
 
 # vts libraries
 set(BUILDSYS_NOBUILD_TARGET_vts-libs ON)

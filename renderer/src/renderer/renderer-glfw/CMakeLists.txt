@@ -1,4 +1,4 @@
-define_module(BINARY ${PROJECT_NAME}-glfw DEPENDS ${PROJECT_NAME}-core)
+define_module(BINARY ${PROJECT_NAME}-glfw DEPENDS ${PROJECT_NAME}-core http glad)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 aux_source_directory(. SRC_LIST)

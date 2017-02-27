@@ -136,7 +136,7 @@ namespace melown
             b.data = malloc(size);
             memcpy(b.data, buffer, size);
             writeLocalFile(convertNameToCache(name), b);
-            data[name] = b;
+            data[name] = std::move(b);
             states[name] = Status::ready;
         }
 

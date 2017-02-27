@@ -48,7 +48,7 @@ namespace melown
                 empty = pending_data.empty();
             }
             res->load(map);
-            return !empty;
+            return empty;
         }
 
         void dataFinalize() override
@@ -72,7 +72,6 @@ namespace melown
             { // sync pending
                 boost::lock_guard<boost::mutex> l(mut);
                 std::swap(pending_data, pending_render);
-                //pending_data.insert(pending_render.begin(), pending_render.end());
             }
             pending_render.clear();
         }

@@ -1,4 +1,4 @@
-#include "glad.h"
+#include <glad/glad.h>
 
 #include "gpuContext.h"
 
@@ -50,6 +50,7 @@ public:
         glLinkProgram(id);
         glDeleteShader(v);
         glDeleteShader(f);
+        glFinish();
         checkGl("load shader program");
         state = melown::Resource::State::ready;
     }
@@ -119,6 +120,7 @@ public:
         glBindTexture(GL_TEXTURE_2D, id);
         glTexImage2D(GL_TEXTURE_2D, 0, findInternalFormat(spec), spec.width, spec.height, 0, findFormat(spec), GL_UNSIGNED_BYTE, spec.buffer);
         glGenerateMipmap(GL_TEXTURE_2D);
+        glFinish();
         checkGl("load texture");
         gpuMemoryCost = spec.bufferSize;
         state = melown::Resource::State::ready;
@@ -204,6 +206,7 @@ public:
         glBindVertexArray(0);
         glDeleteVertexArrays(1, &vao);
         vao = 0;
+        glFinish();
         checkGl("load mesh");
         this->spec.vertexBufferData = nullptr;
         this->spec.indexBufferData = nullptr;

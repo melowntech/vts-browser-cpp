@@ -3,14 +3,14 @@
 
 #include <string>
 
-#include "../../vts-libs/vts/mapconfig.hpp"
+#include <vts-libs/vts/mapconfig.hpp>
 
 #include <renderer/foundation.h>
 #include <renderer/resource.h>
 
 namespace melown
 {
-    class MapConfig : public Resource, public vadstena::vts::MapConfig
+    class MapConfig : public Resource, public vtslibs::vts::MapConfig
     {
     public:
         MapConfig(const std::string &name);

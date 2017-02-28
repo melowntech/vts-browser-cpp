@@ -1,4 +1,4 @@
-#include "../../vts-libs/vts/csconvertor.hpp"
+#include <vts-libs/vts/csconvertor.hpp>
 #include <GeographicLib/Geodesic.hpp>
 #include <ogr_spatialref.h>
 
@@ -9,7 +9,7 @@ namespace melown
     class CsConvertorImpl : public CsConvertor
     {
     public:
-        CsConvertorImpl(const std::string &phys, const std::string &nav, const std::string &pub, const vadstena::registry::Registry &registry) :
+        CsConvertorImpl(const std::string &phys, const std::string &nav, const std::string &pub, const vtslibs::registry::Registry &registry) :
             navToPhys_(nav, phys, registry),
             physToNav_(phys, nav, registry),
             navToPub_ (nav, pub , registry),
@@ -18,7 +18,7 @@ namespace melown
             physToPub_(phys, pub, registry)
         {
             auto n = registry.srs(nav);
-            if (n.type == vadstena::registry::Srs::Type::geographic)
+            if (n.type == vtslibs::registry::Srs::Type::geographic)
             {
                 auto r = registry.srs(nav).srsDef.reference();
                 geodesic_.emplace(r.GetSemiMajor(), r.GetInvFlattening());
@@ -63,16 +63,16 @@ namespace melown
             return res;
         }
 
-        vadstena::vts::CsConvertor navToPhys_;
-        vadstena::vts::CsConvertor physToNav_;
-        vadstena::vts::CsConvertor navToPub_;
-        vadstena::vts::CsConvertor pubToNav_;
-        vadstena::vts::CsConvertor pubToPhys_;
-        vadstena::vts::CsConvertor physToPub_;
+        vtslibs::vts::CsConvertor navToPhys_;
+        vtslibs::vts::CsConvertor physToNav_;
+        vtslibs::vts::CsConvertor navToPub_;
+        vtslibs::vts::CsConvertor pubToNav_;
+        vtslibs::vts::CsConvertor pubToPhys_;
+        vtslibs::vts::CsConvertor physToPub_;
         boost::optional<GeographicLib::Geodesic> geodesic_;
     };
 
-    CsConvertor *CsConvertor::create(const std::string &phys, const std::string &nav, const std::string &pub, const vadstena::registry::Registry &registry)
+    CsConvertor *CsConvertor::create(const std::string &phys, const std::string &nav, const std::string &pub, const vtslibs::registry::Registry &registry)
     {
         return new CsConvertorImpl(phys, nav, pub, registry);
     }

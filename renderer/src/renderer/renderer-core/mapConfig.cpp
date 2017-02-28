@@ -16,7 +16,7 @@ namespace melown
         {
             std::istringstream is(std::string((char*)buffer.data, buffer.size));
             is.imbue(std::locale::classic());
-            vadstena::vts::loadMapConfig(*this, is, name);
+            vtslibs::vts::loadMapConfig(*this, is, name);
             state = State::ready;
             return;
         }

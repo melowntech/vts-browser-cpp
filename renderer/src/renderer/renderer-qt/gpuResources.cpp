@@ -47,6 +47,25 @@ public:
             m(i, j) = value[j * 4 + i];
         setUniformValue(location, m);
     }
+
+    void uniformMat3(melown::uint32 location, const float *value) override
+    {
+        QMatrix3x3 m;
+        for (int j = 0; j < 3; j++)
+        for (int i = 0; i < 3; i++)
+            m(i, j) = value[j * 3 + i];
+        setUniformValue(location, m);
+    }
+
+    void uniform(melown::uint32 location, const float value) override
+    {
+        setUniformValue(location, value);
+    }
+
+    void uniform(melown::uint32 location, const int value) override
+    {
+        setUniformValue(location, value);
+    }
 };
 
 

@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include "../../vts-libs/vts/metatile.hpp"
+#include <vts-libs/vts/metatile.hpp>
 
 #include <renderer/foundation.h>
 #include <renderer/resource.h>
@@ -13,7 +13,7 @@
 
 namespace melown
 {
-    class MetaTile : public Resource, public vadstena::vts::MetaTile
+    class MetaTile : public Resource, public vtslibs::vts::MetaTile
     {
     public:
         MetaTile(const std::string &name);
@@ -23,8 +23,11 @@ namespace melown
     class MeshPart
     {
     public:
+        MeshPart();
         std::shared_ptr<GpuMeshRenderable> renderable;
         mat4 normToPhys;
+        bool internalUv;
+        bool externalUv;
     };
 
     class MeshAggregate : public Resource
@@ -44,7 +47,7 @@ namespace melown
 
         void load(class MapImpl *base) override;
 
-        vadstena::registry::BoundLayer bl;
+        vtslibs::registry::BoundLayer bl;
     };
 }
 

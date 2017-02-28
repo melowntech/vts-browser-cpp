@@ -16,6 +16,9 @@ namespace melown
         void load(class MapImpl *base) override;
 
         virtual void uniformMat4(uint32 location, const float *value) = 0;
+        virtual void uniformMat3(uint32 location, const float *value) = 0;
+        virtual void uniform(uint32 location, const float value) = 0;
+        virtual void uniform(uint32 location, const int value) = 0;
     };
 
     class MELOWN_API GpuTextureSpec

@@ -6,7 +6,7 @@
 
 #include "math.h"
 
-namespace vadstena
+namespace vtslibs
 {
     namespace registry
     {
@@ -19,7 +19,7 @@ namespace melown
     class CsConvertor
     {
     public:
-        static CsConvertor *create(const std::string &phys, const std::string &nav, const std::string &pub, const vadstena::registry::Registry &registry);
+        static CsConvertor *create(const std::string &phys, const std::string &nav, const std::string &pub, const vtslibs::registry::Registry &registry);
 
         virtual ~CsConvertor();
 

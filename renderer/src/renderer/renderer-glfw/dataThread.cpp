@@ -35,7 +35,7 @@ DataThread::~DataThread()
 
 void DataThread::run()
 {
-    setThreadName("renderer-data");
+    setThreadName("data");
     glfwMakeContextCurrent(window);
     while (!stop && !map)
         usleep(1000);

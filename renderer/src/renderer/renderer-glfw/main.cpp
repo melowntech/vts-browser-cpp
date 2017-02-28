@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
         DataThread data(main.window);
         main.map = &map;
         data.map = &map;
-        setThreadName("renderer-main");
+        setThreadName("main");
         main.run();
     }
 

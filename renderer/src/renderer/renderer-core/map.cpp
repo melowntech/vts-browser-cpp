@@ -1,4 +1,4 @@
-#include "../../dbglog/dbglog.hpp"
+#include <dbglog/dbglog.hpp>
 
 #include <renderer/map.h>
 
@@ -58,17 +58,17 @@ namespace melown
         MapConfig *mapConfig = impl->resources->getMapConfig(impl->mapConfigPath);
         if (mapConfig && mapConfig->state == Resource::State::ready && impl->convertor)
         {
-            vadstena::registry::Position &pos = mapConfig->position;
+            vtslibs::registry::Position &pos = mapConfig->position;
             switch (mapConfig->srs.get(mapConfig->referenceFrame.model.navigationSrs).type)
             {
-            case vadstena::registry::Srs::Type::projected:
+            case vtslibs::registry::Srs::Type::projected:
             {
                 mat3 rot = upperLeftSubMatrix(rotationMatrix(2, degToRad(pos.orientation(0))));
                 vec3 move = vec3(-value[0], value[1], 0);
                 move = rot * move * (pos.verticalExtent / 800);
                 pos.position += vecToUblas<math::Point3>(move);
             } break;
-            case vadstena::registry::Srs::Type::geographic:
+            case vtslibs::registry::Srs::Type::geographic:
             {
                 mat3 rot = upperLeftSubMatrix(rotationMatrix(2, degToRad(-pos.orientation(0))));
                 vec3 move = vec3(-value[0], value[1], 0);
@@ -90,13 +90,13 @@ namespace melown
         MapConfig *mapConfig = impl->resources->getMapConfig(impl->mapConfigPath);
         if (mapConfig && mapConfig->state == Resource::State::ready)
         {
-            vadstena::registry::Position &pos = mapConfig->position;
+            vtslibs::registry::Position &pos = mapConfig->position;
             vec3 rot(value[0] * -0.2, value[1] * -0.1, 0);
             switch (mapConfig->srs.get(mapConfig->referenceFrame.model.navigationSrs).type)
             {
-            case vadstena::registry::Srs::Type::projected:
+            case vtslibs::registry::Srs::Type::projected:
                 break; // do nothing
-            case vadstena::registry::Srs::Type::geographic:
+            case vtslibs::registry::Srs::Type::geographic:
                 rot(0) *= -1;
                 break;
             default:

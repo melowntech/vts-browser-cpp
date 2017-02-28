@@ -7,11 +7,11 @@
 #include "resourceManager.h"
 #include "math.h"
 
-#include "../../vts-libs/vts/meshio.hpp"
+#include <vts-libs/vts/meshio.hpp>
 
 namespace melown
 {
-    MetaTile::MetaTile(const std::string &name) : Resource(name), vadstena::vts::MetaTile(vadstena::vts::TileId(), 0)
+    MetaTile::MetaTile(const std::string &name) : Resource(name), vtslibs::vts::MetaTile(vtslibs::vts::TileId(), 0)
     {}
 
     void MetaTile::load(MapImpl *base)
@@ -22,7 +22,7 @@ namespace melown
         case Cache::Result::ready:
         {
             std::istringstream is(std::string((char*)buffer.data, buffer.size));
-            *(vadstena::vts::MetaTile*)this = vadstena::vts::loadMetaTile(is, 5, name);
+            *(vtslibs::vts::MetaTile*)this = vtslibs::vts::loadMetaTile(is, 5, name);
             state = State::ready;
             return;
         }
@@ -31,6 +31,9 @@ namespace melown
             return;
         }
     }
+
+    MeshPart::MeshPart() : internalUv(false), externalUv(false)
+    {}
 
     MeshAggregate::MeshAggregate(const std::string &name) : Resource(name)
     {}
@@ -54,14 +57,14 @@ namespace melown
         case Cache::Result::ready:
         {
             std::istringstream is(std::string((char*)buffer.data, buffer.size));
-            vadstena::vts::NormalizedSubMesh::list meshes = vadstena::vts::loadMeshProperNormalized(is, name);
+            vtslibs::vts::NormalizedSubMesh::list meshes = vtslibs::vts::loadMeshProperNormalized(is, name);
 
             submeshes.clear();
             submeshes.reserve(meshes.size());
 
             for (uint32 mi = 0, me = meshes.size(); mi != me; mi++)
             {
-                vadstena::vts::SubMesh &m = meshes[mi].submesh;
+                vtslibs::vts::SubMesh &m = meshes[mi].submesh;
 
                 char tmp[10];
                 sprintf(tmp, "%d", mi);
@@ -85,7 +88,7 @@ namespace melown
                     spec.attributes[0].enable = true;
                     spec.attributes[0].components = 3;
                     vec3f *b = (vec3f*)buffer.data;
-                    for (vadstena::vts::Point3u32 f : m.faces)
+                    for (vtslibs::vts::Point3u32 f : m.faces)
                         for (uint32 j = 0; j < 3; j++)
                             *b++ = vecFromUblas<vec3f>(m.vertices[f[j]]);
                     offset += m.faces.size() * sizeof(vec3f) * 3;
@@ -97,7 +100,7 @@ namespace melown
                     spec.attributes[1].components = 2;
                     spec.attributes[1].offset = offset;
                     vec2f *b = (vec2f*)(((char*)buffer.data) + offset);
-                    for (vadstena::vts::Point3u32 f : m.facesTc)
+                    for (vtslibs::vts::Point3u32 f : m.facesTc)
                         for (uint32 j = 0; j < 3; j++)
                             *b++ = vecFromUblas<vec2f>(m.tc[f[j]]);
                     offset += m.faces.size() * sizeof(vec2f) * 3;
@@ -109,7 +112,7 @@ namespace melown
                     spec.attributes[2].components = 2;
                     spec.attributes[2].offset = offset;
                     vec2f *b = (vec2f*)(((char*)buffer.data) + offset);
-                    for (vadstena::vts::Point3u32 f : m.faces)
+                    for (vtslibs::vts::Point3u32 f : m.faces)
                         for (uint32 j = 0; j < 3; j++)
                             *b++ = vecFromUblas<vec2f>(m.etc[f[j]]);
                     offset += m.faces.size() * sizeof(vec2f) * 3;
@@ -120,6 +123,8 @@ namespace melown
                 MeshPart part;
                 part.renderable = gm;
                 part.normToPhys = findNormToPhys(meshes[mi].extents);
+                part.internalUv = spec.attributes[1].enable;
+                part.externalUv = spec.attributes[2].enable;
                 submeshes.push_back(part);
             }
 
@@ -150,7 +155,7 @@ namespace melown
         case Cache::Result::ready:
         {
             std::istringstream is(std::string((char*)buffer.data, buffer.size));
-            bl = vadstena::registry::loadBoundLayer(is, name);
+            bl = vtslibs::registry::loadBoundLayer(is, name);
             state = State::ready;
             return;
         }

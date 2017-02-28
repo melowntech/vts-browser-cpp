@@ -7,15 +7,16 @@
 #include "mapResources.h"
 #include "csConvertor.h"
 
-#include "../../vts-libs/vts/urltemplate.hpp"
-#include "../../dbglog/dbglog.hpp"
+#include <vts-libs/vts/nodeinfo.hpp>
+#include <vts-libs/vts/urltemplate.hpp>
+#include <dbglog/dbglog.hpp>
 
 #include <boost/optional/optional_io.hpp>
 
 namespace melown
 {
-    using namespace vadstena::vts;
-    using namespace vadstena::registry;
+    using namespace vtslibs::vts;
+    using namespace vtslibs::registry;
 
     class RendererImpl : public Renderer
     {
@@ -24,8 +25,7 @@ namespace melown
         {}
 
         void renderInitialize() override
-        {
-        }
+        {}
 
         void traverse(const TileId nodeId)
         {
@@ -54,14 +54,30 @@ namespace melown
                     {
                         MeshPart &part = meshAgg->submeshes[i];
                         GpuMeshRenderable *mesh = part.renderable.get();
-                        GpuTexture *texture = map->resources->getTexture(textureInternalUrlTemplate(UrlTemplate::Vars(nodeId).addSubmesh(i)));
+                        GpuTexture *texture = nullptr;
+                        int mode = 0;
+                        if (part.internalUv)
+                            texture = map->resources->getTexture(textureInternalUrlTemplate(UrlTemplate::Vars(nodeId, i)));
+                        else if (part.externalUv)
+                        { // bound layer
+                            mode = 1;
+                            if (!mapConfig->boundLayers.empty()) // temporary hack -> chooses first available bound layer
+                            {
+                                const vtslibs::registry::BoundLayer &bl = *mapConfig->boundLayers.begin();
+                                UrlTemplate t(bl.url);
+                                texture = map->resources->getTexture(t(UrlTemplate::Vars(nodeId, i)));
+                            }
+                        }
                         if (!texture || texture->state != Resource::State::ready)
                             texture = map->resources->getTexture("data/helper.jpg");
                         if (texture && texture->state == Resource::State::ready)
                         {
                             texture->bind();
                             mat4f mvp = (viewProj * part.normToPhys).cast<float>();
+                            mat3f uvm = upperLeftSubMatrix(identityMatrix()).cast<float>();
                             shader->uniformMat4(0, mvp.data());
+                            shader->uniformMat3(4, uvm.data());
+                            shader->uniform(8, mode);
                             mesh->draw();
 
                             lastRenderable = vec4to3(part.normToPhys * vec4(0, 0, 0, 1));
@@ -75,9 +91,9 @@ namespace melown
 
         void updateCamera(uint32 width, uint32 height)
         {
-            if (mapConfig->position.type != vadstena::registry::Position::Type::objective)
+            if (mapConfig->position.type != vtslibs::registry::Position::Type::objective)
                 throw "unsupported position type"; // todo
-            if (mapConfig->position.heightMode != vadstena::registry::Position::HeightMode::fixed)
+            if (mapConfig->position.heightMode != vtslibs::registry::Position::HeightMode::fixed)
                 throw "unsupported position height mode"; // todo
 
             vec3 center = vecFromUblas<vec3>(mapConfig->position.position);
@@ -95,7 +111,7 @@ namespace melown
 
             switch (mapConfig->srs.get(mapConfig->referenceFrame.model.navigationSrs).type)
             {
-            case vadstena::registry::Srs::Type::projected:
+            case vtslibs::registry::Srs::Type::projected:
             {
                 // swap XY
                 std::swap(dir(0), dir(1));
@@ -114,7 +130,7 @@ namespace melown
                 dir = normalize(dir - center);
                 up = normalize(up - center);
             } break;
-            case vadstena::registry::Srs::Type::geographic:
+            case vtslibs::registry::Srs::Type::geographic:
             {
                 // find lat-lon coordinates of points moved to north and east respectively
                 vec3 n2 = map->convertor->navGeodesicDirect(center, 0, 100);
@@ -249,8 +265,7 @@ namespace melown
         }
 
         void renderFinalize() override
-        {
-        }
+        {}
 
         UrlTemplate metaUrlTemplate;
         UrlTemplate meshUrlTemplate;

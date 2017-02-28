@@ -16,7 +16,7 @@ namespace
     public:
         FetcherImpl() : fetcher(htt.fetcher())
         {
-            htt.startClient(1);
+            htt.startClient(3);
             doneFunc = std::bind(&FetcherImpl::done, this, std::placeholders::_1);
         }
 

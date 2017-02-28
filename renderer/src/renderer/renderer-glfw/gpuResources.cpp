@@ -59,6 +59,21 @@ public:
     {
         glUniformMatrix4fv(location, 1, GL_FALSE, value);
     }
+
+    void uniformMat3(melown::uint32 location, const float *value) override
+    {
+        glUniformMatrix3fv(location, 1, GL_FALSE, value);
+    }
+
+    void uniform(melown::uint32 location, const float value) override
+    {
+        glUniform1f(location, value);
+    }
+
+    void uniform(melown::uint32 location, const int value) override
+    {
+        glUniform1i(location, value);
+    }
 };
 
 

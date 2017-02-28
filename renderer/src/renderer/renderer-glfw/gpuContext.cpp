@@ -71,16 +71,14 @@ void checkGl(const char *name)
     GLint err = glGetError();
     switch (err)
     {
-#define CAGE_THROW_ERROR(EXC, TXT, ERR) throw TXT;
     case GL_NO_ERROR: return;
-    case GL_INVALID_ENUM: CAGE_THROW_ERROR(graphicException, "gl_invalid_enum", err); break;
-    case GL_INVALID_VALUE: CAGE_THROW_ERROR(graphicException, "gl_invalid_value", err); break;
-    case GL_INVALID_OPERATION: CAGE_THROW_ERROR(graphicException, "gl_invalid_operation", err); break;
-    case GL_INVALID_FRAMEBUFFER_OPERATION: CAGE_THROW_ERROR(graphicException, "gl_invalid_framebuffer_operation", err); break;
-    case GL_OUT_OF_MEMORY: CAGE_THROW_ERROR(graphicException, "gl_out_of_memory", err); break;
-    case GL_STACK_UNDERFLOW: CAGE_THROW_ERROR(graphicException, "gl_stack_underflow", err); break;
-    case GL_STACK_OVERFLOW: CAGE_THROW_ERROR(graphicException, "gl_stack_overflow", err); break;
-    default: CAGE_THROW_ERROR(graphicException, "gl_unknown_error", err); break;
-#undef CAGE_THROW_ERROR
+    case GL_INVALID_ENUM: throw melown::graphicsException("gl_invalid_enum"); break;
+    case GL_INVALID_VALUE: throw melown::graphicsException("gl_invalid_value"); break;
+    case GL_INVALID_OPERATION: throw melown::graphicsException("gl_invalid_operation"); break;
+    case GL_INVALID_FRAMEBUFFER_OPERATION: throw melown::graphicsException("gl_invalid_framebuffer_operation"); break;
+    case GL_OUT_OF_MEMORY: throw melown::graphicsException("gl_out_of_memory"); break;
+    case GL_STACK_UNDERFLOW: throw melown::graphicsException("gl_stack_underflow"); break;
+    case GL_STACK_OVERFLOW: throw melown::graphicsException("gl_stack_overflow"); break;
+    default: throw melown::graphicsException("gl_unknown_error"); break;
     }
 }

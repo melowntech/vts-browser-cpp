@@ -3,11 +3,14 @@
 
 #include <string>
 #include <memory>
+#include <stdexcept>
 
 #include "foundation.h"
 
 namespace melown
 {
+    typedef std::runtime_error graphicsException;
+
     class Resource;
 
     class MELOWN_API GpuContext

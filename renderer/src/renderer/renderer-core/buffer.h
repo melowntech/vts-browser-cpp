@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <renderer/foundation.h>
+
 namespace melown
 {
     class Buffer

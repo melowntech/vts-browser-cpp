@@ -143,6 +143,11 @@ namespace melown
             return getMapResource<MeshAggregate>(name);
         }
 
+        ExternalBoundLayer *getExternalBoundLayer(const std::string &name)
+        {
+            return getMapResource<ExternalBoundLayer>(name);
+        }
+
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
         std::unordered_set<Resource*> pending_render;
         std::unordered_set<Resource*> pending_data;

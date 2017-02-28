@@ -9,16 +9,14 @@ namespace melown
 
     void MapConfig::load(MapImpl *base)
     {
-        void *buffer = nullptr;
-        uint32 size = 0;
-        switch (base->cache->read(name, buffer, size))
+        Buffer buffer;
+        switch (base->cache->read(name, buffer))
         {
         case Cache::Result::ready:
         {
-            std::istringstream is(std::string((char*)buffer, size));
+            std::istringstream is(std::string((char*)buffer.data, buffer.size));
             is.imbue(std::locale::classic());
             vadstena::vts::loadMapConfig(*this, is, name);
-            basePath = name.substr(0, name.find_last_of('/') + 1);
             state = State::ready;
             return;
         }

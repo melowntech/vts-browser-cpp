@@ -10,6 +10,8 @@
 #include "../../vts-libs/vts/urltemplate.hpp"
 #include "../../dbglog/dbglog.hpp"
 
+#include <boost/optional/optional_io.hpp>
+
 namespace melown
 {
     using namespace vadstena::vts;
@@ -144,29 +146,89 @@ namespace melown
             viewProj = proj * view;
         }
 
-        void renderTick(uint32 width, uint32 height) override
+        const std::string convertPath(const std::string &path, const std::string &parent)
+        {
+            if (path.find("://") != std::string::npos)
+                return path;
+            if (path.substr(0, 2) == "//")
+            {
+                size_t p = parent.find("://");
+                if (p == std::string::npos)
+                    return path.substr(2);
+                return parent.substr(0, p + 3) + path.substr(2);
+            }
+            if (!parent.empty())
+                return parent.substr(0, parent.find_last_of("/") + 1) + path;
+            return path;
+        }
+
+        const bool configLoaded()
         {
             mapConfig = map->resources->getMapConfig(map->mapConfigPath);
             if (!mapConfig || mapConfig->state != Resource::State::ready)
+                return false;
+
+            bool ok = true;
+            for (auto &&bl : mapConfig->boundLayers)
+            {
+                if (bl.external())
+                {
+                    std::string url = convertPath(bl.url, mapConfig->name);
+                    ExternalBoundLayer *r = map->resources->getExternalBoundLayer(url);
+                    if (!r || r->state != Resource::State::ready)
+                        ok = false;
+                    else
+                    {
+                        r->bl.id = bl.id;
+                        r->bl.url = convertPath(r->bl.url, url);
+                        if (r->bl.metaUrl)
+                            r->bl.metaUrl = convertPath(*r->bl.metaUrl, url);
+                        if (r->bl.maskUrl)
+                            r->bl.maskUrl = convertPath(*r->bl.maskUrl, url);
+                        if (r->bl.creditsUrl)
+                            r->bl.creditsUrl = convertPath(*r->bl.creditsUrl, url);
+                        mapConfig->boundLayers.replace(r->bl);
+                    }
+                }
+            }
+            return ok;
+        }
+
+        void onceInitialize()
+        {
+            map->convertor = std::shared_ptr<CsConvertor>(CsConvertor::create(
+                mapConfig->referenceFrame.model.physicalSrs,
+                mapConfig->referenceFrame.model.navigationSrs,
+                mapConfig->referenceFrame.model.publicSrs,
+                *mapConfig
+            ));
+
+            LOG(info3) << "position: " << mapConfig->position.position;
+            LOG(info3) << "rotation: " << mapConfig->position.orientation;
+
+            for (auto &&bl : mapConfig->boundLayers)
+            {
+                LOG(info3) << bl.type;
+                LOG(info3) << bl.id;
+                LOG(info3) << bl.url;
+                LOG(info3) << bl.metaUrl;
+                LOG(info3) << bl.maskUrl;
+                LOG(info3) << bl.creditsUrl;
+            }
+        }
+
+        void renderTick(uint32 width, uint32 height) override
+        {
+            if (!configLoaded())
                 return;
+
+            if (!map->convertor)
+                onceInitialize();
 
             shader = map->resources->getShader("data/shaders/a");
             if (!shader || shader->state != Resource::State::ready)
                 return;
             shader->bind();
-
-            if (!map->convertor)
-            {
-                map->convertor = std::shared_ptr<CsConvertor>(CsConvertor::create(
-                    mapConfig->referenceFrame.model.physicalSrs,
-                    mapConfig->referenceFrame.model.navigationSrs,
-                    mapConfig->referenceFrame.model.publicSrs,
-                    *mapConfig
-                ));
-
-                LOG(info3) << "position: " << mapConfig->position.position;
-                LOG(info3) << "rotation: " << mapConfig->position.orientation;
-            }
 
             updateCamera(width, height);
 
@@ -175,9 +237,9 @@ namespace melown
             {
                 this->surfConf = &surfConf;
                 targetLod = (this->surfConf->lodRange.min + this->surfConf->lodRange.max) / 2;
-                metaUrlTemplate.parse(mapConfig->basePath + surfConf.urls3d->meta);
-                meshUrlTemplate.parse(mapConfig->basePath + surfConf.urls3d->mesh);
-                textureInternalUrlTemplate.parse(mapConfig->basePath + surfConf.urls3d->texture);
+                metaUrlTemplate.parse(convertPath(surfConf.urls3d->meta, mapConfig->name));
+                meshUrlTemplate.parse(convertPath(surfConf.urls3d->mesh, mapConfig->name));
+                textureInternalUrlTemplate.parse(convertPath(surfConf.urls3d->texture, mapConfig->name));
                 traverse(TileId());
             }
 

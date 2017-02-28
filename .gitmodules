@@ -40,3 +40,6 @@
 [submodule "externals/http"]
 	path = externals/http
 	url = ssh://gitlab.citationtech.net/lib/http.git
+[submodule "externals/lodepng"]
+	path = externals/lodepng
+	url = https://github.com/lvandeve/lodepng.git

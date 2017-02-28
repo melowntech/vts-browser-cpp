@@ -25,7 +25,7 @@ namespace melown
             error,
         };
 
-        CacheImpl(Fetcher *fetcher) : fetcher(fetcher)
+        CacheImpl(Fetcher *fetcher) : fetcher(fetcher), downloadingTasks(0)
         {
             if (!fetcher)
                 return;
@@ -36,8 +36,9 @@ namespace melown
         ~CacheImpl()
         {}
 
-        const std::string convertNameToPath(const std::string &path, bool preserveSlashes)
+        const std::string convertNameToPath(std::string path, bool preserveSlashes)
         {
+            path = boost::filesystem::path(path).normalize().string();
             std::string res;
             res.reserve(path.size());
             for (char it : path)
@@ -126,6 +127,7 @@ namespace melown
 
         void fetchedFile(const std::string &name, const char *buffer, uint32 size) override
         {
+            downloadingTasks--;
             if (!buffer)
             {
                 states[name] = Status::error;
@@ -140,7 +142,7 @@ namespace melown
             states[name] = Status::ready;
         }
 
-        Result read(const std::string &name, void *&buffer, uint32 &size) override
+        Result read(const std::string &name, Buffer &buffer) override
         {
             if (states[name] == Status::initialized)
             {
@@ -152,8 +154,13 @@ namespace melown
                     std::string cachePath = convertNameToCache(name);
                     if (boost::filesystem::exists(cachePath))
                         readLocalFile(name, cachePath);
-                    else
+                    else if (downloadingTasks < 20)
+                    {
                         fetcher->fetch(name);
+                        downloadingTasks++;
+                    }
+                    else
+                        states[name] = Status::initialized;
                 }
             }
             switch (states[name])
@@ -161,9 +168,7 @@ namespace melown
             case Status::done:
             case Status::ready:
             {
-                Buffer &buf = data[name];
-                buffer = buf.data;
-                size = buf.size;
+                buffer = data[name];
                 states[name] = Status::done;
             } break;
             }
@@ -173,6 +178,7 @@ namespace melown
         std::unordered_map<std::string, Status> states;
         std::unordered_map<std::string, Buffer> data;
         Fetcher *fetcher;
+        uint32 downloadingTasks;
     };
 
     Cache *Cache::create(class MapImpl *, Fetcher *fetcher)

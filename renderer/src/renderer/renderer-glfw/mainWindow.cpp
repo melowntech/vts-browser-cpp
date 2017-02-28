@@ -32,6 +32,8 @@ MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0), map(nullptr), window(nu
 
 MainWindow::~MainWindow()
 {
+    if (map)
+        map->renderFinalize();
     glfwDestroyWindow(window);
     window = nullptr;
 }
@@ -56,7 +58,6 @@ void MainWindow::mouseScrollCallback(double, double yoffset)
 void MainWindow::run()
 {
     map->renderInitialize(&gpu);
-
     while (!glfwWindowShouldClose(window))
     {
         checkGl("frame begin");
@@ -78,6 +79,4 @@ void MainWindow::run()
 
         checkGl("frame end");
     }
-
-    map->renderFinalize();
 }

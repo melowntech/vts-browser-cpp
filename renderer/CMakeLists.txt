@@ -33,6 +33,7 @@ find_package(LibProc REQUIRED)
 include_directories(${LIBPROC_INCLUDE_DIR})
 
 include(glfw.cmake)
+include(lodepng.cmake)
 
 # dependencies
 add_subdirectory(src/dbglog)

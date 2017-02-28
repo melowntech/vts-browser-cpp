@@ -44,7 +44,7 @@ void DataThread::run()
     {
         fetcher->tick();
         if (map->dataTick())
-            usleep(10000);
+            usleep(1000);
     }
     map->dataFinalize();
 }

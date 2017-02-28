@@ -16,8 +16,6 @@ namespace melown
         MapConfig(const std::string &name);
 
         void load(class MapImpl *base) override;
-
-        std::string basePath;
     };
 }
 

@@ -30,6 +30,7 @@ namespace melown
         virtual class MeshAggregate *getMeshAggregate(const std::string &name) = 0;
         virtual class MapConfig *getMapConfig(const std::string &name) = 0;
         virtual class MetaTile *getMetaTile(const std::string &name) = 0;
+        virtual class ExternalBoundLayer *getExternalBoundLayer(const std::string &name) = 0;
 
         GpuContext *renderContext;
         GpuContext *dataContext;

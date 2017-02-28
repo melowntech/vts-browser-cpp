@@ -9,8 +9,7 @@
 #include "cache.h"
 #include "resourceManager.h"
 #include "buffer.h"
-
-#include <jpeglib.h>
+#include "image.h"
 
 namespace melown
 {
@@ -19,10 +18,9 @@ namespace melown
 
     void GpuShader::load(MapImpl *base)
     {
-        void *bv = nullptr, *bf = nullptr;
-        uint32 sv = 0, sf = 0;
-        Cache::Result rv = base->cache->read(name + ".vert.glsl", bv, sv);
-        Cache::Result rf = base->cache->read(name + ".frag.glsl", bf, sf);
+        Buffer bv, bf;
+        Cache::Result rv = base->cache->read(name + ".vert.glsl", bv);
+        Cache::Result rf = base->cache->read(name + ".frag.glsl", bf);
         if (rv == Cache::Result::error || rf == Cache::Result::error)
         {
             state = State::errorDownload;
@@ -30,8 +28,8 @@ namespace melown
         }
         if (rv == Cache::Result::ready && rf == Cache::Result::ready)
         {
-            std::string vert((char*)bv, sv);
-            std::string frag((char*)bf, sf);
+            std::string vert((char*)bv.data, bv.size);
+            std::string frag((char*)bf.data, bf.size);
             loadShaders(vert, frag);
         }
     }
@@ -44,35 +42,16 @@ namespace melown
 
     void GpuTexture::load(MapImpl *base)
     {
-        void *buffer = nullptr;
-        uint32 size = 0;
-        switch (base->cache->read(name, buffer, size))
+        Buffer encoded;
+        switch (base->cache->read(name, encoded))
         {
         case Cache::Result::ready:
         {
             GpuTextureSpec spec;
-            jpeg_decompress_struct info;
-            jpeg_error_mgr errmgr;
-            info.err = jpeg_std_error(&errmgr);
-            jpeg_create_decompress(&info);
-            jpeg_mem_src(&info, (unsigned char*)buffer, size);
-            jpeg_read_header(&info, TRUE);
-            jpeg_start_decompress(&info);
-            spec.width = info.output_width;
-            spec.height = info.output_height;
-            spec.components = info.num_components;
-            uint32 lineSize = spec.components * spec.width;
-            Buffer buf(lineSize * spec.height);
-            while (info.output_scanline < info.output_height)
-            {
-                unsigned char *ptr[1];
-                ptr[0] = (unsigned char*)buf.data + lineSize * (spec.height - info.output_scanline - 1);
-                jpeg_read_scanlines(&info, ptr, 1);
-            }
-            jpeg_finish_decompress(&info);
-            jpeg_destroy_decompress(&info);
-            spec.buffer = buf.data;
-            spec.bufferSize = buf.size;
+            Buffer decoded;
+            decodeImage(name, encoded, decoded, spec.width, spec.height, spec.components);
+            spec.buffer = decoded.data;
+            spec.bufferSize = decoded.size;
             loadTexture(spec);
         } return;
         case Cache::Result::error:

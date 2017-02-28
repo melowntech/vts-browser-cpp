@@ -36,6 +36,16 @@ namespace melown
 
         std::vector<MeshPart> submeshes;
     };
+
+    class ExternalBoundLayer : public Resource
+    {
+    public:
+        ExternalBoundLayer(const std::string &name);
+
+        void load(class MapImpl *base) override;
+
+        vadstena::registry::BoundLayer bl;
+    };
 }
 
 #endif

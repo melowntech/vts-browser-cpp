@@ -71,7 +71,7 @@ namespace melown
 
         GpuMeshSpec();
 
-        VertexAttribute attributes[2];
+        VertexAttribute attributes[3];
         const uint16 *indexBufferData;
         void *vertexBufferData;
         uint32 vertexBufferSize; // in bytes

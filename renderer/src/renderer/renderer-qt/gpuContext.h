@@ -8,15 +8,19 @@
 
 #include <renderer/gpuContext.h>
 
-class Gl : public QOpenGLContext, public QOpenGLFunctions_4_4_Core, public melown::GpuContext
+class Gl : public QOpenGLContext, public QOpenGLFunctions_4_4_Core,
+        public melown::GpuContext
 {
 public:
     Gl(class QSurface *surface);
     ~Gl();
 
-    std::shared_ptr<melown::Resource> createShader(const std::string &name) override;
-    std::shared_ptr<melown::Resource> createTexture(const std::string &name) override;
-    std::shared_ptr<melown::Resource> createMeshRenderable(const std::string &name) override;
+    std::shared_ptr<melown::Resource> createShader
+        (const std::string &name) override;
+    std::shared_ptr<melown::Resource> createTexture
+        (const std::string &name) override;
+    std::shared_ptr<melown::Resource> createMeshRenderable
+        (const std::string &name) override;
 
     void initialize();
     void current(bool bind = true);

@@ -10,13 +10,15 @@
 
 namespace melown
 {
-    class MapConfig : public Resource, public vtslibs::vts::MapConfig
-    {
-    public:
-        MapConfig(const std::string &name);
 
-        void load(class MapImpl *base) override;
-    };
-}
+class MapConfig : public Resource, public vtslibs::vts::MapConfig
+{
+public:
+    MapConfig(const std::string &name);
+
+    void load(class MapImpl *base) override;
+};
+
+} // namespace melown
 
 #endif

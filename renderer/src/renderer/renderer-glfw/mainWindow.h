@@ -7,8 +7,8 @@ class GLFWwindow;
 
 namespace melown
 {
-    class MapFoundation;
-}
+class MapFoundation;
+} // namespace
 
 class MainWindow
 {

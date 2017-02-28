@@ -6,17 +6,19 @@
 
 namespace melown
 {
-    class MapImpl
-    {
-    public:
-        MapImpl(const std::string &mapConfigPath);
 
-        std::shared_ptr<class CsConvertor> convertor;
-        std::shared_ptr<class Cache> cache;
-        std::shared_ptr<class ResourceManager> resources;
-        std::shared_ptr<class Renderer> renderer;
-        std::string mapConfigPath;
-    };
-}
+class MapImpl
+{
+public:
+    MapImpl(const std::string &mapConfigPath);
+
+    std::shared_ptr<class CsConvertor> convertor;
+    std::shared_ptr<class Cache> cache;
+    std::shared_ptr<class ResourceManager> resources;
+    std::shared_ptr<class Renderer> renderer;
+    std::string mapConfigPath;
+};
+
+} // namespace melown
 
 #endif

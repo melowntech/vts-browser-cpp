@@ -5,20 +5,23 @@
 
 namespace
 {
-    void mousePositionCallback(GLFWwindow *window, double xpos, double ypos)
-    {
-        MainWindow *m = (MainWindow*)glfwGetWindowUserPointer(window);
-        m->mousePositionCallback(xpos, ypos);
-    }
 
-    void mouseScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
-    {
-        MainWindow *m = (MainWindow*)glfwGetWindowUserPointer(window);
-        m->mouseScrollCallback(xoffset, yoffset);
-    }
+void mousePositionCallback(GLFWwindow *window, double xpos, double ypos)
+{
+    MainWindow *m = (MainWindow*)glfwGetWindowUserPointer(window);
+    m->mousePositionCallback(xpos, ypos);
 }
 
-MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0), map(nullptr), window(nullptr)
+void mouseScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
+{
+    MainWindow *m = (MainWindow*)glfwGetWindowUserPointer(window);
+    m->mouseScrollCallback(xoffset, yoffset);
+}
+
+} // namespace
+
+MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
+    map(nullptr), window(nullptr)
 {
     window = glfwCreateWindow(800, 600, "renderer-glfw", NULL, NULL);
     glfwMakeContextCurrent(window);

@@ -31,14 +31,16 @@ void Gl::initialize()
     initializeOpenGLFunctions();
 
     logger->initialize();
-    connect(logger.get(), &QOpenGLDebugLogger::messageLogged, this, &Gl::onDebugMessage);
+    connect(logger.get(), &QOpenGLDebugLogger::messageLogged,
+            this, &Gl::onDebugMessage);
     logger->startLogging();
 }
 
 void Gl::onDebugMessage(const QOpenGLDebugMessage &message)
 {
     //qDebug() << message.id() << " " << message.type();
-    if (message.id() == 131185 && message.type() == QOpenGLDebugMessage::OtherType)
+    if (message.id() == 131185
+            && message.type() == QOpenGLDebugMessage::OtherType)
         return;
     qDebug() << message.message();
 }

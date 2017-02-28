@@ -7,28 +7,30 @@
 
 namespace melown
 {
-    class MELOWN_API Resource
+
+class MELOWN_API Resource
+{
+public:
+    enum class State
     {
-    public:
-        enum class State
-        {
-            initializing,
-            ready,
-            errorDownload,
-            errorLoad,
-            finalizing,
-        };
-
-        Resource(const std::string &name);
-        virtual ~Resource();
-
-        virtual void load(class MapImpl *base) = 0;
-
-        const std::string name;
-        uint32 ramMemoryCost;
-        uint32 gpuMemoryCost;
-        State state;
+        initializing,
+        ready,
+        errorDownload,
+        errorLoad,
+        finalizing,
     };
-}
+
+    Resource(const std::string &name);
+    virtual ~Resource();
+
+    virtual void load(class MapImpl *base) = 0;
+
+    const std::string name;
+    uint32 ramMemoryCost;
+    uint32 gpuMemoryCost;
+    State state;
+};
+
+} // namespace melown
 
 #endif

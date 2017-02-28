@@ -13,42 +13,44 @@
 
 namespace melown
 {
-    class MetaTile : public Resource, public vtslibs::vts::MetaTile
-    {
-    public:
-        MetaTile(const std::string &name);
-        void load(class MapImpl *base) override;
-    };
 
-    class MeshPart
-    {
-    public:
-        MeshPart();
-        std::shared_ptr<GpuMeshRenderable> renderable;
-        mat4 normToPhys;
-        bool internalUv;
-        bool externalUv;
-    };
+class MetaTile : public Resource, public vtslibs::vts::MetaTile
+{
+public:
+    MetaTile(const std::string &name);
+    void load(class MapImpl *base) override;
+};
 
-    class MeshAggregate : public Resource
-    {
-    public:
-        MeshAggregate(const std::string &name);
+class MeshPart
+{
+public:
+    MeshPart();
+    std::shared_ptr<GpuMeshRenderable> renderable;
+    mat4 normToPhys;
+    bool internalUv;
+    bool externalUv;
+};
 
-        void load(class MapImpl *base) override;
+class MeshAggregate : public Resource
+{
+public:
+    MeshAggregate(const std::string &name);
 
-        std::vector<MeshPart> submeshes;
-    };
+    void load(class MapImpl *base) override;
 
-    class ExternalBoundLayer : public Resource
-    {
-    public:
-        ExternalBoundLayer(const std::string &name);
+    std::vector<MeshPart> submeshes;
+};
 
-        void load(class MapImpl *base) override;
+class ExternalBoundLayer : public Resource
+{
+public:
+    ExternalBoundLayer(const std::string &name);
 
-        vtslibs::registry::BoundLayer bl;
-    };
-}
+    void load(class MapImpl *base) override;
+
+    vtslibs::registry::BoundLayer bl;
+};
+
+} // namespace melown
 
 #endif

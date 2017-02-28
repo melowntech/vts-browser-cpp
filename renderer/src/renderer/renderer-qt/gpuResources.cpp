@@ -12,7 +12,8 @@
 
 QOpenGLFunctions_4_4_Core *gpuFunctions()
 {
-    return QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_4_Core>();
+    return QOpenGLContext::currentContext()
+            ->versionFunctions<QOpenGLFunctions_4_4_Core>();
 }
 
 class GpuShaderImpl : public QOpenGLShaderProgram, public melown::GpuShader
@@ -27,12 +28,17 @@ public:
             throw "failed to bind gpu shader";
     }
 
-    void loadShaders(const std::string &vertexShader, const std::string &fragmentShader) override
+    void loadShaders(const std::string &vertexShader,
+                     const std::string &fragmentShader) override
     {
         create();
-        addShaderFromSourceCode(QOpenGLShader::Vertex, QString::fromUtf8(vertexShader.data(), vertexShader.size()));
+        addShaderFromSourceCode(QOpenGLShader::Vertex,
+                                QString::fromUtf8(vertexShader.data(),
+                                                  vertexShader.size()));
         if (!fragmentShader.empty())
-            addShaderFromSourceCode(QOpenGLShader::Fragment, QString::fromUtf8(fragmentShader.data(), fragmentShader.size()));
+            addShaderFromSourceCode(QOpenGLShader::Fragment,
+                                    QString::fromUtf8(fragmentShader.data(),
+                                                      fragmentShader.size()));
         if (!link())
             throw "failed to link shader program";
         //removeAllShaders();
@@ -72,7 +78,8 @@ public:
 class GpuTextureImpl : public QOpenGLTexture, public melown::GpuTexture
 {
 public:
-    GpuTextureImpl(const std::string &name) : melown::GpuTexture(name), QOpenGLTexture(QOpenGLTexture::Target2D)
+    GpuTextureImpl(const std::string &name) : melown::GpuTexture(name),
+        QOpenGLTexture(QOpenGLTexture::Target2D)
     {}
 
     void bind() override
@@ -95,7 +102,8 @@ public:
             throw "invalid texture components count";
         }
         create();
-        setData(QImage((unsigned char*)spec.buffer, spec.width, spec.height, format));
+        setData(QImage((unsigned char*)spec.buffer,
+                       spec.width, spec.height, format));
         gpuMemoryCost = spec.bufferSize;
         state = melown::Resource::State::ready;
     }
@@ -105,7 +113,9 @@ public:
 class GpuSubMeshImpl : public melown::GpuMeshRenderable
 {
 public:
-    GpuSubMeshImpl(const std::string &name) : melown::GpuMeshRenderable(name), vertexBuffer(QOpenGLBuffer::VertexBuffer), indexBuffer(QOpenGLBuffer::IndexBuffer)
+    GpuSubMeshImpl(const std::string &name) : melown::GpuMeshRenderable(name),
+        vertexBuffer(QOpenGLBuffer::VertexBuffer),
+        indexBuffer(QOpenGLBuffer::IndexBuffer)
     {}
 
     void draw() override
@@ -120,20 +130,24 @@ public:
             vertexBuffer.bind();
             if (indexBuffer.isCreated())
                 indexBuffer.bind();
-            for (int i = 0; i < sizeof(melown::GpuMeshSpec::attributes) / sizeof(melown::GpuMeshSpec::VertexAttribute); i++)
+            for (int i = 0; i < sizeof(melown::GpuMeshSpec::attributes)
+                 / sizeof(melown::GpuMeshSpec::VertexAttribute); i++)
             {
                 melown::GpuMeshSpec::VertexAttribute &a = spec.attributes[i];
                 if (a.enable)
                 {
                     gl->glEnableVertexAttribArray(i);
-                    gl->glVertexAttribPointer(i, a.components, (GLenum)a.type, a.normalized ? GL_TRUE : GL_FALSE, a.stride, (void*)a.offset);
+                    gl->glVertexAttribPointer(i, a.components, (GLenum)a.type,
+                                              a.normalized ? GL_TRUE : GL_FALSE,
+                                              a.stride, (void*)a.offset);
                 }
                 else
                     gl->glDisableVertexAttribArray(i);
             }
         }
         if (spec.indicesCount > 0)
-            gl->glDrawElements((GLenum)spec.faceMode, spec.indicesCount, GL_UNSIGNED_SHORT, nullptr);
+            gl->glDrawElements((GLenum)spec.faceMode, spec.indicesCount,
+                               GL_UNSIGNED_SHORT, nullptr);
         else
             gl->glDrawArrays((GLenum)spec.faceMode, 0, spec.verticesCount);
         gl->glBindVertexArray(0);
@@ -151,9 +165,11 @@ public:
         {
             indexBuffer.create();
             indexBuffer.bind();
-            indexBuffer.allocate(spec.indexBufferData, spec.indicesCount * sizeof(melown::uint16));
+            indexBuffer.allocate(spec.indexBufferData,
+                                 spec.indicesCount * sizeof(melown::uint16));
         }
-        gpuMemoryCost = spec.vertexBufferSize + spec.indicesCount * sizeof(melown::uint16);
+        gpuMemoryCost = spec.vertexBufferSize
+                + spec.indicesCount * sizeof(melown::uint16);
         arrayObject.destroy();
         this->spec.vertexBufferData = nullptr;
         this->spec.indexBufferData = nullptr;
@@ -166,17 +182,20 @@ public:
     melown::GpuMeshSpec spec;
 };
 
-std::shared_ptr<melown::Resource> Gl::createShader(const std::string &name)
+std::shared_ptr<melown::Resource>
+Gl::createShader(const std::string &name)
 {
     return std::shared_ptr<melown::GpuShader>(new GpuShaderImpl(name));
 }
 
-std::shared_ptr<melown::Resource> Gl::createTexture(const std::string &name)
+std::shared_ptr<melown::Resource>
+Gl::createTexture(const std::string &name)
 {
     return std::shared_ptr<melown::GpuTexture>(new GpuTextureImpl(name));
 }
 
-std::shared_ptr<melown::Resource> Gl::createMeshRenderable(const std::string &name)
+std::shared_ptr<melown::Resource>
+Gl::createMeshRenderable(const std::string &name)
 {
     return std::shared_ptr<melown::GpuMeshRenderable>(new GpuSubMeshImpl(name));
 }

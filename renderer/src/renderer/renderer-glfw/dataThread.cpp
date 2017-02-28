@@ -15,7 +15,8 @@ namespace
     }
 }
 
-DataThread::DataThread(GLFWwindow *shared) : window(nullptr), map(nullptr), stop(false)
+DataThread::DataThread(GLFWwindow *shared) : window(nullptr),
+    map(nullptr), stop(false)
 {
     fetcher = std::shared_ptr<Fetcher>(Fetcher::create());
     window = glfwCreateWindow(1, 1, "data context", NULL, shared);

@@ -9,9 +9,12 @@
 
 namespace melown
 {
-    typedef std::runtime_error imageDecodeException;
 
-    void decodeImage(const std::string &name, const Buffer &in, Buffer &out, uint32 &width, uint32 &height, uint32 &components);
-}
+typedef std::runtime_error imageDecodeException;
+
+void decodeImage(const std::string &name, const Buffer &in, Buffer &out,
+                 uint32 &width, uint32 &height, uint32 &components);
+
+} // namespace melown
 
 #endif

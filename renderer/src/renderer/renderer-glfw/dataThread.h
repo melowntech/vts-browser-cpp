@@ -9,7 +9,7 @@ class GLFWwindow;
 
 namespace melown
 {
-    class MapFoundation;
+class MapFoundation;
 }
 
 class DataThread

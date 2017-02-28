@@ -5,14 +5,15 @@
 
 namespace melown
 {
-    typedef std::uint8_t uint8;
-    typedef std::int8_t sint8;
-    typedef std::uint16_t uint16;
-    typedef std::int16_t sint16;
-    typedef std::uint32_t uint32;
-    typedef std::int32_t sint32;
-    typedef std::uint64_t uint64;
-    typedef std::int64_t sint64;
+
+typedef std::uint8_t uint8;
+typedef std::int8_t sint8;
+typedef std::uint16_t uint16;
+typedef std::int16_t sint16;
+typedef std::uint32_t uint32;
+typedef std::int32_t sint32;
+typedef std::uint64_t uint64;
+typedef std::int64_t sint64;
 
 #ifdef _MSVC
 #define MELOWN_API_EXPORT _declspec(dllexport)
@@ -29,7 +30,8 @@ namespace melown
 #else
 #define MELOWN_API MELOWN_API_IMPORT
 #endif
-}
+
+} // namespace melown
 
 #endif
 

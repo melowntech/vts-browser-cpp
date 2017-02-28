@@ -5,8 +5,8 @@
 
 namespace
 {
-    class FetcherDetail;
-}
+class FetcherDetail;
+} // namespace
 
 class FetcherOptions
 {

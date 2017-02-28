@@ -39,10 +39,6 @@ int main(int argc, char *argv[])
     dynamic_cast<FetcherImpl*>(mainWindow.fetcher)->setOptions(fetcherOptions);
 
     melown::MapFoundation map(argv[1]);
-    //melown::MapFoundation map("https://david.test.mlwn.se/maps/j8.pp.flat/mapConfig.json");
-    //melown::MapFoundation map("http://pomerol.internal:8870/Chrudim/mapConfig.json");
-    //melown::MapFoundation map("http://cdn.test.mlwn.se/mario/proxy/melown2015/surface/melown/viewfinder-world/mapConfig.json");
-    //melown::MapFoundation map("http://cdn.melown.com/mario/store/melown2015/map-config/tomas-maly_melown-com/Name-your-map862/mapConfig.json");
 
     mainWindow.map = &map;
     mainWindow.resize(QSize(800, 600));

@@ -8,28 +8,30 @@
 
 namespace melown
 {
-    class MapImpl;
 
-    class MELOWN_API MapFoundation
-    {
-    public:
-        MapFoundation(const std::string &mapConfigPath);
-        virtual ~MapFoundation();
+class MapImpl;
 
-        void dataInitialize(class GpuContext *context, class Fetcher *fetcher);
-        bool dataTick();
-        void dataFinalize();
+class MELOWN_API MapFoundation
+{
+public:
+    MapFoundation(const std::string &mapConfigPath);
+    virtual ~MapFoundation();
 
-        void renderInitialize(class GpuContext *context);
-        void renderTick(uint32 width, uint32 height);
-        void renderFinalize();
+    void dataInitialize(class GpuContext *context, class Fetcher *fetcher);
+    bool dataTick();
+    void dataFinalize();
 
-        void pan(const double value[3]);
-        void rotate(const double value[3]);
+    void renderInitialize(class GpuContext *context);
+    void renderTick(uint32 width, uint32 height);
+    void renderFinalize();
 
-    private:
-        std::shared_ptr<MapImpl> impl;
-    };
-}
+    void pan(const double value[3]);
+    void rotate(const double value[3]);
+
+private:
+    std::shared_ptr<MapImpl> impl;
+};
+
+} // namespace melown
 
 #endif

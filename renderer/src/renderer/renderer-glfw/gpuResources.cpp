@@ -41,7 +41,8 @@ public:
         return s;
     }
 
-    void loadShaders(const std::string &vertexShader, const std::string &fragmentShader) override
+    void loadShaders(const std::string &vertexShader,
+                     const std::string &fragmentShader) override
     {
         clear();
         id = glCreateProgram();
@@ -133,7 +134,9 @@ public:
         clear();
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_2D, id);
-        glTexImage2D(GL_TEXTURE_2D, 0, findInternalFormat(spec), spec.width, spec.height, 0, findFormat(spec), GL_UNSIGNED_BYTE, spec.buffer);
+        glTexImage2D(GL_TEXTURE_2D, 0, findInternalFormat(spec),
+                     spec.width, spec.height, 0,
+                     findFormat(spec), GL_UNSIGNED_BYTE, spec.buffer);
         glGenerateMipmap(GL_TEXTURE_2D);
         glFinish();
         checkGl("load texture");
@@ -149,7 +152,8 @@ public:
     melown::GpuMeshSpec spec;
     GLuint vao, vbo, vio;
 
-    GpuSubMeshImpl(const std::string &name) : melown::GpuMeshRenderable(name), vao(0), vbo(0), vio(0)
+    GpuSubMeshImpl(const std::string &name) : melown::GpuMeshRenderable(name),
+        vao(0), vbo(0), vio(0)
     {}
 
     void clear()
@@ -181,13 +185,16 @@ public:
             if (vio)
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vio);
 
-            for (int i = 0; i < sizeof(melown::GpuMeshSpec::attributes) / sizeof(melown::GpuMeshSpec::VertexAttribute); i++)
+            for (int i = 0; i < sizeof(melown::GpuMeshSpec::attributes)
+                 / sizeof(melown::GpuMeshSpec::VertexAttribute); i++)
             {
                 melown::GpuMeshSpec::VertexAttribute &a = spec.attributes[i];
                 if (a.enable)
                 {
                     glEnableVertexAttribArray(i);
-                    glVertexAttribPointer(i, a.components, (GLenum)a.type, a.normalized ? GL_TRUE : GL_FALSE, a.stride, (void*)a.offset);
+                    glVertexAttribPointer(i, a.components, (GLenum)a.type,
+                                          a.normalized ? GL_TRUE : GL_FALSE,
+                                          a.stride, (void*)a.offset);
                 }
                 else
                     glDisableVertexAttribArray(i);
@@ -195,7 +202,8 @@ public:
         }
 
         if (spec.indicesCount > 0)
-            glDrawElements((GLenum)spec.faceMode, spec.indicesCount, GL_UNSIGNED_SHORT, nullptr);
+            glDrawElements((GLenum)spec.faceMode, spec.indicesCount,
+                           GL_UNSIGNED_SHORT, nullptr);
         else
             glDrawArrays((GLenum)spec.faceMode, 0, spec.verticesCount);
         glBindVertexArray(0);
@@ -204,23 +212,28 @@ public:
 
     void loadMeshRenderable(const melown::GpuMeshSpec &spec) override
     {
+        state = melown::Resource::State::initializing;
         clear();
         this->spec = spec;
+        GLuint vao = 0;
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
         glGenBuffers(1, &vbo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, spec.vertexBufferSize, spec.vertexBufferData, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, spec.vertexBufferSize,
+                     spec.vertexBufferData, GL_STATIC_DRAW);
         if (spec.indicesCount)
         {
             glGenBuffers(1, &vio);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vio);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, spec.indicesCount * sizeof(spec.indexBufferData[0]), spec.indexBufferData, GL_STATIC_DRAW);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                         spec.indicesCount * sizeof(spec.indexBufferData[0]),
+                    spec.indexBufferData, GL_STATIC_DRAW);
         }
-        gpuMemoryCost = spec.vertexBufferSize + spec.indicesCount * sizeof(spec.indexBufferData[0]);
+        gpuMemoryCost = spec.vertexBufferSize
+                + spec.indicesCount * sizeof(spec.indexBufferData[0]);
         glBindVertexArray(0);
         glDeleteVertexArrays(1, &vao);
-        vao = 0;
         glFinish();
         checkGl("load mesh");
         this->spec.vertexBufferData = nullptr;
@@ -229,17 +242,20 @@ public:
     }
 };
 
-std::shared_ptr<melown::Resource> GpuContext::createShader(const std::string &name)
+std::shared_ptr<melown::Resource>
+GpuContext::createShader(const std::string &name)
 {
     return std::shared_ptr<melown::GpuShader>(new GpuShaderImpl(name));
 }
 
-std::shared_ptr<melown::Resource> GpuContext::createTexture(const std::string &name)
+std::shared_ptr<melown::Resource>
+GpuContext::createTexture(const std::string &name)
 {
     return std::shared_ptr<melown::GpuTexture>(new GpuTextureImpl(name));
 }
 
-std::shared_ptr<melown::Resource> GpuContext::createMeshRenderable(const std::string &name)
+std::shared_ptr<melown::Resource>
+GpuContext::createMeshRenderable(const std::string &name)
 {
     return std::shared_ptr<melown::GpuMeshRenderable>(new GpuSubMeshImpl(name));
 }

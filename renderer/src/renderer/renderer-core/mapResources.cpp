@@ -54,6 +54,7 @@ const mat4 findNormToPhys(const math::Extents3 &extents)
 
 void MeshAggregate::load(MapImpl *base)
 {
+    state = Resource::State::initializing;
     Buffer buffer;
     switch (base->cache->read(name, buffer))
     {

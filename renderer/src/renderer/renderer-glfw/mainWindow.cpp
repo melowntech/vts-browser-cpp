@@ -21,7 +21,7 @@ void mouseScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
 } // namespace
 
 MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
-    map(nullptr), window(nullptr)
+    map(nullptr), window(nullptr), lastFrameTime(0)
 {
     window = glfwCreateWindow(800, 600, "renderer-glfw", NULL, NULL);
     glfwMakeContextCurrent(window);
@@ -68,6 +68,7 @@ void MainWindow::run()
         glClearColor(0.2, 0.2, 0.2, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
 
         int width = 800, height = 600;
         glfwGetFramebufferSize(window, &width, &height);
@@ -77,9 +78,23 @@ void MainWindow::run()
         map->renderTick(width, height);
         checkGl("renderTick");
 
-        glfwSwapBuffers(window);
         glfwPollEvents();
+        glfwSwapBuffers(window);
 
         checkGl("frame end");
+
+        showFps();
     }
+}
+
+void MainWindow::showFps()
+{
+    double currentTime = glfwGetTime();
+    double diff = currentTime - lastFrameTime;
+    lastFrameTime = currentTime;
+    if (diff < 1e-5)
+        diff = 1e-5;
+    char buffer[100];
+    sprintf(buffer, "fps: %.1f", 1.0 / diff);
+    glfwSetWindowTitle(window, buffer);
 }

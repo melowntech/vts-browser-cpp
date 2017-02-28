@@ -42,7 +42,7 @@ public:
         { // take an item
             boost::lock_guard<boost::mutex> l(mut);
             if (pending_data.empty())
-                return false;
+                return true;
             auto it = std::next(pending_data.begin(),
                                 takeItemIndex++ % pending_data.size());
             res = *it;

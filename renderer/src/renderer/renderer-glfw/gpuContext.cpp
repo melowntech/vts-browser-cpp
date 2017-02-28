@@ -86,8 +86,7 @@ namespace
 }
 
 GpuContext::GpuContext()
-{
-}
+{}
 
 void GpuContext::initialize()
 {

@@ -42,13 +42,15 @@ public:
         { // take an item
             boost::lock_guard<boost::mutex> l(mut);
             if (pending_data.empty())
-                return true;
+                return true; // all done
             auto it = std::next(pending_data.begin(),
                                 takeItemIndex++ % pending_data.size());
             res = *it;
             pending_data.erase(it);
             empty = pending_data.empty();
         }
+        if (res->state != Resource::State::initializing)
+            return false; // immediately try next
         res->load(map);
         return empty;
     }

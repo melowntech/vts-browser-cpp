@@ -22,8 +22,6 @@ void usage(char *argv[])
     abort();
 }
 
-melown::MapFoundation *globalMap;
-
 int main(int argc, char *argv[])
 {
     if (argc != 2)

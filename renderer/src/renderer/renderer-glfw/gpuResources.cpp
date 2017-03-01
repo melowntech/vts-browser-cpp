@@ -212,7 +212,6 @@ public:
 
     void loadMeshRenderable(const melown::GpuMeshSpec &spec) override
     {
-        state = melown::Resource::State::initializing;
         clear();
         this->spec = spec;
         GLuint vao = 0;

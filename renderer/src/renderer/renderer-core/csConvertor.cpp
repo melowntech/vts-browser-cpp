@@ -59,13 +59,13 @@ public:
         return vecFromUblas<vec3>(physToPub_(vecToUblas<math::Point3d>(value)));
     }
 
-    const vec3 navGeodesicDirect(const vec3 &latLon,
+    const vec3 navGeodesicDirect(const vec3 &position,
                                  double azimuth, double distance) override
     {
         vec3 res;
-        geodesic_->Direct(latLon(0), latLon(1),
-                          azimuth, distance, res(0), res(1));
-        res(2) = latLon(2);
+        geodesic_->Direct(position(1), position(0),
+                          azimuth, distance, res(1), res(0));
+        res(2) = position(2);
         return res;
     }
 

@@ -10,6 +10,9 @@
 #include <vts-libs/vts/nodeinfo.hpp>
 #include <vts-libs/vts/urltemplate.hpp>
 #include <dbglog/dbglog.hpp>
+#include <utility/uri.hpp>
+
+#include <unordered_map>
 
 #include <boost/optional/optional_io.hpp>
 
@@ -22,42 +25,103 @@ using namespace vtslibs::registry;
 class RendererImpl : public Renderer
 {
 public:
+    class SurfaceInfo : public SurfaceConfig
+    {
+    public:
+        SurfaceInfo(const SurfaceConfig &surface, RendererImpl *renderer)
+            : SurfaceConfig(surface)
+        {
+            urlMeta.parse(renderer->convertPath(urls3d->meta,
+                                      renderer->mapConfig->name));
+            urlMesh.parse(renderer->convertPath(urls3d->mesh,
+                                      renderer->mapConfig->name));
+            urlIntTex.parse(renderer->convertPath(urls3d->texture,
+                                        renderer->mapConfig->name));
+        }
+
+        UrlTemplate urlMeta;
+        UrlTemplate urlMesh;
+        UrlTemplate urlIntTex;
+    };
+
+    class BoundInfo : public BoundLayer
+    {
+    public:
+        BoundInfo(const BoundLayer &layer, RendererImpl *)
+            : BoundLayer(layer)
+        {
+            urlExtTex.parse(url);
+        }
+
+        UrlTemplate urlExtTex;
+    };
+
     RendererImpl(MapImpl *map) : map(map), mapConfig(nullptr),
-        surfConf(nullptr), shader(nullptr)
+        shader(nullptr)
     {}
 
     void renderInitialize() override
     {}
 
-    void renderSubMesh(const TileId nodeId,
-                       MeshAggregate *meshAgg,
-                       uint32 subMeshIndex)
+    const View::BoundLayerParams pickBoundLayer(
+            const View::BoundLayerParams::list &boundList)
     {
-        MeshPart &part = meshAgg->submeshes[subMeshIndex];
-        GpuMeshRenderable *mesh = part.renderable.get();
-        GpuTexture *texture = nullptr;
-        int mode = 0;
-        if (part.internalUv)
-            texture = map->resources->getTexture
-                    (textureInternalUrlTemplate
-                     (UrlTemplate::Vars(nodeId, subMeshIndex)));
-        else if (part.externalUv)
-        { // bound layer
-            mode = 1;
-            // temporary hack -> chooses first available bound layer
-            if (!mapConfig->boundLayers.empty())
-            {
-                const vtslibs::registry::BoundLayer &bl
-                        = *mapConfig->boundLayers.begin();
-                UrlTemplate t(bl.url);
-                texture = map->resources->getTexture
-                        (t(UrlTemplate::Vars(nodeId, subMeshIndex)));
-            }
-        }
-        if (!texture || texture->state != Resource::State::ready)
-            texture = map->resources->getTexture("data/helper.jpg");
-        if (texture && texture->state == Resource::State::ready)
+        // todo - pick first bound layer for now
+        return *boundList.begin();
+    }
+
+    View::BoundLayerParams::list mergeBoundList(
+            const View::BoundLayerParams::list &original,
+            uint32 textureLayer)
+    {
+        View::BoundLayerParams::list res(original);
+        res.push_back(View::BoundLayerParams(
+                      mapConfig->boundLayers.get(textureLayer).id));
+        return res;
+    }
+
+    void renderNode(const NodeInfo nodeInfo,
+                    const SurfaceInfo &surface,
+                    const View::BoundLayerParams::list &boundList)
+    {
+        // nodeId
+        const TileId nodeId = nodeInfo.nodeId();
+
+        // aggregate mesh
+        MeshAggregate *meshAgg = map->resources->getMeshAggregate
+                (surface.urlMesh(UrlTemplate::Vars(nodeId)));
+        if (!meshAgg || meshAgg->state != Resource::State::ready)
+            return;
+
+        // iterate over all submeshes
+        for (uint32 subMeshIndex = 0, e = meshAgg->submeshes.size();
+             subMeshIndex != e; subMeshIndex++)
         {
+            UrlTemplate::Vars vars(nodeId, local(nodeInfo), subMeshIndex);
+            const MeshPart &part = meshAgg->submeshes[subMeshIndex];
+            GpuMeshRenderable *mesh = part.renderable.get();
+            GpuTexture *texture = nullptr;
+            int mode = 0;
+            if (part.internalUv)
+                texture = map->resources->getTexture(surface.urlIntTex(vars));
+            else if (part.externalUv)
+            { // bound layer
+                const View::BoundLayerParams boundParams = pickBoundLayer(
+                            part.textureLayer
+                            ? mergeBoundList(boundList, part.textureLayer)
+                            : boundList);
+                const BoundInfo *bound = getBoundInfo(boundParams.id);
+                if (bound)
+                {
+                    mode = 1;
+                    texture = map->resources->getTexture(
+                                bound->urlExtTex(vars));
+                }
+            }
+            if (!texture || texture->state != Resource::State::ready)
+                texture = map->resources->getTexture("data/helper.jpg");
+            if (!texture || texture->state != Resource::State::ready)
+                continue;
             texture->bind();
             mat4f mvp = (viewProj * part.normToPhys).cast<float>();
             mat3f uvm = upperLeftSubMatrix(identityMatrix()).cast<float>();
@@ -65,55 +129,66 @@ public:
             shader->uniformMat3(4, uvm.data());
             shader->uniform(8, mode);
             mesh->draw();
-
-            lastRenderable = vec4to3(part.normToPhys * vec4(0, 0, 0, 1));
-            sumRenderable += lastRenderable;
-            countRenderale++;
         }
     }
 
-    void traverse(const TileId nodeId)
+    const std::string &pickSurface(
+        const View::BoundLayerParams::list *&boundList)
     {
+        // todo - pick first surface for now
+        auto it = mapConfig->view.surfaces.begin();
+        boundList = &it->second;
+        return it->first;
+    }
+
+    const bool visibilityTest()
+    {
+        return true; // todo - all is visible, for now
+    }
+
+    const bool coarsenessTest(const NodeInfo &nodeInfo)
+    {
+        //return nodeInfo.nodeId().lod == 3;
+        return true; // todo - the most rough surfaces are rendered for now
+    }
+
+    void traverse(const NodeInfo nodeInfo)
+    {
+        // nodeId
+        const TileId nodeId = nodeInfo.nodeId();
+
+        // pick surface
+        const View::BoundLayerParams::list *boundList = nullptr;
+        const SurfaceInfo *surface = getSurfaceInfo(pickSurface(boundList));
+        if (!surface)
+            return;
+
+        // pick meta tile
         const TileId tileId(nodeId.lod,
                             (nodeId.x >> binaryOrder) << binaryOrder,
                             (nodeId.y >> binaryOrder) << binaryOrder);
         const MetaTile *tile = map->resources->getMetaTile
-                (metaUrlTemplate(UrlTemplate::Vars(tileId)));
+                (surface->urlMeta(UrlTemplate::Vars(tileId)));
         if (!tile || tile->state != Resource::State::ready)
             return;
+
+        // pick meta node
         const MetaNode *node = tile->get(nodeId, std::nothrow_t());
         if (!node)
             return;
 
-        if (nodeId.lod <= targetLod)
-        { // traverse children
-            if (node->ulChild())
-                traverse(TileId(nodeId.lod + 1,
-                                nodeId.x * 2 + 0,
-                                nodeId.y * 2 + 0));
-            if (node->urChild())
-                traverse(TileId(nodeId.lod + 1,
-                                nodeId.x * 2 + 1,
-                                nodeId.y * 2 + 0));
-            if (node->llChild())
-                traverse(TileId(nodeId.lod + 1,
-                                nodeId.x * 2 + 0,
-                                nodeId.y * 2 + 1));
-            if (node->lrlChild())
-                traverse(TileId(nodeId.lod + 1,
-                                nodeId.x * 2 + 1,
-                                nodeId.y * 2 + 1));
-        }
+        if (!visibilityTest())
+            return;
 
-        if (node->geometry() && nodeId.lod == targetLod)
-        {
-            MeshAggregate *meshAgg = map->resources->getMeshAggregate
-                    (meshUrlTemplate(UrlTemplate::Vars(nodeId)));
-            if (meshAgg && meshAgg->state == Resource::State::ready)
-            {
-                for (uint32 i = 0, e = meshAgg->submeshes.size(); i != e; i++)
-                    renderSubMesh(nodeId, meshAgg, i);
-            }
+        if (node->geometry() && coarsenessTest(nodeInfo))
+        { // render the node's resources
+            renderNode(nodeInfo, *surface, *boundList);
+        }
+        else
+        { // traverse children
+            Children childs = children(nodeId);
+            for (uint32 i = 0; i < 4; i++)
+                traverse(nodeInfo.child(childs[i]));
         }
     }
 
@@ -176,7 +251,7 @@ public:
             // construct NED coordinate system
             vec3 d = normalize(cross(n, e));
             e = normalize(cross(n, d));
-            mat3 tmp = (mat3() << -e, -n, -d).finished();
+            mat3 tmp = (mat3() << n, e, d).finished();
             // rotate original vectors
             dir = tmp * dir;
             up = tmp * up;
@@ -199,18 +274,7 @@ public:
     const std::string convertPath(const std::string &path,
                                   const std::string &parent)
     {
-        if (path.find("://") != std::string::npos)
-            return path;
-        if (path.substr(0, 2) == "//")
-        {
-            size_t p = parent.find("://");
-            if (p == std::string::npos)
-                return path.substr(2);
-            return parent.substr(0, p + 3) + path.substr(2);
-        }
-        if (!parent.empty())
-            return parent.substr(0, parent.find_last_of("/") + 1) + path;
-        return path;
+        return utility::Uri(parent).resolve(path).str();
     }
 
     const bool configLoaded()
@@ -222,25 +286,24 @@ public:
         bool ok = true;
         for (auto &&bl : mapConfig->boundLayers)
         {
-            if (bl.external())
+            if (!bl.external())
+                continue;
+            std::string url = convertPath(bl.url, mapConfig->name);
+            ExternalBoundLayer *r
+                    = map->resources->getExternalBoundLayer(url);
+            if (!r || r->state != Resource::State::ready)
+                ok = false;
+            else
             {
-                std::string url = convertPath(bl.url, mapConfig->name);
-                ExternalBoundLayer *r
-                        = map->resources->getExternalBoundLayer(url);
-                if (!r || r->state != Resource::State::ready)
-                    ok = false;
-                else
-                {
-                    r->bl.id = bl.id;
-                    r->bl.url = convertPath(r->bl.url, url);
-                    if (r->bl.metaUrl)
-                        r->bl.metaUrl = convertPath(*r->bl.metaUrl, url);
-                    if (r->bl.maskUrl)
-                        r->bl.maskUrl = convertPath(*r->bl.maskUrl, url);
-                    if (r->bl.creditsUrl)
-                        r->bl.creditsUrl = convertPath(*r->bl.creditsUrl, url);
-                    mapConfig->boundLayers.replace(r->bl);
-                }
+                r->bl.id = bl.id;
+                r->bl.url = convertPath(r->bl.url, url);
+                if (r->bl.metaUrl)
+                    r->bl.metaUrl = convertPath(*r->bl.metaUrl, url);
+                if (r->bl.maskUrl)
+                    r->bl.maskUrl = convertPath(*r->bl.maskUrl, url);
+                if (r->bl.creditsUrl)
+                    r->bl.creditsUrl = convertPath(*r->bl.creditsUrl, url);
+                mapConfig->boundLayers.replace(r->bl);
             }
         }
         return ok;
@@ -254,6 +317,23 @@ public:
             mapConfig->referenceFrame.model.publicSrs,
             *mapConfig
         ));
+
+        binaryOrder = mapConfig->referenceFrame.metaBinaryOrder;
+
+        for (auto &&bl : mapConfig->boundLayers)
+        {
+            boundInfos[bl.id] = std::shared_ptr<BoundInfo>
+                    (new BoundInfo(bl, this));
+        }
+
+        for (auto &&sr : mapConfig->surfaces)
+        {
+            surfaceInfos[sr.id] = std::shared_ptr<SurfaceInfo>
+                    (new SurfaceInfo(sr, this));
+        }
+
+        // todo - temporarily reset camera
+        mapConfig->position.orientation = math::Point3(0, -90, 0);
 
         LOG(info3) << "position: " << mapConfig->position.position;
         LOG(info3) << "rotation: " << mapConfig->position.orientation;
@@ -274,54 +354,47 @@ public:
         if (!configLoaded())
             return;
 
-        if (!map->convertor)
-            onceInitialize();
-
         shader = map->resources->getShader("data/shaders/a");
         if (!shader || shader->state != Resource::State::ready)
             return;
         shader->bind();
 
+        if (!map->convertor)
+            onceInitialize();
+
         updateCamera(width, height);
 
-        binaryOrder = mapConfig->referenceFrame.metaBinaryOrder;
-        for (auto &&surfConf : mapConfig->surfaces)
-        {
-            this->surfConf = &surfConf;
-            targetLod = (this->surfConf->lodRange.min
-                         + this->surfConf->lodRange.max) / 2;
-            metaUrlTemplate.parse(convertPath
-                                  (surfConf.urls3d->meta, mapConfig->name));
-            meshUrlTemplate.parse(convertPath
-                                  (surfConf.urls3d->mesh, mapConfig->name));
-            textureInternalUrlTemplate.parse
-                    (convertPath(surfConf.urls3d->texture, mapConfig->name));
-            traverse(TileId());
-        }
-
-        avgRenderable = sumRenderable / countRenderale;
-        sumRenderable = vec3(0, 0, 0);
-        countRenderale = 0;
+        NodeInfo nodeInfo(mapConfig->referenceFrame, TileId(), mapConfig);
+        traverse(nodeInfo);
     }
 
     void renderFinalize() override
     {}
 
-    UrlTemplate metaUrlTemplate;
-    UrlTemplate meshUrlTemplate;
-    UrlTemplate textureInternalUrlTemplate;
+    SurfaceInfo *getSurfaceInfo(const std::string &id)
+    {
+        auto it = surfaceInfos.find(id);
+        if (it == surfaceInfos.end())
+            return nullptr;
+        return it->second.get();
+    }
+
+    BoundInfo *getBoundInfo(const std::string &id)
+    {
+        auto it = boundInfos.find(id);
+        if (it == boundInfos.end())
+            return nullptr;
+        return it->second.get();
+    }
+
+    std::unordered_map<std::string, std::shared_ptr<SurfaceInfo>> surfaceInfos;
+    std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
+
     mat4 viewProj;
     MapImpl *map;
     MapConfig *mapConfig;
-    SurfaceConfig *surfConf;
     GpuShader *shader;
     uint32 binaryOrder;
-
-    vec3 lastRenderable;
-    vec3 avgRenderable;
-    vec3 sumRenderable;
-    uint32 countRenderale;
-    uint32 targetLod;
 };
 
 Renderer::Renderer()

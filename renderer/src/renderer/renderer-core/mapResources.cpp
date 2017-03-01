@@ -35,7 +35,7 @@ void MetaTile::load(MapImpl *base)
     }
 }
 
-MeshPart::MeshPart() : internalUv(false), externalUv(false)
+MeshPart::MeshPart() : textureLayer(0), internalUv(false), externalUv(false)
 {}
 
 MeshAggregate::MeshAggregate(const std::string &name) : Resource(name)
@@ -132,6 +132,7 @@ void MeshAggregate::load(MapImpl *base)
             part.normToPhys = findNormToPhys(meshes[mi].extents);
             part.internalUv = spec.attributes[1].enable;
             part.externalUv = spec.attributes[2].enable;
+            part.textureLayer = m.textureLayer ? *m.textureLayer : 0;
             submeshes.push_back(part);
         }
 

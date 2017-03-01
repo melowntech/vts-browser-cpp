@@ -27,6 +27,7 @@ public:
     MeshPart();
     std::shared_ptr<GpuMeshRenderable> renderable;
     mat4 normToPhys;
+    uint32 textureLayer;
     bool internalUv;
     bool externalUv;
 };

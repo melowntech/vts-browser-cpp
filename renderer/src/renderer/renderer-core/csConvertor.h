@@ -32,7 +32,7 @@ public:
     virtual const vec3 pubToPhys(const vec3 &value) = 0;
     virtual const vec3 physToPub(const vec3 &value) = 0;
 
-    virtual const vec3 navGeodesicDirect(const vec3 &latLon,
+    virtual const vec3 navGeodesicDirect(const vec3 &position,
                                          double azimuth, double distance) = 0;
 };
 

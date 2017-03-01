@@ -24,7 +24,6 @@ find_package(JPEG REQUIRED)
 find_package(PNG REQUIRED)
 find_package(CURL REQUIRED)
 find_package(magic REQUIRED)
-find_package(URIPARSER REQUIRED)
 
 find_package(Eigen3 3.2 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
@@ -49,7 +48,9 @@ add_subdirectory(src/http)
 add_subdirectory(src/glad)
 
 # vts libraries
-set(BUILDSYS_NOBUILD_TARGET_vts-libs ON)
+buildsys_nobuild_target(vts-libs)
+buildsys_nobuild_target(vts-libs-core:tilestorage)
+buildsys_nobuild_target(vts-libs-core:vts0)
 add_subdirectory(src/vts-libs)
 
 # renderer

@@ -60,15 +60,18 @@ void MeshAggregate::load(MapImpl *base)
     case Cache::Result::ready:
     {
         std::istringstream is(std::string((char*)buffer.data, buffer.size));
-        vtslibs::vts::NormalizedSubMesh::list meshes
-                = vtslibs::vts::loadMeshProperNormalized(is, name);
+        //vtslibs::vts::NormalizedSubMesh::list meshes
+        //        = vtslibs::vts::loadMeshProperNormalized(is, name);
+        vtslibs::vts::Mesh meshes;
+        vtslibs::vts::detail::loadMeshProper(is, name, meshes);
 
         submeshes.clear();
         submeshes.reserve(meshes.size());
 
         for (uint32 mi = 0, me = meshes.size(); mi != me; mi++)
         {
-            vtslibs::vts::SubMesh &m = meshes[mi].submesh;
+            //vtslibs::vts::SubMesh &m = meshes[mi].submesh;
+            vtslibs::vts::SubMesh &m = meshes[mi];
 
             char tmp[10];
             sprintf(tmp, "%d", mi);
@@ -129,7 +132,8 @@ void MeshAggregate::load(MapImpl *base)
 
             MeshPart part;
             part.renderable = gm;
-            part.normToPhys = findNormToPhys(meshes[mi].extents);
+            //part.normToPhys = findNormToPhys(meshes[mi].extents);
+            part.normToPhys = identityMatrix();
             part.internalUv = spec.attributes[1].enable;
             part.externalUv = spec.attributes[2].enable;
             part.textureLayer = m.textureLayer ? *m.textureLayer : 0;
@@ -144,28 +148,6 @@ void MeshAggregate::load(MapImpl *base)
             gpuMemoryCost += it.renderable->gpuMemoryCost;
         }
         state = ready ? State::ready : State::errorLoad;
-        return;
-    }
-    case Cache::Result::error:
-        state = State::errorDownload;
-        return;
-    }
-}
-
-ExternalBoundLayer::ExternalBoundLayer(const std::string &name)
-    : Resource(name)
-{}
-
-void ExternalBoundLayer::load(MapImpl *base)
-{
-    Buffer buffer;
-    switch (base->cache->read(name, buffer))
-    {
-    case Cache::Result::ready:
-    {
-        std::istringstream is(std::string((char*)buffer.data, buffer.size));
-        bl = vtslibs::registry::loadBoundLayer(is, name);
-        state = State::ready;
         return;
     }
     case Cache::Result::error:

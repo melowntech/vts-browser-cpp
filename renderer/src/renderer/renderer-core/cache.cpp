@@ -3,13 +3,14 @@
 #include <cstdio>
 
 #include <boost/filesystem.hpp>
+#include <dbglog/dbglog.hpp>
 
 #include <renderer/fetcher.h>
+#include <renderer/statistics.h>
 
 #include "cache.h"
 #include "buffer.h"
-
-#include "dbglog/dbglog.hpp"
+#include "map.h"
 
 namespace melown
 {
@@ -26,7 +27,8 @@ public:
         error,
     };
 
-    CacheImpl(Fetcher *fetcher) : fetcher(fetcher), downloadingTasks(0)
+    CacheImpl(MapImpl *map, Fetcher *fetcher) : fetcher(fetcher), map(map),
+        downloadingTasks(0)
     {
         if (!fetcher)
             return;
@@ -150,7 +152,8 @@ public:
         states[name] = Status::ready;
     }
 
-    Result read(const std::string &name, Buffer &buffer) override
+    Result read(const std::string &name, Buffer &buffer,
+                bool allowDiskCache) override
     {
         if (states[name] == Status::initialized)
         {
@@ -160,12 +163,16 @@ public:
             else
             {
                 std::string cachePath = convertNameToCache(name);
-                if (boost::filesystem::exists(cachePath))
+                if (allowDiskCache && boost::filesystem::exists(cachePath))
+                {
                     readLocalFile(name, cachePath);
+                    map->statistics->resourcesDiskLoaded++;
+                }
                 else if (downloadingTasks < 20)
                 {
                     fetcher->fetch(name);
                     downloadingTasks++;
+                    map->statistics->resourcesDownloaded++;
                 }
                 else
                     states[name] = Status::initialized;
@@ -186,12 +193,13 @@ public:
     std::unordered_map<std::string, Status> states;
     std::unordered_map<std::string, Buffer> data;
     Fetcher *fetcher;
+    MapImpl *map;
     uint32 downloadingTasks;
 };
 
-Cache *Cache::create(class MapImpl *, Fetcher *fetcher)
+Cache *Cache::create(MapImpl *map, Fetcher *fetcher)
 {
-    return new CacheImpl(fetcher);
+    return new CacheImpl(map, fetcher);
 }
 
 Cache::~Cache()

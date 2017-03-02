@@ -9,8 +9,6 @@
 namespace melown
 {
 
-class MapImpl;
-
 class MELOWN_API MapFoundation
 {
 public:
@@ -28,8 +26,10 @@ public:
     void pan(const double value[3]);
     void rotate(const double value[3]);
 
+    class MapStatistics &statistics();
+
 private:
-    std::shared_ptr<MapImpl> impl;
+    std::shared_ptr<class MapImpl> impl;
 };
 
 } // namespace melown

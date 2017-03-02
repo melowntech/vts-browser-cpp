@@ -16,6 +16,7 @@ public:
     std::shared_ptr<class Cache> cache;
     std::shared_ptr<class ResourceManager> resources;
     std::shared_ptr<class Renderer> renderer;
+    std::shared_ptr<class MapStatistics> statistics;
     std::string mapConfigPath;
 };
 

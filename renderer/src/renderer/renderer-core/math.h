@@ -65,6 +65,8 @@ double radToDeg(double angle);
 const mat3 upperLeftSubMatrix(const mat4 &mat);
 const vec3 vec4to3(const vec4 &value);
 
+double modulo(double a, double m);
+
 } // namespace melown
 
 #endif // renderer_math_hpp_included_

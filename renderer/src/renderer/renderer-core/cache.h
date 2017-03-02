@@ -23,7 +23,8 @@ public:
 
     virtual ~Cache();
 
-    virtual Result read(const std::string &name, Buffer &buffer) = 0;
+    virtual Result read(const std::string &name, Buffer &buffer,
+                        bool allowDiskCache = true) = 0;
 
     virtual void fetchedFile(const std::string &name,
                              const char *buffer, uint32 size) = 0;

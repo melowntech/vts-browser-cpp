@@ -198,5 +198,11 @@ const vec3 vec4to3(const vec4 &value)
     return res;
 }
 
+double modulo(double a, double m)
+{
+    int b = (int)(a / m);
+    return a - m * b;
+}
+
 } // namespace melown
 

@@ -11,10 +11,20 @@
 namespace melown
 {
 
-class MapConfig : public Resource, public vtslibs::vts::MapConfig
+class MapConfig : public Resource,
+        public vtslibs::vts::MapConfig
 {
 public:
     MapConfig(const std::string &name);
+
+    void load(class MapImpl *base) override;
+};
+
+class ExternalBoundLayer : public Resource,
+        public vtslibs::registry::BoundLayer
+{
+public:
+    ExternalBoundLayer(const std::string &name);
 
     void load(class MapImpl *base) override;
 };

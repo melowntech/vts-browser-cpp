@@ -9,7 +9,7 @@
 namespace melown
 {
 
-class Fetcher
+class MELOWN_API Fetcher
 {
 public:
     typedef std::function<void(const std::string &, const char *, uint32)> Func;

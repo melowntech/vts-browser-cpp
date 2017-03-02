@@ -11,13 +11,35 @@ MapConfig::MapConfig(const std::string &name) : Resource(name)
 void MapConfig::load(MapImpl *base)
 {
     Buffer buffer;
-    switch (base->cache->read(name, buffer))
+    switch (base->cache->read(name, buffer, false))
     {
     case Cache::Result::ready:
     {
         std::istringstream is(std::string((char*)buffer.data, buffer.size));
         is.imbue(std::locale::classic());
         vtslibs::vts::loadMapConfig(*this, is, name);
+        state = State::ready;
+        return;
+    }
+    case Cache::Result::error:
+        state = State::errorDownload;
+        return;
+    }
+}
+
+ExternalBoundLayer::ExternalBoundLayer(const std::string &name)
+    : Resource(name)
+{}
+
+void ExternalBoundLayer::load(MapImpl *base)
+{
+    Buffer buffer;
+    switch (base->cache->read(name, buffer))
+    {
+    case Cache::Result::ready:
+    {
+        std::istringstream is(std::string((char*)buffer.data, buffer.size));
+        *(vtslibs::registry::BoundLayer*)this = vtslibs::registry::loadBoundLayer(is, name);
         state = State::ready;
         return;
     }

@@ -105,6 +105,7 @@ public:
         }
         touch(name, it->second.get());
         return dynamic_cast<T*>(it->second.get());
+        //return (T*)it->second.get();
     }
 
     GpuShader *getShader(const std::string &name) override
@@ -133,6 +134,7 @@ public:
         }
         touch(name, it->second.get());
         return dynamic_cast<T*>(it->second.get());
+        //return (T*)it->second.get();
     }
 
     MapConfig *getMapConfig(const std::string &name) override

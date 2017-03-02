@@ -42,16 +42,6 @@ public:
     std::vector<MeshPart> submeshes;
 };
 
-class ExternalBoundLayer : public Resource
-{
-public:
-    ExternalBoundLayer(const std::string &name);
-
-    void load(class MapImpl *base) override;
-
-    vtslibs::registry::BoundLayer bl;
-};
-
 } // namespace melown
 
 #endif

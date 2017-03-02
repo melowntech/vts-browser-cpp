@@ -1,6 +1,7 @@
 #include <dbglog/dbglog.hpp>
 
 #include <renderer/map.h>
+#include <renderer/statistics.h>
 
 #include "map.h"
 #include "renderer.h"
@@ -44,6 +45,7 @@ void MapFoundation::renderInitialize(GpuContext *context)
 
 void MapFoundation::renderTick(uint32 width, uint32 height)
 {
+    impl->statistics->resetFrame();
     impl->renderer->renderTick(width, height);
     impl->resources->renderTick();
 }
@@ -52,14 +54,6 @@ void MapFoundation::renderFinalize()
 {
     impl->renderer->renderFinalize();
     impl->resources->renderFinalize();
-}
-
-namespace {
-double modulo(double a, double m)
-{
-    int b = (int)(a / m);
-    return a - m * b;
-}
 }
 
 void MapFoundation::pan(const double value[3])
@@ -129,11 +123,17 @@ void MapFoundation::rotate(const double value[3])
     //LOG(info3) << "rotation: " << mapConfig->position.orientation;
 }
 
+MapStatistics &MapFoundation::statistics()
+{
+    return *impl->statistics;
+}
+
 MapImpl::MapImpl(const std::string &mapConfigPath)
     : mapConfigPath(mapConfigPath)
 {
     resources = std::shared_ptr<ResourceManager>(ResourceManager::create(this));
     renderer = std::shared_ptr<Renderer>(Renderer::create(this));
+    statistics = std::shared_ptr<MapStatistics>(new MapStatistics());
 }
 
 } // namespace melown

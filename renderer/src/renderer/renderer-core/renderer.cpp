@@ -1,4 +1,13 @@
+#include <unordered_map>
+
+#include <boost/optional/optional_io.hpp>
+#include <vts-libs/vts/urltemplate.hpp>
+#include <vts-libs/vts/nodeinfo.hpp>
+#include <dbglog/dbglog.hpp>
+#include <utility/uri.hpp>
+
 #include <renderer/gpuResources.h>
+#include <renderer/statistics.h>
 
 #include "map.h"
 #include "mapConfig.h"
@@ -6,15 +15,6 @@
 #include "resourceManager.h"
 #include "mapResources.h"
 #include "csConvertor.h"
-
-#include <vts-libs/vts/nodeinfo.hpp>
-#include <vts-libs/vts/urltemplate.hpp>
-#include <dbglog/dbglog.hpp>
-#include <utility/uri.hpp>
-
-#include <unordered_map>
-
-#include <boost/optional/optional_io.hpp>
 
 namespace melown
 {
@@ -87,6 +87,11 @@ public:
         // nodeId
         const TileId nodeId = nodeInfo.nodeId();
 
+        // statistics
+        map->statistics->meshesRenderedTotal++;
+        map->statistics->meshesRenderedPerLod[
+                std::min<uint32>(nodeId.lod, MapStatistics::MaxLods-1)]++;
+
         // aggregate mesh
         MeshAggregate *meshAgg = map->resources->getMeshAggregate
                 (surface.urlMesh(UrlTemplate::Vars(nodeId)));
@@ -148,14 +153,19 @@ public:
 
     const bool coarsenessTest(const NodeInfo &nodeInfo)
     {
-        //return nodeInfo.nodeId().lod == 3;
-        return true; // todo - the most rough surfaces are rendered for now
+        return nodeInfo.nodeId().lod >= 17;
+        //return true; // todo - the most rough surfaces are rendered for now
     }
 
     void traverse(const NodeInfo nodeInfo)
     {
         // nodeId
         const TileId nodeId = nodeInfo.nodeId();
+
+        // statistics
+        map->statistics->metaNodesTraverzedTotal++;
+        map->statistics->metaNodesTraverzedPerLod[
+                std::min<uint32>(nodeId.lod, MapStatistics::MaxLods-1)]++;
 
         // pick surface
         const View::BoundLayerParams::list *boundList = nullptr;
@@ -183,13 +193,13 @@ public:
         if (node->geometry() && coarsenessTest(nodeInfo))
         { // render the node's resources
             renderNode(nodeInfo, *surface, *boundList);
+            return;
         }
-        else
-        { // traverse children
-            Children childs = children(nodeId);
-            for (uint32 i = 0; i < 4; i++)
-                traverse(nodeInfo.child(childs[i]));
-        }
+
+        // traverse children
+        Children childs = children(nodeId);
+        for (uint32 i = 0; i < 4; i++)
+            traverse(nodeInfo.child(childs[i]));
     }
 
     void updateCamera(uint32 width, uint32 height)
@@ -295,15 +305,15 @@ public:
                 ok = false;
             else
             {
-                r->bl.id = bl.id;
-                r->bl.url = convertPath(r->bl.url, url);
-                if (r->bl.metaUrl)
-                    r->bl.metaUrl = convertPath(*r->bl.metaUrl, url);
-                if (r->bl.maskUrl)
-                    r->bl.maskUrl = convertPath(*r->bl.maskUrl, url);
-                if (r->bl.creditsUrl)
-                    r->bl.creditsUrl = convertPath(*r->bl.creditsUrl, url);
-                mapConfig->boundLayers.replace(r->bl);
+                r->id = bl.id;
+                r->url = convertPath(r->url, url);
+                if (r->metaUrl)
+                    r->metaUrl = convertPath(*r->metaUrl, url);
+                if (r->maskUrl)
+                    r->maskUrl = convertPath(*r->maskUrl, url);
+                if (r->creditsUrl)
+                    r->creditsUrl = convertPath(*r->creditsUrl, url);
+                mapConfig->boundLayers.replace(*r);
             }
         }
         return ok;

@@ -2,4 +2,4 @@
 /cache
 /*.user*
 /callgrind.out.*
-
+/*.map

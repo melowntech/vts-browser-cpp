@@ -63,7 +63,9 @@ double degToRad(double angle);
 double radToDeg(double angle);
 
 const mat3 upperLeftSubMatrix(const mat4 &mat);
-const vec3 vec4to3(const vec4 &value);
+
+const vec4 vec3to4(vec3 v, double w);
+const vec3 vec4to3(vec4 v, bool division = false);
 
 double modulo(double a, double m);
 

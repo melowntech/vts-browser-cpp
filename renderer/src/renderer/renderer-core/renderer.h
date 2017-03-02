@@ -12,7 +12,7 @@ public:
     Renderer();
     virtual ~Renderer();
 
-    virtual void renderInitialize() = 0;
+    virtual void renderInitialize(class GpuContext *gpuContext) = 0;
     virtual void renderTick(uint32 width, uint32 height) = 0;
     virtual void renderFinalize() = 0;
 };

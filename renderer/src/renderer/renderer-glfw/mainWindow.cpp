@@ -1,7 +1,8 @@
-#include "mainWindow.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <renderer/map.h>
+
+#include "mainWindow.h"
 
 namespace
 {

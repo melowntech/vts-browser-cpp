@@ -18,6 +18,8 @@ public:
 
     virtual void uniformMat4(uint32 location, const float *value) = 0;
     virtual void uniformMat3(uint32 location, const float *value) = 0;
+    virtual void uniformVec4(uint32 location, const float *value) = 0;
+    virtual void uniformVec3(uint32 location, const float *value) = 0;
     virtual void uniform(uint32 location, const float value) = 0;
     virtual void uniform(uint32 location, const int value) = 0;
 };

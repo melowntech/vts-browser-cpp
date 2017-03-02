@@ -1,5 +1,7 @@
 #include <cstdio>
+
 #include <glad/glad.h>
+
 #include "gpuContext.h"
 
 namespace
@@ -126,4 +128,12 @@ void checkGl(const char *name)
         throw melown::graphicsException("gl_unknown_error");
         break;
     }
+}
+
+void GpuContext::wiremode(bool wiremode)
+{
+    if (wiremode)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    else
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }

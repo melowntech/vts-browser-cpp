@@ -1,6 +1,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <boost/thread/mutex.hpp>
+
 #include <renderer/gpuContext.h>
 #include <renderer/gpuResources.h>
 #include <renderer/fetcher.h>
@@ -10,8 +12,6 @@
 #include "mapConfig.h"
 #include "mapResources.h"
 #include "resourceManager.h"
-
-#include <boost/thread/mutex.hpp>
 
 namespace melown
 {

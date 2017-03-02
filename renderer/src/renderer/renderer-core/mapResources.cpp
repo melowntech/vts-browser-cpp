@@ -1,3 +1,5 @@
+#include <vts-libs/vts/meshio.hpp>
+
 #include <renderer/gpuContext.h>
 #include <renderer/gpuResources.h>
 
@@ -6,8 +8,6 @@
 #include "mapResources.h"
 #include "resourceManager.h"
 #include "math.h"
-
-#include <vts-libs/vts/meshio.hpp>
 
 namespace melown
 {
@@ -41,6 +41,7 @@ MeshPart::MeshPart() : textureLayer(0), internalUv(false), externalUv(false)
 MeshAggregate::MeshAggregate(const std::string &name) : Resource(name)
 {}
 
+namespace {
 const mat4 findNormToPhys(const math::Extents3 &extents)
 {
     vec3 u = vecFromUblas<vec3>(extents.ur);
@@ -50,6 +51,7 @@ const mat4 findNormToPhys(const math::Extents3 &extents)
     mat4 sc = scaleMatrix(d(0), d(1), d(2));
     mat4 tr = translationMatrix(c);
     return tr * sc;
+}
 }
 
 void MeshAggregate::load(MapImpl *base)
@@ -72,6 +74,13 @@ void MeshAggregate::load(MapImpl *base)
         {
             //vtslibs::vts::SubMesh &m = meshes[mi].submesh;
             vtslibs::vts::SubMesh &m = meshes[mi];
+
+            math::Extents3 ext = math::Extents3(math::InvalidExtents());
+            for (vtslibs::vts::Point3u32 f : m.faces)
+                for (uint32 j = 0; j < 3; j++)
+                    math::update(ext, m.vertices[f[j]]);
+            mat4 norm = findNormToPhys(ext);
+            mat4 phys = norm.inverse();
 
             char tmp[10];
             sprintf(tmp, "%d", mi);
@@ -99,8 +108,14 @@ void MeshAggregate::load(MapImpl *base)
                 spec.attributes[0].components = 3;
                 vec3f *b = (vec3f*)buffer.data;
                 for (vtslibs::vts::Point3u32 f : m.faces)
+                {
                     for (uint32 j = 0; j < 3; j++)
-                        *b++ = vecFromUblas<vec3f>(m.vertices[f[j]]);
+                    {
+                        vec3 p3 = vecFromUblas<vec3>(m.vertices[f[j]]);
+                        p3 = vec4to3(phys * vec3to4(p3, 1));
+                        *b++ = p3.cast<float>();
+                    }
+                }
                 offset += m.faces.size() * sizeof(vec3f) * 3;
             }
 
@@ -133,7 +148,8 @@ void MeshAggregate::load(MapImpl *base)
             MeshPart part;
             part.renderable = gm;
             //part.normToPhys = findNormToPhys(meshes[mi].extents);
-            part.normToPhys = identityMatrix();
+            //part.normToPhys = identityMatrix();
+            part.normToPhys = norm;
             part.internalUv = spec.attributes[1].enable;
             part.externalUv = spec.attributes[2].enable;
             part.textureLayer = m.textureLayer ? *m.textureLayer : 0;

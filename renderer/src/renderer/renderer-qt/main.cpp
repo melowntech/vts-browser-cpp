@@ -1,13 +1,12 @@
 #include <clocale>
 
+#include <QGuiApplication>
+#include <QDebug>
+#include <renderer/map.h>
+
 #include "mainWindow.h"
 #include "gpuContext.h"
 #include "fetcher.h"
-
-#include <QGuiApplication>
-#include <QDebug>
-
-#include <renderer/map.h>
 
 void usage(char *argv[])
 {

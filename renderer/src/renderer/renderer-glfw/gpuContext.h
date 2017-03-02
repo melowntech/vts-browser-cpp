@@ -19,6 +19,8 @@ public:
     std::shared_ptr<melown::Resource> createMeshRenderable
         (const std::string &name) override;
 
+    void wiremode(bool wiremode) override;
+
     void initialize();
 };
 

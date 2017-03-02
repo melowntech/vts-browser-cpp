@@ -2,12 +2,11 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QDebug>
+#include <renderer/map.h>
 
 #include "mainWindow.h"
 #include "gpuContext.h"
 #include "fetcher.h"
-
-#include <renderer/map.h>
 
 MainWindow::MainWindow() : gl(nullptr), isMouseDetached(false), fetcher(nullptr)
 {

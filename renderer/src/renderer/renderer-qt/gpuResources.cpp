@@ -5,10 +5,9 @@
 #include <QImage>
 #include <QBuffer>
 #include <QImageReader>
+#include <renderer/gpuResources.h>
 
 #include "gpuContext.h"
-
-#include <renderer/gpuResources.h>
 
 QOpenGLFunctions_4_4_Core *gpuFunctions()
 {
@@ -60,6 +59,22 @@ public:
         for (int j = 0; j < 3; j++)
         for (int i = 0; i < 3; i++)
             m(i, j) = value[j * 3 + i];
+        setUniformValue(location, m);
+    }
+
+    void uniformVec4(melown::uint32 location, const float *value) override
+    {
+        QVector4D m;
+        for (int i = 0; i < 4; i++)
+            m[i] = value[i];
+        setUniformValue(location, m);
+    }
+
+    void uniformVec3(melown::uint32 location, const float *value) override
+    {
+        QVector3D m;
+        for (int i = 0; i < 3; i++)
+            m[i] = value[i];
         setUniformValue(location, m);
     }
 

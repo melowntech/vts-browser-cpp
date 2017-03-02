@@ -21,6 +21,8 @@ public:
     virtual std::shared_ptr<Resource> createShader(const std::string &name) = 0;
     virtual std::shared_ptr<Resource> createTexture(const std::string &name) = 0;
     virtual std::shared_ptr<Resource> createMeshRenderable(const std::string &name) = 0;
+
+    virtual void wiremode(bool wiremode) = 0;
 };
 
 } // namespace melown

@@ -1,4 +1,3 @@
-
 #include "math.h"
 
 namespace melown
@@ -189,12 +188,24 @@ const mat3 upperLeftSubMatrix(const mat4 &m)
     return res;
 }
 
-const vec3 vec4to3(const vec4 &value)
+const vec4 vec3to4(vec3 v, double w)
+{
+    vec4 res;
+    res(0) = v(0);
+    res(1) = v(1);
+    res(2) = v(2);
+    res(3) = w;
+    return res;
+}
+
+const vec3 vec4to3(vec4 v, bool division)
 {
     vec3 res;
-    res(0) = value(0);
-    res(1) = value(1);
-    res(2) = value(2);
+    if (division)
+        v = v / v(3);
+    res(0) = v(0);
+    res(1) = v(1);
+    res(2) = v(2);
     return res;
 }
 

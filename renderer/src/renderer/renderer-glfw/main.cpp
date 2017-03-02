@@ -1,14 +1,11 @@
-
 #include <cstdio>
 #include <cstdlib>
 
 #include <GLFW/glfw3.h>
-
 #include <renderer/map.h>
 
 #include "mainWindow.h"
 #include "dataThread.h"
-
 #include "threadName.h"
 
 void errorCallback(int error, const char* description)

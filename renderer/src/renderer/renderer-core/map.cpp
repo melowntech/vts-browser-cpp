@@ -39,7 +39,7 @@ void MapFoundation::dataFinalize()
 void MapFoundation::renderInitialize(GpuContext *context)
 {
     dbglog::thread_id("render");
-    impl->renderer->renderInitialize();
+    impl->renderer->renderInitialize(context);
     impl->resources->renderInitialize(context);
 }
 

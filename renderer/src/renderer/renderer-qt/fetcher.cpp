@@ -1,9 +1,9 @@
-#include "fetcher.h"
-
 #include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkRequest>
 #include <QtNetwork/QNetworkReply>
 #include <QtNetwork/QAuthenticator>
+
+#include "fetcher.h"
 
 namespace
 {

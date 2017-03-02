@@ -1,13 +1,12 @@
 #include <functional>
 #include <unistd.h> // usleep
 
-#include "fetcher.h"
-
+#include <boost/lockfree/queue.hpp>
 #include <http/http.hpp>
 #include <http/resourcefetcher.hpp>
 #include <http/sink.hpp>
 
-#include <boost/lockfree/queue.hpp>
+#include "fetcher.h"
 
 namespace
 {

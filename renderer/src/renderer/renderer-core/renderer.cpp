@@ -7,6 +7,7 @@
 #include <utility/uri.hpp>
 
 #include <renderer/gpuResources.h>
+#include <renderer/gpuContext.h>
 #include <renderer/statistics.h>
 
 #include "map.h"
@@ -57,11 +58,13 @@ public:
     };
 
     RendererImpl(MapImpl *map) : map(map), mapConfig(nullptr),
-        shader(nullptr)
+        shader(nullptr), gpuContext(nullptr)
     {}
 
-    void renderInitialize() override
-    {}
+    void renderInitialize(GpuContext *gpuContext) override
+    {
+        this->gpuContext = gpuContext;
+    }
 
     const View::BoundLayerParams pickBoundLayer(
             const View::BoundLayerParams::list &boundList)
@@ -78,6 +81,22 @@ public:
         res.push_back(View::BoundLayerParams(
                       mapConfig->boundLayers.get(textureLayer).id));
         return res;
+    }
+
+    void drawBox(const mat4f &mvp)
+    {
+        GpuMeshRenderable *mesh
+                = map->resources->getMeshRenderable("data/cube.obj");
+        if (!mesh)
+            return;
+
+        shaderColor->bind();
+        shaderColor->uniformMat4(0, mvp.data());
+        shaderColor->uniformVec3(8, vec3f(1, 0, 0).data());
+        gpuContext->wiremode(true);
+        mesh->draw();
+        gpuContext->wiremode(false);
+        shader->bind();
     }
 
     void renderNode(const NodeInfo nodeInfo,
@@ -134,6 +153,8 @@ public:
             shader->uniformMat3(4, uvm.data());
             shader->uniform(8, mode);
             mesh->draw();
+
+            //drawBox(mvp);
         }
     }
 
@@ -153,7 +174,7 @@ public:
 
     const bool coarsenessTest(const NodeInfo &nodeInfo)
     {
-        return nodeInfo.nodeId().lod >= 17;
+        return nodeInfo.nodeId().lod >= 6;
         //return true; // todo - the most rough surfaces are rendered for now
     }
 
@@ -163,8 +184,8 @@ public:
         const TileId nodeId = nodeInfo.nodeId();
 
         // statistics
-        map->statistics->metaNodesTraverzedTotal++;
-        map->statistics->metaNodesTraverzedPerLod[
+        map->statistics->metaNodesTraversedTotal++;
+        map->statistics->metaNodesTraversedPerLod[
                 std::min<uint32>(nodeId.lod, MapStatistics::MaxLods-1)]++;
 
         // pick surface
@@ -199,7 +220,10 @@ public:
         // traverse children
         Children childs = children(nodeId);
         for (uint32 i = 0; i < 4; i++)
-            traverse(nodeInfo.child(childs[i]));
+        {
+            if (node->flags() & (MetaNode::Flag::ulChild << i))
+                traverse(nodeInfo.child(childs[i]));
+        }
     }
 
     void updateCamera(uint32 width, uint32 height)
@@ -364,6 +388,10 @@ public:
         if (!configLoaded())
             return;
 
+        shaderColor = map->resources->getShader("data/shaders/color");
+        if (!shaderColor || shaderColor->state != Resource::State::ready)
+            return;
+
         shader = map->resources->getShader("data/shaders/a");
         if (!shader || shader->state != Resource::State::ready)
             return;
@@ -376,6 +404,8 @@ public:
 
         NodeInfo nodeInfo(mapConfig->referenceFrame, TileId(), mapConfig);
         traverse(nodeInfo);
+
+        map->statistics->frameIndex++;
     }
 
     void renderFinalize() override
@@ -404,6 +434,8 @@ public:
     MapImpl *map;
     MapConfig *mapConfig;
     GpuShader *shader;
+    GpuShader *shaderColor;
+    GpuContext *gpuContext;
     uint32 binaryOrder;
 };
 

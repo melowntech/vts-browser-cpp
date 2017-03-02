@@ -1,8 +1,8 @@
 #include <glad/glad.h>
+#include <renderer/gpuResources.h>
 
 #include "gpuContext.h"
 
-#include <renderer/gpuResources.h>
 
 class GpuShaderImpl : public melown::GpuShader
 {
@@ -64,6 +64,16 @@ public:
     void uniformMat3(melown::uint32 location, const float *value) override
     {
         glUniformMatrix3fv(location, 1, GL_FALSE, value);
+    }
+
+    void uniformVec4(melown::uint32 location, const float *value) override
+    {
+        glUniform4fv(location, 1, value);
+    }
+
+    void uniformVec3(melown::uint32 location, const float *value) override
+    {
+        glUniform3fv(location, 1, value);
     }
 
     void uniform(melown::uint32 location, const float value) override

@@ -10,6 +10,8 @@
 #include "resourceManager.h"
 #include "buffer.h"
 #include "image.h"
+#include "obj.h"
+#include "math.h"
 
 namespace melown
 {
@@ -76,6 +78,33 @@ GpuMeshRenderable::GpuMeshRenderable(const std::string &name) : Resource(name)
 {}
 
 void GpuMeshRenderable::load(MapImpl *base)
-{}
+{
+    Buffer buffer;
+    switch (base->cache->read(name, buffer))
+    {
+    case Cache::Result::ready:
+    {
+        Buffer vb, ib;
+        uint32 vc, ic;
+        decodeObj(name, buffer, vb, ib, vc, ic);
+        GpuMeshSpec spec;
+        spec.vertexBufferData = vb.data;
+        spec.vertexBufferSize = vb.size;
+        spec.verticesCount = vc;
+        spec.attributes[0].enable = true;
+        spec.attributes[0].stride = sizeof(vec3f) + sizeof(vec2f);
+        spec.attributes[0].components = 3;
+        spec.attributes[1].enable = true;
+        spec.attributes[1].stride = spec.attributes[0].stride;
+        spec.attributes[1].components = 2;
+        spec.attributes[1].offset = sizeof(vec3f);
+        spec.attributes[2] = spec.attributes[1];
+        loadMeshRenderable(spec);
+    } return;
+    case Cache::Result::error:
+        state = State::errorDownload;
+        return;
+    }
+}
 
 } // namespace melown

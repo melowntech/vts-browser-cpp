@@ -20,13 +20,14 @@ public:
 
     uint32 meshesRenderedTotal;
     uint32 meshesRenderedPerLod[MaxLods];
-    uint32 metaNodesTraverzedTotal;
-    uint32 metaNodesTraverzedPerLod[MaxLods];
+    uint32 metaNodesTraversedTotal;
+    uint32 metaNodesTraversedPerLod[MaxLods];
 
     // global statistics
 
     uint32 resourcesDownloaded;
     uint32 resourcesDiskLoaded;
+    uint32 frameIndex;
 };
 
 } // namespace melown

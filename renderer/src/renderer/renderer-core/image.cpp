@@ -1,5 +1,5 @@
-
 #include <cstdio>
+
 #include <jpeglib.h>
 #include <lodepng/lodepng.h>
 

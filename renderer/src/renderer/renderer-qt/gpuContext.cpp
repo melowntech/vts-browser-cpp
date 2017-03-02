@@ -1,7 +1,7 @@
-#include "gpuContext.h"
-
 #include <QOpenGLDebugLogger>
 #include <QSurface>
+
+#include "gpuContext.h"
 
 Gl::Gl(QSurface *surface) : surface(surface)
 {
@@ -43,4 +43,13 @@ void Gl::onDebugMessage(const QOpenGLDebugMessage &message)
             && message.type() == QOpenGLDebugMessage::OtherType)
         return;
     qDebug() << message.message();
+}
+
+
+void Gl::wiremode(bool wiremode)
+{
+    if (wiremode)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    else
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }

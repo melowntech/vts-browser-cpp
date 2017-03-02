@@ -1,10 +1,9 @@
 #include <unistd.h> // usleep
 
 #include <GLFW/glfw3.h>
-
-#include "dataThread.h"
 #include <renderer/map.h>
 
+#include "dataThread.h"
 #include "threadName.h"
 
 namespace

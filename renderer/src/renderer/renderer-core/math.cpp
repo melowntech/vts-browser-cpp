@@ -3,7 +3,7 @@
 namespace melown
 {
 
-vec3 cross(const vec3 &a, const vec3 &b)
+const vec3 cross(const vec3 &a, const vec3 &b)
 {
     return vec3(
                 a(1) * b(2) - a(2) * b(1),
@@ -17,17 +17,27 @@ double dot(const vec3 &a, const vec3 &b)
     return a(0) * b(0) + a(1) * b(1) + a(2) * b(2);
 }
 
-double length(const vec3 &a)
+double dot(const vec2 &a, const vec2 &b)
 {
-    return sqrtf(dot(a, a));
+    return a(0) * b(0) + a(1) * b(1);
 }
 
-vec3 normalize(const vec3 &a)
+double length(const vec3 &a)
+{
+    return sqrt(dot(a, a));
+}
+
+double length(const vec2 &a)
+{
+    return sqrt(dot(a, a));
+}
+
+const vec3 normalize(const vec3 &a)
 {
     return a / length(a);
 }
 
-mat4 frustumMatrix(double left, double right,
+const mat4 frustumMatrix(double left, double right,
                    double bottom, double top,
                    double near, double far)
 {
@@ -42,14 +52,14 @@ mat4 frustumMatrix(double left, double right,
             0, 0, -1, 0).finished();
 }
 
-mat4 perspectiveMatrix(double fovyDegs, double aspect, double near, double far)
+const mat4 perspectiveMatrix(double fovyDegs, double aspect, double near, double far)
 {
     double ymax = near * tanf(fovyDegs * M_PI / 360.0);
     double xmax = ymax * aspect;
     return frustumMatrix(-xmax, xmax, -ymax, ymax, near, far);
 }
 
-
+namespace {
 inline double &at(mat3 &a, uint32 i)
 {
     return a(i % 3, i / 3);
@@ -59,8 +69,9 @@ inline double &at(mat4 &a, uint32 i)
 {
     return a(i % 4, i / 4);
 }
+}
 
-mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up)
+const mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up)
 {
     vec3 f = normalize(target - eye);
     vec3 u = normalize(up);
@@ -86,12 +97,12 @@ mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up)
     return res;
 }
 
-mat4 identityMatrix()
+const mat4 identityMatrix()
 {
     return scaleMatrix(1);
 }
 
-mat4 rotationMatrix(int axis, double radians)
+const mat4 rotationMatrix(int axis, double radians)
 {
     double ca(cos(radians)), sa(sin(radians));
 
@@ -119,7 +130,7 @@ mat4 rotationMatrix(int axis, double radians)
     }
 }
 
-mat4 scaleMatrix(double sx, double sy, double sz)
+const mat4 scaleMatrix(double sx, double sy, double sz)
 {
     return (mat4() <<
             sx,  0,  0, 0,
@@ -128,12 +139,12 @@ mat4 scaleMatrix(double sx, double sy, double sz)
             0,  0,  0, 1).finished();
 }
 
-mat4 scaleMatrix(double s)
+const mat4 scaleMatrix(double s)
 {
     return scaleMatrix(s, s, s);
 }
 
-mat4 translationMatrix(double tx, double ty, double tz)
+const mat4 translationMatrix(double tx, double ty, double tz)
 {
     return (mat4() <<
             1, 0, 0, tx,
@@ -142,7 +153,7 @@ mat4 translationMatrix(double tx, double ty, double tz)
             0, 0, 0, 1).finished();
 }
 
-mat4 translationMatrix(const vec3 &vec)
+const mat4 translationMatrix(const vec3 &vec)
 {
     return translationMatrix(vec(0), vec(1), vec(2));
 }
@@ -188,6 +199,12 @@ const mat3 upperLeftSubMatrix(const mat4 &m)
     return res;
 }
 
+double modulo(double a, double m)
+{
+    int b = (int)(a / m);
+    return a - m * b;
+}
+
 const vec4 vec3to4(vec3 v, double w)
 {
     vec4 res;
@@ -209,10 +226,23 @@ const vec3 vec4to3(vec4 v, bool division)
     return res;
 }
 
-double modulo(double a, double m)
+const vec3 vec2to3(vec2 v, double w)
 {
-    int b = (int)(a / m);
-    return a - m * b;
+    vec3 res;
+    res(0) = v(0);
+    res(1) = v(1);
+    res(2) = w;
+    return res;
+}
+
+const vec2 vec3to2(vec3 v, bool division)
+{
+    vec2 res;
+    if (division)
+        v = v / v(2);
+    res(0) = v(0);
+    res(1) = v(1);
+    return res;
 }
 
 } // namespace melown

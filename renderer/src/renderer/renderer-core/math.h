@@ -22,21 +22,25 @@ typedef Eigen::Matrix2d mat2;
 typedef Eigen::Matrix3d mat3;
 typedef Eigen::Matrix4d mat4;
 
-vec3 cross(const vec3 &a, const vec3 &b);
+const vec3 cross(const vec3 &a, const vec3 &b);
 double dot(const vec3 &a, const vec3 &b);
+double dot(const vec2 &a, const vec2 &b);
 double length(const vec3 &a);
-vec3 normalize(const vec3 &a);
+double length(const vec2 &a);
+const vec3 normalize(const vec3 &a);
 
-mat4 frustumMatrix(double left, double right, double bottom, double top, double near, double far);
-mat4 perspectiveMatrix(double fovyDegs, double aspect, double near, double far);
-mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up);
+const mat4 frustumMatrix(double left, double right, double bottom, double top,
+                         double near, double far);
+const mat4 perspectiveMatrix(double fovyDegs, double aspect,
+                             double near, double far);
+const mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up);
 
-mat4 identityMatrix();
-mat4 rotationMatrix(int axis, double radians);
-mat4 scaleMatrix(double sx, double sy, double sz);
-mat4 scaleMatrix(double s);
-mat4 translationMatrix(double tx, double ty, double tz);
-mat4 translationMatrix(const vec3 &vec);
+const mat4 identityMatrix();
+const mat4 rotationMatrix(int axis, double radians);
+const mat4 scaleMatrix(double sx, double sy, double sz);
+const mat4 scaleMatrix(double s);
+const mat4 translationMatrix(double tx, double ty, double tz);
+const mat4 translationMatrix(const vec3 &vec);
 
 const vec3 min(const vec3 &a, const vec3 &b);
 const vec3 max(const vec3 &a, const vec3 &b);
@@ -66,6 +70,8 @@ const mat3 upperLeftSubMatrix(const mat4 &mat);
 
 const vec4 vec3to4(vec3 v, double w);
 const vec3 vec4to3(vec4 v, bool division = false);
+const vec3 vec2to3(vec2 v, double w);
+const vec2 vec3to2(vec3 v, bool division = false);
 
 double modulo(double a, double m);
 

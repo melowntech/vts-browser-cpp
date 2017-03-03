@@ -62,25 +62,15 @@ void MeshAggregate::load(MapImpl *base)
     case Cache::Result::ready:
     {
         std::istringstream is(std::string((char*)buffer.data, buffer.size));
-        //vtslibs::vts::NormalizedSubMesh::list meshes
-        //        = vtslibs::vts::loadMeshProperNormalized(is, name);
-        vtslibs::vts::Mesh meshes;
-        vtslibs::vts::detail::loadMeshProper(is, name, meshes);
+        vtslibs::vts::NormalizedSubMesh::list meshes
+                = vtslibs::vts::loadMeshProperNormalized(is, name);
 
         submeshes.clear();
         submeshes.reserve(meshes.size());
 
         for (uint32 mi = 0, me = meshes.size(); mi != me; mi++)
         {
-            //vtslibs::vts::SubMesh &m = meshes[mi].submesh;
-            vtslibs::vts::SubMesh &m = meshes[mi];
-
-            math::Extents3 ext = math::Extents3(math::InvalidExtents());
-            for (vtslibs::vts::Point3u32 f : m.faces)
-                for (uint32 j = 0; j < 3; j++)
-                    math::update(ext, m.vertices[f[j]]);
-            mat4 norm = findNormToPhys(ext);
-            mat4 phys = norm.inverse();
+            vtslibs::vts::SubMesh &m = meshes[mi].submesh;
 
             char tmp[10];
             sprintf(tmp, "%d", mi);
@@ -112,7 +102,6 @@ void MeshAggregate::load(MapImpl *base)
                     for (uint32 j = 0; j < 3; j++)
                     {
                         vec3 p3 = vecFromUblas<vec3>(m.vertices[f[j]]);
-                        p3 = vec4to3(phys * vec3to4(p3, 1));
                         *b++ = p3.cast<float>();
                     }
                 }
@@ -147,9 +136,7 @@ void MeshAggregate::load(MapImpl *base)
 
             MeshPart part;
             part.renderable = gm;
-            //part.normToPhys = findNormToPhys(meshes[mi].extents);
-            //part.normToPhys = identityMatrix();
-            part.normToPhys = norm;
+            part.normToPhys = findNormToPhys(meshes[mi].extents);
             part.internalUv = spec.attributes[1].enable;
             part.externalUv = spec.attributes[2].enable;
             part.textureLayer = m.textureLayer ? *m.textureLayer : 0;

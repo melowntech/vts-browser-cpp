@@ -23,6 +23,17 @@ namespace melown
 using namespace vtslibs::vts;
 using namespace vtslibs::registry;
 
+namespace {
+const vec3 lowerUpperCombine(uint32 i)
+{
+    vec3 res;
+    res(0) = (i >> 0) % 2;
+    res(1) = (i >> 1) % 2;
+    res(2) = (i >> 2) % 2;
+    return res;
+}
+}
+
 class RendererImpl : public Renderer
 {
 public:
@@ -172,10 +183,36 @@ public:
         return true; // todo - all is visible, for now
     }
 
-    const bool coarsenessTest(const NodeInfo &nodeInfo)
+    const bool coarsenessTest(const NodeInfo &nodeInfo, const MetaNode &node)
     {
-        return nodeInfo.nodeId().lod >= 6;
-        //return true; // todo - the most rough surfaces are rendered for now
+        if (!node.applyTexelSize() && !node.applyDisplaySize())
+            return false;
+        bool result = true;
+        if (node.applyTexelSize())
+        {
+            vec3 fl = vecFromUblas<vec3>(node.extents.ll);
+            vec3 fu = vecFromUblas<vec3>(node.extents.ur);
+            vec3 el = vecFromUblas<vec3>
+                    (mapConfig->referenceFrame.division.extents.ll);
+            vec3 eu = vecFromUblas<vec3>
+                    (mapConfig->referenceFrame.division.extents.ur);
+            vec3 up = perpendicularUnitVector * node.texelSize;
+            for (uint32 i = 0; i < 8; i++)
+            {
+                vec3 f = lowerUpperCombine(i).cwiseProduct(fu - fl) + fl;
+                vec3 c1 = f.cwiseProduct(eu - el) + el - up * 0.5;
+                vec3 c2 = c1 + up;
+                c1 = vec4to3(viewProj * vec3to4(c1, 1), true);
+                c2 = vec4to3(viewProj * vec3to4(c2, 1), true);
+                double len = length(vec3(c2 - c1)) * windowHeight;
+                result = result && len < 1.2;
+            }
+        }
+        if (node.applyDisplaySize())
+        {
+            result = false;
+        }
+        return result;
     }
 
     void traverse(const NodeInfo nodeInfo)
@@ -211,7 +248,7 @@ public:
         if (!visibilityTest())
             return;
 
-        if (node->geometry() && coarsenessTest(nodeInfo))
+        if (node->geometry() && coarsenessTest(nodeInfo, *node))
         { // render the node's resources
             renderNode(nodeInfo, *surface, *boundList);
             return;
@@ -226,7 +263,7 @@ public:
         }
     }
 
-    void updateCamera(uint32 width, uint32 height)
+    void updateCamera()
     {
         if (mapConfig->position.type
                 != vtslibs::registry::Position::Type::objective)
@@ -300,9 +337,10 @@ public:
                 * 0.5 / tan(degToRad(mapConfig->position.verticalFov * 0.5));
         mat4 view = lookAt(center - dir * dist, center, up);
         mat4 proj = perspectiveMatrix(mapConfig->position.verticalFov,
-                                      (double)width / (double)height,
-                                      dist * 0.1, dist * 10);
+                        (double)windowWidth / (double)windowHeight,
+                        dist * 0.1, dist * 10);
         viewProj = proj * view;
+        perpendicularUnitVector = normalize(cross(up, dir));
     }
 
     const std::string convertPath(const std::string &path,
@@ -383,10 +421,13 @@ public:
         }
     }
 
-    void renderTick(uint32 width, uint32 height) override
+    void renderTick(uint32 windowWidth, uint32 windowHeight) override
     {
         if (!configLoaded())
             return;
+
+        this->windowWidth = windowWidth;
+        this->windowHeight = windowHeight;
 
         shaderColor = map->resources->getShader("data/shaders/color");
         if (!shaderColor || shaderColor->state != Resource::State::ready)
@@ -400,7 +441,7 @@ public:
         if (!map->convertor)
             onceInitialize();
 
-        updateCamera(width, height);
+        updateCamera();
 
         NodeInfo nodeInfo(mapConfig->referenceFrame, TileId(), mapConfig);
         traverse(nodeInfo);
@@ -430,7 +471,10 @@ public:
     std::unordered_map<std::string, std::shared_ptr<SurfaceInfo>> surfaceInfos;
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
 
+    vec3 perpendicularUnitVector;
     mat4 viewProj;
+    uint32 windowWidth;
+    uint32 windowHeight;
     MapImpl *map;
     MapConfig *mapConfig;
     GpuShader *shader;

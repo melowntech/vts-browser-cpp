@@ -32,6 +32,10 @@ const vec3 lowerUpperCombine(uint32 i)
     res(2) = (i >> 2) % 2;
     return res;
 }
+const vec4 column(const mat4 &m, uint32 index)
+{
+    return vec4(m(index, 0), m(index, 1), m(index, 2), m(index, 3));
+}
 }
 
 class RendererImpl : public Renderer
@@ -178,9 +182,40 @@ public:
         return it->first;
     }
 
-    const bool visibilityTest()
+    const bool visibilityTest(const NodeInfo &nodeInfo, const MetaNode &node)
     {
-        return true; // todo - all is visible, for now
+        vec4 c0 = column(viewProj, 0);
+        vec4 c1 = column(viewProj, 1);
+        vec4 c2 = column(viewProj, 2);
+        vec4 c3 = column(viewProj, 3);
+        vec4 planes[6] = {
+            c3 + c0, c3 - c0,
+            c3 + c1, c3 - c1,
+            c3 + c2, c3 - c2,
+        };
+        vec3 fl = vecFromUblas<vec3>(node.extents.ll);
+        vec3 fu = vecFromUblas<vec3>(node.extents.ur);
+        vec3 el = vecFromUblas<vec3>
+          (mapConfig->referenceFrame.division.extents.ll);
+        vec3 eu = vecFromUblas<vec3>
+          (mapConfig->referenceFrame.division.extents.ur);
+        vec3 box[2] = {
+            fl.cwiseProduct(eu - el) + el,
+            fu.cwiseProduct(eu - el) + el,
+        };
+        for (uint32 i = 0; i < 6; i++)
+        {
+            vec4 &p = planes[i]; // current plane
+            vec3 pv = vec3( // current p-vertex
+                box[!!(p[0] > 0)](0),
+                box[!!(p[1] > 0)](1),
+                box[!!(p[2] > 0)](2)
+            );
+            double d = dot(vec4to3(p), pv);
+            if (d < -p[3])
+                return false;
+        }
+        return true;
     }
 
     const bool coarsenessTest(const NodeInfo &nodeInfo, const MetaNode &node)
@@ -245,7 +280,7 @@ public:
         if (!node)
             return;
 
-        if (!visibilityTest())
+        if (!visibilityTest(nodeInfo, *node))
             return;
 
         if (node->geometry() && coarsenessTest(nodeInfo, *node))

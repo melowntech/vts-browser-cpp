@@ -32,11 +32,32 @@ public:
     GLuint loadShader(const std::string &source, GLenum stage)
     {
         GLuint s = glCreateShader(stage);
-        GLchar *src = (GLchar*)source.c_str();
-        GLint len = source.length();
-        glShaderSource(s, 1, &src, &len);
-        glCompileShader(s);
-        glAttachShader(id, s);
+        try
+        {
+            GLchar *src = (GLchar*)source.c_str();
+            GLint len = source.length();
+            glShaderSource(s, 1, &src, &len);
+            glCompileShader(s);
+
+            glGetShaderiv(s, GL_INFO_LOG_LENGTH, &len);
+            if (len > 5)
+            {
+                char *buf = (char*)malloc(len + 1);
+                glGetShaderInfoLog(s, len, &len, buf);
+                fprintf(stderr, "shader compilation log:\n%s\n\n", buf);
+            }
+
+            glGetShaderiv(s, GL_COMPILE_STATUS, &len);
+            if (len != GL_TRUE)
+                throw melown::graphicsException("failed to compile shader");
+
+            glAttachShader(id, s);
+        }
+        catch (...)
+        {
+            glDeleteShader(s);
+            throw;
+        }
         checkGl("load shader source");
         return s;
     }
@@ -46,11 +67,33 @@ public:
     {
         clear();
         id = glCreateProgram();
-        GLuint v = loadShader(vertexShader, GL_VERTEX_SHADER);
-        GLuint f = loadShader(fragmentShader, GL_FRAGMENT_SHADER);
-        glLinkProgram(id);
-        glDeleteShader(v);
-        glDeleteShader(f);
+        try
+        {
+            GLuint v = loadShader(vertexShader, GL_VERTEX_SHADER);
+            GLuint f = loadShader(fragmentShader, GL_FRAGMENT_SHADER);
+            glLinkProgram(id);
+            glDeleteShader(v);
+            glDeleteShader(f);
+
+            GLint len = 0;
+            glGetProgramiv(id, GL_INFO_LOG_LENGTH, &len);
+            if (len > 5)
+            {
+                char *buf = (char*)malloc(len + 1);
+                glGetProgramInfoLog(id, len, &len, buf);
+                fprintf(stderr, "shader link log:\n%s\n\n", buf);
+            }
+
+            glGetProgramiv(id, GL_LINK_STATUS, &len);
+            if (len != GL_TRUE)
+                throw melown::graphicsException("failed to link shader");
+        }
+        catch(...)
+        {
+            glDeleteProgram(id);
+            id = 0;
+            throw;
+        }
         glFinish();
         checkGl("load shader program");
         state = melown::Resource::State::ready;

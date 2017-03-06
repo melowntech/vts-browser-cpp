@@ -72,6 +72,61 @@ public:
         UrlTemplate urlExtTex;
     };
 
+    class BoundParamInfo : public View::BoundLayerParams
+    {
+    public:
+        typedef std::vector<BoundParamInfo> list;
+
+        BoundParamInfo(const View::BoundLayerParams &params)
+            : View::BoundLayerParams(params), info(nullptr),
+              depth(100), watertight(true), mask(false)
+        {}
+
+        void prepare(const NodeInfo &node, RendererImpl &impl)
+        {
+            nodeId = node.nodeId();
+            info = impl.getBoundInfo(id);
+            if (info)
+                depth = std::max(nodeId.lod - info->lodRange.max, 0);
+        }
+
+        bool available() const
+        {
+            return true; // todo
+            // todo fill in the watertight and mask flags
+        }
+
+        bool invalid() const
+        {
+            if (!info)
+                return true;
+            TileId t = nodeId;
+            int m = info->lodRange.min;
+            if (t.lod < m)
+                return true;
+            if (!available())
+                return true;
+            t.x >>= t.lod - m;
+            t.y >>= t.lod - m;
+            if (t.x < info->tileRange.ll[0] || t.x >= info->tileRange.ur[0])
+                return true;
+            if (t.y < info->tileRange.ll[1] || t.y >= info->tileRange.ur[1])
+                return true;
+            return false;
+        }
+
+        bool operator < (const BoundParamInfo &rhs) const
+        {
+            return depth < rhs.depth;
+        }
+
+        const BoundInfo *info;
+        TileId nodeId;
+        int depth;
+        bool watertight;
+        bool mask;
+    };
+
     RendererImpl(MapImpl *map) : map(map), mapConfig(nullptr),
         shader(nullptr), gpuContext(nullptr)
     {}
@@ -81,70 +136,22 @@ public:
         this->gpuContext = gpuContext;
     }
 
-    const View::BoundLayerParams pickBoundLayer(const NodeInfo &nodeInfo,
-            View::BoundLayerParams::list boundList)
+    void reorderBoundLayer(const NodeInfo &nodeInfo,
+            BoundParamInfo::list &boundList)
     {
-        struct Eraser
-        {
-            RendererImpl &impl;
-            const NodeInfo &node;
-            Eraser(RendererImpl &impl, const NodeInfo &node)
-                : impl(impl), node(node)
-            {}
-            bool operator ()(const View::BoundLayerParams &a)
-            {
-                TileId t = node.nodeId();
-                BoundInfo *l = impl.getBoundInfo(a.id);
-                if (t.lod < l->lodRange.min)
-                    return true;
-                t.x >>= t.lod - l->lodRange.min;
-                t.y >>= t.lod - l->lodRange.min;
-                if (t.x < l->tileRange.ll[0] || t.x > l->tileRange.ur[0])
-                    return true;
-                if (t.y < l->tileRange.ll[1] || t.y > l->tileRange.ur[1])
-                    return true;
-                return false;
-            }
-        };
+        for (auto &&b : boundList)
+            b.prepare(nodeInfo, *this);
         boundList.erase(std::remove_if(boundList.begin(), boundList.end(),
-                       Eraser(*this, nodeInfo)), boundList.end());
+            [](const BoundParamInfo &a){ return a.invalid(); }),
+                        boundList.end());
         if (boundList.empty())
-            return View::BoundLayerParams();
-
-        /*
-        struct Cmp
-        {
-            RendererImpl &impl;
-            const NodeInfo &node;
-            Cmp(RendererImpl &impl, const NodeInfo &node)
-                : impl(impl), node(node)
-            {}
-            bool operator ()(const View::BoundLayerParams &a,
-                             const View::BoundLayerParams &b)
-            {
-                BoundInfo *la = impl.getBoundInfo(a.id);
-                BoundInfo *lb = impl.getBoundInfo(b.id);
-                int da = node.nodeId().lod - la->lodRange.max;
-                int db = node.nodeId().lod - lb->lodRange.max;
-                da = std::max(da, 0);
-                db = std::max(db, 0);
-                return da > db;
-            }
-        };
-        std::stable_sort(boundList.begin(), boundList.end(),
-                         Cmp(*this, nodeInfo));
-        */
-        return *boundList.begin();
-    }
-
-    View::BoundLayerParams::list mergeBoundList(
-            const View::BoundLayerParams::list &original,
-            uint32 textureLayer)
-    {
-        View::BoundLayerParams::list res(original);
-        res.push_back(View::BoundLayerParams(
-                      mapConfig->boundLayers.get(textureLayer).id));
-        return res;
+            return;
+        std::stable_sort(boundList.begin(), boundList.end());
+        auto it = boundList.begin(), et = boundList.end();
+        while (it != et && !it->watertight)
+            it++;
+        boundList.erase(++it, et); // do not render overlapping layers
+        std::reverse(boundList.begin(), boundList.end()); // render in reverse
     }
 
     void drawBox(const mat4f &mvp)
@@ -161,6 +168,25 @@ public:
         mesh->draw();
         gpuContext->wiremode(false);
         shader->bind();
+    }
+
+    void textureFallDown(mat3 &m, UrlTemplate::Vars &v, int depth)
+    {
+        if (depth == 0)
+            return;
+        double scale = 1.0 / (1 << depth);
+        double tx = scale * (v.localId.x - ((v.localId.x >> depth) << depth));
+        double ty = scale * (v.localId.y - ((v.localId.y >> depth) << depth));
+        ty = 1 - scale - ty;
+        m << scale, 0, tx,
+             0, scale, ty,
+             0, 0, 1;
+        v.tileId.lod -= depth;
+        v.tileId.x >>= depth;
+        v.tileId.y >>= depth;
+        v.localId.lod -= depth;
+        v.localId.x >>= depth;
+        v.localId.y >>= depth;
     }
 
     void renderNode(const NodeInfo nodeInfo,
@@ -188,38 +214,48 @@ public:
             UrlTemplate::Vars vars(nodeId, local(nodeInfo), subMeshIndex);
             const MeshPart &part = meshAgg->submeshes[subMeshIndex];
             GpuMeshRenderable *mesh = part.renderable.get();
-            GpuTexture *texture = nullptr;
-            int mode = 0;
-            if (part.internalUv)
-                texture = map->resources->getTexture(surface.urlIntTex(vars));
-            else if (part.externalUv)
-            { // bound layer
-                const View::BoundLayerParams boundParams
-                        = pickBoundLayer(nodeInfo,
-                            part.textureLayer
-                            ? mergeBoundList(boundList, part.textureLayer)
-                            : boundList);
-                const BoundInfo *bound = getBoundInfo(boundParams.id);
-                if (bound)
-                {
-                    mode = 1;
-                    texture = map->resources->getTexture(
-                                bound->urlExtTex(vars));
-                }
-            }
-            if (!texture || texture->state != Resource::State::ready)
-                texture = map->resources->getTexture("data/helper.jpg");
-            if (!texture || texture->state != Resource::State::ready)
-                continue;
-            texture->bind();
             mat4f mvp = (viewProj * part.normToPhys).cast<float>();
-            mat3f uvm = upperLeftSubMatrix(identityMatrix()).cast<float>();
             shader->uniformMat4(0, mvp.data());
-            shader->uniformMat3(4, uvm.data());
-            shader->uniform(8, mode);
-            mesh->draw();
 
-            //drawBox(mvp);
+            if (part.externalUv)
+            {
+                BoundParamInfo::list bls(boundList.begin(), boundList.end());
+                if (part.textureLayer)
+                    bls.push_back(BoundParamInfo(View::BoundLayerParams(
+                        mapConfig->boundLayers.get(part.textureLayer).id)));
+                reorderBoundLayer(nodeInfo, bls);
+                for (BoundParamInfo &b : bls)
+                {
+                    UrlTemplate::Vars v(vars);
+                    mat3 uvmd = upperLeftSubMatrix(identityMatrix());
+                    textureFallDown(uvmd, v, b.depth);
+                    GpuTexture *texture = map->resources->getTexture(
+                                b.info->urlExtTex(v));
+                    if (!texture || texture->state != Resource::State::ready)
+                        continue;
+                    texture->bind();
+                    mat3f uvmf = uvmd.cast<float>();
+                    shader->uniformMat3(4, uvmf.data());
+                    shader->uniform(8, 1); // external uv
+                    mesh->draw();
+                }
+                if (!bls.empty())
+                    continue; // submesh done
+            }
+
+            if (part.internalUv)
+            {
+                GpuTexture *texture = map->resources->getTexture(
+                            surface.urlIntTex(vars));
+                if (!texture || texture->state != Resource::State::ready)
+                    continue;
+                texture->bind();
+                mat3f uvm = upperLeftSubMatrix(identityMatrix())
+                        .cast<float>();
+                shader->uniformMat3(4, uvm.data());
+                shader->uniform(8, 0); // internal uv
+                mesh->draw();
+            }
         }
     }
 

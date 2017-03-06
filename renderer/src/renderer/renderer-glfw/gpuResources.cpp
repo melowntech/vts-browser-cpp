@@ -122,7 +122,7 @@ public:
         case 3: return GL_RGB8;
         case 4: return GL_RGBA8;
         default:
-            throw "invalid texture components count";
+            throw std::invalid_argument("invalid texture components count");
         }
     }
 
@@ -135,7 +135,7 @@ public:
         case 3: return GL_RGB;
         case 4: return GL_RGBA;
         default:
-            throw "invalid texture components count";
+            throw std::invalid_argument("invalid texture components count");
         }
     }
 

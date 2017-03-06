@@ -51,7 +51,14 @@ public:
         }
         if (res->state != Resource::State::initializing)
             return false; // immediately try next
-        res->load(map);
+        try
+        {
+            res->load(map);
+        }
+        catch (std::runtime_error &)
+        {
+            res->state = Resource::State::errorLoad;
+        }
         return empty;
     }
 
@@ -105,7 +112,6 @@ public:
         }
         touch(name, it->second.get());
         return dynamic_cast<T*>(it->second.get());
-        //return (T*)it->second.get();
     }
 
     GpuShader *getShader(const std::string &name) override
@@ -134,7 +140,6 @@ public:
         }
         touch(name, it->second.get());
         return dynamic_cast<T*>(it->second.get());
-        //return (T*)it->second.get();
     }
 
     MapConfig *getMapConfig(const std::string &name) override

@@ -24,7 +24,7 @@ public:
     void bind() override
     {
         if (!QOpenGLShaderProgram::bind())
-            throw "failed to bind gpu shader";
+            throw melown::graphicsException("failed to bind gpu shader");
     }
 
     void loadShaders(const std::string &vertexShader,
@@ -39,7 +39,7 @@ public:
                                     QString::fromUtf8(fragmentShader.data(),
                                                       fragmentShader.size()));
         if (!link())
-            throw "failed to link shader program";
+            throw melown::graphicsException("failed to link shader program");
         //removeAllShaders();
         state = melown::Resource::State::ready;
     }
@@ -114,7 +114,7 @@ public:
             format = QImage::Format_RGBA8888;
             break;
         default:
-            throw "invalid texture components count";
+            throw std::invalid_argument("invalid texture components count");
         }
         create();
         setData(QImage((unsigned char*)spec.buffer,

@@ -17,6 +17,8 @@ namespace
         if (id == 131185 && type == GL_DEBUG_TYPE_OTHER)
             return;
 
+        bool throwing = false;
+
         const char *src = nullptr;
         switch (source)
         {
@@ -47,9 +49,11 @@ namespace
         {
         case GL_DEBUG_TYPE_ERROR:
             tp = "error";
+            throwing = true;
             break;
         case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
             tp = "undefined behavior";
+            throwing = true;
             break;
         case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
             tp = "deprecated behavior";
@@ -69,9 +73,11 @@ namespace
         {
         case GL_DEBUG_SEVERITY_HIGH:
             sevr = "high";
+            throwing = true;
             break;
         case GL_DEBUG_SEVERITY_MEDIUM:
             sevr = "medium";
+            throwing = true;
             break;
         case GL_DEBUG_SEVERITY_LOW:
             sevr = "low";
@@ -84,6 +90,9 @@ namespace
         }
 
         fprintf(stderr, "%d %s %s %s\t%s\n", id, src, tp, sevr, message);
+        if (throwing)
+            throw melown::graphicsException(
+                    std::string("opengl problem: ") + message);
     }
 }
 

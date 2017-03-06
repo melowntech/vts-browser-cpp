@@ -93,7 +93,7 @@ void MainWindow::tick()
         return;
 
     if (!gl->isValid())
-        throw "invalid gl context";
+        throw std::runtime_error("invalid gl context");
 
     gl->makeCurrent(this);
 

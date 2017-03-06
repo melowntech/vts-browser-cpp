@@ -90,7 +90,7 @@ void MapFoundation::pan(const double value[3])
         pos.position(1) = std::min(std::max(pos.position(1), -80.0), 80.0);
     } break;
     default:
-        throw "not implemented navigation srs type";
+        throw std::invalid_argument("not implemented navigation srs type");
     }
     pos.verticalExtent *= pow(1.001, -value[2]);
 
@@ -115,7 +115,7 @@ void MapFoundation::rotate(const double value[3])
         rot(0) *= -1;
         break;
     default:
-        throw "not implemented navigation srs type";
+        throw std::invalid_argument("not implemented navigation srs type");
     }
     pos.orientation += vecToUblas<math::Point3>(rot);
 

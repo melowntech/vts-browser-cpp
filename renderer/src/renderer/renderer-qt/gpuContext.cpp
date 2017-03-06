@@ -25,7 +25,7 @@ void Gl::initialize()
 
     create();
     if (!isValid())
-        throw "unable to create opengl context";
+        throw std::runtime_error("unable to create opengl context");
 
     current(true);
     initializeOpenGLFunctions();

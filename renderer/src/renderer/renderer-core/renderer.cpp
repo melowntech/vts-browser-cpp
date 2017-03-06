@@ -81,10 +81,59 @@ public:
         this->gpuContext = gpuContext;
     }
 
-    const View::BoundLayerParams pickBoundLayer(
-            const View::BoundLayerParams::list &boundList)
+    const View::BoundLayerParams pickBoundLayer(const NodeInfo &nodeInfo,
+            View::BoundLayerParams::list boundList)
     {
-        // todo - pick first bound layer for now
+        struct Eraser
+        {
+            RendererImpl &impl;
+            const NodeInfo &node;
+            Eraser(RendererImpl &impl, const NodeInfo &node)
+                : impl(impl), node(node)
+            {}
+            bool operator ()(const View::BoundLayerParams &a)
+            {
+                TileId t = node.nodeId();
+                BoundInfo *l = impl.getBoundInfo(a.id);
+                if (t.lod < l->lodRange.min)
+                    return true;
+                t.x >>= t.lod - l->lodRange.min;
+                t.y >>= t.lod - l->lodRange.min;
+                if (t.x < l->tileRange.ll[0] || t.x > l->tileRange.ur[0])
+                    return true;
+                if (t.y < l->tileRange.ll[1] || t.y > l->tileRange.ur[1])
+                    return true;
+                return false;
+            }
+        };
+        boundList.erase(std::remove_if(boundList.begin(), boundList.end(),
+                       Eraser(*this, nodeInfo)), boundList.end());
+        if (boundList.empty())
+            return View::BoundLayerParams();
+
+        /*
+        struct Cmp
+        {
+            RendererImpl &impl;
+            const NodeInfo &node;
+            Cmp(RendererImpl &impl, const NodeInfo &node)
+                : impl(impl), node(node)
+            {}
+            bool operator ()(const View::BoundLayerParams &a,
+                             const View::BoundLayerParams &b)
+            {
+                BoundInfo *la = impl.getBoundInfo(a.id);
+                BoundInfo *lb = impl.getBoundInfo(b.id);
+                int da = node.nodeId().lod - la->lodRange.max;
+                int db = node.nodeId().lod - lb->lodRange.max;
+                da = std::max(da, 0);
+                db = std::max(db, 0);
+                return da > db;
+            }
+        };
+        std::stable_sort(boundList.begin(), boundList.end(),
+                         Cmp(*this, nodeInfo));
+        */
         return *boundList.begin();
     }
 
@@ -145,7 +194,8 @@ public:
                 texture = map->resources->getTexture(surface.urlIntTex(vars));
             else if (part.externalUv)
             { // bound layer
-                const View::BoundLayerParams boundParams = pickBoundLayer(
+                const View::BoundLayerParams boundParams
+                        = pickBoundLayer(nodeInfo,
                             part.textureLayer
                             ? mergeBoundList(boundList, part.textureLayer)
                             : boundList);
@@ -300,12 +350,13 @@ public:
 
     void updateCamera()
     {
+        // todo position conversions
         if (mapConfig->position.type
                 != vtslibs::registry::Position::Type::objective)
-            throw "unsupported position type"; // todo
+            throw std::invalid_argument("unsupported position type");
         if (mapConfig->position.heightMode
                 != vtslibs::registry::Position::HeightMode::fixed)
-            throw "unsupported position height mode"; // todo
+            throw std::invalid_argument("unsupported position height mode");
 
         vec3 center = vecFromUblas<vec3>(mapConfig->position.position);
         vec3 rot = vecFromUblas<vec3>(mapConfig->position.orientation);
@@ -365,7 +416,7 @@ public:
             up = normalize(up);
         } break;
         default:
-            throw "not implemented navigation srs type";
+            throw std::invalid_argument("not implemented navigation srs type");
         }
 
         double dist = mapConfig->position.verticalExtent

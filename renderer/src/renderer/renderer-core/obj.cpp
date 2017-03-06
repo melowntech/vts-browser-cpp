@@ -13,7 +13,7 @@ void decodeObj(const std::__cxx11::string &name, const Buffer &in,
     geometry::Obj obj;
     std::istringstream is(std::string((char*)in.data, in.size));
     if (!obj.parse(is))
-        throw objDecodeException(std::string("failed to decode obj: ") + name);
+        throw std::runtime_error(std::string("failed to decode obj: ") + name);
 
     struct F
     {

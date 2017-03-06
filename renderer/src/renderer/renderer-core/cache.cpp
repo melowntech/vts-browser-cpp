@@ -83,7 +83,7 @@ public:
         case Status::done: return Result::ready;
         case Status::error: return Result::error;
         default:
-            throw "invalid cache data status";
+            throw std::invalid_argument("invalid cache data status");
         }
     }
 
@@ -91,18 +91,26 @@ public:
     {
         FILE *f = fopen(path.c_str(), "rb");
         if (!f)
-            throw "failed to read file";
-        Buffer b;
-        fseek(f, 0, SEEK_END);
-        b.size = ftell(f);
-        fseek(f, 0, SEEK_SET);
-        b.data = malloc(b.size);
-        if (!b.data)
-            throw "out of memory";
-        if (fread(b.data, b.size, 1, f) != 1)
-            throw "failed to read file";
-        fclose(f);
-        return b;
+            throw std::runtime_error("failed to read file");
+        try
+        {
+            Buffer b;
+            fseek(f, 0, SEEK_END);
+            b.size = ftell(f);
+            fseek(f, 0, SEEK_SET);
+            b.data = malloc(b.size);
+            if (!b.data)
+                throw std::runtime_error("out of memory");
+            if (fread(b.data, b.size, 1, f) != 1)
+                throw std::runtime_error("failed to read file");
+            fclose(f);
+            return b;
+        }
+        catch (...)
+        {
+            fclose(f);
+            throw;
+        }
     }
 
     void readLocalFile(const std::string &name, const std::string &path)
@@ -112,7 +120,7 @@ public:
             data[name] = readLocalFileBuffer(path);
             states[name] = Status::ready;
         }
-        catch (...)
+        catch (std::runtime_error &)
         {
             states[name] = Status::error;
         }
@@ -124,14 +132,14 @@ public:
                     boost::filesystem::path(path).parent_path());
         FILE *f = fopen(path.c_str(), "wb");
         if (!f)
-            throw "failed to write file";
+            throw std::runtime_error("failed to write file");
         if (fwrite(buffer.data, buffer.size, 1, f) != 1)
         {
             fclose(f);
-            throw "failed to write file";
+            throw std::runtime_error("failed to write file");
         }
         if (fclose(f) != 0)
-            throw "failed to write file";
+            throw std::runtime_error("failed to write file");
     }
 
     void fetchedFile(const std::string &name,
@@ -146,6 +154,8 @@ public:
         Buffer b;
         b.size = size;
         b.data = malloc(size);
+        if (!b.data)
+            throw std::runtime_error("out of memory");
         memcpy(b.data, buffer, size);
         writeLocalFile(convertNameToCache(name), b);
         data[name] = std::move(b);

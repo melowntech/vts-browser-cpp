@@ -29,6 +29,8 @@ public:
 
     virtual void fetchedFile(const std::string &name,
                              const char *buffer, uint32 size) = 0;
+    
+    virtual void tick() = 0;
 };
 
 } // namespace melown

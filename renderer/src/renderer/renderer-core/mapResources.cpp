@@ -27,6 +27,7 @@ void MetaTile::load(MapImpl *base)
         std::istringstream is(std::string((char*)buffer.data, buffer.size));
         *(vtslibs::vts::MetaTile*)this
                 = vtslibs::vts::loadMetaTile(is, 5, name);
+        ramMemoryCost = this->size() * sizeof(vtslibs::vts::MetaNode);
         state = State::ready;
         return;
     }
@@ -145,11 +146,13 @@ void MeshAggregate::load(MapImpl *base)
         }
 
         gpuMemoryCost = 0;
+        ramMemoryCost = meshes.size() * sizeof(MeshPart);
         bool ready = true;
         for (auto &&it : submeshes)
         {
             ready = ready && it.renderable->state == Resource::State::ready;
             gpuMemoryCost += it.renderable->gpuMemoryCost;
+            ramMemoryCost += it.renderable->ramMemoryCost;
         }
         state = ready ? State::ready : State::errorLoad;
         return;
@@ -177,6 +180,7 @@ void BoundMetaTile::load(MapImpl *base)
         if (decoded.size != sizeof(flags))
             throw std::runtime_error("bound meta tile has invalid resolution");
         memcpy(flags, decoded.data, decoded.size);
+        ramMemoryCost = decoded.size;
         state = State::ready;
     } return;
     case Cache::Result::error:
@@ -205,6 +209,8 @@ void BoundMaskTile::load(MapImpl *base)
         spec.buffer = decoded.data;
         spec.bufferSize = decoded.size;
         texture->loadTexture(spec);
+        gpuMemoryCost = texture->gpuMemoryCost;
+        ramMemoryCost = texture->ramMemoryCost;
         state = texture->state;
     } return;
     case Cache::Result::error:

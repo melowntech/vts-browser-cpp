@@ -213,7 +213,7 @@ public:
                     readLocalFile(name, cachePath);
                     map->statistics->resourcesDiskLoaded++;
                 }
-                else if (downloadingTasks < 20)
+                else if (downloadingTasks < 10)
                 {
                     fetcher->fetch(name);
                     downloadingTasks++;
@@ -230,13 +230,24 @@ public:
         {
             buffer = data[name];
             states[name] = Status::done;
+            readyToRemove.insert(name);
         } break;
         }
         return result(states[name]);
     }
+    
+    void tick() override
+    {
+        for (auto n : readyToRemove)
+        {
+            states.erase(n);
+            data.erase(n);
+        }
+    }
 
     std::unordered_map<std::string, Status> states;
     std::unordered_map<std::string, Buffer> data;
+    std::unordered_set<std::string> readyToRemove;
     Fetcher *fetcher;
     MapImpl *map;
     uint32 downloadingTasks;

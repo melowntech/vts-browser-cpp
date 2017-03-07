@@ -89,7 +89,6 @@ public:
     }
 };
 
-
 class GpuTextureImpl : public QOpenGLTexture, public melown::GpuTexture
 {
 public:
@@ -107,6 +106,9 @@ public:
         QImage::Format format;
         switch (spec.components)
         {
+        case 1:
+            format = QImage::Format_Grayscale8;
+            break;
         case 3:
             format = QImage::Format_RGB888;
             break;
@@ -119,11 +121,13 @@ public:
         create();
         setData(QImage((unsigned char*)spec.buffer,
                        spec.width, spec.height, format).mirrored());
+        setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
+        setMagnificationFilter(QOpenGLTexture::Linear);
+        setWrapMode(QOpenGLTexture::ClampToEdge);
         gpuMemoryCost = spec.bufferSize;
         state = melown::Resource::State::ready;
     }
 };
-
 
 class GpuSubMeshImpl : public melown::GpuMeshRenderable
 {

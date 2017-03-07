@@ -208,6 +208,11 @@ public:
                      spec.width, spec.height, 0,
                      findFormat(spec), GL_UNSIGNED_BYTE, spec.buffer);
         glGenerateMipmap(GL_TEXTURE_2D);
+        glTexParameteri(GL_TEXTURE_2D,
+                        GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glFinish();
         checkGl("load texture");
         gpuMemoryCost = spec.bufferSize;
@@ -299,14 +304,15 @@ public:
                          spec.indicesCount * sizeof(spec.indexBufferData[0]),
                     spec.indexBufferData, GL_STATIC_DRAW);
         }
-        gpuMemoryCost = spec.vertexBufferSize
-                + spec.indicesCount * sizeof(spec.indexBufferData[0]);
         glBindVertexArray(0);
         glDeleteVertexArrays(1, &vao);
         glFinish();
         checkGl("load mesh");
         this->spec.vertexBufferData = nullptr;
         this->spec.indexBufferData = nullptr;
+        ramMemoryCost = sizeof(GpuSubMeshImpl);
+        gpuMemoryCost = spec.vertexBufferSize
+                + spec.indicesCount * sizeof(spec.indexBufferData[0]);
         state = melown::Resource::State::ready;
     }
 };

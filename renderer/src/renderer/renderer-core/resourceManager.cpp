@@ -23,7 +23,7 @@ public:
     /// DATA thread
     /////////
 
-    ResourceManagerImpl(MapImpl *map) : map(map), takeItemIndex(0)
+    ResourceManagerImpl(MapImpl *map) : map(map), takeItemIndex(0), tickIndex(0)
     {}
 
     ~ResourceManagerImpl()
@@ -38,19 +38,25 @@ public:
     bool dataTick() override
     {
         Resource *res = nullptr;
-        bool empty = false;
+        bool empty = true;
         { // take an item
             boost::lock_guard<boost::mutex> l(mut);
-            if (pending_data.empty())
-                return true; // all done
-            auto it = std::next(pending_data.begin(),
-                                takeItemIndex++ % pending_data.size());
-            res = *it;
-            pending_data.erase(it);
-            empty = pending_data.empty();
+            if (!pending_data.empty())
+            {
+                auto it = std::next(pending_data.begin(),
+                                    takeItemIndex++ % pending_data.size());
+                res = *it;
+                pending_data.erase(it);
+                empty = pending_data.empty();
+            }
+        }
+        if (!res)
+        {
+            map->cache->tick();
+            return true; // all is done (sleep)
         }
         if (res->state != Resource::State::initializing)
-            return false; // immediately try next
+            return false; // already loaded (try next)
         try
         {
             res->load(map);
@@ -80,11 +86,47 @@ public:
 
     void renderTick() override
     {
-        { // sync pending
+        // sync pending
+        {
             boost::lock_guard<boost::mutex> l(mut);
             std::swap(pending_data, pending_render);
         }
         pending_render.clear();
+        // clear old resources
+        if (tickIndex % 10 == 0)
+        {
+            std::vector<Resource*> res;
+            res.reserve(resources.size());
+            uint32 memUse = 0;
+            for (auto &&it : resources)
+            {
+                memUse += it.second->gpuMemoryCost + it.second->ramMemoryCost;
+                // consider long time not used resources only
+                if (it.second->lastAccessTick + 100 < tickIndex)
+                    res.push_back(it.second.get());
+            }
+            static const uint32 memCap = 500000000;
+            if (memUse > memCap)
+            {
+                std::sort(res.begin(), res.end(), [](Resource *a, Resource *b){
+                    if (a->lastAccessTick == b->lastAccessTick)
+                        return a->gpuMemoryCost + a->ramMemoryCost
+                                > b->gpuMemoryCost + b->ramMemoryCost;
+                    return a->lastAccessTick < b->lastAccessTick;
+                });
+                for (Resource *it : res)
+                {
+                    if (memUse <= memCap)
+                        break;
+                    memUse -= it->gpuMemoryCost + it->ramMemoryCost;
+                    if (it->state != Resource::State::finalizing)
+                        it->state = Resource::State::finalizing;
+                    else
+                        resources.erase(it->name);
+                }
+            }
+        }
+        tickIndex++;
     }
 
     void renderFinalize() override
@@ -96,8 +138,16 @@ public:
 
     void touch(const std::string &name, Resource *resource)
     {
-        if (resource->state == Resource::State::initializing)
+        resource->lastAccessTick = tickIndex;
+        switch (resource->state)
+        {
+        case Resource::State::finalizing:
+            resource->state = Resource::State::initializing;
+            // intentionally no break here
+        case Resource::State::initializing:
             pending_render.insert(resource);
+            break;
+        }
     }
 
     template<class T,
@@ -179,6 +229,7 @@ public:
 
     MapImpl *map;
     uint32 takeItemIndex;
+    uint32 tickIndex;
 };
 
 ResourceManager::ResourceManager() : renderContext(nullptr),

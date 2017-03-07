@@ -28,6 +28,7 @@ public:
     const std::string name;
     uint32 ramMemoryCost;
     uint32 gpuMemoryCost;
+    uint32 lastAccessTick;
     State state;
 };
 

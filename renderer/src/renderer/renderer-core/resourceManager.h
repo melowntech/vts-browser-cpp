@@ -35,6 +35,8 @@ public:
     virtual class MetaTile *getMetaTile(const std::string &name) = 0;
     virtual class ExternalBoundLayer *getExternalBoundLayer
                     (const std::string &name) = 0;
+    virtual class BoundMetaTile *getBoundMetaTile(const std::string &name) = 0;
+    virtual class BoundMaskTile *getBoundMaskTile(const std::string &name) = 0;
 
     GpuContext *renderContext;
     GpuContext *dataContext;

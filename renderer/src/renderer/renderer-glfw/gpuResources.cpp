@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include <glad/glad.h>
 #include <renderer/gpuResources.h>
 
@@ -173,7 +175,7 @@ public:
     {
         switch (spec.components)
         {
-        case 1: return GL_R;
+        case 1: return GL_RED;
         case 2: return GL_RG;
         case 3: return GL_RGB;
         case 4: return GL_RGBA;
@@ -187,6 +189,21 @@ public:
         clear();
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_2D, id);
+        { // vertical flip
+            if (spec.width > 1024)
+                throw std::invalid_argument("texture too large");
+            char buffer[1024*4];
+            unsigned lineSize = spec.width * spec.components;
+            for (unsigned y = 0; y < spec.height / 2; y++)
+            {
+                memcpy(buffer, (char*)spec.buffer + y * lineSize, lineSize);
+                memcpy((char*)spec.buffer + y * lineSize,
+                       (char*)spec.buffer + (spec.height - y - 1) * lineSize,
+                       lineSize);
+                memcpy((char*)spec.buffer + (spec.height - y - 1) * lineSize,
+                       buffer, lineSize);
+            }
+        }
         glTexImage2D(GL_TEXTURE_2D, 0, findInternalFormat(spec),
                      spec.width, spec.height, 0,
                      findFormat(spec), GL_UNSIGNED_BYTE, spec.buffer);

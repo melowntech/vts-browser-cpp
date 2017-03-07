@@ -20,6 +20,7 @@ public:
         (const std::string &name) override;
 
     void wiremode(bool wiremode) override;
+    void activeTextureUnit(melown::uint32 index) override;
 
     void initialize();
 };

@@ -23,6 +23,7 @@ public:
     virtual std::shared_ptr<Resource> createMeshRenderable(const std::string &name) = 0;
 
     virtual void wiremode(bool wiremode) = 0;
+    virtual void activeTextureUnit(uint32 index) = 0;
 };
 
 } // namespace melown

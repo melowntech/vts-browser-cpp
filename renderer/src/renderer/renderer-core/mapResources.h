@@ -5,6 +5,7 @@
 #include <string>
 
 #include <vts-libs/vts/metatile.hpp>
+#include <vts-libs/registry/referenceframe.hpp>
 
 #include <renderer/foundation.h>
 #include <renderer/resource.h>
@@ -41,6 +42,27 @@ public:
     void load(class MapImpl *base) override;
 
     std::vector<MeshPart> submeshes;
+};
+
+class BoundMetaTile : public Resource
+{
+public:
+    BoundMetaTile(const std::string &name);
+
+    void load(class MapImpl *base) override;
+
+    uint8 flags[vtslibs::registry::BoundLayer::rasterMetatileWidth
+                * vtslibs::registry::BoundLayer::rasterMetatileHeight];
+};
+
+class BoundMaskTile : public Resource
+{
+public:
+    BoundMaskTile(const std::string &name);
+
+    void load(class MapImpl *base) override;
+
+    std::shared_ptr<GpuTexture> texture;
 };
 
 } // namespace melown

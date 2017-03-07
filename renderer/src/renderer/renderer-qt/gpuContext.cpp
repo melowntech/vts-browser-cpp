@@ -53,3 +53,8 @@ void Gl::wiremode(bool wiremode)
     else
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
+
+void Gl::activeTextureUnit(melown::uint32 index)
+{
+    glActiveTexture(GL_TEXTURE0 + index);
+}

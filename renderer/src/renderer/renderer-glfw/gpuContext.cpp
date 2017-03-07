@@ -108,34 +108,28 @@ void GpuContext::initialize()
 void checkGl(const char *name)
 {
     GLint err = glGetError();
+    if (err != GL_NO_ERROR)
+        fprintf(stderr, "opengl error in %s\n", name);
     switch (err)
     {
     case GL_NO_ERROR:
         return;
     case GL_INVALID_ENUM:
         throw melown::graphicsException("gl_invalid_enum");
-        break;
     case GL_INVALID_VALUE:
         throw melown::graphicsException("gl_invalid_value");
-        break;
     case GL_INVALID_OPERATION:
         throw melown::graphicsException("gl_invalid_operation");
-        break;
     case GL_INVALID_FRAMEBUFFER_OPERATION:
         throw melown::graphicsException("gl_invalid_framebuffer_operation");
-        break;
     case GL_OUT_OF_MEMORY:
         throw melown::graphicsException("gl_out_of_memory");
-        break;
     case GL_STACK_UNDERFLOW:
         throw melown::graphicsException("gl_stack_underflow");
-        break;
     case GL_STACK_OVERFLOW:
         throw melown::graphicsException("gl_stack_overflow");
-        break;
     default:
         throw melown::graphicsException("gl_unknown_error");
-        break;
     }
 }
 
@@ -145,4 +139,9 @@ void GpuContext::wiremode(bool wiremode)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+void GpuContext::activeTextureUnit(melown::uint32 index)
+{
+    glActiveTexture(GL_TEXTURE0 + index);
 }

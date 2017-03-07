@@ -8,6 +8,7 @@
 #include "mapResources.h"
 #include "resourceManager.h"
 #include "math.h"
+#include "image.h"
 
 namespace melown
 {
@@ -153,6 +154,59 @@ void MeshAggregate::load(MapImpl *base)
         state = ready ? State::ready : State::errorLoad;
         return;
     }
+    case Cache::Result::error:
+        state = State::errorDownload;
+        return;
+    }
+}
+
+BoundMetaTile::BoundMetaTile(const std::string &name) : Resource(name)
+{}
+
+void BoundMetaTile::load(MapImpl *base)
+{
+    Buffer encoded;
+    switch (base->cache->read(name, encoded))
+    {
+    case Cache::Result::ready:
+    {
+        GpuTextureSpec spec;
+        Buffer decoded;
+        decodeImage(name, encoded, decoded,
+                    spec.width, spec.height, spec.components);
+        if (decoded.size != sizeof(flags))
+            throw std::runtime_error("bound meta tile has invalid resolution");
+        memcpy(flags, decoded.data, decoded.size);
+        state = State::ready;
+    } return;
+    case Cache::Result::error:
+        state = State::errorDownload;
+        return;
+    }
+}
+
+BoundMaskTile::BoundMaskTile(const std::string &name) : Resource(name)
+{}
+
+void BoundMaskTile::load(MapImpl *base)
+{
+    if (!texture)
+        texture = std::dynamic_pointer_cast<GpuTexture>(
+                    base->resources->dataContext->createTexture(name + "#tex"));
+    Buffer encoded;
+    switch (base->cache->read(name, encoded))
+    {
+    case Cache::Result::ready:
+    {
+        GpuTextureSpec spec;
+        Buffer decoded;
+        decodeImage(name, encoded, decoded,
+                    spec.width, spec.height, spec.components);
+        spec.buffer = decoded.data;
+        spec.bufferSize = decoded.size;
+        texture->loadTexture(spec);
+        state = texture->state;
+    } return;
     case Cache::Result::error:
         state = State::errorDownload;
         return;

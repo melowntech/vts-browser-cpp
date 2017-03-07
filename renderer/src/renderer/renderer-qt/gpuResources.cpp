@@ -118,7 +118,7 @@ public:
         }
         create();
         setData(QImage((unsigned char*)spec.buffer,
-                       spec.width, spec.height, format));
+                       spec.width, spec.height, format).mirrored());
         gpuMemoryCost = spec.bufferSize;
         state = melown::Resource::State::ready;
     }

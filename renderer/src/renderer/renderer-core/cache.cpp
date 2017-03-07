@@ -37,10 +37,45 @@ public:
                                        std::placeholders::_2,
                                        std::placeholders::_3);
         fetcher->setCallback(func);
+        
+        try
+        {
+            Buffer buf = readLocalFileBuffer("cache/invalidUrl.txt");
+            std::istringstream is(std::string((char*)buf.data, buf.size));
+            while (is.good())
+            {
+                std::string line;
+                std::getline(is, line);
+                states[line] = Status::error;
+            }
+        }
+        catch (...)
+        {
+            // do nothing
+        }
     }
 
     ~CacheImpl()
-    {}
+    {
+        try
+        {
+            boost::filesystem::create_directories("cache");
+            FILE *f = fopen("cache/invalidUrl.txt", "wb");
+            if (!f)
+                throw std::runtime_error("failed to write file");
+            for (auto it : states)
+            {
+                if (it.second == Status::error)
+                    fprintf(f, "%s\n", it.first.c_str());
+            }
+            if (fclose(f) != 0)
+                throw std::runtime_error("failed to write file");
+        }
+        catch (...)
+        {
+            // do nothing
+        }
+    }
 
     const std::string convertNameToPath(std::string path, bool preserveSlashes)
     {

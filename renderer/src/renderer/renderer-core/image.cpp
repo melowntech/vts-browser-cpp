@@ -11,20 +11,34 @@ namespace melown
 namespace
 {
 
+uint32 colortypeToComponents(LodePNGColorType colortype)
+{
+    switch(colortype)
+    {
+    case LCT_RGBA: return 4;
+    case LCT_RGB: return 3;
+    case LCT_GREY_ALPHA: return 2;
+    case LCT_GREY: return 1;
+    default:
+        throw std::invalid_argument("invalid png color type");
+    }
+}
+
 void decodePng(const std::string &name, const Buffer &in, Buffer &out,
                uint32 &width, uint32 &height, uint32 &components)
 {
     LodePNGState state;
+    lodepng_state_init(&state);
     unsigned res = lodepng_inspect(&width, &height, &state,
                                    (unsigned char*)in.data, in.size);
     if (res != 0)
         throw std::runtime_error(
                 std::string("failed to decode png image ") + name);
-    components = state.info_png.color.colortype == LCT_RGBA ? 4 : 3;
+    components = colortypeToComponents(state.info_png.color.colortype);
     unsigned char *tmp = nullptr;
     res = lodepng_decode_memory(&tmp, &width, &height,
                                 (unsigned char*)in.data, in.size,
-                                components == 4 ? LCT_RGBA : LCT_RGB, 8);
+                                state.info_png.color.colortype, 8);
     if (res != 0)
     {
         free(tmp);
@@ -66,7 +80,7 @@ void decodeJpeg(const std::string &, const Buffer &in, Buffer &out,
         {
             unsigned char *ptr[1];
             ptr[0] = (unsigned char*)out.data
-                    + lineSize * (height - info.output_scanline - 1);
+                    + lineSize * info.output_scanline;
             jpeg_read_scanlines(&info, ptr, 1);
         }
         jpeg_finish_decompress(&info);
@@ -84,7 +98,11 @@ void decodeJpeg(const std::string &, const Buffer &in, Buffer &out,
 void decodeImage(const std::string &name, const Buffer &in, Buffer &out,
                  uint32 &width, uint32 &height, uint32 &components)
 {
-    if (name.find(".png") != std::string::npos)
+    if (in.size < 8)
+        throw std::runtime_error("invalid image data");
+    static const unsigned char pngSignature[]
+            = { 137, 80, 78, 71, 13, 10, 26, 10 };
+    if (memcmp(in.data, pngSignature, 8) == 0)
         decodePng(name, in, out, width, height, components);
     else
         decodeJpeg(name, in, out, width, height, components);

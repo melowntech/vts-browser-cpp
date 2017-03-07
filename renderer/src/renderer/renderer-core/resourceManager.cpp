@@ -157,9 +157,19 @@ public:
         return getMapResource<MeshAggregate>(name);
     }
 
-    ExternalBoundLayer *getExternalBoundLayer(const std::string &name)
+    ExternalBoundLayer *getExternalBoundLayer(const std::string &name) override
     {
         return getMapResource<ExternalBoundLayer>(name);
+    }
+
+    BoundMetaTile *getBoundMetaTile(const std::string &name) override
+    {
+        return getMapResource<BoundMetaTile>(name);
+    }
+
+    BoundMaskTile *getBoundMaskTile(const std::string &name) override
+    {
+        return getMapResource<BoundMaskTile>(name);
     }
 
     std::unordered_map<std::string, std::shared_ptr<Resource>> resources;

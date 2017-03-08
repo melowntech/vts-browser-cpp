@@ -221,6 +221,14 @@ public:
     {
         return getMapResource<BoundMaskTile>(name);
     }
+    
+    bool ready(const std::string &name) override
+    {
+        auto &&it = resources.find(name);
+        if (it == resources.end())
+            return false;
+        return it->second->state == Resource::State::ready;
+    }
 
     std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
     std::unordered_set<Resource*> pending_render;

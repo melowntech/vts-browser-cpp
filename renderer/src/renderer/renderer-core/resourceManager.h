@@ -37,6 +37,8 @@ public:
                     (const std::string &name) = 0;
     virtual class BoundMetaTile *getBoundMetaTile(const std::string &name) = 0;
     virtual class BoundMaskTile *getBoundMaskTile(const std::string &name) = 0;
+                    
+    virtual bool ready(const std::string &name) = 0;
 
     GpuContext *renderContext;
     GpuContext *dataContext;

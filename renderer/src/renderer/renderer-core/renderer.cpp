@@ -113,10 +113,9 @@ public:
         typedef std::vector<BoundParamInfo> list;
 
         BoundParamInfo(const View::BoundLayerParams &params)
-            : View::BoundLayerParams(params),
-              info(nullptr), texColor(nullptr), texMask(nullptr),
+            : View::BoundLayerParams(params), info(nullptr),
               depth(100), watertight(true),
-              vars(0), uvm(upperLeftSubMatrix(identityMatrix()).cast<float>())
+              uvm(upperLeftSubMatrix(identityMatrix()).cast<float>())
         {}
 
         void prepare(const NodeInfo &nodeInfo, RendererImpl &impl,
@@ -127,7 +126,7 @@ public:
             if (!info)
                 return;
             depth = std::max(nodeId.lod - info->lodRange.max, 0);
-            vars = UrlTemplate::Vars(nodeId, local(nodeInfo), subMeshIndex);
+            UrlTemplate::Vars vars(nodeId, local(nodeInfo), subMeshIndex);
             UrlTemplate::Vars varsOrig(vars);
             textureFallDownVars(vars, depth);
             if (info->metaUrl)
@@ -153,22 +152,11 @@ public:
                     watertight = (f & BoundLayer::MetaFlags::watertight)
                             == BoundLayer::MetaFlags::watertight;
                     if (info->maskUrl && !watertight)
-                    {
-                        BoundMaskTile *bmt = impl.map->resources
-                                ->getBoundMaskTile(info->urlMask(vars));
-                        if (bmt && bmt->state == Resource::State::ready)
-                            texMask = bmt->texture.get();
-                        if (!texMask)
-                        {
-                            info = nullptr;
-                            return;
-                        }
-                    }
+                        texMaskName = info->urlMask(vars);
                 }
             }
             textureFallDownMatrix(uvm, varsOrig, depth);
-            texColor = impl.map->resources->getTexture(
-                        info->urlExtTex(vars));
+            texColorName = info->urlExtTex(vars);
         }
 
         bool invalid()
@@ -179,13 +167,11 @@ public:
             int m = info->lodRange.min;
             if (t.lod < m)
                 return true;
-            if (!texColor || texColor->state != Resource::State::ready)
-                return true;
             t.x >>= t.lod - m;
             t.y >>= t.lod - m;
-            if (t.x < info->tileRange.ll[0] || t.x >= info->tileRange.ur[0])
+            if (t.x < info->tileRange.ll[0] || t.x > info->tileRange.ur[0])
                 return true;
-            if (t.y < info->tileRange.ll[1] || t.y >= info->tileRange.ur[1])
+            if (t.y < info->tileRange.ll[1] || t.y > info->tileRange.ur[1])
                 return true;
             return false;
         }
@@ -196,11 +182,10 @@ public:
         }
 
         BoundInfo *info;
-        GpuTexture *texColor;
-        GpuTexture *texMask;
+        std::string texColorName;
+        std::string texMaskName;
         mat3f uvm;
         TileId nodeId;
-        UrlTemplate::Vars vars;
         sint32 depth;
         bool watertight;
     };
@@ -226,11 +211,12 @@ public:
             return;
         std::stable_sort(boundList.begin(), boundList.end());
         std::reverse(boundList.begin(), boundList.end()); // render in reverse
+        // skip overlapping layers
         auto it = boundList.begin(), et = boundList.end();
         while (it != et && !it->watertight)
             it++;
         if (it != et)
-            boundList.erase(++it, et); // do not render overlapping layers
+            boundList.erase(++it, et);
     }
 
     void drawBox(const mat4f &mvp)
@@ -264,7 +250,7 @@ public:
         // aggregate mesh
         MeshAggregate *meshAgg = map->resources->getMeshAggregate
                 (surface.urlMesh(UrlTemplate::Vars(nodeId)));
-        if (!meshAgg || meshAgg->state != Resource::State::ready)
+        if (meshAgg->state != Resource::State::ready)
             return;
 
         // iterate over all submeshes
@@ -286,14 +272,21 @@ public:
                 reorderBoundLayer(nodeInfo, subMeshIndex, bls);
                 for (BoundParamInfo &b : bls)
                 {
-                    if (b.texMask)
+                    if (!b.texMaskName.empty())
                     {
+                        GpuTexture *m = map->resources->getTexture(
+                                            b.texMaskName);
+                        if (m->state != Resource::State::ready)
+                            continue; // skip if mask not ready
                         gpuContext->activeTextureUnit(1);
-                        b.texMask->bind();
+                        m->bind();
                         gpuContext->activeTextureUnit(0);
                         shader->uniform(9, 1); // use mask
                     }
-                    b.texColor->bind();
+                    GpuTexture *t = map->resources->getTexture(b.texColorName);
+                    if (t->state != Resource::State::ready)
+                        continue;
+                    t->bind();
                     shader->uniformMat3(4, b.uvm.data());
                     shader->uniform(8, 1); // external uv
                     mesh->draw();
@@ -309,7 +302,7 @@ public:
                 UrlTemplate::Vars vars(nodeId, local(nodeInfo), subMeshIndex);
                 GpuTexture *texture = map->resources->getTexture(
                             surface.urlIntTex(vars));
-                if (!texture || texture->state != Resource::State::ready)
+                if (texture->state != Resource::State::ready)
                     continue;
                 texture->bind();
                 mat3f uvm = upperLeftSubMatrix(identityMatrix())
@@ -420,7 +413,7 @@ public:
                             (nodeId.y >> binaryOrder) << binaryOrder);
         const MetaTile *tile = map->resources->getMetaTile
                 (surface->urlMeta(UrlTemplate::Vars(tileId)));
-        if (!tile || tile->state != Resource::State::ready)
+        if (tile->state != Resource::State::ready)
             return;
 
         // pick meta node
@@ -547,7 +540,7 @@ public:
             std::string url = convertPath(bl.url, mapConfig->name);
             ExternalBoundLayer *r
                     = map->resources->getExternalBoundLayer(url);
-            if (!r || r->state != Resource::State::ready)
+            if (r->state != Resource::State::ready)
                 ok = false;
             else
             {
@@ -614,11 +607,11 @@ public:
         this->windowHeight = windowHeight;
 
         shaderColor = map->resources->getShader("data/shaders/color");
-        if (!shaderColor || shaderColor->state != Resource::State::ready)
+        if (shaderColor->state != Resource::State::ready)
             return;
 
         shader = map->resources->getShader("data/shaders/a");
-        if (!shader || shader->state != Resource::State::ready)
+        if (shader->state != Resource::State::ready)
             return;
         shader->bind();
 

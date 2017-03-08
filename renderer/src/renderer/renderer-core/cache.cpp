@@ -23,7 +23,6 @@ public:
         initialized,
         downloading,
         ready,
-        done,
         error,
     };
 
@@ -115,7 +114,6 @@ public:
         case Status::initialized: return Result::downloading;
         case Status::downloading: return Result::downloading;
         case Status::ready: return Result::ready;
-        case Status::done: return Result::ready;
         case Status::error: return Result::error;
         default:
             throw std::invalid_argument("invalid cache data status");
@@ -202,6 +200,7 @@ public:
     {
         if (states[name] == Status::initialized)
         {
+            readyToRemove.erase(name);
             states[name] = Status::downloading;
             if (name.find("://") == std::string::npos)
                 readLocalFile(name, name);
@@ -223,15 +222,12 @@ public:
                     states[name] = Status::initialized;
             }
         }
-        switch (states[name])
+        if (states[name] == Status::ready)
         {
-        case Status::done:
-        case Status::ready:
-        {
-            buffer = data[name];
-            states[name] = Status::done;
+            buffer = std::move(data[name]);
+            states[name] = Status::initialized;
             readyToRemove.insert(name);
-        } break;
+            return result(Status::ready);
         }
         return result(states[name]);
     }

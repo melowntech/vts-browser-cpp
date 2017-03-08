@@ -11,19 +11,6 @@ namespace melown
 namespace
 {
 
-uint32 colortypeToComponents(LodePNGColorType colortype)
-{
-    switch(colortype)
-    {
-    case LCT_RGBA: return 4;
-    case LCT_RGB: return 3;
-    case LCT_GREY_ALPHA: return 2;
-    case LCT_GREY: return 1;
-    default:
-        throw std::invalid_argument("invalid png color type");
-    }
-}
-
 void decodePng(const std::string &name, const Buffer &in, Buffer &out,
                uint32 &width, uint32 &height, uint32 &components)
 {
@@ -34,7 +21,7 @@ void decodePng(const std::string &name, const Buffer &in, Buffer &out,
     if (res != 0)
         throw std::runtime_error(
                 std::string("failed to decode png image ") + name);
-    components = colortypeToComponents(state.info_png.color.colortype);
+    components = lodepng_get_channels(&state.info_png.color);
     unsigned char *tmp = nullptr;
     res = lodepng_decode_memory(&tmp, &width, &height,
                                 (unsigned char*)in.data, in.size,

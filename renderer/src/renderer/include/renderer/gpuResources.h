@@ -2,6 +2,7 @@
 #define GPURESOURCES_H_jhsegf
 
 #include "resource.h"
+#include "buffer.h"
 
 namespace melown
 {
@@ -12,7 +13,8 @@ public:
     GpuShader(const std::string &name);
 
     virtual void bind() = 0;
-    virtual void loadShaders(const std::string &vertexShader, const std::string &fragmentShader) = 0;
+    virtual void loadShaders(const std::string &vertexShader,
+                             const std::string &fragmentShader) = 0;
 
     void load(class MapImpl *base) override;
 
@@ -31,8 +33,7 @@ public:
 
     uint32 width, height;
     uint32 components; // 1, 2, 3 or 4
-    uint32 bufferSize; // bytes
-    void *buffer;
+    Buffer buffer;
 };
 
 class MELOWN_API GpuTexture : public Resource
@@ -77,10 +78,9 @@ public:
 
     GpuMeshSpec();
 
+    Buffer vertices;
+    Buffer indices;
     VertexAttribute attributes[3];
-    const uint16 *indexBufferData;
-    void *vertexBufferData;
-    uint32 vertexBufferSize; // in bytes
     uint32 verticesCount;
     uint32 indicesCount;
     FaceMode faceMode;

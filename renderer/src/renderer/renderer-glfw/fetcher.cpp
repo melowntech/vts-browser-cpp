@@ -1,7 +1,6 @@
 #include <functional>
 #include <unistd.h> // usleep
 
-#include <boost/lockfree/queue.hpp>
 #include <http/http.hpp>
 #include <http/resourcefetcher.hpp>
 #include <http/sink.hpp>
@@ -11,13 +10,44 @@
 namespace
 {
 
+class FetcherImpl;
+
+class Task
+{
+public:
+    Task(melown::FetchTask *task, melown::Fetcher::Func func)
+        : query(task->url), task(task), func(func)
+    {
+        query.timeout(1000000);
+    }
+    
+    void done(http::ResourceFetcher::MultiQuery &&queries)
+    {
+        task->code = 404;
+        http::ResourceFetcher::Query &q = *queries.begin();
+        if (q)
+        {
+            task->code = 200;
+            const http::ResourceFetcher::Query::Body &body = q.get();
+            task->contentData.allocate(body.data.size());
+            memcpy(task->contentData.data, body.data.data(), body.data.size());
+            task->contentType = body.contentType;
+        }
+        func(task);
+        delete this;
+    }
+    
+    http::ResourceFetcher::Query query;
+    melown::Fetcher::Func func;
+    melown::FetchTask *task;
+};
+
 class FetcherImpl : public Fetcher
 {
 public:
     FetcherImpl() : fetcher(htt.fetcher())
     {
-        htt.startClient(5);
-        doneFunc = std::bind(&FetcherImpl::done, this, std::placeholders::_1);
+        htt.startClient(1);
     }
 
     ~FetcherImpl()
@@ -30,65 +60,21 @@ public:
         this->func = func;
     }
 
-    void fetch(const std::string &name) override
+    void fetch(melown::FetchTask *task) override
     {
-        fetcher.perform(http::ResourceFetcher::Query(name).timeout(-1),
-                        doneFunc);
-    }
-
-    void done(http::ResourceFetcher::MultiQuery &&queries)
-    {
-        for (auto &&q : queries)
-        {
-            /*
-            if (!q.valid())
-            {
-                LOG(info3) << q.ec();
-                if (q.exc())
-                {
-                    try
-                    {
-                        std::rethrow_exception(q.exc());
-                    }
-                    catch(std::exception &e)
-                    {
-                        LOG(info3) << e.what();
-                    }
-                }
-            }
-            */
-            while (true)
-            {
-                if (que.push(new http::ResourceFetcher::Query(std::move(q))))
-                    break;
-                usleep(1000);
-            }
-        }
+        Task *t = new Task(task, func);
+        fetcher.perform(t->query, std::bind(&Task::done, t,
+                                            std::placeholders::_1));
     }
 
     void tick() override
     {
-        http::ResourceFetcher::Query *q = nullptr;
-        if (que.pop(q))
-        {
-            if (q->valid())
-            {
-                std::string b(q->get().data);
-                func(q->location(), b.c_str(), b.length());
-            }
-            else
-                func(q->location(), nullptr, 0);
-            delete q;
-        }
+        // do nothing
     }
 
     melown::Fetcher::Func func;
     http::Http htt;
     http::ResourceFetcher fetcher;
-    http::ResourceFetcher::Done doneFunc;
-    boost::lockfree::queue
-        <http::ResourceFetcher::Query*,
-        boost::lockfree::capacity<1024>> que;
 };
 
 } // namespace

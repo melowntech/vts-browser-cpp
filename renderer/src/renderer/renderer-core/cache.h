@@ -4,11 +4,12 @@
 #include <string>
 
 #include <renderer/foundation.h>
-
-#include "buffer.h"
+#include <renderer/buffer.h>
 
 namespace melown
 {
+
+class FetchTask;
 
 class Cache
 {
@@ -27,8 +28,7 @@ public:
     virtual Result read(const std::string &name, Buffer &buffer,
                         bool allowDiskCache = true) = 0;
 
-    virtual void fetchedFile(const std::string &name,
-                             const char *buffer, uint32 size) = 0;
+    virtual void fetchedFile(FetchTask *task) = 0;
     
     virtual void tick() = 0;
 };

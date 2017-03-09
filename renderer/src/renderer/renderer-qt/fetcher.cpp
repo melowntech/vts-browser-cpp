@@ -25,7 +25,7 @@ public:
                                                      options.password.size()));
     }
 
-    void fetch(const std::string &name);
+    void fetch(melown::FetchTask *task);
 
     FetcherOptions options;
     FetcherImpl::Func func;
@@ -34,8 +34,8 @@ public:
 class FetchTask : public QObject
 {
 public:
-    FetchTask(FetcherDetail *fetcher, const std::string &name) : name(name),
-        fetcher(fetcher), reply(nullptr), redirections(0)
+    FetchTask(FetcherDetail *fetcher, melown::FetchTask *task) : task(task),
+        fetcher(fetcher), reply(nullptr)
     {}
 
     void finished()
@@ -43,45 +43,39 @@ public:
         reply->deleteLater();
 
         if (reply->error() != QNetworkReply::NoError)
+            task->code = 404;
+        else
         {
-            fetcher->func(name, nullptr, 0);
-            delete this;
-            return;
-        }
-
-        QVariant redirVar = reply->attribute
-                (QNetworkRequest::RedirectionTargetAttribute);
-        QUrl redir = redirVar.toUrl();
-        if (!redir.isEmpty() && redir != reply->request().url())
-        { // do redirect
-            if (redirections++ > 5)
-            { // too many redirections
-                fetcher->func(name, nullptr, 0);
-                delete this;
-                return;
+            QVariant redirVar = reply->attribute
+                    (QNetworkRequest::RedirectionTargetAttribute);
+            QUrl redir = redirVar.toUrl();
+            if (!redir.isEmpty() && redir != reply->request().url())
+            { // do redirect
+                task->code = 302;
+                task->redirectUrl = (char*)redir.toString().unicode();
             }
-
-            reply = fetcher->get(QNetworkRequest(redir));
-            connect(reply, &QNetworkReply::finished,
-                    this, &FetchTask::finished);
-            return;
+            else
+            {
+                task->code = 200;
+                QByteArray arr = reply->readAll();
+                task->contentData.allocate(arr.size());
+                memcpy(task->contentData.data, arr.data(), arr.size());
+            }
         }
 
-        QByteArray arr = reply->readAll();
-        fetcher->func(name, arr.data(), arr.size());
+        fetcher->func(task);
         delete this;
     }
 
-    const std::string name;
+    melown::FetchTask *task;
     FetcherDetail *fetcher;
     QNetworkReply *reply;
-    melown::uint32 redirections;
 };
 
-void FetcherDetail::fetch(const std::string &name)
+void FetcherDetail::fetch(melown::FetchTask *task)
 {
-    FetchTask *t = new FetchTask(this, name);
-    QUrl url(QString::fromUtf8(name.data(), name.length()));
+    FetchTask *t = new FetchTask(this, task);
+    QUrl url(QString::fromUtf8(t->task->url.data(), t->task->url.length()));
     QNetworkRequest request(url);
     t->reply = get(request);
     connect(t->reply, &QNetworkReply::finished, t, &FetchTask::finished);
@@ -109,7 +103,7 @@ void FetcherImpl::setCallback(Func func)
     impl->func = func;
 }
 
-void FetcherImpl::fetch(const std::string &name)
+void FetcherImpl::fetch(melown::FetchTask *task)
 {
-    return impl->fetch(name);
+    return impl->fetch(task);
 }

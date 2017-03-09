@@ -1,4 +1,5 @@
 #include <cstring>
+#include <cassert>
 
 #include <glad/glad.h>
 #include <renderer/gpuResources.h>
@@ -28,6 +29,7 @@ public:
 
     void bind() override
     {
+        assert(id > 0);
         glUseProgram(id);
     }
 
@@ -155,6 +157,7 @@ public:
 
     void bind() override
     {
+        assert(id > 0);
         glBindTexture(GL_TEXTURE_2D, id);
     }
 
@@ -196,17 +199,17 @@ public:
             unsigned lineSize = spec.width * spec.components;
             for (unsigned y = 0; y < spec.height / 2; y++)
             {
-                memcpy(buffer, (char*)spec.buffer + y * lineSize, lineSize);
-                memcpy((char*)spec.buffer + y * lineSize,
-                       (char*)spec.buffer + (spec.height - y - 1) * lineSize,
-                       lineSize);
-                memcpy((char*)spec.buffer + (spec.height - y - 1) * lineSize,
-                       buffer, lineSize);
+                char *a = (char*)spec.buffer.data + y * lineSize;
+                char *b = (char*)spec.buffer.data
+                        + (spec.height - y - 1) * lineSize;
+                memcpy(buffer, a, lineSize);
+                memcpy(a, b, lineSize);
+                memcpy(b, buffer, lineSize);
             }
         }
         glTexImage2D(GL_TEXTURE_2D, 0, findInternalFormat(spec),
                      spec.width, spec.height, 0,
-                     findFormat(spec), GL_UNSIGNED_BYTE, spec.buffer);
+                     findFormat(spec), GL_UNSIGNED_BYTE, spec.buffer.data);
         glGenerateMipmap(GL_TEXTURE_2D);
         glTexParameteri(GL_TEXTURE_2D,
                         GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -215,7 +218,7 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glFinish();
         checkGl("load texture");
-        gpuMemoryCost = spec.bufferSize;
+        gpuMemoryCost = spec.buffer.size;
         state = melown::Resource::State::ready;
     }
 };
@@ -249,6 +252,7 @@ public:
 
     void draw() override
     {
+        assert(vbo > 0);
         if (vao)
             glBindVertexArray(vao);
         else
@@ -274,6 +278,7 @@ public:
                 else
                     glDisableVertexAttribArray(i);
             }
+            checkGl("first draw mesh");
         }
 
         if (spec.indicesCount > 0)
@@ -288,31 +293,29 @@ public:
     void loadMeshRenderable(const melown::GpuMeshSpec &spec) override
     {
         clear();
-        this->spec = spec;
+        this->spec = std::move(spec);
         GLuint vao = 0;
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
         glGenBuffers(1, &vbo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, spec.vertexBufferSize,
-                     spec.vertexBufferData, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER,
+                     spec.vertices.size, spec.vertices.data, GL_STATIC_DRAW);
         if (spec.indicesCount)
         {
             glGenBuffers(1, &vio);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vio);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                         spec.indicesCount * sizeof(spec.indexBufferData[0]),
-                    spec.indexBufferData, GL_STATIC_DRAW);
+                         spec.indices.size, spec.indices.data, GL_STATIC_DRAW);
         }
         glBindVertexArray(0);
         glDeleteVertexArrays(1, &vao);
         glFinish();
         checkGl("load mesh");
-        this->spec.vertexBufferData = nullptr;
-        this->spec.indexBufferData = nullptr;
         ramMemoryCost = sizeof(GpuSubMeshImpl);
-        gpuMemoryCost = spec.vertexBufferSize
-                + spec.indicesCount * sizeof(spec.indexBufferData[0]);
+        gpuMemoryCost = spec.vertices.size + spec.indices.size;
+        this->spec.vertices.free();
+        this->spec.indices.free();
         state = melown::Resource::State::ready;
     }
 };

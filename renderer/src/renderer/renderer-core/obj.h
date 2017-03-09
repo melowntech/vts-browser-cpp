@@ -5,8 +5,7 @@
 #include <string>
 
 #include <renderer/foundation.h>
-
-#include "buffer.h"
+#include <renderer/buffer.h>
 
 namespace melown
 {

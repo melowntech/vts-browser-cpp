@@ -23,7 +23,7 @@ public:
 
     void setOptions(const FetcherOptions &options);
     void setCallback(Func func) override;
-    void fetch(const std::string &name) override;
+    void fetch(melown::FetchTask *task) override;
 
     FetcherDetail *impl;
 };

@@ -4,11 +4,11 @@
 #include <cstdlib>
 
 #include <renderer/gpuResources.h>
+#include <renderer/buffer.h>
 
 #include "map.h"
 #include "cache.h"
 #include "resourceManager.h"
-#include "buffer.h"
 #include "image.h"
 #include "obj.h"
 #include "math.h"
@@ -37,8 +37,7 @@ void GpuShader::load(MapImpl *base)
     }
 }
 
-GpuTextureSpec::GpuTextureSpec() : width(0), height(0),
-    components(0), bufferSize(0), buffer(nullptr)
+GpuTextureSpec::GpuTextureSpec() : width(0), height(0), components(0)
 {}
 
 GpuTexture::GpuTexture(const std::string &name) : Resource(name)
@@ -52,11 +51,8 @@ void GpuTexture::load(MapImpl *base)
     case Cache::Result::ready:
     {
         GpuTextureSpec spec;
-        Buffer decoded;
-        decodeImage(name, encoded, decoded,
+        decodeImage(name, encoded, spec.buffer,
                     spec.width, spec.height, spec.components);
-        spec.buffer = decoded.data;
-        spec.bufferSize = decoded.size;
         loadTexture(spec);
     } return;
     case Cache::Result::error:
@@ -65,9 +61,8 @@ void GpuTexture::load(MapImpl *base)
     }
 }
 
-GpuMeshSpec::GpuMeshSpec() : indexBufferData(nullptr),
-    vertexBufferData(nullptr), verticesCount(0), vertexBufferSize(0),
-    indicesCount(0), faceMode(FaceMode::Triangles)
+GpuMeshSpec::GpuMeshSpec() : verticesCount(0), indicesCount(0),
+    faceMode(FaceMode::Triangles)
 {}
 
 GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0),
@@ -84,12 +79,9 @@ void GpuMeshRenderable::load(MapImpl *base)
     {
     case Cache::Result::ready:
     {
-        Buffer vb, ib;
         uint32 vc, ic;
-        decodeObj(name, buffer, vb, ib, vc, ic);
         GpuMeshSpec spec;
-        spec.vertexBufferData = vb.data;
-        spec.vertexBufferSize = vb.size;
+        decodeObj(name, buffer, spec.vertices, spec.indices, vc, ic);
         spec.verticesCount = vc;
         spec.attributes[0].enable = true;
         spec.attributes[0].stride = sizeof(vec3f) + sizeof(vec2f);

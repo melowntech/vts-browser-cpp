@@ -119,12 +119,12 @@ public:
             throw std::invalid_argument("invalid texture components count");
         }
         create();
-        setData(QImage((unsigned char*)spec.buffer,
+        setData(QImage((unsigned char*)spec.buffer.data,
                        spec.width, spec.height, format).mirrored());
         setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
         setMagnificationFilter(QOpenGLTexture::Linear);
         setWrapMode(QOpenGLTexture::ClampToEdge);
-        gpuMemoryCost = spec.bufferSize;
+        gpuMemoryCost = spec.buffer.size;
         state = melown::Resource::State::ready;
     }
 };
@@ -174,24 +174,20 @@ public:
 
     void loadMeshRenderable(const melown::GpuMeshSpec &spec) override
     {
-        this->spec = spec;
+        this->spec = std::move(spec);
         arrayObject.create();
         arrayObject.bind();
         vertexBuffer.create();
         vertexBuffer.bind();
-        vertexBuffer.allocate(spec.vertexBufferData, spec.vertexBufferSize);
+        vertexBuffer.allocate(spec.vertices.data, spec.vertices.size);
         if (spec.indicesCount)
         {
             indexBuffer.create();
             indexBuffer.bind();
-            indexBuffer.allocate(spec.indexBufferData,
-                                 spec.indicesCount * sizeof(melown::uint16));
+            indexBuffer.allocate(spec.indices.data, spec.indices.size);
         }
-        gpuMemoryCost = spec.vertexBufferSize
-                + spec.indicesCount * sizeof(melown::uint16);
+        gpuMemoryCost = spec.vertices.size + spec.indices.size;
         arrayObject.destroy();
-        this->spec.vertexBufferData = nullptr;
-        this->spec.indexBufferData = nullptr;
         state = melown::Resource::State::ready;
     }
 

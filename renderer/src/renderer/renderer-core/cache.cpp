@@ -2,18 +2,28 @@
 #include <unordered_set>
 #include <cstdio>
 
+#include <boost/atomic/atomic.hpp>
+#include <boost/thread/mutex.hpp>
 #include <boost/filesystem.hpp>
 #include <dbglog/dbglog.hpp>
+#include <vts-libs/registry/referenceframe.hpp>
 
-#include <renderer/fetcher.h>
 #include <renderer/statistics.h>
+#include <renderer/buffer.h>
+#include <renderer/fetcher.h>
 
 #include "cache.h"
-#include "buffer.h"
 #include "map.h"
 
 namespace melown
 {
+
+FetchTask::FetchTask(const std::string &name) : name(name), url(name), 
+    allowRedirects(false), code(0), redirectionsCount(0)
+{}
+
+Fetcher::~Fetcher()
+{}
 
 class CacheImpl : public Cache
 {
@@ -25,6 +35,17 @@ public:
         ready,
         error,
     };
+    
+    class CacheTask : public FetchTask
+    {
+    public:
+        CacheTask(const std::string &name) : FetchTask(name),
+            status(Status::initialized), availTest(nullptr)
+        {}
+
+        Status status;
+        vtslibs::registry::BoundLayer::Availability *availTest;
+    };
 
     CacheImpl(MapImpl *map, Fetcher *fetcher) : fetcher(fetcher), map(map),
         downloadingTasks(0)
@@ -32,9 +53,7 @@ public:
         if (!fetcher)
             return;
         Fetcher::Func func = std::bind(&CacheImpl::fetchedFile, this,
-                                       std::placeholders::_1,
-                                       std::placeholders::_2,
-                                       std::placeholders::_3);
+                                       std::placeholders::_1);
         fetcher->setCallback(func);
         
         try
@@ -45,7 +64,7 @@ public:
             {
                 std::string line;
                 std::getline(is, line);
-                states[line] = Status::error;
+                invalid.insert(line);
             }
         }
         catch (...)
@@ -62,11 +81,8 @@ public:
             FILE *f = fopen("cache/invalidUrl.txt", "wb");
             if (!f)
                 throw std::runtime_error("failed to write file");
-            for (auto it : states)
-            {
-                if (it.second == Status::error)
-                    fprintf(f, "%s\n", it.first.c_str());
-            }
+            for (auto it : invalid)
+                fprintf(f, "%s\n", it.c_str());
             if (fclose(f) != 0)
                 throw std::runtime_error("failed to write file");
         }
@@ -76,7 +92,8 @@ public:
         }
     }
 
-    const std::string convertNameToPath(std::string path, bool preserveSlashes)
+    static const std::string convertNameToPath(std::string path,
+                                               bool preserveSlashes)
     {
         path = boost::filesystem::path(path).normalize().string();
         std::string res;
@@ -96,7 +113,7 @@ public:
         return res;
     }
 
-    const std::string convertNameToCache(const std::string &path)
+    static const std::string convertNameToCache(const std::string &path)
     {
         uint32 p = path.find("://");
         std::string a = p == std::string::npos ? path : path.substr(p + 3);
@@ -107,7 +124,7 @@ public:
                 + convertNameToPath(c, false);
     }
 
-    Result result(Status status)
+    static Result result(Status status)
     {
         switch (status)
         {
@@ -131,9 +148,7 @@ public:
             fseek(f, 0, SEEK_END);
             b.size = ftell(f);
             fseek(f, 0, SEEK_SET);
-            b.data = malloc(b.size);
-            if (!b.data)
-                throw std::runtime_error("out of memory");
+            b.allocate(b.size);
             if (fread(b.data, b.size, 1, f) != 1)
                 throw std::runtime_error("failed to read file");
             fclose(f);
@@ -148,14 +163,15 @@ public:
 
     void readLocalFile(const std::string &name, const std::string &path)
     {
+        CacheTask *t = tasks[name].get();
         try
         {
-            data[name] = readLocalFileBuffer(path);
-            states[name] = Status::ready;
+            t->contentData = readLocalFileBuffer(path);
+            t->status = Status::ready;
         }
         catch (std::runtime_error &)
         {
-            states[name] = Status::error;
+            t->status = Status::error;
         }
     }
 
@@ -175,33 +191,96 @@ public:
             throw std::runtime_error("failed to write file");
     }
 
-    void fetchedFile(const std::string &name,
-                     const char *buffer, uint32 size) override
+    void fetchedFile(FetchTask *task) override
     {
         downloadingTasks--;
-        if (!buffer)
+        CacheTask *t = (CacheTask*)(task);
+        
+        // handle error codes
+        if (t->code >= 400)
+            t->status = Status::error;
+        
+        // availability tests
+        if (t->status == Status::downloading)
+        if (t->availTest)
         {
-            states[name] = Status::error;
+            switch (t->availTest->type)
+            {
+            case vtslibs::registry::BoundLayer
+            ::Availability::Type::negativeCode:
+                if (t->availTest->codes.find(t->code)
+                        == t->availTest->codes.end())
+                    t->status = Status::error;
+                break;
+            case vtslibs::registry::BoundLayer
+            ::Availability::Type::negativeType:
+                if (t->availTest->mime == t->contentType)
+                    t->status = Status::error;
+                break;
+            case vtslibs::registry::BoundLayer
+            ::Availability::Type::negativeSize:
+                if (t->contentData.size <= t->availTest->size)
+                    t->status = Status::error;
+            default:
+                throw std::runtime_error("invalid availability test type");
+            }
+        }
+        
+        // handle redirections
+        if (t->status == Status::downloading)
+        switch (task->code)
+        {
+        case 301:
+        case 302:
+        case 303:
+        case 307:
+        case 308:
+            if (t->redirectionsCount++ > 5)
+                t->status = Status::error;
+            else
+            {
+                t->url = t->redirectUrl;
+                fetcher->fetch(t);
+                return;
+            }
+        }
+        
+        if (t->status == Status::error)
+        {
+            boost::lock_guard<boost::mutex> l(mut);
+            invalidNew.insert(t->name);
             return;
         }
-        Buffer b;
-        b.size = size;
-        b.data = malloc(size);
-        if (!b.data)
-            throw std::runtime_error("out of memory");
-        memcpy(b.data, buffer, size);
-        writeLocalFile(convertNameToCache(name), b);
-        data[name] = std::move(b);
-        states[name] = Status::ready;
+        
+        try
+        {
+            writeLocalFile(convertNameToCache(t->name), t->contentData);
+        }
+        catch(std::runtime_error &)
+        {
+            // do nothing
+        }
+        
+        t->status = Status::ready;
+    }
+    
+    CacheTask *getTask(const std::string &name)
+    {
+        auto it = tasks.find(name);
+        if (it != tasks.end())
+            return it->second.get();
+        return (tasks[name] = std::shared_ptr<CacheTask>(new CacheTask(name))).get();
     }
 
     Result read(const std::string &name, Buffer &buffer,
                 bool allowDiskCache) override
     {
-        if (states[name] == Status::initialized)
+        if (invalid.find(name) != invalid.end())
+            return result(Status::error);
+        CacheTask *t = getTask(name);
+        if (t->status == Status::initialized)
         {
-            readyToRemove.erase(name);
-            states[name] = Status::downloading;
+            t->status = Status::downloading;
             if (name.find("://") == std::string::npos)
                 readLocalFile(name, name);
             else
@@ -214,39 +293,37 @@ public:
                 }
                 else if (downloadingTasks < 10)
                 {
-                    fetcher->fetch(name);
+                    fetcher->fetch(t);
                     downloadingTasks++;
                     map->statistics->resourcesDownloaded++;
                 }
                 else
-                    states[name] = Status::initialized;
+                    t->status = Status::initialized;
             }
         }
-        if (states[name] == Status::ready)
+        if (t->status == Status::ready)
         {
-            buffer = std::move(data[name]);
-            states[name] = Status::initialized;
-            readyToRemove.insert(name);
+            buffer = std::move(t->contentData);
+            tasks.erase(t->name);
             return result(Status::ready);
         }
-        return result(states[name]);
+        return result(t->status);
     }
     
     void tick() override
     {
-        for (auto n : readyToRemove)
-        {
-            states.erase(n);
-            data.erase(n);
-        }
+        boost::lock_guard<boost::mutex> l(mut);
+        invalid.insert(invalidNew.begin(), invalidNew.end());
+        invalidNew.clear();
     }
-
-    std::unordered_map<std::string, Status> states;
-    std::unordered_map<std::string, Buffer> data;
-    std::unordered_set<std::string> readyToRemove;
+    
+    std::unordered_map<std::string, std::shared_ptr<CacheTask>> tasks;
+    std::unordered_set<std::string> invalid;
+    std::unordered_set<std::string> invalidNew;
+    boost::mutex mut;
     Fetcher *fetcher;
     MapImpl *map;
-    uint32 downloadingTasks;
+    boost::atomic<uint32> downloadingTasks;
 };
 
 Cache *Cache::create(MapImpl *map, Fetcher *fetcher)

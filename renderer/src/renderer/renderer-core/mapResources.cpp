@@ -89,16 +89,13 @@ void MeshAggregate::load(MapImpl *base)
 
             GpuMeshSpec spec;
             spec.verticesCount = m.faces.size() * 3;
-            spec.vertexBufferSize = spec.verticesCount * vertexSize;
-
-            Buffer buffer(spec.vertexBufferSize);
-            spec.vertexBufferData = buffer.data;
+            spec.vertices.allocate(spec.verticesCount * vertexSize);
             uint32 offset = 0;
 
             { // vertices
                 spec.attributes[0].enable = true;
                 spec.attributes[0].components = 3;
-                vec3f *b = (vec3f*)buffer.data;
+                vec3f *b = (vec3f*)spec.vertices.data;
                 for (vtslibs::vts::Point3u32 f : m.faces)
                 {
                     for (uint32 j = 0; j < 3; j++)
@@ -115,7 +112,7 @@ void MeshAggregate::load(MapImpl *base)
                 spec.attributes[1].enable = true;
                 spec.attributes[1].components = 2;
                 spec.attributes[1].offset = offset;
-                vec2f *b = (vec2f*)(((char*)buffer.data) + offset);
+                vec2f *b = (vec2f*)(((char*)spec.vertices.data) + offset);
                 for (vtslibs::vts::Point3u32 f : m.facesTc)
                     for (uint32 j = 0; j < 3; j++)
                         *b++ = vecFromUblas<vec2f>(m.tc[f[j]]);
@@ -127,7 +124,7 @@ void MeshAggregate::load(MapImpl *base)
                 spec.attributes[2].enable = true;
                 spec.attributes[2].components = 2;
                 spec.attributes[2].offset = offset;
-                vec2f *b = (vec2f*)(((char*)buffer.data) + offset);
+                vec2f *b = (vec2f*)(((char*)spec.vertices.data) + offset);
                 for (vtslibs::vts::Point3u32 f : m.faces)
                     for (uint32 j = 0; j < 3; j++)
                         *b++ = vecFromUblas<vec2f>(m.etc[f[j]]);
@@ -203,11 +200,8 @@ void BoundMaskTile::load(MapImpl *base)
     case Cache::Result::ready:
     {
         GpuTextureSpec spec;
-        Buffer decoded;
-        decodeImage(name, encoded, decoded,
+        decodeImage(name, encoded, spec.buffer,
                     spec.width, spec.height, spec.components);
-        spec.buffer = decoded.data;
-        spec.bufferSize = decoded.size;
         texture->loadTexture(spec);
         gpuMemoryCost = texture->gpuMemoryCost;
         ramMemoryCost = texture->ramMemoryCost;

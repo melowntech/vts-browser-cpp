@@ -14,7 +14,7 @@ public:
     void resetAll();
     void resetFrame();
 
-    static const uint32 MaxLods = 30;
+    static const uint32 MaxLods = 22;
 
     // frame statistics
 

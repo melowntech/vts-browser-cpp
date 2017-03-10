@@ -98,10 +98,13 @@ void FetcherImpl::setOptions(const FetcherOptions &options)
     impl->options = options;
 }
 
-void FetcherImpl::setCallback(Func func)
+void FetcherImpl::initialize(Func func)
 {
     impl->func = func;
 }
+
+void FetcherImpl::finalize()
+{}
 
 void FetcherImpl::fetch(melown::FetchTask *task)
 {

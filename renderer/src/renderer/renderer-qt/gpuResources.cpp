@@ -40,8 +40,6 @@ public:
                                                       fragmentShader.size()));
         if (!link())
             throw melown::graphicsException("failed to link shader program");
-        //removeAllShaders();
-        state = melown::Resource::State::ready;
     }
 
     void uniformMat4(melown::uint32 location, const float *value) override
@@ -125,7 +123,6 @@ public:
         setMagnificationFilter(QOpenGLTexture::Linear);
         setWrapMode(QOpenGLTexture::ClampToEdge);
         gpuMemoryCost = spec.buffer.size;
-        state = melown::Resource::State::ready;
     }
 };
 
@@ -188,7 +185,6 @@ public:
         }
         gpuMemoryCost = spec.vertices.size + spec.indices.size;
         arrayObject.destroy();
-        state = melown::Resource::State::ready;
     }
 
     QOpenGLVertexArrayObject arrayObject;

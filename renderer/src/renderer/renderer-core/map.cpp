@@ -59,8 +59,7 @@ void MapFoundation::renderFinalize()
 void MapFoundation::pan(const double value[3])
 {
     MapConfig *mapConfig = impl->resources->getMapConfig(impl->mapConfigPath);
-    if (!mapConfig || mapConfig->state != Resource::State::ready
-            || !impl->convertor)
+    if (!mapConfig || !*mapConfig || !impl->convertor)
         return;
 
     vtslibs::registry::Position &pos = mapConfig->position;
@@ -101,7 +100,7 @@ void MapFoundation::pan(const double value[3])
 void MapFoundation::rotate(const double value[3])
 {
     MapConfig *mapConfig = impl->resources->getMapConfig(impl->mapConfigPath);
-    if (!mapConfig || mapConfig->state != Resource::State::ready)
+    if (!mapConfig || !*mapConfig)
         return;
 
     vtslibs::registry::Position &pos = mapConfig->position;

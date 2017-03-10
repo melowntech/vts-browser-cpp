@@ -21,8 +21,10 @@ public:
     FetcherImpl();
     ~FetcherImpl();
 
+    void initialize(Func func) override;
+    void finalize() override;
+    
     void setOptions(const FetcherOptions &options);
-    void setCallback(Func func) override;
     void fetch(melown::FetchTask *task) override;
 
     FetcherDetail *impl;

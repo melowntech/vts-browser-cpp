@@ -39,7 +39,9 @@ void DataThread::run()
     glfwMakeContextCurrent(window);
     while (!stop && !map)
         usleep(1000);
+    setThreadName("downloader"); // the downloader threads inherits the name
     map->dataInitialize(&gpu, fetcher.get());
+    setThreadName("data");
     while (!stop)
     {
         fetcher->tick();

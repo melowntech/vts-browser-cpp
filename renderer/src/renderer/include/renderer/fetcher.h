@@ -12,10 +12,10 @@ namespace melown
 
 struct MELOWN_API FetchTask
 {
-    FetchTask(const std::string &name);
+    FetchTask(const std::string &url);
+    virtual ~FetchTask();
     
     // query
-    const std::string name;
     std::string url;
     bool allowRedirects;
     
@@ -31,9 +31,12 @@ class MELOWN_API Fetcher
 {
 public:
     typedef std::function<void(FetchTask *)> Func;
-
+    
     virtual ~Fetcher();
-    virtual void setCallback(Func func) = 0;
+    
+    virtual void initialize(Func func) = 0;
+    virtual void finalize() = 0;
+    
     virtual void fetch(FetchTask *) = 0;
 };
 

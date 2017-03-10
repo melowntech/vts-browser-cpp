@@ -100,7 +100,6 @@ public:
         }
         glFinish();
         checkGl("load shader program");
-        state = melown::Resource::State::ready;
     }
 
     void uniformMat4(melown::uint32 location, const float *value) override
@@ -219,7 +218,6 @@ public:
         glFinish();
         checkGl("load texture");
         gpuMemoryCost = spec.buffer.size;
-        state = melown::Resource::State::ready;
     }
 };
 
@@ -316,7 +314,6 @@ public:
         gpuMemoryCost = spec.vertices.size + spec.indices.size;
         this->spec.vertices.free();
         this->spec.indices.free();
-        state = melown::Resource::State::ready;
     }
 };
 

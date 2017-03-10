@@ -18,22 +18,27 @@ public:
     Task(melown::FetchTask *task, melown::Fetcher::Func func)
         : query(task->url), task(task), func(func)
     {
-        query.timeout(1000000);
+        query.timeout(-1);
     }
     
     void done(http::ResourceFetcher::MultiQuery &&queries)
     {
         task->code = 404;
         http::ResourceFetcher::Query &q = *queries.begin();
-        if (q)
+        if (q.valid())
         {
-            task->code = 200;
             const http::ResourceFetcher::Query::Body &body = q.get();
             task->contentData.allocate(body.data.size());
             memcpy(task->contentData.data, body.data.data(), body.data.size());
             task->contentType = body.contentType;
+            task->code = 200;
         }
-        func(task);
+        try
+        {
+            func(task);
+        }
+        catch (...)
+        {}
         delete this;
     }
     
@@ -46,18 +51,20 @@ class FetcherImpl : public Fetcher
 {
 public:
     FetcherImpl() : fetcher(htt.fetcher())
-    {
-        htt.startClient(1);
-    }
+    {}
 
     ~FetcherImpl()
-    {
-        htt.stop();
-    }
+    {}
 
-    void setCallback(melown::Fetcher::Func func) override
+    void initialize(melown::Fetcher::Func func) override
     {
         this->func = func;
+        htt.startClient(4);
+    }
+    
+    void finalize() override
+    {
+        htt.stop();
     }
 
     void fetch(melown::FetchTask *task) override

@@ -92,53 +92,43 @@ public:
         BoundParamInfo(const View::BoundLayerParams &params)
             : View::BoundLayerParams(params), bound(nullptr),
               watertight(true), availCache(false),
-              texColor(nullptr), texMask(nullptr),
               vars(0), orig(0)
         {}
         
-        bool available()
+        bool available(bool primaryLod = false)
         {
             if (availCache)
-                return true;
-            if (bound->metaUrl)
-            { // bound meta nodes
-                UrlTemplate::Vars v(vars);
-                v.tileId.x &= ~255;
-                v.tileId.y &= ~255;
-                v.localId.x &= ~255;
-                v.localId.y &= ~255;
-                BoundMetaTile *bmt = impl->map->resources->getBoundMetaTile(
-                            bound->urlMeta(v));
-                if (!*bmt)
-                    return false;
-                
-                uint8 f = bmt->flags[(vars.tileId.y & 255) * 256
-                        + (vars.tileId.x & 255)];
-                if ((f & BoundLayer::MetaFlags::available)
-                        != BoundLayer::MetaFlags::available)
-                    return false;
-                
-                texMask = nullptr;
-                watertight = (f & BoundLayer::MetaFlags::watertight)
-                        == BoundLayer::MetaFlags::watertight;
-                if (!watertight)
+                return true;  
+            
+            // check mask texture
+            if (bound->metaUrl && !watertight)
+            {
+                if (primaryLod)
                 {
-                    texMask = impl->map->resources->getTexture(
+                    GpuTexture *t = impl->map->resources->getTexture(
                                 bound->urlMask(vars));
-                    if (!*texMask)
+                    if (!*t)
                         return false;
                 }
-                
-                texColor = impl->map->resources->getTexture(
+                else
+                {
+                    if (!impl->map->resources->ready(
+                                bound->urlMask(vars)))
+                        return false;
+                }
+            }
+            
+            // check color texture
+            if (primaryLod)
+            {
+                GpuTexture *t = impl->map->resources->getTexture(
                             bound->urlExtTex(vars));
+                t->impl->availTest = bound->availability.get_ptr();
+                return availCache = *t;
             }
             else
-            { // availability tests
-                texColor = impl->map->resources->getTexture(
+                return availCache = impl->map->resources->ready(
                             bound->urlExtTex(vars));
-                texColor->impl->availTest = bound->availability.get_ptr();
-            }
-            return availCache = *texColor;
         }
         
         void varsFallDown(int depth)
@@ -193,6 +183,34 @@ public:
             orig = vars = UrlTemplate::Vars(nodeInfo.nodeId(), local(nodeInfo),
                                             subMeshIndex);
             varsFallDown(depth());
+            
+            if (bound->metaUrl)
+            { // bound meta nodes
+                UrlTemplate::Vars v(vars);
+                v.tileId.x &= ~255;
+                v.tileId.y &= ~255;
+                v.localId.x &= ~255;
+                v.localId.y &= ~255;
+                BoundMetaTile *bmt = impl->map->resources->getBoundMetaTile(
+                            bound->urlMeta(v));
+                if (!*bmt)
+                {
+                    bound = nullptr;
+                    return;
+                }
+                
+                uint8 f = bmt->flags[(vars.tileId.y & 255) * 256
+                        + (vars.tileId.x & 255)];
+                if ((f & BoundLayer::MetaFlags::available)
+                        != BoundLayer::MetaFlags::available)
+                {
+                    bound = nullptr;
+                    return;
+                }
+                
+                watertight = (f & BoundLayer::MetaFlags::watertight)
+                        == BoundLayer::MetaFlags::watertight;
+            }
         }
 
         bool invalid() const
@@ -219,8 +237,6 @@ public:
         
         UrlTemplate::Vars orig;
         UrlTemplate::Vars vars;
-        GpuTexture *texColor;
-        GpuTexture *texMask;
         const NodeInfo *nodeInfo;
         RendererImpl *impl;
         BoundInfo *bound;
@@ -245,30 +261,14 @@ public:
         for (BoundParamInfo &b : boundList)
             b.prepare(nodeInfo, this, subMeshIndex);
         
+        // erase invalid layers
         boundList.erase(std::remove_if(boundList.begin(), boundList.end(),
             [](BoundParamInfo &a){ return a.invalid(); }),
                         boundList.end());
         if (boundList.empty())
             return;
-        
-        for (BoundParamInfo &b : boundList)
-        {
-            while (true)
-            {
-                if (b.available())
-                    break;
-                if (!b.canGoUp())
-                    break;
-                b.varsFallDown(1);
-            }
-        }
-        
-        boundList.erase(std::remove_if(boundList.begin(), boundList.end(),
-            [](BoundParamInfo &a){ return !a.available(); }),
-                        boundList.end());
-        if (boundList.empty())
-            return;
             
+        // sort by depth and priority
         std::stable_sort(boundList.begin(), boundList.end());
         std::reverse(boundList.begin(), boundList.end()); // render in reverse
         
@@ -278,13 +278,29 @@ public:
             it++;
         if (it != et)
             boundList.erase(++it, et);
+        
+        // show lower resolution when appropriate
+        for (BoundParamInfo &b : boundList)
+        {
+            for (uint32  i = 0; i < 5; i++)
+            {
+                if (b.available(i == 0) || !b.canGoUp())
+                    break;
+                b.varsFallDown(1);
+            }
+        }
+        
+        // erase not-ready layers
+        boundList.erase(std::remove_if(boundList.begin(), boundList.end(),
+            [](BoundParamInfo &a){ return !a.available(); }),
+                        boundList.end());
     }
 
     void drawBox(const mat4f &mvp)
     {
         GpuMeshRenderable *mesh
                 = map->resources->getMeshRenderable("data/cube.obj");
-        if (!mesh)
+        if (!*mesh)
             return;
 
         shaderColor->bind();
@@ -296,23 +312,27 @@ public:
         shader->bind();
     }
 
-    void renderNode(const NodeInfo nodeInfo,
+    bool renderNode(const NodeInfo &nodeInfo,
                     const SurfaceInfo &surface,
-                    const View::BoundLayerParams::list &boundList)
+                    const View::BoundLayerParams::list &boundList,
+                    bool onlyCheckReady)
     {
         // nodeId
         const TileId nodeId = nodeInfo.nodeId();
 
         // statistics
-        map->statistics->meshesRenderedTotal++;
-        map->statistics->meshesRenderedPerLod[
-                std::min<uint32>(nodeId.lod, MapStatistics::MaxLods-1)]++;
+        if (!onlyCheckReady)
+        {
+            map->statistics->meshesRenderedTotal++;
+            map->statistics->meshesRenderedPerLod[
+                    std::min<uint32>(nodeId.lod, MapStatistics::MaxLods-1)]++;
+        }
 
         // aggregate mesh
         MeshAggregate *meshAgg = map->resources->getMeshAggregate
-                (surface.urlMesh(UrlTemplate::Vars(nodeId)));
+                (surface.urlMesh(UrlTemplate::Vars(nodeId, local(nodeInfo))));
         if (!*meshAgg)
-            return;
+            return false;
 
         // iterate over all submeshes
         for (uint32 subMeshIndex = 0, e = meshAgg->submeshes.size();
@@ -320,8 +340,12 @@ public:
         {
             const MeshPart &part = meshAgg->submeshes[subMeshIndex];
             GpuMeshRenderable *mesh = part.renderable.get();
-            mat4f mvp = (viewProj * part.normToPhys).cast<float>();
-            shader->uniformMat4(0, mvp.data());
+            if (!onlyCheckReady)
+            {
+                mat4f mvp = (viewProj * part.normToPhys).cast<float>();
+                shader->uniformMat4(0, mvp.data());
+                //drawBox(mvp);
+            }
             
             // internal texture
             if (part.internalUv)
@@ -329,14 +353,22 @@ public:
                 UrlTemplate::Vars vars(nodeId, local(nodeInfo), subMeshIndex);
                 GpuTexture *texture = map->resources->getTexture(
                             surface.urlIntTex(vars));
-                if (!*texture)
-                    continue;
-                texture->bind();
-                mat3f uvm = upperLeftSubMatrix(identityMatrix())
-                        .cast<float>();
-                shader->uniformMat3(4, uvm.data());
-                shader->uniform(8, 0); // internal uv
-                mesh->draw();
+                if (onlyCheckReady)
+                {
+                    if (!*texture)
+                        return false;
+                }
+                else
+                {
+                    if (!*texture)
+                        continue;
+                    texture->bind();
+                    mat3f uvm = upperLeftSubMatrix(identityMatrix())
+                            .cast<float>();
+                    shader->uniformMat3(4, uvm.data());
+                    shader->uniform(8, 0); // internal uv
+                    mesh->draw();
+                }
                 continue;
             }
 
@@ -348,25 +380,32 @@ public:
                     bls.push_back(BoundParamInfo(View::BoundLayerParams(
                         mapConfig->boundLayers.get(part.textureLayer).id)));
                 reorderBoundLayer(nodeInfo, subMeshIndex, bls);
+                if (onlyCheckReady && bls.empty())
+                    return false;
+                if (!onlyCheckReady)
                 for (BoundParamInfo &b : bls)
                 {
-                    if (b.texMask)
+                    if (!b.watertight)
                     {
                         gpuContext->activeTextureUnit(1);
-                        b.texMask->bind();
+                        map->resources->getTexture(b.bound->urlMask(b.vars))
+                                ->bind();
                         gpuContext->activeTextureUnit(0);
                         shader->uniform(9, 1); // use mask
                     }
-                    b.texColor->bind();
+                    map->resources->getTexture(b.bound->urlExtTex(b.vars))
+                            ->bind();
                     mat3f uvm = b.uvMatrix();
                     shader->uniformMat3(4, uvm.data());
                     shader->uniform(8, 1); // external uv
                     mesh->draw();
-                    if (b.texMask)
+                    if (!b.watertight)
                         shader->uniform(9, 0); // do not use mask
                 }
             }
         }
+        
+        return true;
     }
 
     const std::string &pickSurface(
@@ -446,7 +485,7 @@ public:
         return result;
     }
 
-    void traverse(const NodeInfo nodeInfo)
+    void traverse(const NodeInfo &nodeInfo)
     {
         // nodeId
         const TileId nodeId = nodeInfo.nodeId();
@@ -478,20 +517,40 @@ public:
 
         if (!visibilityTest(nodeInfo, *node))
             return;
-
+        
         if (node->geometry() && coarsenessTest(nodeInfo, *node))
-        { // render the node's resources
-            renderNode(nodeInfo, *surface, *boundList);
+        {
+            // deep enough, render and return
+            renderNode(nodeInfo, *surface, *boundList, false);
             return;
         }
-
-        // traverse children
+        
+        // check children
         Children childs = children(nodeId);
-        for (uint32 i = 0; i < 4; i++)
+        bool allChildsReady = true;
+        if (node->geometry())
         {
-            if (node->flags() & (MetaNode::Flag::ulChild << i))
-                traverse(nodeInfo.child(childs[i]));
+            for (uint32 i = 0; i < childs.size(); i++)
+            {
+                if (node->flags() & (MetaNode::Flag::ulChild << i))
+                    allChildsReady = allChildsReady
+                        && renderNode(nodeInfo.child(childs[i]),
+                                      *surface, *boundList, true);
+            }
         }
+        
+        // traverse children
+        if (allChildsReady)
+        {
+            for (uint32 i = 0; i < childs.size(); i++)
+            {
+                if (node->flags() & (MetaNode::Flag::ulChild << i))
+                    traverse(nodeInfo.child(childs[i]));
+            }
+            return;
+        }
+        
+        renderNode(nodeInfo, *surface, *boundList, false);
     }
 
     void updateCamera()

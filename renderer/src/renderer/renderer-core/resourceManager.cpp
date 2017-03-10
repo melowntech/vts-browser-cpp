@@ -105,8 +105,8 @@ public:
         { // sync invalid urls
             boost::lock_guard<boost::mutex> l(mutInvalidUrls);
             invalidUrl.insert(invalidUrlNew.begin(), invalidUrlNew.end());
+            invalidUrlNew.clear();
         }
-        invalidUrlNew.clear();
         
         { // load resource
             ResourceImpl *r = nullptr;

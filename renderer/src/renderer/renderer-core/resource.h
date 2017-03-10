@@ -2,6 +2,7 @@
 #define RESOURCE_H_seghioqnh
 
 #include <string>
+#include <atomic>
 
 #include <vts-libs/registry/referenceframe.hpp>
 #include <boost/optional.hpp>
@@ -44,7 +45,7 @@ public:
     Resource *const resource;
     vtslibs::registry::BoundLayer::Availability *availTest;
     uint32 lastAccessTick;
-    State state;
+    std::atomic<State> state;
 };
 
 } // namespace melown

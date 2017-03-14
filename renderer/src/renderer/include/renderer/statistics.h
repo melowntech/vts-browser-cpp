@@ -28,6 +28,10 @@ public:
     uint32 resourcesDownloaded;
     uint32 resourcesDiskLoaded;
     uint32 frameIndex;
+    
+    // current statistics
+    
+    uint32 currentDownloads;
 };
 
 } // namespace melown

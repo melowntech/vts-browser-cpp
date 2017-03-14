@@ -16,3 +16,6 @@ if(NOT DEFINED BUILDSYS_NOBUILD_TARGET_renderer-glfw)
 	add_subdirectory(renderer-glfw)
 endif()
 
+
+add_subdirectory(pokus)
+

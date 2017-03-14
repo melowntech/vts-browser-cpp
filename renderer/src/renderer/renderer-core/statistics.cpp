@@ -6,12 +6,14 @@ namespace melown
 {
 
 MapStatistics::MapStatistics()
+    : currentDownloads(0)
 {
     resetAll();
 }
 
 MapStatistics::~MapStatistics()
 {
+    LOG(info3) << "currentDownloads:" << currentDownloads;
     LOG(info3) << "resourcesDownloaded:" << resourcesDownloaded;
     LOG(info3) << "resourcesDiskLoaded:" << resourcesDiskLoaded;
     LOG(info3) << "meshesRenderedTotal:" << meshesRenderedTotal;

@@ -192,18 +192,16 @@ public:
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_2D, id);
         { // vertical flip
-            if (spec.width > 1024)
-                throw std::invalid_argument("texture too large");
-            char buffer[1024*4];
             unsigned lineSize = spec.width * spec.components;
+            melown::Buffer buffer(lineSize);
             for (unsigned y = 0; y < spec.height / 2; y++)
             {
                 char *a = (char*)spec.buffer.data + y * lineSize;
                 char *b = (char*)spec.buffer.data
                         + (spec.height - y - 1) * lineSize;
-                memcpy(buffer, a, lineSize);
+                memcpy(buffer.data, a, lineSize);
                 memcpy(a, b, lineSize);
-                memcpy(b, buffer, lineSize);
+                memcpy(b, buffer.data, lineSize);
             }
         }
         glTexImage2D(GL_TEXTURE_2D, 0, findInternalFormat(spec),

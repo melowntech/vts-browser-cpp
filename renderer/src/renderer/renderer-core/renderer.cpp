@@ -1,5 +1,6 @@
 #include <unordered_map>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/optional/optional_io.hpp>
 #include <vts-libs/vts/urltemplate.hpp>
 #include <vts-libs/vts/nodeinfo.hpp>
@@ -40,16 +41,26 @@ const vec4 column(const mat4 &m, uint32 index)
     return vec4(m(index, 0), m(index, 1), m(index, 2), m(index, 3));
 }
 
+SurfaceCommonConfig *findGlue(MapConfig *mapConfig, const Glue::Id &id)
+{
+    for (auto &&it : mapConfig->glues)
+    {
+        if (it.id == id)
+            return &it;
+    }
+    return nullptr;
+}
+
 }
 
 class RendererImpl : public Renderer
 {
 public:
-    class SurfaceInfo : public SurfaceConfig
+    class SurfaceInfo : public SurfaceCommonConfig
     {
     public:
-        SurfaceInfo(const SurfaceConfig &surface, RendererImpl *renderer)
-            : SurfaceConfig(surface)
+        SurfaceInfo(const SurfaceCommonConfig &surface, RendererImpl *renderer)
+            : SurfaceCommonConfig(surface)
         {
             urlMeta.parse(renderer->convertPath(urls3d->meta,
                                       renderer->mapConfig->name));
@@ -408,13 +419,26 @@ public:
         return true;
     }
 
-    const std::string &pickSurface(
-        const View::BoundLayerParams::list *&boundList)
+    const SurfaceInfo *pickSurface(const NodeInfo &nodeInfo,
+        const View::BoundLayerParams::list *&boundList,
+        const MetaTile *&tile, const MetaNode *&node)
     {
         // todo - pick first surface for now
         auto it = mapConfig->view.surfaces.begin();
+        const SurfaceInfo *surface = getSurfaceInfo(it->first).get();
         boundList = &it->second;
-        return it->first;
+        const TileId nodeId = nodeInfo.nodeId();
+        const TileId tileId(nodeId.lod,
+                            (nodeId.x >> binaryOrder) << binaryOrder,
+                            (nodeId.y >> binaryOrder) << binaryOrder);
+        tile = map->resources->getMetaTile(surface->urlMeta(
+            UrlTemplate::Vars(tileId)));
+        if (!*tile)
+            return nullptr;
+        node = tile->get(nodeInfo.nodeId(), std::nothrow);
+        if (!node)
+            return nullptr;
+        return surface;
     }
 
     const bool visibilityTest(const NodeInfo &nodeInfo, const MetaNode &node)
@@ -453,7 +477,7 @@ public:
         return true;
     }
 
-    const bool coarsenessTest(const NodeInfo &nodeInfo, const MetaNode &node)
+    bool coarsenessTest(const NodeInfo &nodeInfo, const MetaNode &node)
     {
         if (!node.applyTexelSize() && !node.applyDisplaySize())
             return false;
@@ -497,22 +521,11 @@ public:
 
         // pick surface
         const View::BoundLayerParams::list *boundList = nullptr;
-        const SurfaceInfo *surface = getSurfaceInfo(pickSurface(boundList));
+        const MetaTile *tile = nullptr;
+        const MetaNode *node = nullptr;
+        const SurfaceInfo *surface = pickSurface(
+                    nodeInfo, boundList, tile, node);
         if (!surface)
-            return;
-
-        // pick meta tile
-        const TileId tileId(nodeId.lod,
-                            (nodeId.x >> binaryOrder) << binaryOrder,
-                            (nodeId.y >> binaryOrder) << binaryOrder);
-        const MetaTile *tile = map->resources->getMetaTile
-                (surface->urlMeta(UrlTemplate::Vars(tileId)));
-        if (!*tile)
-            return;
-
-        // pick meta node
-        const MetaNode *node = tile->get(nodeId, std::nothrow_t());
-        if (!node)
             return;
 
         if (!visibilityTest(nodeInfo, *node))
@@ -671,6 +684,58 @@ public:
         }
         return ok;
     }
+    
+    void generateSurfaceStack()
+    {
+        TileSetGlues::list lst;
+        for (auto &&s : mapConfig->view.surfaces)
+        {
+            TileSetGlues ts(s.first);
+            for (auto &&g : mapConfig->glues)
+            {
+                if (g.id.back() == ts.tilesetId)
+                    ts.glues.push_back(Glue(g.id));
+            }
+            lst.push_back(ts);
+        }
+        
+        std::unordered_map<std::string, uint32> order;
+        uint32 i = 0;
+        for (auto &&it : mapConfig->surfaces)
+            order[it.id] = i++;
+        
+        std::sort(lst.begin(), lst.end(), [order](
+                  TileSetGlues &a,
+                  TileSetGlues &b) mutable {
+            assert(order.find(a.tilesetId) != order.end());
+            assert(order.find(b.tilesetId) != order.end());
+            return order[a.tilesetId] < order[b.tilesetId];
+        });
+        
+        lst = glueOrder(lst);
+        std::reverse(lst.begin(), lst.end());
+        
+        for (auto &&l : lst)
+        {
+            std::vector<std::string> s;
+            for (auto &&g : l.glues)
+            {
+                std::string gn = boost::algorithm::join(g.id, ",");
+                s.push_back(std::string() + "[" + gn + "]");
+            }
+            std::cout << l.tilesetId << " : "
+                      << boost::algorithm::join(s, " , ") << std::endl;
+        }
+        
+        surfaceStack.clear();
+        for (auto &&ts : lst)
+        {
+            for (auto &&g : ts.glues)
+                surfaceStack.push_back(std::shared_ptr<SurfaceInfo>(
+                    new SurfaceInfo(*findGlue(mapConfig, g.id), this)));
+            surfaceStack.push_back(getSurfaceInfo(ts.tilesetId));
+        }
+    }
 
     void onceInitialize()
     {
@@ -683,20 +748,33 @@ public:
 
         binaryOrder = mapConfig->referenceFrame.metaBinaryOrder;
 
+        boundInfos.clear();
         for (auto &&bl : mapConfig->boundLayers)
         {
             boundInfos[bl.id] = std::shared_ptr<BoundInfo>
                     (new BoundInfo(bl, this));
         }
 
+        surfaceInfos.clear();
         for (auto &&sr : mapConfig->surfaces)
         {
             surfaceInfos[sr.id] = std::shared_ptr<SurfaceInfo>
                     (new SurfaceInfo(sr, this));
         }
+        
+        generateSurfaceStack();
 
         // todo - temporarily reset camera
-        mapConfig->position.orientation = math::Point3(0, -90, 0);
+        //mapConfig->position.orientation = math::Point3(0, -90, 0);
+        // todo - temporarily reset position height
+        if (mapConfig->position.heightMode == Position::HeightMode::floating)
+        {
+            mapConfig->position.heightMode = Position::HeightMode::fixed;
+            mapConfig->position.position[0] = 471776.0;
+            mapConfig->position.position[1] = 5555744.0;
+            mapConfig->position.position[2] = 250;
+            mapConfig->position.verticalExtent = 1000;
+        }
 
         LOG(info3) << "position: " << mapConfig->position.position;
         LOG(info3) << "rotation: " << mapConfig->position.orientation;
@@ -746,12 +824,12 @@ public:
     void renderFinalize() override
     {}
 
-    SurfaceInfo *getSurfaceInfo(const std::string &id)
+    std::shared_ptr<SurfaceInfo> getSurfaceInfo(const std::string &id)
     {
         auto it = surfaceInfos.find(id);
         if (it == surfaceInfos.end())
             return nullptr;
-        return it->second.get();
+        return it->second;
     }
 
     BoundInfo *getBoundInfo(const std::string &id)
@@ -764,6 +842,7 @@ public:
 
     std::unordered_map<std::string, std::shared_ptr<SurfaceInfo>> surfaceInfos;
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
+    std::vector<std::shared_ptr<SurfaceInfo>> surfaceStack;
 
     vec3 perpendicularUnitVector;
     mat4 viewProj;

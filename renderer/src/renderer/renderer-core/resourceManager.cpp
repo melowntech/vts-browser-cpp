@@ -102,6 +102,8 @@ public:
 
     bool dataTick() override
     {
+        map->statistics->currentDownloads = downloads;
+        
         { // sync invalid urls
             boost::lock_guard<boost::mutex> l(mutInvalidUrls);
             invalidUrl.insert(invalidUrlNew.begin(), invalidUrlNew.end());
@@ -147,6 +149,8 @@ public:
                 }
                 
                 r->state = ResourceImpl::State::preparing;
+                
+                LOG(info3) << r->resource->name;
                 
                 assert(!r->download);
                 r->download.emplace(r);

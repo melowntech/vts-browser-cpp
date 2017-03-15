@@ -25,8 +25,12 @@ public:
 
     // global statistics
 
+    uint32 resourcesIgnored;
     uint32 resourcesDownloaded;
     uint32 resourcesDiskLoaded;
+    uint32 resourcesGpuLoaded;
+    uint32 resourcesReleased;
+    uint32 resourcesFailed;
     uint32 frameIndex;
     
     // current statistics

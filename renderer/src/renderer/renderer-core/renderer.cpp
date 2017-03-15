@@ -25,7 +25,92 @@ namespace melown
 using namespace vtslibs::vts;
 using namespace vtslibs::registry;
 
-namespace {
+namespace
+{
+
+const vec3f convertRgbToHsv(const vec3f &inColor)
+{
+    vec3f outColor;
+    float minColor = inColor[0] < inColor[1] ? inColor[0] : inColor[1];
+    minColor = minColor < inColor[2] ? minColor : inColor[2];
+    float maxColor = inColor[0] > inColor[1] ? inColor[0] : inColor[1];
+    maxColor = maxColor > inColor[2] ? maxColor : inColor[2];
+    outColor[2] = maxColor;
+    float delta = maxColor - minColor;
+    if (delta < 0.00001)
+        return outColor;
+    if (maxColor > 0)
+        outColor[1] = (delta / maxColor);
+    else
+        return outColor;
+    if (inColor[0] >= maxColor)
+        outColor[0] = (inColor[1] - inColor[2]) / delta;
+    else
+        if (inColor[1] >= maxColor)
+            outColor[0] = 2 + (inColor[2] - inColor[0]) / delta;
+        else
+            outColor[0] = 4 + (inColor[0] - inColor[1]) / delta;
+    outColor[0] *= 60.f / 360.f;
+    if (outColor[0] < 0)
+        outColor[0] += 1;
+    return outColor;
+}
+
+const vec3f convertHsvToRgb(const vec3f &inColor)
+{
+    vec3f outColor;
+    if (inColor[1] <= 0)
+    {
+        outColor[0] = inColor[2];
+        outColor[1] = inColor[2];
+        outColor[2] = inColor[2];
+        return outColor;
+    }
+    float hh = inColor[0];
+    if (hh >= 1)
+        hh = 0;
+    hh /= 60.f / 360.f;
+    uint32 i = (uint32)hh;
+    float ff = hh - i;
+    float p = inColor[2] * (1 - inColor[1]);
+    float q = inColor[2] * (1 - (inColor[1] * ff));
+    float t = inColor[2] * (1 - (inColor[1] * (1 - ff)));
+    switch (i)
+    {
+    case 0:
+        outColor[0] = inColor[2];
+        outColor[1] = t;
+        outColor[2] = p;
+        break;
+    case 1:
+        outColor[0] = q;
+        outColor[1] = inColor[2];
+        outColor[2] = p;
+        break;
+    case 2:
+        outColor[0] = p;
+        outColor[1] = inColor[2];
+        outColor[2] = t;
+        break;
+    case 3:
+        outColor[0] = p;
+        outColor[1] = q;
+        outColor[2] = inColor[2];
+        break;
+    case 4:
+        outColor[0] = t;
+        outColor[1] = p;
+        outColor[2] = inColor[2];
+        break;
+    case 5:
+    default:
+        outColor[0] = inColor[2];
+        outColor[1] = p;
+        outColor[2] = q;
+        break;
+    }
+    return outColor;
+}
 
 const vec3 lowerUpperCombine(uint32 i)
 {
@@ -44,6 +129,16 @@ const vec4 column(const mat4 &m, uint32 index)
 SurfaceCommonConfig *findGlue(MapConfig *mapConfig, const Glue::Id &id)
 {
     for (auto &&it : mapConfig->glues)
+    {
+        if (it.id == id)
+            return &it;
+    }
+    return nullptr;
+}
+
+SurfaceCommonConfig *findSurface(MapConfig *mapConfig, const std::string &id)
+{
+    for (auto &&it : mapConfig->surfaces)
     {
         if (it.id == id)
             return &it;
@@ -73,6 +168,18 @@ public:
         UrlTemplate urlMeta;
         UrlTemplate urlMesh;
         UrlTemplate urlIntTex;
+        TilesetIdList name;
+    };
+    
+    class SurfaceStackItem
+    {
+    public:
+        SurfaceStackItem() : alien(false)
+        {}
+        
+        std::shared_ptr<SurfaceInfo> surface;
+        vec3f color;
+        bool alien;
     };
 
     class BoundInfo : public BoundLayer
@@ -307,7 +414,7 @@ public:
                         boundList.end());
     }
 
-    void drawBox(const mat4f &mvp)
+    void drawBox(const mat4f &mvp, const vec3f &color = vec3f(1, 0, 0))
     {
         GpuMeshRenderable *mesh
                 = map->resources->getMeshRenderable("data/cube.obj");
@@ -316,7 +423,7 @@ public:
 
         shaderColor->bind();
         shaderColor->uniformMat4(0, mvp.data());
-        shaderColor->uniformVec3(8, vec3f(1, 0, 0).data());
+        shaderColor->uniformVec3(8, color.data());
         gpuContext->wiremode(true);
         mesh->draw();
         gpuContext->wiremode(false);
@@ -324,8 +431,7 @@ public:
     }
 
     bool renderNode(const NodeInfo &nodeInfo,
-                    const SurfaceInfo &surface,
-                    const View::BoundLayerParams::list &boundList,
+                    const SurfaceStackItem &surface,
                     bool onlyCheckReady)
     {
         // nodeId
@@ -340,8 +446,8 @@ public:
         }
 
         // aggregate mesh
-        MeshAggregate *meshAgg = map->resources->getMeshAggregate
-                (surface.urlMesh(UrlTemplate::Vars(nodeId, local(nodeInfo))));
+        MeshAggregate *meshAgg = map->resources->getMeshAggregate(surface
+                .surface->urlMesh(UrlTemplate::Vars(nodeId, local(nodeInfo))));
         if (!*meshAgg)
             return false;
 
@@ -355,7 +461,7 @@ public:
             {
                 mat4f mvp = (viewProj * part.normToPhys).cast<float>();
                 shader->uniformMat4(0, mvp.data());
-                //drawBox(mvp);
+                //drawBox(mvp, surface.color);
             }
             
             // internal texture
@@ -363,7 +469,7 @@ public:
             {
                 UrlTemplate::Vars vars(nodeId, local(nodeInfo), subMeshIndex);
                 GpuTexture *texture = map->resources->getTexture(
-                            surface.urlIntTex(vars));
+                            surface.surface->urlIntTex(vars));
                 if (onlyCheckReady)
                 {
                     if (!*texture)
@@ -386,6 +492,14 @@ public:
             // external bound textures
             if (part.externalUv)
             {
+                std::string surfaceName;
+                if (surface.surface->name.size() > 1)
+                    surfaceName = surface.surface
+                            ->name[part.surfaceReference - 1];
+                else
+                    surfaceName = surface.surface->name.back();
+                const View::BoundLayerParams::list &boundList
+                                = mapConfig->view.surfaces[surfaceName];
                 BoundParamInfo::list bls(boundList.begin(), boundList.end());
                 if (part.textureLayer)
                     bls.push_back(BoundParamInfo(View::BoundLayerParams(
@@ -418,28 +532,30 @@ public:
         
         return true;
     }
-
-    const SurfaceInfo *pickSurface(const NodeInfo &nodeInfo,
-        const View::BoundLayerParams::list *&boundList,
-        const MetaTile *&tile, const MetaNode *&node)
+    
+    /*
+    bool checkParentsChild(const SurfaceInfo *surface, const TileId &id)
     {
-        // todo - pick first surface for now
-        auto it = mapConfig->view.surfaces.begin();
-        const SurfaceInfo *surface = getSurfaceInfo(it->first).get();
-        boundList = &it->second;
-        const TileId nodeId = nodeInfo.nodeId();
-        const TileId tileId(nodeId.lod,
-                            (nodeId.x >> binaryOrder) << binaryOrder,
-                            (nodeId.y >> binaryOrder) << binaryOrder);
-        tile = map->resources->getMetaTile(surface->urlMeta(
-            UrlTemplate::Vars(tileId)));
-        if (!*tile)
-            return nullptr;
-        node = tile->get(nodeInfo.nodeId(), std::nothrow);
-        if (!node)
-            return nullptr;
-        return surface;
+        if (id.lod == 0)
+            return false;
+        TileId pid = parent(id);
+        const TileId tileId(pid.lod,
+                            (pid.x >> binaryOrder) << binaryOrder,
+                            (pid.y >> binaryOrder) << binaryOrder);
+        const MetaTile *pt = map->resources->getMetaTile(surface->urlMeta(
+                                            UrlTemplate::Vars(tileId)));
+        if (!*pt)
+            return false;
+        const MetaNode *pn = pt->get(pid, std::nothrow);
+        if (!pn)
+            return false;
+        uint32 idx = 0;
+        idx += (id.y - pid.y * 2) * 2;
+        idx += id.x - pid.x * 2;
+        assert(idx < 4);
+        return (pn->flags() & (MetaNode::Flag::ulChild << idx)) != 0;
     }
+    */
 
     const bool visibilityTest(const NodeInfo &nodeInfo, const MetaNode &node)
     {
@@ -508,62 +624,65 @@ public:
         }
         return result;
     }
-
+    
     void traverse(const NodeInfo &nodeInfo)
     {
-        // nodeId
         const TileId nodeId = nodeInfo.nodeId();
 
         // statistics
         map->statistics->metaNodesTraversedTotal++;
         map->statistics->metaNodesTraversedPerLod[
                 std::min<uint32>(nodeId.lod, MapStatistics::MaxLods-1)]++;
-
-        // pick surface
-        const View::BoundLayerParams::list *boundList = nullptr;
-        const MetaTile *tile = nullptr;
-        const MetaNode *node = nullptr;
-        const SurfaceInfo *surface = pickSurface(
-                    nodeInfo, boundList, tile, node);
-        if (!surface)
-            return;
-
-        if (!visibilityTest(nodeInfo, *node))
-            return;
         
-        if (node->geometry() && coarsenessTest(nodeInfo, *node))
+        // vars
+        const SurfaceStackItem *topmost = nullptr;
+        const MetaNode *node = nullptr;
+        bool childsAvailable[4] = {false, false, false, false};
+
+        // find topmost nonempty surface
+        for (auto &&it : surfaceStack)
         {
-            // deep enough, render and return
-            renderNode(nodeInfo, *surface, *boundList, false);
-            return;
+            const TileId tileId(nodeId.lod,
+                                (nodeId.x >> binaryOrder) << binaryOrder,
+                                (nodeId.y >> binaryOrder) << binaryOrder);
+            const MetaTile *t = map->resources->getMetaTile(
+                        it.surface->urlMeta(UrlTemplate::Vars(tileId)));
+            if (!*t)
+                continue;
+            const MetaNode *n = t->get(nodeInfo.nodeId(), std::nothrow);
+            if (!n || n->extents.ll == n->extents.ur)
+                continue;
+            if (!visibilityTest(nodeInfo, *n))
+                continue;
+            for (uint32 i = 0; i < 4; i++)
+                childsAvailable[i] = childsAvailable[i]
+                        || (n->childFlags() & (MetaNode::Flag::ulChild << i));
+            if (topmost || n->alien() != it.alien || !n->geometry())
+                continue;
+            topmost = &it;
+            node = n;
         }
         
-        // check children
-        Children childs = children(nodeId);
-        bool allChildsReady = true;
-        if (node->geometry())
+        bool anychild = false;
+        bool allchild = true;
+        for (uint32 i = 0; i < 4; i++)
         {
-            for (uint32 i = 0; i < childs.size(); i++)
-            {
-                if (node->flags() & (MetaNode::Flag::ulChild << i))
-                    allChildsReady = allChildsReady
-                        && renderNode(nodeInfo.child(childs[i]),
-                                      *surface, *boundList, true);
-            }
+            anychild = anychild || childsAvailable[i];
+            allchild = allchild && childsAvailable[i];
+        }
+        
+        // render the node, if available
+        if (topmost && (!allchild || coarsenessTest(nodeInfo, *node)))
+        {
+            renderNode(nodeInfo, *topmost, false);
+            return;
         }
         
         // traverse children
-        if (allChildsReady)
-        {
-            for (uint32 i = 0; i < childs.size(); i++)
-            {
-                if (node->flags() & (MetaNode::Flag::ulChild << i))
-                    traverse(nodeInfo.child(childs[i]));
-            }
-            return;
-        }
-        
-        renderNode(nodeInfo, *surface, *boundList, false);
+        Children childs = children(nodeId);
+        for (uint32 i = 0; i < childs.size(); i++)
+            if (childsAvailable[i])
+                traverse(nodeInfo.child(childs[i]));
     }
 
     void updateCamera()
@@ -685,6 +804,18 @@ public:
         return ok;
     }
     
+    void printSurfaceStack()
+    {
+        std::ostringstream ss;
+        ss << std::endl;
+        for (auto &&l : surfaceStack)
+            ss << (l.alien ? "* " : "  ")
+                << std::setw(50) << std::left << (std::string()
+                + "[" + boost::algorithm::join(l.surface->name, ",") + "]")
+                << " " << l.color.transpose() << std::endl;
+        LOG(info3) << ss.str();
+    }
+    
     void generateSurfaceStack()
     {
         TileSetGlues::list lst;
@@ -699,11 +830,11 @@ public:
             lst.push_back(ts);
         }
         
+        // sort surfaces by their order in mapConfig
         std::unordered_map<std::string, uint32> order;
         uint32 i = 0;
         for (auto &&it : mapConfig->surfaces)
             order[it.id] = i++;
-        
         std::sort(lst.begin(), lst.end(), [order](
                   TileSetGlues &a,
                   TileSetGlues &b) mutable {
@@ -712,29 +843,70 @@ public:
             return order[a.tilesetId] < order[b.tilesetId];
         });
         
+        // sort glues on surfaces
         lst = glueOrder(lst);
         std::reverse(lst.begin(), lst.end());
         
-        for (auto &&l : lst)
-        {
-            std::vector<std::string> s;
-            for (auto &&g : l.glues)
-            {
-                std::string gn = boost::algorithm::join(g.id, ",");
-                s.push_back(std::string() + "[" + gn + "]");
-            }
-            std::cout << l.tilesetId << " : "
-                      << boost::algorithm::join(s, " , ") << std::endl;
-        }
-        
+        // generate proper surface stack
         surfaceStack.clear();
         for (auto &&ts : lst)
         {
             for (auto &&g : ts.glues)
-                surfaceStack.push_back(std::shared_ptr<SurfaceInfo>(
-                    new SurfaceInfo(*findGlue(mapConfig, g.id), this)));
-            surfaceStack.push_back(getSurfaceInfo(ts.tilesetId));
+            {
+                SurfaceStackItem i;
+                i.surface = std::shared_ptr<SurfaceInfo> (new SurfaceInfo(
+                            *findGlue(mapConfig, g.id), this));
+                i.surface->name = g.id;
+                surfaceStack.push_back(i);
+            }
+            SurfaceStackItem i;
+            i.surface = std::shared_ptr<SurfaceInfo> (new SurfaceInfo(
+                    *findSurface(mapConfig, ts.tilesetId), this));
+            i.surface->name = {ts.tilesetId};
+            surfaceStack.push_back(i);
         }
+        
+        // colorize proper surface stack
+        for (auto it = surfaceStack.begin(),
+             et = surfaceStack.end(); it != et; it++)
+            it->color = convertHsvToRgb(vec3f((it - surfaceStack.begin())
+                        / (float)surfaceStack.size(), 1, 1));
+        
+        // generate alien surface stack positions
+        auto copy(surfaceStack);
+        for (auto &&it : copy)
+        {
+            if (it.surface->name.size() > 1)
+            {
+                auto n2 = it.surface->name;
+                n2.pop_back();
+                std::string n = boost::join(n2, "|");
+                auto jt = surfaceStack.begin(), et = surfaceStack.end();
+                while (jt != et && boost::join(jt->surface->name, "|") != n)
+                    jt++;
+                if (jt != et)
+                {
+                    SurfaceStackItem i(it);
+                    i.alien = true;
+                    surfaceStack.insert(jt, i);
+                }
+            }
+        }
+        
+        // colorize alien positions
+        for (auto it = surfaceStack.begin(),
+             et = surfaceStack.end(); it != et; it++)
+        {
+            if (it->alien)
+            {
+                vec3f c = convertRgbToHsv(it->color);
+                c(1) *= 0.5;
+                it->color = convertHsvToRgb(c);
+            }
+        }
+        
+        // debug print
+        printSurfaceStack();
     }
 
     void onceInitialize()
@@ -754,16 +926,10 @@ public:
             boundInfos[bl.id] = std::shared_ptr<BoundInfo>
                     (new BoundInfo(bl, this));
         }
-
-        surfaceInfos.clear();
-        for (auto &&sr : mapConfig->surfaces)
-        {
-            surfaceInfos[sr.id] = std::shared_ptr<SurfaceInfo>
-                    (new SurfaceInfo(sr, this));
-        }
         
         generateSurfaceStack();
 
+        /*
         // todo - temporarily reset camera
         //mapConfig->position.orientation = math::Point3(0, -90, 0);
         // todo - temporarily reset position height
@@ -775,6 +941,9 @@ public:
             mapConfig->position.position[2] = 250;
             mapConfig->position.verticalExtent = 1000;
         }
+        */
+        // temporarily change height above terrain
+        mapConfig->position.position[2] = 0;
 
         LOG(info3) << "position: " << mapConfig->position.position;
         LOG(info3) << "rotation: " << mapConfig->position.orientation;
@@ -824,14 +993,6 @@ public:
     void renderFinalize() override
     {}
 
-    std::shared_ptr<SurfaceInfo> getSurfaceInfo(const std::string &id)
-    {
-        auto it = surfaceInfos.find(id);
-        if (it == surfaceInfos.end())
-            return nullptr;
-        return it->second;
-    }
-
     BoundInfo *getBoundInfo(const std::string &id)
     {
         auto it = boundInfos.find(id);
@@ -840,9 +1001,8 @@ public:
         return it->second.get();
     }
 
-    std::unordered_map<std::string, std::shared_ptr<SurfaceInfo>> surfaceInfos;
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
-    std::vector<std::shared_ptr<SurfaceInfo>> surfaceStack;
+    std::vector<SurfaceStackItem> surfaceStack;
 
     vec3 perpendicularUnitVector;
     mat4 viewProj;

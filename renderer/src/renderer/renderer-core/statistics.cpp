@@ -14,15 +14,21 @@ MapStatistics::MapStatistics()
 MapStatistics::~MapStatistics()
 {
     LOG(info3) << "currentDownloads:" << currentDownloads;
+    LOG(info3) << "resourcesIgnored:" << resourcesIgnored;
     LOG(info3) << "resourcesDownloaded:" << resourcesDownloaded;
     LOG(info3) << "resourcesDiskLoaded:" << resourcesDiskLoaded;
+    LOG(info3) << "resourcesGpuLoaded:" << resourcesGpuLoaded;
+    LOG(info3) << "resourcesReleased:" << resourcesReleased;
+    LOG(info3) << "resourcesFailed:" << resourcesFailed;
     LOG(info3) << "meshesRenderedTotal:" << meshesRenderedTotal;
     for (uint32 i = 0; i < MaxLods; i++)
-        LOG(info3) << "meshesRenderedPerLod[" << i << "]:"
+        if (meshesRenderedPerLod[i])
+            LOG(info3) << "meshesRenderedPerLod[" << i << "]:"
                    << meshesRenderedPerLod[i];
     LOG(info3) << "metaNodesTraversedTotal:" << metaNodesTraversedTotal;
     for (uint32 i = 0; i < MaxLods; i++)
-        LOG(info3) << "metaNodesTraversedPerLod[" << i << "]:"
+        if (metaNodesTraversedPerLod[i])
+            LOG(info3) << "metaNodesTraversedPerLod[" << i << "]:"
                    << metaNodesTraversedPerLod[i];
     LOG(info3) << "frameIndex:" << frameIndex;
 }
@@ -30,8 +36,12 @@ MapStatistics::~MapStatistics()
 void MapStatistics::resetAll()
 {
     resetFrame();
+    resourcesIgnored = 0;
     resourcesDownloaded = 0;
     resourcesDiskLoaded = 0;
+    resourcesGpuLoaded = 0;
+    resourcesReleased = 0;
+    resourcesFailed = 0;
     frameIndex = 0;
 }
 

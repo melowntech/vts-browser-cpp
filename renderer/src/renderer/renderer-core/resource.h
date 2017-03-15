@@ -14,13 +14,16 @@
 namespace melown
 {
 
+bool availableInCache(const std::string &name);
+
 class ResourceImpl
 {
 public:
     enum class State
     {
         initializing,
-        preparing,
+        downloading,
+        downloaded,
         ready,
         errorDownload,
         errorLoad,
@@ -35,7 +38,7 @@ public:
         ResourceImpl *const resource;
         
         void saveToCache();
-        bool loadFromCache();
+        void loadFromCache();
         void readLocalFile();
     };
     

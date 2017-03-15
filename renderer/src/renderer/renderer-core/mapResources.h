@@ -30,6 +30,7 @@ public:
     std::shared_ptr<GpuMeshRenderable> renderable;
     mat4 normToPhys;
     uint32 textureLayer;
+    uint32 surfaceReference;
     bool internalUv;
     bool externalUv;
 };

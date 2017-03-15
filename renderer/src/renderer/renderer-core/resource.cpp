@@ -114,21 +114,17 @@ void ResourceImpl::DownloadTask::saveToCache()
     {}
 }
 
-bool ResourceImpl::DownloadTask::loadFromCache()
+void ResourceImpl::DownloadTask::loadFromCache()
 {
     code = 0;
     try
     {
         std::string path = convertNameToCache(resource->resource->name);
-        if (boost::filesystem::exists(path))
-        {
-            contentData = readLocalFileBuffer(path);
-            code = 200;
-        }
+        contentData = readLocalFileBuffer(path);
+        code = 200;
     }
     catch (std::runtime_error &)
     {}
-    return code == 200;
 }
 
 void ResourceImpl::DownloadTask::readLocalFile()
@@ -147,5 +143,11 @@ ResourceImpl::ResourceImpl(Resource *resource)
     : resource(resource), state(State::initializing),
       lastAccessTick(0), availTest(nullptr)
 {}
+
+bool availableInCache(const std::string &name)
+{
+    std::string path = convertNameToCache(name);
+    return boost::filesystem::exists(path);
+}
 
 } // namespace melown

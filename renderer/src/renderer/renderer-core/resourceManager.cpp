@@ -80,14 +80,13 @@ public:
     {
         dataContext = nullptr;
         fetcher->finalize();
-        downloadQue.clear();
+        prepareQue.clear();
     }
     
     void loadResource(ResourceImpl *r)
     {
-        assert(r->state == ResourceImpl::State::preparing);
         assert(r->download);
-        
+        map->statistics->resourcesGpuLoaded++;
         try
         {
             r->resource->load(map);
@@ -95,6 +94,7 @@ public:
         }
         catch (std::runtime_error &)
         {
+            map->statistics->resourcesFailed++;
             r->state = ResourceImpl::State::errorLoad;
         }
         r->download.reset();
@@ -110,74 +110,66 @@ public:
             invalidUrlNew.clear();
         }
         
-        { // load resource
-            ResourceImpl *r = nullptr;
+        ResourceImpl *r = nullptr;
+        {
+            boost::lock_guard<boost::mutex> l(mutPrepareQue);
+            if (!prepareQue.empty())
             {
-                boost::lock_guard<boost::mutex> l(mutLoadQue);
-                if (!loadQue.empty())
-                {
-                    r = loadQue.front();
-                    loadQue.pop();
-                }
-            }
-            if (r)
-            {
-                loadResource(r);
-                return false;
+                auto it = std::next(prepareQue.begin(),
+                                    takeItemIndex++ % prepareQue.size());
+                r = *it;
+                prepareQue.erase(it);
             }
         }
+        if (!r)
+            return true; // sleep
         
-        if (downloads.load() < 5)
-        { // download resource
-            ResourceImpl *r = nullptr;
+        if (r->state == ResourceImpl::State::downloaded)
+        {
+            loadResource(r);
+            return false;
+        }
+        
+        if (r->state == ResourceImpl::State::initializing)
+        {
+            if (invalidUrl.find(r->resource->name) != invalidUrl.end())
             {
-                boost::lock_guard<boost::mutex> l(mutDownloadQue);
-                if (!downloadQue.empty())
-                {
-                    auto it = std::next(downloadQue.begin(),
-                                        takeItemIndex++ % downloadQue.size());
-                    r = *it;
-                    downloadQue.erase(it);
-                }
+                map->statistics->resourcesIgnored++;
+                r->state = ResourceImpl::State::errorLoad;
+                return false;
             }
-            if (r && r->state == ResourceImpl::State::initializing)
+            
+            if (r->resource->name.find("://") == std::string::npos)
             {
-                if (invalidUrl.find(r->resource->name) != invalidUrl.end())
-                {
-                    r->state = ResourceImpl::State::errorLoad;
-                    return false;
-                }
-                
-                r->state = ResourceImpl::State::preparing;
-                
-                LOG(info3) << r->resource->name;
-                
                 assert(!r->download);
                 r->download.emplace(r);
-                
-                if (r->resource->name.find("://") == std::string::npos)
-                {
-                    r->download->readLocalFile();
-                    loadResource(r);
-                }
-                else if (r->download->loadFromCache())
-                {
-                    map->statistics->resourcesDiskLoaded++;
-                    loadResource(r);
-                }
-                else
-                {
-                    fetcher->fetch(r->download.get_ptr());
-                    map->statistics->resourcesDownloaded++;
-                    downloads++;
-                }
-                
-                return false;
+                r->download->readLocalFile();
+                loadResource(r);
             }
+            else if (availableInCache(r->resource->name))
+            {
+                assert(!r->download);
+                r->download.emplace(r);
+                r->download->loadFromCache();
+                loadResource(r);
+                map->statistics->resourcesDiskLoaded++;
+            }
+            else if (downloads < 5)
+            {
+                assert(!r->download);
+                r->download.emplace(r);
+                r->state = ResourceImpl::State::downloading;
+                fetcher->fetch(r->download.get_ptr());
+                map->statistics->resourcesDownloaded++;
+                downloads++;
+            }
+            else
+                return true; // sleep
+            
+            return false;
         }
         
-        // sleep
-        return true;
+        return true; // sleep
     }
     
     
@@ -189,7 +181,7 @@ public:
     void fetchedFile(FetchTask *task)
     {
         ResourceImpl *resource = ((ResourceImpl::DownloadTask*)task)->resource;
-        assert(resource->state == ResourceImpl::State::preparing);
+        assert(resource->state == ResourceImpl::State::downloading);
         assert(resource->download);
         
         // handle error codes
@@ -251,11 +243,7 @@ public:
             return;
         }
         
-        ((ResourceImpl::DownloadTask*)task)->saveToCache();
-        {
-            boost::lock_guard<boost::mutex> l(mutLoadQue);
-            loadQue.push(resource);
-        }
+        resource->state = ResourceImpl::State::downloaded;
     }
     
     
@@ -272,21 +260,20 @@ public:
     void renderFinalize() override
     {
         renderContext = nullptr;
-        downloadQueNew.clear();
+        prepareQueNew.clear();
+        LOG(info3) << "Releasing " << resources.size() << " resources";
         resources.clear();
     }
 
     void renderTick() override
     {
         { // sync download queue
-            boost::lock_guard<boost::mutex> l(mutDownloadQue);
-            std::swap(downloadQueNew, downloadQue);
+            boost::lock_guard<boost::mutex> l(mutPrepareQue);
+            std::swap(prepareQueNew, prepareQue);
         }
-        downloadQueNew.clear();
+        prepareQueNew.clear();
         
-        // clear old resources
-        if (tickIndex % 10 == 0)
-        {
+        { // clear old resources
             std::vector<Resource*> res;
             res.reserve(resources.size());
             uint32 memUse = 0;
@@ -295,7 +282,8 @@ public:
                 memUse += it.second->gpuMemoryCost + it.second->ramMemoryCost;
                 // consider long time not used resources only
                 if (it.second->impl->lastAccessTick + 100 < tickIndex
-                        && it.second->impl->download)
+                        && it.second->impl->state
+                        != ResourceImpl::State::downloading)
                     res.push_back(it.second.get());
             }
             static const uint32 memCap = 500000000;
@@ -315,7 +303,10 @@ public:
                     if (it->impl->state != ResourceImpl::State::finalizing)
                         it->impl->state = ResourceImpl::State::finalizing;
                     else
+                    {
+                        map->statistics->resourcesReleased++;
                         resources.erase(it->name);
+                    }
                 }
             }
         }
@@ -333,7 +324,8 @@ public:
             resource->impl->state = ResourceImpl::State::initializing;
             // intentionally no break here
         case ResourceImpl::State::initializing:
-            downloadQueNew.insert(resource->impl.get());
+        case ResourceImpl::State::downloaded:
+            prepareQueNew.insert(resource->impl.get());
             break;
         }
     }
@@ -419,13 +411,11 @@ public:
     }
 
     std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
-    std::unordered_set<ResourceImpl*> downloadQue;
-    std::unordered_set<ResourceImpl*> downloadQueNew;
-    std::queue<ResourceImpl*> loadQue;
+    std::unordered_set<ResourceImpl*> prepareQue;
+    std::unordered_set<ResourceImpl*> prepareQueNew;
     std::unordered_set<std::string> invalidUrl;
     std::unordered_set<std::string> invalidUrlNew;
-    boost::mutex mutDownloadQue;
-    boost::mutex mutLoadQue;
+    boost::mutex mutPrepareQue;
     boost::mutex mutInvalidUrls;
     MapImpl *map;
     Fetcher *fetcher;

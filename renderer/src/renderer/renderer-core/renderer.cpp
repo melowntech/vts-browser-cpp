@@ -573,7 +573,7 @@ public:
         vec3 el = vecFromUblas<vec3>
           (mapConfig->referenceFrame.division.extents.ll);
         vec3 eu = vecFromUblas<vec3>
-          (mapConfig->referenceFrame.division.extents.ur);
+          (mapConfig->referenceFrame.division.extents.ur);        
         vec3 box[2] = {
             fl.cwiseProduct(eu - el) + el,
             fu.cwiseProduct(eu - el) + el,
@@ -633,6 +633,23 @@ public:
         map->statistics->metaNodesTraversedTotal++;
         map->statistics->metaNodesTraversedPerLod[
                 std::min<uint32>(nodeId.lod, MapStatistics::MaxLods-1)]++;
+        
+        // back-tile culling
+        if (nodeInfo.distanceFromRoot() < 6 && nodeInfo.distanceFromRoot() > 2)
+        {
+            vec2 fl = vecFromUblas<vec2>(nodeInfo.extents().ll);
+            vec2 fu = vecFromUblas<vec2>(nodeInfo.extents().ur);
+            vec2 c = (fl + fu) * 0.5;
+            vec3 an = vec2to3(c, 0);
+            vec3 ap = map->convertor->convert(an, nodeInfo.srs(),
+                            mapConfig->referenceFrame.model.physicalSrs);
+            vec3 bn = vec2to3(c, 100);
+            vec3 bp = map->convertor->convert(bn, nodeInfo.srs(),
+                            mapConfig->referenceFrame.model.physicalSrs);
+            vec3 dir = normalize(bp - ap);
+            if (dot(dir, forwardUnitVector) > 0)
+                return;
+        }
         
         // vars
         const SurfaceStackItem *topmost = nullptr;
@@ -755,15 +772,23 @@ public:
         default:
             throw std::invalid_argument("not implemented navigation srs type");
         }
-
+        
         double dist = mapConfig->position.verticalExtent
                 * 0.5 / tan(degToRad(mapConfig->position.verticalFov * 0.5));
         mat4 view = lookAt(center - dir * dist, center, up);
+        
+        double cameraHeight = mapConfig->position.position[2]; // todo nav2phys
+        double zFactor = std::max(cameraHeight, dist) / 600000;
+        double near = std::max(2.0, 40 * zFactor);
+        zFactor = std::max(1.0, zFactor);
+        double far = 600000 * 10 * zFactor;
         mat4 proj = perspectiveMatrix(mapConfig->position.verticalFov,
                         (double)windowWidth / (double)windowHeight,
-                        dist * 0.1, dist * 10);
+                        near, far);
+        
         viewProj = proj * view;
         perpendicularUnitVector = normalize(cross(up, dir));
+        forwardUnitVector = dir;
     }
 
     const std::string convertPath(const std::string &path,
@@ -1005,6 +1030,7 @@ public:
     std::vector<SurfaceStackItem> surfaceStack;
 
     vec3 perpendicularUnitVector;
+    vec3 forwardUnitVector;
     mat4 viewProj;
     uint32 windowWidth;
     uint32 windowHeight;

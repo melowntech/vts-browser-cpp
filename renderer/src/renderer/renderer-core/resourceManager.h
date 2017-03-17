@@ -33,6 +33,7 @@ public:
     virtual class MeshAggregate *getMeshAggregate(const std::string &name) = 0;
     virtual class MapConfig *getMapConfig(const std::string &name) = 0;
     virtual class MetaTile *getMetaTile(const std::string &name) = 0;
+    virtual class NavTile *getNavTile(const std::string &name) = 0;
     virtual class ExternalBoundLayer *getExternalBoundLayer
                     (const std::string &name) = 0;
     virtual class BoundMetaTile *getBoundMetaTile(const std::string &name) = 0;

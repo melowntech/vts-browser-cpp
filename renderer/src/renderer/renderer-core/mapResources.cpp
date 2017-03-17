@@ -19,11 +19,17 @@ MetaTile::MetaTile(const std::string &name) : Resource(name),
 
 void MetaTile::load(MapImpl *base)
 {
-    Buffer buffer = std::move(impl->download->contentData);
-    std::istringstream is(std::string((char*)buffer.data, buffer.size));
     *(vtslibs::vts::MetaTile*)this
-            = vtslibs::vts::loadMetaTile(is, 5, name);
+            = vtslibs::vts::loadMetaTile(impl->download->contentData, 5, name);
     ramMemoryCost = this->size() * sizeof(vtslibs::vts::MetaNode);
+}
+
+NavTile::NavTile(const std::string &name) : Resource(name)
+{}
+
+void NavTile::load(MapImpl *base)
+{
+    RawNavTile::deserialize({0, 0}, impl->download->contentData, name);
 }
 
 MeshPart::MeshPart() : textureLayer(0), surfaceReference(0),
@@ -48,10 +54,8 @@ const mat4 findNormToPhys(const math::Extents3 &extents)
 
 void MeshAggregate::load(MapImpl *base)
 {
-    Buffer buffer = std::move(impl->download->contentData);
-    std::istringstream is(std::string((char*)buffer.data, buffer.size));
-    vtslibs::vts::NormalizedSubMesh::list meshes
-            = vtslibs::vts::loadMeshProperNormalized(is, name);
+    vtslibs::vts::NormalizedSubMesh::list meshes = vtslibs::vts::
+            loadMeshProperNormalized(impl->download->contentData, name);
 
     submeshes.clear();
     submeshes.reserve(meshes.size());
@@ -81,7 +85,7 @@ void MeshAggregate::load(MapImpl *base)
         { // vertices
             spec.attributes[0].enable = true;
             spec.attributes[0].components = 3;
-            vec3f *b = (vec3f*)spec.vertices.data;
+            vec3f *b = (vec3f*)spec.vertices.data();
             for (vtslibs::vts::Point3u32 f : m.faces)
             {
                 for (uint32 j = 0; j < 3; j++)
@@ -98,7 +102,7 @@ void MeshAggregate::load(MapImpl *base)
             spec.attributes[1].enable = true;
             spec.attributes[1].components = 2;
             spec.attributes[1].offset = offset;
-            vec2f *b = (vec2f*)(((char*)spec.vertices.data) + offset);
+            vec2f *b = (vec2f*)(spec.vertices.data() + offset);
             for (vtslibs::vts::Point3u32 f : m.facesTc)
                 for (uint32 j = 0; j < 3; j++)
                     *b++ = vecFromUblas<vec2f>(m.tc[f[j]]);
@@ -110,7 +114,7 @@ void MeshAggregate::load(MapImpl *base)
             spec.attributes[2].enable = true;
             spec.attributes[2].components = 2;
             spec.attributes[2].offset = offset;
-            vec2f *b = (vec2f*)(((char*)spec.vertices.data) + offset);
+            vec2f *b = (vec2f*)(spec.vertices.data() + offset);
             for (vtslibs::vts::Point3u32 f : m.faces)
                 for (uint32 j = 0; j < 3; j++)
                     *b++ = vecFromUblas<vec2f>(m.etc[f[j]]);
@@ -147,10 +151,10 @@ void BoundMetaTile::load(MapImpl *)
     GpuTextureSpec spec;
     decodeImage(name, buffer, spec.buffer,
                 spec.width, spec.height, spec.components);
-    if (spec.buffer.size != sizeof(flags))
+    if (spec.buffer.size() != sizeof(flags))
         throw std::runtime_error("bound meta tile has invalid resolution");
-    memcpy(flags, spec.buffer.data, spec.buffer.size);
-    ramMemoryCost = spec.buffer.size;
+    memcpy(flags, spec.buffer.data(), spec.buffer.size());
+    ramMemoryCost = spec.buffer.size();
 }
 
 BoundMaskTile::BoundMaskTile(const std::string &name) : Resource(name)

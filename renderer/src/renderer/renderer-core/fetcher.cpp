@@ -5,7 +5,10 @@
 #include <http/resourcefetcher.hpp>
 #include <http/sink.hpp>
 
-#include "fetcher.h"
+#include <renderer/fetcher.h>
+
+namespace melown
+{
 
 namespace
 {
@@ -29,7 +32,8 @@ public:
         {
             const http::ResourceFetcher::Query::Body &body = q.get();
             task->contentData.allocate(body.data.size());
-            memcpy(task->contentData.data, body.data.data(), body.data.size());
+            memcpy(task->contentData.data(), body.data.data(),
+                   body.data.size());
             task->contentType = body.contentType;
             task->code = 200;
         }
@@ -74,11 +78,6 @@ public:
                                             std::placeholders::_1));
     }
 
-    void tick() override
-    {
-        // do nothing
-    }
-
     melown::Fetcher::Func func;
     http::Http htt;
     http::ResourceFetcher fetcher;
@@ -90,3 +89,6 @@ Fetcher *Fetcher::create()
 {
     return new FetcherImpl();
 }
+
+} // namespace melown
+

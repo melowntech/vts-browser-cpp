@@ -92,6 +92,8 @@ void MapFoundation::pan(const double value[3])
         throw std::invalid_argument("not implemented navigation srs type");
     }
     pos.verticalExtent *= pow(1.001, -value[2]);
+    
+    impl->renderer->panAdjustZ(vec3to2(vecFromUblas<vec3>(pos.position)));
 
     //LOG(info3) << "position: " << mapConfig->position.position;
     //LOG(info3) << "rotation: " << mapConfig->position.orientation;
@@ -132,7 +134,7 @@ MapImpl::MapImpl(const std::string &mapConfigPath)
 {
     resources = std::shared_ptr<ResourceManager>(ResourceManager::create(this));
     renderer = std::shared_ptr<Renderer>(Renderer::create(this));
-    statistics = std::shared_ptr<MapStatistics>(new MapStatistics());
+    statistics = std::make_shared<MapStatistics>();
 }
 
 } // namespace melown

@@ -23,6 +23,13 @@ public:
     void load(class MapImpl *base) override;
 };
 
+class NavTile : public Resource, public vtslibs::vts::RawNavTile
+{
+public:
+    NavTile(const std::string &name);
+    void load(class MapImpl *base) override;
+};
+
 class MeshPart
 {
 public:

@@ -8,6 +8,7 @@
 #include <renderer/gpuContext.h>
 #include <renderer/gpuResources.h>
 #include <renderer/statistics.h>
+#include <renderer/fetcher.h>
 
 #include "map.h"
 #include "resource.h"
@@ -31,7 +32,8 @@ public:
     static const std::string invalidurlFileName;
     
     ResourceManagerImpl(MapImpl *map) : map(map),
-        takeItemIndex(0), tickIndex(0), downloads(0)
+        takeItemIndex(0), tickIndex(0), downloads(0),
+        destroyTheFetcher(false)
     {
         try
         {
@@ -54,6 +56,12 @@ public:
 
     ~ResourceManagerImpl()
     {
+        if (destroyTheFetcher)
+        {
+            delete fetcher;
+            fetcher = nullptr;
+            destroyTheFetcher = false;
+        }
         try
         {
             std::ofstream f;
@@ -69,6 +77,11 @@ public:
     void dataInitialize(GpuContext *context, Fetcher *fetcher) override
     {
         dataContext = context;
+        if (!fetcher)
+        {
+            destroyTheFetcher = true;
+            fetcher = Fetcher::create();
+        }
         this->fetcher = fetcher;
         Fetcher::Func func = std::bind(
                     &ResourceManagerImpl::fetchedFile,
@@ -94,6 +107,7 @@ public:
         }
         catch (std::runtime_error &)
         {
+            LOG(err3) << "Error loading resource: " + r->resource->name;
             map->statistics->resourcesFailed++;
             r->state = ResourceImpl::State::errorLoad;
         }
@@ -146,7 +160,8 @@ public:
                 r->download->readLocalFile();
                 loadResource(r);
             }
-            else if (availableInCache(r->resource->name))
+            else if (r->resource->name.find(".json") == std::string::npos
+                     && availableInCache(r->resource->name))
             {
                 assert(!r->download);
                 r->download.emplace(r);
@@ -207,7 +222,7 @@ public:
                 break;
             case vtslibs::registry::BoundLayer
             ::Availability::Type::negativeSize:
-                if (task->contentData.size <= resource->availTest->size)
+                if (task->contentData.size() <= resource->availTest->size)
                     resource->state = ResourceImpl::State::errorDownload;
             default:
                 throw std::invalid_argument("invalid availability test type");
@@ -243,6 +258,7 @@ public:
             return;
         }
         
+        resource->download->saveToCache();
         resource->state = ResourceImpl::State::downloaded;
     }
     
@@ -381,6 +397,11 @@ public:
     {
         return getMapResource<MetaTile>(name);
     }
+    
+    NavTile *getNavTile(const std::string &name) override
+    {
+        return getMapResource<NavTile>(name);
+    }
 
     MeshAggregate *getMeshAggregate(const std::string &name) override
     {
@@ -422,6 +443,7 @@ public:
     uint32 takeItemIndex;
     uint32 tickIndex;
     std::atomic_uint downloads;
+    bool destroyTheFetcher;
 };
 
 const std::string ResourceManagerImpl::invalidurlFileName

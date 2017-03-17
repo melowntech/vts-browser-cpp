@@ -7,24 +7,27 @@
 namespace melown
 {
 
-Buffer::Buffer() : data(nullptr), size(0)
+Buffer::Buffer() : data_(nullptr), size_(0), std::istream(this)
 {}
 
-Buffer::Buffer(uint32 size) : data(nullptr), size(size)
+Buffer::Buffer(uint32 size) : data_(nullptr), size_(size), std::istream(this)
 {
     allocate(size);
 }
 
-Buffer::Buffer(const Buffer &other) : data(nullptr), size(other.size)
+Buffer::Buffer(const Buffer &other) : data_(nullptr), size_(other.size_),
+    std::istream(this)
 {
-    allocate(size);
-    memcpy(data, other.data, size);
+    allocate(size_);
+    memcpy(data_, other.data_, size_);
 }
 
-Buffer::Buffer(Buffer &&other) : data(other.data), size(other.size)
+Buffer::Buffer(Buffer &&other) : data_(other.data_), size_(other.size_),
+    std::istream(this)
 {
-    other.data = nullptr;
-    other.size = 0;
+    other.data_ = nullptr;
+    other.size_ = 0;
+    setg(data_, data_, data_ + size_);
 }
 
 Buffer::~Buffer()
@@ -37,8 +40,8 @@ Buffer &Buffer::operator = (const Buffer &other)
     if (&other == this)
         return *this;
     this->free();
-    allocate(other.size);
-    memcpy(data, other.data, size);
+    allocate(other.size_);
+    memcpy(data_, other.data_, size_);
 }
 
 Buffer &Buffer::operator = (Buffer &&other)
@@ -46,26 +49,29 @@ Buffer &Buffer::operator = (Buffer &&other)
     if (&other == this)
         return *this;
     this->free();
-    size = other.size;
-    data = other.data;
-    other.data = nullptr;
-    other.size = 0;
+    size_ = other.size_;
+    data_ = other.data_;
+    other.data_ = nullptr;
+    other.size_ = 0;
+    setg(data_, data_, data_ + size_);
 }
 
 void Buffer::allocate(uint32 size)
 {
     this->free();
-    this->size = size;
-    data = malloc(size);
-    if (!data)
+    this->size_ = size;
+    data_ = (char*)malloc(size_);
+    if (!data_)
         throw std::runtime_error("not enough memory");
+    setg(data_, data_, data_ + size_);
 }
 
 void Buffer::free()
 {
-    ::free(data);
-    data = nullptr;
-    size = 0;
+    setg(nullptr, nullptr, nullptr);
+    ::free(data_);
+    data_ = nullptr;
+    size_ = 0;
 }
 
 } // namespace melown

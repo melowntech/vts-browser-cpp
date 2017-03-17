@@ -117,12 +117,12 @@ public:
             throw std::invalid_argument("invalid texture components count");
         }
         create();
-        setData(QImage((unsigned char*)spec.buffer.data,
+        setData(QImage((unsigned char*)spec.buffer.data(),
                        spec.width, spec.height, format).mirrored());
         setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
         setMagnificationFilter(QOpenGLTexture::Linear);
         setWrapMode(QOpenGLTexture::ClampToEdge);
-        gpuMemoryCost = spec.buffer.size;
+        gpuMemoryCost = spec.buffer.size();
     }
 };
 
@@ -176,14 +176,14 @@ public:
         arrayObject.bind();
         vertexBuffer.create();
         vertexBuffer.bind();
-        vertexBuffer.allocate(spec.vertices.data, spec.vertices.size);
+        vertexBuffer.allocate(spec.vertices.data(), spec.vertices.size());
         if (spec.indicesCount)
         {
             indexBuffer.create();
             indexBuffer.bind();
-            indexBuffer.allocate(spec.indices.data, spec.indices.size);
+            indexBuffer.allocate(spec.indices.data(), spec.indices.size());
         }
-        gpuMemoryCost = spec.vertices.size + spec.indices.size;
+        gpuMemoryCost = spec.vertices.size() + spec.indices.size();
         arrayObject.destroy();
     }
 

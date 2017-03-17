@@ -4,7 +4,6 @@
 #include <thread>
 
 #include "gpuContext.h"
-#include "fetcher.h"
 
 class GLFWwindow;
 
@@ -23,7 +22,6 @@ public:
 
     melown::MapFoundation *map;
     GLFWwindow* window;
-    std::shared_ptr<Fetcher> fetcher;
     GpuContext gpu;
     std::thread thr;
     volatile bool stop;

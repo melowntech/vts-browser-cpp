@@ -18,6 +18,8 @@
 #include "mapResources.h"
 #include "csConvertor.h"
 #include "resource.h"
+#include "color.h"
+#include "height.h"
 
 namespace melown
 {
@@ -27,90 +29,6 @@ using namespace vtslibs::registry;
 
 namespace
 {
-
-const vec3f convertRgbToHsv(const vec3f &inColor)
-{
-    vec3f outColor;
-    float minColor = inColor[0] < inColor[1] ? inColor[0] : inColor[1];
-    minColor = minColor < inColor[2] ? minColor : inColor[2];
-    float maxColor = inColor[0] > inColor[1] ? inColor[0] : inColor[1];
-    maxColor = maxColor > inColor[2] ? maxColor : inColor[2];
-    outColor[2] = maxColor;
-    float delta = maxColor - minColor;
-    if (delta < 0.00001)
-        return outColor;
-    if (maxColor > 0)
-        outColor[1] = (delta / maxColor);
-    else
-        return outColor;
-    if (inColor[0] >= maxColor)
-        outColor[0] = (inColor[1] - inColor[2]) / delta;
-    else
-        if (inColor[1] >= maxColor)
-            outColor[0] = 2 + (inColor[2] - inColor[0]) / delta;
-        else
-            outColor[0] = 4 + (inColor[0] - inColor[1]) / delta;
-    outColor[0] *= 60.f / 360.f;
-    if (outColor[0] < 0)
-        outColor[0] += 1;
-    return outColor;
-}
-
-const vec3f convertHsvToRgb(const vec3f &inColor)
-{
-    vec3f outColor;
-    if (inColor[1] <= 0)
-    {
-        outColor[0] = inColor[2];
-        outColor[1] = inColor[2];
-        outColor[2] = inColor[2];
-        return outColor;
-    }
-    float hh = inColor[0];
-    if (hh >= 1)
-        hh = 0;
-    hh /= 60.f / 360.f;
-    uint32 i = (uint32)hh;
-    float ff = hh - i;
-    float p = inColor[2] * (1 - inColor[1]);
-    float q = inColor[2] * (1 - (inColor[1] * ff));
-    float t = inColor[2] * (1 - (inColor[1] * (1 - ff)));
-    switch (i)
-    {
-    case 0:
-        outColor[0] = inColor[2];
-        outColor[1] = t;
-        outColor[2] = p;
-        break;
-    case 1:
-        outColor[0] = q;
-        outColor[1] = inColor[2];
-        outColor[2] = p;
-        break;
-    case 2:
-        outColor[0] = p;
-        outColor[1] = inColor[2];
-        outColor[2] = t;
-        break;
-    case 3:
-        outColor[0] = p;
-        outColor[1] = q;
-        outColor[2] = inColor[2];
-        break;
-    case 4:
-        outColor[0] = t;
-        outColor[1] = p;
-        outColor[2] = inColor[2];
-        break;
-    case 5:
-    default:
-        outColor[0] = inColor[2];
-        outColor[1] = p;
-        outColor[2] = q;
-        break;
-    }
-    return outColor;
-}
 
 const vec3 lowerUpperCombine(uint32 i)
 {
@@ -163,11 +81,14 @@ public:
                                       renderer->mapConfig->name));
             urlIntTex.parse(renderer->convertPath(urls3d->texture,
                                         renderer->mapConfig->name));
+            urlNav.parse(renderer->convertPath(urls3d->nav,
+                                        renderer->mapConfig->name));
         }
 
         UrlTemplate urlMeta;
         UrlTemplate urlMesh;
         UrlTemplate urlIntTex;
+        UrlTemplate urlNav;
         TilesetIdList name;
     };
     
@@ -532,30 +453,6 @@ public:
         
         return true;
     }
-    
-    /*
-    bool checkParentsChild(const SurfaceInfo *surface, const TileId &id)
-    {
-        if (id.lod == 0)
-            return false;
-        TileId pid = parent(id);
-        const TileId tileId(pid.lod,
-                            (pid.x >> binaryOrder) << binaryOrder,
-                            (pid.y >> binaryOrder) << binaryOrder);
-        const MetaTile *pt = map->resources->getMetaTile(surface->urlMeta(
-                                            UrlTemplate::Vars(tileId)));
-        if (!*pt)
-            return false;
-        const MetaNode *pn = pt->get(pid, std::nothrow);
-        if (!pn)
-            return false;
-        uint32 idx = 0;
-        idx += (id.y - pid.y * 2) * 2;
-        idx += id.x - pid.x * 2;
-        assert(idx < 4);
-        return (pn->flags() & (MetaNode::Flag::ulChild << idx)) != 0;
-    }
-    */
 
     const bool visibilityTest(const NodeInfo &nodeInfo, const MetaNode &node)
     {
@@ -702,6 +599,19 @@ public:
                 traverse(nodeInfo.child(childs[i]));
     }
 
+    void checkPanZQueue()
+    {
+        HeightRequest r;
+        if (!panZQueue->pop(r))
+            return;
+        double h = mapConfig->position.position[2];
+        h += r.result;
+        if (lastPanZShift)
+            h -= *lastPanZShift;
+        lastPanZShift.emplace(r.result);
+        mapConfig->position.position[2] = h;
+    }
+    
     void updateCamera()
     {
         // todo position conversions
@@ -711,6 +621,8 @@ public:
         if (mapConfig->position.heightMode
                 != vtslibs::registry::Position::HeightMode::fixed)
             throw std::invalid_argument("unsupported position height mode");
+        
+        checkPanZQueue();
 
         vec3 center = vecFromUblas<vec3>(mapConfig->position.position);
         vec3 rot = vecFromUblas<vec3>(mapConfig->position.orientation);
@@ -797,7 +709,7 @@ public:
         return utility::Uri(parent).resolve(path).str();
     }
 
-    const bool configLoaded()
+    const bool prerequisitesCheck()
     {
         mapConfig = map->resources->getMapConfig(map->mapConfigPath);
         if (!mapConfig || !*mapConfig)
@@ -934,7 +846,7 @@ public:
         printSurfaceStack();
     }
 
-    void onceInitialize()
+    void mapConfigLoaded()
     {
         map->convertor = std::shared_ptr<CsConvertor>(CsConvertor::create(
             mapConfig->referenceFrame.model.physicalSrs,
@@ -984,11 +896,25 @@ public:
             LOG(info3) << bl.creditsUrl;
         }
         */
+        
+        { // initialize camera panZQueue
+            lastPanZShift.reset();
+            HeightRequestQueue::FindNavTileUrl func; // todo
+            panZQueue = std::shared_ptr<HeightRequestQueue>(
+                        HeightRequestQueue::create(map, func));
+            panZQueue->push(vec3to2(vecFromUblas<vec3>(
+                                             mapConfig->position.position)));
+        }
+    }
+    
+    void panAdjustZ(const vec2 &navPos) override
+    {
+        panZQueue->push(navPos);
     }
 
     void renderTick(uint32 windowWidth, uint32 windowHeight) override
     {
-        if (!configLoaded())
+        if (!prerequisitesCheck())
             return;
 
         this->windowWidth = windowWidth;
@@ -1004,7 +930,7 @@ public:
         shader->bind();
 
         if (!map->convertor)
-            onceInitialize();
+            mapConfigLoaded();
 
         updateCamera();
 
@@ -1028,7 +954,6 @@ public:
 
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
     std::vector<SurfaceStackItem> surfaceStack;
-
     vec3 perpendicularUnitVector;
     vec3 forwardUnitVector;
     mat4 viewProj;
@@ -1040,6 +965,8 @@ public:
     GpuShader *shaderColor;
     GpuContext *gpuContext;
     uint32 binaryOrder;
+    boost::optional<double> lastPanZShift;
+    std::shared_ptr<HeightRequestQueue> panZQueue;
 };
 
 Renderer::Renderer()

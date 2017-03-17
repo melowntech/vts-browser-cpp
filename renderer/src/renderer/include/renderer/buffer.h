@@ -1,12 +1,14 @@
 #ifndef BUFFER_H_xwsertzui
 #define BUFFER_H_xwsertzui
 
+#include <iostream>
+
 #include "foundation.h"
 
 namespace melown
 {
 
-class Buffer
+class Buffer : public std::istream, protected std::streambuf
 {
 public:
     Buffer();
@@ -20,8 +22,12 @@ public:
     void allocate(uint32 size);
     void free();
 
-    void *data;
-    uint32 size;
+    char *data() const { return data_; }
+    uint32 size() const { return size_; }
+    
+private:
+    char *data_;
+    uint32 size_;
 };
 
 } // namespace melown

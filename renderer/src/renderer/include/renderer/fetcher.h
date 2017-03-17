@@ -30,6 +30,8 @@ struct MELOWN_API FetchTask
 class MELOWN_API Fetcher
 {
 public:
+    static Fetcher *create();
+    
     typedef std::function<void(FetchTask *)> Func;
     
     virtual ~Fetcher();

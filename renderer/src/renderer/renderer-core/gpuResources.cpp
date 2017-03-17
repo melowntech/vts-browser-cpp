@@ -23,8 +23,9 @@ GpuShader::GpuShader(const std::string &name) : Resource(name)
 
 void GpuShader::load(MapImpl *)
 {
-    Buffer buffer = std::move(impl->download->contentData);
-    std::istringstream is(std::string((char*)buffer.data, buffer.size));
+    std::string s(impl->download->contentData.data(),
+                         impl->download->contentData.size());
+    std::istringstream is(s);
     std::map<std::string, std::string> shaders;
     std::string current;
     while (is.good())

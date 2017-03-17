@@ -10,12 +10,10 @@ Buffer readLocalFileBuffer(const std::string &path)
         throw std::runtime_error("failed to read file");
     try
     {
-        Buffer b;
         fseek(f, 0, SEEK_END);
-        b.size = ftell(f);
+        Buffer b(ftell(f));
         fseek(f, 0, SEEK_SET);
-        b.allocate(b.size);
-        if (fread(b.data, b.size, 1, f) != 1)
+        if (fread(b.data(), b.size(), 1, f) != 1)
             throw std::runtime_error("failed to read file");
         fclose(f);
         return b;
@@ -34,7 +32,7 @@ void writeLocalFileBuffer(const std::string &path, const Buffer &buffer)
     FILE *f = fopen(path.c_str(), "wb");
     if (!f)
         throw std::runtime_error("failed to write file");
-    if (fwrite(buffer.data, buffer.size, 1, f) != 1)
+    if (fwrite(buffer.data(), buffer.size(), 1, f) != 1)
     {
         fclose(f);
         throw std::runtime_error("failed to write file");

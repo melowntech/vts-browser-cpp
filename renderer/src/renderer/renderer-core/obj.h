@@ -10,7 +10,7 @@
 namespace melown
 {
 
-void decodeObj(const std::string &name, const Buffer &in,
+void decodeObj(const std::string &name, Buffer &in,
                Buffer &outVertices, Buffer &outIndices,
                uint32 &vertices, uint32 &indices);
 

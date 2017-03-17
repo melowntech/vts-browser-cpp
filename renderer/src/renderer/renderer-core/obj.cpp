@@ -6,13 +6,12 @@
 namespace melown
 {
 
-void decodeObj(const std::__cxx11::string &name, const Buffer &in,
+void decodeObj(const std::string &name, Buffer &in,
                Buffer &outVertices, Buffer &,
                uint32 &vertices, uint32 &indices)
 {
     geometry::Obj obj;
-    std::istringstream is(std::string((char*)in.data, in.size));
-    if (!obj.parse(is))
+    if (!obj.parse(in))
         throw std::runtime_error(std::string("failed to decode obj: ") + name);
 
     struct F
@@ -21,7 +20,7 @@ void decodeObj(const std::__cxx11::string &name, const Buffer &in,
         vec2f uvs;
     };
     outVertices = Buffer(obj.facets.size() * sizeof(F) * 3);
-    F *fs = (F*)outVertices.data;
+    F *fs = (F*)outVertices.data();
     for (auto &of : obj.facets)
     {
         for (uint32 i = 0; i < 3; i++)

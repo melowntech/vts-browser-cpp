@@ -59,7 +59,7 @@ public:
                 task->code = 200;
                 QByteArray arr = reply->readAll();
                 task->contentData.allocate(arr.size());
-                memcpy(task->contentData.data, arr.data(), arr.size());
+                memcpy(task->contentData.data(), arr.data(), arr.size());
             }
         }
 

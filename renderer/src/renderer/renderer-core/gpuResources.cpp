@@ -23,15 +23,12 @@ GpuShader::GpuShader(const std::string &name) : Resource(name)
 
 void GpuShader::load(MapImpl *)
 {
-    std::string s(impl->download->contentData.data(),
-                         impl->download->contentData.size());
-    std::istringstream is(s);
     std::map<std::string, std::string> shaders;
     std::string current;
-    while (is.good())
+    while (impl->download->contentData.good())
     {
         std::string line;
-        std::getline(is, line);
+        std::getline(impl->download->contentData, line);
         if (line.empty())
             continue;
         if (line[0] == '$')
@@ -50,9 +47,8 @@ GpuTexture::GpuTexture(const std::string &name) : Resource(name)
 
 void GpuTexture::load(MapImpl *)
 {
-    Buffer buffer = std::move(impl->download->contentData);
     GpuTextureSpec spec;
-    decodeImage(name, buffer, spec.buffer,
+    decodeImage(name, impl->download->contentData, spec.buffer,
                 spec.width, spec.height, spec.components);
     loadTexture(spec);
 }
@@ -68,12 +64,12 @@ GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0),
 GpuMeshRenderable::GpuMeshRenderable(const std::string &name) : Resource(name)
 {}
 
-void GpuMeshRenderable::load(MapImpl *base)
+void GpuMeshRenderable::load(MapImpl *)
 {
-    Buffer buffer = std::move(impl->download->contentData);
     uint32 vc = 0, ic = 0;
     GpuMeshSpec spec;
-    decodeObj(name, buffer, spec.vertices, spec.indices, vc, ic);
+    decodeObj(name, impl->download->contentData,
+              spec.vertices, spec.indices, vc, ic);
     spec.verticesCount = vc;
     spec.attributes[0].enable = true;
     spec.attributes[0].stride = sizeof(vec3f) + sizeof(vec2f);

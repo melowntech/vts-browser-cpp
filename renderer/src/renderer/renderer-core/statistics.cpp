@@ -6,7 +6,6 @@ namespace melown
 {
 
 MapStatistics::MapStatistics()
-    : currentDownloads(0)
 {
     resetAll();
 }
@@ -14,6 +13,8 @@ MapStatistics::MapStatistics()
 MapStatistics::~MapStatistics()
 {
     LOG(info3) << "currentDownloads:" << currentDownloads;
+    LOG(info3) << "currentGpuMemUse:" << currentGpuMemUse;
+    LOG(info3) << "currentRamMemUse:" << currentRamMemUse;
     LOG(info3) << "resourcesIgnored:" << resourcesIgnored;
     LOG(info3) << "resourcesDownloaded:" << resourcesDownloaded;
     LOG(info3) << "resourcesDiskLoaded:" << resourcesDiskLoaded;
@@ -43,6 +44,9 @@ void MapStatistics::resetAll()
     resourcesReleased = 0;
     resourcesFailed = 0;
     frameIndex = 0;
+    currentDownloads = 0;
+    currentGpuMemUse = 0;
+    currentRamMemUse = 0;
 }
 
 void MapStatistics::resetFrame()

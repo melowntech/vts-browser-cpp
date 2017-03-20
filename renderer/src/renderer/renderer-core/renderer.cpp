@@ -1,4 +1,5 @@
 #include <unordered_map>
+#include <queue>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/optional/optional_io.hpp>
@@ -19,7 +20,6 @@
 #include "csConvertor.h"
 #include "resource.h"
 #include "color.h"
-#include "height.h"
 
 namespace melown
 {
@@ -101,6 +101,59 @@ public:
         std::shared_ptr<SurfaceInfo> surface;
         vec3f color;
         bool alien;
+    };
+    
+    class HeightRequest
+    {
+    public:
+        static const NodeInfo findPosition(NodeInfo &info,
+                                           const vec2 &pos,
+                                           double viewExtent)
+        {
+            double desire = std::log2(4 * info.extents().size()
+                                          / viewExtent) - 8;
+            if (desire < 1)
+                return info;
+            
+            Children childs = children(info.nodeId());
+            for (uint32 i = 0; i < childs.size(); i++)
+            {
+                NodeInfo ni = info.child(childs[i]);
+                if (!ni.inside(vecToUblas<math::Point2>(pos)))
+                    continue;
+                return findPosition(ni, pos, viewExtent);
+            }
+            assert(false);
+        }
+        
+        HeightRequest(const vec2 &navPos, RendererImpl *renderer) :
+            frameIndex(renderer->map->statistics->frameIndex)
+        {
+            for (auto &&it : renderer->mapConfig->referenceFrame.division.nodes)
+            {
+                if (!it.second.valid())
+                    continue;
+                NodeInfo ni(renderer->mapConfig->referenceFrame, it.first,
+                            false, *renderer->mapConfig);
+                vec2 sdp = vec3to2(renderer->map->convertor->convert(
+                    vec2to3(navPos, 0), renderer->mapConfig
+                    ->referenceFrame.model.navigationSrs, it.second.srs));
+                if (!ni.inside(vecToUblas<math::Point2>(sdp)))
+                    continue;
+                ni = findPosition(ni, sdp,
+                            renderer->mapConfig->position.verticalExtent);
+                pixPos = NavTile::sds2px(sdp, ni.extents());
+                nodeId = ni.nodeId();
+                return;
+            }
+            assert(false);
+        }
+        
+        std::string navUrl;
+        std::string metaUrl;
+        TileId nodeId;
+        vec2 pixPos;
+        uint32 frameIndex;
     };
 
     class BoundInfo : public BoundLayer
@@ -289,6 +342,13 @@ public:
         shader(nullptr), gpuContext(nullptr)
     {}
 
+    const TileId roundId(TileId nodeId)
+    {
+        return TileId (nodeId.lod,
+            (nodeId.x >> metaTileBinaryOrder) << metaTileBinaryOrder,
+            (nodeId.y >> metaTileBinaryOrder) << metaTileBinaryOrder);
+    }
+    
     void renderInitialize(GpuContext *gpuContext) override
     {
         this->gpuContext = gpuContext;
@@ -456,38 +516,45 @@ public:
 
     const bool visibilityTest(const NodeInfo &nodeInfo, const MetaNode &node)
     {
-        vec4 c0 = column(viewProj, 0);
-        vec4 c1 = column(viewProj, 1);
-        vec4 c2 = column(viewProj, 2);
-        vec4 c3 = column(viewProj, 3);
-        vec4 planes[6] = {
-            c3 + c0, c3 - c0,
-            c3 + c1, c3 - c1,
-            c3 + c2, c3 - c2,
-        };
-        vec3 fl = vecFromUblas<vec3>(node.extents.ll);
-        vec3 fu = vecFromUblas<vec3>(node.extents.ur);
-        vec3 el = vecFromUblas<vec3>
-          (mapConfig->referenceFrame.division.extents.ll);
-        vec3 eu = vecFromUblas<vec3>
-          (mapConfig->referenceFrame.division.extents.ur);        
-        vec3 box[2] = {
-            fl.cwiseProduct(eu - el) + el,
-            fu.cwiseProduct(eu - el) + el,
-        };
-        for (uint32 i = 0; i < 6; i++)
+        //if (node.geomExtents.z == GeomExtents::ZRange::emptyRange())
         {
-            vec4 &p = planes[i]; // current plane
-            vec3 pv = vec3( // current p-vertex
-                box[!!(p[0] > 0)](0),
-                box[!!(p[1] > 0)](1),
-                box[!!(p[2] > 0)](2)
-            );
-            double d = dot(vec4to3(p), pv);
-            if (d < -p[3])
-                return false;
+            vec4 c0 = column(viewProj, 0);
+            vec4 c1 = column(viewProj, 1);
+            vec4 c2 = column(viewProj, 2);
+            vec4 c3 = column(viewProj, 3);
+            vec4 planes[6] = {
+                c3 + c0, c3 - c0,
+                c3 + c1, c3 - c1,
+                c3 + c2, c3 - c2,
+            };
+            vec3 fl = vecFromUblas<vec3>(node.extents.ll);
+            vec3 fu = vecFromUblas<vec3>(node.extents.ur);
+            vec3 el = vecFromUblas<vec3>
+              (mapConfig->referenceFrame.division.extents.ll);
+            vec3 eu = vecFromUblas<vec3>
+              (mapConfig->referenceFrame.division.extents.ur);        
+            vec3 box[2] = {
+                fl.cwiseProduct(eu - el) + el,
+                fu.cwiseProduct(eu - el) + el,
+            };
+            for (uint32 i = 0; i < 6; i++)
+            {
+                vec4 &p = planes[i]; // current plane
+                vec3 pv = vec3( // current p-vertex
+                    box[!!(p[0] > 0)](0),
+                    box[!!(p[1] > 0)](1),
+                    box[!!(p[2] > 0)](2)
+                );
+                double d = dot(vec4to3(p), pv);
+                if (d < -p[3])
+                    return false;
+            }
+            return true;
         }
-        return true;
+        //else
+        {
+            // todo
+        }
     }
 
     bool coarsenessTest(const NodeInfo &nodeInfo, const MetaNode &node)
@@ -525,6 +592,8 @@ public:
     void traverse(const NodeInfo &nodeInfo)
     {
         const TileId nodeId = nodeInfo.nodeId();
+        const TileId tileId = roundId(nodeId);
+        UrlTemplate::Vars tileVars(tileId);
 
         // statistics
         map->statistics->metaNodesTraversedTotal++;
@@ -556,14 +625,11 @@ public:
         // find topmost nonempty surface
         for (auto &&it : surfaceStack)
         {
-            const TileId tileId(nodeId.lod,
-                                (nodeId.x >> binaryOrder) << binaryOrder,
-                                (nodeId.y >> binaryOrder) << binaryOrder);
             const MetaTile *t = map->resources->getMetaTile(
-                        it.surface->urlMeta(UrlTemplate::Vars(tileId)));
+                        it.surface->urlMeta(tileVars));
             if (!*t)
                 continue;
-            const MetaNode *n = t->get(nodeInfo.nodeId(), std::nothrow);
+            const MetaNode *n = t->get(nodeId, std::nothrow);
             if (!n || n->extents.ll == n->extents.ur)
                 continue;
             if (!visibilityTest(nodeInfo, *n))
@@ -599,17 +665,73 @@ public:
                 traverse(nodeInfo.child(childs[i]));
     }
 
+    bool panZSurfaceStack(HeightRequest &task)
+    {
+        const TileId nodeId = task.nodeId;
+        const TileId tileId = roundId(nodeId);
+        UrlTemplate::Vars tileVars(tileId);
+        for (auto &&it : surfaceStack)
+        {
+            const MetaTile *t = map->resources->getMetaTile(
+                        it.surface->urlMeta(tileVars));
+            switch (t->impl->state)
+            {
+            case ResourceImpl::State::initializing:
+            case ResourceImpl::State::downloading:
+            case ResourceImpl::State::downloaded:
+                return false;
+            case ResourceImpl::State::errorDownload:
+            case ResourceImpl::State::errorLoad:
+                continue;
+            case ResourceImpl::State::ready:
+                break;
+            default:
+                assert(false);
+            }
+            const MetaNode *n = t->get(nodeId, std::nothrow);
+            if (!n || n->extents.ll == n->extents.ur
+                    || n->alien() != it.alien || !n->navtile())
+                continue;
+            task.metaUrl = it.surface->urlMeta(tileVars);
+            task.navUrl = it.surface->urlNav(UrlTemplate::Vars(nodeId));
+            return true;
+        }
+        assert(false);
+    }
+    
     void checkPanZQueue()
     {
-        HeightRequest r;
-        if (!panZQueue->pop(r))
+        if (panZQueue.empty())
             return;
+        HeightRequest &task = *panZQueue.front();
+        
+        // find urls to the resources
+        if (task.navUrl.empty() && !panZSurfaceStack(task))
+            return;
+        
+        // acquire required resources
+        const NavTile *nav = map->resources->getNavTile(task.navUrl);
+        const MetaTile *met = map->resources->getMetaTile(task.metaUrl);
+        if (!*nav || !*met)
+            return;    
+        const MetaNode *men = met->get(task.nodeId, std::nothrow);
+        assert(men);
+    
+        // acquire height from the navtile
+        uint32 idx = (uint32)round(task.pixPos(1)) * 256
+                    + (uint32)round(task.pixPos(0));
+        double nhc = (double)(unsigned char)nav->data[idx] / 255.0;
+        assert(nhc >= 0 && nhc <= 1);
+        double nh = (nhc * (men->heightRange.max
+            - men->heightRange.min) + men->heightRange.min) ;
+
+        // apply the height to camera
         double h = mapConfig->position.position[2];
-        h += r.result;
         if (lastPanZShift)
-            h -= *lastPanZShift;
-        lastPanZShift.emplace(r.result);
+            h += nh - *lastPanZShift;
+        lastPanZShift.emplace(nh);
         mapConfig->position.position[2] = h;
+        panZQueue.pop();
     }
     
     void updateCamera()
@@ -855,7 +977,7 @@ public:
             *mapConfig
         ));
 
-        binaryOrder = mapConfig->referenceFrame.metaBinaryOrder;
+        metaTileBinaryOrder = mapConfig->referenceFrame.metaBinaryOrder;
 
         boundInfos.clear();
         for (auto &&bl : mapConfig->boundLayers)
@@ -899,17 +1021,19 @@ public:
         
         { // initialize camera panZQueue
             lastPanZShift.reset();
-            HeightRequestQueue::FindNavTileUrl func; // todo
-            panZQueue = std::shared_ptr<HeightRequestQueue>(
-                        HeightRequestQueue::create(map, func));
-            panZQueue->push(vec3to2(vecFromUblas<vec3>(
+            {
+                std::queue<std::shared_ptr<HeightRequest>> tmp;
+                std::swap(tmp, panZQueue);
+            }
+            panAdjustZ(vec3to2(vecFromUblas<vec3>(
                                              mapConfig->position.position)));
         }
     }
     
     void panAdjustZ(const vec2 &navPos) override
     {
-        panZQueue->push(navPos);
+        // todo
+        //panZQueue.push(std::make_shared<HeightRequest>(navPos, this));
     }
 
     void renderTick(uint32 windowWidth, uint32 windowHeight) override
@@ -964,9 +1088,9 @@ public:
     GpuShader *shader;
     GpuShader *shaderColor;
     GpuContext *gpuContext;
-    uint32 binaryOrder;
+    uint32 metaTileBinaryOrder;
     boost::optional<double> lastPanZShift;
-    std::shared_ptr<HeightRequestQueue> panZQueue;
+    std::queue<std::shared_ptr<HeightRequest>> panZQueue;
 };
 
 Renderer::Renderer()

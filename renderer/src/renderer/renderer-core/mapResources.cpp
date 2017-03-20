@@ -27,9 +27,21 @@ void MetaTile::load(MapImpl *base)
 NavTile::NavTile(const std::string &name) : Resource(name)
 {}
 
-void NavTile::load(MapImpl *base)
+void NavTile::load(MapImpl *)
 {
-    RawNavTile::deserialize({0, 0}, impl->download->contentData, name);
+    GpuTextureSpec spec;
+    decodeImage(name, impl->download->contentData, spec.buffer,
+                spec.width, spec.height, spec.components);
+    if (spec.width != 256 || spec.height != 256 || spec.components != 1)
+        throw std::runtime_error("invalid navtile image");
+    data.resize(256 * 256);
+    memcpy(data.data(), spec.buffer.data(), 256 * 256);
+}
+
+vec2 NavTile::sds2px(const vec2 &point, const math::Extents2 &extents)
+{
+    return vecFromUblas<vec2>(vtslibs::vts::NavTile::sds2px(
+                                  vecToUblas<math::Point2>(point), extents));
 }
 
 MeshPart::MeshPart() : textureLayer(0), surfaceReference(0),

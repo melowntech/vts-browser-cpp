@@ -292,16 +292,19 @@ public:
         { // clear old resources
             std::vector<Resource*> res;
             res.reserve(resources.size());
-            uint32 memUse = 0;
+            uint32 memRamUse = 0;
+            uint32 memGpuUse = 0;
             for (auto &&it : resources)
             {
-                memUse += it.second->gpuMemoryCost + it.second->ramMemoryCost;
+                memRamUse += it.second->ramMemoryCost;
+                memGpuUse += it.second->gpuMemoryCost;
                 // consider long time not used resources only
                 if (it.second->impl->lastAccessTick + 100 < tickIndex
                         && it.second->impl->state
                         != ResourceImpl::State::downloading)
                     res.push_back(it.second.get());
             }
+            uint32 memUse = memRamUse + memGpuUse;
             static const uint32 memCap = 500000000;
             if (memUse > memCap)
             {
@@ -325,6 +328,8 @@ public:
                     }
                 }
             }
+            map->statistics->currentGpuMemUse = memGpuUse;
+            map->statistics->currentRamMemUse = memRamUse;
         }
         
         // advance the tick counter

@@ -23,11 +23,15 @@ public:
     void load(class MapImpl *base) override;
 };
 
-class NavTile : public Resource, public vtslibs::vts::RawNavTile
+class NavTile : public Resource
 {
 public:
     NavTile(const std::string &name);
     void load(class MapImpl *base) override;
+    
+    std::vector<unsigned char> data;
+    
+    static vec2 sds2px(const vec2 &point, const math::Extents2 &extents);
 };
 
 class MeshPart

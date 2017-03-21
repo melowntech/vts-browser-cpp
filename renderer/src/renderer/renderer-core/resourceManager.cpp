@@ -1,210 +1,178 @@
-#include <unordered_map>
-#include <unordered_set>
-#include <queue>
-#include <atomic>
-
-#include <boost/thread/mutex.hpp>
-
-#include <renderer/gpuContext.h>
-#include <renderer/gpuResources.h>
-#include <renderer/statistics.h>
-#include <renderer/fetcher.h>
-
 #include "map.h"
-#include "resource.h"
-#include "mapConfig.h"
-#include "mapResources.h"
-#include "resourceManager.h"
 
 namespace melown
 {
 
-namespace
+MapImpl::Resources::Resources() : takeItemIndex(0), tickIndex(0), downloads(0),
+    destroyTheFetcher(false)
 {
-
-class ResourceManagerImpl : public ResourceManager
-{
-public:
-    /////////
-    /// DATA thread
-    /////////
-
-    static const std::string invalidurlFileName;
-    
-    ResourceManagerImpl(MapImpl *map) : map(map),
-        takeItemIndex(0), tickIndex(0), downloads(0),
-        destroyTheFetcher(false)
+    try
     {
-        try
+        if (boost::filesystem::exists(invalidUrlFileName))
         {
-            if (boost::filesystem::exists(invalidurlFileName))
+            std::ifstream f;
+            f.open(invalidUrlFileName);
+            while (f.good())
             {
-                std::ifstream f;
-                f.open(invalidurlFileName);
-                while (f.good())
-                {
-                    std::string line;
-                    std::getline(f, line);
-                    invalidUrl.insert(line);
-                }
-                f.close();
+                std::string line;
+                std::getline(f, line);
+                invalidUrl.insert(line);
             }
-        }
-        catch (...)
-        {}
-    }
-
-    ~ResourceManagerImpl()
-    {
-        if (destroyTheFetcher)
-        {
-            delete fetcher;
-            fetcher = nullptr;
-            destroyTheFetcher = false;
-        }
-        try
-        {
-            std::ofstream f;
-            f.open(invalidurlFileName);
-            for (auto &&line : invalidUrl)
-                f << line << '\n';
             f.close();
         }
-        catch (...)
-        {}
     }
+    catch (...)
+    {}
+}
 
-    void dataInitialize(GpuContext *context, Fetcher *fetcher) override
+MapImpl::Resources::~Resources()
+{
+    if (destroyTheFetcher)
     {
-        dataContext = context;
-        if (!fetcher)
-        {
-            destroyTheFetcher = true;
-            fetcher = Fetcher::create();
-        }
-        this->fetcher = fetcher;
-        Fetcher::Func func = std::bind(
-                    &ResourceManagerImpl::fetchedFile,
-                    this, std::placeholders::_1);
-        fetcher->initialize(func);
+        delete fetcher;
+        fetcher = nullptr;
+        destroyTheFetcher = false;
+    }
+    try
+    {
+        std::ofstream f;
+        f.open(invalidUrlFileName);
+        for (auto &&line : invalidUrl)
+            f << line << '\n';
+        f.close();
+    }
+    catch (...)
+    {}
+}
+
+void MapImpl::dataInitialize(GpuContext *context, Fetcher *fetcher)
+{
+    dataContext = context;
+    if (!fetcher)
+    {
+        resources.destroyTheFetcher = true;
+        fetcher = Fetcher::create();
+    }
+    resources.fetcher = fetcher;
+    Fetcher::Func func = std::bind(
+                &MapImpl::fetchedFile,
+                this, std::placeholders::_1);
+    fetcher->initialize(func);
+}
+
+void MapImpl::dataFinalize()
+{
+    dataContext = nullptr;
+    resources.fetcher->finalize();
+    resources.prepareQue.clear();
+}
+
+void MapImpl::loadResource(ResourceImpl *r)
+{
+    assert(r->download);
+    statistics.resourcesGpuLoaded++;
+    try
+    {
+        r->resource->load(this);
+        r->state = ResourceImpl::State::ready;
+    }
+    catch (std::runtime_error &)
+    {
+        LOG(err3) << "Error loading resource: " + r->resource->name;
+        statistics.resourcesFailed++;
+        r->state = ResourceImpl::State::errorLoad;
+    }
+    r->download.reset();
+}
+
+bool MapImpl::dataTick()
+{
+    statistics.currentDownloads = resources.downloads;
+    
+    { // sync invalid urls
+        boost::lock_guard<boost::mutex> l(resources.mutInvalidUrls);
+        resources.invalidUrl.insert(resources.invalidUrlNew.begin(),
+                                    resources.invalidUrlNew.end());
+        resources.invalidUrlNew.clear();
     }
     
-    void dataFinalize() override
+    ResourceImpl *r = nullptr;
     {
-        dataContext = nullptr;
-        fetcher->finalize();
-        prepareQue.clear();
+        boost::lock_guard<boost::mutex> l(resources.mutPrepareQue);
+        if (!resources.prepareQue.empty())
+        {
+            auto it = std::next(resources.prepareQue.begin(),
+                                resources.takeItemIndex++
+                                % resources.prepareQue.size());
+            r = *it;
+            resources.prepareQue.erase(it);
+        }
+    }
+    if (!r)
+        return true; // sleep
+    
+    if (r->state == ResourceImpl::State::downloaded)
+    {
+        loadResource(r);
+        return false;
     }
     
-    void loadResource(ResourceImpl *r)
+    if (r->state == ResourceImpl::State::initializing)
     {
-        assert(r->download);
-        map->statistics->resourcesGpuLoaded++;
-        try
+        if (resources.invalidUrl.find(r->resource->name)
+                != resources.invalidUrl.end())
         {
-            r->resource->load(map);
-            r->state = ResourceImpl::State::ready;
-        }
-        catch (std::runtime_error &)
-        {
-            LOG(err3) << "Error loading resource: " + r->resource->name;
-            map->statistics->resourcesFailed++;
+            statistics.resourcesIgnored++;
             r->state = ResourceImpl::State::errorLoad;
-        }
-        r->download.reset();
-    }
-
-    bool dataTick() override
-    {
-        map->statistics->currentDownloads = downloads;
-        
-        { // sync invalid urls
-            boost::lock_guard<boost::mutex> l(mutInvalidUrls);
-            invalidUrl.insert(invalidUrlNew.begin(), invalidUrlNew.end());
-            invalidUrlNew.clear();
+            return false;
         }
         
-        ResourceImpl *r = nullptr;
+        if (r->resource->name.find("://") == std::string::npos)
         {
-            boost::lock_guard<boost::mutex> l(mutPrepareQue);
-            if (!prepareQue.empty())
-            {
-                auto it = std::next(prepareQue.begin(),
-                                    takeItemIndex++ % prepareQue.size());
-                r = *it;
-                prepareQue.erase(it);
-            }
+            assert(!r->download);
+            r->download.emplace(r);
+            r->download->readLocalFile();
+            loadResource(r);
         }
-        if (!r)
+        else if (r->resource->name.find(".json") == std::string::npos
+                 && availableInCache(r->resource->name))
+        {
+            assert(!r->download);
+            r->download.emplace(r);
+            r->download->loadFromCache();
+            loadResource(r);
+            statistics.resourcesDiskLoaded++;
+        }
+        else if (resources.downloads < 5)
+        {
+            assert(!r->download);
+            r->download.emplace(r);
+            r->state = ResourceImpl::State::downloading;
+            resources.fetcher->fetch(r->download.get_ptr());
+            statistics.resourcesDownloaded++;
+            resources.downloads++;
+        }
+        else
             return true; // sleep
         
-        if (r->state == ResourceImpl::State::downloaded)
-        {
-            loadResource(r);
-            return false;
-        }
-        
-        if (r->state == ResourceImpl::State::initializing)
-        {
-            if (invalidUrl.find(r->resource->name) != invalidUrl.end())
-            {
-                map->statistics->resourcesIgnored++;
-                r->state = ResourceImpl::State::errorLoad;
-                return false;
-            }
-            
-            if (r->resource->name.find("://") == std::string::npos)
-            {
-                assert(!r->download);
-                r->download.emplace(r);
-                r->download->readLocalFile();
-                loadResource(r);
-            }
-            else if (r->resource->name.find(".json") == std::string::npos
-                     && availableInCache(r->resource->name))
-            {
-                assert(!r->download);
-                r->download.emplace(r);
-                r->download->loadFromCache();
-                loadResource(r);
-                map->statistics->resourcesDiskLoaded++;
-            }
-            else if (downloads < 5)
-            {
-                assert(!r->download);
-                r->download.emplace(r);
-                r->state = ResourceImpl::State::downloading;
-                fetcher->fetch(r->download.get_ptr());
-                map->statistics->resourcesDownloaded++;
-                downloads++;
-            }
-            else
-                return true; // sleep
-            
-            return false;
-        }
-        
-        return true; // sleep
+        return false;
     }
     
+    return true; // sleep
+}
+
+void MapImpl::fetchedFile(FetchTask *task)
+{
+    ResourceImpl *resource = ((ResourceImpl::DownloadTask*)task)->resource;
+    assert(resource->state == ResourceImpl::State::downloading);
+    assert(resource->download);
     
-    /////////
-    /// DOWNLOAD thread
-    /////////
+    // handle error codes
+    if (task->code >= 400 || task->code == 0)
+        resource->state = ResourceImpl::State::errorDownload;
     
-    
-    void fetchedFile(FetchTask *task)
-    {
-        ResourceImpl *resource = ((ResourceImpl::DownloadTask*)task)->resource;
-        assert(resource->state == ResourceImpl::State::downloading);
-        assert(resource->download);
-        
-        // handle error codes
-        if (task->code >= 400 || task->code == 0)
-            resource->state = ResourceImpl::State::errorDownload;
-        
-        // availability tests
-        if (resource->state == ResourceImpl::State::initializing)
+    // availability tests
+    if (resource->state == ResourceImpl::State::initializing)
         if (resource->availTest)
         {
             switch (resource->availTest->type)
@@ -228,9 +196,9 @@ public:
                 throw std::invalid_argument("invalid availability test type");
             }
         }
-        
-        // handle redirections
-        if (resource->state == ResourceImpl::State::initializing)
+    
+    // handle redirections
+    if (resource->state == ResourceImpl::State::initializing)
         switch (task->code)
         {
         case 301:
@@ -243,229 +211,166 @@ public:
             else
             {
                 task->url = task->redirectUrl;
-                fetcher->fetch(task);
+                resources.fetcher->fetch(task);
                 return;
             }
         }
-        
-        downloads--;
-        
-        if (resource->state == ResourceImpl::State::errorDownload)
+    
+    resources.downloads--;
+    
+    if (resource->state == ResourceImpl::State::errorDownload)
+    {
+        resource->download.reset();
+        boost::lock_guard<boost::mutex> l(resources.mutInvalidUrls);
+        resources.invalidUrlNew.insert(resource->resource->name);
+        return;
+    }
+    
+    resource->download->saveToCache();
+    resource->state = ResourceImpl::State::downloaded;
+}
+
+void MapImpl::dataRenderInitialize()
+{}
+
+void MapImpl::dataRenderFinalize()
+{
+    renderContext = nullptr;
+    resources.prepareQueNew.clear();
+    LOG(info3) << "Releasing " << resources.resources.size() << " resources";
+    resources.resources.clear();
+}
+
+bool MapImpl::dataRenderTick()
+{
+    { // sync download queue
+        boost::lock_guard<boost::mutex> l(resources.mutPrepareQue);
+        std::swap(resources.prepareQueNew, resources.prepareQue);
+    }
+    resources.prepareQueNew.clear();
+    
+    { // clear old resources
+        std::vector<Resource*> res;
+        res.reserve(resources.resources.size());
+        uint32 memRamUse = 0;
+        uint32 memGpuUse = 0;
+        for (auto &&it : resources.resources)
         {
-            resource->download.reset();
-            boost::lock_guard<boost::mutex> l(mutInvalidUrls);
-            invalidUrlNew.insert(resource->resource->name);
-            return;
+            memRamUse += it.second->ramMemoryCost;
+            memGpuUse += it.second->gpuMemoryCost;
+            // consider long time not used resources only
+            if (it.second->impl->lastAccessTick + 100 < resources.tickIndex
+                    && it.second->impl->state
+                    != ResourceImpl::State::downloading)
+                res.push_back(it.second.get());
         }
-        
-        resource->download->saveToCache();
-        resource->state = ResourceImpl::State::downloaded;
-    }
-    
-    
-    /////////
-    /// RENDER thread
-    /////////
-
-    
-    void renderInitialize(GpuContext *context) override
-    {
-        renderContext = context;
-    }
-    
-    void renderFinalize() override
-    {
-        renderContext = nullptr;
-        prepareQueNew.clear();
-        LOG(info3) << "Releasing " << resources.size() << " resources";
-        resources.clear();
-    }
-
-    void renderTick() override
-    {
-        { // sync download queue
-            boost::lock_guard<boost::mutex> l(mutPrepareQue);
-            std::swap(prepareQueNew, prepareQue);
-        }
-        prepareQueNew.clear();
-        
-        { // clear old resources
-            std::vector<Resource*> res;
-            res.reserve(resources.size());
-            uint32 memRamUse = 0;
-            uint32 memGpuUse = 0;
-            for (auto &&it : resources)
+        uint32 memUse = memRamUse + memGpuUse;
+        static const uint32 memCap = 500000000;
+        if (memUse > memCap)
+        {
+            std::sort(res.begin(), res.end(), [](Resource *a, Resource *b){
+                if (a->impl->lastAccessTick == b->impl->lastAccessTick)
+                    return a->gpuMemoryCost + a->ramMemoryCost
+                            > b->gpuMemoryCost + b->ramMemoryCost;
+                return a->impl->lastAccessTick < b->impl->lastAccessTick;
+            });
+            for (Resource *it : res)
             {
-                memRamUse += it.second->ramMemoryCost;
-                memGpuUse += it.second->gpuMemoryCost;
-                // consider long time not used resources only
-                if (it.second->impl->lastAccessTick + 100 < tickIndex
-                        && it.second->impl->state
-                        != ResourceImpl::State::downloading)
-                    res.push_back(it.second.get());
-            }
-            uint32 memUse = memRamUse + memGpuUse;
-            static const uint32 memCap = 500000000;
-            if (memUse > memCap)
-            {
-                std::sort(res.begin(), res.end(), [](Resource *a, Resource *b){
-                    if (a->impl->lastAccessTick == b->impl->lastAccessTick)
-                        return a->gpuMemoryCost + a->ramMemoryCost
-                                > b->gpuMemoryCost + b->ramMemoryCost;
-                    return a->impl->lastAccessTick < b->impl->lastAccessTick;
-                });
-                for (Resource *it : res)
+                if (memUse <= memCap)
+                    break;
+                memUse -= it->gpuMemoryCost + it->ramMemoryCost;
+                if (it->impl->state != ResourceImpl::State::finalizing)
+                    it->impl->state = ResourceImpl::State::finalizing;
+                else
                 {
-                    if (memUse <= memCap)
-                        break;
-                    memUse -= it->gpuMemoryCost + it->ramMemoryCost;
-                    if (it->impl->state != ResourceImpl::State::finalizing)
-                        it->impl->state = ResourceImpl::State::finalizing;
-                    else
-                    {
-                        map->statistics->resourcesReleased++;
-                        resources.erase(it->name);
-                    }
+                    statistics.resourcesReleased++;
+                    resources.resources.erase(it->name);
                 }
             }
-            map->statistics->currentGpuMemUse = memGpuUse;
-            map->statistics->currentRamMemUse = memRamUse;
         }
-        
-        // advance the tick counter
-        tickIndex++;
-    }
-
-    void touch(const std::string &, Resource *resource)
-    {
-        resource->impl->lastAccessTick = tickIndex;
-        switch (resource->impl->state)
-        {
-        case ResourceImpl::State::finalizing:
-            resource->impl->state = ResourceImpl::State::initializing;
-            // intentionally no break here
-        case ResourceImpl::State::initializing:
-        case ResourceImpl::State::downloaded:
-            prepareQueNew.insert(resource->impl.get());
-            break;
-        }
-    }
-
-    template<class T,
-             std::shared_ptr<Resource>(GpuContext::*F)(const std::string &)>
-    T *getGpuResource(const std::string &name)
-    {
-        auto it = resources.find(name);
-        if (it == resources.end())
-        {
-            resources[name] = (renderContext->*F)(name);
-            it = resources.find(name);
-        }
-        touch(name, it->second.get());
-        return dynamic_cast<T*>(it->second.get());
-    }
-
-    GpuShader *getShader(const std::string &name) override
-    {
-        return getGpuResource<GpuShader, &GpuContext::createShader>(name);
-    }
-
-    GpuTexture *getTexture(const std::string &name) override
-    {
-        return getGpuResource<GpuTexture, &GpuContext::createTexture>(name);
-    }
-
-    GpuMeshRenderable *getMeshRenderable(const std::string &name) override
-    {
-        return getGpuResource<GpuMeshRenderable,
-                &GpuContext::createMeshRenderable>(name);
-    }
-
-    template<class T> T *getMapResource(const std::string &name)
-    {
-        auto it = resources.find(name);
-        if (it == resources.end())
-        {
-            resources[name] = std::shared_ptr<Resource>(new T(name));
-            it = resources.find(name);
-        }
-        touch(name, it->second.get());
-        return dynamic_cast<T*>(it->second.get());
-    }
-
-    MapConfig *getMapConfig(const std::string &name) override
-    {
-        return getMapResource<MapConfig>(name);
-    }
-
-    MetaTile *getMetaTile(const std::string &name) override
-    {
-        return getMapResource<MetaTile>(name);
+        statistics.currentGpuMemUse = memGpuUse;
+        statistics.currentRamMemUse = memRamUse;
     }
     
-    NavTile *getNavTile(const std::string &name) override
-    {
-        return getMapResource<NavTile>(name);
-    }
-
-    MeshAggregate *getMeshAggregate(const std::string &name) override
-    {
-        return getMapResource<MeshAggregate>(name);
-    }
-
-    ExternalBoundLayer *getExternalBoundLayer(const std::string &name) override
-    {
-        return getMapResource<ExternalBoundLayer>(name);
-    }
-
-    BoundMetaTile *getBoundMetaTile(const std::string &name) override
-    {
-        return getMapResource<BoundMetaTile>(name);
-    }
-
-    BoundMaskTile *getBoundMaskTile(const std::string &name) override
-    {
-        return getMapResource<BoundMaskTile>(name);
-    }
-    
-    bool ready(const std::string &name) override
-    {
-        auto &&it = resources.find(name);
-        if (it == resources.end())
-            return false;
-        return *it->second;
-    }
-
-    std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
-    std::unordered_set<ResourceImpl*> prepareQue;
-    std::unordered_set<ResourceImpl*> prepareQueNew;
-    std::unordered_set<std::string> invalidUrl;
-    std::unordered_set<std::string> invalidUrlNew;
-    boost::mutex mutPrepareQue;
-    boost::mutex mutInvalidUrls;
-    MapImpl *map;
-    Fetcher *fetcher;
-    uint32 takeItemIndex;
-    uint32 tickIndex;
-    std::atomic_uint downloads;
-    bool destroyTheFetcher;
-};
-
-const std::string ResourceManagerImpl::invalidurlFileName
-            = "cache/invalidUrl.txt";
-
-} // anonymous namespace
-
-ResourceManager::ResourceManager() : renderContext(nullptr),
-    dataContext(nullptr)
-{}
-
-ResourceManager::~ResourceManager()
-{}
-
-ResourceManager *ResourceManager::create(MapImpl *map)
-{
-    return new ResourceManagerImpl(map);
+    // advance the tick counter
+    resources.tickIndex++;
 }
+
+void MapImpl::touchResource(const std::string &, Resource *resource)
+{
+    resource->impl->lastAccessTick = resources.tickIndex;
+    switch (resource->impl->state)
+    {
+    case ResourceImpl::State::finalizing:
+        resource->impl->state = ResourceImpl::State::initializing;
+        // intentionally no break here
+    case ResourceImpl::State::initializing:
+    case ResourceImpl::State::downloaded:
+        resources.prepareQueNew.insert(resource->impl.get());
+        break;
+    }
+}
+
+GpuShader *MapImpl::getShader(const std::string &name)
+{
+    return getGpuResource<GpuShader, &GpuContext::createShader>(name);
+}
+
+GpuTexture *MapImpl::getTexture(const std::string &name)
+{
+    return getGpuResource<GpuTexture, &GpuContext::createTexture>(name);
+}
+
+GpuMeshRenderable *MapImpl::getMeshRenderable(const std::string &name)
+{
+    return getGpuResource<GpuMeshRenderable,
+            &GpuContext::createMeshRenderable>(name);
+}
+
+MapConfig *MapImpl::getMapConfig(const std::string &name)
+{
+    return getMapResource<MapConfig>(name);
+}
+
+MetaTile *MapImpl::getMetaTile(const std::string &name)
+{
+    return getMapResource<MetaTile>(name);
+}
+
+NavTile *MapImpl::getNavTile(const std::string &name)
+{
+    return getMapResource<NavTile>(name);
+}
+
+MeshAggregate *MapImpl::getMeshAggregate(const std::string &name)
+{
+    return getMapResource<MeshAggregate>(name);
+}
+
+ExternalBoundLayer *MapImpl::getExternalBoundLayer(const std::string &name)
+{
+    return getMapResource<ExternalBoundLayer>(name);
+}
+
+BoundMetaTile *MapImpl::getBoundMetaTile(const std::string &name)
+{
+    return getMapResource<BoundMetaTile>(name);
+}
+
+BoundMaskTile *MapImpl::getBoundMaskTile(const std::string &name)
+{
+    return getMapResource<BoundMaskTile>(name);
+}
+
+bool MapImpl::getResourceReady(const std::string &name)
+{
+    auto &&it = resources.resources.find(name);
+    if (it == resources.resources.end())
+        return false;
+    return *it->second;
+}
+
+const std::string MapImpl::Resources::invalidUrlFileName
+            = "cache/invalidUrl.txt";
 
 } // namespace melown

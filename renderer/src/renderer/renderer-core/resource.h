@@ -7,7 +7,6 @@
 #include <vts-libs/registry/referenceframe.hpp>
 #include <boost/optional.hpp>
 
-#include <renderer/foundation.h>
 #include <renderer/resource.h>
 #include <renderer/fetcher.h>
 

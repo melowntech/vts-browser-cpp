@@ -15,7 +15,7 @@ class Registry;
 namespace melown
 {
 
-    class CsConvertor
+class CsConvertor
 {
 public:
     static CsConvertor *create(const std::string &phys,

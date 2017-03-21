@@ -14,7 +14,6 @@ class ResourceImpl;
 class MELOWN_API Resource
 {
 public:
-
     Resource(const std::string &name);
     virtual ~Resource();
 

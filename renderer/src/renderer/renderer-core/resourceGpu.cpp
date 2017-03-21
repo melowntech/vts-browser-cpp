@@ -1,16 +1,8 @@
-#include <string>
-#include <sstream>
-#include <iostream>
-#include <cstdlib>
-
 #include <vts-libs/registry/referenceframe.hpp>
-
 #include <renderer/gpuResources.h>
 #include <renderer/buffer.h>
 
-#include "map.h"
 #include "resource.h"
-#include "resourceManager.h"
 #include "image.h"
 #include "obj.h"
 #include "math.h"
@@ -21,7 +13,7 @@ namespace melown
 GpuShader::GpuShader(const std::string &name) : Resource(name)
 {}
 
-void GpuShader::load(MapImpl *)
+void GpuShader::load(class MapImpl *)
 {
     std::map<std::string, std::string> shaders;
     std::string current;
@@ -45,7 +37,7 @@ GpuTextureSpec::GpuTextureSpec() : width(0), height(0), components(0)
 GpuTexture::GpuTexture(const std::string &name) : Resource(name)
 {}
 
-void GpuTexture::load(MapImpl *)
+void GpuTexture::load(class MapImpl *)
 {
     GpuTextureSpec spec;
     decodeImage(name, impl->download->contentData, spec.buffer,
@@ -64,7 +56,7 @@ GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0),
 GpuMeshRenderable::GpuMeshRenderable(const std::string &name) : Resource(name)
 {}
 
-void GpuMeshRenderable::load(MapImpl *)
+void GpuMeshRenderable::load(class MapImpl *)
 {
     uint32 vc = 0, ic = 0;
     GpuMeshSpec spec;

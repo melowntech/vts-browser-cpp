@@ -1,10 +1,8 @@
 #ifndef IMAGE_H_erweubdnu
 #define IMAGE_H_erweubdnu
 
-#include <stdexcept>
 #include <string>
 
-#include <renderer/foundation.h>
 #include <renderer/buffer.h>
 
 namespace melown

@@ -7,7 +7,6 @@
 #include <vts-libs/vts/metatile.hpp>
 #include <vts-libs/registry/referenceframe.hpp>
 
-#include <renderer/foundation.h>
 #include <renderer/resource.h>
 #include <renderer/gpuResources.h>
 

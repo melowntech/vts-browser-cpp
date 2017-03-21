@@ -1,13 +1,6 @@
 #include <vts-libs/vts/meshio.hpp>
 
-#include <renderer/gpuContext.h>
-#include <renderer/gpuResources.h>
-
 #include "map.h"
-#include "resource.h"
-#include "mapResources.h"
-#include "resourceManager.h"
-#include "math.h"
 #include "image.h"
 
 namespace melown
@@ -17,7 +10,7 @@ MetaTile::MetaTile(const std::string &name) : Resource(name),
     vtslibs::vts::MetaTile(vtslibs::vts::TileId(), 0)
 {}
 
-void MetaTile::load(MapImpl *base)
+void MetaTile::load(MapImpl *)
 {
     *(vtslibs::vts::MetaTile*)this
             = vtslibs::vts::loadMetaTile(impl->download->contentData, 5, name);
@@ -80,7 +73,7 @@ void MeshAggregate::load(MapImpl *base)
         sprintf(tmp, "%d", mi);
         std::shared_ptr<GpuMeshRenderable> gm
                 = std::dynamic_pointer_cast<GpuMeshRenderable>
-                (base->resources->dataContext->createMeshRenderable
+                (base->dataContext->createMeshRenderable
                  (name + "#" + tmp));
 
         uint32 vertexSize = sizeof(vec3f);
@@ -176,7 +169,7 @@ void BoundMaskTile::load(MapImpl *base)
 {
     if (!texture)
         texture = std::dynamic_pointer_cast<GpuTexture>(
-                    base->resources->dataContext->createTexture(name + "#tex"));
+                    base->dataContext->createTexture(name + "#tex"));
     
     Buffer buffer = std::move(impl->download->contentData);
     GpuTextureSpec spec;

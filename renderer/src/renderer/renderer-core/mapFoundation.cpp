@@ -65,7 +65,8 @@ MapStatistics &MapFoundation::statistics()
 }
 
 MapImpl::MapImpl(const std::string &mapConfigPath)
-    : mapConfigPath(mapConfigPath)
+    : mapConfigPath(mapConfigPath),
+    renderContext(nullptr), dataContext(nullptr)
 {}
 
 } // namespace melown

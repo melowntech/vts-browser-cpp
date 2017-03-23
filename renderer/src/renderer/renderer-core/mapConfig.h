@@ -60,6 +60,7 @@ public:
     vtslibs::vts::SurfaceCommonConfig *findGlue(
             const vtslibs::vts::Glue::Id &id);
     vtslibs::vts::SurfaceCommonConfig *findSurface(const std::string &id);
+    BoundInfo *getBoundInfo(const std::string &id);
     void printSurfaceStack();
     void generateSurfaceStack();
     

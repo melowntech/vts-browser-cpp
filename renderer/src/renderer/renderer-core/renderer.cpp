@@ -3,7 +3,12 @@
 namespace melown
 {
 
-MapImpl::Renderer::Renderer() : shader(nullptr), shaderColor(nullptr)
+void MapImpl::renderInitialize(GpuContext *gpuContext)
+{
+    renderContext = gpuContext;
+}
+
+void MapImpl::renderFinalize()
 {}
 
 const TileId MapImpl::roundId(TileId nodeId)
@@ -13,23 +18,30 @@ const TileId MapImpl::roundId(TileId nodeId)
    (nodeId.y >> renderer.metaTileBinaryOrder) << renderer.metaTileBinaryOrder);
 }
 
-void MapImpl::renderInitialize(GpuContext *gpuContext)
+Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
+                                     uint32 subMeshIndex,
+                                     BoundParamInfo::list &boundList)
 {
-    renderContext = gpuContext;
-}
-
-void MapImpl::reorderBoundLayer(const NodeInfo &nodeInfo, uint32 subMeshIndex,
-                                BoundParamInfo::list &boundList)
-{
-    for (BoundParamInfo &b : boundList)
-        b.prepare(nodeInfo, this, subMeshIndex);
-    
-    // erase invalid layers
-    boundList.erase(std::remove_if(boundList.begin(), boundList.end(),
-                        [](BoundParamInfo &a){ return a.invalid(); }),
-            boundList.end());
-    if (boundList.empty())
-        return;
+    { // prepare all layers
+        bool determined = true;
+        auto it = boundList.begin();
+        while (it != boundList.end())
+        {
+            switch (it->prepare(nodeInfo, this, subMeshIndex))
+            {
+            case Validity::Invalid:
+                it = boundList.erase(it);
+                break;
+            case Validity::Indeterminate:
+                determined = false;
+                // no break here
+            case Validity::Valid:
+                it++;
+            }
+        }
+        if (!determined)
+            return Validity::Indeterminate;
+    }
     
     // sort by depth and priority
     std::stable_sort(boundList.begin(), boundList.end());
@@ -42,141 +54,40 @@ void MapImpl::reorderBoundLayer(const NodeInfo &nodeInfo, uint32 subMeshIndex,
     if (it != et)
         boundList.erase(++it, et);
     
-    // show lower resolution when appropriate
-    for (BoundParamInfo &b : boundList)
-    {
-        for (uint32  i = 0; i < 5; i++)
-        {
-            if (b.available(i == 0) || !b.canGoUp())
-                break;
-            b.varsFallDown(1);
-        }
-    }
-    
-    // erase not-ready layers
-    boundList.erase(std::remove_if(boundList.begin(), boundList.end(),
-                                   [](BoundParamInfo &a){ return !a.available(); }),
-            boundList.end());
+    return Validity::Valid;
 }
 
-void MapImpl::drawBox(const mat4f &mvp, const vec3f &color)
+void MapImpl::touchResources(std::shared_ptr<TraverseNode> trav)
 {
-    GpuMeshRenderable *mesh = getMeshRenderable("data/cube.obj");
-    if (!*mesh)
-        return;
-    
-    renderer.shaderColor->bind();
-    renderer.shaderColor->uniformMat4(0, mvp.data());
-    renderer.shaderColor->uniformVec3(8, color.data());
-    renderContext->wiremode(true);
-    mesh->draw();
-    renderContext->wiremode(false);
-    renderer.shader->bind();
+    trav->lastAccessTime = statistics.frameIndex;
+    if (trav->renderBatch)
+        touchResources(trav->renderBatch);
 }
 
-bool MapImpl::renderNode(const NodeInfo &nodeInfo,
-                         const SurfaceStackItem &surface, bool onlyCheckReady)
+void MapImpl::touchResources(std::shared_ptr<RenderBatch> batch)
 {
-    // nodeId
-    const TileId nodeId = nodeInfo.nodeId();
-    
-    // statistics
-    if (!onlyCheckReady)
-    {
-        statistics.meshesRenderedTotal++;
-        statistics.meshesRenderedPerLod[
-                std::min<uint32>(nodeId.lod, MapStatistics::MaxLods-1)]++;
-    }
-    
-    // aggregate mesh
-    MeshAggregate *meshAgg = getMeshAggregate(
-        surface.surface->urlMesh(UrlTemplate::Vars(nodeId, local(nodeInfo))));
-    if (!*meshAgg)
-        return false;
-    
-    // iterate over all submeshes
-    for (uint32 subMeshIndex = 0, e = meshAgg->submeshes.size();
-         subMeshIndex != e; subMeshIndex++)
-    {
-        const MeshPart &part = meshAgg->submeshes[subMeshIndex];
-        GpuMeshRenderable *mesh = part.renderable.get();
-        if (!onlyCheckReady)
-        {
-            mat4f mvp = (renderer.viewProj * part.normToPhys).cast<float>();
-            renderer.shader->uniformMat4(0, mvp.data());
-            //drawBox(mvp, surface.color);
-        }
-        
-        // internal texture
-        if (part.internalUv)
-        {
-            UrlTemplate::Vars vars(nodeId, local(nodeInfo), subMeshIndex);
-            GpuTexture *texture = getTexture(surface.surface->urlIntTex(vars));
-            if (onlyCheckReady)
-            {
-                if (!*texture)
-                    return false;
-            }
-            else
-            {
-                if (!*texture)
-                    continue;
-                texture->bind();
-                mat3f uvm = upperLeftSubMatrix(identityMatrix())
-                        .cast<float>();
-                renderer.shader->uniformMat3(4, uvm.data());
-                renderer.shader->uniform(8, 0); // internal uv
-                mesh->draw();
-            }
-            continue;
-        }
-        
-        // external bound textures
-        if (part.externalUv)
-        {
-            std::string surfaceName;
-            if (surface.surface->name.size() > 1)
-                surfaceName = surface.surface
-                        ->name[part.surfaceReference - 1];
-            else
-                surfaceName = surface.surface->name.back();
-            const vtslibs::registry::View::BoundLayerParams::list &boundList
-                    = mapConfig->view.surfaces[surfaceName];
-            BoundParamInfo::list bls(boundList.begin(), boundList.end());
-            if (part.textureLayer)
-                bls.push_back(BoundParamInfo(
-                        vtslibs::registry::View::BoundLayerParams(
-                        mapConfig->boundLayers.get(part.textureLayer).id)));
-            reorderBoundLayer(nodeInfo, subMeshIndex, bls);
-            if (onlyCheckReady && bls.empty())
-                return false;
-            if (!onlyCheckReady)
-                for (BoundParamInfo &b : bls)
-                {
-                    if (!b.watertight)
-                    {
-                        renderContext->activeTextureUnit(1);
-                        getTexture(b.bound->urlMask(b.vars))->bind();
-                        renderContext->activeTextureUnit(0);
-                        renderer.shader->uniform(9, 1); // use mask
-                    }
-                    getTexture(b.bound->urlExtTex(b.vars))->bind();
-                    mat3f uvm = b.uvMatrix();
-                    renderer.shader->uniformMat3(4, uvm.data());
-                    renderer.shader->uniform(8, 1); // external uv
-                    mesh->draw();
-                    if (!b.watertight)
-                        renderer.shader->uniform(9, 0); // do not use mask
-                }
-        }
-    }
-    
-    return true;
+    for (auto &&it : batch->opaque)
+        touchResources(it);
+    for (auto &&it : batch->transparent)
+        touchResources(it);
+    for (auto &&it : batch->wires)
+        touchResources(it);
 }
 
-const bool MapImpl::visibilityTest(const NodeInfo &nodeInfo,
-                                   const MetaNode &node)
+void MapImpl::touchResources(std::shared_ptr<RenderTask> task)
 {
+    if (task->meshAgg)
+        touchResource(task->meshAgg);
+    if (task->textureColor)
+        touchResource(task->textureColor);
+    if (task->textureMask)
+        touchResource(task->textureMask);
+}
+
+bool MapImpl::visibilityTest(const NodeInfo &nodeInfo, const MetaNode &node)
+{
+    if (nodeInfo.nodeId().lod < 3)
+        return true;
     //if (node.geomExtents.z == GeomExtents::ZRange::emptyRange())
     {
         vec4 c0 = column(renderer.viewProj, 0);
@@ -250,18 +161,8 @@ bool MapImpl::coarsenessTest(const NodeInfo &nodeInfo, const MetaNode &node)
     return result;
 }
 
-void MapImpl::traverse(const NodeInfo &nodeInfo)
+bool MapImpl::backTileCulling(const NodeInfo &nodeInfo)
 {
-    const TileId nodeId = nodeInfo.nodeId();
-    const TileId tileId = roundId(nodeId);
-    UrlTemplate::Vars tileVars(tileId);
-    
-    // statistics
-    statistics.metaNodesTraversedTotal++;
-    statistics.metaNodesTraversedPerLod[
-            std::min<uint32>(nodeId.lod, MapStatistics::MaxLods-1)]++;
-    
-    // back-tile culling
     if (nodeInfo.distanceFromRoot() < 6 && nodeInfo.distanceFromRoot() > 2)
     {
         vec2 fl = vecFromUblas<vec2>(nodeInfo.extents().ll);
@@ -275,24 +176,82 @@ void MapImpl::traverse(const NodeInfo &nodeInfo)
                     mapConfig->referenceFrame.model.physicalSrs);
         vec3 dir = normalize(bp - ap);
         if (dot(dir, renderer.forwardUnitVector) > 0)
+            return true;
+    }
+    return false;
+}
+
+void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
+{
+    // node visibility
+    if (backTileCulling(trav->nodeInfo)
+            || !visibilityTest(trav->nodeInfo, trav->metaNode))
+        return;
+    
+    // check children
+    if (!trav->childs.empty()
+            && !coarsenessTest(trav->nodeInfo, trav->metaNode))
+    {
+        bool allOk = true;
+        for (std::shared_ptr<TraverseNode> &t : trav->childs)
+        {
+            switch (t->validity)
+            {
+            case Validity::Invalid:
+                continue;
+            case Validity::Indeterminate:
+                allOk = false;
+                traverse(t, true);
+                break;
+            case Validity::Valid:
+                allOk = allOk && t->renderBatch->ready();
+                touchResources(t);
+                break;
+            }
+        }
+        if (allOk)
+        {
+            for (std::shared_ptr<TraverseNode> &t : trav->childs)
+                traverse(t, false);
             return;
+        }
     }
     
-    // vars
+    // render the node
+    if (trav->empty)
+        return;
+    statistics.meshesRenderedTotal++;
+    statistics.meshesRenderedPerLod[
+            std::min<uint32>(trav->nodeInfo.nodeId().lod,
+                             MapStatistics::MaxLods-1)]++;
+    renderer.renderBatch.mergeIn(*trav->renderBatch, options);
+}
+
+bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
+{
+    const TileId nodeId = trav->nodeInfo.nodeId();
+    const TileId tileId = roundId(nodeId);
+    UrlTemplate::Vars tileVars(tileId);
     const SurfaceStackItem *topmost = nullptr;
     const MetaNode *node = nullptr;
     bool childsAvailable[4] = {false, false, false, false};
+    bool determined = true;
     
     // find topmost nonempty surface
     for (auto &&it : mapConfig->surfaceStack)
     {
-        const MetaTile *t = getMetaTile(it.surface->urlMeta(tileVars));
-        if (!*t)
+        std::string metaName = it.surface->urlMeta(tileVars);
+        std::shared_ptr<const MetaTile> t = getMetaTile(metaName);
+        switch (getResourceValidity(metaName))
+        {
+        case Validity::Indeterminate:
+            determined = false;
+            // no break here
+        case Validity::Invalid:
             continue;
+        }
         const MetaNode *n = t->get(nodeId, std::nothrow);
         if (!n || n->extents.ll == n->extents.ur)
-            continue;
-        if (!visibilityTest(nodeInfo, *n))
             continue;
         for (uint32 i = 0; i < 4; i++)
             childsAvailable[i] = childsAvailable[i]
@@ -302,27 +261,197 @@ void MapImpl::traverse(const NodeInfo &nodeInfo)
         topmost = &it;
         node = n;
     }
+    if (!determined)
+        return false;
     
-    bool anychild = false;
-    bool allchild = true;
+    if (topmost)
+    {
+        trav->metaNode = *node;
+        trav->surface = topmost;
+    }
+    else
+        trav->empty = true;
+    
+    // prepare children
+    vtslibs::vts::Children childs = vtslibs::vts::children(nodeId);
     for (uint32 i = 0; i < 4; i++)
     {
-        anychild = anychild || childsAvailable[i];
-        allchild = allchild && childsAvailable[i];
+        if (childsAvailable[i])
+            trav->childs.push_back(std::make_shared<TraverseNode>(
+                                       trav->nodeInfo.child(childs[i])));
     }
     
-    // render the node, if available
-    if (topmost && (!allchild || coarsenessTest(nodeInfo, *node)))
+    return true;
+}
+
+bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
+{
+    const TileId nodeId = trav->nodeInfo.nodeId();
+    
+    // aggregate mesh
+    std::string meshAggName = trav->surface->surface->urlMesh(
+            UrlTemplate::Vars(nodeId, vtslibs::vts::local(trav->nodeInfo)));
+    std::shared_ptr<MeshAggregate> meshAgg = getMeshAggregate(meshAggName);
+    switch (getResourceValidity(meshAggName))
     {
-        renderNode(nodeInfo, *topmost, false);
+    case Validity::Invalid:
+        trav->validity = Validity::Invalid;
+        // no break here
+    case Validity::Indeterminate:
+        return false;
+    }
+    
+    RenderBatch batch;
+    bool determined = true;
+    
+    // iterate over all submeshes
+    for (uint32 subMeshIndex = 0, e = meshAgg->submeshes.size();
+         subMeshIndex != e; subMeshIndex++)
+    {
+        const MeshPart &part = meshAgg->submeshes[subMeshIndex];
+        std::shared_ptr<GpuMeshRenderable> mesh = part.renderable;
+        
+        { // wire box
+            RenderTask task;
+            task.mesh = getMeshRenderable("data/cube.obj");;
+            task.model = part.normToPhys;
+            task.color = trav->surface->color;
+            batch.wires.push_back(std::make_shared<RenderTask>(task));
+        }
+        
+        // internal texture
+        if (part.internalUv)
+        {
+            UrlTemplate::Vars vars(nodeId,
+                    vtslibs::vts::local(trav->nodeInfo), subMeshIndex);
+            RenderTask task;
+            task.meshAgg = meshAgg;
+            task.mesh = mesh;
+            task.model = part.normToPhys;
+            task.uvm = upperLeftSubMatrix(identityMatrix()).cast<float>();
+            task.textureColor = getTexture(
+                        trav->surface->surface->urlIntTex(vars));
+            task.external = false;
+            batch.opaque.push_back(std::make_shared<RenderTask>(task));
+            continue;
+        }
+        
+        // external bound textures
+        if (part.externalUv)
+        {
+            std::string surfaceName;
+            if (trav->surface->surface->name.size() > 1)
+                surfaceName = trav->surface->surface
+                        ->name[part.surfaceReference - 1];
+            else
+                surfaceName = trav->surface->surface->name.back();
+            const vtslibs::registry::View::BoundLayerParams::list &boundList
+                    = mapConfig->view.surfaces[surfaceName];
+            BoundParamInfo::list bls(boundList.begin(), boundList.end());
+            if (part.textureLayer)
+                bls.push_back(BoundParamInfo(
+                        vtslibs::registry::View::BoundLayerParams(
+                        mapConfig->boundLayers.get(part.textureLayer).id)));
+            switch (reorderBoundLayers(trav->nodeInfo, subMeshIndex, bls))
+            {
+            case Validity::Indeterminate:
+                determined = false;
+                // no break here
+            case Validity::Invalid:
+                continue;
+            }
+            for (BoundParamInfo &b : bls)
+            {
+                RenderTask task;
+                task.meshAgg = meshAgg;
+                task.mesh = mesh;
+                task.model = part.normToPhys;
+                task.uvm = b.uvMatrix();
+                task.textureColor = getTexture(b.bound->urlExtTex(b.vars));
+                task.textureColor->impl->availTest
+                        = b.bound->availability.get_ptr();
+                task.external = true;
+                if (!b.watertight)
+                    task.textureMask = getTexture(b.bound->urlMask(b.vars));
+                batch.opaque.push_back(std::make_shared<RenderTask>(task));
+            }
+        }
+    }
+    
+    if (!determined)
+        return false;
+    
+    trav->renderBatch = std::make_shared<RenderBatch>(batch);
+    return true;
+}
+
+void MapImpl::traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly)
+{
+    if (trav->validity == Validity::Invalid)
+        return;
+    
+    // statistics
+    statistics.metaNodesTraversedTotal++;
+    statistics.metaNodesTraversedPerLod[
+            std::min<uint32>(trav->nodeInfo.nodeId().lod,
+                             MapStatistics::MaxLods-1)]++;
+    
+    // valid node
+    if (trav->validity == Validity::Valid)
+    {
+        if (loadOnly)
+            return;
+        traverseValidNode(trav);
         return;
     }
     
-    // traverse children
-    vtslibs::vts::Children childs = vtslibs::vts::children(nodeId);
-    for (uint32 i = 0; i < childs.size(); i++)
-        if (childsAvailable[i])
-            traverse(nodeInfo.child(childs[i]));
+    touchResources(trav);
+    
+    // find surface
+    if (!trav->surface && !trav->empty && !traverseDetermineSurface(trav))
+        return;
+    
+    assert(trav->surface || trav->empty);
+    
+    if (trav->empty)
+    {
+        trav->validity = Validity::Valid;
+        return;
+    }
+    
+    // prepare render batch
+    if (!trav->renderBatch && !traverseDetermineBoundLayers(trav))
+        return;
+    
+    assert(trav->renderBatch);
+    
+    // make node valid
+    trav->validity = Validity::Valid;
+    if (!loadOnly)
+        traverse(trav, false);
+}
+
+void MapImpl::dispatchRenderTasks()
+{
+    renderer.shader->bind();
+    for (std::shared_ptr<RenderTask> &t : renderer.renderBatch.opaque)
+    {
+        mat4f mvp = (renderer.viewProj * t->model).cast<float>();
+        renderer.shader->uniformMat4(0, mvp.data());
+        renderer.shader->uniformMat3(4, t->uvm.data());
+        renderer.shader->uniform(8, (int)t->external);
+        if (t->textureMask)
+        {
+            renderer.shader->uniform(9, 1);
+            renderContext->activeTextureUnit(1);
+            t->textureMask->bind();
+            renderContext->activeTextureUnit(0);
+        }
+        else
+            renderer.shader->uniform(9, 0);
+        t->textureColor->bind();
+        t->mesh->draw();
+    }
 }
 
 bool MapImpl::panZSurfaceStack(HeightRequest &task)
@@ -332,7 +461,8 @@ bool MapImpl::panZSurfaceStack(HeightRequest &task)
     UrlTemplate::Vars tileVars(tileId);
     for (auto &&it : mapConfig->surfaceStack)
     {
-        const MetaTile *t = getMetaTile(it.surface->urlMeta(tileVars));
+        std::shared_ptr<const MetaTile> t = getMetaTile(
+                    it.surface->urlMeta(tileVars));
         switch (t->impl->state)
         {
         case ResourceImpl::State::initializing:
@@ -369,8 +499,8 @@ void MapImpl::checkPanZQueue()
         return;
     
     // acquire required resources
-    const NavTile *nav = getNavTile(task.navUrl);
-    const MetaTile *met = getMetaTile(task.metaUrl);
+    std::shared_ptr<const NavTile> nav = getNavTile(task.navUrl);
+    std::shared_ptr<const MetaTile> met = getMetaTile(task.metaUrl);
     if (!*nav || !*met)
         return;    
     const MetaNode *men = met->get(task.nodeId, std::nothrow);
@@ -391,6 +521,12 @@ void MapImpl::checkPanZQueue()
     renderer.lastPanZShift.emplace(nh);
     mapConfig->position.position[2] = h;
     renderer.panZQueue.pop();
+}
+
+void MapImpl::panAdjustZ(const vec2 &navPos)
+{
+    // todo
+    //panZQueue.push(std::make_shared<HeightRequest>(navPos, this));
 }
 
 void MapImpl::updateCamera()
@@ -484,19 +620,27 @@ void MapImpl::updateCamera()
     renderer.forwardUnitVector = dir;
 }
 
-const bool MapImpl::prerequisitesCheck()
+bool MapImpl::prerequisitesCheck()
 {
+    // load shaders
+    renderer.shaderColor = getShader("data/shaders/color.glsl");
+    renderer.shader = getShader("data/shaders/a.glsl");
+    if (!*renderer.shader || !*renderer.shaderColor)
+        return false;
+    
+    // load map config
     mapConfig = getMapConfig(mapConfigPath);
     if (!mapConfig || !*mapConfig)
         return false;
     
+    // load external bound layers
     bool ok = true;
     for (auto &&bl : mapConfig->boundLayers)
     {
         if (!bl.external())
             continue;
         std::string url = convertPath(bl.url, mapConfig->name);
-        ExternalBoundLayer *r = getExternalBoundLayer(url);
+        std::shared_ptr<ExternalBoundLayer> r = getExternalBoundLayer(url);
         if (!*r)
             ok = false;
         else
@@ -550,12 +694,9 @@ void MapImpl::mapConfigLoaded()
         panAdjustZ(vec3to2(vecFromUblas<vec3>(
                                mapConfig->position.position)));
     }
-}
-
-void MapImpl::panAdjustZ(const vec2 &navPos)
-{
-    // todo
-    //panZQueue.push(std::make_shared<HeightRequest>(navPos, this));
+    
+    NodeInfo nodeInfo(mapConfig->referenceFrame, TileId(), false, *mapConfig);
+    renderer.traverseRoot = std::make_shared<TraverseNode>(nodeInfo);
 }
 
 void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
@@ -566,36 +707,15 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
     renderer.windowWidth = windowWidth;
     renderer.windowHeight = windowHeight;
     
-    renderer.shaderColor = getShader("data/shaders/color.glsl");
-    if (!*renderer.shaderColor)
-        return;
-    
-    renderer.shader = getShader("data/shaders/a.glsl");
-    if (!*renderer.shader)
-        return;
-    renderer.shader->bind();
-    
     if (!convertor)
         mapConfigLoaded();
     
     updateCamera();
-    
-    NodeInfo nodeInfo(mapConfig->referenceFrame, TileId(),
-                      false, *mapConfig);
-    traverse(nodeInfo);
+    renderer.renderBatch.clear();
+    traverse(renderer.traverseRoot, false);
+    dispatchRenderTasks();
     
     statistics.frameIndex++;
-}
-
-void MapImpl::renderFinalize()
-{}
-
-BoundInfo *MapImpl::getBoundInfo(const std::string &id)
-{
-    auto it = mapConfig->boundInfos.find(id);
-    if (it == mapConfig->boundInfos.end())
-        return nullptr;
-    return it->second.get();
 }
 
 } // namespace melown

@@ -66,6 +66,14 @@ vtslibs::vts::SurfaceCommonConfig *MapConfig::findSurface(const std::string &id)
     return nullptr;
 }
 
+BoundInfo *MapConfig::getBoundInfo(const std::__cxx11::string &id)
+{
+    auto it = boundInfos.find(id);
+    if (it == boundInfos.end())
+        return nullptr;
+    return it->second.get();
+}
+
 
 void MapConfig::printSurfaceStack()
 {

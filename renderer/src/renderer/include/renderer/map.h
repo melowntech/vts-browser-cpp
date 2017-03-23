@@ -27,6 +27,7 @@ public:
     void rotate(const double value[3]);
 
     class MapStatistics &statistics();
+    class MapOptions &options();
 
 private:
     std::shared_ptr<class MapImpl> impl;

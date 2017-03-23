@@ -3,8 +3,8 @@
 namespace melown
 {
 
-MapImpl::Resources::Resources() : takeItemIndex(0), tickIndex(0), downloads(0),
-    destroyTheFetcher(false)
+MapImpl::Resources::Resources() : takeItemIndex(0), downloads(0),
+    destroyTheFetcher(false), fetcher(nullptr)
 {
     try
     {
@@ -143,7 +143,7 @@ bool MapImpl::dataTick()
             loadResource(r);
             statistics.resourcesDiskLoaded++;
         }
-        else if (resources.downloads < 5)
+        else if (resources.downloads < options.maxConcurrentDownloads)
         {
             assert(!r->download);
             r->download.emplace(r);
@@ -259,14 +259,13 @@ bool MapImpl::dataRenderTick()
             memRamUse += it.second->ramMemoryCost;
             memGpuUse += it.second->gpuMemoryCost;
             // consider long time not used resources only
-            if (it.second->impl->lastAccessTick + 100 < resources.tickIndex
-                    && it.second->impl->state
+            if (it.second->impl->lastAccessTick + 100 < statistics.frameIndex
+                    && it.second.use_count() == 1 && it.second->impl->state
                     != ResourceImpl::State::downloading)
                 res.push_back(it.second.get());
         }
         uint32 memUse = memRamUse + memGpuUse;
-        static const uint32 memCap = 500000000;
-        if (memUse > memCap)
+        if (memUse > options.maxResourcesMemory)
         {
             std::sort(res.begin(), res.end(), [](Resource *a, Resource *b){
                 if (a->impl->lastAccessTick == b->impl->lastAccessTick)
@@ -276,7 +275,7 @@ bool MapImpl::dataRenderTick()
             });
             for (Resource *it : res)
             {
-                if (memUse <= memCap)
+                if (memUse <= options.maxResourcesMemory)
                     break;
                 memUse -= it->gpuMemoryCost + it->ramMemoryCost;
                 if (it->impl->state != ResourceImpl::State::finalizing)
@@ -291,19 +290,16 @@ bool MapImpl::dataRenderTick()
         statistics.currentGpuMemUse = memGpuUse;
         statistics.currentRamMemUse = memRamUse;
     }
-    
-    // advance the tick counter
-    resources.tickIndex++;
 }
 
-void MapImpl::touchResource(const std::string &, Resource *resource)
+void MapImpl::touchResource(std::shared_ptr<Resource> resource)
 {
-    resource->impl->lastAccessTick = resources.tickIndex;
+    resource->impl->lastAccessTick = statistics.frameIndex;
     switch (resource->impl->state)
     {
     case ResourceImpl::State::finalizing:
         resource->impl->state = ResourceImpl::State::initializing;
-        // intentionally no break here
+        // no break here
     case ResourceImpl::State::initializing:
     case ResourceImpl::State::downloaded:
         resources.prepareQueNew.insert(resource->impl.get());
@@ -311,63 +307,83 @@ void MapImpl::touchResource(const std::string &, Resource *resource)
     }
 }
 
-GpuShader *MapImpl::getShader(const std::string &name)
+std::shared_ptr<GpuShader> MapImpl::getShader(const std::string &name)
 {
     return getGpuResource<GpuShader, &GpuContext::createShader>(name);
 }
 
-GpuTexture *MapImpl::getTexture(const std::string &name)
+std::shared_ptr<GpuTexture> MapImpl::getTexture(const std::string &name)
 {
     return getGpuResource<GpuTexture, &GpuContext::createTexture>(name);
 }
 
-GpuMeshRenderable *MapImpl::getMeshRenderable(const std::string &name)
+std::shared_ptr<GpuMeshRenderable> MapImpl::getMeshRenderable(
+        const std::string &name)
 {
     return getGpuResource<GpuMeshRenderable,
             &GpuContext::createMeshRenderable>(name);
 }
 
-MapConfig *MapImpl::getMapConfig(const std::string &name)
+std::shared_ptr<MapConfig> MapImpl::getMapConfig(const std::string &name)
 {
     return getMapResource<MapConfig>(name);
 }
 
-MetaTile *MapImpl::getMetaTile(const std::string &name)
+std::shared_ptr<MetaTile> MapImpl::getMetaTile(const std::string &name)
 {
     return getMapResource<MetaTile>(name);
 }
 
-NavTile *MapImpl::getNavTile(const std::string &name)
+std::shared_ptr<NavTile> MapImpl::getNavTile(
+        const std::string &name)
 {
     return getMapResource<NavTile>(name);
 }
 
-MeshAggregate *MapImpl::getMeshAggregate(const std::string &name)
+std::shared_ptr<MeshAggregate> MapImpl::getMeshAggregate(
+        const std::string &name)
 {
     return getMapResource<MeshAggregate>(name);
 }
 
-ExternalBoundLayer *MapImpl::getExternalBoundLayer(const std::string &name)
+std::shared_ptr<ExternalBoundLayer> MapImpl::getExternalBoundLayer(
+        const std::string &name)
 {
     return getMapResource<ExternalBoundLayer>(name);
 }
 
-BoundMetaTile *MapImpl::getBoundMetaTile(const std::string &name)
+std::shared_ptr<BoundMetaTile> MapImpl::getBoundMetaTile(
+        const std::string &name)
 {
     return getMapResource<BoundMetaTile>(name);
 }
 
-BoundMaskTile *MapImpl::getBoundMaskTile(const std::string &name)
+std::shared_ptr<BoundMaskTile> MapImpl::getBoundMaskTile(
+        const std::string &name)
 {
     return getMapResource<BoundMaskTile>(name);
 }
 
-bool MapImpl::getResourceReady(const std::string &name)
+Validity MapImpl::getResourceValidity(const std::string &name)
 {
     auto &&it = resources.resources.find(name);
     if (it == resources.resources.end())
-        return false;
-    return *it->second;
+        return Validity::Invalid;
+    switch (it->second->impl->state)
+    {
+    case ResourceImpl::State::errorDownload:
+    case ResourceImpl::State::errorLoad:
+        return Validity::Invalid;
+    case ResourceImpl::State::finalizing:
+    case ResourceImpl::State::initializing:
+    case ResourceImpl::State::downloading:
+    case ResourceImpl::State::downloaded:
+        return Validity::Indeterminate;
+    case ResourceImpl::State::ready:
+        return Validity::Valid;
+    default:
+        assert(false);
+    }
 }
 
 const std::string MapImpl::Resources::invalidUrlFileName

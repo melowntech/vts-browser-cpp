@@ -16,6 +16,7 @@
 #include <utility/uri.hpp>
 
 #include <renderer/statistics.h>
+#include <renderer/options.h>
 #include <renderer/gpuResources.h>
 #include <renderer/gpuContext.h>
 #include <renderer/buffer.h>
@@ -33,6 +34,13 @@ using vtslibs::vts::NodeInfo;
 using vtslibs::vts::TileId;
 using vtslibs::vts::MetaNode;
 using vtslibs::vts::UrlTemplate;
+
+enum class Validity
+{
+    Indeterminate,
+    Invalid,
+    Valid,
+};
 
 class HeightRequest
 {
@@ -56,25 +64,61 @@ public:
     typedef std::vector<BoundParamInfo> list;
 
     BoundParamInfo(const vtslibs::registry::View::BoundLayerParams &params);
-    bool available(bool primaryLod = false);
-    void varsFallDown(int depth);
     const mat3f uvMatrix() const;
-    bool canGoUp() const;
-    int depth() const;
-    void prepare(const NodeInfo &nodeInfo, class MapImpl *impl,
+    Validity prepare(const NodeInfo &nodeInfo, class MapImpl *impl,
                  uint32 subMeshIndex);
-    bool invalid() const;
     bool operator < (const BoundParamInfo &rhs) const;
     
     UrlTemplate::Vars orig;
     UrlTemplate::Vars vars;
-    const NodeInfo *nodeInfo;
-    MapImpl *impl;
     BoundInfo *bound;
+    int depth;
     bool watertight;
+};
+
+class RenderTask
+{
+public:
+    std::shared_ptr<MeshAggregate> meshAgg;
+    std::shared_ptr<GpuMeshRenderable> mesh;
+    std::shared_ptr<GpuTexture> textureColor;
+    std::shared_ptr<GpuTexture> textureMask;
+    mat4 model;
+    mat3f uvm;
+    vec3f color;
+    bool external;
     
-private:
-    bool availCache;
+    RenderTask();
+    bool ready() const;
+};
+
+class RenderBatch
+{
+public:
+    std::vector<std::shared_ptr<RenderTask>> opaque;
+    std::vector<std::shared_ptr<RenderTask>> transparent;
+    std::vector<std::shared_ptr<RenderTask>> wires;
+    
+    RenderBatch();
+    void clear();
+    void mergeIn(const RenderBatch &batch, const MapOptions &options);
+    bool ready() const;
+};
+
+class TraverseNode
+{
+public:
+    std::shared_ptr<RenderBatch> renderBatch;
+    std::vector<std::shared_ptr<TraverseNode>> childs;
+    NodeInfo nodeInfo;
+    MetaNode metaNode;
+    const SurfaceStackItem *surface;
+    uint32 lastAccessTime;
+    Validity validity;
+    bool empty;
+    
+    TraverseNode(const NodeInfo &nodeInfo);
+    ~TraverseNode();
 };
 
 class MapImpl
@@ -83,15 +127,18 @@ public:
     MapImpl(const std::string &mapConfigPath);
 
     std::shared_ptr<CsConvertor> convertor;
+    std::shared_ptr<MapConfig> mapConfig;
     std::string mapConfigPath;
     MapStatistics statistics;
+    MapOptions options;
     GpuContext *renderContext;
-    GpuContext *dataContext;   
-    MapConfig *mapConfig;
+    GpuContext *dataContext;
     
     class Resources
     {
     public:
+        static const std::string invalidUrlFileName;
+        
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
         std::unordered_set<ResourceImpl*> prepareQue;
         std::unordered_set<ResourceImpl*> prepareQueNew;
@@ -99,12 +146,10 @@ public:
         std::unordered_set<std::string> invalidUrlNew;
         boost::mutex mutPrepareQue;
         boost::mutex mutInvalidUrls;
+        std::atomic_uint downloads;
         Fetcher *fetcher;
         uint32 takeItemIndex;
-        uint32 tickIndex;
-        std::atomic_uint downloads;
         bool destroyTheFetcher;
-        static const std::string invalidUrlFileName;
         
         Resources();
         ~Resources();
@@ -113,23 +158,27 @@ public:
     class Renderer
     {
     public:
+        std::shared_ptr<GpuShader> shader;
+        std::shared_ptr<GpuShader> shaderColor;
+        std::shared_ptr<TraverseNode> traverseRoot;
+        RenderBatch renderBatch;
+        std::queue<std::shared_ptr<HeightRequest>> panZQueue;
+        boost::optional<double> lastPanZShift;
+        mat4 viewProj;
         vec3 perpendicularUnitVector;
         vec3 forwardUnitVector;
-        mat4 viewProj;
         uint32 windowWidth;
         uint32 windowHeight;
-        GpuShader *shader;
-        GpuShader *shaderColor;
         uint32 metaTileBinaryOrder;
-        boost::optional<double> lastPanZShift;
-        std::queue<std::shared_ptr<HeightRequest>> panZQueue;
         
         Renderer();
     } renderer;
     
+    // map foundation methods
     void pan(const vec3 &value);
     void rotate(const vec3 &value); 
     
+    // resources methods
     void dataInitialize(GpuContext *context, Fetcher *fetcher);
     void dataFinalize();
     bool dataTick();
@@ -138,43 +187,50 @@ public:
     bool dataRenderTick();
     void loadResource(ResourceImpl *r);
     void fetchedFile(FetchTask *task);
-    void touchResource(const std::string &, Resource *resource);
-    GpuShader *getShader(const std::string &name);
-    GpuTexture *getTexture(const std::string &name);
-    GpuMeshRenderable *getMeshRenderable(const std::string &name);
-    MapConfig *getMapConfig(const std::string &name);
-    MetaTile *getMetaTile(const std::string &name);
-    NavTile *getNavTile(const std::string &name);
-    MeshAggregate *getMeshAggregate(const std::string &name);
-    ExternalBoundLayer *getExternalBoundLayer(const std::string &name);
-    BoundMetaTile *getBoundMetaTile(const std::string &name);
-    BoundMaskTile *getBoundMaskTile(const std::string &name);
-    bool getResourceReady(const std::string &name);
+    void touchResource(std::shared_ptr<Resource> resource);
+    std::shared_ptr<GpuShader> getShader(const std::string &name);
+    std::shared_ptr<GpuTexture> getTexture(const std::string &name);
+    std::shared_ptr<GpuMeshRenderable> getMeshRenderable(
+            const std::string &name);
+    std::shared_ptr<MapConfig> getMapConfig(const std::string &name);
+    std::shared_ptr<MetaTile> getMetaTile(const std::string &name);
+    std::shared_ptr<NavTile> getNavTile(const std::string &name);
+    std::shared_ptr<MeshAggregate> getMeshAggregate(const std::string &name);
+    std::shared_ptr<ExternalBoundLayer> getExternalBoundLayer(
+            const std::string &name);
+    std::shared_ptr<BoundMetaTile> getBoundMetaTile(const std::string &name);
+    std::shared_ptr<BoundMaskTile> getBoundMaskTile(const std::string &name);
+    Validity getResourceValidity(const std::string &name);
     
+    // renderer methods
     void renderInitialize(GpuContext *context);
     void renderFinalize();
     void renderTick(uint32 windowWidth, uint32 windowHeight);
     const TileId roundId(TileId nodeId);
-    void reorderBoundLayer(const NodeInfo &nodeInfo, uint32 subMeshIndex,
+    Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
                            BoundParamInfo::list &boundList);
-    void drawBox(const mat4f &mvp, const vec3f &color = vec3f(1, 0, 0));
-    bool renderNode(const NodeInfo &nodeInfo,
-                    const SurfaceStackItem &surface,
-                    bool onlyCheckReady);
-    const bool visibilityTest(const NodeInfo &nodeInfo, const MetaNode &node);
+    void touchResources(std::shared_ptr<TraverseNode> trav);
+    void touchResources(std::shared_ptr<RenderBatch> batch);
+    void touchResources(std::shared_ptr<RenderTask> task);
+    bool visibilityTest(const NodeInfo &nodeInfo, const MetaNode &node);
+    bool backTileCulling(const NodeInfo &nodeInfo);
     bool coarsenessTest(const NodeInfo &nodeInfo, const MetaNode &node);
-    void traverse(const NodeInfo &nodeInfo);
+    void traverseValidNode(std::shared_ptr<TraverseNode> &trav);
+    bool traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav);
+    bool traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav);
+    void traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly);
+    void dispatchRenderTasks();
     bool panZSurfaceStack(HeightRequest &task);
     void checkPanZQueue();
-    void updateCamera();
-    const bool prerequisitesCheck();
-    void mapConfigLoaded();
     void panAdjustZ(const vec2 &navPos);
-    BoundInfo *getBoundInfo(const std::string &id);
+    void updateCamera();
+    bool prerequisitesCheck();
+    void mapConfigLoaded();
     
+    // templates
     template<class T,
         std::shared_ptr<Resource>(GpuContext::*F)(const std::string &)>
-    T *getGpuResource(const std::string &name)
+    std::shared_ptr<T> getGpuResource(const std::string &name)
     {
         auto it = resources.resources.find(name);
         if (it == resources.resources.end())
@@ -182,20 +238,21 @@ public:
             resources.resources[name] = (renderContext->*F)(name);
             it = resources.resources.find(name);
         }
-        touchResource(name, it->second.get());
-        return dynamic_cast<T*>(it->second.get());
+        touchResource(it->second);
+        return std::dynamic_pointer_cast<T>(it->second);
     }
     
-    template<class T> T *getMapResource(const std::string &name)
+    template<class T>
+    std::shared_ptr<T> getMapResource(const std::string &name)
     {
         auto it = resources.resources.find(name);
         if (it == resources.resources.end())
         {
-            resources.resources[name] = std::shared_ptr<Resource>(new T(name));
+            resources.resources[name] = std::make_shared<T>(name);
             it = resources.resources.find(name);
         }
-        touchResource(name, it->second.get());
-        return dynamic_cast<T*>(it->second.get());
+        touchResource(it->second);
+        return std::dynamic_pointer_cast<T>(it->second);
     }
 };
 

@@ -20,14 +20,11 @@ public:
     void mouseScrollCallback(double, double yoffset);
 
     void run();
-    void showFps();
 
     double mousePrevX, mousePrevY;
     melown::MapFoundation *map;
     GLFWwindow* window;
     GpuContext gpu;
-
-    double lastFrameTime;
 };
 
 #endif

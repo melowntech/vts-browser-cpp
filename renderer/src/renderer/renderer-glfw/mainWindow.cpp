@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <renderer/map.h>
+#include <renderer/statistics.h>
 
 #include "mainWindow.h"
 
@@ -22,7 +23,7 @@ void mouseScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
 } // namespace
 
 MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
-    map(nullptr), window(nullptr), lastFrameTime(0)
+    map(nullptr), window(nullptr)
 {
     window = glfwCreateWindow(800, 600, "renderer-glfw", NULL, NULL);
     glfwMakeContextCurrent(window);
@@ -64,6 +65,8 @@ void MainWindow::run()
     map->renderInitialize(&gpu);
     while (!glfwWindowShouldClose(window))
     {
+        double timeFrameStart = glfwGetTime();
+        
         checkGl("frame begin");
 
         glClearColor(0.2, 0.2, 0.2, 1);
@@ -79,24 +82,28 @@ void MainWindow::run()
         checkGl("frame");
         map->renderTick(width, height);
         checkGl("renderTick");
-
+        
+        double timeBeforeSwap = glfwGetTime();
         glfwPollEvents();
         glfwSwapBuffers(window);
+        double timeFrameFinish = glfwGetTime();
 
-        checkGl("frame end");
-
-        showFps();
+        {
+            char buffer[500];
+            melown::MapStatistics &stat = map->statistics();
+            sprintf(buffer, "timing: %3d + %3d = %3d, "
+                            "downloads: %d, gpu mem: %4d MB, "
+                            "traversed: %4d, rendered: %4d, "
+                            "frame index: %d",
+                    (int)(1000 * (timeBeforeSwap - timeFrameStart)),
+                    (int)(1000 * (timeFrameFinish - timeBeforeSwap)),
+                    (int)(1000 * (timeFrameFinish - timeFrameStart)),
+                    stat.currentDownloads,
+                    stat.currentGpuMemUse / 1024 / 1024,
+                    stat.metaNodesTraversedTotal,
+                    stat.meshesRenderedTotal,
+                    stat.frameIndex);
+            glfwSetWindowTitle(window, buffer);
+        }
     }
-}
-
-void MainWindow::showFps()
-{
-    double currentTime = glfwGetTime();
-    double diff = currentTime - lastFrameTime;
-    lastFrameTime = currentTime;
-    if (diff < 1e-5)
-        diff = 1e-5;
-    char buffer[100];
-    sprintf(buffer, "fps: %.1f", 1.0 / diff);
-    glfwSetWindowTitle(window, buffer);
 }

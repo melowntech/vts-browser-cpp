@@ -127,6 +127,7 @@ void MeshAggregate::load(MapImpl *base)
         }
 
         gm->loadMeshRenderable(spec);
+        gm->impl->state = ResourceImpl::State::ready;
 
         MeshPart part;
         part.renderable = gm;

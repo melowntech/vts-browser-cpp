@@ -119,6 +119,7 @@ public:
     
     TraverseNode(const NodeInfo &nodeInfo);
     ~TraverseNode();
+    void clear();
 };
 
 class MapImpl
@@ -219,6 +220,7 @@ public:
     bool traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav);
     bool traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav);
     void traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly);
+    void traverseClearing(std::shared_ptr<TraverseNode> &trav);
     void dispatchRenderTasks();
     bool panZSurfaceStack(HeightRequest &task);
     void checkPanZQueue();

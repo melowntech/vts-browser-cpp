@@ -120,9 +120,13 @@ void ResourceImpl::DownloadTask::loadFromCache()
         std::string path = convertNameToCache(resource->resource->name);
         contentData = readLocalFileBuffer(path);
         code = 200;
+        resource->state = ResourceImpl::State::downloaded;
     }
     catch (std::runtime_error &)
-    {}
+    {
+        LOG(err4) << "Error reading resource: " + resource->resource->name
+                     + " from cache file";
+    }
 }
 
 void ResourceImpl::DownloadTask::readLocalFile()
@@ -132,9 +136,13 @@ void ResourceImpl::DownloadTask::readLocalFile()
     {
         contentData = readLocalFileBuffer(url);
         code = 200;
+        resource->state = ResourceImpl::State::downloaded;
     }
     catch (std::runtime_error &)
-    {}
+    {
+        LOG(err4) << "Error reading resource: " + resource->resource->name
+                     + " from local file";
+    }
 }
 
 ResourceImpl::ResourceImpl(Resource *resource)

@@ -32,6 +32,11 @@ MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
     glfwSetWindowUserPointer(window, this);
     glfwSetCursorPosCallback(window, &::mousePositionCallback);
     glfwSetScrollCallback(window, &::mouseScrollCallback);
+    
+    // check for extensions
+    anisotropicFilteringAvailable
+            = glfwExtensionSupported("GL_EXT_texture_filter_anisotropic");
+    
     gpu.initialize();
 }
 
@@ -92,7 +97,7 @@ void MainWindow::run()
             char buffer[500];
             melown::MapStatistics &stat = map->statistics();
             sprintf(buffer, "timing: %3d + %3d = %3d, "
-                            "downloads: %d, gpu mem: %4d MB, "
+                            "downloads: %3d, gpu mem: %4d MB, "
                             "traversed: %4d, rendered: %4d, "
                             "frame index: %d",
                     (int)(1000 * (timeBeforeSwap - timeFrameStart)),

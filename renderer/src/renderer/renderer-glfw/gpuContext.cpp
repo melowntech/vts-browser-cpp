@@ -4,6 +4,8 @@
 
 #include "gpuContext.h"
 
+bool anisotropicFilteringAvailable = false;
+
 namespace
 {
     void APIENTRY openglErrorCallback(GLenum source,
@@ -124,10 +126,12 @@ void checkGl(const char *name)
         throw melown::graphicsException("gl_invalid_framebuffer_operation");
     case GL_OUT_OF_MEMORY:
         throw melown::graphicsException("gl_out_of_memory");
+    /*
     case GL_STACK_UNDERFLOW:
         throw melown::graphicsException("gl_stack_underflow");
     case GL_STACK_OVERFLOW:
         throw melown::graphicsException("gl_stack_overflow");
+    */
     default:
         throw melown::graphicsException("gl_unknown_error");
     }

@@ -88,7 +88,7 @@ bool MapImpl::visibilityTest(const NodeInfo &nodeInfo, const MetaNode &node)
 {
     if (nodeInfo.nodeId().lod < 3)
         return true;
-    //if (node.geomExtents.z == GeomExtents::ZRange::emptyRange())
+    //if (vtslibs::vts::empty(node.geomExtents))
     {
         vec4 c0 = column(renderer.viewProj, 0);
         vec4 c1 = column(renderer.viewProj, 1);
@@ -182,11 +182,13 @@ bool MapImpl::backTileCulling(const NodeInfo &nodeInfo)
 }
 
 void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
-{
+{    
     // node visibility
     if (backTileCulling(trav->nodeInfo)
             || !visibilityTest(trav->nodeInfo, trav->metaNode))
         return;
+    
+    touchResources(trav);
     
     // check children
     if (!trav->childs.empty()
@@ -197,11 +199,11 @@ void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
         {
             switch (t->validity)
             {
-            case Validity::Invalid:
-                continue;
             case Validity::Indeterminate:
-                allOk = false;
                 traverse(t, true);
+                // no break here
+            case Validity::Invalid:
+                allOk = false;
                 break;
             case Validity::Valid:
                 allOk = allOk && t->renderBatch->ready();
@@ -217,9 +219,10 @@ void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
         }
     }
     
-    // render the node
     if (trav->empty)
         return;
+    
+    // render the node
     statistics.meshesRenderedTotal++;
     statistics.meshesRenderedPerLod[
             std::min<uint32>(trav->nodeInfo.nodeId().lod,
@@ -429,6 +432,18 @@ void MapImpl::traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly)
     trav->validity = Validity::Valid;
     if (!loadOnly)
         traverse(trav, false);
+}
+
+void MapImpl::traverseClearing(std::shared_ptr<TraverseNode> &trav)
+{
+    if (trav->lastAccessTime + 100 < statistics.frameIndex)
+    {
+        trav->clear();
+        return;
+    }
+    
+    for (auto &&it : trav->childs)
+        traverseClearing(it);
 }
 
 void MapImpl::dispatchRenderTasks()
@@ -714,6 +729,7 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
     renderer.renderBatch.clear();
     traverse(renderer.traverseRoot, false);
     dispatchRenderTasks();
+    traverseClearing(renderer.traverseRoot);
     
     statistics.frameIndex++;
 }

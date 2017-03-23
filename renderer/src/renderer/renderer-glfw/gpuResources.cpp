@@ -6,7 +6,6 @@
 
 #include "gpuContext.h"
 
-
 class GpuShaderImpl : public melown::GpuShader
 {
 public:
@@ -213,6 +212,15 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        
+        if (anisotropicFilteringAvailable)
+        {
+            float aniso = 0.0f;
+            glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
+            glTexParameterf(GL_TEXTURE_2D,
+                            GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
+        }
+        
         glFinish();
         checkGl("load texture");
         gpuMemoryCost = spec.buffer.size();

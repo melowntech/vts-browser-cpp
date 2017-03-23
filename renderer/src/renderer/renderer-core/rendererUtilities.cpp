@@ -195,6 +195,16 @@ TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
 TraverseNode::~TraverseNode()
 {}
 
+void TraverseNode::clear()
+{
+    renderBatch.reset();
+    childs.clear();
+    surface = nullptr;
+    empty = false;
+    if (validity == Validity::Valid)
+        validity = Validity::Indeterminate;
+}
+
 MapImpl::Renderer::Renderer() : metaTileBinaryOrder(0),
     windowWidth(0), windowHeight(0)
 {}

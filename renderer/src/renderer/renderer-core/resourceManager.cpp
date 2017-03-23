@@ -78,7 +78,7 @@ void MapImpl::loadResource(ResourceImpl *r)
     }
     catch (std::runtime_error &)
     {
-        LOG(err3) << "Error loading resource: " + r->resource->name;
+        LOG(err4) << "Error loading resource: " + r->resource->name;
         statistics.resourcesFailed++;
         r->state = ResourceImpl::State::errorLoad;
     }
@@ -127,33 +127,33 @@ bool MapImpl::dataTick()
             return false;
         }
         
+        r->state = ResourceImpl::State::downloading;
+        r->download.emplace(r);
+        
         if (r->resource->name.find("://") == std::string::npos)
         {
-            assert(!r->download);
-            r->download.emplace(r);
             r->download->readLocalFile();
             loadResource(r);
         }
         else if (r->resource->name.find(".json") == std::string::npos
                  && availableInCache(r->resource->name))
         {
-            assert(!r->download);
-            r->download.emplace(r);
             r->download->loadFromCache();
             loadResource(r);
             statistics.resourcesDiskLoaded++;
         }
         else if (resources.downloads < options.maxConcurrentDownloads)
         {
-            assert(!r->download);
-            r->download.emplace(r);
-            r->state = ResourceImpl::State::downloading;
             resources.fetcher->fetch(r->download.get_ptr());
             statistics.resourcesDownloaded++;
             resources.downloads++;
         }
         else
+        {
+            r->download.reset();
+            r->state = ResourceImpl::State::initializing;
             return true; // sleep
+        }
         
         return false;
     }
@@ -172,33 +172,34 @@ void MapImpl::fetchedFile(FetchTask *task)
         resource->state = ResourceImpl::State::errorDownload;
     
     // availability tests
-    if (resource->state == ResourceImpl::State::initializing)
-        if (resource->availTest)
+    if (resource->state == ResourceImpl::State::downloading
+            && resource->availTest)
+    {
+        switch (resource->availTest->type)
         {
-            switch (resource->availTest->type)
-            {
-            case vtslibs::registry::BoundLayer
-            ::Availability::Type::negativeCode:
-                if (resource->availTest->codes.find(task->code)
-                        == resource->availTest->codes.end())
-                    resource->state = ResourceImpl::State::errorDownload;
-                break;
-            case vtslibs::registry::BoundLayer
-            ::Availability::Type::negativeType:
-                if (resource->availTest->mime == task->contentType)
-                    resource->state = ResourceImpl::State::errorDownload;
-                break;
-            case vtslibs::registry::BoundLayer
-            ::Availability::Type::negativeSize:
-                if (task->contentData.size() <= resource->availTest->size)
-                    resource->state = ResourceImpl::State::errorDownload;
-            default:
-                throw std::invalid_argument("invalid availability test type");
-            }
+        case vtslibs::registry::BoundLayer
+        ::Availability::Type::negativeCode:
+            if (resource->availTest->codes.find(task->code)
+                    == resource->availTest->codes.end())
+                resource->state = ResourceImpl::State::errorDownload;
+            break;
+        case vtslibs::registry::BoundLayer
+        ::Availability::Type::negativeType:
+            if (resource->availTest->mime == task->contentType)
+                resource->state = ResourceImpl::State::errorDownload;
+            break;
+        case vtslibs::registry::BoundLayer
+        ::Availability::Type::negativeSize:
+            if (task->contentData.size() <= resource->availTest->size)
+                resource->state = ResourceImpl::State::errorDownload;
+        default:
+            throw std::invalid_argument("invalid availability test type");
         }
+    }
     
     // handle redirections
-    if (resource->state == ResourceImpl::State::initializing)
+    if (resource->state == ResourceImpl::State::downloading)
+    {
         switch (task->code)
         {
         case 301:
@@ -215,6 +216,7 @@ void MapImpl::fetchedFile(FetchTask *task)
                 return;
             }
         }
+    }
     
     resources.downloads--;
     
@@ -366,7 +368,7 @@ std::shared_ptr<BoundMaskTile> MapImpl::getBoundMaskTile(
 
 Validity MapImpl::getResourceValidity(const std::string &name)
 {
-    auto &&it = resources.resources.find(name);
+    auto it = resources.resources.find(name);
     if (it == resources.resources.end())
         return Validity::Invalid;
     switch (it->second->impl->state)

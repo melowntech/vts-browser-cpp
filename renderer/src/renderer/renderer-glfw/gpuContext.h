@@ -5,6 +5,8 @@
 
 #include <renderer/gpuContext.h>
 
+extern bool anisotropicFilteringAvailable;
+
 void checkGl(const char *name = nullptr);
 
 class GpuContext : public melown::GpuContext

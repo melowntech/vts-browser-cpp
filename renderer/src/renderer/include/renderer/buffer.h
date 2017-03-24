@@ -2,6 +2,7 @@
 #define BUFFER_H_xwsertzui
 
 #include <iostream>
+#include <string>
 
 #include "foundation.h"
 
@@ -29,6 +30,8 @@ private:
     char *data_;
     uint32 size_;
 };
+
+Buffer readLocalFileBuffer(const std::string &path);
 
 } // namespace melown
 

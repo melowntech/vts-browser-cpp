@@ -7,7 +7,7 @@
 #include <vts-libs/registry/referenceframe.hpp>
 #include <boost/optional.hpp>
 
-#include <renderer/resource.h>
+#include <renderer/resources.h>
 #include <renderer/fetcher.h>
 
 namespace melown

@@ -3,8 +3,6 @@
 
 #include <thread>
 
-#include "gpuContext.h"
-
 class GLFWwindow;
 
 namespace melown
@@ -22,7 +20,6 @@ public:
 
     melown::MapFoundation *map;
     GLFWwindow* window;
-    GpuContext gpu;
     std::thread thr;
     volatile bool stop;
 };

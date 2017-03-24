@@ -7,7 +7,11 @@ class GLFWwindow;
 
 namespace melown
 {
+
 class MapFoundation;
+class Resource;
+
+
 } // namespace
 
 class MainWindow
@@ -20,11 +24,17 @@ public:
     void mouseScrollCallback(double, double yoffset);
 
     void run();
+    
+    std::shared_ptr<melown::GpuTexture> createTexture
+        (const std::string &name);
+    std::shared_ptr<melown::GpuMesh> createMesh
+        (const std::string &name);
 
     double mousePrevX, mousePrevY;
     melown::MapFoundation *map;
     GLFWwindow* window;
-    GpuContext gpu;
+    
+    std::shared_ptr<GpuShader> shader;
 };
 
 #endif

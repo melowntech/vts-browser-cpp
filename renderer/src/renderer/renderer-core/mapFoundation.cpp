@@ -5,18 +5,18 @@
 namespace melown
 {
 
-MapFoundation::MapFoundation(const std::string &mapConfigPath)
+MapFoundation::MapFoundation()
 {
-    impl = std::shared_ptr<MapImpl>(new MapImpl(mapConfigPath));
+    impl = std::shared_ptr<MapImpl>(new MapImpl(this));
 }
 
 MapFoundation::~MapFoundation()
 {}
 
-void MapFoundation::dataInitialize(GpuContext *context, Fetcher *fetcher)
+void MapFoundation::dataInitialize(Fetcher *fetcher)
 {
     dbglog::thread_id("data");
-    impl->dataInitialize(context, fetcher);
+    impl->dataInitialize(fetcher);
 }
 
 bool MapFoundation::dataTick()
@@ -29,11 +29,11 @@ void MapFoundation::dataFinalize()
     impl->dataFinalize();
 }
 
-void MapFoundation::renderInitialize(GpuContext *context)
+void MapFoundation::renderInitialize()
 {
     dbglog::thread_id("render");
     impl->dataRenderInitialize();
-    impl->renderInitialize(context);
+    impl->renderInitialize();
 }
 
 void MapFoundation::renderTick(uint32 width, uint32 height)
@@ -47,6 +47,11 @@ void MapFoundation::renderFinalize()
 {
     impl->dataRenderFinalize();
     impl->renderFinalize();
+}
+
+void MapFoundation::setMapConfig(const std::string &mapConfigPath)
+{
+    impl->setMapConfig(mapConfigPath);
 }
 
 void MapFoundation::pan(const double value[3])
@@ -64,9 +69,13 @@ MapStatistics &MapFoundation::statistics()
     return impl->statistics;
 }
 
-MapImpl::MapImpl(const std::string &mapConfigPath)
-    : mapConfigPath(mapConfigPath),
-    renderContext(nullptr), dataContext(nullptr)
+DrawBatch &MapFoundation::drawBatch()
+{
+    return impl->draws;
+}
+
+MapImpl::MapImpl(MapFoundation *const mapFoundation) :
+    mapFoundation(mapFoundation), initialized(false)
 {}
 
 } // namespace melown

@@ -3,28 +3,6 @@
 namespace melown
 {
 
-Buffer readLocalFileBuffer(const std::string &path)
-{
-    FILE *f = fopen(path.c_str(), "rb");
-    if (!f)
-        throw std::runtime_error("failed to read file");
-    try
-    {
-        fseek(f, 0, SEEK_END);
-        Buffer b(ftell(f));
-        fseek(f, 0, SEEK_SET);
-        if (fread(b.data(), b.size(), 1, f) != 1)
-            throw std::runtime_error("failed to read file");
-        fclose(f);
-        return b;
-    }
-    catch (...)
-    {
-        fclose(f);
-        throw;
-    }
-}
-
 void writeLocalFileBuffer(const std::string &path, const Buffer &buffer)
 {
     boost::filesystem::create_directories(

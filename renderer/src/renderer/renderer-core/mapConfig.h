@@ -7,8 +7,9 @@
 #include <vts-libs/registry/referenceframe.hpp>
 #include <vts-libs/vts/mapconfig.hpp>
 #include <vts-libs/vts/urltemplate.hpp>
-#include <renderer/resource.h>
+#include <renderer/resources.h>
 
+#include "csConvertor.h"
 #include "math.h"
 
 namespace melown
@@ -67,6 +68,7 @@ public:
     std::unordered_map<std::string, std::shared_ptr<SurfaceInfo>> surfaceInfos;
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
     std::vector<SurfaceStackItem> surfaceStack;
+    std::shared_ptr<CsConvertor> convertor;
 };
 
 class ExternalBoundLayer : public Resource,

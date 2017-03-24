@@ -3,6 +3,11 @@
 namespace melown
 {
 
+void MapImpl::setMapConfig(const std::__cxx11::string &mapConfigPath)
+{
+    this->mapConfigPath = mapConfigPath;
+}
+
 void MapImpl::rotate(const vec3 &value)
 {
     if (!mapConfig || !*mapConfig)
@@ -29,7 +34,7 @@ void MapImpl::rotate(const vec3 &value)
 
 void MapImpl::pan(const vec3 &value)
 {
-    if (!mapConfig || !*mapConfig || !convertor)
+    if (!mapConfig || !*mapConfig)
         return;
     
     vtslibs::registry::Position &pos = mapConfig->position;
@@ -51,8 +56,8 @@ void MapImpl::pan(const vec3 &value)
         vec3 move = vec3(-value[0], value[1], 0);
         move = rot * move * (pos.verticalExtent / 800);
         vec3 p = vecFromUblas<vec3>(pos.position);
-        p = convertor->navGeodesicDirect(p, 90, move(0));
-        p = convertor->navGeodesicDirect(p, 0, move(1));
+        p = mapConfig->convertor->navGeodesicDirect(p, 90, move(0));
+        p = mapConfig->convertor->navGeodesicDirect(p, 0, move(1));
         pos.position = vecToUblas<math::Point3>(p);
         pos.position(0) = modulo(pos.position(0) + 180, 360) - 180;
         // todo - temporarily clamp

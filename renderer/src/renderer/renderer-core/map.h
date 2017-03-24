@@ -17,11 +17,10 @@
 
 #include <renderer/statistics.h>
 #include <renderer/options.h>
-#include <renderer/gpuResources.h>
-#include <renderer/gpuContext.h>
+#include <renderer/rendering.h>
+#include <renderer/resources.h>
 #include <renderer/buffer.h>
 
-#include "csConvertor.h"
 #include "mapConfig.h"
 #include "resource.h"
 #include "resourceMap.h"
@@ -80,7 +79,7 @@ class RenderTask
 {
 public:
     std::shared_ptr<MeshAggregate> meshAgg;
-    std::shared_ptr<GpuMeshRenderable> mesh;
+    std::shared_ptr<GpuMesh> mesh;
     std::shared_ptr<GpuTexture> textureColor;
     std::shared_ptr<GpuTexture> textureMask;
     mat4 model;
@@ -92,23 +91,12 @@ public:
     bool ready() const;
 };
 
-class RenderBatch
+class TraverseNode
 {
 public:
     std::vector<std::shared_ptr<RenderTask>> opaque;
     std::vector<std::shared_ptr<RenderTask>> transparent;
     std::vector<std::shared_ptr<RenderTask>> wires;
-    
-    RenderBatch();
-    void clear();
-    void mergeIn(const RenderBatch &batch, const MapOptions &options);
-    bool ready() const;
-};
-
-class TraverseNode
-{
-public:
-    std::shared_ptr<RenderBatch> renderBatch;
     std::vector<std::shared_ptr<TraverseNode>> childs;
     NodeInfo nodeInfo;
     MetaNode metaNode;
@@ -120,20 +108,21 @@ public:
     TraverseNode(const NodeInfo &nodeInfo);
     ~TraverseNode();
     void clear();
+    bool ready() const;
 };
 
 class MapImpl
 {
 public:
-    MapImpl(const std::string &mapConfigPath);
+    MapImpl(class MapFoundation *const mapFoundation);
 
-    std::shared_ptr<CsConvertor> convertor;
+    class MapFoundation *const mapFoundation;
     std::shared_ptr<MapConfig> mapConfig;
     std::string mapConfigPath;
     MapStatistics statistics;
     MapOptions options;
-    GpuContext *renderContext;
-    GpuContext *dataContext;
+    DrawBatch draws;
+    bool initialized;
     
     class Resources
     {
@@ -159,10 +148,7 @@ public:
     class Renderer
     {
     public:
-        std::shared_ptr<GpuShader> shader;
-        std::shared_ptr<GpuShader> shaderColor;
         std::shared_ptr<TraverseNode> traverseRoot;
-        RenderBatch renderBatch;
         std::queue<std::shared_ptr<HeightRequest>> panZQueue;
         boost::optional<double> lastPanZShift;
         mat4 viewProj;
@@ -176,11 +162,12 @@ public:
     } renderer;
     
     // map foundation methods
+    void setMapConfig(const std::string &mapConfigPath);
     void pan(const vec3 &value);
     void rotate(const vec3 &value); 
     
     // resources methods
-    void dataInitialize(GpuContext *context, Fetcher *fetcher);
+    void dataInitialize(Fetcher *fetcher);
     void dataFinalize();
     bool dataTick();
     void dataRenderInitialize();
@@ -189,9 +176,8 @@ public:
     void loadResource(ResourceImpl *r);
     void fetchedFile(FetchTask *task);
     void touchResource(std::shared_ptr<Resource> resource);
-    std::shared_ptr<GpuShader> getShader(const std::string &name);
     std::shared_ptr<GpuTexture> getTexture(const std::string &name);
-    std::shared_ptr<GpuMeshRenderable> getMeshRenderable(
+    std::shared_ptr<GpuMesh> getMeshRenderable(
             const std::string &name);
     std::shared_ptr<MapConfig> getMapConfig(const std::string &name);
     std::shared_ptr<MetaTile> getMetaTile(const std::string &name);
@@ -204,58 +190,29 @@ public:
     Validity getResourceValidity(const std::string &name);
     
     // renderer methods
-    void renderInitialize(GpuContext *context);
+    void renderInitialize();
     void renderFinalize();
     void renderTick(uint32 windowWidth, uint32 windowHeight);
     const TileId roundId(TileId nodeId);
     Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
                            BoundParamInfo::list &boundList);
     void touchResources(std::shared_ptr<TraverseNode> trav);
-    void touchResources(std::shared_ptr<RenderBatch> batch);
     void touchResources(std::shared_ptr<RenderTask> task);
     bool visibilityTest(const NodeInfo &nodeInfo, const MetaNode &node);
     bool backTileCulling(const NodeInfo &nodeInfo);
     bool coarsenessTest(const NodeInfo &nodeInfo, const MetaNode &node);
+    void convertRenderTasks(std::vector<DrawTask> &draws,
+                            std::vector<std::shared_ptr<RenderTask>> &renders);
     void traverseValidNode(std::shared_ptr<TraverseNode> &trav);
     bool traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav);
     bool traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav);
     void traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly);
     void traverseClearing(std::shared_ptr<TraverseNode> &trav);
-    void dispatchRenderTasks();
     bool panZSurfaceStack(HeightRequest &task);
     void checkPanZQueue();
     void panAdjustZ(const vec2 &navPos);
     void updateCamera();
     bool prerequisitesCheck();
-    void mapConfigLoaded();
-    
-    // templates
-    template<class T,
-        std::shared_ptr<Resource>(GpuContext::*F)(const std::string &)>
-    std::shared_ptr<T> getGpuResource(const std::string &name)
-    {
-        auto it = resources.resources.find(name);
-        if (it == resources.resources.end())
-        {
-            resources.resources[name] = (renderContext->*F)(name);
-            it = resources.resources.find(name);
-        }
-        touchResource(it->second);
-        return std::dynamic_pointer_cast<T>(it->second);
-    }
-    
-    template<class T>
-    std::shared_ptr<T> getMapResource(const std::string &name)
-    {
-        auto it = resources.resources.find(name);
-        if (it == resources.resources.end())
-        {
-            resources.resources[name] = std::make_shared<T>(name);
-            it = resources.resources.find(name);
-        }
-        touchResource(it->second);
-        return std::dynamic_pointer_cast<T>(it->second);
-    }
 };
 
 } // namespace melown

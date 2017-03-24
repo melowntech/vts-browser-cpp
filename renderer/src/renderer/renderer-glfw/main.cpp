@@ -1,12 +1,10 @@
 #include <cstdio>
 #include <cstdlib>
-
-#include <GLFW/glfw3.h>
 #include <renderer/map.h>
-
 #include "mainWindow.h"
 #include "dataThread.h"
 #include "threadName.h"
+#include <GLFW/glfw3.h>
 
 void errorCallback(int error, const char* description)
 {
@@ -38,7 +36,8 @@ int main(int argc, char *argv[])
 #endif
 
     {
-        melown::MapFoundation map(argv[1]);
+        melown::MapFoundation map;
+        map.setMapConfig(argv[1]);
         MainWindow main;
         DataThread data(main.window);
         main.map = &map;

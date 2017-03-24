@@ -2,7 +2,6 @@
 #include <QtNetwork/QNetworkRequest>
 #include <QtNetwork/QNetworkReply>
 #include <QtNetwork/QAuthenticator>
-
 #include "fetcher.h"
 
 namespace
@@ -11,23 +10,8 @@ namespace
 class FetcherDetail : public QNetworkAccessManager
 {
 public:
-    FetcherDetail()
-    {
-        connect(this, &QNetworkAccessManager::authenticationRequired,
-                this, &FetcherDetail::authentication);
-    }
-
-    void authentication(QNetworkReply *, QAuthenticator *authenticator)
-    {
-        authenticator->setUser(QString::fromUtf8(options.username.data(),
-                                                 options.username.size()));
-        authenticator->setPassword(QString::fromUtf8(options.password.data(),
-                                                     options.password.size()));
-    }
-
     void fetch(melown::FetchTask *task);
 
-    FetcherOptions options;
     FetcherImpl::Func func;
 };
 
@@ -85,18 +69,11 @@ void FetcherDetail::fetch(melown::FetchTask *task)
 
 FetcherImpl::FetcherImpl() : impl(nullptr)
 {
-    impl = new FetcherDetail();
+    impl = std::make_shared<FetcherDetail>();
 }
 
 FetcherImpl::~FetcherImpl()
-{
-    delete impl;
-}
-
-void FetcherImpl::setOptions(const FetcherOptions &options)
-{
-    impl->options = options;
-}
+{}
 
 void FetcherImpl::initialize(Func func)
 {

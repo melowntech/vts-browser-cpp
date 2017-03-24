@@ -3,6 +3,7 @@
 
 #include <string>
 #include <memory>
+#include <functional>
 
 #include "foundation.h"
 
@@ -12,22 +13,29 @@ namespace melown
 class MELOWN_API MapFoundation
 {
 public:
-    MapFoundation(const std::string &mapConfigPath);
+    MapFoundation();
     virtual ~MapFoundation();
-
-    void dataInitialize(class GpuContext *context, class Fetcher *fetcher);
+    
+    std::function<std::shared_ptr<class GpuTexture>(const std::string &)>
+            createTexture;
+    std::function<std::shared_ptr<class GpuMesh>(const std::string &)>
+            createMesh;
+    
+    void dataInitialize(class Fetcher *fetcher);
     bool dataTick();
     void dataFinalize();
 
-    void renderInitialize(class GpuContext *context);
+    void renderInitialize();
     void renderTick(uint32 width, uint32 height);
     void renderFinalize();
 
+    void setMapConfig(const std::string &mapConfigPath);
     void pan(const double value[3]);
     void rotate(const double value[3]);
 
     class MapStatistics &statistics();
     class MapOptions &options();
+    class DrawBatch &drawBatch();
 
 private:
     std::shared_ptr<class MapImpl> impl;

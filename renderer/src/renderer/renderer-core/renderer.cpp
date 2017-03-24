@@ -3,10 +3,8 @@
 namespace melown
 {
 
-void MapImpl::renderInitialize(GpuContext *gpuContext)
-{
-    renderContext = gpuContext;
-}
+void MapImpl::renderInitialize()
+{}
 
 void MapImpl::renderFinalize()
 {}
@@ -60,17 +58,11 @@ Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
 void MapImpl::touchResources(std::shared_ptr<TraverseNode> trav)
 {
     trav->lastAccessTime = statistics.frameIndex;
-    if (trav->renderBatch)
-        touchResources(trav->renderBatch);
-}
-
-void MapImpl::touchResources(std::shared_ptr<RenderBatch> batch)
-{
-    for (auto &&it : batch->opaque)
+    for (auto &&it : trav->opaque)
         touchResources(it);
-    for (auto &&it : batch->transparent)
+    for (auto &&it : trav->transparent)
         touchResources(it);
-    for (auto &&it : batch->wires)
+    for (auto &&it : trav->wires)
         touchResources(it);
 }
 
@@ -86,10 +78,12 @@ void MapImpl::touchResources(std::shared_ptr<RenderTask> task)
 
 bool MapImpl::visibilityTest(const NodeInfo &nodeInfo, const MetaNode &node)
 {
-    if (nodeInfo.nodeId().lod < 3)
+    if (nodeInfo.distanceFromRoot() < 3)
         return true;
     //if (vtslibs::vts::empty(node.geomExtents))
     {
+        if (node.extents.ll == node.extents.ur)
+            return true;
         vec4 c0 = column(renderer.viewProj, 0);
         vec4 c1 = column(renderer.viewProj, 1);
         vec4 c2 = column(renderer.viewProj, 2);
@@ -169,16 +163,23 @@ bool MapImpl::backTileCulling(const NodeInfo &nodeInfo)
         vec2 fu = vecFromUblas<vec2>(nodeInfo.extents().ur);
         vec2 c = (fl + fu) * 0.5;
         vec3 an = vec2to3(c, 0);
-        vec3 ap = convertor->convert(an, nodeInfo.srs(),
+        vec3 ap = mapConfig->convertor->convert(an, nodeInfo.srs(),
                     mapConfig->referenceFrame.model.physicalSrs);
         vec3 bn = vec2to3(c, 100);
-        vec3 bp = convertor->convert(bn, nodeInfo.srs(),
+        vec3 bp = mapConfig->convertor->convert(bn, nodeInfo.srs(),
                     mapConfig->referenceFrame.model.physicalSrs);
         vec3 dir = normalize(bp - ap);
         if (dot(dir, renderer.forwardUnitVector) > 0)
             return true;
     }
     return false;
+}
+
+void MapImpl::convertRenderTasks(std::vector<DrawTask> &draws,
+                        std::vector<std::shared_ptr<RenderTask>> &renders)
+{
+    for (std::shared_ptr<RenderTask> &r : renders)
+        draws.emplace_back(r.get(), this);
 }
 
 void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
@@ -206,7 +207,7 @@ void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
                 allOk = false;
                 break;
             case Validity::Valid:
-                allOk = allOk && t->renderBatch->ready();
+                allOk = allOk && t->ready();
                 touchResources(t);
                 break;
             }
@@ -223,11 +224,15 @@ void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
         return;
     
     // render the node
+    convertRenderTasks(draws.opaque, trav->opaque);
+    convertRenderTasks(draws.transparent, trav->transparent);
+    if (options.renderWireBoxes)
+        convertRenderTasks(draws.wires, trav->wires);
+    
     statistics.meshesRenderedTotal++;
     statistics.meshesRenderedPerLod[
             std::min<uint32>(trav->nodeInfo.nodeId().lod,
                              MapStatistics::MaxLods-1)]++;
-    renderer.renderBatch.mergeIn(*trav->renderBatch, options);
 }
 
 bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
@@ -304,22 +309,24 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
         return false;
     }
     
-    RenderBatch batch;
     bool determined = true;
+    trav->opaque.clear();
+    trav->transparent.clear();
+    trav->wires.clear();
     
     // iterate over all submeshes
     for (uint32 subMeshIndex = 0, e = meshAgg->submeshes.size();
          subMeshIndex != e; subMeshIndex++)
     {
         const MeshPart &part = meshAgg->submeshes[subMeshIndex];
-        std::shared_ptr<GpuMeshRenderable> mesh = part.renderable;
+        std::shared_ptr<GpuMesh> mesh = part.renderable;
         
         { // wire box
             RenderTask task;
             task.mesh = getMeshRenderable("data/cube.obj");;
             task.model = part.normToPhys;
             task.color = trav->surface->color;
-            batch.wires.push_back(std::make_shared<RenderTask>(task));
+            trav->wires.push_back(std::make_shared<RenderTask>(task));
         }
         
         // internal texture
@@ -335,7 +342,7 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
             task.textureColor = getTexture(
                         trav->surface->surface->urlIntTex(vars));
             task.external = false;
-            batch.opaque.push_back(std::make_shared<RenderTask>(task));
+            trav->opaque.push_back(std::make_shared<RenderTask>(task));
             continue;
         }
         
@@ -376,16 +383,12 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
                 task.external = true;
                 if (!b.watertight)
                     task.textureMask = getTexture(b.bound->urlMask(b.vars));
-                batch.opaque.push_back(std::make_shared<RenderTask>(task));
+                trav->opaque.push_back(std::make_shared<RenderTask>(task));
             }
         }
     }
     
-    if (!determined)
-        return false;
-    
-    trav->renderBatch = std::make_shared<RenderBatch>(batch);
-    return true;
+    return determined;
 }
 
 void MapImpl::traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly)
@@ -423,10 +426,8 @@ void MapImpl::traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly)
     }
     
     // prepare render batch
-    if (!trav->renderBatch && !traverseDetermineBoundLayers(trav))
+    if (!traverseDetermineBoundLayers(trav))
         return;
-    
-    assert(trav->renderBatch);
     
     // make node valid
     trav->validity = Validity::Valid;
@@ -444,29 +445,6 @@ void MapImpl::traverseClearing(std::shared_ptr<TraverseNode> &trav)
     
     for (auto &&it : trav->childs)
         traverseClearing(it);
-}
-
-void MapImpl::dispatchRenderTasks()
-{
-    renderer.shader->bind();
-    for (std::shared_ptr<RenderTask> &t : renderer.renderBatch.opaque)
-    {
-        mat4f mvp = (renderer.viewProj * t->model).cast<float>();
-        renderer.shader->uniformMat4(0, mvp.data());
-        renderer.shader->uniformMat3(4, t->uvm.data());
-        renderer.shader->uniform(8, (int)t->external);
-        if (t->textureMask)
-        {
-            renderer.shader->uniform(9, 1);
-            renderContext->activeTextureUnit(1);
-            t->textureMask->bind();
-            renderContext->activeTextureUnit(0);
-        }
-        else
-            renderer.shader->uniform(9, 0);
-        t->textureColor->bind();
-        t->mesh->draw();
-    }
 }
 
 bool MapImpl::panZSurfaceStack(HeightRequest &task)
@@ -584,9 +562,9 @@ void MapImpl::updateCamera()
         dir += center;
         up += center;
         // transform to physical srs
-        center = convertor->navToPhys(center);
-        dir = convertor->navToPhys(dir);
-        up = convertor->navToPhys(up);
+        center = mapConfig->convertor->navToPhys(center);
+        dir = mapConfig->convertor->navToPhys(dir);
+        up = mapConfig->convertor->navToPhys(up);
         // points -> vectors
         dir = normalize(dir - center);
         up = normalize(up - center);
@@ -594,12 +572,12 @@ void MapImpl::updateCamera()
     case vtslibs::registry::Srs::Type::geographic:
     {
         // find lat-lon coordinates of points moved to north and east
-        vec3 n2 = convertor->navGeodesicDirect(center, 0, 100);
-        vec3 e2 = convertor->navGeodesicDirect(center, 90, 100);
+        vec3 n2 = mapConfig->convertor->navGeodesicDirect(center, 0, 100);
+        vec3 e2 = mapConfig->convertor->navGeodesicDirect(center, 90, 100);
         // transform to physical srs
-        center = convertor->navToPhys(center);
-        vec3 n = convertor->navToPhys(n2);
-        vec3 e = convertor->navToPhys(e2);
+        center = mapConfig->convertor->navToPhys(center);
+        vec3 n = mapConfig->convertor->navToPhys(n2);
+        vec3 e = mapConfig->convertor->navToPhys(e2);
         // points -> vectors
         n = normalize(n - center);
         e = normalize(e - center);
@@ -637,51 +615,53 @@ void MapImpl::updateCamera()
 
 bool MapImpl::prerequisitesCheck()
 {
-    // load shaders
-    renderer.shaderColor = getShader("data/shaders/color.glsl");
-    renderer.shader = getShader("data/shaders/a.glsl");
-    if (!*renderer.shader || !*renderer.shaderColor)
-        return false;
-    
-    // load map config
-    mapConfig = getMapConfig(mapConfigPath);
-    if (!mapConfig || !*mapConfig)
-        return false;
-    
-    // load external bound layers
-    bool ok = true;
-    for (auto &&bl : mapConfig->boundLayers)
+    // clear on change
+    if (mapConfig && mapConfig->name != mapConfigPath)
     {
-        if (!bl.external())
-            continue;
-        std::string url = convertPath(bl.url, mapConfig->name);
-        std::shared_ptr<ExternalBoundLayer> r = getExternalBoundLayer(url);
-        if (!*r)
-            ok = false;
-        else
-        {
-            r->id = bl.id;
-            r->url = convertPath(r->url, url);
-            if (r->metaUrl)
-                r->metaUrl = convertPath(*r->metaUrl, url);
-            if (r->maskUrl)
-                r->maskUrl = convertPath(*r->maskUrl, url);
-            if (r->creditsUrl)
-                r->creditsUrl = convertPath(*r->creditsUrl, url);
-            mapConfig->boundLayers.replace(*r);
+        initialized = false;
+        renderer.traverseRoot.reset();
+        { // clear panZQueue
+            std::queue<std::shared_ptr<HeightRequest>> tmp;
+            std::swap(tmp, renderer.panZQueue);
         }
     }
-    return ok;
-}
-
-void MapImpl::mapConfigLoaded()
-{
-    convertor = std::shared_ptr<CsConvertor>(CsConvertor::create(
-                  mapConfig->referenceFrame.model.physicalSrs,
-                  mapConfig->referenceFrame.model.navigationSrs,
-                  mapConfig->referenceFrame.model.publicSrs,
-                  *mapConfig
-                  ));
+    
+    if (initialized)
+        return true;
+    
+    if (mapConfigPath.empty())
+        return false;
+    
+    mapConfig = getMapConfig(mapConfigPath);
+    if (!*mapConfig)
+        return false;
+    
+    { // load external bound layers
+        bool ok = true;
+        for (auto &&bl : mapConfig->boundLayers)
+        {
+            if (!bl.external())
+                continue;
+            std::string url = convertPath(bl.url, mapConfig->name);
+            std::shared_ptr<ExternalBoundLayer> r = getExternalBoundLayer(url);
+            if (!*r)
+                ok = false;
+            else
+            {
+                r->id = bl.id;
+                r->url = convertPath(r->url, url);
+                if (r->metaUrl)
+                    r->metaUrl = convertPath(*r->metaUrl, url);
+                if (r->maskUrl)
+                    r->maskUrl = convertPath(*r->maskUrl, url);
+                if (r->creditsUrl)
+                    r->creditsUrl = convertPath(*r->creditsUrl, url);
+                mapConfig->boundLayers.replace(*r);
+            }
+        }
+        if (!ok)
+            return false;
+    }
     
     renderer.metaTileBinaryOrder = mapConfig->referenceFrame.metaBinaryOrder;
     
@@ -692,26 +672,15 @@ void MapImpl::mapConfigLoaded()
                 (new BoundInfo(bl));
     }
     
-    mapConfig->generateSurfaceStack();
-    
-    // temporarily change height above terrain
-    mapConfig->position.position[2] = 0;
-    
-    LOG(info3) << "position: " << mapConfig->position.position;
-    LOG(info3) << "rotation: " << mapConfig->position.orientation;
-    
-    { // initialize camera panZQueue
-        renderer.lastPanZShift.reset();
-        {
-            std::queue<std::shared_ptr<HeightRequest>> tmp;
-            std::swap(tmp, renderer.panZQueue);
-        }
-        panAdjustZ(vec3to2(vecFromUblas<vec3>(
-                               mapConfig->position.position)));
-    }
+    renderer.lastPanZShift.reset();
+    panAdjustZ(vec3to2(vecFromUblas<vec3>(
+                           mapConfig->position.position)));
     
     NodeInfo nodeInfo(mapConfig->referenceFrame, TileId(), false, *mapConfig);
     renderer.traverseRoot = std::make_shared<TraverseNode>(nodeInfo);
+    
+    initialized = true;
+    return true;
 }
 
 void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
@@ -722,13 +691,11 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
     renderer.windowWidth = windowWidth;
     renderer.windowHeight = windowHeight;
     
-    if (!convertor)
-        mapConfigLoaded();
-    
     updateCamera();
-    renderer.renderBatch.clear();
+    draws.opaque.clear();
+    draws.transparent.clear();
+    draws.wires.clear();
     traverse(renderer.traverseRoot, false);
-    dispatchRenderTasks();
     traverseClearing(renderer.traverseRoot);
     
     statistics.frameIndex++;

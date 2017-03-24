@@ -1,7 +1,27 @@
+#include <renderer/map.h>
+
 #include "map.h"
 
 namespace melown
 {
+
+namespace
+{
+
+template<class T>
+std::shared_ptr<T> getMapResource(const std::string &name, MapImpl *map)
+{
+    auto it = map->resources.resources.find(name);
+    if (it == map->resources.resources.end())
+    {
+        map->resources.resources[name] = std::make_shared<T>(name);
+        it = map->resources.resources.find(name);
+    }
+    map->touchResource(it->second);
+    return std::dynamic_pointer_cast<T>(it->second);
+}
+
+} // namespace
 
 MapImpl::Resources::Resources() : takeItemIndex(0), downloads(0),
     destroyTheFetcher(false), fetcher(nullptr)
@@ -45,9 +65,8 @@ MapImpl::Resources::~Resources()
     {}
 }
 
-void MapImpl::dataInitialize(GpuContext *context, Fetcher *fetcher)
+void MapImpl::dataInitialize(Fetcher *fetcher)
 {
-    dataContext = context;
     if (!fetcher)
     {
         resources.destroyTheFetcher = true;
@@ -62,7 +81,6 @@ void MapImpl::dataInitialize(GpuContext *context, Fetcher *fetcher)
 
 void MapImpl::dataFinalize()
 {
-    dataContext = nullptr;
     resources.fetcher->finalize();
     resources.prepareQue.clear();
 }
@@ -237,7 +255,6 @@ void MapImpl::dataRenderInitialize()
 
 void MapImpl::dataRenderFinalize()
 {
-    renderContext = nullptr;
     resources.prepareQueNew.clear();
     LOG(info3) << "Releasing " << resources.resources.size() << " resources";
     resources.resources.clear();
@@ -309,61 +326,68 @@ void MapImpl::touchResource(std::shared_ptr<Resource> resource)
     }
 }
 
-std::shared_ptr<GpuShader> MapImpl::getShader(const std::string &name)
-{
-    return getGpuResource<GpuShader, &GpuContext::createShader>(name);
-}
-
 std::shared_ptr<GpuTexture> MapImpl::getTexture(const std::string &name)
 {
-    return getGpuResource<GpuTexture, &GpuContext::createTexture>(name);
+    auto it = resources.resources.find(name);
+    if (it == resources.resources.end())
+    {
+        resources.resources[name] = mapFoundation->createTexture(name);
+        it = resources.resources.find(name);
+    }
+    touchResource(it->second);
+    return std::dynamic_pointer_cast<GpuTexture>(it->second);
 }
 
-std::shared_ptr<GpuMeshRenderable> MapImpl::getMeshRenderable(
-        const std::string &name)
+std::shared_ptr<GpuMesh> MapImpl::getMeshRenderable(const std::string &name)
 {
-    return getGpuResource<GpuMeshRenderable,
-            &GpuContext::createMeshRenderable>(name);
+    auto it = resources.resources.find(name);
+    if (it == resources.resources.end())
+    {
+        resources.resources[name] = mapFoundation->createMesh(name);
+        it = resources.resources.find(name);
+    }
+    touchResource(it->second);
+    return std::dynamic_pointer_cast<GpuMesh>(it->second);
 }
 
 std::shared_ptr<MapConfig> MapImpl::getMapConfig(const std::string &name)
 {
-    return getMapResource<MapConfig>(name);
+    return getMapResource<MapConfig>(name, this);
 }
 
 std::shared_ptr<MetaTile> MapImpl::getMetaTile(const std::string &name)
 {
-    return getMapResource<MetaTile>(name);
+    return getMapResource<MetaTile>(name, this);
 }
 
 std::shared_ptr<NavTile> MapImpl::getNavTile(
         const std::string &name)
 {
-    return getMapResource<NavTile>(name);
+    return getMapResource<NavTile>(name, this);
 }
 
 std::shared_ptr<MeshAggregate> MapImpl::getMeshAggregate(
         const std::string &name)
 {
-    return getMapResource<MeshAggregate>(name);
+    return getMapResource<MeshAggregate>(name, this);
 }
 
 std::shared_ptr<ExternalBoundLayer> MapImpl::getExternalBoundLayer(
         const std::string &name)
 {
-    return getMapResource<ExternalBoundLayer>(name);
+    return getMapResource<ExternalBoundLayer>(name, this);
 }
 
 std::shared_ptr<BoundMetaTile> MapImpl::getBoundMetaTile(
         const std::string &name)
 {
-    return getMapResource<BoundMetaTile>(name);
+    return getMapResource<BoundMetaTile>(name, this);
 }
 
 std::shared_ptr<BoundMaskTile> MapImpl::getBoundMaskTile(
         const std::string &name)
 {
-    return getMapResource<BoundMaskTile>(name);
+    return getMapResource<BoundMaskTile>(name, this);
 }
 
 Validity MapImpl::getResourceValidity(const std::string &name)

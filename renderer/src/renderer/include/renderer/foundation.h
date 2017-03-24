@@ -20,8 +20,8 @@ typedef std::int64_t sint64;
 #define MELOWN_API_IMPORT _declspec(dllimport)
 #define MELOWN_THREAD_LOCAL_STORAGE __declspec(thread)
 #else
-#define MELOWN_API_EXPORT __attribute__ ((visibility ("default")))
-#define MELOWN_API_IMPORT __attribute__ ((visibility ("default")))
+#define MELOWN_API_EXPORT __attribute__((visibility ("default")))
+#define MELOWN_API_IMPORT __attribute__((visibility ("default")))
 #define MELOWN_THREAD_LOCAL_STORAGE __thread
 #endif
 

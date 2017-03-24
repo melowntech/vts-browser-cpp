@@ -1,10 +1,9 @@
 #include <unistd.h> // usleep
-
-#include <GLFW/glfw3.h>
 #include <renderer/map.h>
-
 #include "dataThread.h"
 #include "threadName.h"
+#include "gpuContext.h"
+#include <GLFW/glfw3.h>
 
 namespace
 {
@@ -20,7 +19,7 @@ DataThread::DataThread(GLFWwindow *shared) : window(nullptr),
     window = glfwCreateWindow(1, 1, "data context", NULL, shared);
     glfwSetWindowUserPointer(window, this);
     glfwHideWindow(window);
-    gpu.initialize();
+    initializeGpuContext();
     thr = std::thread(&::run, this);
 }
 
@@ -39,7 +38,7 @@ void DataThread::run()
     while (!stop && !map)
         usleep(1000);
     setThreadName("downloader"); // the downloader threads inherits the name
-    map->dataInitialize(&gpu, nullptr);
+    map->dataInitialize(nullptr);
     setThreadName("data");
     while (!stop)
     {

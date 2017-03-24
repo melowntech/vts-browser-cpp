@@ -2,7 +2,6 @@
 #define MAINWINDOW_H
 
 #include <QWindow>
-
 #include "gpuContext.h"
 
 namespace melown
@@ -30,10 +29,17 @@ private:
     void mousePress(class QMouseEvent *event);
     void mouseRelease(class QMouseEvent *event);
     void mouseWheel(class QWheelEvent *event);
+    
+    std::shared_ptr<melown::GpuTexture> createTexture
+        (const std::string &name);
+    std::shared_ptr<melown::GpuMesh> createMesh
+        (const std::string &name);
 
     bool isMouseDetached;
     QPoint mouseLastPosition;
     QPoint mouseOriginalPosition;
+    
+    std::shared_ptr<GpuShader> shader;
 };
 
 #endif

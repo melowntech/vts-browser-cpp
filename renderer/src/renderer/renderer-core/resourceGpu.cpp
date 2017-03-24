@@ -1,5 +1,5 @@
 #include <vts-libs/registry/referenceframe.hpp>
-#include <renderer/gpuResources.h>
+#include <renderer/resources.h>
 #include <renderer/buffer.h>
 
 #include "resource.h"
@@ -9,27 +9,6 @@
 
 namespace melown
 {
-
-GpuShader::GpuShader(const std::string &name) : Resource(name)
-{}
-
-void GpuShader::load(class MapImpl *)
-{
-    std::map<std::string, std::string> shaders;
-    std::string current;
-    while (impl->download->contentData.good())
-    {
-        std::string line;
-        std::getline(impl->download->contentData, line);
-        if (line.empty())
-            continue;
-        if (line[0] == '$')
-            current = line.substr(1);
-        else
-            shaders[current] += line + "\n";
-    }
-    loadShaders(shaders["vertex"], shaders["fragment"]);
-}
 
 GpuTextureSpec::GpuTextureSpec() : width(0), height(0), components(0)
 {}
@@ -53,10 +32,10 @@ GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0),
     components(0), type(Type::Float), enable(false), normalized(false)
 {}
 
-GpuMeshRenderable::GpuMeshRenderable(const std::string &name) : Resource(name)
+GpuMesh::GpuMesh(const std::string &name) : Resource(name)
 {}
 
-void GpuMeshRenderable::load(class MapImpl *)
+void GpuMesh::load(class MapImpl *)
 {
     uint32 vc = 0, ic = 0;
     GpuMeshSpec spec;
@@ -71,7 +50,7 @@ void GpuMeshRenderable::load(class MapImpl *)
     spec.attributes[1].components = 2;
     spec.attributes[1].offset = sizeof(vec3f);
     spec.attributes[2] = spec.attributes[1];
-    loadMeshRenderable(spec);
+    loadMesh(spec);
 }
 
 } // namespace melown

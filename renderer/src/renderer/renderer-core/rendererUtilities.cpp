@@ -34,7 +34,7 @@ HeightRequest::HeightRequest(const vec2 &navPos, MapImpl *map) :
             continue;
         NodeInfo ni(map->mapConfig->referenceFrame, it.first,
                     false, *map->mapConfig);
-        vec2 sdp = vec3to2(map->convertor->convert(
+        vec2 sdp = vec3to2(map->mapConfig->convertor->convert(
                        vec2to3(navPos, 0), map->mapConfig
                        ->referenceFrame.model.navigationSrs, it.second.srs));
         if (!ni.inside(vecToUblas<math::Point2>(sdp)))
@@ -139,6 +139,20 @@ bool BoundParamInfo::operator <(const BoundParamInfo &rhs) const
     return depth > rhs.depth;
 }
 
+DrawTask::DrawTask(RenderTask *r, MapImpl *m) :
+    mesh(nullptr), texColor(nullptr), texMask(nullptr),
+    alpha(1), externalUv(false)
+{
+    mesh = r->mesh.get();
+    texColor = r->textureColor.get();
+    texMask = r->textureMask.get();
+    mat4f mvp = (m->renderer.viewProj * r->model).cast<float>();
+    memcpy(this->mvp, mvp.data(), sizeof(mvp));
+    memcpy(uvm, r->uvm.data(), sizeof(uvm));
+    memcpy(color, r->color.data(), sizeof(color));
+    externalUv = r->external;
+}
+
 RenderTask::RenderTask() : model(identityMatrix()),
     uvm(upperLeftSubMatrix(identityMatrix()).cast<float>()),
     color(1,0,0), external(false)
@@ -157,36 +171,6 @@ bool RenderTask::ready() const
     return true;
 }
 
-RenderBatch::RenderBatch()
-{}
-
-void RenderBatch::clear()
-{
-    opaque.clear();
-    transparent.clear();
-    wires.clear();
-}
-
-void RenderBatch::mergeIn(const RenderBatch &batch, const MapOptions &options)
-{
-    opaque.insert(opaque.end(), batch.opaque.begin(), batch.opaque.end());
-    transparent.insert(transparent.end(), batch.transparent.begin(),
-                       batch.transparent.end());
-    if (options.renderWireBoxes)
-        wires.insert(wires.end(), batch.wires.begin(), batch.wires.end());
-}
-
-bool RenderBatch::ready() const
-{
-    for (auto &&it : opaque)
-        if (!it->ready())
-            return false;
-    for (auto &&it : transparent)
-        if (!it->ready())
-            return false;
-    return true;
-}
-
 TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
     : nodeInfo(nodeInfo), surface(nullptr), lastAccessTime(0),
       validity(Validity::Indeterminate), empty(false)
@@ -197,12 +181,25 @@ TraverseNode::~TraverseNode()
 
 void TraverseNode::clear()
 {
-    renderBatch.reset();
+    opaque.clear();
+    transparent.clear();
+    wires.clear();
     childs.clear();
     surface = nullptr;
     empty = false;
     if (validity == Validity::Valid)
         validity = Validity::Indeterminate;
+}
+
+bool TraverseNode::ready() const
+{
+    for (auto &&it : opaque)
+        if (!it->ready())
+            return false;
+    for (auto &&it : transparent)
+        if (!it->ready())
+            return false;
+    return true;
 }
 
 MapImpl::Renderer::Renderer() : metaTileBinaryOrder(0),

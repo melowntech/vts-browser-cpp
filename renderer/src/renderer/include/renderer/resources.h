@@ -1,29 +1,30 @@
-#ifndef GPURESOURCES_H_jhsegf
-#define GPURESOURCES_H_jhsegf
+#ifndef RESOURCES_H_jhsegfshg
+#define RESOURCES_H_jhsegfshg
 
-#include "resource.h"
+#include <memory>
+
 #include "buffer.h"
 
 namespace melown
 {
 
-class MELOWN_API GpuShader : public Resource
+class ResourceImpl;
+
+class MELOWN_API Resource
 {
 public:
-    GpuShader(const std::string &name);
+    Resource(const std::string &name);
+    virtual ~Resource();
 
-    virtual void bind() = 0;
-    virtual void loadShaders(const std::string &vertexShader,
-                             const std::string &fragmentShader) = 0;
+    virtual void load(class MapImpl *base) = 0;
 
-    void load(class MapImpl *base) override;
-
-    virtual void uniformMat4(uint32 location, const float *value) = 0;
-    virtual void uniformMat3(uint32 location, const float *value) = 0;
-    virtual void uniformVec4(uint32 location, const float *value) = 0;
-    virtual void uniformVec3(uint32 location, const float *value) = 0;
-    virtual void uniform(uint32 location, const float value) = 0;
-    virtual void uniform(uint32 location, const int value) = 0;
+    operator bool () const;
+    
+    const std::string name;
+    uint32 ramMemoryCost;
+    uint32 gpuMemoryCost;
+    
+    std::shared_ptr<ResourceImpl> impl;
 };
 
 class MELOWN_API GpuTextureSpec
@@ -41,7 +42,6 @@ class MELOWN_API GpuTexture : public Resource
 public:
     GpuTexture(const std::string &name);
 
-    virtual void bind() = 0;
     virtual void loadTexture(const GpuTextureSpec &spec) = 0;
 
     void load(class MapImpl *base) override;
@@ -86,13 +86,12 @@ public:
     FaceMode faceMode;
 };
 
-class MELOWN_API GpuMeshRenderable : public Resource
+class MELOWN_API GpuMesh : public Resource
 {
 public:
-    GpuMeshRenderable(const std::string &name);
+    GpuMesh(const std::string &name);
 
-    virtual void draw() = 0;
-    virtual void loadMeshRenderable(const GpuMeshSpec &spec) = 0;
+    virtual void loadMesh(const GpuMeshSpec &spec) = 0;
 
     void load(class MapImpl *base) override;
 };

@@ -3,10 +3,13 @@
 #include <QWheelEvent>
 #include <QDebug>
 #include <renderer/map.h>
-
+#include <renderer/rendering.h>
+#include <renderer/buffer.h>
 #include "mainWindow.h"
 #include "gpuContext.h"
 #include "fetcher.h"
+
+using melown::readLocalFileBuffer;
 
 MainWindow::MainWindow() : gl(nullptr), isMouseDetached(false), fetcher(nullptr)
 {
@@ -82,8 +85,17 @@ bool MainWindow::event(QEvent *event)
 void MainWindow::initialize()
 {
     gl->initialize();
-    map->renderInitialize(gl);
-    map->dataInitialize(gl, fetcher);
+    map->renderInitialize();
+    map->dataInitialize(fetcher);
+    
+    { // load shader
+        shader = std::make_shared<GpuShader>();
+        melown::Buffer vert = readLocalFileBuffer("data/shaders/a.vert.glsl");
+        melown::Buffer frag = readLocalFileBuffer("data/shaders/a.frag.glsl");
+        shader->loadShaders(
+            std::string(vert.data(), vert.size()),
+            std::string(frag.data(), frag.size()));
+    }
 }
 
 void MainWindow::tick()
@@ -94,6 +106,11 @@ void MainWindow::tick()
 
     if (!gl->isValid())
         throw std::runtime_error("invalid gl context");
+    
+    map->createTexture = std::bind(&MainWindow::createTexture,
+                                   this, std::placeholders::_1);
+    map->createMesh = std::bind(&MainWindow::createMesh,
+                                this, std::placeholders::_1);
 
     gl->makeCurrent(this);
 
@@ -104,8 +121,43 @@ void MainWindow::tick()
 
     gl->glEnable(GL_DEPTH_TEST);
 
-    map->renderTick(size.width(), size.height());
     map->dataTick();
+    map->renderTick(size.width(), size.height());
+    
+    { // draws
+        melown::DrawBatch &draws = map->drawBatch();
+        shader->bind();
+        for (melown::DrawTask &t : draws.opaque)
+        {
+            shader->uniformMat4(0, t.mvp);
+            shader->uniformMat3(4, t.uvm);
+            shader->uniform(8, (int)t.externalUv);
+            if (t.texMask)
+            {
+                shader->uniform(9, 1);
+                gl->glActiveTexture(GL_TEXTURE0 + 1);
+                dynamic_cast<GpuTextureImpl*>(t.texMask)->bind();
+                gl->glActiveTexture(GL_TEXTURE0 + 0);
+            }
+            else
+                shader->uniform(9, 0);
+            dynamic_cast<GpuTextureImpl*>(t.texColor)->bind();
+            dynamic_cast<GpuMeshImpl*>(t.mesh)->draw();
+        }
+    }
 
     gl->swapBuffers(this);
 }
+
+std::shared_ptr<melown::GpuTexture> MainWindow::createTexture(
+        const std::string &name)
+{
+    return std::make_shared<GpuTextureImpl>(name);
+}
+
+std::shared_ptr<melown::GpuMesh> MainWindow::createMesh(
+        const std::string &name)
+{
+    return std::make_shared<GpuMeshImpl>(name);
+}
+

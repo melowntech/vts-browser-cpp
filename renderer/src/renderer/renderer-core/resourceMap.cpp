@@ -1,4 +1,5 @@
 #include <vts-libs/vts/meshio.hpp>
+#include <renderer/map.h>
 
 #include "map.h"
 #include "image.h"
@@ -71,9 +72,9 @@ void MeshAggregate::load(MapImpl *base)
 
         char tmp[10];
         sprintf(tmp, "%d", mi);
-        std::shared_ptr<GpuMeshRenderable> gm
-                = std::dynamic_pointer_cast<GpuMeshRenderable>
-                (base->dataContext->createMeshRenderable
+        std::shared_ptr<GpuMesh> gm
+                = std::dynamic_pointer_cast<GpuMesh>
+                (base->mapFoundation->createMesh
                  (name + "#" + tmp));
 
         uint32 vertexSize = sizeof(vec3f);
@@ -126,7 +127,7 @@ void MeshAggregate::load(MapImpl *base)
             offset += m.faces.size() * sizeof(vec2f) * 3;
         }
 
-        gm->loadMeshRenderable(spec);
+        gm->loadMesh(spec);
         gm->impl->state = ResourceImpl::State::ready;
 
         MeshPart part;
@@ -170,7 +171,7 @@ void BoundMaskTile::load(MapImpl *base)
 {
     if (!texture)
         texture = std::dynamic_pointer_cast<GpuTexture>(
-                    base->dataContext->createTexture(name + "#tex"));
+                    base->mapFoundation->createTexture(name + "#tex"));
     
     Buffer buffer = std::move(impl->download->contentData);
     GpuTextureSpec spec;

@@ -43,6 +43,21 @@ MapConfig::MapConfig(const std::string &name) : Resource(name)
 void MapConfig::load(MapImpl *)
 {
     vtslibs::vts::loadMapConfig(*this, impl->download->contentData, name);
+    
+    convertor = std::shared_ptr<CsConvertor>(CsConvertor::create(
+                  referenceFrame.model.physicalSrs,
+                  referenceFrame.model.navigationSrs,
+                  referenceFrame.model.publicSrs,
+                  *this
+                  ));
+    
+    generateSurfaceStack();
+    
+    // temporarily change height above terrain
+    position.position[2] = 0;
+    
+    LOG(info3) << "position: " << position.position;
+    LOG(info3) << "rotation: " << position.orientation;
 }
 
 vtslibs::vts::SurfaceCommonConfig *MapConfig::findGlue(

@@ -1,12 +1,15 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include <renderer/map.h>
 #include <renderer/statistics.h>
-
+#include <renderer/rendering.h>
+#include <renderer/buffer.h>
+#include <renderer/resources.h>
 #include "mainWindow.h"
+#include <GLFW/glfw3.h>
 
 namespace
 {
+
+using melown::readLocalFileBuffer;
 
 void mousePositionCallback(GLFWwindow *window, double xpos, double ypos)
 {
@@ -23,7 +26,7 @@ void mouseScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
 } // namespace
 
 MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
-    map(nullptr), window(nullptr)
+    map(nullptr), window(nullptr), shader(nullptr)
 {
     window = glfwCreateWindow(800, 600, "renderer-glfw", NULL, NULL);
     glfwMakeContextCurrent(window);
@@ -37,7 +40,16 @@ MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
     anisotropicFilteringAvailable
             = glfwExtensionSupported("GL_EXT_texture_filter_anisotropic");
     
-    gpu.initialize();
+    initializeGpuContext();
+    
+    { // load shader
+        shader = std::make_shared<GpuShader>();
+        melown::Buffer vert = readLocalFileBuffer("data/shaders/a.vert.glsl");
+        melown::Buffer frag = readLocalFileBuffer("data/shaders/a.frag.glsl");
+        shader->loadShaders(
+            std::string(vert.data(), vert.size()),
+            std::string(frag.data(), frag.size()));
+    }
 }
 
 MainWindow::~MainWindow()
@@ -67,7 +79,11 @@ void MainWindow::mouseScrollCallback(double, double yoffset)
 
 void MainWindow::run()
 {
-    map->renderInitialize(&gpu);
+    map->createTexture = std::bind(&MainWindow::createTexture,
+                                   this, std::placeholders::_1);
+    map->createMesh = std::bind(&MainWindow::createMesh,
+                                this, std::placeholders::_1);
+    map->renderInitialize();
     while (!glfwWindowShouldClose(window))
     {
         double timeFrameStart = glfwGetTime();
@@ -83,9 +99,30 @@ void MainWindow::run()
         int width = 800, height = 600;
         glfwGetFramebufferSize(window, &width, &height);
         glViewport(0, 0, width, height);
-
         checkGl("frame");
-        map->renderTick(width, height);
+        
+        { // draws
+            map->renderTick(width, height);
+            melown::DrawBatch &draws = map->drawBatch();
+            shader->bind();
+            for (melown::DrawTask &t : draws.opaque)
+            {
+                shader->uniformMat4(0, t.mvp);
+                shader->uniformMat3(4, t.uvm);
+                shader->uniform(8, (int)t.externalUv);
+                if (t.texMask)
+                {
+                    shader->uniform(9, 1);
+                    glActiveTexture(GL_TEXTURE0 + 1);
+                    dynamic_cast<GpuTextureImpl*>(t.texMask)->bind();
+                    glActiveTexture(GL_TEXTURE0 + 0);
+                }
+                else
+                    shader->uniform(9, 0);
+                dynamic_cast<GpuTextureImpl*>(t.texColor)->bind();
+                dynamic_cast<GpuMeshImpl*>(t.mesh)->draw();
+            }
+        }
         checkGl("renderTick");
         
         double timeBeforeSwap = glfwGetTime();
@@ -111,4 +148,16 @@ void MainWindow::run()
             glfwSetWindowTitle(window, buffer);
         }
     }
+}
+
+std::shared_ptr<melown::GpuTexture> MainWindow::createTexture(
+        const std::string &name)
+{
+    return std::make_shared<GpuTextureImpl>(name);
+}
+
+std::shared_ptr<melown::GpuMesh> MainWindow::createMesh(
+        const std::string &name)
+{
+    return std::make_shared<GpuMeshImpl>(name);
 }

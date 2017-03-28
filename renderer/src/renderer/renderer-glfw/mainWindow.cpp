@@ -84,6 +84,7 @@ void MainWindow::run()
     map->createMesh = std::bind(&MainWindow::createMesh,
                                 this, std::placeholders::_1);
     map->renderInitialize();
+    gui.initialize(this);
     while (!glfwWindowShouldClose(window))
     {
         double timeFrameStart = glfwGetTime();
@@ -127,6 +128,7 @@ void MainWindow::run()
         
         double timeBeforeSwap = glfwGetTime();
         glfwPollEvents();
+        gui.render();
         glfwSwapBuffers(window);
         double timeFrameFinish = glfwGetTime();
 
@@ -148,6 +150,7 @@ void MainWindow::run()
             glfwSetWindowTitle(window, buffer);
         }
     }
+    gui.finalize();
 }
 
 std::shared_ptr<melown::GpuTexture> MainWindow::createTexture(

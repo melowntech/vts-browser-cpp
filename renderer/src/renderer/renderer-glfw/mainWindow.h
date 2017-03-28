@@ -23,6 +23,16 @@ public:
     void mousePositionCallback(double xpos, double ypos);
     void mouseScrollCallback(double, double yoffset);
 
+    class Gui
+    {
+    public:
+        void initialize(MainWindow *window);
+        void finalize();
+        void render();
+        
+        std::shared_ptr<class GuiImpl> impl;
+    } gui;
+    
     void run();
     
     std::shared_ptr<melown::GpuTexture> createTexture

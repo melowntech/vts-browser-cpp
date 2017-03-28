@@ -6,7 +6,9 @@ namespace melown
 {
 
 MapOptions::MapOptions() : renderWireBoxes(false),
-    maxResourcesMemory(512*1024*1024), maxConcurrentDownloads(100)
+    maxTexelToPixelScale(1.2),
+    maxResourcesMemory(512*1024*1024),
+    maxConcurrentDownloads(100)
 {}
 
 MapOptions::~MapOptions()

@@ -14,13 +14,19 @@ using melown::readLocalFileBuffer;
 void mousePositionCallback(GLFWwindow *window, double xpos, double ypos)
 {
     MainWindow *m = (MainWindow*)glfwGetWindowUserPointer(window);
-    m->mousePositionCallback(xpos, ypos);
+    m->gui.mousePositionCallback(xpos, ypos);
 }
 
 void mouseScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
 {
     MainWindow *m = (MainWindow*)glfwGetWindowUserPointer(window);
-    m->mouseScrollCallback(xoffset, yoffset);
+    m->gui.mouseScrollCallback(xoffset, yoffset);
+}
+
+void keyboardUnicodeCallback(GLFWwindow *window, unsigned int codepoint)
+{
+    MainWindow *m = (MainWindow*)glfwGetWindowUserPointer(window);
+    m->gui.keyboardUnicodeCallback(codepoint);
 }
 
 } // namespace
@@ -35,6 +41,7 @@ MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
     glfwSetWindowUserPointer(window, this);
     glfwSetCursorPosCallback(window, &::mousePositionCallback);
     glfwSetScrollCallback(window, &::mouseScrollCallback);
+    glfwSetCharCallback(window, &::keyboardUnicodeCallback);
     
     // check for extensions
     anisotropicFilteringAvailable
@@ -71,10 +78,15 @@ void MainWindow::mousePositionCallback(double xpos, double ypos)
     mousePrevY = ypos;
 }
 
-void MainWindow::mouseScrollCallback(double, double yoffset)
+void MainWindow::mouseScrollCallback(double xoffset, double yoffset)
 {
     double diff[3] = {0, 0, yoffset * 120};
     map->pan(diff);
+}
+
+void MainWindow::keyboardUnicodeCallback(unsigned int codepoint)
+{
+    // do nothing
 }
 
 void MainWindow::run()
@@ -127,8 +139,8 @@ void MainWindow::run()
         checkGl("renderTick");
         
         double timeBeforeSwap = glfwGetTime();
-        glfwPollEvents();
-        gui.render();
+        gui.input();
+        gui.render(width, height);
         glfwSwapBuffers(window);
         double timeFrameFinish = glfwGetTime();
 

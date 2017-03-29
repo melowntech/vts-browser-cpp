@@ -10,7 +10,8 @@
 namespace melown
 {
 
-GpuTextureSpec::GpuTextureSpec() : width(0), height(0), components(0)
+GpuTextureSpec::GpuTextureSpec() : width(0), height(0), components(0),
+    verticalFlip(true)
 {}
 
 GpuTexture::GpuTexture(const std::string &name) : Resource(name)

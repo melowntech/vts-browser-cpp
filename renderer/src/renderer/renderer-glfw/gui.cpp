@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include <renderer/map.h>
 #include <renderer/statistics.h>
 #include <renderer/options.h>
@@ -8,27 +10,312 @@
 class GuiImpl
 {
 public:
+    struct vertex
+    {
+        float position[2];
+        float uv[2];
+        nk_byte col[4];
+    };
+    
     GuiImpl(MainWindow *window) : window(window)
     {
+        { // load font
+            struct nk_font_config cfg;
+            memset(&cfg, 0, sizeof(cfg));
+            cfg.oversample_h = 6;
+            cfg.oversample_v = 6;
+            nk_font_atlas_init_default(&atlas);
+            nk_font_atlas_begin(&atlas);
+            font = nk_font_atlas_add_from_file(&atlas,
+                "data/fonts/roboto-regular.ttf", 14, &cfg);
+            melown::GpuTextureSpec spec;
+            spec.verticalFlip = false;
+            const void* img = nk_font_atlas_bake(&atlas,
+                (int*)&spec.width, (int*)&spec.height, NK_FONT_ATLAS_RGBA32);
+            spec.components = 4;
+            spec.buffer.allocate(spec.width * spec.height * spec.components);
+            memcpy(spec.buffer.data(), img, spec.buffer.size());
+            fontTexture = std::make_shared<GpuTextureImpl>("font texture");
+            fontTexture->loadTexture(spec);
+            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            nk_font_atlas_end(&atlas, nk_handle_id(fontTexture->id), &null);
+        }
         
+        nk_init_default(&ctx, &font->handle);
+        nk_buffer_init_default(&cmds);
+        
+        static const nk_draw_vertex_layout_element vertex_layout[] =
+        {
+            { NK_VERTEX_POSITION, NK_FORMAT_FLOAT, 0 },
+            { NK_VERTEX_TEXCOORD, NK_FORMAT_FLOAT, 8 },
+            { NK_VERTEX_COLOR, NK_FORMAT_R8G8B8A8, 16 },
+            { NK_VERTEX_LAYOUT_END }
+        };
+        memset(&config, 0, sizeof(config));
+        config.vertex_layout = vertex_layout;
+        config.vertex_size = sizeof(vertex);
+        config.vertex_alignment = alignof(vertex);
+        config.circle_segment_count = 22;
+        config.curve_segment_count = 22;
+        config.arc_segment_count = 22;
+        config.global_alpha = 1.0f;
+        config.shape_AA = NK_ANTI_ALIASING_ON;
+        config.line_AA = NK_ANTI_ALIASING_ON;
+        config.null = null;
+        
+        { // load shader
+            shader = std::make_shared<GpuShader>();
+            melown::Buffer vert = melown::readLocalFileBuffer(
+                        "data/shaders/gui.vert.glsl");
+            melown::Buffer frag = melown::readLocalFileBuffer(
+                        "data/shaders/gui.frag.glsl");
+            shader->loadShaders(
+                std::string(vert.data(), vert.size()),
+                std::string(frag.data(), frag.size()));
+        }
+        
+        { // prepare mesh buffers
+            mesh = std::make_shared<GpuMeshImpl>("gui mesh");
+            glGenVertexArrays(1, &mesh->vao);
+            glGenBuffers(1, &mesh->vbo);
+            glGenBuffers(1, &mesh->vio);
+            glBindVertexArray(mesh->vao);
+            glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->vio);
+            glBufferData(GL_ARRAY_BUFFER, MaxVertexMemory,
+                         NULL, GL_STREAM_DRAW);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, MaxElementMemory,
+                         NULL, GL_STREAM_DRAW);
+            glEnableVertexAttribArray(0);
+            glEnableVertexAttribArray(1);
+            glEnableVertexAttribArray(2);
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
+                sizeof(vertex), (void*)0);
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 
+                sizeof(vertex), (void*)8);
+            glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
+                sizeof(vertex), (void*)16);
+        }
     }
     
     ~GuiImpl()
     {
+        nk_font_atlas_clear(&atlas);
+        nk_free(&ctx);
+    }
+    
+    void dispatch(int width, int height)
+    {
+        glEnable(GL_BLEND);
+        glBlendEquation(GL_FUNC_ADD);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_SCISSOR_TEST);
+        glActiveTexture(GL_TEXTURE0);
+        glBindVertexArray(mesh->vao);
+        glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->vio);
+        shader->bind();
+        
+        { // proj matrix
+            GLfloat ortho[4][4] = {
+                    {2.0f, 0.0f, 0.0f, 0.0f},
+                    {0.0f,-2.0f, 0.0f, 0.0f},
+                    {0.0f, 0.0f,-1.0f, 0.0f},
+                    {-1.0f,1.0f, 0.0f, 1.0f},
+            };
+            ortho[0][0] /= (GLfloat)width;
+            ortho[1][1] /= (GLfloat)height;
+            glUniformMatrix4fv(0, 1, GL_FALSE, &ortho[0][0]);
+        }
+        
+        { // upload buffer data
+            void *vertices = glMapBuffer(GL_ARRAY_BUFFER,
+                                         GL_WRITE_ONLY);
+            void *elements = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER,
+                                         GL_WRITE_ONLY);
+            nk_buffer vbuf, ebuf;
+            nk_buffer_init_fixed(&vbuf, vertices, MaxVertexMemory);
+            nk_buffer_init_fixed(&ebuf, elements, MaxElementMemory);
+            nk_convert(&ctx, &cmds, &vbuf, &ebuf, &config);
+            glUnmapBuffer(GL_ARRAY_BUFFER);
+            glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+        }
+        
+        { // draw commands
+            struct nk_vec2 scale;
+            scale.x = 1;
+            scale.y = 1;
+            const nk_draw_command *cmd;
+            const nk_draw_index *offset = NULL;
+            nk_draw_foreach(cmd, &ctx, &cmds)
+            {
+                if (!cmd->elem_count)
+                    continue;
+                glBindTexture(GL_TEXTURE_2D, cmd->texture.id);
+                glScissor(
+                    (GLint)(cmd->clip_rect.x * scale.x),
+                    (GLint)((height - (GLint)(cmd->clip_rect.y
+                                              + cmd->clip_rect.h)) * scale.y),
+                    (GLint)(cmd->clip_rect.w * scale.x),
+                    (GLint)(cmd->clip_rect.h * scale.y));
+                glDrawElements(GL_TRIANGLES, (GLsizei)cmd->elem_count,
+                               GL_UNSIGNED_SHORT, offset);
+                offset += cmd->elem_count;
+            }
+        }
+        
+        nk_clear(&ctx);
+        
+        glUseProgram(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+        glDisable(GL_BLEND);
+        glDisable(GL_SCISSOR_TEST);
+    }
+    
+    void input()
+    {
+        consumeEvents = nk_item_is_any_active(&ctx);
+        nk_input_begin(&ctx);
+        glfwPollEvents();
+        nk_input_key(&ctx, NK_KEY_DEL, glfwGetKey(window->window,
+                GLFW_KEY_DELETE) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_ENTER, glfwGetKey(window->window,
+                GLFW_KEY_ENTER) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_TAB, glfwGetKey(window->window,
+                GLFW_KEY_TAB) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_BACKSPACE, glfwGetKey(window->window,
+                GLFW_KEY_BACKSPACE) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_LEFT, glfwGetKey(window->window,
+                GLFW_KEY_LEFT) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_RIGHT, glfwGetKey(window->window,
+                GLFW_KEY_RIGHT) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_UP, glfwGetKey(window->window,
+                GLFW_KEY_UP) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_DOWN, glfwGetKey(window->window,
+                GLFW_KEY_DOWN) == GLFW_PRESS);
+        if (glfwGetKey(window->window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ||
+            glfwGetKey(window->window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS)
+        {
+            nk_input_key(&ctx, NK_KEY_COPY, glfwGetKey(window->window,
+                    GLFW_KEY_C) == GLFW_PRESS);
+            nk_input_key(&ctx, NK_KEY_PASTE, glfwGetKey(window->window,
+                    GLFW_KEY_P) == GLFW_PRESS);
+            nk_input_key(&ctx, NK_KEY_CUT, glfwGetKey(window->window,
+                    GLFW_KEY_X) == GLFW_PRESS);
+            nk_input_key(&ctx, NK_KEY_CUT, glfwGetKey(window->window,
+                    GLFW_KEY_E) == GLFW_PRESS);
+            nk_input_key(&ctx, NK_KEY_SHIFT, 1);
+        } 
+        else
+        {
+            nk_input_key(&ctx, NK_KEY_COPY, 0);
+            nk_input_key(&ctx, NK_KEY_PASTE, 0);
+            nk_input_key(&ctx, NK_KEY_CUT, 0);
+            nk_input_key(&ctx, NK_KEY_SHIFT, 0);
+        }
+        double x, y;
+        glfwGetCursorPos(window->window, &x, &y);
+        nk_input_motion(&ctx, (int)x, (int)y);
+        nk_input_button(&ctx, NK_BUTTON_LEFT, (int)x, (int)y,
+                        glfwGetMouseButton(window->window,
+                        GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
+        nk_input_button(&ctx, NK_BUTTON_MIDDLE, (int)x, (int)y,
+                        glfwGetMouseButton(window->window,
+                        GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS);
+        nk_input_button(&ctx, NK_BUTTON_RIGHT, (int)x, (int)y,
+                        glfwGetMouseButton(window->window,
+                        GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS);
+        nk_input_end(&ctx);
+    }
+    
+    void mousePositionCallback(double xpos, double ypos)
+    {
+        if (!consumeEvents)
+            window->mousePositionCallback(xpos, ypos);
+    }
+
+    void mouseScrollCallback(double xoffset, double yoffset)
+    {
+        struct nk_vec2 pos;
+        pos.x = xoffset;
+        pos.y = yoffset;
+        nk_input_scroll(&ctx, pos);
+        if (!consumeEvents)
+            window->mouseScrollCallback(xoffset, yoffset);
+    }
+
+    void keyboardUnicodeCallback(unsigned int codepoint)
+    {
+        nk_input_unicode(&ctx, codepoint);
+        if (!consumeEvents)
+            window->keyboardUnicodeCallback(codepoint);
+    }
+    
+    void prepare(int width, int height)
+    {
         
     }
     
+    void render(int width, int height)
+    {
+        prepare(width, height);
+        dispatch(width, height);
+    }
+    
+    nk_context ctx;
+    nk_font_atlas atlas;
+    nk_font *font;
+    nk_buffer cmds;
+    nk_convert_config config;
+    nk_draw_null_texture null;
+    bool consumeEvents;
+    
     MainWindow *window;
+    std::shared_ptr<GpuTextureImpl> fontTexture;
+    std::shared_ptr<GpuShader> shader;
+    std::shared_ptr<GpuMeshImpl> mesh;
+    
+    static const int MaxVertexMemory = 512 * 1024;
+    static const int MaxElementMemory = 128 * 1024;
 };
+
+
+void MainWindow::Gui::mousePositionCallback(double xpos, double ypos)
+{
+    impl->mousePositionCallback(xpos, ypos);
+}
+
+void MainWindow::Gui::mouseScrollCallback(double xoffset, double yoffset)
+{
+    impl->mouseScrollCallback(xoffset, yoffset);
+}
+
+void MainWindow::Gui::keyboardUnicodeCallback(unsigned int codepoint)
+{
+    impl->keyboardUnicodeCallback(codepoint);
+}
 
 void MainWindow::Gui::initialize(MainWindow *window)
 {
     impl = std::make_shared<GuiImpl>(window);
 }
 
-void MainWindow::Gui::render()
+void MainWindow::Gui::render(int width, int height)
 {
-    
+    impl->render(width, height);
+}
+
+void MainWindow::Gui::input()
+{
+    impl->input();
+    //glfwPollEvents();
 }
 
 void MainWindow::Gui::finalize()

@@ -17,7 +17,9 @@ public:
         nk_byte col[4];
     };
     
-    GuiImpl(MainWindow *window) : window(window)
+    GuiImpl(MainWindow *window) : window(window),
+        consumeEvents(true), prepareFirst(true),
+        statTraversedDetails(false), statRenderedDetails(false)
     {
         { // load font
             struct nk_font_config cfg;
@@ -258,9 +260,110 @@ public:
             window->keyboardUnicodeCallback(codepoint);
     }
     
-    void prepare(int width, int height)
+    void prepareOptions()
+    {
+        int flags = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE
+                | NK_WINDOW_SCALABLE | NK_WINDOW_TITLE
+                | NK_WINDOW_MINIMIZABLE;
+        if (prepareFirst)
+            flags |= NK_WINDOW_MINIMIZED;
+        if (nk_begin(&ctx, "Options", nk_rect(10, 10, 250, 400), flags))
+        {
+            melown::MapOptions &o = window->map->options();
+            float width = nk_window_get_content_region_size(&ctx).x - 15;
+            float ratio[] = { width * 0.4, width * 0.5, width * 0.1 };
+            nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
+            char buffer[256];
+            // maxTexelToPixelScale
+            nk_label(&ctx, "Detail control:", NK_TEXT_LEFT);
+            o.maxTexelToPixelScale = nk_slide_float(&ctx,
+                    1, o.maxTexelToPixelScale, 5, 0.01);
+            sprintf(buffer, "%3.1f", o.maxTexelToPixelScale);
+            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            // maxConcurrentDownloads
+            nk_label(&ctx, "Max downloads:", NK_TEXT_LEFT);
+            o.maxConcurrentDownloads = nk_slide_int(&ctx,
+                    1, o.maxConcurrentDownloads, 100, 1);
+            sprintf(buffer, "%3d", o.maxConcurrentDownloads);
+            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+        }
+        nk_end(&ctx);
+    }
+    
+    void prepareStatistics()
+    {
+        int flags = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE
+                | NK_WINDOW_SCALABLE | NK_WINDOW_TITLE
+                | NK_WINDOW_MINIMIZABLE;
+        if (prepareFirst)
+            flags |= NK_WINDOW_MINIMIZED;
+        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 200, 400), flags))
+        {
+            melown::MapStatistics &s = window->map->statistics();
+            float width = nk_window_get_content_region_size(&ctx).x - 15;
+            float ratio[] = { width * 0.6, width * 0.4 };
+            nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+            char buffer[256];
+#define S(NAME, VAL, UNIT) { \
+                nk_label(&ctx, NAME, NK_TEXT_LEFT); \
+                sprintf(buffer, "%d" UNIT, VAL); \
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT); \
+            }
+            // general
+            S("Frame:", s.frameIndex, "");
+            S("Downloading:", s.currentDownloads, "");
+            S("Gpu Memory:", s.currentGpuMemUse / 1024 / 1024, " MB");
+            // resources
+            S("Res. downloaded:", s.resourcesDownloaded, "");
+            S("Res. read:", s.resourcesDiskLoaded, "");
+            S("Res. gpu:", s.resourcesGpuLoaded, "");
+            S("Res. released:", s.resourcesReleased, "");
+            S("Res. ignored:", s.resourcesIgnored, "");
+            S("Res. failed:", s.resourcesFailed, "");
+            // traversed
+            S("Traversed:", s.metaNodesTraversedTotal, "");
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            nk_checkbox_label(&ctx, "details", &statTraversedDetails);
+            if (statTraversedDetails)
+            {
+                for (int i = 0; i < melown::MapStatistics::MaxLods; i++)
+                {
+                    if (s.metaNodesTraversedPerLod[i] == 0)
+                        continue;
+                    sprintf(buffer, "Traversed[%d]:", i);
+                    S(buffer, s.metaNodesTraversedPerLod[i], "");
+                }
+            }
+            // rendered
+            S("Rendered:", s.meshesRenderedTotal, "");
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            nk_checkbox_label(&ctx, "details", &statRenderedDetails);
+            if (statRenderedDetails)
+            {
+                for (int i = 0; i < melown::MapStatistics::MaxLods; i++)
+                {
+                    if (s.meshesRenderedPerLod[i] == 0)
+                        continue;
+                    sprintf(buffer, "Rendered[%d]:", i);
+                    S(buffer, s.meshesRenderedPerLod[i], "");
+                }
+            }
+#undef S
+        }
+        nk_end(&ctx);
+    }
+    
+    void prepareSurfaces()
     {
         
+    }
+    
+    void prepare(int width, int height)
+    {
+        prepareOptions();
+        prepareStatistics();
+        prepareSurfaces();
+        prepareFirst = false;
     }
     
     void render(int width, int height)
@@ -276,6 +379,10 @@ public:
     nk_convert_config config;
     nk_draw_null_texture null;
     bool consumeEvents;
+    bool prepareFirst;
+    
+    int statTraversedDetails;
+    int statRenderedDetails;
     
     MainWindow *window;
     std::shared_ptr<GpuTextureImpl> fontTexture;
@@ -285,7 +392,6 @@ public:
     static const int MaxVertexMemory = 512 * 1024;
     static const int MaxElementMemory = 128 * 1024;
 };
-
 
 void MainWindow::Gui::mousePositionCallback(double xpos, double ypos)
 {

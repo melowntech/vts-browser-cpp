@@ -147,18 +147,11 @@ void MainWindow::run()
         {
             char buffer[500];
             melown::MapStatistics &stat = map->statistics();
-            sprintf(buffer, "timing: %3d + %3d = %3d, "
-                            "downloads: %3d, gpu mem: %4d MB, "
-                            "traversed: %4d, rendered: %4d, "
-                            "frame index: %d",
+            sprintf(buffer, "timing: %3d + %3d = %3d",
                     (int)(1000 * (timeBeforeSwap - timeFrameStart)),
                     (int)(1000 * (timeFrameFinish - timeBeforeSwap)),
-                    (int)(1000 * (timeFrameFinish - timeFrameStart)),
-                    stat.currentDownloads,
-                    stat.currentGpuMemUse / 1024 / 1024,
-                    stat.metaNodesTraversedTotal,
-                    stat.meshesRenderedTotal,
-                    stat.frameIndex);
+                    (int)(1000 * (timeFrameFinish - timeFrameStart))
+                    );
             glfwSetWindowTitle(window, buffer);
         }
     }

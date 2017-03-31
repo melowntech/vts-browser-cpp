@@ -46,11 +46,13 @@ class HeightRequest
 public:
     static const NodeInfo findPosition(NodeInfo &info,
                                        const vec2 &pos,
-                                       double viewExtent);
+                                       class MapImpl *map);
     
     HeightRequest(class MapImpl *map);
     
     boost::optional<NodeInfo> nodeInfo;
+    SurfaceStackItem *surface;
+    vec2 sds;
     uint32 frameIndex;
 };
 

@@ -1,13 +1,14 @@
 #include "map.h"
+#include <boost/algorithm/string.hpp>
 
 namespace melown
 {
 
 const NodeInfo HeightRequest::findPosition(
-        NodeInfo &info, const vec2 &pos, double viewExtent)
+        NodeInfo &info, const vec2 &pos, MapImpl *map)
 {
-    double desire = std::log2(4 * info.extents().size()
-                              / viewExtent);// - 8;
+    double desire = std::log2(map->options.navigationSamplesPerViewExtent
+            * info.extents().size() / map->mapConfig->position.verticalExtent);
     if (desire < 1)
         return info;
     
@@ -17,15 +18,17 @@ const NodeInfo HeightRequest::findPosition(
         NodeInfo ni = info.child(childs[i]);
         if (!ni.inside(vecToUblas<math::Point2>(pos)))
             continue;
-        return findPosition(ni, pos, viewExtent);
+        return findPosition(ni, pos, map);
     }
     assert(false);
 }
 
 HeightRequest::HeightRequest(MapImpl *map) :
+    surface(nullptr),
     frameIndex(map->statistics.frameIndex)
 {
     vec3 navPos = vecFromUblas<vec3>(map->mapConfig->position.position);
+    // find suitable spatial division subtree node
     for (auto &&it : map->mapConfig->referenceFrame.division.nodes)
     {
         if (it.second.partitioning.mode
@@ -33,12 +36,11 @@ HeightRequest::HeightRequest(MapImpl *map) :
             continue;
         NodeInfo ni(map->mapConfig->referenceFrame, it.first,
                     false, *map->mapConfig);
-        vec2 sdp = vec3to2(map->mapConfig->convertor->convert(navPos,
+        sds = vec3to2(map->mapConfig->convertor->convert(navPos,
             map->mapConfig->referenceFrame.model.navigationSrs, it.second.srs));
-        if (!ni.inside(vecToUblas<math::Point2>(sdp)))
+        if (!ni.inside(vecToUblas<math::Point2>(sds)))
             continue;
-        nodeInfo = findPosition(ni, sdp,
-            map->mapConfig->position.verticalExtent);
+        nodeInfo = findPosition(ni, sds, map);
         return;
     }
     assert(false);
@@ -123,53 +125,117 @@ void MapImpl::checkPanZQueue()
     HeightRequest &task = *renderer.panZQueue.front();
     
     // find urls to the resources
-    const TileId nodeId = task.nodeInfo->nodeId();
-    const TileId tileId = roundId(nodeId);
-    UrlTemplate::Vars tileVars(tileId);
-    const MetaNode *men = nullptr;
-    for (auto &&it : mapConfig->surfaceStack)
+    if (!task.surface)
     {
-        std::string tileUrl = it.surface->urlMeta(tileVars);
-        std::shared_ptr<const MetaTile> t = getMetaTile(tileUrl);
-        switch (t->impl->state)
+        for (auto &&it : mapConfig->surfaceStack)
         {
-        case ResourceImpl::State::initializing:
-        case ResourceImpl::State::downloading:
-        case ResourceImpl::State::downloaded:
-            return; // try again later
-        case ResourceImpl::State::errorDownload:
-        case ResourceImpl::State::errorLoad:
-            continue;
-        case ResourceImpl::State::ready:
+            uint32 lodMax = it.surface->lodRange.max;
+            TileId nodeId = task.nodeInfo->nodeId();
+            boost::optional<NodeInfo> info;
+            if (nodeId.lod > lodMax)
+            {
+                uint32 lodDiff = nodeId.lod - lodMax;
+                nodeId.lod -= lodDiff;
+                nodeId.x >>= lodDiff;
+                nodeId.y >>= lodDiff;
+                info.emplace(mapConfig->referenceFrame, nodeId,
+                             false, *mapConfig);
+            }
+            TileId tileId = roundId(nodeId);
+            UrlTemplate::Vars tileVars(tileId);
+            std::string tileUrl = it.surface->urlMeta(tileVars);
+            std::shared_ptr<const MetaTile> t = getMetaTile(tileUrl);
+            switch (t->impl->state)
+            {
+            case ResourceImpl::State::initializing:
+            case ResourceImpl::State::downloading:
+            case ResourceImpl::State::downloaded:
+                return; // try again later
+            case ResourceImpl::State::errorDownload:
+            case ResourceImpl::State::errorLoad:
+                continue;
+            case ResourceImpl::State::ready:
+                break;
+            default:
+                assert(false);
+            }
+            const MetaNode *n = t->get(nodeId, std::nothrow);
+            if (!n || n->extents.ll == n->extents.ur
+                    || n->alien() != it.alien || !n->geometry())
+                continue;
+            task.surface = &it;
+            if (info)
+                task.nodeInfo = info;
             break;
-        default:
-            assert(false);
         }
-        const MetaNode *n = t->get(nodeId, std::nothrow);
-        if (!n || n->extents.ll == n->extents.ur
-                || n->alien() != it.alien || !n->geometry())
-            continue;
-        men = n;
-        break;
-    }
-    if (!men)
-    { // this HeightRequest cannot be served
-        renderer.panZQueue.pop();
-        return;
+        if (!task.surface)
+        {
+            renderer.panZQueue.pop();
+            return; // this HeightRequest cannot be served
+        }
     }
     
-    // acquire the height
-    vec2 exU = vecFromUblas<vec2>(task.nodeInfo->extents().ur);
-    vec2 exL = vecFromUblas<vec2>(task.nodeInfo->extents().ll);
-    vec2 exS = (exU + exL) * 0.5;
-    double nh = mapConfig->convertor->convert(vec2to3(exS,
-                        men->geomExtents.surrogate),
+    // find interpolation coefficients and corner id
+    vec2 center = vecFromUblas<vec2>(task.nodeInfo->extents().ll
+                                     + task.nodeInfo->extents().ur) * 0.5;
+    vec2 size = vecFromUblas<vec2>(task.nodeInfo->extents().ur
+                                     - task.nodeInfo->extents().ll);
+    vec2 interpol = task.sds - center;
+    interpol(0) /= size(0);
+    interpol(1) /= size(1);
+    TileId cornerId = task.nodeInfo->nodeId();
+    if (task.sds(0) < center(0))
+    {
+        cornerId.x--;
+        interpol(0) += 1;
+    }
+    if (task.sds(1) < center(1))
+        interpol(1) += 1;
+    else
+        cornerId.y--;
+    
+    // acguire the four heights
+    double heights[4];
+    for (uint32 i = 0; i < 4; i++)
+    {
+        TileId nodeId = cornerId;
+        nodeId.x += i % 2;
+        nodeId.y += i / 2;
+        TileId tileId = roundId(nodeId);
+        std::shared_ptr<MetaTile> met = getMetaTile(
+                    task.surface->surface->urlMeta(UrlTemplate::Vars(tileId)));
+        const MetaNode *men = met->get(nodeId, std::nothrow);
+        if (!men || !vtslibs::vts::GeomExtents::validSurrogate(
+                    men->geomExtents.surrogate))
+        {
+            renderer.panZQueue.pop();
+            return; // this HeightRequest cannot be served
+        }
+        heights[i] = men->geomExtents.surrogate;
+    }
+    
+    // interpolate heights
+    assert(interpol(0) >= 0 && interpol(0) <= 1);
+    assert(interpol(1) >= 0 && interpol(1) <= 1);
+    double height = interpolate(
+                interpolate(heights[2], heights[3], interpol(0)),
+                interpolate(heights[0], heights[1], interpol(0)),
+                interpol(1));
+    
+    // convert height from sds to navigation
+    double nh = mapConfig->convertor->convert(vec2to3(task.sds, height),
                         task.nodeInfo->srs(),
                         mapConfig->referenceFrame.model.navigationSrs)(2);
     
-    //LOG(info3) << "id: " << task.nodeInfo->nodeId() << " height: " << nh;
+    LOG(info3) << "\nsurface: "
+               << boost::algorithm::join(task.surface->surface->name, " ")
+               << "\nnodeid: " << task.nodeInfo->nodeId()
+               << "\ncorner: " << cornerId
+               << "\ninterpol: " << interpol.transpose()
+               << "\nheight: " << nh;
     
     // apply the height to the camera
+    assert(nh == nh);
     double h = mapConfig->position.position[2];
     if (renderer.lastPanZShift)
         h += nh - *renderer.lastPanZShift;

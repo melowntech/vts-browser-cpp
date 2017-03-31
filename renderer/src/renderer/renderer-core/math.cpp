@@ -259,5 +259,10 @@ const vec4 column(const mat4 &m, uint32 index)
     return vec4(m(index, 0), m(index, 1), m(index, 2), m(index, 3));
 }
 
+double interpolate(double a, double b, double f)
+{
+    return (b - a) * f + a;
+}
+
 } // namespace melown
 

@@ -36,6 +36,7 @@ public:
     // current statistics
     
     uint32 currentDownloads;
+    uint32 currentResources;
     uint32 currentGpuMemUse;
     uint32 currentRamMemUse;
 };

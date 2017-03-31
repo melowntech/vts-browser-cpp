@@ -283,8 +283,14 @@ public:
             // maxConcurrentDownloads
             nk_label(&ctx, "Max downloads:", NK_TEXT_LEFT);
             o.maxConcurrentDownloads = nk_slide_int(&ctx,
-                    1, o.maxConcurrentDownloads, 100, 1);
+                    1, o.maxConcurrentDownloads, 50, 1);
             sprintf(buffer, "%3d", o.maxConcurrentDownloads);
+            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            // navigation samples per view extent
+            nk_label(&ctx, "Navigation samples:", NK_TEXT_LEFT);
+            o.navigationSamplesPerViewExtent = nk_slide_int(&ctx,
+                    1, o.navigationSamplesPerViewExtent, 8, 1);
+            sprintf(buffer, "%3d", o.navigationSamplesPerViewExtent);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             // render mesh wire boxes
             nk_label(&ctx, "Display:", NK_TEXT_LEFT);
@@ -324,6 +330,7 @@ public:
             S("Downloading:", s.currentDownloads, "");
             S("Gpu Memory:", s.currentGpuMemUse / 1024 / 1024, " MB");
             // resources
+            S("Res. active:", s.currentResources, "");
             S("Res. downloaded:", s.resourcesDownloaded, "");
             S("Res. read:", s.resourcesDiskLoaded, "");
             S("Res. gpu:", s.resourcesGpuLoaded, "");

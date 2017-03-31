@@ -49,6 +49,7 @@ void MapStatistics::resetAll()
     currentDownloads = 0;
     currentGpuMemUse = 0;
     currentRamMemUse = 0;
+    currentResources = 0;
 }
 
 void MapStatistics::resetFrame()

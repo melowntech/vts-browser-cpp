@@ -308,6 +308,7 @@ bool MapImpl::dataRenderTick()
         }
         statistics.currentGpuMemUse = memGpuUse;
         statistics.currentRamMemUse = memRamUse;
+        statistics.currentResources = resources.resources.size();
     }
 }
 

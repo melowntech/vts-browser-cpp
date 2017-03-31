@@ -78,6 +78,8 @@ double modulo(double a, double m);
 const vec3 lowerUpperCombine(uint32 i);
 const vec4 column(const mat4 &m, uint32 index);
 
+double interpolate(double a, double b, double f);
+
 } // namespace melown
 
 #endif // renderer_math_hpp_included_

@@ -15,6 +15,7 @@ public:
     double maxTexelToPixelScale;
     uint32 maxResourcesMemory;
     uint32 maxConcurrentDownloads;
+    uint32 navigationSamplesPerViewExtent;
     bool renderWireBoxes;
     bool renderSurrogates;
 };

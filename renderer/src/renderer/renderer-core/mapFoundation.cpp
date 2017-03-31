@@ -69,6 +69,11 @@ MapStatistics &MapFoundation::statistics()
     return impl->statistics;
 }
 
+MapOptions &MapFoundation::options()
+{
+    return impl->options;
+}
+
 DrawBatch &MapFoundation::drawBatch()
 {
     return impl->draws;

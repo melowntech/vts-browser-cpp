@@ -8,6 +8,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # project
 setup_project(renderer "${BUILDSYS_PACKAGE_VERSION}")
 
+# temporarily disable warnings-as-errors
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
+
 # 3rd party dependencies
 find_package(Boost 1.46 REQUIRED COMPONENTS thread program_options filesystem system date_time serialization regex chrono iostreams)
 link_directories(${Boost_LIBRARY_DIRS})
@@ -31,9 +35,6 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 find_package(LibProc REQUIRED)
 include_directories(${LIBPROC_INCLUDE_DIR})
 
-include(glfw.cmake)
-include(lodepng.cmake)
-
 # dependencies
 add_subdirectory(src/dbglog)
 add_subdirectory(src/utility)
@@ -46,6 +47,9 @@ add_subdirectory(src/geo)
 add_subdirectory(src/half)
 add_subdirectory(src/http)
 add_subdirectory(src/glad)
+include(src/glfw.cmake)
+include(src/lodepng.cmake)
+include(src/nuklear.cmake)
 
 # vts libraries
 buildsys_nobuild_target(vts-libs)

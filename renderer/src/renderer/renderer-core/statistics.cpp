@@ -12,6 +12,7 @@ MapStatistics::MapStatistics()
 
 MapStatistics::~MapStatistics()
 {
+    /*
     LOG(info3) << "currentDownloads:" << currentDownloads;
     LOG(info3) << "currentGpuMemUse:" << currentGpuMemUse;
     LOG(info3) << "currentRamMemUse:" << currentRamMemUse;
@@ -32,6 +33,7 @@ MapStatistics::~MapStatistics()
             LOG(info3) << "metaNodesTraversedPerLod[" << i << "]:"
                    << metaNodesTraversedPerLod[i];
     LOG(info3) << "frameIndex:" << frameIndex;
+    */
 }
 
 void MapStatistics::resetAll()

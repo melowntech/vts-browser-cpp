@@ -256,7 +256,7 @@ void MapImpl::dataRenderInitialize()
 void MapImpl::dataRenderFinalize()
 {
     resources.prepareQueNew.clear();
-    LOG(info3) << "Releasing " << resources.resources.size() << " resources";
+    //LOG(info3) << "Releasing " << resources.resources.size() << " resources";
     resources.resources.clear();
 }
 

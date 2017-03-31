@@ -43,3 +43,6 @@
 [submodule "externals/lodepng"]
 	path = externals/lodepng
 	url = https://github.com/lvandeve/lodepng.git
+[submodule "externals/nuklear"]
+	path = externals/nuklear
+	url = https://github.com/vurtun/nuklear.git

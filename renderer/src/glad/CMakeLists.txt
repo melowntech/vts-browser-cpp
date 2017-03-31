@@ -1,6 +1,4 @@
-define_module(LIBRARY glad=0.1.13a0 DEPENDS)
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
+define_module(LIBRARY glad=0 DEPENDS)
 
 set(glad_SOURCES
 	glad.c
@@ -8,4 +6,8 @@ set(glad_SOURCES
 
 add_library(glad STATIC ${glad_SOURCES})
 buildsys_library(glad)
+target_link_libraries(glad ${MODULE_LIBRARIES})
+buildsys_target_compile_definitions(glad ${MODULE_DEFINITIONS})
+
+
 

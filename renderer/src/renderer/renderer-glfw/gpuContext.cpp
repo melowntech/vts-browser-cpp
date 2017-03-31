@@ -307,6 +307,7 @@ void GpuTextureImpl::loadTexture(const melown::GpuTextureSpec &spec)
     clear();
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
+    if (spec.verticalFlip)
     { // vertical flip
         unsigned lineSize = spec.width * spec.components;
         melown::Buffer buffer(lineSize);
@@ -342,7 +343,6 @@ void GpuTextureImpl::loadTexture(const melown::GpuTextureSpec &spec)
     checkGl("load texture");
     gpuMemoryCost = spec.buffer.size();
 }
-
 
 GpuMeshImpl::GpuMeshImpl(const std::string &name) : melown::GpuMesh(name),
     vao(0), vbo(0), vio(0)

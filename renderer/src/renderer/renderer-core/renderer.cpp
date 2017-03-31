@@ -152,7 +152,7 @@ bool MapImpl::coarsenessTest(const NodeInfo &nodeInfo, const MetaNode &node)
             c1 = vec4to3(renderer.viewProj * vec3to4(c1, 1), true);
             c2 = vec4to3(renderer.viewProj * vec3to4(c2, 1), true);
             double len = length(vec3(c2 - c1)) * renderer.windowHeight;
-            result = result && len < 1.2;
+            result = result && len < options.maxTexelToPixelScale;
         }
     }
     if (node.applyDisplaySize())

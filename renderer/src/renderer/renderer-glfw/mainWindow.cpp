@@ -14,13 +14,19 @@ using melown::readLocalFileBuffer;
 void mousePositionCallback(GLFWwindow *window, double xpos, double ypos)
 {
     MainWindow *m = (MainWindow*)glfwGetWindowUserPointer(window);
-    m->mousePositionCallback(xpos, ypos);
+    m->gui.mousePositionCallback(xpos, ypos);
 }
 
 void mouseScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
 {
     MainWindow *m = (MainWindow*)glfwGetWindowUserPointer(window);
-    m->mouseScrollCallback(xoffset, yoffset);
+    m->gui.mouseScrollCallback(xoffset, yoffset);
+}
+
+void keyboardUnicodeCallback(GLFWwindow *window, unsigned int codepoint)
+{
+    MainWindow *m = (MainWindow*)glfwGetWindowUserPointer(window);
+    m->gui.keyboardUnicodeCallback(codepoint);
 }
 
 } // namespace
@@ -35,6 +41,7 @@ MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
     glfwSetWindowUserPointer(window, this);
     glfwSetCursorPosCallback(window, &::mousePositionCallback);
     glfwSetScrollCallback(window, &::mouseScrollCallback);
+    glfwSetCharCallback(window, &::keyboardUnicodeCallback);
     
     // check for extensions
     anisotropicFilteringAvailable
@@ -84,10 +91,15 @@ void MainWindow::mousePositionCallback(double xpos, double ypos)
     mousePrevY = ypos;
 }
 
-void MainWindow::mouseScrollCallback(double, double yoffset)
+void MainWindow::mouseScrollCallback(double xoffset, double yoffset)
 {
     double diff[3] = {0, 0, yoffset * 120};
     map->pan(diff);
+}
+
+void MainWindow::keyboardUnicodeCallback(unsigned int codepoint)
+{
+    // do nothing
 }
 
 void MainWindow::drawTexture(melown::DrawTask &t)
@@ -122,6 +134,7 @@ void MainWindow::run()
     map->createMesh = std::bind(&MainWindow::createMesh,
                                 this, std::placeholders::_1);
     map->renderInitialize();
+    gui.initialize(this);
     while (!glfwWindowShouldClose(window))
     {
         double timeFrameStart = glfwGetTime();
@@ -158,28 +171,23 @@ void MainWindow::run()
         checkGl("renderTick");
         
         double timeBeforeSwap = glfwGetTime();
-        glfwPollEvents();
+        gui.input();
+        gui.render(width, height);
         glfwSwapBuffers(window);
         double timeFrameFinish = glfwGetTime();
 
         {
             char buffer[500];
             melown::MapStatistics &stat = map->statistics();
-            sprintf(buffer, "timing: %3d + %3d = %3d, "
-                            "downloads: %3d, gpu mem: %4d MB, "
-                            "traversed: %4d, rendered: %4d, "
-                            "frame index: %d",
+            sprintf(buffer, "timing: %3d + %3d = %3d",
                     (int)(1000 * (timeBeforeSwap - timeFrameStart)),
                     (int)(1000 * (timeFrameFinish - timeBeforeSwap)),
-                    (int)(1000 * (timeFrameFinish - timeFrameStart)),
-                    stat.currentDownloads,
-                    stat.currentGpuMemUse / 1024 / 1024,
-                    stat.metaNodesTraversedTotal,
-                    stat.meshesRenderedTotal,
-                    stat.frameIndex);
+                    (int)(1000 * (timeFrameFinish - timeFrameStart))
+                    );
             glfwSetWindowTitle(window, buffer);
         }
     }
+    gui.finalize();
 }
 
 std::shared_ptr<melown::GpuTexture> MainWindow::createTexture(

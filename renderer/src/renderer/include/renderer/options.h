@@ -12,6 +12,7 @@ public:
     MapOptions();
     ~MapOptions();
     
+    double maxTexelToPixelScale;
     uint32 maxResourcesMemory;
     uint32 maxConcurrentDownloads;
     bool renderWireBoxes;

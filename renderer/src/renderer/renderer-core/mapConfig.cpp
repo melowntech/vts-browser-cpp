@@ -192,7 +192,7 @@ void MapConfig::generateSurfaceStack()
     }
     
     // debug print
-    printSurfaceStack();
+    //printSurfaceStack();
 }
 
 ExternalBoundLayer::ExternalBoundLayer(const std::string &name)

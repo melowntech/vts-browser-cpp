@@ -35,6 +35,7 @@ public:
     uint32 width, height;
     uint32 components; // 1, 2, 3 or 4
     Buffer buffer;
+    bool verticalFlip;
 };
 
 class MELOWN_API GpuTexture : public Resource
@@ -65,6 +66,7 @@ public:
         enum class Type
         { // OpenGL constants
             Float = 0x1406,
+            UnsignedByte = 0x1401,
         };
 
         VertexAttribute();

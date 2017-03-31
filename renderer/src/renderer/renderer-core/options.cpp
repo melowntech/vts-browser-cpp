@@ -5,7 +5,7 @@
 namespace melown
 {
 
-MapOptions::MapOptions() : renderWireBoxes(false),
+MapOptions::MapOptions() : renderWireBoxes(false), renderSurrogates(false),
     maxResourcesMemory(512*1024*1024), maxConcurrentDownloads(100)
 {}
 

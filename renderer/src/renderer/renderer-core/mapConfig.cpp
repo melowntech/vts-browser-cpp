@@ -54,7 +54,7 @@ void MapConfig::load(MapImpl *)
     generateSurfaceStack();
     
     // temporarily change height above terrain
-    position.position[2] = 0;
+    //position.position[2] = 0;
     
     LOG(info3) << "position: " << position.position;
     LOG(info3) << "rotation: " << position.orientation;

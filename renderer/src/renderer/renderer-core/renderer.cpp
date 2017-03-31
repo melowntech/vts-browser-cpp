@@ -9,6 +9,11 @@ void MapImpl::renderInitialize()
 void MapImpl::renderFinalize()
 {}
 
+void MapImpl::setMapConfig(const std::string &mapConfigPath)
+{
+    this->mapConfigPath = mapConfigPath;
+}
+
 const TileId MapImpl::roundId(TileId nodeId)
 {
     return TileId (nodeId.lod,
@@ -63,6 +68,8 @@ void MapImpl::touchResources(std::shared_ptr<TraverseNode> trav)
     for (auto &&it : trav->transparent)
         touchResources(it);
     for (auto &&it : trav->wires)
+        touchResources(it);
+    for (auto &&it : trav->surrogate)
         touchResources(it);
 }
 
@@ -157,6 +164,7 @@ bool MapImpl::coarsenessTest(const NodeInfo &nodeInfo, const MetaNode &node)
 
 bool MapImpl::backTileCulling(const NodeInfo &nodeInfo)
 {
+    return false; // todo temporarily disabled backtile culling
     if (nodeInfo.distanceFromRoot() < 6 && nodeInfo.distanceFromRoot() > 2)
     {
         vec2 fl = vecFromUblas<vec2>(nodeInfo.extents().ll);
@@ -226,8 +234,14 @@ void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
     // render the node
     convertRenderTasks(draws.opaque, trav->opaque);
     convertRenderTasks(draws.transparent, trav->transparent);
+    
+    // render wireboxes
     if (options.renderWireBoxes)
         convertRenderTasks(draws.wires, trav->wires);
+    
+    // render surrogate
+    if (options.renderSurrogates)
+        convertRenderTasks(draws.opaque, trav->surrogate);
     
     statistics.meshesRenderedTotal++;
     statistics.meshesRenderedPerLod[
@@ -276,6 +290,22 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
     {
         trav->metaNode = *node;
         trav->surface = topmost;
+        
+        { // surrogate
+            trav->surrogate.clear();
+            vec2 exU = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
+            vec2 exL = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
+            vec3 sds = vec2to3((exU + exL) * 0.5,
+                               trav->metaNode.geomExtents.surrogate);
+            vec3 phys = mapConfig->convertor->convert(sds, trav->nodeInfo.srs(),
+                                mapConfig->referenceFrame.model.physicalSrs);
+            std::shared_ptr<RenderTask> r = std::make_shared<RenderTask>();
+            r->mesh = getMeshRenderable("data/cube.obj");
+            r->textureColor = getTexture("data/helper.jpg");
+            r->model = translationMatrix(phys)
+                    * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
+            trav->surrogate.push_back(r);
+        }
     }
     else
         trav->empty = true;
@@ -447,81 +477,6 @@ void MapImpl::traverseClearing(std::shared_ptr<TraverseNode> &trav)
         traverseClearing(it);
 }
 
-bool MapImpl::panZSurfaceStack(HeightRequest &task)
-{
-    const TileId nodeId = task.nodeId;
-    const TileId tileId = roundId(nodeId);
-    UrlTemplate::Vars tileVars(tileId);
-    for (auto &&it : mapConfig->surfaceStack)
-    {
-        std::shared_ptr<const MetaTile> t = getMetaTile(
-                    it.surface->urlMeta(tileVars));
-        switch (t->impl->state)
-        {
-        case ResourceImpl::State::initializing:
-        case ResourceImpl::State::downloading:
-        case ResourceImpl::State::downloaded:
-            return false;
-        case ResourceImpl::State::errorDownload:
-        case ResourceImpl::State::errorLoad:
-            continue;
-        case ResourceImpl::State::ready:
-            break;
-        default:
-            assert(false);
-        }
-        const MetaNode *n = t->get(nodeId, std::nothrow);
-        if (!n || n->extents.ll == n->extents.ur
-                || n->alien() != it.alien || !n->navtile())
-            continue;
-        task.metaUrl = it.surface->urlMeta(tileVars);
-        task.navUrl = it.surface->urlNav(UrlTemplate::Vars(nodeId));
-        return true;
-    }
-    assert(false);
-}
-
-void MapImpl::checkPanZQueue()
-{
-    if (renderer.panZQueue.empty())
-        return;
-    HeightRequest &task = *renderer.panZQueue.front();
-    
-    // find urls to the resources
-    if (task.navUrl.empty() && !panZSurfaceStack(task))
-        return;
-    
-    // acquire required resources
-    std::shared_ptr<const NavTile> nav = getNavTile(task.navUrl);
-    std::shared_ptr<const MetaTile> met = getMetaTile(task.metaUrl);
-    if (!*nav || !*met)
-        return;    
-    const MetaNode *men = met->get(task.nodeId, std::nothrow);
-    assert(men);
-    
-    // acquire height from the navtile
-    uint32 idx = (uint32)round(task.pixPos(1)) * 256
-            + (uint32)round(task.pixPos(0));
-    double nhc = (double)(unsigned char)nav->data[idx] / 255.0;
-    assert(nhc >= 0 && nhc <= 1);
-    double nh = (nhc * (men->heightRange.max
-                        - men->heightRange.min) + men->heightRange.min) ;
-    
-    // apply the height to camera
-    double h = mapConfig->position.position[2];
-    if (renderer.lastPanZShift)
-        h += nh - *renderer.lastPanZShift;
-    renderer.lastPanZShift.emplace(nh);
-    mapConfig->position.position[2] = h;
-    renderer.panZQueue.pop();
-}
-
-void MapImpl::panAdjustZ(const vec2 &navPos)
-{
-    // todo
-    //panZQueue.push(std::make_shared<HeightRequest>(navPos, this));
-}
-
 void MapImpl::updateCamera()
 {
     // todo position conversions
@@ -673,8 +628,7 @@ bool MapImpl::prerequisitesCheck()
     }
     
     renderer.lastPanZShift.reset();
-    panAdjustZ(vec3to2(vecFromUblas<vec3>(
-                           mapConfig->position.position)));
+    renderer.panZQueue.push(std::make_shared<HeightRequest>(this));
     
     NodeInfo nodeInfo(mapConfig->referenceFrame, TileId(), false, *mapConfig);
     renderer.traverseRoot = std::make_shared<TraverseNode>(nodeInfo);
@@ -695,6 +649,7 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
     draws.opaque.clear();
     draws.transparent.clear();
     draws.wires.clear();
+    convertRenderTasks(draws.opaque, renderer.helperRenders);
     traverse(renderer.traverseRoot, false);
     traverseClearing(renderer.traverseRoot);
     

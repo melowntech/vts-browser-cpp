@@ -48,12 +48,9 @@ public:
                                        const vec2 &pos,
                                        double viewExtent);
     
-    HeightRequest(const vec2 &navPos, class MapImpl *map);
+    HeightRequest(class MapImpl *map);
     
-    std::string navUrl;
-    std::string metaUrl;
-    TileId nodeId;
-    vec2 pixPos;
+    boost::optional<NodeInfo> nodeInfo;
     uint32 frameIndex;
 };
 
@@ -97,6 +94,7 @@ public:
     std::vector<std::shared_ptr<RenderTask>> opaque;
     std::vector<std::shared_ptr<RenderTask>> transparent;
     std::vector<std::shared_ptr<RenderTask>> wires;
+    std::vector<std::shared_ptr<RenderTask>> surrogate;
     std::vector<std::shared_ptr<TraverseNode>> childs;
     NodeInfo nodeInfo;
     MetaNode metaNode;
@@ -148,6 +146,7 @@ public:
     class Renderer
     {
     public:
+        std::vector<std::shared_ptr<RenderTask>> helperRenders;
         std::shared_ptr<TraverseNode> traverseRoot;
         std::queue<std::shared_ptr<HeightRequest>> panZQueue;
         boost::optional<double> lastPanZShift;
@@ -208,9 +207,7 @@ public:
     bool traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav);
     void traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly);
     void traverseClearing(std::shared_ptr<TraverseNode> &trav);
-    bool panZSurfaceStack(HeightRequest &task);
     void checkPanZQueue();
-    void panAdjustZ(const vec2 &navPos);
     void updateCamera();
     bool prerequisitesCheck();
 };

@@ -26,7 +26,7 @@ void mouseScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
 } // namespace
 
 MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
-    map(nullptr), window(nullptr), shader(nullptr)
+    map(nullptr), window(nullptr)
 {
     window = glfwCreateWindow(800, 600, "renderer-glfw", NULL, NULL);
     glfwMakeContextCurrent(window);
@@ -42,11 +42,24 @@ MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
     
     initializeGpuContext();
     
-    { // load shader
-        shader = std::make_shared<GpuShader>();
-        melown::Buffer vert = readLocalFileBuffer("data/shaders/a.vert.glsl");
-        melown::Buffer frag = readLocalFileBuffer("data/shaders/a.frag.glsl");
-        shader->loadShaders(
+    { // load shader texture
+        shaderTexture = std::make_shared<GpuShader>();
+        melown::Buffer vert = readLocalFileBuffer(
+                    "data/shaders/a.vert.glsl");
+        melown::Buffer frag = readLocalFileBuffer(
+                    "data/shaders/a.frag.glsl");
+        shaderTexture->loadShaders(
+            std::string(vert.data(), vert.size()),
+            std::string(frag.data(), frag.size()));
+    }
+    
+    { // load shader color
+        shaderColor = std::make_shared<GpuShader>();
+        melown::Buffer vert = readLocalFileBuffer(
+                    "data/shaders/color.vert.glsl");
+        melown::Buffer frag = readLocalFileBuffer(
+                    "data/shaders/color.frag.glsl");
+        shaderColor->loadShaders(
             std::string(vert.data(), vert.size()),
             std::string(frag.data(), frag.size()));
     }
@@ -77,6 +90,31 @@ void MainWindow::mouseScrollCallback(double, double yoffset)
     map->pan(diff);
 }
 
+void MainWindow::drawTexture(melown::DrawTask &t)
+{
+    shaderTexture->uniformMat4(0, t.mvp);
+    shaderTexture->uniformMat3(4, t.uvm);
+    shaderTexture->uniform(8, (int)t.externalUv);
+    if (t.texMask)
+    {
+        shaderTexture->uniform(9, 1);
+        glActiveTexture(GL_TEXTURE0 + 1);
+        dynamic_cast<GpuTextureImpl*>(t.texMask)->bind();
+        glActiveTexture(GL_TEXTURE0 + 0);
+    }
+    else
+        shaderTexture->uniform(9, 0);
+    dynamic_cast<GpuTextureImpl*>(t.texColor)->bind();
+    dynamic_cast<GpuMeshImpl*>(t.mesh)->draw();
+}
+
+void MainWindow::drawColor(melown::DrawTask &t)
+{
+    shaderColor->uniformMat4(0, t.mvp);
+    shaderColor->uniformVec3(8, t.color);
+    dynamic_cast<GpuMeshImpl*>(t.mesh)->draw();
+}
+
 void MainWindow::run()
 {
     map->createTexture = std::bind(&MainWindow::createTexture,
@@ -104,24 +142,18 @@ void MainWindow::run()
         { // draws
             map->renderTick(width, height);
             melown::DrawBatch &draws = map->drawBatch();
-            shader->bind();
+            shaderTexture->bind();
             for (melown::DrawTask &t : draws.opaque)
-            {
-                shader->uniformMat4(0, t.mvp);
-                shader->uniformMat3(4, t.uvm);
-                shader->uniform(8, (int)t.externalUv);
-                if (t.texMask)
-                {
-                    shader->uniform(9, 1);
-                    glActiveTexture(GL_TEXTURE0 + 1);
-                    dynamic_cast<GpuTextureImpl*>(t.texMask)->bind();
-                    glActiveTexture(GL_TEXTURE0 + 0);
-                }
-                else
-                    shader->uniform(9, 0);
-                dynamic_cast<GpuTextureImpl*>(t.texColor)->bind();
-                dynamic_cast<GpuMeshImpl*>(t.mesh)->draw();
-            }
+                drawTexture(t);
+            glEnable(GL_BLEND);
+            for (melown::DrawTask &t : draws.transparent)
+                drawTexture(t);
+            glDisable(GL_BLEND);
+            shaderColor->bind();
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            for (melown::DrawTask &t : draws.wires)
+                drawColor(t);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
         checkGl("renderTick");
         

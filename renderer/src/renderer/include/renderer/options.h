@@ -15,6 +15,7 @@ public:
     uint32 maxResourcesMemory;
     uint32 maxConcurrentDownloads;
     bool renderWireBoxes;
+    bool renderSurrogates;
 };
 
 } // namespace melown

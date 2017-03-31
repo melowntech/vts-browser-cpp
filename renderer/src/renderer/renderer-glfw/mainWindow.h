@@ -10,7 +10,7 @@ namespace melown
 
 class MapFoundation;
 class Resource;
-
+class DrawTask;
 
 } // namespace
 
@@ -25,6 +25,9 @@ public:
 
     void run();
     
+    void drawTexture(melown::DrawTask &t);
+    void drawColor(melown::DrawTask &t);
+    
     std::shared_ptr<melown::GpuTexture> createTexture
         (const std::string &name);
     std::shared_ptr<melown::GpuMesh> createMesh
@@ -34,7 +37,8 @@ public:
     melown::MapFoundation *map;
     GLFWwindow* window;
     
-    std::shared_ptr<GpuShader> shader;
+    std::shared_ptr<GpuShader> shaderTexture;
+    std::shared_ptr<GpuShader> shaderColor;
 };
 
 #endif

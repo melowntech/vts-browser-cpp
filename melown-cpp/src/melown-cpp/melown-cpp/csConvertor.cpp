@@ -5,7 +5,7 @@
 #include <GeographicLib/Geodesic.hpp>
 #include <ogr_spatialref.h>
 
-#include "csConvertor.h"
+#include "csConvertor.hpp"
 
 namespace melown
 {

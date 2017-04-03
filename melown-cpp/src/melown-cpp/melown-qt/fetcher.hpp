@@ -2,7 +2,7 @@
 #define FETCHERIMPL_H_djghfubhj
 
 #include <memory>
-#include <melown/fetcher.h>
+#include <melown/fetcher.hpp>
 
 namespace
 {

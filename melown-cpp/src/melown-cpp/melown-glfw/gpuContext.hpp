@@ -3,7 +3,7 @@
 
 #include <string>
 #include <glad/glad.h>
-#include <melown/resources.h>
+#include <melown/resources.hpp>
 
 extern bool anisotropicFilteringAvailable;
 

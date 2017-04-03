@@ -4,7 +4,7 @@
 #include <string>
 #include <memory>
 
-#include "math.h"
+#include "math.hpp"
 
 namespace vtslibs { namespace registry {
 

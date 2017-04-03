@@ -7,9 +7,9 @@
 #include <vts-libs/vts/metatile.hpp>
 #include <vts-libs/registry/referenceframe.hpp>
 
-#include <melown/resources.h>
+#include <melown/resources.hpp>
 
-#include "math.h"
+#include "math.hpp"
 
 namespace melown
 {

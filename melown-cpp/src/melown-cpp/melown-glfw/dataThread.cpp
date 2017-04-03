@@ -1,8 +1,8 @@
 #include <unistd.h> // usleep
-#include <melown/map.h>
-#include "dataThread.h"
-#include "threadName.h"
-#include "gpuContext.h"
+#include <melown/map.hpp>
+#include "dataThread.hpp"
+#include "threadName.hpp"
+#include "gpuContext.hpp"
 #include <GLFW/glfw3.h>
 
 namespace

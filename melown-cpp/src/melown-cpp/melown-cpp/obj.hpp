@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include <melown/buffer.h>
+#include <melown/buffer.hpp>
 
 namespace melown
 {

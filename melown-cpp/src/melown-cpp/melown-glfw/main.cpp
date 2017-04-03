@@ -1,9 +1,9 @@
 #include <cstdio>
 #include <cstdlib>
-#include <melown/map.h>
-#include "mainWindow.h"
-#include "dataThread.h"
-#include "threadName.h"
+#include <melown/map.hpp>
+#include "mainWindow.hpp"
+#include "dataThread.hpp"
+#include "threadName.hpp"
 #include <GLFW/glfw3.h>
 
 void errorCallback(int error, const char* description)

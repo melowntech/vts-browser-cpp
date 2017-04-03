@@ -3,7 +3,7 @@
 
 #include <Eigen/Dense>
 
-#include <melown/foundation.h>
+#include <melown/foundation.hpp>
 
 namespace melown
 {

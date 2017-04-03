@@ -1,11 +1,11 @@
 #include <vts-libs/registry/referenceframe.hpp>
-#include <melown/resources.h>
-#include <melown/buffer.h>
+#include <melown/resources.hpp>
+#include <melown/buffer.hpp>
 
-#include "resource.h"
-#include "image.h"
-#include "obj.h"
-#include "math.h"
+#include "resource.hpp"
+#include "image.hpp"
+#include "obj.hpp"
+#include "math.hpp"
 
 namespace melown
 {

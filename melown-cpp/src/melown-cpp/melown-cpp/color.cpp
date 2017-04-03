@@ -1,4 +1,4 @@
-#include "color.h"
+#include "color.hpp"
 
 namespace melown
 {

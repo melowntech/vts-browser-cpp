@@ -1,8 +1,8 @@
 #include <vts-libs/vts/meshio.hpp>
-#include <melown/map.h>
+#include <melown/map.hpp>
 
-#include "map.h"
-#include "image.h"
+#include "map.hpp"
+#include "image.hpp"
 
 namespace melown
 {

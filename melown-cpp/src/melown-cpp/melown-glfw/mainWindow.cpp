@@ -1,9 +1,9 @@
-#include <melown/map.h>
-#include <melown/statistics.h>
-#include <melown/rendering.h>
-#include <melown/buffer.h>
-#include <melown/resources.h>
-#include "mainWindow.h"
+#include <melown/map.hpp>
+#include <melown/statistics.hpp>
+#include <melown/rendering.hpp>
+#include <melown/buffer.hpp>
+#include <melown/resources.hpp>
+#include "mainWindow.hpp"
 #include <GLFW/glfw3.h>
 
 namespace

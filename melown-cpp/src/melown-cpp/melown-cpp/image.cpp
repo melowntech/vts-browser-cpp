@@ -3,7 +3,7 @@
 #include <jpeglib.h>
 #include <lodepng/lodepng.h>
 
-#include "image.h"
+#include "image.hpp"
 
 namespace melown
 {

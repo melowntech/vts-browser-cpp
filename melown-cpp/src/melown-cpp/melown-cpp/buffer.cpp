@@ -1,6 +1,6 @@
 #include <cstring>
 
-#include <melown/buffer.h>
+#include <melown/buffer.hpp>
 
 namespace melown
 {

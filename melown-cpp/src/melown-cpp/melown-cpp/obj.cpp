@@ -1,7 +1,7 @@
 #include <geometry/parse-obj.hpp>
 
-#include "obj.h"
-#include "math.h"
+#include "obj.hpp"
+#include "math.hpp"
 
 namespace melown
 {

@@ -1,6 +1,6 @@
 #include <dbglog/dbglog.hpp>
 
-#include <melown/options.h>
+#include <melown/options.hpp>
 
 namespace melown
 {

@@ -1,9 +1,9 @@
 #include <cstring>
 
-#include <melown/map.h>
-#include <melown/statistics.h>
-#include <melown/options.h>
-#include "mainWindow.h"
+#include <melown/map.hpp>
+#include <melown/statistics.hpp>
+#include <melown/options.hpp>
+#include "mainWindow.hpp"
 #include <nuklear.h>
 #include <GLFW/glfw3.h>
 

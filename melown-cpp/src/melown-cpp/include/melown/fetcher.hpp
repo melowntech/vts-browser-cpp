@@ -4,8 +4,8 @@
 #include <string>
 #include <functional>
 
-#include "foundation.h"
-#include "buffer.h"
+#include "foundation.hpp"
+#include "buffer.hpp"
 
 namespace melown
 {

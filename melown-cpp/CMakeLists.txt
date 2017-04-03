@@ -2,9 +2,6 @@
 cmake_minimum_required(VERSION 2.8.11)
 include(buildsys/cmake/buildsys.cmake)
 
-#global options
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 # project
 setup_project(melown-cpp "${BUILDSYS_PACKAGE_VERSION}")
 

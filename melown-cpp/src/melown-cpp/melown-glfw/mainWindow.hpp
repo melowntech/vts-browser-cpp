@@ -1,7 +1,7 @@
 #ifndef MAINWINDOW_H_wuiegfzbn
 #define MAINWINDOW_H_wuiegfzbn
 
-#include "gpuContext.h"
+#include "gpuContext.hpp"
 
 class GLFWwindow;
 

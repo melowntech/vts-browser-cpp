@@ -3,7 +3,7 @@
 #include <QImage>
 #include <QBuffer>
 #include <QImageReader>
-#include "gpuContext.h"
+#include "gpuContext.hpp"
 
 QOpenGLFunctions_4_4_Core *gpuFunctions()
 {

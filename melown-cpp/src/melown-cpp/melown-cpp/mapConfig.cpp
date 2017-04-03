@@ -1,9 +1,9 @@
 #include <utility/uri.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "resource.h"
-#include "mapConfig.h"
-#include "color.h"
+#include "resource.hpp"
+#include "mapConfig.hpp"
+#include "color.hpp"
 
 namespace melown
 {

@@ -2,12 +2,12 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QDebug>
-#include <melown/map.h>
-#include <melown/rendering.h>
-#include <melown/buffer.h>
-#include "mainWindow.h"
-#include "gpuContext.h"
-#include "fetcher.h"
+#include <melown/map.hpp>
+#include <melown/rendering.hpp>
+#include <melown/buffer.hpp>
+#include "mainWindow.hpp"
+#include "gpuContext.hpp"
+#include "fetcher.hpp"
 
 using melown::readLocalFileBuffer;
 

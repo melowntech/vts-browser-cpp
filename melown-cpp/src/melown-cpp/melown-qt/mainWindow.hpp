@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QWindow>
-#include "gpuContext.h"
+#include "gpuContext.hpp"
 
 namespace melown
 {

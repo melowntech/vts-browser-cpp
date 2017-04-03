@@ -1,9 +1,9 @@
 #include <clocale>
 #include <QGuiApplication>
 #include <QDebug>
-#include <melown/map.h>
-#include "mainWindow.h"
-#include "gpuContext.h"
+#include <melown/map.hpp>
+#include "mainWindow.hpp"
+#include "gpuContext.hpp"
 
 void usage(char *argv[])
 {

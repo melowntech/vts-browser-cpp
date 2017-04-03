@@ -1,7 +1,7 @@
 #ifndef COLOR_H_wgfhbjbvf
 #define COLOR_H_wgfhbjbvf
 
-#include "math.h"
+#include "math.hpp"
 
 namespace melown
 {

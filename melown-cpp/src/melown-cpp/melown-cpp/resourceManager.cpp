@@ -1,6 +1,6 @@
-#include <melown/map.h>
+#include <melown/map.hpp>
 
-#include "map.h"
+#include "map.hpp"
 
 namespace melown
 {

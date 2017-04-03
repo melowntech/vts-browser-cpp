@@ -15,16 +15,16 @@
 #include <dbglog/dbglog.hpp>
 #include <utility/uri.hpp>
 
-#include <melown/statistics.h>
-#include <melown/options.h>
-#include <melown/rendering.h>
-#include <melown/resources.h>
-#include <melown/buffer.h>
+#include <melown/statistics.hpp>
+#include <melown/options.hpp>
+#include <melown/rendering.hpp>
+#include <melown/resources.hpp>
+#include <melown/buffer.hpp>
 
-#include "mapConfig.h"
-#include "resource.h"
-#include "resourceMap.h"
-#include "math.h"
+#include "mapConfig.hpp"
+#include "resource.hpp"
+#include "resourceMap.hpp"
+#include "math.hpp"
 
 namespace melown
 {

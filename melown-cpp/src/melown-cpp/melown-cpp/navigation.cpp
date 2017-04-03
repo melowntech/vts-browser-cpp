@@ -1,4 +1,4 @@
-#include "map.h"
+#include "map.hpp"
 #include <boost/algorithm/string.hpp>
 
 namespace melown

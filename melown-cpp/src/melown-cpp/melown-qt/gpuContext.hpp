@@ -10,7 +10,7 @@
 #include <QOpenGLBuffer>
 #include <QOpenGLVertexArrayObject>
 #include <QSurface>
-#include <melown/resources.h>
+#include <melown/resources.hpp>
 
 class Gl : public QOpenGLContext, public QOpenGLFunctions_4_4_Core
 {

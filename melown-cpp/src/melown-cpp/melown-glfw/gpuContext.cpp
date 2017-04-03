@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <cassert>
 #include <cstring>
-#include "gpuContext.h"
+#include "gpuContext.hpp"
 
 bool anisotropicFilteringAvailable = false;
 

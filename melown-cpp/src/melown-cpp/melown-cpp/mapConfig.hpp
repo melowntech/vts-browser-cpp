@@ -7,10 +7,10 @@
 #include <vts-libs/registry/referenceframe.hpp>
 #include <vts-libs/vts/mapconfig.hpp>
 #include <vts-libs/vts/urltemplate.hpp>
-#include <melown/resources.h>
+#include <melown/resources.hpp>
 
-#include "csConvertor.h"
-#include "math.h"
+#include "csConvertor.hpp"
+#include "math.hpp"
 
 namespace melown
 {

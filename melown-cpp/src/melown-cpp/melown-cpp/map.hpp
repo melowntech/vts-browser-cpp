@@ -158,6 +158,9 @@ public:
         uint32 windowWidth;
         uint32 windowHeight;
         uint32 metaTileBinaryOrder;
+        vec3 inertiaMotion;
+        vec3 inertiaRotation;
+        double inertiaViewExtent;
         
         Renderer();
     } renderer;

@@ -38,7 +38,8 @@ void MainWindow::mouseMove(QMouseEvent *event)
         double value[3] = {diff.x(), diff.y(), 0};
         map->pan(value);
     }
-    if (event->buttons() & Qt::RightButton)
+    if ((event->buttons() & Qt::RightButton)
+        || (event->buttons() & Qt::MiddleButton))
     { // rotate
         double value[3] = {diff.x(), diff.y(), 0};
         map->rotate(value);
@@ -91,9 +92,9 @@ void MainWindow::initialize()
     { // load shader
         shader = std::make_shared<GpuShader>();
         melown::Buffer vert = readInternalMemoryBuffer(
-                    "data/shaders/a.vert.glsl");
+                    "data/shaders/tex.vert.glsl");
         melown::Buffer frag = readInternalMemoryBuffer(
-                    "data/shaders/a.frag.glsl");
+                    "data/shaders/tex.frag.glsl");
         shader->loadShaders(
             std::string(vert.data(), vert.size()),
             std::string(frag.data(), frag.size()));

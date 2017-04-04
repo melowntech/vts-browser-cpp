@@ -302,12 +302,13 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
             continue;
         }
         const MetaNode *n = t->get(nodeId, std::nothrow);
-        if (!n || n->extents.ll == n->extents.ur)
+        if (!n)
             continue;
         for (uint32 i = 0; i < 4; i++)
             childsAvailable[i] = childsAvailable[i]
                     || (n->childFlags() & (MetaNode::Flag::ulChild << i));
-        if (topmost || n->alien() != it.alien || !n->geometry())
+        if (topmost || n->alien() != it.alien || !n->geometry()
+                || n->extents.ll == n->extents.ur)
             continue;
         topmost = &it;
         node = n;
@@ -511,23 +512,50 @@ void MapImpl::traverseClearing(std::shared_ptr<TraverseNode> &trav)
 
 void MapImpl::updateCamera()
 {
-    if (mapConfig->position.type
-            != vtslibs::registry::Position::Type::objective)
+    vtslibs::registry::Position &pos = mapConfig->position;
+    if (pos.type != vtslibs::registry::Position::Type::objective)
         throw std::runtime_error("unsupported position type");
-    if (mapConfig->position.heightMode
-            != vtslibs::registry::Position::HeightMode::fixed)
+    if (pos.heightMode != vtslibs::registry::Position::HeightMode::fixed)
         throw std::runtime_error("unsupported position height mode");
     
-    // normalize camera rotation
-    normalizeAngle(mapConfig->position.orientation[0]);
-    normalizeAngle(mapConfig->position.orientation[1]);
-    normalizeAngle(mapConfig->position.orientation[2]);
-    
-    checkPanZQueue();
+    { // update and normalize camera position
+        checkPanZQueue();
+        
+        // apply inertia
+        { // position
+            vec2 curXY = vec3to2(vecFromUblas<vec3>(pos.position));
+            vec2 inrXY = vec3to2(renderer.inertiaMotion);
+            double curZ = pos.position[2];
+            double inrZ = renderer.inertiaMotion[2];
+            curXY += 0.25 * inrXY;
+            inrXY *= 0.8;
+            curZ += 0.05 * inrZ;
+            inrZ *= 0.95;
+            pos.position = vecToUblas<math::Point3>(vec2to3(curXY, curZ));
+            renderer.inertiaMotion = vec2to3(inrXY, inrZ);
+        }
+        { // orientation
+            pos.orientation += vecToUblas<math::Point3>(0.25 * 
+                        renderer.inertiaRotation);
+            renderer.inertiaRotation *= 0.8;
+        }
+        { // vertical view extent
+            pos.verticalExtent += renderer.inertiaViewExtent * 0.2;
+            renderer.inertiaViewExtent *= 0.8;
+        }
+        
+        // normalize
+        pos.position[0] = modulo(pos.position[0] + 180, 360) - 180;
+        pos.position[1] = clamp(pos.position[1], -80, 80);
+        normalizeAngle(pos.orientation[0]);
+        normalizeAngle(pos.orientation[1]);
+        normalizeAngle(pos.orientation[2]);
+        pos.orientation[1] = clamp(pos.orientation[1], 270, 350);
+    }
     
     // camera-space vectors
-    vec3 center = vecFromUblas<vec3>(mapConfig->position.position);
-    vec3 rot = vecFromUblas<vec3>(mapConfig->position.orientation);
+    vec3 center = vecFromUblas<vec3>(pos.position);
+    vec3 rot = vecFromUblas<vec3>(pos.orientation);
     vec3 dir(1, 0, 0);
     vec3 up(0, 0, -1);
     
@@ -587,17 +615,17 @@ void MapImpl::updateCamera()
     }
     
     // camera distance from object position
-    double dist = mapConfig->position.verticalExtent
-            * 0.5 / tan(degToRad(mapConfig->position.verticalFov * 0.5));
+    double dist = pos.verticalExtent
+            * 0.5 / tan(degToRad(pos.verticalFov * 0.5));
     mat4 view = lookAt(center - dir * dist, center, up);
     
     // camera projection matrix
-    double cameraHeight = mapConfig->position.position[2]; // todo nav2phys
+    double cameraHeight = pos.position[2]; // todo nav2phys
     double zFactor = std::max(cameraHeight, dist) / 600000;
     double near = std::max(2.0, 40 * zFactor);
     zFactor = std::max(1.0, zFactor);
     double far = 600000 * 10 * zFactor;
-    mat4 proj = perspectiveMatrix(mapConfig->position.verticalFov,
+    mat4 proj = perspectiveMatrix(pos.verticalFov,
               (double)renderer.windowWidth / (double)renderer.windowHeight,
               near, far);
     
@@ -610,12 +638,12 @@ void MapImpl::updateCamera()
     if (options.renderObjectPosition)
     {
         vec3 phys = mapConfig->convertor->navToPhys(
-                    vecFromUblas<vec3>(mapConfig->position.position));
+                    vecFromUblas<vec3>(pos.position));
         std::shared_ptr<RenderTask> r = std::make_shared<RenderTask>();
         r->mesh = getMeshRenderable("data/cube.obj");
         r->textureColor = getTexture("data/helper.jpg");
         r->model = translationMatrix(phys)
-                * scaleMatrix(mapConfig->position.verticalExtent * 0.015);
+                * scaleMatrix(pos.verticalExtent * 0.015);
         if (r->ready())
             draws.opaque.emplace_back(r.get(), this);
     }

@@ -85,7 +85,8 @@ void MainWindow::mousePositionCallback(double xpos, double ypos)
     double diff[3] = {xpos - mousePrevX, ypos - mousePrevY, 0};
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
         map->pan(diff);
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS
+        || glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS)
         map->rotate(diff);
     mousePrevX = xpos;
     mousePrevY = ypos;

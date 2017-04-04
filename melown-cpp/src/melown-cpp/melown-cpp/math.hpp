@@ -74,11 +74,11 @@ const vec3 vec2to3(vec2 v, double w);
 const vec2 vec3to2(vec3 v, bool division = false);
 
 double modulo(double a, double m);
+double interpolate(double a, double b, double f);
+double clamp(double a, double min, double max);
 
 const vec3 lowerUpperCombine(uint32 i);
 const vec4 column(const mat4 &m, uint32 index);
-
-double interpolate(double a, double b, double f);
 
 } // namespace melown
 

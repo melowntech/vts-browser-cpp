@@ -18,8 +18,12 @@ void usage(char *argv[])
 
 int main(int argc, char *argv[])
 {
+    // release build -> catch exceptions and print them to stderr
+    // debug build -> let the debugger handle the exceptions
+#ifdef NDEBUG
     try
     {
+#endif
         if (argc != 2)
         {
             usage(argv);
@@ -52,6 +56,7 @@ int main(int argc, char *argv[])
     
         glfwTerminate();
         return 0;
+#ifdef NDEBUG
     }
     catch(const std::exception &e)
     {
@@ -68,4 +73,5 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Unknown exception.\n");
         return 1;
     }
+#endif
 }

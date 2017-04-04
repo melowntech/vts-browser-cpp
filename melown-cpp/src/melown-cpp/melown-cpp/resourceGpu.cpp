@@ -20,7 +20,7 @@ GpuTexture::GpuTexture(const std::string &name) : Resource(name)
 void GpuTexture::load(class MapImpl *)
 {
     GpuTextureSpec spec;
-    decodeImage(name, impl->download->contentData, spec.buffer,
+    decodeImage(name, impl->contentData, spec.buffer,
                 spec.width, spec.height, spec.components);
     loadTexture(spec);
 }
@@ -40,7 +40,7 @@ void GpuMesh::load(class MapImpl *)
 {
     uint32 vc = 0, ic = 0;
     GpuMeshSpec spec;
-    decodeObj(name, impl->download->contentData,
+    decodeObj(name, impl->contentData,
               spec.vertices, spec.indices, vc, ic);
     spec.verticesCount = vc;
     spec.attributes[0].enable = true;

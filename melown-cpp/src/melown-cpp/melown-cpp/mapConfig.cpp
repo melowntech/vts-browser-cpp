@@ -42,7 +42,7 @@ MapConfig::MapConfig(const std::string &name) : Resource(name)
 
 void MapConfig::load(MapImpl *)
 {
-    vtslibs::vts::loadMapConfig(*this, impl->download->contentData, name);
+    vtslibs::vts::loadMapConfig(*this, impl->contentData, name);
     
     convertor = std::shared_ptr<CsConvertor>(CsConvertor::create(
                   referenceFrame.model.physicalSrs,
@@ -199,7 +199,7 @@ ExternalBoundLayer::ExternalBoundLayer(const std::string &name)
 void ExternalBoundLayer::load(MapImpl *)
 {
     *(vtslibs::registry::BoundLayer*)this
-        = vtslibs::registry::loadBoundLayer(impl->download->contentData, name);
+        = vtslibs::registry::loadBoundLayer(impl->contentData, name);
 }
 
 } // namespace melown

@@ -32,6 +32,7 @@ private:
 };
 
 Buffer readLocalFileBuffer(const std::string &path);
+Buffer readInternalMemoryBuffer(const std::string &path);
 
 } // namespace melown
 

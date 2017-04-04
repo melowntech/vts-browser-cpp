@@ -44,6 +44,35 @@ set(SRC_LIST
 	mapFoundation.cpp
 )
 
+set(DATA_LIST
+	data/cube.obj
+	data/helper.jpg
+	data/fonts/roboto-regular.ttf
+	data/shaders/color.frag.glsl
+	data/shaders/color.vert.glsl
+	data/shaders/gui.frag.glsl
+	data/shaders/gui.vert.glsl
+	data/shaders/tex.frag.glsl
+	data/shaders/tex.vert.glsl
+)
+
+set(GEN_CODE "\#include <map>\n")
+set(GEN_CODE "${GEN_CODE}extern std::map<std::string, std::pair<size_t, const unsigned char*>> data_map\;\n")
+set(GEN_CODE "${GEN_CODE}namespace\n{\nclass Data_mapInitializer\n{\npublic:\nData_mapInitializer()\n{\n")
+foreach(path ${DATA_LIST})
+	string(REPLACE "/" "_" name ${path})
+	string(REPLACE "." "_" name ${name})
+	string(REPLACE "-" "_" name ${name})
+	file_to_cpp("" ${name} ${path})
+	list(APPEND HDR_LIST ${CMAKE_CURRENT_BINARY_DIR}/${path}.hpp)
+	list(APPEND SRC_LIST ${CMAKE_CURRENT_BINARY_DIR}/${path}.cpp)
+	set(GEN_CODE "\#include \"${CMAKE_CURRENT_BINARY_DIR}/${path}.hpp\"\n${GEN_CODE}")
+	set(GEN_CODE "${GEN_CODE}data_map[\"${path}\"] = std::make_pair(sizeof(${name}), ${name})\;\n")
+endforeach()
+set(GEN_CODE "${GEN_CODE}}\n} data_mapInitializer\;\n}\n")
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/data_map.cpp ${GEN_CODE})
+list(APPEND SRC_LIST ${CMAKE_CURRENT_BINARY_DIR}/data_map.cpp)
+
 buildsys_position_independent(${MODULE_LIBRARIES})
 
 add_library(melown-cpp SHARED ${SRC_LIST})

@@ -1,6 +1,9 @@
 #include <cstring>
+#include <map>
 
 #include <melown/buffer.hpp>
+
+std::map<std::string, std::pair<size_t, unsigned char *>> data_map;
 
 namespace melown
 {
@@ -76,14 +79,14 @@ Buffer readLocalFileBuffer(const std::string &path)
 {
     FILE *f = fopen(path.c_str(), "rb");
     if (!f)
-        throw std::runtime_error("failed to read file");
+        throw std::runtime_error("failed to read local file");
     try
     {
         fseek(f, 0, SEEK_END);
         Buffer b(ftell(f));
         fseek(f, 0, SEEK_SET);
         if (fread(b.data(), b.size(), 1, f) != 1)
-            throw std::runtime_error("failed to read file");
+            throw std::runtime_error("failed to read local file");
         fclose(f);
         return b;
     }
@@ -93,5 +96,16 @@ Buffer readLocalFileBuffer(const std::string &path)
         throw;
     }
 }
+
+Buffer readInternalMemoryBuffer(const std::string &path)
+{
+    auto it = data_map.find(path);
+    if (it == data_map.end())
+        throw std::runtime_error("internal resource not found");
+    Buffer b(it->second.first);
+    memcpy(b.data(), it->second.second, b.size());
+    return b;
+}
+
 
 } // namespace melown

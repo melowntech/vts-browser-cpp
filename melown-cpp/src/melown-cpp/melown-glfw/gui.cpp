@@ -28,8 +28,10 @@ public:
             cfg.oversample_v = 6;
             nk_font_atlas_init_default(&atlas);
             nk_font_atlas_begin(&atlas);
-            font = nk_font_atlas_add_from_file(&atlas,
-                "data/fonts/roboto-regular.ttf", 14, &cfg);
+            melown::Buffer buffer = melown::readInternalMemoryBuffer(
+                        "data/fonts/roboto-regular.ttf");
+            font = nk_font_atlas_add_from_memory(&atlas,
+                buffer.data(), buffer.size(), 14, &cfg);
             melown::GpuTextureSpec spec;
             spec.verticalFlip = false;
             const void* img = nk_font_atlas_bake(&atlas,
@@ -70,9 +72,9 @@ public:
         
         { // load shader
             shader = std::make_shared<GpuShader>();
-            melown::Buffer vert = melown::readLocalFileBuffer(
+            melown::Buffer vert = melown::readInternalMemoryBuffer(
                         "data/shaders/gui.vert.glsl");
-            melown::Buffer frag = melown::readLocalFileBuffer(
+            melown::Buffer frag = melown::readInternalMemoryBuffer(
                         "data/shaders/gui.frag.glsl");
             shader->loadShaders(
                 std::string(vert.data(), vert.size()),
@@ -298,9 +300,14 @@ public:
                                                o.renderWireBoxes);
             nk_label(&ctx, "", NK_TEXT_LEFT);
             // render surrogates
-            nk_label(&ctx, "Display:", NK_TEXT_LEFT);
+            nk_label(&ctx, "", NK_TEXT_LEFT);
             o.renderSurrogates = nk_check_label(&ctx, "surrogates",
                                                 o.renderSurrogates);
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            // render objective position
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            o.renderObjectPosition = nk_check_label(&ctx, "object. pos.",
+                                                o.renderObjectPosition);
             nk_label(&ctx, "", NK_TEXT_LEFT);
         }
         nk_end(&ctx);

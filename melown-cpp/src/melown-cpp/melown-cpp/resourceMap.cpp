@@ -14,7 +14,7 @@ MetaTile::MetaTile(const std::string &name) : Resource(name),
 void MetaTile::load(MapImpl *)
 {
     *(vtslibs::vts::MetaTile*)this
-            = vtslibs::vts::loadMetaTile(impl->download->contentData, 5, name);
+            = vtslibs::vts::loadMetaTile(impl->contentData, 5, name);
     ramMemoryCost = this->size() * sizeof(vtslibs::vts::MetaNode);
 }
 
@@ -24,7 +24,7 @@ NavTile::NavTile(const std::string &name) : Resource(name)
 void NavTile::load(MapImpl *)
 {
     GpuTextureSpec spec;
-    decodeImage(name, impl->download->contentData, spec.buffer,
+    decodeImage(name, impl->contentData, spec.buffer,
                 spec.width, spec.height, spec.components);
     if (spec.width != 256 || spec.height != 256 || spec.components != 1)
         throw std::runtime_error("invalid navtile image");
@@ -61,7 +61,7 @@ const mat4 findNormToPhys(const math::Extents3 &extents)
 void MeshAggregate::load(MapImpl *base)
 {
     vtslibs::vts::NormalizedSubMesh::list meshes = vtslibs::vts::
-            loadMeshProperNormalized(impl->download->contentData, name);
+            loadMeshProperNormalized(impl->contentData, name);
 
     submeshes.clear();
     submeshes.reserve(meshes.size());
@@ -154,7 +154,7 @@ BoundMetaTile::BoundMetaTile(const std::string &name) : Resource(name)
 
 void BoundMetaTile::load(MapImpl *)
 {
-    Buffer buffer = std::move(impl->download->contentData);
+    Buffer buffer = std::move(impl->contentData);
     GpuTextureSpec spec;
     decodeImage(name, buffer, spec.buffer,
                 spec.width, spec.height, spec.components);
@@ -173,7 +173,7 @@ void BoundMaskTile::load(MapImpl *base)
         texture = std::dynamic_pointer_cast<GpuTexture>(
                     base->mapFoundation->createTexture(name + "#tex"));
     
-    Buffer buffer = std::move(impl->download->contentData);
+    Buffer buffer = std::move(impl->contentData);
     GpuTextureSpec spec;
     decodeImage(name, buffer, spec.buffer,
                 spec.width, spec.height, spec.components);

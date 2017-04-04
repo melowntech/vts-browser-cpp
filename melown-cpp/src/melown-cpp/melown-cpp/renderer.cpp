@@ -511,23 +511,23 @@ void MapImpl::traverseClearing(std::shared_ptr<TraverseNode> &trav)
 
 void MapImpl::updateCamera()
 {
-    // todo position conversions
     if (mapConfig->position.type
             != vtslibs::registry::Position::Type::objective)
-        throw std::invalid_argument("unsupported position type");
+        throw std::runtime_error("unsupported position type");
     if (mapConfig->position.heightMode
             != vtslibs::registry::Position::HeightMode::fixed)
-        throw std::invalid_argument("unsupported position height mode");
+        throw std::runtime_error("unsupported position height mode");
     
+    // normalize camera rotation
     normalizeAngle(mapConfig->position.orientation[0]);
     normalizeAngle(mapConfig->position.orientation[1]);
     normalizeAngle(mapConfig->position.orientation[2]);
     
     checkPanZQueue();
     
+    // camera-space vectors
     vec3 center = vecFromUblas<vec3>(mapConfig->position.position);
     vec3 rot = vecFromUblas<vec3>(mapConfig->position.orientation);
-    
     vec3 dir(1, 0, 0);
     vec3 up(0, 0, -1);
     
@@ -586,10 +586,12 @@ void MapImpl::updateCamera()
         throw std::invalid_argument("not implemented navigation srs type");
     }
     
+    // camera distance from object position
     double dist = mapConfig->position.verticalExtent
             * 0.5 / tan(degToRad(mapConfig->position.verticalFov * 0.5));
     mat4 view = lookAt(center - dir * dist, center, up);
     
+    // camera projection matrix
     double cameraHeight = mapConfig->position.position[2]; // todo nav2phys
     double zFactor = std::max(cameraHeight, dist) / 600000;
     double near = std::max(2.0, 40 * zFactor);
@@ -599,9 +601,24 @@ void MapImpl::updateCamera()
               (double)renderer.windowWidth / (double)renderer.windowHeight,
               near, far);
     
+    // few other variables
     renderer.viewProj = proj * view;
     renderer.perpendicularUnitVector = normalize(cross(up, dir));
     renderer.forwardUnitVector = dir;
+    
+    // render object position
+    if (options.renderObjectPosition)
+    {
+        vec3 phys = mapConfig->convertor->navToPhys(
+                    vecFromUblas<vec3>(mapConfig->position.position));
+        std::shared_ptr<RenderTask> r = std::make_shared<RenderTask>();
+        r->mesh = getMeshRenderable("data/cube.obj");
+        r->textureColor = getTexture("data/helper.jpg");
+        r->model = translationMatrix(phys)
+                * scaleMatrix(mapConfig->position.verticalExtent * 0.015);
+        if (r->ready())
+            draws.opaque.emplace_back(r.get(), this);
+    }
 }
 
 bool MapImpl::prerequisitesCheck()
@@ -681,10 +698,10 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
     renderer.windowWidth = windowWidth;
     renderer.windowHeight = windowHeight;
     
-    updateCamera();
     draws.opaque.clear();
     draws.transparent.clear();
     draws.wires.clear();
+    updateCamera();
     convertRenderTasks(draws.opaque, renderer.helperRenders);
     traverse(renderer.traverseRoot, false);
     traverseClearing(renderer.traverseRoot);

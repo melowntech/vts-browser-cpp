@@ -87,7 +87,7 @@ void MapImpl::dataFinalize()
 
 void MapImpl::loadResource(ResourceImpl *r)
 {
-    assert(r->download);
+    assert(r->contentData.size() > 0);
     statistics.resourcesGpuLoaded++;
     try
     {
@@ -100,7 +100,7 @@ void MapImpl::loadResource(ResourceImpl *r)
         statistics.resourcesFailed++;
         r->state = ResourceImpl::State::errorLoad;
     }
-    r->download.reset();
+    r->contentData.free();
 }
 
 bool MapImpl::dataTick()
@@ -146,29 +146,27 @@ bool MapImpl::dataTick()
         }
         
         r->state = ResourceImpl::State::downloading;
-        r->download.emplace(r);
         
         if (r->resource->name.find("://") == std::string::npos)
         {
-            r->download->readLocalFile();
+            r->loadFromInternalMemory();
             loadResource(r);
         }
         else if (r->resource->name.find(".json") == std::string::npos
                  && availableInCache(r->resource->name))
         {
-            r->download->loadFromCache();
+            r->loadFromCache();
             loadResource(r);
             statistics.resourcesDiskLoaded++;
         }
         else if (resources.downloads < options.maxConcurrentDownloads)
         {
-            resources.fetcher->fetch(r->download.get_ptr());
+            resources.fetcher->fetch(r);
             statistics.resourcesDownloaded++;
             resources.downloads++;
         }
         else
         {
-            r->download.reset();
             r->state = ResourceImpl::State::initializing;
             return true; // sleep
         }
@@ -181,9 +179,8 @@ bool MapImpl::dataTick()
 
 void MapImpl::fetchedFile(FetchTask *task)
 {
-    ResourceImpl *resource = ((ResourceImpl::DownloadTask*)task)->resource;
+    ResourceImpl *resource = dynamic_cast<ResourceImpl*>(task);
     assert(resource->state == ResourceImpl::State::downloading);
-    assert(resource->download);
     
     // handle error codes
     if (task->code >= 400 || task->code == 0)
@@ -240,13 +237,13 @@ void MapImpl::fetchedFile(FetchTask *task)
     
     if (resource->state == ResourceImpl::State::errorDownload)
     {
-        resource->download.reset();
+        resource->contentData.free();
         boost::lock_guard<boost::mutex> l(resources.mutInvalidUrls);
         resources.invalidUrlNew.insert(resource->resource->name);
         return;
     }
     
-    resource->download->saveToCache();
+    resource->saveToCache();
     resource->state = ResourceImpl::State::downloaded;
 }
 

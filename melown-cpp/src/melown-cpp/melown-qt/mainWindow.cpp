@@ -9,7 +9,7 @@
 #include "gpuContext.hpp"
 #include "fetcher.hpp"
 
-using melown::readLocalFileBuffer;
+using melown::readInternalMemoryBuffer;
 
 MainWindow::MainWindow() : gl(nullptr), isMouseDetached(false), fetcher(nullptr)
 {
@@ -90,8 +90,10 @@ void MainWindow::initialize()
     
     { // load shader
         shader = std::make_shared<GpuShader>();
-        melown::Buffer vert = readLocalFileBuffer("data/shaders/a.vert.glsl");
-        melown::Buffer frag = readLocalFileBuffer("data/shaders/a.frag.glsl");
+        melown::Buffer vert = readInternalMemoryBuffer(
+                    "data/shaders/a.vert.glsl");
+        melown::Buffer frag = readInternalMemoryBuffer(
+                    "data/shaders/a.frag.glsl");
         shader->loadShaders(
             std::string(vert.data(), vert.size()),
             std::string(frag.data(), frag.size()));

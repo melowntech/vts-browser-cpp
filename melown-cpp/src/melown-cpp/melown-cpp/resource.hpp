@@ -15,7 +15,7 @@ namespace melown
 
 bool availableInCache(const std::string &name);
 
-class ResourceImpl
+class ResourceImpl : public FetchTask
 {
 public:
     enum class State
@@ -29,21 +29,12 @@ public:
         finalizing,
     };
     
-    class DownloadTask : public FetchTask
-    {
-    public:
-        DownloadTask(ResourceImpl *resource);
-
-        ResourceImpl *const resource;
-        
-        void saveToCache();
-        void loadFromCache();
-        void readLocalFile();
-    };
-    
     ResourceImpl(Resource *resource);
     
-    boost::optional<DownloadTask> download;
+    void saveToCache();
+    void loadFromCache();
+    void loadFromInternalMemory();
+    
     Resource *const resource;
     vtslibs::registry::BoundLayer::Availability *availTest;
     uint32 lastAccessTick;

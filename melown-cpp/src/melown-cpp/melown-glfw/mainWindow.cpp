@@ -9,7 +9,7 @@
 namespace
 {
 
-using melown::readLocalFileBuffer;
+using melown::readInternalMemoryBuffer;
 
 void mousePositionCallback(GLFWwindow *window, double xpos, double ypos)
 {
@@ -51,10 +51,10 @@ MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
     
     { // load shader texture
         shaderTexture = std::make_shared<GpuShader>();
-        melown::Buffer vert = readLocalFileBuffer(
-                    "data/shaders/a.vert.glsl");
-        melown::Buffer frag = readLocalFileBuffer(
-                    "data/shaders/a.frag.glsl");
+        melown::Buffer vert = readInternalMemoryBuffer(
+                    "data/shaders/tex.vert.glsl");
+        melown::Buffer frag = readInternalMemoryBuffer(
+                    "data/shaders/tex.frag.glsl");
         shaderTexture->loadShaders(
             std::string(vert.data(), vert.size()),
             std::string(frag.data(), frag.size()));
@@ -62,9 +62,9 @@ MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
     
     { // load shader color
         shaderColor = std::make_shared<GpuShader>();
-        melown::Buffer vert = readLocalFileBuffer(
+        melown::Buffer vert = readInternalMemoryBuffer(
                     "data/shaders/color.vert.glsl");
-        melown::Buffer frag = readLocalFileBuffer(
+        melown::Buffer frag = readInternalMemoryBuffer(
                     "data/shaders/color.frag.glsl");
         shaderColor->loadShaders(
             std::string(vert.data(), vert.size()),

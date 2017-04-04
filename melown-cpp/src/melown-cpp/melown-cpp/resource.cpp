@@ -75,56 +75,53 @@ melown::Resource::operator bool() const
     return impl->state == ResourceImpl::State::ready;
 }
 
-ResourceImpl::DownloadTask::DownloadTask(ResourceImpl *resource)
-    : FetchTask(resource->resource->name), resource(resource)
-{}
-
-void ResourceImpl::DownloadTask::saveToCache()
+void ResourceImpl::saveToCache()
 {
     try
     {
-        writeLocalFileBuffer(convertNameToCache(resource->resource->name),
+        writeLocalFileBuffer(convertNameToCache(resource->name),
                        contentData);
     }
     catch(std::runtime_error &)
     {}
 }
 
-void ResourceImpl::DownloadTask::loadFromCache()
+void ResourceImpl::loadFromCache()
 {
     code = 0;
     try
     {
-        std::string path = convertNameToCache(resource->resource->name);
+        std::string path = convertNameToCache(resource->name);
         contentData = readLocalFileBuffer(path);
         code = 200;
-        resource->state = ResourceImpl::State::downloaded;
+        state = ResourceImpl::State::downloaded;
     }
     catch (std::runtime_error &)
     {
-        LOG(err4) << "Error reading resource: " + resource->resource->name
+        LOG(err4) << "Error reading resource: " + resource->name
                      + " from cache file";
     }
 }
 
-void ResourceImpl::DownloadTask::readLocalFile()
+void ResourceImpl::loadFromInternalMemory()
 {
     code = 0;
     try
     {
-        contentData = readLocalFileBuffer(url);
+        contentData = readInternalMemoryBuffer(resource->name);
         code = 200;
-        resource->state = ResourceImpl::State::downloaded;
+        state = ResourceImpl::State::downloaded;
     }
     catch (std::runtime_error &)
     {
-        LOG(err4) << "Error reading resource: " + resource->resource->name
-                     + " from local file";
+        LOG(err4) << "Error reading resource: " + resource->name
+                     + " from internal memory";
     }
 }
 
 ResourceImpl::ResourceImpl(Resource *resource)
-    : resource(resource), state(State::initializing),
+    : FetchTask(resource->name),
+      resource(resource), state(State::initializing),
       lastAccessTick(0), availTest(nullptr)
 {}
 

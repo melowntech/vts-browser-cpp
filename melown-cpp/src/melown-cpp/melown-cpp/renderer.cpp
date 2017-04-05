@@ -524,24 +524,24 @@ void MapImpl::updateCamera()
         // apply inertia
         { // position
             vec2 curXY = vec3to2(vecFromUblas<vec3>(pos.position));
-            vec2 inrXY = vec3to2(renderer.inertiaMotion);
+            vec2 inrXY = vec3to2(navigation.inertiaMotion);
             double curZ = pos.position[2];
-            double inrZ = renderer.inertiaMotion[2];
+            double inrZ = navigation.inertiaMotion[2];
             curXY += 0.25 * inrXY;
             inrXY *= 0.8;
             curZ += 0.05 * inrZ;
             inrZ *= 0.95;
             pos.position = vecToUblas<math::Point3>(vec2to3(curXY, curZ));
-            renderer.inertiaMotion = vec2to3(inrXY, inrZ);
+            navigation.inertiaMotion = vec2to3(inrXY, inrZ);
         }
         { // orientation
             pos.orientation += vecToUblas<math::Point3>(0.25 * 
-                        renderer.inertiaRotation);
-            renderer.inertiaRotation *= 0.8;
+                        navigation.inertiaRotation);
+            navigation.inertiaRotation *= 0.8;
         }
         { // vertical view extent
-            pos.verticalExtent += renderer.inertiaViewExtent * 0.2;
-            renderer.inertiaViewExtent *= 0.8;
+            pos.verticalExtent += navigation.inertiaViewExtent * 0.2;
+            navigation.inertiaViewExtent *= 0.8;
         }
         
         // normalize
@@ -658,7 +658,7 @@ bool MapImpl::prerequisitesCheck()
         renderer.traverseRoot.reset();
         { // clear panZQueue
             std::queue<std::shared_ptr<HeightRequest>> tmp;
-            std::swap(tmp, renderer.panZQueue);
+            std::swap(tmp, navigation.panZQueue);
         }
     }
     
@@ -708,8 +708,9 @@ bool MapImpl::prerequisitesCheck()
                 (new BoundInfo(bl));
     }
     
-    renderer.lastPanZShift.reset();
-    renderer.panZQueue.push(std::make_shared<HeightRequest>(this));
+    navigation.lastPanZShift.reset();
+    navigation.panZQueue.push(std::make_shared<HeightRequest>(
+                vec3to2(vecFromUblas<vec3>(mapConfig->position.position))));
     
     NodeInfo nodeInfo(mapConfig->referenceFrame, TileId(), false, *mapConfig);
     renderer.traverseRoot = std::make_shared<TraverseNode>(nodeInfo);
@@ -730,7 +731,6 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
     draws.transparent.clear();
     draws.wires.clear();
     updateCamera();
-    convertRenderTasks(draws.opaque, renderer.helperRenders);
     traverse(renderer.traverseRoot, false);
     traverseClearing(renderer.traverseRoot);
     

@@ -4,48 +4,10 @@
 namespace melown
 {
 
-const NodeInfo HeightRequest::findPosition(
-        NodeInfo &info, const vec2 &pos, MapImpl *map)
-{
-    double desire = std::log2(map->options.navigationSamplesPerViewExtent
-            * info.extents().size() / map->mapConfig->position.verticalExtent);
-    if (desire < 3)
-        return info;
-    
-    vtslibs::vts::Children childs = vtslibs::vts::children(info.nodeId());
-    for (uint32 i = 0; i < childs.size(); i++)
-    {
-        NodeInfo ni = info.child(childs[i]);
-        if (!ni.inside(vecToUblas<math::Point2>(pos)))
-            continue;
-        return findPosition(ni, pos, map);
-    }
-    assert(false);
-}
-
-HeightRequest::HeightRequest(MapImpl *map) :
-    surface(nullptr),
-    frameIndex(map->statistics.frameIndex)
-{
-    vec3 navPos = vecFromUblas<vec3>(map->mapConfig->position.position);
-    // find suitable spatial division subtree node
-    for (auto &&it : map->mapConfig->referenceFrame.division.nodes)
-    {
-        if (it.second.partitioning.mode
-                != vtslibs::registry::PartitioningMode::bisection)
-            continue;
-        NodeInfo ni(map->mapConfig->referenceFrame, it.first,
-                    false, *map->mapConfig);
-        sds = vec3to2(map->mapConfig->convertor->convert(navPos,
-            map->mapConfig->referenceFrame.model.navigationSrs, it.second.srs));
-        if (!ni.inside(vecToUblas<math::Point2>(sds)))
-            continue;
-        nodeInfo = findPosition(ni, sds, map);
-        map->statistics.lastHeightRequestLod = nodeInfo->nodeId().lod;
-        return;
-    }
-    assert(false);
-}
+MapImpl::Navigation::Navigation() :
+    inertiaMotion(0,0,0), inertiaRotation(0,0,0),
+    inertiaViewExtent(0)
+{}
 
 void MapImpl::rotate(const vec3 &value)
 {
@@ -65,7 +27,7 @@ void MapImpl::rotate(const vec3 &value)
     default:
         throw std::invalid_argument("not implemented navigation srs type");
     }
-    renderer.inertiaRotation += rot;
+    navigation.inertiaRotation += rot;
 }
 
 void MapImpl::pan(const vec3 &value)
@@ -83,7 +45,7 @@ void MapImpl::pan(const vec3 &value)
                 (rotationMatrix(2, degToRad(pos.orientation(0))));
         vec3 move = vec3(-value[0], value[1], 0);
         move = rot * move * (pos.verticalExtent / 800);
-        renderer.inertiaMotion += move;
+        navigation.inertiaMotion += move;
     } break;
     case vtslibs::registry::Srs::Type::geographic:
     {
@@ -94,141 +56,236 @@ void MapImpl::pan(const vec3 &value)
         vec3 p = vecFromUblas<vec3>(pos.position);
         p = mapConfig->convertor->navGeodesicDirect(p, 90, move(0));
         p = mapConfig->convertor->navGeodesicDirect(p, 0, move(1));
-        renderer.inertiaMotion += p - vecFromUblas<vec3>(pos.position);
+        navigation.inertiaMotion += p - vecFromUblas<vec3>(pos.position);
     } break;
     default:
         throw std::invalid_argument("not implemented navigation srs type");
     }
-    double cur = pos.verticalExtent + renderer.inertiaViewExtent;
-    renderer.inertiaViewExtent += cur * pow(1.001, -value[2]) - cur;
+    double cur = pos.verticalExtent + navigation.inertiaViewExtent;
+    navigation.inertiaViewExtent += cur * pow(1.001, -value[2]) - cur;
     
     { // vertical camera adjustment
-        auto h = std::make_shared<HeightRequest>(this);
-        if (renderer.panZQueue.size() < 2)
-            renderer.panZQueue.push(h);
+        auto h = std::make_shared<HeightRequest>(vec3to2(
+                    vecFromUblas<vec3>(mapConfig->position.position)));
+        if (navigation.panZQueue.size() < 2)
+            navigation.panZQueue.push(h);
         else
-            renderer.panZQueue.back() = h;
+            navigation.panZQueue.back() = h;
     }
 }
 
-void MapImpl::checkPanZQueue()
+HeightRequest::HeightRequest(const vec2 &navPos) :
+    navPos(navPos),
+    sds(std::numeric_limits<double>::quiet_NaN(),
+        std::numeric_limits<double>::quiet_NaN()),
+    interpol(std::numeric_limits<double>::quiet_NaN(),
+             std::numeric_limits<double>::quiet_NaN())
+{}
+
+Validity HeightRequest::process(MapImpl *map)
 {
-    if (renderer.panZQueue.empty())
-        return;
-    HeightRequest &task = *renderer.panZQueue.front();
+    if (result)
+        return Validity::Valid;
     
-    // find urls to the resources
-    if (!task.surface)
+    if (corners.empty())
     {
-        for (auto &&it : mapConfig->surfaceStack)
+        // find initial position
+        corners.reserve(4);
+        auto nisds = map->findInfoNavRoot(navPos);
+        sds = nisds.second;
+        nodeInfo.emplace(map->findInfoSdsSampled(nisds.first, sds));
+        
+        // find top-left corner position
+        math::Extents2 ext = nodeInfo->extents();
+        vec2 center = vecFromUblas<vec2>(ext.ll + ext.ur) * 0.5;
+        vec2 size = vecFromUblas<vec2>(ext.ur - ext.ll);
+        interpol = sds - center;
+        interpol(0) /= size(0);
+        interpol(1) /= size(1);
+        TileId cornerId = nodeInfo->nodeId();
+        if (sds(0) < center(0))
         {
-            uint32 lodMax = it.surface->lodRange.max;
-            TileId nodeId = task.nodeInfo->nodeId();
-            boost::optional<NodeInfo> info;
-            if (nodeId.lod > lodMax)
+            cornerId.x--;
+            interpol(0) += 1;
+        }
+        if (sds(1) < center(1))
+            interpol(1) += 1;
+        else
+            cornerId.y--;
+        
+        // prepare all four corners
+        for (uint32 i = 0; i < 4; i++)
+        {
+            TileId nodeId = cornerId;
+            nodeId.x += i % 2;
+            nodeId.y += i / 2;
+            corners.emplace_back(NodeInfo(map->mapConfig->referenceFrame,
+                                nodeId, false, *map->mapConfig));
+        }
+        
+        map->statistics.lastHeightRequestLod = nodeInfo->nodeId().lod;
+    }
+    
+    { // process corners
+        assert(corners.size() == 4);
+        bool determined = true;
+        for (auto &&it : corners)
+        {
+            switch (it.process(map))
             {
-                uint32 lodDiff = nodeId.lod - lodMax;
-                nodeId.lod -= lodDiff;
-                nodeId.x >>= lodDiff;
-                nodeId.y >>= lodDiff;
-                info.emplace(mapConfig->referenceFrame, nodeId,
-                             false, *mapConfig);
-            }
-            TileId tileId = roundId(nodeId);
-            UrlTemplate::Vars tileVars(tileId);
-            std::string tileUrl = it.surface->urlMeta(tileVars);
-            std::shared_ptr<const MetaTile> t = getMetaTile(tileUrl);
-            switch (t->impl->state)
-            {
-            case ResourceImpl::State::initializing:
-            case ResourceImpl::State::downloading:
-            case ResourceImpl::State::downloaded:
-                return; // try again later
-            case ResourceImpl::State::errorDownload:
-            case ResourceImpl::State::errorLoad:
-                continue;
-            case ResourceImpl::State::ready:
+            case Validity::Invalid:
+                return Validity::Invalid;
+            case Validity::Indeterminate:
+                determined = false;
+                break;
+            case Validity::Valid:
                 break;
             default:
                 assert(false);
             }
-            const MetaNode *n = t->get(nodeId, std::nothrow);
-            if (!n || n->extents.ll == n->extents.ur
-                    || n->alien() != it.alien || !n->geometry())
-                continue;
-            task.surface = &it;
-            if (info)
-                task.nodeInfo = info;
-            break;
         }
-        if (!task.surface)
-        {
-            renderer.panZQueue.pop();
-            return; // this HeightRequest cannot be served
-        }
+        if (!determined)
+            return Validity::Indeterminate; // try again later
     }
     
-    // find interpolation coefficients and corner id
-    vec2 center = vecFromUblas<vec2>(task.nodeInfo->extents().ll
-                                     + task.nodeInfo->extents().ur) * 0.5;
-    vec2 size = vecFromUblas<vec2>(task.nodeInfo->extents().ur
-                                     - task.nodeInfo->extents().ll);
-    vec2 interpol = task.sds - center;
-    interpol(0) /= size(0);
-    interpol(1) /= size(1);
-    TileId cornerId = task.nodeInfo->nodeId();
-    if (task.sds(0) < center(0))
-    {
-        cornerId.x--;
-        interpol(0) += 1;
-    }
-    if (task.sds(1) < center(1))
-        interpol(1) += 1;
-    else
-        cornerId.y--;
-    
-    // acguire the four heights
-    double heights[4];
-    for (uint32 i = 0; i < 4; i++)
-    {
-        TileId nodeId = cornerId;
-        nodeId.x += i % 2;
-        nodeId.y += i / 2;
-        TileId tileId = roundId(nodeId);
-        std::shared_ptr<MetaTile> met = getMetaTile(
-                    task.surface->surface->urlMeta(UrlTemplate::Vars(tileId)));
-        const MetaNode *men = met->get(nodeId, std::nothrow);
-        if (!men || !vtslibs::vts::GeomExtents::validSurrogate(
-                    men->geomExtents.surrogate))
-        {
-            renderer.panZQueue.pop();
-            return; // this HeightRequest cannot be served
-        }
-        heights[i] = men->geomExtents.surrogate;
-    }
-    
-    // interpolate heights
+    // find the height
     assert(interpol(0) >= 0 && interpol(0) <= 1);
     assert(interpol(1) >= 0 && interpol(1) <= 1);
     double height = interpolate(
-                interpolate(heights[2], heights[3], interpol(0)),
-                interpolate(heights[0], heights[1], interpol(0)),
-                interpol(1));
+            interpolate(*corners[2].result, *corners[3].result, interpol(0)),
+            interpolate(*corners[0].result, *corners[1].result, interpol(0)),
+            interpol(1));
+    height = map->mapConfig->convertor->convert(vec2to3(sds, height),
+                        nodeInfo->srs(),
+                        map->mapConfig->referenceFrame.model.navigationSrs)(2);
+    result.emplace(height);
+    return Validity::Valid;
+}
+
+HeightRequest::CornerRequest::CornerRequest(const NodeInfo &nodeInfo) :
+    nodeInfo(nodeInfo)
+{}
+
+Validity HeightRequest::CornerRequest::process(MapImpl *map)
+{
+    if (result)
+        return vtslibs::vts::GeomExtents::validSurrogate(*result)
+                ? Validity::Valid : Validity::Invalid;
     
-    // convert height from sds to navigation
-    double nh = mapConfig->convertor->convert(vec2to3(task.sds, height),
-                        task.nodeInfo->srs(),
-                        mapConfig->referenceFrame.model.navigationSrs)(2);
+    if (!trav)
+    {
+        trav = map->renderer.traverseRoot;
+        if (!trav)
+            return Validity::Indeterminate;
+    }
+    
+    // load if needed
+    switch (trav->validity)
+    {
+    case Validity::Invalid:
+        return Validity::Invalid;
+    case Validity::Indeterminate:
+        map->traverse(trav, true);
+        return Validity::Indeterminate;
+    case Validity::Valid:
+        break;
+    default:
+        assert(false);
+    }
+    
+    // check id
+    if (trav->nodeInfo.nodeId() == nodeInfo.nodeId() || trav->childs.empty())
+    {
+        result.emplace(trav->metaNode.geomExtents.surrogate);
+        return process(nullptr);
+    }
+    
+    { // find child
+        uint32 lodDiff = nodeInfo.nodeId().lod-trav->nodeInfo.nodeId().lod-1;
+        TileId id = nodeInfo.nodeId();
+        id.lod -= lodDiff;
+        id.x >>= lodDiff;
+        id.y >>= lodDiff;
+        
+        for (auto &&it : trav->childs)
+        {
+            if (it->nodeInfo.nodeId() == id)
+            {
+                trav = it;
+                return process(map);
+            }
+        }    
+    }
+    assert(false);
+}
+
+void MapImpl::checkPanZQueue()
+{
+    if (navigation.panZQueue.empty())
+        return;
+    
+    HeightRequest &task = *navigation.panZQueue.front();
+    double nh = std::numeric_limits<double>::quiet_NaN();
+    switch (task.process(this))
+    {
+    case Validity::Indeterminate:
+        return; // try again later
+    case Validity::Invalid:
+        navigation.panZQueue.pop();
+        return; // request cannot be served
+    case Validity::Valid:
+        nh = *task.result;
+        break;
+    default:
+        assert(false);
+    }
     
     // apply the height to the camera
     assert(nh == nh);
     double h = mapConfig->position.position[2];
-    if (renderer.lastPanZShift)
-        renderer.inertiaMotion(2) += nh - *renderer.lastPanZShift;
+    if (navigation.lastPanZShift)
+        navigation.inertiaMotion(2) += nh - *navigation.lastPanZShift;
     else
         mapConfig->position.position[2] = nh;
-    renderer.lastPanZShift.emplace(nh);
-    renderer.panZQueue.pop();
+    navigation.lastPanZShift.emplace(nh);
+    navigation.panZQueue.pop();
+}
+
+const std::pair<NodeInfo, vec2> MapImpl::findInfoNavRoot(const vec2 &navPos)
+{
+    for (auto &&it : mapConfig->referenceFrame.division.nodes)
+    {
+        if (it.second.partitioning.mode
+                != vtslibs::registry::PartitioningMode::bisection)
+            continue;
+        NodeInfo ni(mapConfig->referenceFrame, it.first,
+                    false, *mapConfig);
+        vec2 sds = vec3to2(mapConfig->convertor->convert(vec2to3(navPos, 0),
+            mapConfig->referenceFrame.model.navigationSrs, it.second.srs));
+        if (!ni.inside(vecToUblas<math::Point2>(sds)))
+            continue;
+        return std::make_pair(ni, sds);
+    }
+    assert(false);
+}
+
+const NodeInfo MapImpl::findInfoSdsSampled(const NodeInfo &info,
+                                           const vec2 &sdsPos)
+{
+    double desire = std::log2(options.navigationSamplesPerViewExtent
+            * info.extents().size() / mapConfig->position.verticalExtent);
+    if (desire < 3)
+        return info;
+    
+    vtslibs::vts::Children childs = vtslibs::vts::children(info.nodeId());
+    for (uint32 i = 0; i < childs.size(); i++)
+    {
+        NodeInfo ni = info.child(childs[i]);
+        if (!ni.inside(vecToUblas<math::Point2>(sdsPos)))
+            continue;
+        return findInfoSdsSampled(ni, sdsPos);
+    }
+    assert(false);
 }
 
 } // namespace melown

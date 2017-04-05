@@ -41,21 +41,6 @@ enum class Validity
     Valid,
 };
 
-class HeightRequest
-{
-public:
-    static const NodeInfo findPosition(NodeInfo &info,
-                                       const vec2 &pos,
-                                       class MapImpl *map);
-    
-    HeightRequest(class MapImpl *map);
-    
-    boost::optional<NodeInfo> nodeInfo;
-    SurfaceStackItem *surface;
-    vec2 sds;
-    uint32 frameIndex;
-};
-
 class BoundParamInfo : public vtslibs::registry::View::BoundLayerParams
 {
 public:
@@ -111,6 +96,30 @@ public:
     bool ready() const;
 };
 
+class HeightRequest
+{
+public:
+    struct CornerRequest
+    {
+        const NodeInfo nodeInfo;
+        std::shared_ptr<TraverseNode> trav;
+        boost::optional<double> result;
+        
+        CornerRequest(const NodeInfo &nodeInfo);
+        Validity process(class MapImpl *map);
+    };
+    std::vector<CornerRequest> corners;
+    
+    const vec2 navPos;
+    boost::optional<NodeInfo> nodeInfo;
+    vec2 sds;
+    vec2 interpol;
+    boost::optional<double> result;
+    
+    HeightRequest(const vec2 &navPos);
+    Validity process(class MapImpl *map);
+};
+
 class MapImpl
 {
 public:
@@ -123,6 +132,18 @@ public:
     MapOptions options;
     DrawBatch draws;
     bool initialized;
+    
+    class Navigation
+    {
+    public:
+        vec3 inertiaMotion;
+        vec3 inertiaRotation;
+        double inertiaViewExtent;
+        std::queue<std::shared_ptr<HeightRequest>> panZQueue;
+        boost::optional<double> lastPanZShift;
+        
+        Navigation();
+    } navigation;
     
     class Resources
     {
@@ -148,27 +169,28 @@ public:
     class Renderer
     {
     public:
-        std::vector<std::shared_ptr<RenderTask>> helperRenders;
         std::shared_ptr<TraverseNode> traverseRoot;
-        std::queue<std::shared_ptr<HeightRequest>> panZQueue;
-        boost::optional<double> lastPanZShift;
         mat4 viewProj;
         vec3 perpendicularUnitVector;
         vec3 forwardUnitVector;
         uint32 windowWidth;
         uint32 windowHeight;
         uint32 metaTileBinaryOrder;
-        vec3 inertiaMotion;
-        vec3 inertiaRotation;
-        double inertiaViewExtent;
         
         Renderer();
     } renderer;
     
     // map foundation methods
     void setMapConfig(const std::string &mapConfigPath);
+    
+    // navigation
     void pan(const vec3 &value);
-    void rotate(const vec3 &value); 
+    void rotate(const vec3 &value);
+    void checkPanZQueue();
+    const std::pair<vtslibs::vts::NodeInfo, vec2> findInfoNavRoot(
+            const vec2 &navPos);
+    const NodeInfo findInfoSdsSampled(const NodeInfo &info,
+                                      const vec2 &sdsPos);
     
     // resources methods
     void dataInitialize(Fetcher *fetcher);
@@ -212,7 +234,6 @@ public:
     bool traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav);
     void traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly);
     void traverseClearing(std::shared_ptr<TraverseNode> &trav);
-    void checkPanZQueue();
     void updateCamera();
     bool prerequisitesCheck();
 };

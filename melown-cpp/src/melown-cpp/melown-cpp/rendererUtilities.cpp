@@ -162,9 +162,7 @@ bool TraverseNode::ready() const
 }
 
 MapImpl::Renderer::Renderer() : metaTileBinaryOrder(0),
-    windowWidth(0), windowHeight(0),
-    inertiaMotion(0,0,0), inertiaRotation(0,0,0),
-    inertiaViewExtent(0)
+    windowWidth(0), windowHeight(0)
 {}
 
 } // namespace melown

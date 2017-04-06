@@ -40,6 +40,8 @@ public:
     uint32 currentGpuMemUse;
     uint32 currentRamMemUse;
     uint32 lastHeightRequestLod;
+    double currentNearPlane;
+    double currentFarPlane;
 };
 
 } // namespace melown

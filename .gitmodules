@@ -24,7 +24,7 @@
 	url = ssh://git@gitlab.citationtech.net:8022/lib/dbglog.git
 [submodule "externals/jsoncpp"]
 	path = externals/jsoncpp
-	url = ssh://git@gitlab.citationtech.net:8022/3rdparty/jsoncpp.git
+	url = ssh://git@gitlab.citationtech.net:8022/lib/jsoncpp.git
 [submodule "externals/half"]
 	path = externals/half
 	url = ssh://git@gitlab.citationtech.net:8022/3rdparty/half.git

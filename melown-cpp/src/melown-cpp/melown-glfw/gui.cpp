@@ -324,7 +324,7 @@ public:
         {
             melown::MapStatistics &s = window->map->statistics();
             float width = nk_window_get_content_region_size(&ctx).x - 15;
-            float ratio[] = { width * 0.6, width * 0.4 };
+            float ratio[] = { width * 0.5, width * 0.5 };
             nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
             char buffer[256];
 #define S(NAME, VAL, UNIT) { \
@@ -337,6 +337,10 @@ public:
             S("Downloading:", s.currentDownloads, "");
             S("Gpu Memory:", s.currentGpuMemUse / 1024 / 1024, " MB");
             S("Nav. lod:", s.lastHeightRequestLod, "");
+            nk_label(&ctx, "Z range:", NK_TEXT_LEFT);
+            sprintf(buffer, "%0.0f - %0.0f", s.currentNearPlane,
+                                            s.currentFarPlane);
+            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             // resources
             S("Res. active:", s.currentResources, "");
             S("Res. downloaded:", s.resourcesDownloaded, "");

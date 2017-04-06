@@ -56,7 +56,9 @@ void MapImpl::pan(const vec3 &value)
         vec3 p = vecFromUblas<vec3>(pos.position);
         p = mapConfig->convertor->navGeodesicDirect(p, 90, move(0));
         p = mapConfig->convertor->navGeodesicDirect(p, 0, move(1));
-        navigation.inertiaMotion += p - vecFromUblas<vec3>(pos.position);
+        p -= vecFromUblas<vec3>(pos.position);
+        p(0) = modulo(p(0) + 180, 360) - 180;
+        navigation.inertiaMotion += p;
     } break;
     default:
         throw std::invalid_argument("not implemented navigation srs type");
@@ -216,7 +218,7 @@ Validity HeightRequest::CornerRequest::process(MapImpl *map)
             }
         }    
     }
-    assert(false);
+    return Validity::Invalid;
 }
 
 void MapImpl::checkPanZQueue()

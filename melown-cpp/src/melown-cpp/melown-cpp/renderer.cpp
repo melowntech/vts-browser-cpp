@@ -219,6 +219,48 @@ void MapImpl::convertRenderTasks(std::vector<DrawTask> &draws,
         draws.emplace_back(r.get(), this);
 }
 
+Validity MapImpl::checkMetaNode(SurfaceInfo *surface,
+                                const TileId &nodeId,
+                                const MetaNode *&node)
+{
+    if (nodeId.lod == 0)
+    {
+        std::string name = surface->urlMeta(UrlTemplate::Vars(roundId(nodeId)));
+        std::shared_ptr<MetaTile> t = getMetaTile(name);
+        Validity val = getResourceValidity(name);
+        if (val == Validity::Valid)
+            node = t->get(nodeId, std::nothrow);
+        return val;
+    }
+    
+    const MetaNode *pn = nullptr;
+    switch (checkMetaNode(surface, vtslibs::vts::parent(nodeId), pn))
+    {
+    case Validity::Invalid:
+        return Validity::Invalid;
+    case Validity::Indeterminate:
+        return Validity::Indeterminate;
+    case Validity::Valid:
+        break;
+    default:
+        assert(false);
+    }
+
+    assert(pn);
+    uint32 idx = (nodeId.x % 2) + (nodeId.y % 2) * 2;
+    if (pn->flags() & (MetaNode::Flag::ulChild << idx))
+    {
+        std::string name = surface->urlMeta(UrlTemplate::Vars(roundId(nodeId)));
+        std::shared_ptr<MetaTile> t = getMetaTile(name);
+        Validity val = getResourceValidity(name);
+        if (val == Validity::Valid)
+            node = t->get(nodeId, std::nothrow);
+        return val;
+    }
+    
+    return Validity::Invalid;
+}
+
 void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
 {    
     // node visibility
@@ -281,8 +323,6 @@ void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
 bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
 {
     const TileId nodeId = trav->nodeInfo.nodeId();
-    const TileId tileId = roundId(nodeId);
-    UrlTemplate::Vars tileVars(tileId);
     const SurfaceStackItem *topmost = nullptr;
     const MetaNode *node = nullptr;
     bool childsAvailable[4] = {false, false, false, false};
@@ -291,19 +331,20 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
     // find topmost nonempty surface
     for (auto &&it : mapConfig->surfaceStack)
     {
-        std::string metaName = it.surface->urlMeta(tileVars);
-        std::shared_ptr<const MetaTile> t = getMetaTile(metaName);
-        switch (getResourceValidity(metaName))
+        const MetaNode *n = nullptr;
+        switch (checkMetaNode(it.surface.get(), nodeId, n))
         {
         case Validity::Indeterminate:
             determined = false;
             // no break here
         case Validity::Invalid:
             continue;
+        case Validity::Valid:
+            break;
+        default:
+            assert(false);
         }
-        const MetaNode *n = t->get(nodeId, std::nothrow);
-        if (!n)
-            continue;
+        assert(n);
         for (uint32 i = 0; i < 4; i++)
             childsAvailable[i] = childsAvailable[i]
                     || (n->childFlags() & (MetaNode::Flag::ulChild << i));
@@ -545,8 +586,22 @@ void MapImpl::updateCamera()
         }
         
         // normalize
-        pos.position[0] = modulo(pos.position[0] + 180, 360) - 180;
-        pos.position[1] = clamp(pos.position[1], -80, 80);
+        switch (mapConfig->srs.get
+                (mapConfig->referenceFrame.model.navigationSrs).type)
+        {
+        case vtslibs::registry::Srs::Type::projected:
+        {
+            // nothing
+        } break;
+        case vtslibs::registry::Srs::Type::geographic:
+        {
+            pos.position[0] = modulo(pos.position[0] + 180, 360) - 180;
+            assert(pos.position[0] >= -180 && pos.position[0] <= 180);
+            pos.position[1] = clamp(pos.position[1], -80, 80);
+        } break;
+        default:
+            throw std::invalid_argument("not implemented navigation srs type");
+        }
         normalizeAngle(pos.orientation[0]);
         normalizeAngle(pos.orientation[1]);
         normalizeAngle(pos.orientation[2]);
@@ -621,13 +676,12 @@ void MapImpl::updateCamera()
     
     // camera projection matrix
     double cameraHeight = pos.position[2]; // todo nav2phys
-    double zFactor = std::max(cameraHeight, dist) / 600000;
-    double near = std::max(2.0, 40 * zFactor);
-    zFactor = std::max(1.0, zFactor);
-    double far = 600000 * 10 * zFactor;
+    double zFactor = std::max(cameraHeight - 1000, dist);
+    statistics.currentNearPlane = std::max(2.0, zFactor * 0.1);
+    statistics.currentFarPlane = std::max(100000.0, zFactor * 20);
     mat4 proj = perspectiveMatrix(pos.verticalFov,
               (double)renderer.windowWidth / (double)renderer.windowHeight,
-              near, far);
+              statistics.currentNearPlane, statistics.currentFarPlane);
     
     // few other variables
     renderer.viewProj = proj * view;

@@ -229,6 +229,8 @@ public:
     bool coarsenessTest(const NodeInfo &nodeInfo, const MetaNode &node);
     void convertRenderTasks(std::vector<DrawTask> &draws,
                             std::vector<std::shared_ptr<RenderTask>> &renders);
+    Validity checkMetaNode(SurfaceInfo *surface, const TileId &nodeId,
+                           const MetaNode *&node);
     void traverseValidNode(std::shared_ptr<TraverseNode> &trav);
     bool traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav);
     bool traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav);

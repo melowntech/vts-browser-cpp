@@ -28,6 +28,8 @@ void MapStatistics::resetAll()
     currentRamMemUse = 0;
     currentResources = 0;
     lastHeightRequestLod = 0;
+    currentNearPlane = 0;
+    currentFarPlane = 0;
 }
 
 void MapStatistics::resetFrame()

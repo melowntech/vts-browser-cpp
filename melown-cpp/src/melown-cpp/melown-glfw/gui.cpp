@@ -282,6 +282,12 @@ public:
                     1, o.maxTexelToPixelScale, 5, 0.01);
             sprintf(buffer, "%3.1f", o.maxTexelToPixelScale);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            // autoRotateSpeed
+            nk_label(&ctx, "Auto rotate:", NK_TEXT_LEFT);
+            o.autoRotateSpeed = nk_slide_float(&ctx,
+                    0, o.autoRotateSpeed, 1, 0.001);
+            sprintf(buffer, "%.2f", o.autoRotateSpeed);
+            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             // maxConcurrentDownloads
             nk_label(&ctx, "Max downloads:", NK_TEXT_LEFT);
             o.maxConcurrentDownloads = nk_slide_int(&ctx,
@@ -335,6 +341,7 @@ public:
             // general
             S("Frame:", s.frameIndex, "");
             S("Downloading:", s.currentDownloads, "");
+            S("Node updates:", s.currentNodeUpdates, "");
             S("Gpu Memory:", s.currentGpuMemUse / 1024 / 1024, " MB");
             S("Nav. lod:", s.lastHeightRequestLod, "");
             nk_label(&ctx, "Z range:", NK_TEXT_LEFT);
@@ -344,8 +351,8 @@ public:
             // resources
             S("Res. active:", s.currentResources, "");
             S("Res. downloaded:", s.resourcesDownloaded, "");
-            S("Res. read:", s.resourcesDiskLoaded, "");
-            S("Res. gpu:", s.resourcesGpuLoaded, "");
+            S("Res. disk loaded:", s.resourcesDiskLoaded, "");
+            S("Res. processed:", s.resourcesProcessLoaded, "");
             S("Res. released:", s.resourcesReleased, "");
             S("Res. ignored:", s.resourcesIgnored, "");
             S("Res. failed:", s.resourcesFailed, "");

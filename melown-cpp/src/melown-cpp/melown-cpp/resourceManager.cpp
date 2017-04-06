@@ -88,7 +88,7 @@ void MapImpl::dataFinalize()
 void MapImpl::loadResource(ResourceImpl *r)
 {
     assert(r->contentData.size() > 0);
-    statistics.resourcesGpuLoaded++;
+    statistics.resourcesProcessLoaded++;
     try
     {
         r->resource->load(this);

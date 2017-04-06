@@ -12,9 +12,11 @@ public:
     MapOptions();
     ~MapOptions();
     
+    double autoRotateSpeed;
     double maxTexelToPixelScale;
     uint32 maxResourcesMemory;
     uint32 maxConcurrentDownloads;
+    uint32 maxNodeUpdatesPerFrame;
     uint32 navigationSamplesPerViewExtent;
     bool renderWireBoxes;
     bool renderSurrogates;

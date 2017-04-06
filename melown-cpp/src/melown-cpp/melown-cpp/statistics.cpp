@@ -19,7 +19,7 @@ void MapStatistics::resetAll()
     resourcesIgnored = 0;
     resourcesDownloaded = 0;
     resourcesDiskLoaded = 0;
-    resourcesGpuLoaded = 0;
+    resourcesProcessLoaded = 0;
     resourcesReleased = 0;
     resourcesFailed = 0;
     frameIndex = 0;
@@ -30,6 +30,7 @@ void MapStatistics::resetAll()
     lastHeightRequestLod = 0;
     currentNearPlane = 0;
     currentFarPlane = 0;
+    currentNodeUpdates = 0;
 }
 
 void MapStatistics::resetFrame()

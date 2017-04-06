@@ -517,6 +517,10 @@ void MapImpl::traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly)
     
     touchResources(trav);
     
+    // node update limit
+    if (++statistics.currentNodeUpdates >= options.maxNodeUpdatesPerFrame)
+        return;
+    
     // find surface
     if (!trav->surface && !trav->empty && !traverseDetermineSurface(trav))
         return;
@@ -576,6 +580,7 @@ void MapImpl::updateCamera()
             navigation.inertiaMotion = vec2to3(inrXY, inrZ);
         }
         { // orientation
+            navigation.inertiaRotation(0) += options.autoRotateSpeed;
             pos.orientation += vecToUblas<math::Point3>(0.25 * 
                         navigation.inertiaRotation);
             navigation.inertiaRotation *= 0.8;
@@ -781,6 +786,7 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
     renderer.windowWidth = windowWidth;
     renderer.windowHeight = windowHeight;
     
+    statistics.currentNodeUpdates = 0;
     draws.opaque.clear();
     draws.transparent.clear();
     draws.wires.clear();

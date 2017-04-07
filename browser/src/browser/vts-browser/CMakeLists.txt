@@ -91,7 +91,7 @@ install(TARGETS vts-browser
 )
 
 install(FILES ${PUB_HDR_LIST}
-			PUBLIC HEADER DESTINATION include/vts
+			DESTINATION include/vts
 			COMPONENT browser-dev
 )
 

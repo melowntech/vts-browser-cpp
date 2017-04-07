@@ -1,4 +1,4 @@
-define_module(BINARY vts-browser-glfw DEPENDS vts-browser-cpp glad nuklear)
+define_module(BINARY vts-browser-glfw DEPENDS vts-browser glad nuklear)
 
 set(HDR_LIST
 	dataThread.hpp
@@ -25,4 +25,9 @@ target_compile_definitions(vts-browser-glfw PUBLIC ${NUKLEAR_COMPONENTS})
 # trick QtCreator into showing some additional files
 add_custom_target(vts-browser-glfw-headers SOURCES "${HDR_LIST}")
 
+# install
+install(TARGETS vts-browser-glfw
+			RUNTIME DESTINATION bin
+			COMPONENT browser-glfw
+)
 

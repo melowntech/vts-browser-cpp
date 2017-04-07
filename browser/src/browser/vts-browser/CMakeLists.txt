@@ -1,4 +1,4 @@
-define_module(LIBRARY vts-browser-cpp DEPENDS vts-libs-core http lodepng)
+define_module(LIBRARY vts-browser DEPENDS vts-libs-core http lodepng)
 
 set(PUB_HDR_LIST
 	../include/vts/buffer.hpp
@@ -75,12 +75,24 @@ list(APPEND SRC_LIST ${CMAKE_CURRENT_BINARY_DIR}/data_map.cpp)
 
 buildsys_position_independent(${MODULE_LIBRARIES})
 
-add_library(vts-browser-cpp SHARED ${SRC_LIST})
-buildsys_library(vts-browser-cpp)
-target_link_libraries(vts-browser-cpp ${MODULE_LIBRARIES})
-buildsys_target_compile_definitions(vts-browser-cpp ${MODULE_DEFINITIONS})
+add_library(vts-browser SHARED ${SRC_LIST})
+buildsys_library(vts-browser)
+target_link_libraries(vts-browser ${MODULE_LIBRARIES})
+buildsys_target_compile_definitions(vts-browser ${MODULE_DEFINITIONS})
 
 # trick QtCreator into showing some additional files
-add_custom_target(vts-browser-cpp-headers SOURCES ${HDR_LIST} ${PUB_HDR_LIST})
+add_custom_target(vts-browser-headers SOURCES ${HDR_LIST} ${PUB_HDR_LIST})
+
+# install
+install(TARGETS vts-browser
+			RUNTIME DESTINATION bin
+			LIBRARY DESTINATION lib
+			COMPONENT browser
+)
+
+install(FILES ${PUB_HDR_LIST}
+			PUBLIC HEADER DESTINATION include/vts
+			COMPONENT browser-dev
+)
 
 

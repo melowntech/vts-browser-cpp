@@ -1,7 +1,7 @@
 
 include_directories(include)
 
-add_subdirectory(vts-browser-cpp)
+add_subdirectory(vts-browser)
 
 if(NOT DEFINED BUILDSYS_NOBUILD_TARGET_vts-browser-qt)
 	add_subdirectory(vts-browser-qt)

@@ -1,4 +1,4 @@
-define_module(BINARY vts-browser-qt DEPENDS vts-browser-cpp)
+define_module(BINARY vts-browser-qt DEPENDS vts-browser)
 
 set(HDR_LIST
 	fetcher.hpp
@@ -26,4 +26,9 @@ qt5_use_modules(vts-browser-qt Gui Network)
 # trick QtCreator into showing some additional files
 add_custom_target(vts-browser-qt-headers SOURCES "${HDR_LIST}")
 
+# install
+install(TARGETS vts-browser-qt
+			RUNTIME DESTINATION bin
+			COMPONENT browser-qt
+)
 

@@ -1,0 +1,79 @@
+#!/usr/bin/make -f
+# -*- gnumakefile -*-
+
+PACKAGE_VERSION=$(shell dpkg-parsechangelog | grep ^Version: | cut -d' ' -f2)
+
+# list of packages to build
+PACKAGES=BROWSER BROWSER_DEVEL BROWSER_GLFW BROWSER_QT
+
+# package names
+DEB_PACKAGE_BROWSER=libvts-browser0
+DEB_PACKAGE_BROWSER_DEVEL=libvts-browser-dev
+DEB_PACKAGE_BROWSER_DEBUG=libvts-browser-dbg
+DEB_PACKAGE_BROWSER_GLFW=vts-browser-glfw
+DEB_PACKAGE_BROWSER_QT=vts-browser-qt
+
+PREFIX=/usr
+
+# use this build directory
+DEB_BUILDDIR=obj-$(DEB_BUILD_GNU_TYPE)
+# install components
+INSTALL_BROWSER=browser
+INSTALL_BROWSER_GLFW=browser-glfw
+INSTALL_BROWSER_QT=browser-qt
+INSTALL_BROWSER_DEVEL=browser-dev
+INSTALL_BROWSER_DEBUG=browser-dbg
+
+# add settings here
+CMAKE_FLAGS =  \
+	-DCMAKE_INSTALL_PREFIX:PATH=$(PREFIX) \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DBUILDSYS_PACKAGE_VERSION=${PACKAGE_VERSION}
+
+# default rule; tell debhelper we use CMake
+%:
+	dh $@ -Scmake -B$(DEB_BUILDDIR) --parallel -O--version-info
+
+# override configuration
+override_dh_auto_configure:
+	dh_auto_configure -- $(CMAKE_FLAGS)
+
+# custom installation
+override_dh_auto_install:
+	$(foreach package, $(PACKAGES) \
+      , $(foreach component, $(INSTALL_COMPONENTS_$(package)) \
+          , DESTDIR=debian/$(DEB_PACKAGE_$(package)) \
+                cmake -DCOMPONENT=$(component) \
+                      -P $(DEB_BUILDDIR)/cmake_install.cmake;))
+
+# place debug info to debug package
+override_dh_strip:
+	dh_strip --dbg-package=$(DEB_PACKAGE_BROWSER_DEBUG)
+
+# ignore these:
+override_dh_auto_test:
+override_dh_installcatalogs:
+override_dh_installcron:
+override_dh_installdebconf:
+override_dh_installemacsen:
+override_dh_installifupdown:
+override_dh_installinfo:
+override_dh_pysupport:
+override_dh_installmenu:
+override_dh_installmime:
+override_dh_installmodules:
+override_dh_installlogcheck:
+override_dh_installpam:
+override_dh_installppp:
+override_dh_installudev:
+override_dh_installwm:
+override_dh_installxfonts:
+override_dh_installgsettings:
+override_dh_bugfiles:
+override_dh_ucf:
+override_dh_lintian:
+override_dh_gconf:
+override_dh_icons:
+override_dh_perl:
+override_dh_usrlocal:
+override_dh_installexamples:

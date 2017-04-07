@@ -1,0 +1,5 @@
+vts-browser (0ubuntu1) citationtech-xenial; urgency=low
+
+  * Initial Build.
+
+ -- Tomas Maly <tomas.maly@melown.com>  Fri, 07 Apr 2017 15:22:25 +0200

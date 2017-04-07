@@ -1,4 +1,4 @@
-vts-browser (0ubuntu1) citationtech-xenial; urgency=low
+vts-browser (0ubuntu1) melown-xenial; urgency=low
 
   * Initial Build.
 

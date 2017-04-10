@@ -1,3 +1,4 @@
+#include <utility/path.hpp>
 #include <vts/map.hpp>
 
 #include "map.hpp"
@@ -23,15 +24,26 @@ std::shared_ptr<T> getMapResource(const std::string &name, MapImpl *map)
 
 } // namespace
 
-MapImpl::Resources::Resources() : takeItemIndex(0), downloads(0),
+MapImpl::Resources::Resources(const std::string &cachePathVal,
+                              bool keepInvalidUrls)
+    : takeItemIndex(0), downloads(0), cachePath(cachePathVal),
     destroyTheFetcher(false), fetcher(nullptr)
 {
+    if (cachePath.empty())
+    {
+        cachePath = utility::homeDir().string();
+        if (cachePath.empty())
+            throw std::runtime_error("invalid home dir, "
+                                     "the cache path must be defined");
+    }
+    cachePath += "/.vts-browser-cache/";
     try
     {
-        if (boost::filesystem::exists(invalidUrlFileName))
+        if (keepInvalidUrls && boost::filesystem::exists(
+                    cachePath + invalidUrlFileName))
         {
             std::ifstream f;
-            f.open(invalidUrlFileName);
+            f.open(cachePath + invalidUrlFileName);
             while (f.good())
             {
                 std::string line;
@@ -56,7 +68,7 @@ MapImpl::Resources::~Resources()
     try
     {
         std::ofstream f;
-        f.open(invalidUrlFileName);
+        f.open(cachePath + invalidUrlFileName);
         for (auto &&line : invalidUrl)
             f << line << '\n';
         f.close();
@@ -155,7 +167,7 @@ bool MapImpl::dataTick()
         else if (r->resource->name.find(".json") == std::string::npos
                  && availableInCache(r->resource->name))
         {
-            r->loadFromCache();
+            r->loadFromCache(this);
             loadResource(r);
             statistics.resourcesDiskLoaded++;
         }
@@ -243,7 +255,7 @@ void MapImpl::fetchedFile(FetchTask *task)
         return;
     }
     
-    resource->saveToCache();
+    resource->saveToCache(this);
     resource->state = ResourceImpl::State::downloaded;
 }
 
@@ -410,7 +422,44 @@ Validity MapImpl::getResourceValidity(const std::string &name)
     }
 }
 
-const std::string MapImpl::Resources::invalidUrlFileName
-            = "cache/invalidUrl.txt";
+const std::string MapImpl::convertNameToCache(const std::string &path)
+{
+    uint32 p = path.find("://");
+    std::string a = p == std::string::npos ? path : path.substr(p + 3);
+    std::string b = boost::filesystem::path(a).parent_path().string();
+    std::string c = a.substr(b.length() + 1);
+    return resources.cachePath
+            + convertNameToPath(b, false) + "/"
+            + convertNameToPath(c, false);
+}
+
+bool MapImpl::availableInCache(const std::string &name)
+{
+    std::string path = convertNameToCache(name);
+    return boost::filesystem::exists(path);
+}
+
+const std::string MapImpl::convertNameToPath(std::string path,
+                                           bool preserveSlashes)
+{
+    path = boost::filesystem::path(path).normalize().string();
+    std::string res;
+    res.reserve(path.size());
+    for (char it : path)
+    {
+        if ((it >= 'a' && it <= 'z')
+         || (it >= 'A' && it <= 'Z')
+         || (it >= '0' && it <= '9')
+         || (it == '-' || it == '.'))
+            res += it;
+        else if (preserveSlashes && (it == '/' || it == '\\'))
+            res += '/';
+        else
+            res += '_';
+    }
+    return res;
+}
+
+const std::string MapImpl::Resources::invalidUrlFileName = "invalidUrl.txt";
 
 } // namespace vts

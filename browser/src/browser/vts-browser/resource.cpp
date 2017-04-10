@@ -1,4 +1,4 @@
-#include "resource.hpp"
+#include "map.hpp"
 
 namespace vts
 {
@@ -17,38 +17,6 @@ void writeLocalFileBuffer(const std::string &path, const Buffer &buffer)
     }
     if (fclose(f) != 0)
         throw std::runtime_error("failed to write file");
-}
-
-const std::string convertNameToPath(std::string path,
-                                           bool preserveSlashes)
-{
-    path = boost::filesystem::path(path).normalize().string();
-    std::string res;
-    res.reserve(path.size());
-    for (char it : path)
-    {
-        if ((it >= 'a' && it <= 'z')
-         || (it >= 'A' && it <= 'Z')
-         || (it >= '0' && it <= '9')
-         || (it == '-' || it == '.'))
-            res += it;
-        else if (preserveSlashes && (it == '/' || it == '\\'))
-            res += '/';
-        else
-            res += '_';
-    }
-    return res;
-}
-
-const std::string convertNameToCache(const std::string &path)
-{
-    uint32 p = path.find("://");
-    std::string a = p == std::string::npos ? path : path.substr(p + 3);
-    std::string b = boost::filesystem::path(a).parent_path().string();
-    std::string c = a.substr(b.length() + 1);
-    return std::string("cache/")
-            + convertNameToPath(b, false) + "/"
-            + convertNameToPath(c, false);
 }
 
 FetchTask::FetchTask(const std::string &url) : url(url), 
@@ -75,23 +43,23 @@ vts::Resource::operator bool() const
     return impl->state == ResourceImpl::State::ready;
 }
 
-void ResourceImpl::saveToCache()
+void ResourceImpl::saveToCache(MapImpl *map)
 {
     try
     {
-        writeLocalFileBuffer(convertNameToCache(resource->name),
+        writeLocalFileBuffer(map->convertNameToCache(resource->name),
                        contentData);
     }
     catch(std::runtime_error &)
     {}
 }
 
-void ResourceImpl::loadFromCache()
+void ResourceImpl::loadFromCache(MapImpl *map)
 {
     code = 0;
     try
     {
-        std::string path = convertNameToCache(resource->name);
+        std::string path = map->convertNameToCache(resource->name);
         contentData = readLocalFileBuffer(path);
         code = 200;
         state = ResourceImpl::State::downloaded;
@@ -124,11 +92,5 @@ ResourceImpl::ResourceImpl(Resource *resource)
       resource(resource), state(State::initializing),
       lastAccessTick(0), availTest(nullptr)
 {}
-
-bool availableInCache(const std::string &name)
-{
-    std::string path = convertNameToCache(name);
-    return boost::filesystem::exists(path);
-}
 
 } // namespace vts

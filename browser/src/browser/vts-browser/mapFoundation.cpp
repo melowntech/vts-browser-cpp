@@ -5,6 +5,12 @@
 namespace vts
 {
 
+Point::Point() : x(0), y(0), z(0)
+{}
+
+Point::Point(double x, double y, double z) : x(x), y(y), z(z)
+{}
+
 namespace
 {
 
@@ -41,9 +47,12 @@ const std::string srsConvert(MapConfig *config, Srs srs)
 
 } // namespace
 
-MapFoundation::MapFoundation()
+MapFoundationOptions::MapFoundationOptions() : keepInvalidUrls(false)
+{}
+
+MapFoundation::MapFoundation(const MapFoundationOptions &options)
 {
-    impl = std::shared_ptr<MapImpl>(new MapImpl(this));
+    impl = std::shared_ptr<MapImpl>(new MapImpl(this, options));
 }
 
 MapFoundation::~MapFoundation()
@@ -90,14 +99,14 @@ void MapFoundation::setMapConfig(const std::string &mapConfigPath)
     impl->setMapConfig(mapConfigPath);
 }
 
-void MapFoundation::pan(const double value[3])
+void MapFoundation::pan(const Point &value)
 {
-    impl->pan(vec3(value[0], value[1], value[2]));
+    impl->pan(vecFromPoint(value));
 }
 
-void MapFoundation::rotate(const double value[3])
+void MapFoundation::rotate(const Point &value)
 {
-    impl->rotate(vec3(value[0], value[1], value[2])); 
+    impl->rotate(vecFromPoint(value)); 
 }
 
 MapStatistics &MapFoundation::statistics()
@@ -183,7 +192,9 @@ const Point MapFoundation::convert(const Point &point, Srs from, Srs to)
                 srsConvert(impl->mapConfig.get(), to)));
 }
 
-MapImpl::MapImpl(MapFoundation *const mapFoundation) :
+MapImpl::MapImpl(MapFoundation *mapFoundation,
+                 const MapFoundationOptions &options) :
+    resources(options.cachePath, options.keepInvalidUrls),
     mapFoundation(mapFoundation), initialized(false)
 {}
 

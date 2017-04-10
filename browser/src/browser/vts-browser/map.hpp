@@ -123,7 +123,8 @@ public:
 class MapImpl
 {
 public:
-    MapImpl(class MapFoundation *const mapFoundation);
+    MapImpl(class MapFoundation *mapFoundation,
+            const class MapFoundationOptions &options);
 
     class MapFoundation *const mapFoundation;
     std::shared_ptr<MapConfig> mapConfig;
@@ -155,6 +156,7 @@ public:
         std::unordered_set<ResourceImpl*> prepareQueNew;
         std::unordered_set<std::string> invalidUrl;
         std::unordered_set<std::string> invalidUrlNew;
+        std::string cachePath;
         boost::mutex mutPrepareQue;
         boost::mutex mutInvalidUrls;
         std::atomic_uint downloads;
@@ -162,7 +164,7 @@ public:
         uint32 takeItemIndex;
         bool destroyTheFetcher;
         
-        Resources();
+        Resources(const std::string &cachePath, bool keepInvalidUrls);
         ~Resources();
     } resources;
     
@@ -214,6 +216,9 @@ public:
     std::shared_ptr<BoundMetaTile> getBoundMetaTile(const std::string &name);
     std::shared_ptr<BoundMaskTile> getBoundMaskTile(const std::string &name);
     Validity getResourceValidity(const std::string &name);
+    const std::string convertNameToCache(const std::string &path);
+    bool availableInCache(const std::string &name);
+    const std::string convertNameToPath(std::string path, bool preserveSlashes);
     
     // renderer methods
     void renderInitialize();

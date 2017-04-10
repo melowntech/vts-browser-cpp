@@ -13,8 +13,6 @@
 namespace vts
 {
 
-bool availableInCache(const std::string &name);
-
 class ResourceImpl : public FetchTask
 {
 public:
@@ -31,8 +29,8 @@ public:
     
     ResourceImpl(Resource *resource);
     
-    void saveToCache();
-    void loadFromCache();
+    void saveToCache(class MapImpl *map);
+    void loadFromCache(class MapImpl *map);
     void loadFromInternalMemory();
     
     Resource *const resource;

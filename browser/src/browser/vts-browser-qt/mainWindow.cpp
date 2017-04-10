@@ -35,13 +35,13 @@ void MainWindow::mouseMove(QMouseEvent *event)
     QPoint diff = event->globalPos() - mouseLastPosition;
     if (event->buttons() & Qt::LeftButton)
     { // pan
-        double value[3] = {diff.x(), diff.y(), 0};
+        vts::Point value(diff.x(), diff.y(), 0);
         map->pan(value);
     }
     if ((event->buttons() & Qt::RightButton)
         || (event->buttons() & Qt::MiddleButton))
     { // rotate
-        double value[3] = {diff.x(), diff.y(), 0};
+        vts::Point value(diff.x(), diff.y(), 0);
         map->rotate(value);
     }
     mouseLastPosition = event->globalPos();
@@ -55,7 +55,7 @@ void MainWindow::mouseRelease(QMouseEvent *event)
 
 void MainWindow::mouseWheel(QWheelEvent *event)
 {
-    double value[3] = {0, 0, event->angleDelta().y()};
+    vts::Point value(0, 0, event->angleDelta().y());
     map->pan(value);
 }
 

@@ -23,6 +23,8 @@ struct VTS_API Point
             double x, y, z;
         };
     };
+    Point();
+    Point(double x, double y, double z);
 };
 
 enum class Srs
@@ -32,10 +34,19 @@ enum class Srs
     Public,
 };
 
+class MapFoundationOptions
+{
+public:
+    MapFoundationOptions();
+    
+    std::string cachePath;
+    bool keepInvalidUrls;
+};
+
 class VTS_API MapFoundation
 {
 public:
-    MapFoundation();
+    MapFoundation(const MapFoundationOptions &options);
     virtual ~MapFoundation();
     
     std::function<std::shared_ptr<class GpuTexture>(const std::string &)>
@@ -52,8 +63,8 @@ public:
     void renderFinalize();
 
     void setMapConfig(const std::string &mapConfigPath);
-    void pan(const double value[3]);
-    void rotate(const double value[3]);
+    void pan(const Point &value);
+    void rotate(const Point &value);
 
     class MapStatistics &statistics();
     class MapOptions &options();

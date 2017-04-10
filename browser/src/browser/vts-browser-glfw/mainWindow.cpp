@@ -82,7 +82,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::mousePositionCallback(double xpos, double ypos)
 {
-    double diff[3] = {xpos - mousePrevX, ypos - mousePrevY, 0};
+    vts::Point diff(xpos - mousePrevX, ypos - mousePrevY, 0);
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
         map->pan(diff);
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS
@@ -94,7 +94,7 @@ void MainWindow::mousePositionCallback(double xpos, double ypos)
 
 void MainWindow::mouseScrollCallback(double xoffset, double yoffset)
 {
-    double diff[3] = {0, 0, yoffset * 120};
+    vts::Point diff(0, 0, yoffset * 120);
     map->pan(diff);
 }
 

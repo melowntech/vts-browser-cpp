@@ -44,7 +44,8 @@ int main(int argc, char *argv[])
 #endif
     
         {
-            vts::MapFoundation map;
+            vts::MapFoundationOptions options;
+            vts::MapFoundation map(options);
             map.setMapConfig(argv[1]);
             MainWindow main;
             DataThread data(main.window);

@@ -26,7 +26,8 @@ int main(int argc, char *argv[])
 
     MainWindow mainWindow;
 
-    vts::MapFoundation map;
+    vts::MapFoundationOptions options;
+    vts::MapFoundation map(options);
     map.setMapConfig(argv[1]);
 
     mainWindow.map = &map;

@@ -77,6 +77,7 @@ buildsys_position_independent(${MODULE_LIBRARIES})
 
 add_library(vts-browser SHARED ${SRC_LIST})
 buildsys_library(vts-browser)
+buildsys_soversion(vts-browser 0.0.0)
 target_link_libraries(vts-browser ${MODULE_LIBRARIES})
 buildsys_target_compile_definitions(vts-browser ${MODULE_DEFINITIONS})
 

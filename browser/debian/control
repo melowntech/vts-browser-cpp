@@ -12,31 +12,38 @@ Homepage: https://www.melown.com/maps
 
 Package: libvts-browser0
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}
+			, ${misc:Depends}
 Description: vts browser library
  vts browser c++ library
 
 Package: libvts-browser-dbg
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libvts-browser0
+Depends: ${misc:Depends}
+			, libvts-browser0 (= ${binary:Version})
 Description: vts browser debug symbols
  debug symbols for vts browser library
 
 Package: libvts-browser-dev
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libvts-browser0
+Depends: ${misc:Depends}
+			, libvts-browser0 (= ${binary:Version})
 Description: vts browser developer files
  developer files for vts browser library
 
 Package: vts-browser-glfw
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libvts-browser0
+Depends: ${shlibs:Depends}
+			, ${misc:Depends}
+			, libvts-browser0 (= ${binary:Version})
 Description: glfw example using vts browser
  complete vts browser example application build on glfw
 
 Package: vts-browser-qt
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libvts-browser0
+Depends: ${shlibs:Depends}
+			, ${misc:Depends}
+			, libvts-browser0 (= ${binary:Version})
 Description: qt example using vts browser
  simplified vts browser example application build on qt
 

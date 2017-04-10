@@ -18,11 +18,11 @@ PREFIX=/usr
 # use this build directory
 DEB_BUILDDIR=obj-$(DEB_BUILD_GNU_TYPE)
 # install components
-INSTALL_BROWSER=browser
-INSTALL_BROWSER_GLFW=browser-glfw
-INSTALL_BROWSER_QT=browser-qt
-INSTALL_BROWSER_DEVEL=browser-dev
-INSTALL_BROWSER_DEBUG=browser-dbg
+INSTALL_COMPONENTS_BROWSER=browser
+INSTALL_COMPONENTS_BROWSER_GLFW=browser-glfw
+INSTALL_COMPONENTS_BROWSER_QT=browser-qt
+INSTALL_COMPONENTS_BROWSER_DEVEL=browser-dev
+INSTALL_COMPONENTS_BROWSER_DEBUG=browser-dbg
 
 # add settings here
 CMAKE_FLAGS =  \
@@ -45,6 +45,8 @@ override_dh_auto_install:
           , DESTDIR=debian/$(DEB_PACKAGE_$(package)) \
                 cmake -DCOMPONENT=$(component) \
                       -P $(DEB_BUILDDIR)/cmake_install.cmake;))
+	mkdir -p debian/$(DEB_PACKAGE_BROWSER_DEVEL)/usr/lib
+	mv debian/$(DEB_PACKAGE_BROWSER)/usr/lib/libvts-browser.so debian/$(DEB_PACKAGE_BROWSER_DEVEL)/usr/lib/libvts-browser.so
 
 # place debug info to debug package
 override_dh_strip:

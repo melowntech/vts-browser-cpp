@@ -8,7 +8,7 @@
 namespace vts
 {
 
-class DrawTask
+class VTS_API DrawTask
 {
 public:
     class GpuMesh *mesh;
@@ -23,7 +23,7 @@ public:
     DrawTask(class RenderTask *r, class MapImpl *m);
 };
 
-class DrawBatch
+class VTS_API DrawBatch
 {
 public:
     std::vector<DrawTask> opaque;

@@ -96,30 +96,6 @@ public:
     bool ready() const;
 };
 
-class HeightRequest
-{
-public:
-    struct CornerRequest
-    {
-        const NodeInfo nodeInfo;
-        std::shared_ptr<TraverseNode> trav;
-        boost::optional<double> result;
-        
-        CornerRequest(const NodeInfo &nodeInfo);
-        Validity process(class MapImpl *map);
-    };
-    std::vector<CornerRequest> corners;
-    
-    const vec2 navPos;
-    boost::optional<NodeInfo> nodeInfo;
-    vec2 sds;
-    vec2 interpol;
-    boost::optional<double> result;
-    
-    HeightRequest(const vec2 &navPos);
-    Validity process(class MapImpl *map);
-};
-
 class MapImpl
 {
 public:
@@ -129,6 +105,7 @@ public:
     class MapFoundation *const mapFoundation;
     std::shared_ptr<MapConfig> mapConfig;
     std::string mapConfigPath;
+    std::string mapConfigView;
     MapStatistics statistics;
     MapOptions options;
     DrawBatch draws;
@@ -140,7 +117,7 @@ public:
         vec3 inertiaMotion;
         vec3 inertiaRotation;
         double inertiaViewExtent;
-        std::queue<std::shared_ptr<HeightRequest>> panZQueue;
+        std::queue<std::shared_ptr<class HeightRequest>> panZQueue;
         boost::optional<double> lastPanZShift;
         
         Navigation();
@@ -183,7 +160,10 @@ public:
     } renderer;
     
     // map foundation methods
-    void setMapConfig(const std::string &mapConfigPath);
+    void setMapConfigPath(const std::string &mapConfigPath);
+    void purgeHard();
+    void purgeSoft();
+    void printDebugInfo();
     
     // navigation
     void pan(const vec3 &value);
@@ -193,6 +173,7 @@ public:
             const vec2 &navPos);
     const NodeInfo findInfoSdsSampled(const NodeInfo &info,
                                       const vec2 &sdsPos);
+    void resetPositionAltitude();
     
     // resources methods
     void dataInitialize(Fetcher *fetcher);

@@ -145,7 +145,6 @@ void MainWindow::run()
         glClearColor(0.2, 0.2, 0.2, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
-        glEnable(GL_CULL_FACE);
         //glCullFace(GL_FRONT);
 
         int width = 800, height = 600;
@@ -157,6 +156,7 @@ void MainWindow::run()
             map->renderTick(width, height);
             vts::DrawBatch &draws = map->drawBatch();
             shaderTexture->bind();
+            glEnable(GL_CULL_FACE);
             for (vts::DrawTask &t : draws.opaque)
                 drawTexture(t);
             glEnable(GL_BLEND);
@@ -164,6 +164,7 @@ void MainWindow::run()
                 drawTexture(t);
             glDisable(GL_BLEND);
             shaderColor->bind();
+            glDisable(GL_CULL_FACE);
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             for (vts::DrawTask &t : draws.wires)
                 drawColor(t);

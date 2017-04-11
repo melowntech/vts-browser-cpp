@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 
     vts::MapFoundationOptions options;
     vts::MapFoundation map(options);
-    map.setMapConfig(argv[1]);
+    map.setMapConfigPath(argv[1]);
 
     mainWindow.map = &map;
     mainWindow.resize(QSize(800, 600));

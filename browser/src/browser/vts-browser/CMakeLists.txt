@@ -9,6 +9,7 @@ set(PUB_HDR_LIST
 	../include/vts/map.hpp
 	../include/vts/rendering.hpp
 	../include/vts/statistics.hpp
+	../include/vts/view.hpp
 )
 
 set(HDR_LIST

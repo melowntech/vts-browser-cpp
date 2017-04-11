@@ -27,14 +27,14 @@ void MapStatistics::resetAll()
     currentGpuMemUse = 0;
     currentRamMemUse = 0;
     currentResources = 0;
-    lastHeightRequestLod = 0;
-    currentNearPlane = 0;
-    currentFarPlane = 0;
-    currentNodeUpdates = 0;
 }
 
 void MapStatistics::resetFrame()
 {
+    lastHeightRequestLod = 0;
+    currentNearPlane = 0;
+    currentFarPlane = 0;
+    currentNodeUpdates = 0;
     meshesRenderedTotal = 0;
     metaNodesTraversedTotal = 0;
     for (uint32 i = 0; i < MaxLods; i++)

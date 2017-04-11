@@ -38,9 +38,37 @@ void MapImpl::renderInitialize()
 void MapImpl::renderFinalize()
 {}
 
-void MapImpl::setMapConfig(const std::string &mapConfigPath)
+void MapImpl::setMapConfigPath(const std::string &mapConfigPath)
 {
     this->mapConfigPath = mapConfigPath;
+    purgeHard();
+}
+
+void MapImpl::purgeHard()
+{
+    initialized = false;
+    mapConfig.reset();
+    { // clear panZQueue
+        std::queue<std::shared_ptr<HeightRequest>> tmp;
+        std::swap(tmp, navigation.panZQueue);
+    }
+    purgeSoft();
+}
+
+void MapImpl::purgeSoft()
+{
+    resetPositionAltitude();
+    renderer.traverseRoot.reset();
+    statistics.resetFrame();
+    mapConfigView = "";
+    
+    if (!mapConfig || !*mapConfig)
+        return;
+    
+    mapConfig->generateSurfaceStack();
+    
+    NodeInfo nodeInfo(mapConfig->referenceFrame, TileId(), false, *mapConfig);
+    renderer.traverseRoot = std::make_shared<TraverseNode>(nodeInfo);    
 }
 
 const TileId MapImpl::roundId(TileId nodeId)
@@ -556,7 +584,7 @@ void MapImpl::traverseClearing(std::shared_ptr<TraverseNode> &trav)
 }
 
 void MapImpl::updateCamera()
-{
+{    
     vtslibs::registry::Position &pos = mapConfig->position;
     if (pos.type != vtslibs::registry::Position::Type::objective)
         throw std::runtime_error("unsupported position type");
@@ -709,18 +737,7 @@ void MapImpl::updateCamera()
 }
 
 bool MapImpl::prerequisitesCheck()
-{
-    // clear on change
-    if (mapConfig && mapConfig->name != mapConfigPath)
-    {
-        initialized = false;
-        renderer.traverseRoot.reset();
-        { // clear panZQueue
-            std::queue<std::shared_ptr<HeightRequest>> tmp;
-            std::swap(tmp, navigation.panZQueue);
-        }
-    }
-    
+{    
     if (initialized)
         return true;
     
@@ -767,12 +784,7 @@ bool MapImpl::prerequisitesCheck()
                 (new BoundInfo(bl));
     }
     
-    navigation.lastPanZShift.reset();
-    navigation.panZQueue.push(std::make_shared<HeightRequest>(
-                vec3to2(vecFromUblas<vec3>(mapConfig->position.position))));
-    
-    NodeInfo nodeInfo(mapConfig->referenceFrame, TileId(), false, *mapConfig);
-    renderer.traverseRoot = std::make_shared<TraverseNode>(nodeInfo);
+    purgeSoft();
     
     initialized = true;
     return true;
@@ -782,6 +794,10 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
 {    
     if (!prerequisitesCheck())
         return;
+    
+    assert(mapConfig && *mapConfig);
+    assert(mapConfig->convertor);
+    assert(renderer.traverseRoot);
     
     renderer.windowWidth = windowWidth;
     renderer.windowHeight = windowHeight;

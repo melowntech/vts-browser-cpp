@@ -3,6 +3,7 @@
 #include <vts/map.hpp>
 #include <vts/statistics.hpp>
 #include <vts/options.hpp>
+#include <vts/view.hpp>
 #include "mainWindow.hpp"
 #include <nuklear.h>
 #include <GLFW/glfw3.h>
@@ -104,13 +105,13 @@ public:
                 sizeof(vertex), (void*)16);
         }
     }
-    
+
     ~GuiImpl()
     {
         nk_font_atlas_clear(&atlas);
         nk_free(&ctx);
     }
-    
+
     void dispatch(int width, int height)
     {
         glEnable(GL_BLEND);
@@ -182,7 +183,7 @@ public:
         glDisable(GL_BLEND);
         glDisable(GL_SCISSOR_TEST);
     }
-    
+
     void input()
     {
         consumeEvents = nk_item_is_any_active(&ctx);
@@ -238,7 +239,7 @@ public:
                         GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS);
         nk_input_end(&ctx);
     }
-    
+
     void mousePositionCallback(double xpos, double ypos)
     {
         if (!consumeEvents)
@@ -254,14 +255,14 @@ public:
         if (!consumeEvents)
             window->mouseScrollCallback(xoffset, yoffset);
     }
-
+    
     void keyboardUnicodeCallback(unsigned int codepoint)
     {
         nk_input_unicode(&ctx, codepoint);
         if (!consumeEvents)
             window->keyboardUnicodeCallback(codepoint);
     }
-    
+
     void prepareOptions()
     {
         int flags = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE
@@ -315,10 +316,15 @@ public:
             o.renderObjectPosition = nk_check_label(&ctx, "object. pos.",
                                                 o.renderObjectPosition);
             nk_label(&ctx, "", NK_TEXT_LEFT);
+            // print debug info
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            if (nk_button_label(&ctx, "Print debug info"))
+                window->map->printDebugInfo();
+            nk_label(&ctx, "", NK_TEXT_LEFT);
         }
         nk_end(&ctx);
     }
-    
+
     void prepareStatistics()
     {
         int flags = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE
@@ -388,7 +394,7 @@ public:
         }
         nk_end(&ctx);
     }
-    
+
     void preparePosition()
     {
         int flags = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE
@@ -422,8 +428,11 @@ public:
                 vts::Point pub = window->map->convert(n,
                     vts::Srs::Navigation, vts::Srs::Public);
                 S("Pos. pub.:", pub, "%.8f");
-            }
 #undef S
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+                if (nk_button_label(&ctx, "Reset altitude"))
+                    window->map->resetPositionAltitude();
+            }
             { // rotation
                 vts::Point r = window->map->getPositionRotation();
                 nk_label(&ctx, "Rotation:", NK_TEXT_LEFT);
@@ -436,7 +445,7 @@ public:
                 sprintf(buffer, "%5.1f", r.z);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
-                if (nk_button_label(&ctx, "Reset"))
+                if (nk_button_label(&ctx, "Reset rotation"))
                 {
                     r.x = 0;
                     r.y = -90;
@@ -457,27 +466,115 @@ public:
         }
         nk_end(&ctx);
     }
-    
-    void prepareSurfaces()
+
+    void prepareViews()
     {
-        // todo
+        int flags = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE
+                | NK_WINDOW_SCALABLE | NK_WINDOW_TITLE
+                | NK_WINDOW_MINIMIZABLE;
+        if (prepareFirst)
+            flags |= NK_WINDOW_MINIMIZED;
+        if (nk_begin(&ctx, "Views", nk_rect(700, 10, 300, 400), flags))
+        {
+            float width = nk_window_get_content_region_size(&ctx).x - 15;
+            
+            { // view selector
+                float ratio[] = { width * 0.3, width * 0.7 };
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+                nk_label(&ctx, "View:", NK_TEXT_LEFT);
+                if (nk_combo_begin_label(&ctx,
+                                 window->map->getViewCurrent().c_str(),
+                                 nk_vec2(nk_widget_width(&ctx), 200)))
+                {
+                    std::vector<std::string> names
+                            = window->map->getViewNames();
+                    nk_layout_row_dynamic(&ctx, 25, 1);
+                    for (int i = 0, e = names.size(); i < e; i++)
+                        if (nk_combo_item_label(&ctx, names[i].c_str(),
+                                                NK_TEXT_LEFT))
+                            window->map->setViewCurrent(names[i]);
+                    nk_combo_end(&ctx);
+                }
+            }
+            
+            bool viewChanged = false;
+            vts::MapView view;
+            window->map->getViewData("", view);
+            { // surfaces
+                const std::vector<std::string> surfaces
+                        = window->map->getResourceSurfaces();
+                const std::vector<std::string> boundLayers
+                        = window->map->getResourceBoundLayers();
+                for (const std::string &sn : surfaces)
+                {
+                    float ratio[] = { width };
+                    nk_layout_row(&ctx, NK_STATIC, 16, 1, ratio);
+                    bool v1 = view.surfaces.find(sn) != view.surfaces.end();
+                    bool v2 = nk_check_label(&ctx, sn.c_str(), v1);
+                    if (v2)
+                    { // bound layers
+                        vts::MapView::SurfaceInfo &s = view.surfaces[sn];
+                        float ratio[] = { 10, (width - 10) * 0.7,
+                                          (width - 10) * 0.3 };
+                        nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
+                        for (const std::string &bn : boundLayers)
+                        {
+                            nk_label(&ctx, "", NK_TEXT_RIGHT);
+                            bool b1 = s.boundLayers.find(bn)
+                                            != s.boundLayers.end();
+                            bool b2 = nk_check_label(&ctx, bn.c_str(), b1);
+                            if (b2)
+                            { // alpha
+                                vts::MapView::BoundLayerInfo &b
+                                        = s.boundLayers[bn];
+                                double a1 = b.alpha;
+                                double a2 = nk_slide_float(&ctx, 0.1,
+                                                           a1 , 1, 0.1);
+                                if (a1 != a2)
+                                {
+                                    b.alpha = a2;
+                                    viewChanged = true;
+                                }
+                            }
+                            else
+                            {
+                                s.boundLayers.erase(bn);
+                                nk_label(&ctx, "", NK_TEXT_LEFT);
+                            }
+                            if (b1 != b2)
+                                viewChanged = true;
+                        }
+                    }
+                    else
+                        view.surfaces.erase(sn);
+                    if (v1 != v2)
+                        viewChanged = true;
+                }
+            }
+            { // free layers
+                // todo
+            }
+            if (viewChanged)
+                window->map->setViewData("", view);
+        }
+        nk_end(&ctx);
     }
-    
+
     void prepare(int width, int height)
     {
         prepareOptions();
         prepareStatistics();
-        prepareSurfaces();
         preparePosition();
+        prepareViews();
         prepareFirst = false;
     }
-    
+
     void render(int width, int height)
     {
         prepare(width, height);
         dispatch(width, height);
     }
-    
+
     nk_context ctx;
     nk_font_atlas atlas;
     nk_font *font;
@@ -486,15 +583,15 @@ public:
     nk_draw_null_texture null;
     bool consumeEvents;
     bool prepareFirst;
-    
+
     int statTraversedDetails;
     int statRenderedDetails;
-    
+
     MainWindow *window;
     std::shared_ptr<GpuTextureImpl> fontTexture;
     std::shared_ptr<GpuShader> shader;
     std::shared_ptr<GpuMeshImpl> mesh;
-    
+
     static const int MaxVertexMemory = 512 * 1024;
     static const int MaxElementMemory = 128 * 1024;
 };

@@ -52,9 +52,6 @@ void MapConfig::load(MapImpl *)
                   ));
     
     generateSurfaceStack();
-    
-    //LOG(info3) << "position: " << position.position;
-    //LOG(info3) << "rotation: " << position.orientation;
 }
 
 vtslibs::vts::SurfaceCommonConfig *MapConfig::findGlue(
@@ -78,7 +75,7 @@ vtslibs::vts::SurfaceCommonConfig *MapConfig::findSurface(const std::string &id)
     return nullptr;
 }
 
-BoundInfo *MapConfig::getBoundInfo(const std::__cxx11::string &id)
+BoundInfo *MapConfig::getBoundInfo(const std::string &id)
 {
     auto it = boundInfos.find(id);
     if (it == boundInfos.end())
@@ -86,11 +83,10 @@ BoundInfo *MapConfig::getBoundInfo(const std::__cxx11::string &id)
     return it->second.get();
 }
 
-
 void MapConfig::printSurfaceStack()
 {
     std::ostringstream ss;
-    ss << std::endl;
+    ss << "Surface stack: " << std::endl;
     for (auto &&l : surfaceStack)
         ss << (l.alien ? "* " : "  ")
            << std::setw(100) << std::left << (std::string()
@@ -101,13 +97,51 @@ void MapConfig::printSurfaceStack()
 
 void MapConfig::generateSurfaceStack()
 {
+    // remove invalid surfaces from current view
+    std::set<std::string> resSurf;
+    for (auto &&it : surfaces)
+        resSurf.insert(it.id);
+    for (auto it = view.surfaces.begin(); it != view.surfaces.end();)
+    {
+        if (resSurf.find(it->first) == resSurf.end())
+            it = view.surfaces.erase(it);
+        else
+            it++;
+    }
+    
+    // remove invalid bound layers from surfaces in current view
+    std::set<std::string> resBound;
+    for (auto &&it : boundLayers)
+        resBound.insert(it.id);
+    for (auto &&s : view.surfaces)
+    {
+        for (auto it = s.second.begin(); it != s.second.end();)
+        {
+            if (resBound.find(it->id) == resBound.end())
+                it = s.second.erase(it);
+            else
+                it++;
+        }
+    }
+    
+    // remove invalid free layers from current view
+    // todo
+    
+    // remove invalid bound layers from free layers in current view
+    // todo
+    
+    // prepare initial surface stack
     vtslibs::vts::TileSetGlues::list lst;
     for (auto &&s : view.surfaces)
     {
         vtslibs::vts::TileSetGlues ts(s.first);
         for (auto &&g : glues)
         {
-            if (g.id.back() == ts.tilesetId)
+            bool active = g.id.back() == ts.tilesetId;
+            for (auto &&it : g.id)
+                if (view.surfaces.find(it) == view.surfaces.end())
+                    active = false;
+            if (active)
                 ts.glues.push_back(vtslibs::vts::Glue(g.id));
         }
         lst.push_back(ts);
@@ -187,9 +221,6 @@ void MapConfig::generateSurfaceStack()
             it->color = convertHsvToRgb(c);
         }
     }
-    
-    // debug print
-    //printSurfaceStack();
 }
 
 ExternalBoundLayer::ExternalBoundLayer(const std::string &name)

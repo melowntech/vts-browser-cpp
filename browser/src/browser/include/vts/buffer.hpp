@@ -9,7 +9,7 @@
 namespace vts
 {
 
-class Buffer : public std::istream, protected std::streambuf
+class VTS_API Buffer : public std::istream, protected std::streambuf
 {
 public:
     Buffer();
@@ -31,8 +31,8 @@ private:
     uint32 size_;
 };
 
-Buffer readLocalFileBuffer(const std::string &path);
-Buffer readInternalMemoryBuffer(const std::string &path);
+VTS_API Buffer readLocalFileBuffer(const std::string &path);
+VTS_API Buffer readInternalMemoryBuffer(const std::string &path);
 
 } // namespace vts
 

@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
         {
             vts::MapFoundationOptions options;
             vts::MapFoundation map(options);
-            map.setMapConfig(argv[1]);
+            map.setMapConfigPath(argv[1]);
             MainWindow main;
             DataThread data(main.window);
             main.map = &map;

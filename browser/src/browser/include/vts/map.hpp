@@ -59,6 +59,7 @@ public:
             createMesh;
     
     void setMapConfigPath(const std::string &mapConfigPath);
+    const std::string getMapConfigPath() const;
     
     /// returns whether the map config has been downloaded and parsed
     /// successfully

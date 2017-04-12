@@ -174,6 +174,11 @@ void MapFoundation::setMapConfigPath(const std::string &mapConfigPath)
     impl->setMapConfigPath(mapConfigPath);
 }
 
+const std::string MapFoundation::getMapConfigPath() const
+{
+    return impl->mapConfigPath;
+}
+
 bool MapFoundation::isMapConfigReady() const
 {
     return impl->mapConfig && *impl->mapConfig;

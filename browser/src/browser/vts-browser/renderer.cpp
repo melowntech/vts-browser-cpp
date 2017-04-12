@@ -60,6 +60,7 @@ void MapImpl::purgeSoft()
     resetPositionAltitude();
     renderer.traverseRoot.reset();
     statistics.resetFrame();
+    draws = DrawBatch();
     mapConfigView = "";
     
     if (!mapConfig || !*mapConfig)
@@ -140,13 +141,13 @@ void MapImpl::touchResources(std::shared_ptr<RenderTask> task)
         touchResource(task->textureMask);
 }
 
-bool MapImpl::visibilityTest(const NodeInfo &nodeInfo, const MetaNode &node)
+bool MapImpl::visibilityTest(const TraverseNode *trav)
 {
-    if (nodeInfo.distanceFromRoot() < 3)
+    if (trav->nodeInfo.distanceFromRoot() < 3)
         return true;
     //if (vtslibs::vts::empty(node.geomExtents))
     {
-        if (node.extents.ll == node.extents.ur)
+        if (!trav->extents)
             return true;
         vec4 c0 = column(renderer.viewProj, 0);
         vec4 c1 = column(renderer.viewProj, 1);
@@ -157,8 +158,8 @@ bool MapImpl::visibilityTest(const NodeInfo &nodeInfo, const MetaNode &node)
             c3 + c1, c3 - c1,
             c3 + c2, c3 - c2,
         };
-        vec3 fl = vecFromUblas<vec3>(node.extents.ll);
-        vec3 fu = vecFromUblas<vec3>(node.extents.ur);
+        vec3 fl = vecFromUblas<vec3>(trav->extents->ll);
+        vec3 fu = vecFromUblas<vec3>(trav->extents->ur);
         vec3 el = vecFromUblas<vec3>
                 (mapConfig->referenceFrame.division.extents.ll);
         vec3 eu = vecFromUblas<vec3>
@@ -187,20 +188,24 @@ bool MapImpl::visibilityTest(const NodeInfo &nodeInfo, const MetaNode &node)
     }
 }
 
-bool MapImpl::coarsenessTest(const NodeInfo &nodeInfo, const MetaNode &node)
+bool MapImpl::coarsenessTest(const TraverseNode *trav)
 {
-    if (!node.applyTexelSize() && !node.applyDisplaySize())
+    bool applyTexelSize = trav->flags & MetaNode::Flag::applyTexelSize;
+    bool applyDisplaySize = trav->flags & MetaNode::Flag::applyDisplaySize;
+    
+    if (!applyTexelSize && !applyDisplaySize)
         return false;
     bool result = true;
-    if (node.applyTexelSize())
+    if (applyTexelSize)
     {
-        vec3 fl = vecFromUblas<vec3>(node.extents.ll);
-        vec3 fu = vecFromUblas<vec3>(node.extents.ur);
+        assert(trav->extents);
+        vec3 fl = vecFromUblas<vec3>(trav->extents->ll);
+        vec3 fu = vecFromUblas<vec3>(trav->extents->ur);
         vec3 el = vecFromUblas<vec3>
                 (mapConfig->referenceFrame.division.extents.ll);
         vec3 eu = vecFromUblas<vec3>
                 (mapConfig->referenceFrame.division.extents.ur);
-        vec3 up = renderer.perpendicularUnitVector * node.texelSize;
+        vec3 up = renderer.perpendicularUnitVector * trav->texelSize;
         for (uint32 i = 0; i < 8; i++)
         {
             vec3 f = lowerUpperCombine(i).cwiseProduct(fu - fl) + fl;
@@ -212,26 +217,27 @@ bool MapImpl::coarsenessTest(const NodeInfo &nodeInfo, const MetaNode &node)
             result = result && len < options.maxTexelToPixelScale;
         }
     }
-    if (node.applyDisplaySize())
+    if (applyDisplaySize)
     {
         result = false;
     }
     return result;
 }
 
-bool MapImpl::backTileCulling(const NodeInfo &nodeInfo)
+bool MapImpl::backTileCulling(const TraverseNode *trav)
 {
     return false; // todo temporarily disabled backtile culling
-    if (nodeInfo.distanceFromRoot() < 6 && nodeInfo.distanceFromRoot() > 2)
+    if (trav->nodeInfo.distanceFromRoot() < 6
+            && trav->nodeInfo.distanceFromRoot() > 2)
     {
-        vec2 fl = vecFromUblas<vec2>(nodeInfo.extents().ll);
-        vec2 fu = vecFromUblas<vec2>(nodeInfo.extents().ur);
+        vec2 fl = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
+        vec2 fu = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
         vec2 c = (fl + fu) * 0.5;
         vec3 an = vec2to3(c, 0);
-        vec3 ap = mapConfig->convertor->convert(an, nodeInfo.srs(),
+        vec3 ap = mapConfig->convertor->convert(an, trav->nodeInfo.srs(),
                     mapConfig->referenceFrame.model.physicalSrs);
         vec3 bn = vec2to3(c, 100);
-        vec3 bp = mapConfig->convertor->convert(bn, nodeInfo.srs(),
+        vec3 bp = mapConfig->convertor->convert(bn, trav->nodeInfo.srs(),
                     mapConfig->referenceFrame.model.physicalSrs);
         vec3 dir = normalize(bp - ap);
         if (dot(dir, renderer.forwardUnitVector) > 0)
@@ -292,15 +298,13 @@ Validity MapImpl::checkMetaNode(SurfaceInfo *surface,
 void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
 {    
     // node visibility
-    if (backTileCulling(trav->nodeInfo)
-            || !visibilityTest(trav->nodeInfo, trav->metaNode))
+    if (backTileCulling(trav.get()) || !visibilityTest(trav.get()))
         return;
     
     touchResources(trav);
     
     // check children
-    if (!trav->childs.empty()
-            && !coarsenessTest(trav->nodeInfo, trav->metaNode))
+    if (!trav->childs.empty() && !coarsenessTest(trav.get()))
     {
         bool allOk = true;
         for (std::shared_ptr<TraverseNode> &t : trav->childs)
@@ -350,8 +354,10 @@ void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
 
 bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
 {
+    assert(!trav->surface);
+    assert(!trav->empty);
     const TileId nodeId = trav->nodeInfo.nodeId();
-    const SurfaceStackItem *topmost = nullptr;
+    SurfaceStackItem *topmost = nullptr;
     const MetaNode *node = nullptr;
     bool childsAvailable[4] = {false, false, false, false};
     bool determined = true;
@@ -373,6 +379,10 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
             assert(false);
         }
         assert(n);
+        if (!vtslibs::vts::empty(n->geomExtents))
+            trav->geomExtents = n->geomExtents;
+        if (n->extents.ll != n->extents.ur)
+            trav->extents = n->extents;
         for (uint32 i = 0; i < 4; i++)
             childsAvailable[i] = childsAvailable[i]
                     || (n->childFlags() & (MetaNode::Flag::ulChild << i));
@@ -387,18 +397,23 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
     
     if (topmost)
     {
-        trav->metaNode = *node;
+        assert(node);
+        trav->texelSize = node->texelSize;
+        trav->displaySize = node->displaySize;
+        trav->flags = node->flags();
+        trav->extents = node->extents;
+        trav->geomExtents = node->geomExtents;
         trav->surface = topmost;
 
         // surrogate
         trav->surrogate.clear();
-        if (vtslibs::vts::GeomExtents::validSurrogate(
-                    trav->metaNode.geomExtents.surrogate))
+        if (trav->geomExtents && vtslibs::vts::GeomExtents::validSurrogate(
+                    trav->geomExtents->surrogate))
         {
             vec2 exU = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
             vec2 exL = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
             vec3 sds = vec2to3((exU + exL) * 0.5,
-                               trav->metaNode.geomExtents.surrogate);
+                               trav->geomExtents->surrogate);
             vec3 phys = mapConfig->convertor->convert(sds, trav->nodeInfo.srs(),
                                 mapConfig->referenceFrame.model.physicalSrs);
             std::shared_ptr<RenderTask> r = std::make_shared<RenderTask>();
@@ -546,7 +561,7 @@ void MapImpl::traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly)
     touchResources(trav);
     
     // node update limit
-    if (++statistics.currentNodeUpdates >= options.maxNodeUpdatesPerFrame)
+    if (statistics.currentNodeUpdates++ >= options.maxNodeUpdatesPerFrame)
         return;
     
     // find surface

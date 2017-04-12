@@ -84,7 +84,11 @@ public:
     std::vector<std::shared_ptr<RenderTask>> surrogate;
     std::vector<std::shared_ptr<TraverseNode>> childs;
     NodeInfo nodeInfo;
-    MetaNode metaNode;
+    boost::optional<vtslibs::vts::GeomExtents> geomExtents;
+    boost::optional<math::Extents3> extents;
+    uint32 flags;
+    float texelSize;
+    uint16 displaySize;
     const SurfaceStackItem *surface;
     uint32 lastAccessTime;
     Validity validity;
@@ -210,9 +214,9 @@ public:
                            BoundParamInfo::list &boundList);
     void touchResources(std::shared_ptr<TraverseNode> trav);
     void touchResources(std::shared_ptr<RenderTask> task);
-    bool visibilityTest(const NodeInfo &nodeInfo, const MetaNode &node);
-    bool backTileCulling(const NodeInfo &nodeInfo);
-    bool coarsenessTest(const NodeInfo &nodeInfo, const MetaNode &node);
+    bool visibilityTest(const TraverseNode *trav);
+    bool backTileCulling(const TraverseNode *trav);
+    bool coarsenessTest(const TraverseNode *trav);
     void convertRenderTasks(std::vector<DrawTask> &draws,
                             std::vector<std::shared_ptr<RenderTask>> &renders);
     Validity checkMetaNode(SurfaceInfo *surface, const TileId &nodeId,

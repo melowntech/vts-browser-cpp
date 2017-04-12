@@ -132,6 +132,7 @@ bool RenderTask::ready() const
 
 TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
     : nodeInfo(nodeInfo), surface(nullptr), lastAccessTime(0),
+      flags(0), texelSize(0), displaySize(0),
       validity(Validity::Indeterminate), empty(false)
 {}
 

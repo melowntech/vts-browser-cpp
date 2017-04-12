@@ -1,6 +1,8 @@
 #ifndef MAINWINDOW_H_wuiegfzbn
 #define MAINWINDOW_H_wuiegfzbn
 
+#include <vector>
+
 #include "gpuContext.hpp"
 
 class GLFWwindow;
@@ -55,6 +57,8 @@ public:
     
     std::shared_ptr<GpuShader> shaderTexture;
     std::shared_ptr<GpuShader> shaderColor;
+    
+    std::vector<std::string> mapConfigPaths;
 };
 
 #endif

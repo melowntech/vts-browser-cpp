@@ -35,8 +35,10 @@ MapImpl::Resources::Resources(const std::string &cachePathVal,
         if (cachePath.empty())
             throw std::runtime_error("invalid home dir, "
                                      "the cache path must be defined");
+        cachePath += "/.cache/vts-browser/";
     }
-    cachePath += "/.vts-browser-cache/";
+    if (cachePath.back() != '/')
+        cachePath += "/";
     try
     {
         if (keepInvalidUrls && boost::filesystem::exists(

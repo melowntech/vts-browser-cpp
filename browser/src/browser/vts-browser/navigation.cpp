@@ -50,14 +50,19 @@ public:
             }
             
             // check id
-            if (trav->nodeInfo.nodeId() == nodeInfo.nodeId() || trav->childs.empty())
+            if (trav->nodeInfo.nodeId() == nodeInfo.nodeId()
+                    || trav->childs.empty())
             {
-                result.emplace(trav->metaNode.geomExtents.surrogate);
+                if (trav->geomExtents)
+                    result.emplace(trav->geomExtents->surrogate);
+                else
+                    result.emplace(vtslibs::vts::GeomExtents::invalidSurrogate);
                 return process(nullptr);
             }
             
             { // find child
-                uint32 lodDiff = nodeInfo.nodeId().lod-trav->nodeInfo.nodeId().lod-1;
+                uint32 lodDiff = nodeInfo.nodeId().lod
+                            - trav->nodeInfo.nodeId().lod - 1;
                 TileId id = nodeInfo.nodeId();
                 id.lod -= lodDiff;
                 id.x >>= lodDiff;

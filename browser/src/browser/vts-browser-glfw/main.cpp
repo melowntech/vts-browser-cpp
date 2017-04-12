@@ -13,7 +13,7 @@ void errorCallback(int error, const char* description)
 
 void usage(char *argv[])
 {
-    printf("Usage: %s <url>\n", argv[0]);
+    printf("Usage: %s [options] [--] <url> [url...]\n", argv[0]);
 }
 
 int main(int argc, char *argv[])
@@ -24,7 +24,25 @@ int main(int argc, char *argv[])
     try
     {
 #endif
-        if (argc != 2)
+        int firstUrl = argc;
+        for (int i = 1; i < argc; i++)
+        {
+            if (argv[i][0] == '-')
+            {
+                if (argv[i][1] == '-')
+                {
+                    firstUrl = i + 1;
+                    break;
+                }
+                // todo handle options
+            }
+            else
+            {
+                firstUrl = i;
+                break;
+            }
+        }
+        if (firstUrl >= argc)
         {
             usage(argv);
             return 3;
@@ -46,8 +64,10 @@ int main(int argc, char *argv[])
         {
             vts::MapFoundationOptions options;
             vts::MapFoundation map(options);
-            map.setMapConfigPath(argv[1]);
+            map.setMapConfigPath(argv[firstUrl]);
             MainWindow main;
+            for (int i = firstUrl; i < argc; i++)
+                main.mapConfigPaths.push_back(argv[i]);
             DataThread data(main.window);
             main.map = &map;
             data.map = &map;

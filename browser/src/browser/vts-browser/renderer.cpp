@@ -6,7 +6,7 @@ namespace vts
 namespace
 {
 
-bool testAndThrow(ResourceImpl::State state)
+inline bool testAndThrow(ResourceImpl::State state)
 {
     switch (state)
     {
@@ -25,9 +25,23 @@ bool testAndThrow(ResourceImpl::State state)
     }
 }
 
-void normalizeAngle(double &a)
+inline void normalizeAngle(double &a)
 {
     a = modulo(a, 360);
+}
+
+inline const vec3 lowerUpperCombine(uint32 i)
+{
+    vec3 res;
+    res(0) = (i >> 0) % 2;
+    res(1) = (i >> 1) % 2;
+    res(2) = (i >> 2) % 2;
+    return res;
+}
+
+inline const vec4 column(const mat4 &m, uint32 index)
+{
+    return vec4(m(index, 0), m(index, 1), m(index, 2), m(index, 3));
 }
 
 } // namespace

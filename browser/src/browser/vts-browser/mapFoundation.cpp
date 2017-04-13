@@ -11,23 +11,21 @@ namespace vts
 namespace
 {
 
-const vec3 vecFromPoint(const Point &p)
+inline const vec3 vecFromPoint(const Point &in)
 {
-    vec3 v;
-    for (uint32 i = 0; i < 3; i++)
-        v(i) = p.data[i];
-    return v;
+    vec3 r;
+    vecFromPoint(in, r);
+    return r;
 }
 
-const Point vecToPoint(const vec3 &p)
+inline const Point vecToPoint(const vec3 &in)
 {
-    Point v;
-    for (uint32 i = 0; i < 3; i++)
-        v.data[i] = p(i);
-    return v;
+    Point r;
+    vecToPoint(in, r);
+    return r;
 }
 
-const std::string srsConvert(MapConfig *config, Srs srs)
+inline const std::string srsConvert(MapConfig *config, Srs srs)
 {
     switch(srs)
     {

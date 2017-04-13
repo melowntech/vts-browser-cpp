@@ -20,11 +20,11 @@
 #include <vts/rendering.hpp>
 #include <vts/resources.hpp>
 #include <vts/buffer.hpp>
+#include <vts/math.hpp>
 
 #include "mapConfig.hpp"
 #include "resource.hpp"
 #include "resourceMap.hpp"
-#include "math.hpp"
 
 namespace vts
 {

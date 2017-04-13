@@ -8,8 +8,7 @@
 #include <vts-libs/registry/referenceframe.hpp>
 
 #include <vts/resources.hpp>
-
-#include "math.hpp"
+#include <vts/math.hpp>
 
 namespace vts
 {

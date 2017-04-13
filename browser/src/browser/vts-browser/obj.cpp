@@ -1,7 +1,7 @@
 #include <geometry/parse-obj.hpp>
+#include <vts/math.hpp>
 
 #include "obj.hpp"
-#include "math.hpp"
 
 namespace vts
 {

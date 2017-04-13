@@ -10,7 +10,6 @@
 #include <vts/resources.hpp>
 
 #include "csConvertor.hpp"
-#include "math.hpp"
 
 namespace vts
 {

@@ -1,7 +1,7 @@
 #ifndef COLOR_H_wgfhbjbvf
 #define COLOR_H_wgfhbjbvf
 
-#include "math.hpp"
+#include <vts/math.hpp>
 
 namespace vts
 {

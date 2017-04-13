@@ -1,11 +1,11 @@
 #include <vts-libs/registry/referenceframe.hpp>
 #include <vts/resources.hpp>
 #include <vts/buffer.hpp>
+#include <vts/math.hpp>
 
 #include "resource.hpp"
 #include "image.hpp"
 #include "obj.hpp"
-#include "math.hpp"
 
 namespace vts
 {

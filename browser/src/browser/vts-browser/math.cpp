@@ -1,4 +1,5 @@
-#include "math.hpp"
+#include <vts/map.hpp>
+#include <vts/math.hpp>
 
 namespace vts
 {
@@ -256,24 +257,22 @@ const vec2 vec3to2(vec3 v, bool division)
     return res;
 }
 
-const vec3 lowerUpperCombine(uint32 i)
-{
-    vec3 res;
-    res(0) = (i >> 0) % 2;
-    res(1) = (i >> 1) % 2;
-    res(2) = (i >> 2) % 2;
-    return res;
-}
-
-const vec4 column(const mat4 &m, uint32 index)
-{
-    return vec4(m(index, 0), m(index, 1), m(index, 2), m(index, 3));
-}
-
 double clamp(double a, double min, double max)
 {
     assert(min <= max);
     return std::max(std::min(a, max), min);
+}
+
+void vecToPoint(const vts::vec3 &in, Point &out)
+{
+    for (uint32 i = 0; i < 3; i++)
+        out.data[i] = in(i);
+}
+
+void vecFromPoint(const Point &in, vts::vec3 &out)
+{
+    for (uint32 i = 0; i < 3; i++)
+        out(i) = in.data[i];
 }
 
 } // namespace vts

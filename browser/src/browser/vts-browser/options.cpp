@@ -10,6 +10,7 @@ MapOptions::MapOptions() :
     renderSurrogates(false),
     renderObjectPosition(false),
     debugCameraPosition(false),
+    renderTileCorners(false),
     navigationSamplesPerViewExtent(4),
     positionViewExtentMin(75),
     positionViewExtentMax(1e7),

@@ -114,7 +114,7 @@ DrawTask::DrawTask(RenderTask *r, MapImpl *m) :
 
 RenderTask::RenderTask() : model(identityMatrix()),
     uvm(upperLeftSubMatrix(identityMatrix()).cast<float>()),
-    color(1,0,0), external(false)
+    color(1,0,0), external(false), type(Type::Invalid)
 {}
 
 bool RenderTask::ready() const
@@ -133,6 +133,7 @@ bool RenderTask::ready() const
 TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
     : nodeInfo(nodeInfo), surface(nullptr), lastAccessTime(0),
       flags(0), texelSize(0), displaySize(0),
+      surrogate(vtslibs::vts::GeomExtents::invalidSurrogate),
       validity(Validity::Indeterminate), empty(false)
 {}
 
@@ -141,9 +142,7 @@ TraverseNode::~TraverseNode()
 
 void TraverseNode::clear()
 {
-    opaque.clear();
-    transparent.clear();
-    wires.clear();
+    draws.clear();
     childs.clear();
     surface = nullptr;
     empty = false;
@@ -153,10 +152,7 @@ void TraverseNode::clear()
 
 bool TraverseNode::ready() const
 {
-    for (auto &&it : opaque)
-        if (!it->ready())
-            return false;
-    for (auto &&it : transparent)
+    for (auto &&it : draws)
         if (!it->ready())
             return false;
     return true;

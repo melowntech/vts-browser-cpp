@@ -332,6 +332,12 @@ public:
                                                 o.renderSurrogates);
             nk_label(&ctx, "", NK_TEXT_LEFT);
             
+            // render tile corners
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            o.renderTileCorners = nk_check_label(&ctx, "corners",
+                                                o.renderTileCorners);
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            
             // render objective position
             nk_label(&ctx, "", NK_TEXT_LEFT);
             o.renderObjectPosition = nk_check_label(&ctx, "object. pos.",

@@ -71,6 +71,16 @@ public:
     vec3f color;
     bool external;
     
+    enum class Type
+    {
+        Invalid,
+        Opaque,
+        Transparent,
+        WireBox,
+        Surrogate,
+        Corner,
+    } type;
+    
     RenderTask();
     bool ready() const;
 };
@@ -78,19 +88,17 @@ public:
 class TraverseNode
 {
 public:
-    std::vector<std::shared_ptr<RenderTask>> opaque;
-    std::vector<std::shared_ptr<RenderTask>> transparent;
-    std::vector<std::shared_ptr<RenderTask>> wires;
-    std::vector<std::shared_ptr<RenderTask>> surrogate;
+    std::vector<std::shared_ptr<RenderTask>> draws;
     std::vector<std::shared_ptr<TraverseNode>> childs;
+    std::vector<vec3> cornersPhys;
+    vec3 aabbPhys[2];
+    const SurfaceStackItem *surface;
     NodeInfo nodeInfo;
-    boost::optional<vtslibs::vts::GeomExtents> geomExtents;
-    boost::optional<math::Extents3> extents;
+    uint32 lastAccessTime;
     uint32 flags;
     float texelSize;
+    float surrogate;
     uint16 displaySize;
-    const SurfaceStackItem *surface;
-    uint32 lastAccessTime;
     Validity validity;
     bool empty;
     
@@ -155,6 +163,7 @@ public:
         std::shared_ptr<TraverseNode> traverseRoot;
         mat4 viewProj;
         mat4 viewProjRender;
+        vec4 frustumPlanes[6];
         vec3 perpendicularUnitVector;
         vec3 forwardUnitVector;
         uint32 windowWidth;
@@ -218,7 +227,8 @@ public:
     bool visibilityTest(const TraverseNode *trav);
     bool coarsenessTest(const TraverseNode *trav);
     void convertRenderTasks(std::vector<DrawTask> &draws,
-                            std::vector<std::shared_ptr<RenderTask>> &renders);
+                            std::vector<std::shared_ptr<RenderTask>> &renders,
+                            RenderTask::Type filter);
     Validity checkMetaNode(SurfaceInfo *surface, const TileId &nodeId,
                            const MetaNode *&node);
     void traverseValidNode(std::shared_ptr<TraverseNode> &trav);

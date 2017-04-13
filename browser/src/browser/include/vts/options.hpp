@@ -22,6 +22,7 @@ public:
     uint32 navigationSamplesPerViewExtent;
     bool renderWireBoxes;
     bool renderSurrogates;
+    bool renderTileCorners;
     bool renderObjectPosition;
     bool debugCameraPosition;
 };

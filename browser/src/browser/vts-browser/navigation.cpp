@@ -53,10 +53,7 @@ public:
             if (trav->nodeInfo.nodeId() == nodeInfo.nodeId()
                     || trav->childs.empty())
             {
-                if (trav->geomExtents)
-                    result.emplace(trav->geomExtents->surrogate);
-                else
-                    result.emplace(vtslibs::vts::GeomExtents::invalidSurrogate);
+                result.emplace(trav->surrogate);
                 return process(nullptr);
             }
             

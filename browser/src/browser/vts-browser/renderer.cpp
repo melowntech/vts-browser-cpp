@@ -60,6 +60,10 @@ void MapImpl::setMapConfigPath(const std::string &mapConfigPath)
 
 void MapImpl::purgeHard()
 {
+    // todo unload the old map config
+    //if (mapConfig && *mapConfig)
+    //    mapConfig->impl->state = ResourceImpl::State::initializing;
+    
     initialized = false;
     mapConfig.reset();
     { // clear panZQueue
@@ -135,13 +139,7 @@ Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
 void MapImpl::touchResources(std::shared_ptr<TraverseNode> trav)
 {
     trav->lastAccessTime = statistics.frameIndex;
-    for (auto &&it : trav->opaque)
-        touchResources(it);
-    for (auto &&it : trav->transparent)
-        touchResources(it);
-    for (auto &&it : trav->wires)
-        touchResources(it);
-    for (auto &&it : trav->surrogate)
+    for (auto &&it : trav->draws)
         touchResources(it);
 }
 
@@ -156,45 +154,14 @@ void MapImpl::touchResources(std::shared_ptr<RenderTask> task)
 }
 
 bool MapImpl::visibilityTest(const TraverseNode *trav)
-{
-    
-    if (!trav->geomExtents)
-    {
-        if (trav->nodeInfo.distanceFromRoot() < 3)
-            return true;
-        
-    }
-    
-    if (!trav->extents)
-        return true;
-    
-    vec4 c0 = column(renderer.viewProj, 0);
-    vec4 c1 = column(renderer.viewProj, 1);
-    vec4 c2 = column(renderer.viewProj, 2);
-    vec4 c3 = column(renderer.viewProj, 3);
-    vec4 planes[6] = {
-        c3 + c0, c3 - c0,
-        c3 + c1, c3 - c1,
-        c3 + c2, c3 - c2,
-    };
-    vec3 fl = vecFromUblas<vec3>(trav->extents->ll);
-    vec3 fu = vecFromUblas<vec3>(trav->extents->ur);
-    vec3 el = vecFromUblas<vec3>
-            (mapConfig->referenceFrame.division.extents.ll);
-    vec3 eu = vecFromUblas<vec3>
-            (mapConfig->referenceFrame.division.extents.ur);        
-    vec3 box[2] = {
-        fl.cwiseProduct(eu - el) + el,
-        fu.cwiseProduct(eu - el) + el,
-    };
+{    
     for (uint32 i = 0; i < 6; i++)
     {
-        vec4 &p = planes[i]; // current plane
+        vec4 &p = renderer.frustumPlanes[i]; // current plane
         vec3 pv = vec3( // current p-vertex
-                        box[!!(p[0] > 0)](0),
-                box[!!(p[1] > 0)](1),
-                box[!!(p[2] > 0)](2)
-                );
+                trav->aabbPhys[!!(p[0] > 0)](0),
+                trav->aabbPhys[!!(p[1] > 0)](1),
+                trav->aabbPhys[!!(p[2] > 0)](2));
         double d = dot(vec4to3(p), pv);
         if (d < -p[3])
             return false;
@@ -209,21 +176,17 @@ bool MapImpl::coarsenessTest(const TraverseNode *trav)
     
     if (!applyTexelSize && !applyDisplaySize)
         return false;
+    if (trav->cornersPhys.empty())
+        return false;
+    
     bool result = true;
+    
     if (applyTexelSize)
     {
-        assert(trav->extents);
-        vec3 fl = vecFromUblas<vec3>(trav->extents->ll);
-        vec3 fu = vecFromUblas<vec3>(trav->extents->ur);
-        vec3 el = vecFromUblas<vec3>
-                (mapConfig->referenceFrame.division.extents.ll);
-        vec3 eu = vecFromUblas<vec3>
-                (mapConfig->referenceFrame.division.extents.ur);
         vec3 up = renderer.perpendicularUnitVector * trav->texelSize;
-        for (uint32 i = 0; i < 8; i++)
+        for (const vec3 &c : trav->cornersPhys)
         {
-            vec3 f = lowerUpperCombine(i).cwiseProduct(fu - fl) + fl;
-            vec3 c1 = f.cwiseProduct(eu - el) + el - up * 0.5;
+            vec3 c1 = c - up * 0.5;
             vec3 c2 = c1 + up;
             c1 = vec4to3(renderer.viewProj * vec3to4(c1, 1), true);
             c2 = vec4to3(renderer.viewProj * vec3to4(c2, 1), true);
@@ -231,18 +194,22 @@ bool MapImpl::coarsenessTest(const TraverseNode *trav)
             result = result && len < options.maxTexelToPixelScale;
         }
     }
+    
     if (applyDisplaySize)
     {
-        result = false;
+        result = false; // todo
     }
+    
     return result;
 }
 
 void MapImpl::convertRenderTasks(std::vector<DrawTask> &draws,
-                        std::vector<std::shared_ptr<RenderTask>> &renders)
+                        std::vector<std::shared_ptr<RenderTask>> &renders,
+                        RenderTask::Type filter)
 {
     for (std::shared_ptr<RenderTask> &r : renders)
-        draws.emplace_back(r.get(), this);
+        if (r->type == filter)
+            draws.emplace_back(r.get(), this);
 }
 
 Validity MapImpl::checkMetaNode(SurfaceInfo *surface,
@@ -327,16 +294,22 @@ void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
         return;
     
     // render the node
-    convertRenderTasks(draws.opaque, trav->opaque);
-    convertRenderTasks(draws.transparent, trav->transparent);
-    
+    convertRenderTasks(draws.opaque, trav->draws,
+                       RenderTask::Type::Opaque);
+    convertRenderTasks(draws.transparent, trav->draws,
+                       RenderTask::Type::Transparent);
     // render wireboxes
     if (options.renderWireBoxes)
-        convertRenderTasks(draws.wires, trav->wires);
-    
+        convertRenderTasks(draws.wires, trav->draws,
+                           RenderTask::Type::WireBox);
     // render surrogate
     if (options.renderSurrogates)
-        convertRenderTasks(draws.opaque, trav->surrogate);
+        convertRenderTasks(draws.opaque, trav->draws,
+                           RenderTask::Type::Surrogate);
+    // render tile corners
+    if (options.renderTileCorners)
+        convertRenderTasks(draws.opaque, trav->draws,
+                           RenderTask::Type::Corner);
     
     statistics.meshesRenderedTotal++;
     statistics.meshesRenderedPerLod[
@@ -348,6 +321,7 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
 {
     assert(!trav->surface);
     assert(!trav->empty);
+    assert(trav->draws.empty());
     const TileId nodeId = trav->nodeInfo.nodeId();
     SurfaceStackItem *topmost = nullptr;
     const MetaNode *node = nullptr;
@@ -371,41 +345,111 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
             assert(false);
         }
         assert(n);
-        if (!vtslibs::vts::empty(n->geomExtents))
-            trav->geomExtents = n->geomExtents;
-        if (n->extents.ll != n->extents.ur)
-            trav->extents = n->extents;
         for (uint32 i = 0; i < 4; i++)
             childsAvailable[i] = childsAvailable[i]
                     || (n->childFlags() & (MetaNode::Flag::ulChild << i));
-        if (topmost || n->alien() != it.alien || !n->geometry()
-                || n->extents.ll == n->extents.ur)
+        if (topmost || n->alien() != it.alien)
             continue;
-        topmost = &it;
-        node = n;
+        if (n->geometry())
+        {
+            node = n;
+            topmost = &it;
+        }
+        if (!node)
+            node = n;
     }
     if (!determined)
         return false;
     
-    if (topmost)
+    if (node)
     {
-        assert(node);
         trav->texelSize = node->texelSize;
         trav->displaySize = node->displaySize;
         trav->flags = node->flags();
-        trav->extents = node->extents;
-        trav->geomExtents = node->geomExtents;
+        trav->surrogate = node->geomExtents.surrogate;
+        
+        // corners
+        trav->cornersPhys.clear();
+        trav->cornersPhys.reserve(8);
+        if (!vtslibs::vts::empty(node->geomExtents)
+                && vtslibs::vts::GeomExtents::validSurrogate(
+                    node->geomExtents.surrogate)
+                && !trav->nodeInfo.srs().empty())
+        {
+            vec2 exU = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
+            vec2 exL = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
+            for (uint32 i = 0; i < 4; i++)
+            {
+                vec2 f = vec3to2(lowerUpperCombine(i));
+                vec2 c2 = f.cwiseProduct(exU - exL) + exL;
+                vec3 c = vec2to3(c2, node->geomExtents.surrogate);
+                c = mapConfig->convertor->convert(c,
+                                trav->nodeInfo.srs(),
+                                mapConfig->referenceFrame.model.physicalSrs);
+                trav->cornersPhys.push_back(c);
+            }
+        }
+        else if (node->extents.ll != node->extents.ur)
+        {
+            vec3 fl = vecFromUblas<vec3>(node->extents.ll);
+            vec3 fu = vecFromUblas<vec3>(node->extents.ur);
+            vec3 el = vecFromUblas<vec3>
+                    (mapConfig->referenceFrame.division.extents.ll);
+            vec3 eu = vecFromUblas<vec3>
+                    (mapConfig->referenceFrame.division.extents.ur);
+            for (uint32 i = 0; i < 8; i++)
+            {
+                vec3 f = lowerUpperCombine(i).cwiseProduct(fu - fl) + fl;
+                vec3 c = f.cwiseProduct(eu - el) + el;
+                trav->cornersPhys.push_back(c);
+            }
+        }
+        
+        for (const vec3 &c : trav->cornersPhys)
+        {
+            std::shared_ptr<RenderTask> r = std::make_shared<RenderTask>();
+            r->mesh = getMeshRenderable("data/cube.obj");
+            r->textureColor = getTexture("data/helper.jpg");
+            r->model = translationMatrix(c)
+                    * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
+            r->type = RenderTask::Type::Corner;
+            trav->draws.push_back(r);
+        }
+    }
+    
+    { // aabb
+        if (trav->cornersPhys.empty() || trav->nodeInfo.distanceFromRoot() < 3)
+        {
+            double di = std::numeric_limits<double>::infinity();
+            vec3 vi(di, di, di);
+            trav->aabbPhys[0] = -vi;
+            trav->aabbPhys[1] = vi;
+        }
+        else
+        {
+            trav->aabbPhys[0] = trav->aabbPhys[1] = trav->cornersPhys.front();
+            for (const vec3 &it : trav->cornersPhys)
+            {
+                trav->aabbPhys[0] = min(trav->aabbPhys[0], it);
+                trav->aabbPhys[1] = max(trav->aabbPhys[1], it);
+            }
+        }
+    }
+    
+    // surface
+    if (topmost)
+    {
+        assert(node);
         trav->surface = topmost;
 
         // surrogate
-        trav->surrogate.clear();
-        if (trav->geomExtents && vtslibs::vts::GeomExtents::validSurrogate(
-                    trav->geomExtents->surrogate))
+        if (vtslibs::vts::GeomExtents::validSurrogate(
+                    node->geomExtents.surrogate))
         {
             vec2 exU = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
             vec2 exL = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
             vec3 sds = vec2to3((exU + exL) * 0.5,
-                               trav->geomExtents->surrogate);
+                               node->geomExtents.surrogate);
             vec3 phys = mapConfig->convertor->convert(sds, trav->nodeInfo.srs(),
                                 mapConfig->referenceFrame.model.physicalSrs);
             std::shared_ptr<RenderTask> r = std::make_shared<RenderTask>();
@@ -413,7 +457,8 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
             r->textureColor = getTexture("data/helper.jpg");
             r->model = translationMatrix(phys)
                     * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
-            trav->surrogate.push_back(r);
+            r->type = RenderTask::Type::Surrogate;
+            trav->draws.push_back(r);
         }
     }
     else
@@ -449,9 +494,7 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
     }
     
     bool determined = true;
-    trav->opaque.clear();
-    trav->transparent.clear();
-    trav->wires.clear();
+    std::vector<std::shared_ptr<RenderTask>> newDraws;
     
     // iterate over all submeshes
     for (uint32 subMeshIndex = 0, e = meshAgg->submeshes.size();
@@ -465,7 +508,8 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
             task.mesh = getMeshRenderable("data/cube.obj");;
             task.model = part.normToPhys;
             task.color = trav->surface->color;
-            trav->wires.push_back(std::make_shared<RenderTask>(task));
+            task.type = RenderTask::Type::WireBox;
+            newDraws.push_back(std::make_shared<RenderTask>(task));
         }
         
         // internal texture
@@ -481,7 +525,8 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
             task.textureColor = getTexture(
                         trav->surface->surface->urlIntTex(vars));
             task.external = false;
-            trav->opaque.push_back(std::make_shared<RenderTask>(task));
+            task.type = RenderTask::Type::Opaque;
+            newDraws.push_back(std::make_shared<RenderTask>(task));
             continue;
         }
         
@@ -522,10 +567,14 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
                 task.external = true;
                 if (!b.watertight)
                     task.textureMask = getTexture(b.bound->urlMask(b.vars));
-                trav->opaque.push_back(std::make_shared<RenderTask>(task));
+                task.type = RenderTask::Type::Opaque;
+                newDraws.push_back(std::make_shared<RenderTask>(task));
             }
         }
     }
+    
+    if (determined)
+        trav->draws.insert(trav->draws.end(), newDraws.begin(), newDraws.end());
     
     return determined;
 }
@@ -748,6 +797,18 @@ void MapImpl::updateCamera()
         renderer.viewProj = renderer.viewProjRender;
         renderer.perpendicularUnitVector = normalize(cross(up, dir));
         renderer.forwardUnitVector = dir;
+        { // frustum planes
+            vec4 c0 = column(renderer.viewProj, 0);
+            vec4 c1 = column(renderer.viewProj, 1);
+            vec4 c2 = column(renderer.viewProj, 2);
+            vec4 c3 = column(renderer.viewProj, 3);
+            renderer.frustumPlanes[0] = c3 + c0;
+            renderer.frustumPlanes[1] = c3 - c0;
+            renderer.frustumPlanes[2] = c3 + c1;
+            renderer.frustumPlanes[3] = c3 - c1;
+            renderer.frustumPlanes[4] = c3 + c2;
+            renderer.frustumPlanes[5] = c3 - c2;
+        }
     }
     
     // render object position

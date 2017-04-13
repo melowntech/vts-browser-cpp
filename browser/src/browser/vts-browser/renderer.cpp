@@ -143,49 +143,49 @@ void MapImpl::touchResources(std::shared_ptr<RenderTask> task)
 
 bool MapImpl::visibilityTest(const TraverseNode *trav)
 {
-    if (trav->nodeInfo.distanceFromRoot() < 3)
-        return true;
-    //if (vtslibs::vts::empty(node.geomExtents))
+    
+    if (!trav->geomExtents)
     {
-        if (!trav->extents)
+        if (trav->nodeInfo.distanceFromRoot() < 3)
             return true;
-        vec4 c0 = column(renderer.viewProj, 0);
-        vec4 c1 = column(renderer.viewProj, 1);
-        vec4 c2 = column(renderer.viewProj, 2);
-        vec4 c3 = column(renderer.viewProj, 3);
-        vec4 planes[6] = {
-            c3 + c0, c3 - c0,
-            c3 + c1, c3 - c1,
-            c3 + c2, c3 - c2,
-        };
-        vec3 fl = vecFromUblas<vec3>(trav->extents->ll);
-        vec3 fu = vecFromUblas<vec3>(trav->extents->ur);
-        vec3 el = vecFromUblas<vec3>
-                (mapConfig->referenceFrame.division.extents.ll);
-        vec3 eu = vecFromUblas<vec3>
-                (mapConfig->referenceFrame.division.extents.ur);        
-        vec3 box[2] = {
-            fl.cwiseProduct(eu - el) + el,
-            fu.cwiseProduct(eu - el) + el,
-        };
-        for (uint32 i = 0; i < 6; i++)
-        {
-            vec4 &p = planes[i]; // current plane
-            vec3 pv = vec3( // current p-vertex
-                            box[!!(p[0] > 0)](0),
-                    box[!!(p[1] > 0)](1),
-                    box[!!(p[2] > 0)](2)
-                    );
-            double d = dot(vec4to3(p), pv);
-            if (d < -p[3])
-                return false;
-        }
+        
+    }
+    
+    if (!trav->extents)
         return true;
-    }
-    //else
+    
+    vec4 c0 = column(renderer.viewProj, 0);
+    vec4 c1 = column(renderer.viewProj, 1);
+    vec4 c2 = column(renderer.viewProj, 2);
+    vec4 c3 = column(renderer.viewProj, 3);
+    vec4 planes[6] = {
+        c3 + c0, c3 - c0,
+        c3 + c1, c3 - c1,
+        c3 + c2, c3 - c2,
+    };
+    vec3 fl = vecFromUblas<vec3>(trav->extents->ll);
+    vec3 fu = vecFromUblas<vec3>(trav->extents->ur);
+    vec3 el = vecFromUblas<vec3>
+            (mapConfig->referenceFrame.division.extents.ll);
+    vec3 eu = vecFromUblas<vec3>
+            (mapConfig->referenceFrame.division.extents.ur);        
+    vec3 box[2] = {
+        fl.cwiseProduct(eu - el) + el,
+        fu.cwiseProduct(eu - el) + el,
+    };
+    for (uint32 i = 0; i < 6; i++)
     {
-        // todo
+        vec4 &p = planes[i]; // current plane
+        vec3 pv = vec3( // current p-vertex
+                        box[!!(p[0] > 0)](0),
+                box[!!(p[1] > 0)](1),
+                box[!!(p[2] > 0)](2)
+                );
+        double d = dot(vec4to3(p), pv);
+        if (d < -p[3])
+            return false;
     }
+    return true;
 }
 
 bool MapImpl::coarsenessTest(const TraverseNode *trav)
@@ -222,28 +222,6 @@ bool MapImpl::coarsenessTest(const TraverseNode *trav)
         result = false;
     }
     return result;
-}
-
-bool MapImpl::backTileCulling(const TraverseNode *trav)
-{
-    return false; // todo temporarily disabled backtile culling
-    if (trav->nodeInfo.distanceFromRoot() < 6
-            && trav->nodeInfo.distanceFromRoot() > 2)
-    {
-        vec2 fl = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
-        vec2 fu = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
-        vec2 c = (fl + fu) * 0.5;
-        vec3 an = vec2to3(c, 0);
-        vec3 ap = mapConfig->convertor->convert(an, trav->nodeInfo.srs(),
-                    mapConfig->referenceFrame.model.physicalSrs);
-        vec3 bn = vec2to3(c, 100);
-        vec3 bp = mapConfig->convertor->convert(bn, trav->nodeInfo.srs(),
-                    mapConfig->referenceFrame.model.physicalSrs);
-        vec3 dir = normalize(bp - ap);
-        if (dot(dir, renderer.forwardUnitVector) > 0)
-            return true;
-    }
-    return false;
 }
 
 void MapImpl::convertRenderTasks(std::vector<DrawTask> &draws,
@@ -298,7 +276,7 @@ Validity MapImpl::checkMetaNode(SurfaceInfo *surface,
 void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
 {    
     // node visibility
-    if (backTileCulling(trav.get()) || !visibilityTest(trav.get()))
+    if (!visibilityTest(trav.get()))
         return;
     
     touchResources(trav);
@@ -484,7 +462,7 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
             RenderTask task;
             task.meshAgg = meshAgg;
             task.mesh = mesh;
-            task.model = part.normToPhys;
+            task.model = part.normToPhys * scaleMatrix(1.001);
             task.uvm = upperLeftSubMatrix(identityMatrix()).cast<float>();
             task.textureColor = getTexture(
                         trav->surface->surface->urlIntTex(vars));
@@ -522,7 +500,7 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
                 RenderTask task;
                 task.meshAgg = meshAgg;
                 task.mesh = mesh;
-                task.model = part.normToPhys;
+                task.model = part.normToPhys * scaleMatrix(1.001);
                 task.uvm = b.uvMatrix();
                 task.textureColor = getTexture(b.bound->urlExtTex(b.vars));
                 task.textureColor->impl->availTest
@@ -608,6 +586,11 @@ void MapImpl::updateCamera()
     
     { // update and normalize camera position
         checkPanZQueue();
+        
+        // limit zoom
+        pos.verticalExtent = clamp(pos.verticalExtent,
+                                   options.positionViewExtentMin,
+                                   options.positionViewExtentMax);
         
         // apply inertia
         { // position
@@ -720,21 +703,38 @@ void MapImpl::updateCamera()
     // camera distance from object position
     double dist = pos.verticalExtent
             * 0.5 / tan(degToRad(pos.verticalFov * 0.5));
-    mat4 view = lookAt(center - dir * dist, center, up);
+    vec3 cameraPosPhys = center - dir * dist;
+    mat4 view = lookAt(cameraPosPhys, center, up);
     
     // camera projection matrix
-    double cameraHeight = pos.position[2]; // todo nav2phys
-    double zFactor = std::max(cameraHeight - 1000, dist);
-    statistics.currentNearPlane = std::max(2.0, zFactor * 0.1);
-    statistics.currentFarPlane = std::max(100000.0, zFactor * 20);
+    double terrainAboveOrigin = length(mapConfig->convertor->navToPhys(
+        vec2to3(vec3to2(vecFromUblas<vec3>(mapConfig->position.position)), 0)));
+    double cameraAboveOrigin = length(cameraPosPhys);
+    double cameraAboveTerrain = std::max(0.0, 
+                    cameraAboveOrigin - terrainAboveOrigin - 500);
+    double cameraToHorizon = cameraAboveOrigin > terrainAboveOrigin
+            ? std::sqrt(cameraAboveOrigin * cameraAboveOrigin
+                - terrainAboveOrigin * terrainAboveOrigin)
+            : 0;
+    double cameraFocusDist = std::max(dist, cameraAboveTerrain);
+    double mountains = 5000;
+    double mountainsBehindHorizon = std::sqrt((terrainAboveOrigin + mountains)
+                                    * (terrainAboveOrigin + mountains)
+                                    - terrainAboveOrigin * terrainAboveOrigin);
+    statistics.currentNearPlane = std::max(2.0, cameraFocusDist * 0.1);
+    statistics.currentFarPlane = cameraToHorizon + mountainsBehindHorizon;
     mat4 proj = perspectiveMatrix(pos.verticalFov,
               (double)renderer.windowWidth / (double)renderer.windowHeight,
               statistics.currentNearPlane, statistics.currentFarPlane);
     
     // few other variables
-    renderer.viewProj = proj * view;
-    renderer.perpendicularUnitVector = normalize(cross(up, dir));
-    renderer.forwardUnitVector = dir;
+    renderer.viewProjRender = proj * view;
+    if (!options.debugCameraPosition)
+    {
+        renderer.viewProj = renderer.viewProjRender;
+        renderer.perpendicularUnitVector = normalize(cross(up, dir));
+        renderer.forwardUnitVector = dir;
+    }
     
     // render object position
     if (options.renderObjectPosition)

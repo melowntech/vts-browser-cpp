@@ -105,7 +105,7 @@ DrawTask::DrawTask(RenderTask *r, MapImpl *m) :
     mesh = r->mesh.get();
     texColor = r->textureColor.get();
     texMask = r->textureMask.get();
-    mat4f mvp = (m->renderer.viewProj * r->model).cast<float>();
+    mat4f mvp = (m->renderer.viewProjRender * r->model).cast<float>();
     memcpy(this->mvp, mvp.data(), sizeof(mvp));
     memcpy(uvm, r->uvm.data(), sizeof(uvm));
     memcpy(color, r->color.data(), sizeof(color));

@@ -27,11 +27,11 @@ void MapStatistics::resetAll()
     currentGpuMemUse = 0;
     currentRamMemUse = 0;
     currentResources = 0;
+    lastHeightRequestLod = 0;
 }
 
 void MapStatistics::resetFrame()
 {
-    lastHeightRequestLod = 0;
     currentNearPlane = 0;
     currentFarPlane = 0;
     currentNodeUpdates = 0;

@@ -277,57 +277,73 @@ public:
             float ratio[] = { width * 0.4, width * 0.5, width * 0.1 };
             nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
             char buffer[256];
+            
             // maxTexelToPixelScale
             nk_label(&ctx, "Detail control:", NK_TEXT_LEFT);
             o.maxTexelToPixelScale = nk_slide_float(&ctx,
                     1, o.maxTexelToPixelScale, 5, 0.01);
             sprintf(buffer, "%3.1f", o.maxTexelToPixelScale);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            
             // autoRotateSpeed
             nk_label(&ctx, "Auto rotate:", NK_TEXT_LEFT);
             o.autoRotateSpeed = nk_slide_float(&ctx,
                     0, o.autoRotateSpeed, 1, 0.001);
             sprintf(buffer, "%.2f", o.autoRotateSpeed);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            
             // maxResourcesMemory
             nk_label(&ctx, "Max memory:", NK_TEXT_LEFT);
             o.maxResourcesMemory = 1024 * 1024 * nk_slide_int(&ctx,
                     128, o.maxResourcesMemory / 1024 / 1024, 2048, 32);
             sprintf(buffer, "%3d", o.maxResourcesMemory / 1024 / 1024);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            
             // maxConcurrentDownloads
             nk_label(&ctx, "Max downloads:", NK_TEXT_LEFT);
             o.maxConcurrentDownloads = nk_slide_int(&ctx,
                     1, o.maxConcurrentDownloads, 50, 1);
             sprintf(buffer, "%3d", o.maxConcurrentDownloads);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            
             // maxNodeUpdatesPerFrame
             nk_label(&ctx, "Max updates:", NK_TEXT_LEFT);
             o.maxNodeUpdatesPerFrame = nk_slide_int(&ctx,
                     1, o.maxNodeUpdatesPerFrame, 50, 1);
             sprintf(buffer, "%3d", o.maxNodeUpdatesPerFrame);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            
             // navigation samples per view extent
             nk_label(&ctx, "Nav. samples:", NK_TEXT_LEFT);
             o.navigationSamplesPerViewExtent = nk_slide_int(&ctx,
                     1, o.navigationSamplesPerViewExtent, 16, 1);
             sprintf(buffer, "%3d", o.navigationSamplesPerViewExtent);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            
             // render mesh wire boxes
             nk_label(&ctx, "Display:", NK_TEXT_LEFT);
             o.renderWireBoxes = nk_check_label(&ctx, "wireboxes",
                                                o.renderWireBoxes);
             nk_label(&ctx, "", NK_TEXT_LEFT);
+            
             // render surrogates
             nk_label(&ctx, "", NK_TEXT_LEFT);
             o.renderSurrogates = nk_check_label(&ctx, "surrogates",
                                                 o.renderSurrogates);
             nk_label(&ctx, "", NK_TEXT_LEFT);
+            
             // render objective position
             nk_label(&ctx, "", NK_TEXT_LEFT);
             o.renderObjectPosition = nk_check_label(&ctx, "object. pos.",
                                                 o.renderObjectPosition);
             nk_label(&ctx, "", NK_TEXT_LEFT);
+            
+            // camera debug
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            o.debugCameraPosition = nk_check_label(&ctx, "camera debug",
+                                                o.debugCameraPosition);
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            
             // print debug info
             nk_label(&ctx, "", NK_TEXT_LEFT);
             if (nk_button_label(&ctx, "Print debug info"))

@@ -154,6 +154,7 @@ public:
     public:
         std::shared_ptr<TraverseNode> traverseRoot;
         mat4 viewProj;
+        mat4 viewProjRender;
         vec3 perpendicularUnitVector;
         vec3 forwardUnitVector;
         uint32 windowWidth;
@@ -215,7 +216,6 @@ public:
     void touchResources(std::shared_ptr<TraverseNode> trav);
     void touchResources(std::shared_ptr<RenderTask> task);
     bool visibilityTest(const TraverseNode *trav);
-    bool backTileCulling(const TraverseNode *trav);
     bool coarsenessTest(const TraverseNode *trav);
     void convertRenderTasks(std::vector<DrawTask> &draws,
                             std::vector<std::shared_ptr<RenderTask>> &renders);

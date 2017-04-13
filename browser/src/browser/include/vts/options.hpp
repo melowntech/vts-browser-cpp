@@ -14,6 +14,8 @@ public:
     
     double autoRotateSpeed;
     double maxTexelToPixelScale;
+    double positionViewExtentMin;
+    double positionViewExtentMax;
     uint32 maxResourcesMemory;
     uint32 maxConcurrentDownloads;
     uint32 maxNodeUpdatesPerFrame;
@@ -21,6 +23,7 @@ public:
     bool renderWireBoxes;
     bool renderSurrogates;
     bool renderObjectPosition;
+    bool debugCameraPosition;
 };
 
 } // namespace vts

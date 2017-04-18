@@ -177,6 +177,14 @@ const std::string MapFoundation::getMapConfigPath() const
     return impl->mapConfigPath;
 }
 
+void MapFoundation::purgeTraverseCache(bool hard)
+{
+    if (hard)
+        impl->purgeHard();
+    else
+        impl->purgeSoft();
+}
+
 bool MapFoundation::isMapConfigReady() const
 {
     return impl->mapConfig && *impl->mapConfig;

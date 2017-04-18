@@ -88,10 +88,10 @@ public:
 class TraverseNode
 {
 public:
+    vec3 cornersPhys[8];
+    vec3 aabbPhys[2];
     std::vector<std::shared_ptr<RenderTask>> draws;
     std::vector<std::shared_ptr<TraverseNode>> childs;
-    std::vector<vec3> cornersPhys;
-    vec3 aabbPhys[2];
     const SurfaceStackItem *surface;
     NodeInfo nodeInfo;
     uint32 lastAccessTime;
@@ -166,6 +166,7 @@ public:
         vec4 frustumPlanes[6];
         vec3 perpendicularUnitVector;
         vec3 forwardUnitVector;
+        vec3 cameraPosPhys;
         uint32 windowWidth;
         uint32 windowHeight;
         uint32 metaTileBinaryOrder;

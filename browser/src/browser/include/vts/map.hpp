@@ -60,6 +60,7 @@ public:
     
     void setMapConfigPath(const std::string &mapConfigPath);
     const std::string getMapConfigPath() const;
+    void purgeTraverseCache(bool hard);
     
     /// returns whether the map config has been downloaded and parsed
     /// successfully

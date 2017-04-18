@@ -24,7 +24,9 @@ public:
     bool renderSurrogates;
     bool renderTileCorners;
     bool renderObjectPosition;
-    bool debugCameraPosition;
+    
+    bool debugDetachedCamera;
+    bool debugDisableMeta5;
 };
 
 } // namespace vts

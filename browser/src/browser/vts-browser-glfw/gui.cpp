@@ -344,11 +344,21 @@ public:
                                                 o.renderObjectPosition);
             nk_label(&ctx, "", NK_TEXT_LEFT);
             
-            // camera debug
+            // detached camera
+            nk_label(&ctx, "Debug:", NK_TEXT_LEFT);
+            o.debugDetachedCamera = nk_check_label(&ctx, "detached camera",
+                                                o.debugDetachedCamera);
             nk_label(&ctx, "", NK_TEXT_LEFT);
-            o.debugCameraPosition = nk_check_label(&ctx, "camera debug",
-                                                o.debugCameraPosition);
-            nk_label(&ctx, "", NK_TEXT_LEFT);
+            
+            { // debug disable meta 5
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+                bool old = o.debugDisableMeta5;
+                o.debugDisableMeta5 = nk_check_label(&ctx, "disable meta5",
+                                                    o.debugDisableMeta5);
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+                if (old != o.debugDisableMeta5)
+                    window->map->purgeTraverseCache(false);
+            }
             
             // print debug info
             nk_label(&ctx, "", NK_TEXT_LEFT);

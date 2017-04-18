@@ -176,8 +176,6 @@ bool MapImpl::coarsenessTest(const TraverseNode *trav)
     
     if (!applyTexelSize && !applyDisplaySize)
         return false;
-    if (trav->cornersPhys.empty())
-        return false;
     
     bool result = true;
     
@@ -369,24 +367,20 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
         trav->surrogate = node->geomExtents.surrogate;
         
         // corners
-        trav->cornersPhys.clear();
-        trav->cornersPhys.reserve(8);
         if (!vtslibs::vts::empty(node->geomExtents)
-                && vtslibs::vts::GeomExtents::validSurrogate(
-                    node->geomExtents.surrogate)
-                && !trav->nodeInfo.srs().empty())
+                && !trav->nodeInfo.srs().empty()
+                && !options.debugDisableMeta5)
         {
-            vec2 exU = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
-            vec2 exL = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
-            for (uint32 i = 0; i < 4; i++)
+            vec2 fl = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
+            vec2 fu = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
+            vec3 el = vec2to3(fl, node->geomExtents.z.min);
+            vec3 eu = vec2to3(fu, node->geomExtents.z.max);
+            for (uint32 i = 0; i < 8; i++)
             {
-                vec2 f = vec3to2(lowerUpperCombine(i));
-                vec2 c2 = f.cwiseProduct(exU - exL) + exL;
-                vec3 c = vec2to3(c2, node->geomExtents.surrogate);
-                c = mapConfig->convertor->convert(c,
-                                trav->nodeInfo.srs(),
-                                mapConfig->referenceFrame.model.physicalSrs);
-                trav->cornersPhys.push_back(c);
+                vec3 f = lowerUpperCombine(i).cwiseProduct(eu - el) + el;
+                f = mapConfig->convertor->convert(f, trav->nodeInfo.srs(),
+                            mapConfig->referenceFrame.model.physicalSrs);
+                trav->cornersPhys[i] = f;
             }
         }
         else if (node->extents.ll != node->extents.ur)
@@ -400,8 +394,7 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
             for (uint32 i = 0; i < 8; i++)
             {
                 vec3 f = lowerUpperCombine(i).cwiseProduct(fu - fl) + fl;
-                vec3 c = f.cwiseProduct(eu - el) + el;
-                trav->cornersPhys.push_back(c);
+                trav->cornersPhys[i] = f.cwiseProduct(eu - el) + el;
             }
         }
         
@@ -417,22 +410,13 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
         }
     }
     
+    if (trav->nodeInfo.distanceFromRoot() > 2)
     { // aabb
-        if (trav->cornersPhys.empty() || trav->nodeInfo.distanceFromRoot() < 3)
+        trav->aabbPhys[0] = trav->aabbPhys[1] = trav->cornersPhys[0];
+        for (const vec3 &it : trav->cornersPhys)
         {
-            double di = std::numeric_limits<double>::infinity();
-            vec3 vi(di, di, di);
-            trav->aabbPhys[0] = -vi;
-            trav->aabbPhys[1] = vi;
-        }
-        else
-        {
-            trav->aabbPhys[0] = trav->aabbPhys[1] = trav->cornersPhys.front();
-            for (const vec3 &it : trav->cornersPhys)
-            {
-                trav->aabbPhys[0] = min(trav->aabbPhys[0], it);
-                trav->aabbPhys[1] = max(trav->aabbPhys[1], it);
-            }
+            trav->aabbPhys[0] = min(trav->aabbPhys[0], it);
+            trav->aabbPhys[1] = max(trav->aabbPhys[1], it);
         }
     }
     
@@ -770,21 +754,18 @@ void MapImpl::updateCamera()
     mat4 view = lookAt(cameraPosPhys, center, up);
     
     // camera projection matrix
+    statistics.currentNearPlane = std::max(2.0, dist * 0.1);
     double terrainAboveOrigin = length(mapConfig->convertor->navToPhys(
         vec2to3(vec3to2(vecFromUblas<vec3>(mapConfig->position.position)), 0)));
     double cameraAboveOrigin = length(cameraPosPhys);
-    double cameraAboveTerrain = std::max(0.0, 
-                    cameraAboveOrigin - terrainAboveOrigin - 500);
     double cameraToHorizon = cameraAboveOrigin > terrainAboveOrigin
             ? std::sqrt(cameraAboveOrigin * cameraAboveOrigin
                 - terrainAboveOrigin * terrainAboveOrigin)
             : 0;
-    double cameraFocusDist = std::max(dist, cameraAboveTerrain);
     double mountains = 5000;
     double mountainsBehindHorizon = std::sqrt((terrainAboveOrigin + mountains)
                                     * (terrainAboveOrigin + mountains)
                                     - terrainAboveOrigin * terrainAboveOrigin);
-    statistics.currentNearPlane = std::max(2.0, cameraFocusDist * 0.1);
     statistics.currentFarPlane = cameraToHorizon + mountainsBehindHorizon;
     mat4 proj = perspectiveMatrix(pos.verticalFov,
               (double)renderer.windowWidth / (double)renderer.windowHeight,
@@ -792,7 +773,7 @@ void MapImpl::updateCamera()
     
     // few other variables
     renderer.viewProjRender = proj * view;
-    if (!options.debugCameraPosition)
+    if (!options.debugDetachedCamera)
     {
         renderer.viewProj = renderer.viewProjRender;
         renderer.perpendicularUnitVector = normalize(cross(up, dir));
@@ -809,6 +790,7 @@ void MapImpl::updateCamera()
             renderer.frustumPlanes[4] = c3 + c2;
             renderer.frustumPlanes[5] = c3 - c2;
         }
+        renderer.cameraPosPhys = cameraPosPhys;
     }
     
     // render object position

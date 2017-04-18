@@ -135,7 +135,21 @@ TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
       flags(0), texelSize(0), displaySize(0),
       surrogate(vtslibs::vts::GeomExtents::invalidSurrogate),
       validity(Validity::Indeterminate), empty(false)
-{}
+{
+    { // initialize corners to NAN
+        vec3 n;
+        for (uint32 i = 0; i < 3; i++)
+            n[i] = std::numeric_limits<double>::quiet_NaN();
+        for (uint32 i = 0; i < 8; i++)
+            cornersPhys[i] = n;
+    }
+    { // initialize aabb to universe
+        double di = std::numeric_limits<double>::infinity();
+        vec3 vi(di, di, di);
+        aabbPhys[0] = -vi;
+        aabbPhys[1] = vi;
+    }
+}
 
 TraverseNode::~TraverseNode()
 {}

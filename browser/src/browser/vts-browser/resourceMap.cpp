@@ -24,7 +24,7 @@ NavTile::NavTile(const std::string &name) : Resource(name)
 void NavTile::load(MapImpl *)
 {
     GpuTextureSpec spec;
-    decodeImage(name, impl->contentData, spec.buffer,
+    decodeImage(impl->contentData, spec.buffer,
                 spec.width, spec.height, spec.components);
     if (spec.width != 256 || spec.height != 256 || spec.components != 1)
         throw std::runtime_error("invalid navtile image");
@@ -156,7 +156,7 @@ void BoundMetaTile::load(MapImpl *)
 {
     Buffer buffer = std::move(impl->contentData);
     GpuTextureSpec spec;
-    decodeImage(name, buffer, spec.buffer,
+    decodeImage(buffer, spec.buffer,
                 spec.width, spec.height, spec.components);
     if (spec.buffer.size() != sizeof(flags))
         throw std::runtime_error("bound meta tile has invalid resolution");
@@ -175,7 +175,7 @@ void BoundMaskTile::load(MapImpl *base)
     
     Buffer buffer = std::move(impl->contentData);
     GpuTextureSpec spec;
-    decodeImage(name, buffer, spec.buffer,
+    decodeImage(buffer, spec.buffer,
                 spec.width, spec.height, spec.components);
     texture->loadTexture(spec);
     gpuMemoryCost = texture->gpuMemoryCost;

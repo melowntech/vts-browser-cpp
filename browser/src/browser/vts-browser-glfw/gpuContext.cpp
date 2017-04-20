@@ -364,7 +364,7 @@ GpuMeshImpl::~GpuMeshImpl()
     clear();
 }
 
-void GpuMeshImpl::draw()
+void GpuMeshImpl::bind()
 {
     assert(vbo > 0);
     if (vao)
@@ -392,16 +392,18 @@ void GpuMeshImpl::draw()
             else
                 glDisableVertexAttribArray(i);
         }
-        checkGl("first draw mesh");
     }
-    
+    checkGl("bind mesh");
+}
+
+void GpuMeshImpl::dispatch()
+{
     if (spec.indicesCount > 0)
         glDrawElements((GLenum)spec.faceMode, spec.indicesCount,
                        GL_UNSIGNED_SHORT, nullptr);
     else
         glDrawArrays((GLenum)spec.faceMode, 0, spec.verticesCount);
-    glBindVertexArray(0);
-    checkGl("draw mesh");
+    checkGl("dispatch mesh");
 }
 
 void GpuMeshImpl::loadMesh(const vts::GpuMeshSpec &spec)

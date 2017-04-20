@@ -41,8 +41,6 @@ public:
     uint32 currentRamMemUse;
     uint32 lastHeightRequestLod;
     uint32 currentNodeUpdates;
-    double currentNearPlane;
-    double currentFarPlane;
 };
 
 } // namespace vts

@@ -32,8 +32,6 @@ void MapStatistics::resetAll()
 
 void MapStatistics::resetFrame()
 {
-    currentNearPlane = 0;
-    currentFarPlane = 0;
     currentNodeUpdates = 0;
     meshesRenderedTotal = 0;
     metaNodesTraversedTotal = 0;

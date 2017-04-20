@@ -8,7 +8,7 @@
 namespace vts
 {
 
-void decodeImage(const std::string &name, const Buffer &in, Buffer &out,
+void decodeImage(const Buffer &in, Buffer &out,
                  uint32 &width, uint32 &height, uint32 &components);
 
 } // namespace vts

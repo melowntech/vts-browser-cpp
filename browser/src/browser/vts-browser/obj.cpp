@@ -6,13 +6,14 @@
 namespace vts
 {
 
-void decodeObj(const std::string &name, Buffer &in,
+void decodeObj(const Buffer &in,
                Buffer &outVertices, Buffer &,
                uint32 &vertices, uint32 &indices)
 {
+    Buffer buf(in);
     geometry::Obj obj;
-    if (!obj.parse(in))
-        throw std::runtime_error(std::string("failed to decode obj: ") + name);
+    if (!obj.parse(buf))
+        throw std::runtime_error("failed to decode obj file");
 
     struct F
     {

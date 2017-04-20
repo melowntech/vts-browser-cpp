@@ -55,7 +55,8 @@ public:
     GpuMeshImpl(const std::string &name);
     ~GpuMeshImpl();
     void clear();
-    void draw();
+    void bind();
+    void dispatch();
     void loadMesh(const vts::GpuMeshSpec &spec) override;
 };
 

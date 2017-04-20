@@ -11,13 +11,13 @@ set(PUB_HDR_LIST
 	../include/vts/statistics.hpp
 	../include/vts/view.hpp
 	../include/vts/math.hpp
+	../include/vts/point.hpp
 )
 
 set(HDR_LIST
 	map.hpp
 	image.hpp
 	resourceMap.hpp
-	color.hpp
 	mapConfig.hpp
 	csConvertor.hpp
 	obj.hpp

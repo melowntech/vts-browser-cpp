@@ -11,7 +11,7 @@ namespace vts
 namespace
 {
 
-void decodePng(const std::string &name, const Buffer &in, Buffer &out,
+void decodePng(const Buffer &in, Buffer &out,
                uint32 &width, uint32 &height, uint32 &components)
 {
     LodePNGState state;
@@ -19,8 +19,7 @@ void decodePng(const std::string &name, const Buffer &in, Buffer &out,
     unsigned res = lodepng_inspect(&width, &height, &state,
                                    (unsigned char*)in.data(), in.size());
     if (res != 0)
-        throw std::runtime_error(
-                std::string("failed to decode png image ") + name);
+        throw std::runtime_error("failed to decode png image");
     components = lodepng_get_channels(&state.info_png.color);
     unsigned char *tmp = nullptr;
     res = lodepng_decode_memory(&tmp, &width, &height,
@@ -29,8 +28,7 @@ void decodePng(const std::string &name, const Buffer &in, Buffer &out,
     if (res != 0)
     {
         free(tmp);
-        throw std::runtime_error(
-                std::string("failed to decode png image ") + name);
+        throw std::runtime_error("failed to decode png image");
     }
     out = Buffer(width * height * components);
     memcpy(out.data(), tmp, out.size());
@@ -45,7 +43,7 @@ void jpegErrFunc(j_common_ptr cinfo)
                                + jpegLastErrorMsg);
 }
 
-void decodeJpeg(const std::string &, const Buffer &in, Buffer &out,
+void decodeJpeg(const Buffer &in, Buffer &out,
                 uint32 &width, uint32 &height, uint32 &components)
 {
     jpeg_decompress_struct info;
@@ -82,7 +80,7 @@ void decodeJpeg(const std::string &, const Buffer &in, Buffer &out,
 
 } // namespace
 
-void decodeImage(const std::string &name, const Buffer &in, Buffer &out,
+void decodeImage(const Buffer &in, Buffer &out,
                  uint32 &width, uint32 &height, uint32 &components)
 {
     if (in.size() < 8)
@@ -90,9 +88,9 @@ void decodeImage(const std::string &name, const Buffer &in, Buffer &out,
     static const unsigned char pngSignature[]
             = { 137, 80, 78, 71, 13, 10, 26, 10 };
     if (memcmp(in.data(), pngSignature, 8) == 0)
-        decodePng(name, in, out, width, height, components);
+        decodePng(in, out, width, height, components);
     else
-        decodeJpeg(name, in, out, width, height, components);
+        decodeJpeg(in, out, width, height, components);
 }
 
 } // namespace vts

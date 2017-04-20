@@ -3,7 +3,6 @@
 
 #include "resource.hpp"
 #include "mapConfig.hpp"
-#include "color.hpp"
 
 namespace vts
 {

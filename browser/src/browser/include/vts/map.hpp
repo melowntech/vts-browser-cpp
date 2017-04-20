@@ -7,27 +7,10 @@
 #include <vector>
 
 #include "foundation.hpp"
+#include "point.hpp"
 
 namespace vts
 {
-
-struct VTS_API Point
-{
-    Point();
-    Point(double x, double y, double z);
-    
-    union
-    {
-        struct
-        {
-            double data[3];
-        };
-        struct
-        {
-            double x, y, z;
-        };
-    };
-};
 
 enum class Srs
 {
@@ -58,13 +41,22 @@ public:
     std::function<std::shared_ptr<class GpuMesh>(const std::string &)>
             createMesh;
     
+    /// function callbacks for camera overrides (all in physical srs)
+    std::function<void(double*)> cameraOverrideEye;
+    std::function<void(double*)> cameraOverrideTarget;
+    std::function<void(double*)> cameraOverrideUp;
+    std::function<void(double&, double&, double&, double&)>
+                                        cameraOverrideFovAspectNearFar;
+    std::function<void(double*)> cameraOverrideView;
+    std::function<void(double*)> cameraOverrideProj;
+    
     void setMapConfigPath(const std::string &mapConfigPath);
     const std::string getMapConfigPath() const;
     void purgeTraverseCache(bool hard);
     
-    /// returns whether the map config has been downloaded and parsed
-    /// successfully
-    /// most other functions will not work until it is ready
+    /// returns whether the map config has been downloaded
+    /// and parsed successfully
+    /// most other functions will not work until this is ready
     bool isMapConfigReady() const;
     /// returns whether the map has had all resources needed for complete
     /// render

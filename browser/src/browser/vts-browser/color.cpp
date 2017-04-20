@@ -1,4 +1,4 @@
-#include "color.hpp"
+#include <vts/math.hpp>
 
 namespace vts
 {

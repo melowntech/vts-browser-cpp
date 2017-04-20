@@ -31,6 +31,7 @@ class VTS_API GpuTextureSpec
 {
 public:
     GpuTextureSpec();
+    GpuTextureSpec(const Buffer &buffer);
 
     uint32 width, height;
     uint32 components; // 1, 2, 3 or 4
@@ -79,6 +80,7 @@ public:
     };
 
     GpuMeshSpec();
+    GpuMeshSpec(const Buffer &buffer);
 
     Buffer vertices;
     Buffer indices;

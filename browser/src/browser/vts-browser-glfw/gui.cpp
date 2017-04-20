@@ -245,6 +245,12 @@ public:
         if (!consumeEvents)
             window->mousePositionCallback(xpos, ypos);
     }
+    
+    void mouseButtonCallback(int button, int action, int mods)
+    {
+        if (!consumeEvents)
+            window->mouseButtonCallback(button, action, mods);
+    }
 
     void mouseScrollCallback(double xoffset, double yoffset)
     {
@@ -254,6 +260,12 @@ public:
         nk_input_scroll(&ctx, pos);
         if (!consumeEvents)
             window->mouseScrollCallback(xoffset, yoffset);
+    }
+    
+    void keyboardCallback(int key, int scancode, int action, int mods)
+    {
+        if (!consumeEvents)
+            window->keyboardCallback(key, scancode, action, mods);
     }
     
     void keyboardUnicodeCallback(unsigned int codepoint)
@@ -395,8 +407,7 @@ public:
             S("Gpu Memory:", s.currentGpuMemUse / 1024 / 1024, " MB");
             S("Nav. lod:", s.lastHeightRequestLod, "");
             nk_label(&ctx, "Z range:", NK_TEXT_LEFT);
-            sprintf(buffer, "%0.0f - %0.0f", s.currentNearPlane,
-                                            s.currentFarPlane);
+            sprintf(buffer, "%0.0f - %0.0f", window->camNear, window->camFar);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             // resources
             S("Res. active:", s.currentResources, "");
@@ -518,7 +529,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Views", nk_rect(700, 10, 300, 400), flags))
+        if (nk_begin(&ctx, "Views", nk_rect(690, 10, 300, 400), flags))
         {
             float width = nk_window_get_content_region_size(&ctx).x - 15;
             
@@ -632,12 +643,32 @@ public:
         nk_end(&ctx);
     }
 
+    void prepareMarks()
+    {
+        int flags = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE
+                | NK_WINDOW_SCALABLE | NK_WINDOW_TITLE
+                | NK_WINDOW_MINIMIZABLE;
+        if (prepareFirst)
+            flags |= NK_WINDOW_MINIMIZED;
+        if (nk_begin(&ctx, "Marks", nk_rect(1000, 10, 200, 400), flags))
+        {
+            std::vector<Mark> &marks = window->marks;
+            float width = nk_window_get_content_region_size(&ctx).x - 15;
+            float ratio[] = { width * 0.5, width * 0.5 };
+            nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+            char buffer[256];
+            
+        }
+        nk_end(&ctx);
+    }
+    
     void prepare(int width, int height)
     {
         prepareOptions();
         prepareStatistics();
         preparePosition();
         prepareViews();
+        prepareMarks();
         prepareFirst = false;
     }
 
@@ -663,7 +694,7 @@ public:
     std::shared_ptr<GpuTextureImpl> fontTexture;
     std::shared_ptr<GpuShader> shader;
     std::shared_ptr<GpuMeshImpl> mesh;
-
+    
     static const int MaxVertexMemory = 512 * 1024;
     static const int MaxElementMemory = 128 * 1024;
 };
@@ -673,9 +704,20 @@ void MainWindow::Gui::mousePositionCallback(double xpos, double ypos)
     impl->mousePositionCallback(xpos, ypos);
 }
 
+void MainWindow::Gui::mouseButtonCallback(int button, int action, int mods)
+{
+    impl->mouseButtonCallback(button, action, mods);
+}
+
 void MainWindow::Gui::mouseScrollCallback(double xoffset, double yoffset)
 {
     impl->mouseScrollCallback(xoffset, yoffset);
+}
+
+void MainWindow::Gui::keyboardCallback(int key, int scancode,
+                                       int action, int mods)
+{
+    impl->keyboardCallback(key, scancode, action, mods);
 }
 
 void MainWindow::Gui::keyboardUnicodeCallback(unsigned int codepoint)
@@ -696,7 +738,6 @@ void MainWindow::Gui::render(int width, int height)
 void MainWindow::Gui::input()
 {
     impl->input();
-    //glfwPollEvents();
 }
 
 void MainWindow::Gui::finalize()

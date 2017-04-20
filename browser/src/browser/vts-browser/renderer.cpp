@@ -1,3 +1,4 @@
+#include <vts/map.hpp>
 #include "map.hpp"
 
 namespace vts
@@ -751,10 +752,18 @@ void MapImpl::updateCamera()
     double dist = pos.verticalExtent
             * 0.5 / tan(degToRad(pos.verticalFov * 0.5));
     vec3 cameraPosPhys = center - dir * dist;
+    if (mapFoundation->cameraOverrideEye)
+        mapFoundation->cameraOverrideEye((double*)&cameraPosPhys);
+    if (mapFoundation->cameraOverrideTarget)
+        mapFoundation->cameraOverrideTarget((double*)&center);
+    if (mapFoundation->cameraOverrideUp)
+        mapFoundation->cameraOverrideUp((double*)&up);
     mat4 view = lookAt(cameraPosPhys, center, up);
+    if (mapFoundation->cameraOverrideView)
+        mapFoundation->cameraOverrideView((double*)&view);
     
     // camera projection matrix
-    statistics.currentNearPlane = std::max(2.0, dist * 0.1);
+    double near = std::max(2.0, dist * 0.1);
     double terrainAboveOrigin = length(mapConfig->convertor->navToPhys(
         vec2to3(vec3to2(vecFromUblas<vec3>(mapConfig->position.position)), 0)));
     double cameraAboveOrigin = length(cameraPosPhys);
@@ -766,10 +775,14 @@ void MapImpl::updateCamera()
     double mountainsBehindHorizon = std::sqrt((terrainAboveOrigin + mountains)
                                     * (terrainAboveOrigin + mountains)
                                     - terrainAboveOrigin * terrainAboveOrigin);
-    statistics.currentFarPlane = cameraToHorizon + mountainsBehindHorizon;
-    mat4 proj = perspectiveMatrix(pos.verticalFov,
-              (double)renderer.windowWidth / (double)renderer.windowHeight,
-              statistics.currentNearPlane, statistics.currentFarPlane);
+    double far = cameraToHorizon + mountainsBehindHorizon;
+    double fov = pos.verticalFov;
+    double aspect = (double)renderer.windowWidth/(double)renderer.windowHeight;
+    if (mapFoundation->cameraOverrideFovAspectNearFar)
+        mapFoundation->cameraOverrideFovAspectNearFar(fov, aspect, near, far);
+    mat4 proj = perspectiveMatrix(fov, aspect, near, far);
+    if (mapFoundation->cameraOverrideProj)
+        mapFoundation->cameraOverrideProj((double*)&proj);
     
     // few other variables
     renderer.viewProjRender = proj * view;

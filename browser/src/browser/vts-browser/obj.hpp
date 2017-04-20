@@ -8,7 +8,7 @@
 namespace vts
 {
 
-void decodeObj(const std::string &name, Buffer &in,
+void decodeObj(const Buffer &in,
                Buffer &outVertices, Buffer &outIndices,
                uint32 &vertices, uint32 &indices);
 

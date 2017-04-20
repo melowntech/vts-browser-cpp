@@ -22,8 +22,7 @@ public:
         downloading,
         downloaded,
         ready,
-        errorDownload,
-        errorLoad,
+        error,
         finalizing,
     };
     
@@ -33,10 +32,11 @@ public:
     void loadFromCache(class MapImpl *map);
     void loadFromInternalMemory();
     
+    double priority;
     Resource *const resource;
     vtslibs::registry::BoundLayer::Availability *availTest;
-    uint32 lastAccessTick;
     std::atomic<State> state;
+    uint32 lastAccessTick;
 };
 
 } // namespace vts

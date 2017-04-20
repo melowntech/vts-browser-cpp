@@ -273,6 +273,7 @@ void MapImpl::rotate(const vec3 &value)
     default:
         throw std::invalid_argument("not implemented navigation srs type");
     }
+    rot *= options.cameraSensitivityRotate;
     navigation.inertiaRotation += rot;
 }
 
@@ -288,7 +289,7 @@ void MapImpl::pan(const vec3 &value)
     {
         mat3 rot = upperLeftSubMatrix
                 (rotationMatrix(2, degToRad(pos.orientation(0))));
-        vec3 move = vec3(-value[0], value[1], 0);
+        vec3 move = vec3(-value[0], value[1], 0) * options.cameraSensitivityPan;
         move = rot * move * (pos.verticalExtent / 800);
         navigation.inertiaMotion += move;
     } break;
@@ -296,7 +297,7 @@ void MapImpl::pan(const vec3 &value)
     {
         mat3 rot = upperLeftSubMatrix
                 (rotationMatrix(2, degToRad(-pos.orientation(0))));
-        vec3 move = vec3(-value[0], value[1], 0);
+        vec3 move = vec3(-value[0], value[1], 0) * options.cameraSensitivityPan;
         move = rot * move * (pos.verticalExtent / 800);
         vec3 p = vecFromUblas<vec3>(pos.position);
         p = mapConfig->convertor->navGeodesicDirect(p, 90, move(0));
@@ -309,7 +310,8 @@ void MapImpl::pan(const vec3 &value)
         throw std::invalid_argument("not implemented navigation srs type");
     }
     double cur = pos.verticalExtent + navigation.inertiaViewExtent;
-    navigation.inertiaViewExtent += cur * pow(1.001, -value[2]) - cur;
+    navigation.inertiaViewExtent += cur *
+            pow(1.001, -value[2] * options.cameraSensitivityZoom) - cur;
     
     { // vertical camera adjustment
         auto h = std::make_shared<HeightRequest>(vec3to2(

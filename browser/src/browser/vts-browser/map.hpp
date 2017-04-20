@@ -150,7 +150,6 @@ public:
         boost::mutex mutInvalidUrls;
         std::atomic_uint downloads;
         Fetcher *fetcher;
-        uint32 takeItemIndex;
         bool destroyTheFetcher;
         
         Resources(const std::string &cachePath, bool keepInvalidUrls);
@@ -161,6 +160,7 @@ public:
     {
     public:
         std::shared_ptr<TraverseNode> traverseRoot;
+        std::queue<std::shared_ptr<TraverseNode>> traverseQueue;
         mat4 viewProj;
         mat4 viewProjRender;
         vec4 frustumPlanes[6];
@@ -199,7 +199,7 @@ public:
     bool dataRenderTick();
     void loadResource(ResourceImpl *r);
     void fetchedFile(FetchTask *task);
-    void touchResource(std::shared_ptr<Resource> resource);
+    void touchResource(std::shared_ptr<Resource> resource, double priority = 0);
     std::shared_ptr<GpuTexture> getTexture(const std::string &name);
     std::shared_ptr<GpuMesh> getMeshRenderable(
             const std::string &name);

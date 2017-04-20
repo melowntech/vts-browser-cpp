@@ -23,11 +23,12 @@ void MapStatistics::resetAll()
     resourcesReleased = 0;
     resourcesFailed = 0;
     frameIndex = 0;
-    currentDownloads = 0;
+    currentResourceDownloads = 0;
     currentGpuMemUse = 0;
     currentRamMemUse = 0;
     currentResources = 0;
     lastHeightRequestLod = 0;
+    currentResourcePreparing = 0;
 }
 
 void MapStatistics::resetFrame()

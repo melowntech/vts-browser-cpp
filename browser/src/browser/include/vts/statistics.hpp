@@ -35,8 +35,9 @@ public:
     
     // current statistics
     
-    uint32 currentDownloads;
     uint32 currentResources;
+    uint32 currentResourceDownloads;
+    uint32 currentResourcePreparing;
     uint32 currentGpuMemUse;
     uint32 currentRamMemUse;
     uint32 lastHeightRequestLod;

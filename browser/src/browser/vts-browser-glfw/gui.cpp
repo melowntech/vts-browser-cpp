@@ -20,7 +20,8 @@ public:
     
     GuiImpl(MainWindow *window) : window(window),
         consumeEvents(true), prepareFirst(true),
-        statTraversedDetails(false), statRenderedDetails(false)
+        statTraversedDetails(false), statRenderedDetails(false),
+        optSensitivityDetails(false)
     {
         { // load font
             struct nk_font_config cfg;
@@ -290,6 +291,70 @@ public:
             nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
             char buffer[256];
             
+            // camera control sensitivity
+            nk_label(&ctx, "Mouse sensitivity:", NK_TEXT_LEFT);
+            nk_checkbox_label(&ctx, "", &optSensitivityDetails);
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            if (optSensitivityDetails)
+            {
+                nk_label(&ctx, "Pan speed:", NK_TEXT_LEFT);
+                o.cameraSensitivityPan = nk_slide_float(&ctx,
+                        0.1, o.cameraSensitivityPan, 3, 0.01);
+                sprintf(buffer, "%4.2f", o.cameraSensitivityPan);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                nk_label(&ctx, "Vertical speed:", NK_TEXT_LEFT);
+                o.cameraSensitivityAltitude = nk_slide_float(&ctx,
+                        0.1, o.cameraSensitivityAltitude, 3, 0.01);
+                sprintf(buffer, "%4.2f", o.cameraSensitivityAltitude);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                nk_label(&ctx, "Zoom speed:", NK_TEXT_LEFT);
+                o.cameraSensitivityZoom = nk_slide_float(&ctx,
+                        0.1, o.cameraSensitivityZoom, 3, 0.01);
+                sprintf(buffer, "%4.2f", o.cameraSensitivityZoom);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                nk_label(&ctx, "Rotate speed:", NK_TEXT_LEFT);
+                o.cameraSensitivityRotate = nk_slide_float(&ctx,
+                        0.1, o.cameraSensitivityRotate, 3, 0.01);
+                sprintf(buffer, "%4.2f", o.cameraSensitivityRotate);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                
+                nk_label(&ctx, "Pan inertia:", NK_TEXT_LEFT);
+                o.cameraInertiaPan = nk_slide_float(&ctx,
+                        0, o.cameraInertiaPan, 0.99, 0.01);
+                sprintf(buffer, "%4.2f", o.cameraInertiaPan);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                nk_label(&ctx, "Vertical inertia:", NK_TEXT_LEFT);
+                o.cameraInertiaAltitude = nk_slide_float(&ctx,
+                        0, o.cameraInertiaAltitude, 0.99, 0.01);
+                sprintf(buffer, "%4.2f", o.cameraInertiaAltitude);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                nk_label(&ctx, "Zoom inertia:", NK_TEXT_LEFT);
+                o.cameraInertiaZoom = nk_slide_float(&ctx,
+                        0, o.cameraInertiaZoom, 0.99, 0.01);
+                sprintf(buffer, "%4.2f", o.cameraInertiaZoom);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                nk_label(&ctx, "Rotate inertia:", NK_TEXT_LEFT);
+                o.cameraInertiaRotate = nk_slide_float(&ctx,
+                        0, o.cameraInertiaRotate, 0.99, 0.01);
+                sprintf(buffer, "%4.2f", o.cameraInertiaRotate);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+                if (nk_button_label(&ctx, "Reset sensitivity"))
+                {
+                    vts::MapOptions d;
+                    o.cameraSensitivityPan       = d.cameraSensitivityPan;
+                    o.cameraSensitivityAltitude  = d.cameraSensitivityAltitude;
+                    o.cameraSensitivityZoom      = d.cameraSensitivityZoom;
+                    o.cameraSensitivityRotate    = d.cameraSensitivityRotate;
+                    o.cameraInertiaPan           = d.cameraInertiaPan;
+                    o.cameraInertiaAltitude      = d.cameraInertiaAltitude;
+                    o.cameraInertiaZoom          = d.cameraInertiaZoom;
+                    o.cameraInertiaRotate        = d.cameraInertiaRotate;
+                }
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+            }
+                
             // maxTexelToPixelScale
             nk_label(&ctx, "Detail control:", NK_TEXT_LEFT);
             o.maxTexelToPixelScale = nk_slide_float(&ctx,
@@ -402,7 +467,7 @@ public:
             }
             // general
             S("Frame:", s.frameIndex, "");
-            S("Downloading:", s.currentDownloads, "");
+            S("Downloading:", s.currentResourceDownloads, "");
             S("Node updates:", s.currentNodeUpdates, "");
             S("Gpu Memory:", s.currentGpuMemUse / 1024 / 1024, " MB");
             S("Nav. lod:", s.lastHeightRequestLod, "");
@@ -411,6 +476,7 @@ public:
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             // resources
             S("Res. active:", s.currentResources, "");
+            S("Res. preparing:", s.currentResourcePreparing, "");
             S("Res. downloaded:", s.resourcesDownloaded, "");
             S("Res. disk loaded:", s.resourcesDiskLoaded, "");
             S("Res. processed:", s.resourcesProcessLoaded, "");
@@ -689,6 +755,7 @@ public:
 
     int statTraversedDetails;
     int statRenderedDetails;
+    int optSensitivityDetails;
 
     MainWindow *window;
     std::shared_ptr<GpuTextureImpl> fontTexture;

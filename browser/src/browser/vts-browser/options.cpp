@@ -19,7 +19,15 @@ MapOptions::MapOptions() :
     autoRotateSpeed(0),
     maxResourcesMemory(512*1024*1024),
     maxConcurrentDownloads(30),
-    maxNodeUpdatesPerFrame(10)
+    maxNodeUpdatesPerFrame(20),
+    cameraSensitivityPan(1),
+    cameraSensitivityAltitude(1),
+    cameraSensitivityZoom(1),
+    cameraSensitivityRotate(1),
+    cameraInertiaPan(0.8),
+    cameraInertiaAltitude(0.95),
+    cameraInertiaZoom(0.8),
+    cameraInertiaRotate(0.8)
 {}
 
 MapOptions::~MapOptions()

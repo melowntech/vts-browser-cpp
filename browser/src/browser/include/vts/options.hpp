@@ -16,6 +16,14 @@ public:
     double maxTexelToPixelScale;
     double positionViewExtentMin;
     double positionViewExtentMax;
+    double cameraSensitivityPan;
+    double cameraSensitivityAltitude;
+    double cameraSensitivityZoom;
+    double cameraSensitivityRotate;
+    double cameraInertiaPan;
+    double cameraInertiaAltitude;
+    double cameraInertiaZoom;
+    double cameraInertiaRotate;
     uint32 maxResourcesMemory;
     uint32 maxConcurrentDownloads;
     uint32 maxNodeUpdatesPerFrame;

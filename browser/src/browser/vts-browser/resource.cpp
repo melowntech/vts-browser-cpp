@@ -66,8 +66,8 @@ void ResourceImpl::loadFromCache(MapImpl *map)
     }
     catch (std::runtime_error &)
     {
-        LOG(err4) << "Error reading resource: " + resource->name
-                     + " from cache file";
+        LOG(err3) << "Error reading resource '" + resource->name
+                     + "'' from cache file";
     }
 }
 
@@ -82,15 +82,15 @@ void ResourceImpl::loadFromInternalMemory()
     }
     catch (std::runtime_error &)
     {
-        LOG(err4) << "Error reading resource: " + resource->name
-                     + " from internal memory";
+        LOG(err3) << "Error reading resource '" + resource->name
+                     + "'' from internal memory";
     }
 }
 
 ResourceImpl::ResourceImpl(Resource *resource)
     : FetchTask(resource->name),
       resource(resource), state(State::initializing),
-      lastAccessTick(0), availTest(nullptr)
+      lastAccessTick(0), availTest(nullptr), priority(0)
 {}
 
 } // namespace vts

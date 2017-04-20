@@ -11,8 +11,7 @@ inline bool testAndThrow(ResourceImpl::State state)
 {
     switch (state)
     {
-    case ResourceImpl::State::errorDownload:
-    case ResourceImpl::State::errorLoad:
+    case ResourceImpl::State::error:
         throw std::runtime_error("MapConfig failed");
     case ResourceImpl::State::downloaded:
     case ResourceImpl::State::downloading:
@@ -284,7 +283,7 @@ void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
         if (allOk)
         {
             for (std::shared_ptr<TraverseNode> &t : trav->childs)
-                traverse(t, false);
+                renderer.traverseQueue.push(t);
             return;
         }
     }
@@ -608,8 +607,6 @@ void MapImpl::traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly)
     
     // make node valid
     trav->validity = Validity::Valid;
-    if (!loadOnly)
-        traverse(trav, false);
 }
 
 void MapImpl::traverseClearing(std::shared_ptr<TraverseNode> &trav)
@@ -642,26 +639,34 @@ void MapImpl::updateCamera()
         
         // apply inertia
         { // position
+            double cip = options.cameraInertiaPan;
+            double cia = options.cameraInertiaAltitude;
+            assert(cip >= 0 && cip < 1);
+            assert(cia >= 0 && cia < 1);
             vec2 curXY = vec3to2(vecFromUblas<vec3>(pos.position));
             vec2 inrXY = vec3to2(navigation.inertiaMotion);
             double curZ = pos.position[2];
             double inrZ = navigation.inertiaMotion[2];
-            curXY += 0.25 * inrXY;
-            inrXY *= 0.8;
-            curZ += 0.05 * inrZ;
-            inrZ *= 0.95;
+            curXY += (1.0 - cip) * inrXY;
+            inrXY *= cip;
+            curZ += (1.0 - cia) * inrZ;
+            inrZ *= cia;
             pos.position = vecToUblas<math::Point3>(vec2to3(curXY, curZ));
             navigation.inertiaMotion = vec2to3(inrXY, inrZ);
         }
         { // orientation
+            double cir = options.cameraInertiaRotate;
+            assert(cir >= 0 && cir < 1);
             navigation.inertiaRotation(0) += options.autoRotateSpeed;
-            pos.orientation += vecToUblas<math::Point3>(0.25 * 
+            pos.orientation += vecToUblas<math::Point3>((1.0 - cir) * 
                         navigation.inertiaRotation);
-            navigation.inertiaRotation *= 0.8;
+            navigation.inertiaRotation *= cir;
         }
         { // vertical view extent
-            pos.verticalExtent += navigation.inertiaViewExtent * 0.2;
-            navigation.inertiaViewExtent *= 0.8;
+            double ciz = options.cameraInertiaZoom;
+            assert(ciz >= 0 && ciz < 1);
+            pos.verticalExtent += navigation.inertiaViewExtent * (1.0 - ciz);
+            navigation.inertiaViewExtent *= ciz;
         }
         
         // normalize
@@ -892,7 +897,13 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
     draws.transparent.clear();
     draws.wires.clear();
     updateCamera();
-    traverse(renderer.traverseRoot, false);
+    std::queue<std::shared_ptr<TraverseNode>>().swap(renderer.traverseQueue);
+    renderer.traverseQueue.push(renderer.traverseRoot);
+    while (!renderer.traverseQueue.empty())
+    {
+        traverse(renderer.traverseQueue.front(), false);
+        renderer.traverseQueue.pop();
+    }
     traverseClearing(renderer.traverseRoot);
     
     statistics.frameIndex++;

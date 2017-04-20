@@ -13,7 +13,7 @@ void errorCallback(int error, const char* description)
 
 void usage(char *argv[])
 {
-    printf("Usage: %s [options] [--] <url> [url...]\n", argv[0]);
+    printf("Usage: %s [options] [--] <url> [url]...\n", argv[0]);
 }
 
 int main(int argc, char *argv[])
@@ -27,20 +27,22 @@ int main(int argc, char *argv[])
         int firstUrl = argc;
         for (int i = 1; i < argc; i++)
         {
-            if (argv[i][0] == '-')
-            {
-                if (argv[i][1] == '-')
-                {
-                    firstUrl = i + 1;
-                    break;
-                }
-                // todo handle options
-            }
-            else
+            if (argv[i][0] != '-')
             {
                 firstUrl = i;
                 break;
             }
+            if (strcmp(argv[i], "--") == 0)
+            {
+                firstUrl = i + 1;
+                break;
+            }
+            
+            // todo handle options
+            
+            fprintf(stderr, "Unknown option '%s'\n", argv[i]);
+            usage(argv);
+            return 4;
         }
         if (firstUrl >= argc)
         {

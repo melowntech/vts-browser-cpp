@@ -496,24 +496,6 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
             newDraws.push_back(std::make_shared<RenderTask>(task));
         }
         
-        // internal texture
-        if (part.internalUv)
-        {
-            UrlTemplate::Vars vars(nodeId,
-                    vtslibs::vts::local(trav->nodeInfo), subMeshIndex);
-            RenderTask task;
-            task.meshAgg = meshAgg;
-            task.mesh = mesh;
-            task.model = part.normToPhys * scaleMatrix(1.001);
-            task.uvm = upperLeftSubMatrix(identityMatrix()).cast<float>();
-            task.textureColor = getTexture(
-                        trav->surface->surface->urlIntTex(vars));
-            task.external = false;
-            task.type = RenderTask::Type::Opaque;
-            newDraws.push_back(std::make_shared<RenderTask>(task));
-            continue;
-        }
-        
         // external bound textures
         if (part.externalUv)
         {
@@ -554,6 +536,25 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
                 task.type = RenderTask::Type::Opaque;
                 newDraws.push_back(std::make_shared<RenderTask>(task));
             }
+            if (!bls.empty())
+                continue;
+        }
+        
+        // internal texture
+        if (part.internalUv)
+        {
+            UrlTemplate::Vars vars(nodeId,
+                    vtslibs::vts::local(trav->nodeInfo), subMeshIndex);
+            RenderTask task;
+            task.meshAgg = meshAgg;
+            task.mesh = mesh;
+            task.model = part.normToPhys * scaleMatrix(1.001);
+            task.uvm = upperLeftSubMatrix(identityMatrix()).cast<float>();
+            task.textureColor = getTexture(
+                        trav->surface->surface->urlIntTex(vars));
+            task.external = false;
+            task.type = RenderTask::Type::Opaque;
+            newDraws.push_back(std::make_shared<RenderTask>(task));
         }
     }
     

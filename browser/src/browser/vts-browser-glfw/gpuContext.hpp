@@ -35,6 +35,7 @@ class GpuTextureImpl : public vts::GpuTexture
 {
 public:
     GLuint id;
+    bool grayscale;
 
     static GLenum findInternalFormat(const vts::GpuTextureSpec &spec);
     static GLenum findFormat(const vts::GpuTextureSpec &spec);

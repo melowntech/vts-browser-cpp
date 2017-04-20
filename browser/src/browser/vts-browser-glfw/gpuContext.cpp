@@ -255,7 +255,7 @@ void GpuShader::uniform(vts::uint32 location, const int value)
 
 
 GpuTextureImpl::GpuTextureImpl(const std::string &name) :
-    vts::GpuTexture(name), id(0)
+    vts::GpuTexture(name), id(0), grayscale(false)
 {}
 
 void GpuTextureImpl::clear()
@@ -338,6 +338,8 @@ void GpuTextureImpl::loadTexture(const vts::GpuTextureSpec &spec)
         glTexParameterf(GL_TEXTURE_2D,
                         GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
     }
+    
+    grayscale = spec.components == 1;
     
     glFinish();
     checkGl("load texture");

@@ -197,7 +197,9 @@ void MainWindow::drawTexture(vts::DrawTask &t)
     }
     else
         shaderTexture->uniform(9, 0);
-    dynamic_cast<GpuTextureImpl*>(t.texColor)->bind();
+    GpuTextureImpl *tex = dynamic_cast<GpuTextureImpl*>(t.texColor);
+    shaderTexture->uniform(10, (int)tex->grayscale);
+    tex->bind();
     GpuMeshImpl *m = dynamic_cast<GpuMeshImpl*>(t.mesh);
     m->bind();
     m->dispatch();

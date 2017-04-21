@@ -56,6 +56,7 @@ public:
     MapConfig(const std::string &name);
 
     void load(class MapImpl *base) override;
+    void clear();
     
     vtslibs::vts::SurfaceCommonConfig *findGlue(
             const vtslibs::vts::Glue::Id &id);

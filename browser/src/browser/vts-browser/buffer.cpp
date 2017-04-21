@@ -29,6 +29,7 @@ Buffer::Buffer(Buffer &&other) : data_(other.data_), size_(other.size_),
     other.data_ = nullptr;
     other.size_ = 0;
     setg(data_, data_, data_ + size_);
+    clear();
 }
 
 Buffer::~Buffer()
@@ -55,6 +56,7 @@ Buffer &Buffer::operator = (Buffer &&other)
     other.data_ = nullptr;
     other.size_ = 0;
     setg(data_, data_, data_ + size_);
+    clear();
 }
 
 void Buffer::allocate(uint32 size)
@@ -65,6 +67,7 @@ void Buffer::allocate(uint32 size)
     if (!data_)
         throw std::runtime_error("not enough memory");
     setg(data_, data_, data_ + size_);
+    clear();
 }
 
 void Buffer::free()

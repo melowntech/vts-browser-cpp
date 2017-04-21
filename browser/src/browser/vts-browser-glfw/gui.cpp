@@ -569,7 +569,7 @@ public:
                 if (nk_button_label(&ctx, "Reset rotation"))
                 {
                     r.x = 0;
-                    r.y = -90;
+                    r.y = 270;
                     r.z = 0;
                     window->map->setPositionRotation(r);
                 }

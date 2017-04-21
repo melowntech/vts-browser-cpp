@@ -41,6 +41,7 @@ MapConfig::MapConfig(const std::string &name) : Resource(name)
 
 void MapConfig::load(MapImpl *)
 {
+    clear();
     vtslibs::vts::loadMapConfig(*this, impl->contentData, name);
     
     convertor = std::shared_ptr<CsConvertor>(CsConvertor::create(
@@ -51,6 +52,15 @@ void MapConfig::load(MapImpl *)
                   ));
     
     generateSurfaceStack();
+}
+
+void MapConfig::clear()
+{
+    *(vtslibs::vts::MapConfig*)this = vtslibs::vts::MapConfig();
+    surfaceInfos.clear();
+    boundInfos.clear();
+    surfaceStack.clear();
+    convertor.reset();
 }
 
 vtslibs::vts::SurfaceCommonConfig *MapConfig::findGlue(
@@ -216,7 +226,7 @@ void MapConfig::generateSurfaceStack()
         if (it->alien)
         {
             vec3f c = convertRgbToHsv(it->color);
-            c(1) *= 0.5;
+            c(2) *= 0.5;
             it->color = convertHsvToRgb(c);
         }
     }

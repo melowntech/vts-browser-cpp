@@ -60,9 +60,8 @@ void MapImpl::setMapConfigPath(const std::string &mapConfigPath)
 
 void MapImpl::purgeHard()
 {
-    // todo unload the old map config
-    //if (mapConfig && *mapConfig)
-    //    mapConfig->impl->state = ResourceImpl::State::initializing;
+    if (mapConfig && *mapConfig)
+        mapConfig->impl->state = ResourceImpl::State::initializing;
     
     initialized = false;
     mapConfig.reset();
@@ -528,8 +527,7 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
                 task.model = part.normToPhys * scaleMatrix(1.001);
                 task.uvm = b.uvMatrix();
                 task.textureColor = getTexture(b.bound->urlExtTex(b.vars));
-                task.textureColor->impl->availTest
-                        = b.bound->availability.get_ptr();
+                task.textureColor->impl->availTest = b.bound->availability;
                 task.external = true;
                 if (!b.watertight)
                     task.textureMask = getTexture(b.bound->urlMask(b.vars));

@@ -32,9 +32,9 @@ public:
     void loadFromCache(class MapImpl *map);
     void loadFromInternalMemory();
     
-    double priority;
+    boost::optional<vtslibs::registry::BoundLayer::Availability> availTest;
     Resource *const resource;
-    vtslibs::registry::BoundLayer::Availability *availTest;
+    double priority;
     std::atomic<State> state;
     uint32 lastAccessTick;
 };

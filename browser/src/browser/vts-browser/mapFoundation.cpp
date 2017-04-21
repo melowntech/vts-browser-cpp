@@ -242,12 +242,13 @@ void MapFoundation::setPositionPoint(const Point &point)
         return;
     impl->mapConfig->position.position
             = vecToUblas<math::Point3>(vecFromPoint(point));
+    impl->navigation.inertiaMotion = vec3(0,0,0);
 }
 
 const Point MapFoundation::getPositionPoint() const
 {
     if (!isMapConfigReady())
-        return vecToPoint(vec3());
+        return vecToPoint(vec3(0,0,0));
     return vecToPoint(vecFromUblas<vec3>(impl->mapConfig->position.position));
 }
 
@@ -257,12 +258,13 @@ void MapFoundation::setPositionRotation(const Point &point)
         return;
     impl->mapConfig->position.orientation
             = vecToUblas<math::Point3>(vecFromPoint(point));
+    impl->navigation.inertiaRotation = vec3(0,0,0);
 }
 
 const Point MapFoundation::getPositionRotation() const
 {
     if (!isMapConfigReady())
-        return vecToPoint(vec3());
+        return vecToPoint(vec3(0,0,0));
     return vecToPoint(vecFromUblas<vec3>(
                           impl->mapConfig->position.orientation));
 }
@@ -272,6 +274,7 @@ void MapFoundation::setPositionViewExtent(double viewExtent)
     if (!isMapConfigReady())
         return;
     impl->mapConfig->position.verticalExtent = viewExtent;
+    impl->navigation.inertiaViewExtent = 0;
 }
 
 double MapFoundation::getPositionViewExtent() const
@@ -321,7 +324,7 @@ void MapFoundation::resetPositionAltitude()
 const Point MapFoundation::convert(const Point &point, Srs from, Srs to) const
 {
     if (!isMapConfigReady())
-        return vecToPoint(vec3());
+        return vecToPoint(vec3(0,0,0));
     return vecToPoint(impl->mapConfig->convertor->convert(vecFromPoint(point),
                 srsConvert(impl->mapConfig.get(), from),
                 srsConvert(impl->mapConfig.get(), to)));

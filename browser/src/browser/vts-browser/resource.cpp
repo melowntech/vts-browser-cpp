@@ -90,7 +90,7 @@ void ResourceImpl::loadFromInternalMemory()
 ResourceImpl::ResourceImpl(Resource *resource)
     : FetchTask(resource->name),
       resource(resource), state(State::initializing),
-      lastAccessTick(0), availTest(nullptr), priority(0)
+      lastAccessTick(0), priority(0)
 {}
 
 } // namespace vts

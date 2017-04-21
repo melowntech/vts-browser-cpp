@@ -288,17 +288,8 @@ void MainWindow::run()
         gui.input(); // calls glfwPollEvents()
         glfwSwapBuffers(window);
         double timeFrameFinish = glfwGetTime();
-
-        { // timing titlebar
-            char buffer[500];
-            vts::MapStatistics &stat = map->statistics();
-            sprintf(buffer, "timing: %3d + %3d = %3d",
-                    (int)(1000 * (timeBeforeSwap - timeFrameStart)),
-                    (int)(1000 * (timeFrameFinish - timeBeforeSwap)),
-                    (int)(1000 * (timeFrameFinish - timeFrameStart))
-                    );
-            glfwSetWindowTitle(window, buffer);
-        }
+        timingProcess = timeBeforeSwap - timeFrameStart;
+        timingFrame = timeFrameFinish - timeFrameStart;
     }
     gui.finalize();
 }

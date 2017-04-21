@@ -65,16 +65,14 @@ void MapImpl::purgeHard()
     
     initialized = false;
     mapConfig.reset();
-    { // clear panZQueue
-        std::queue<std::shared_ptr<HeightRequest>> tmp;
-        std::swap(tmp, navigation.panZQueue);
-    }
+    navigation.lastPanZShift.reset();
+    std::queue<std::shared_ptr<class HeightRequest>>()
+            .swap(navigation.panZQueue);
     purgeSoft();
 }
 
 void MapImpl::purgeSoft()
 {
-    resetPositionAltitude();
     renderer.traverseRoot.reset();
     statistics.resetFrame();
     draws = DrawBatch();
@@ -84,7 +82,6 @@ void MapImpl::purgeSoft()
         return;
     
     mapConfig->generateSurfaceStack();
-    
     NodeInfo nodeInfo(mapConfig->referenceFrame, TileId(), false, *mapConfig);
     renderer.traverseRoot = std::make_shared<TraverseNode>(nodeInfo);    
 }
@@ -623,10 +620,8 @@ void MapImpl::traverseClearing(std::shared_ptr<TraverseNode> &trav)
 void MapImpl::updateCamera()
 {    
     vtslibs::registry::Position &pos = mapConfig->position;
-    if (pos.type != vtslibs::registry::Position::Type::objective)
-        throw std::runtime_error("unsupported position type");
-    if (pos.heightMode != vtslibs::registry::Position::HeightMode::fixed)
-        throw std::runtime_error("unsupported position height mode");
+    assert(pos.type == vtslibs::registry::Position::Type::objective);    
+    assert(pos.heightMode == vtslibs::registry::Position::HeightMode::fixed);
     
     { // update and normalize camera position
         checkPanZQueue();
@@ -864,16 +859,24 @@ bool MapImpl::prerequisitesCheck()
             return false;
     }
     
-    renderer.metaTileBinaryOrder = mapConfig->referenceFrame.metaBinaryOrder;
+    purgeSoft();
     
+    renderer.metaTileBinaryOrder = mapConfig->referenceFrame.metaBinaryOrder;
+
     mapConfig->boundInfos.clear();
     for (auto &&bl : mapConfig->boundLayers)
     {
-        mapConfig->boundInfos[bl.id] = std::shared_ptr<BoundInfo>
-                (new BoundInfo(bl));
+        mapConfig->boundInfos[bl.id] = std::shared_ptr<BoundInfo>(
+                    new BoundInfo(bl));
     }
     
-    purgeSoft();
+    if (mapConfig->position.heightMode
+            == vtslibs::registry::Position::HeightMode::floating)
+    {
+        mapConfig->position.heightMode
+                = vtslibs::registry::Position::HeightMode::fixed;
+        resetPositionAltitude(mapConfig->position.position[2]);
+    }
     
     initialized = true;
     return true;

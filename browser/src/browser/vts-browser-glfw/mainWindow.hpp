@@ -77,6 +77,8 @@ public:
     vts::mat4 camViewProj;
     double camNear, camFar;
     double mousePrevX, mousePrevY;
+    double timingProcess;
+    double timingFrame;
     int width, height;
     vts::MapFoundation *map;
     GLFWwindow *window;

@@ -468,7 +468,9 @@ public:
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT); \
             }
             // general
-            S("Frame:", s.frameIndex, "");
+            S("Time processing:", (int)(1000 * window->timingProcess), " ms");
+            S("Time frame:", (int)(1000 * window->timingFrame), " ms");
+            S("Frame index:", s.frameIndex, "");
             S("Downloading:", s.currentResourceDownloads, "");
             S("Node updates:", s.currentNodeUpdates, "");
             S("Gpu Memory:", s.currentGpuMemUse / 1024 / 1024, " MB");

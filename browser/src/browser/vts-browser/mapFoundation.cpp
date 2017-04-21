@@ -318,7 +318,7 @@ void MapFoundation::setPositionJson(const std::string &position)
 
 void MapFoundation::resetPositionAltitude()
 {
-    impl->resetPositionAltitude();
+    impl->resetPositionAltitude(0);
 }
 
 const Point MapFoundation::convert(const Point &point, Srs from, Srs to) const

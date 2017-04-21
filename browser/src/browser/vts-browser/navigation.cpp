@@ -85,10 +85,10 @@ public:
     vec2 sds;
     vec2 interpol;
     boost::optional<double> result;
-    bool hardSet;
+    double resetOffset;
     
     HeightRequest(const vec2 &navPos) :
-        navPos(navPos), hardSet(false),
+        navPos(navPos), resetOffset(std::numeric_limits<double>::quiet_NaN()),
         sds(std::numeric_limits<double>::quiet_NaN(),
             std::numeric_limits<double>::quiet_NaN()),
         interpol(std::numeric_limits<double>::quiet_NaN(),
@@ -200,8 +200,8 @@ void MapImpl::checkPanZQueue()
     // apply the height to the camera
     assert(nh == nh);
     double h = mapConfig->position.position[2];
-    if (task.hardSet)
-        mapConfig->position.position[2] = nh;
+    if (task.resetOffset == task.resetOffset)
+        mapConfig->position.position[2] = nh + task.resetOffset;
     else if (navigation.lastPanZShift)
         navigation.inertiaMotion(2) += nh - *navigation.lastPanZShift;
     navigation.lastPanZShift.emplace(nh);
@@ -245,14 +245,15 @@ const NodeInfo MapImpl::findInfoSdsSampled(const NodeInfo &info,
     assert(false);
 }
 
-void MapImpl::resetPositionAltitude()
+void MapImpl::resetPositionAltitude(double resetOffset)
 {
+    navigation.inertiaMotion(2) = 0;
     navigation.lastPanZShift.reset();
     if (!mapConfig || !*mapConfig)
         return;
     auto r = std::make_shared<HeightRequest>(
                 vec3to2(vecFromUblas<vec3>(mapConfig->position.position)));
-    r->hardSet = true;
+    r->resetOffset = resetOffset;
     navigation.panZQueue.push(r);
 }
 

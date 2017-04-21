@@ -188,7 +188,7 @@ public:
             const vec2 &navPos);
     const NodeInfo findInfoSdsSampled(const NodeInfo &info,
                                       const vec2 &sdsPos);
-    void resetPositionAltitude();
+    void resetPositionAltitude(double resetOffset);
     
     // resources methods
     void dataInitialize(Fetcher *fetcher);

@@ -4,9 +4,11 @@
 #include <vts/statistics.hpp>
 #include <vts/options.hpp>
 #include <vts/view.hpp>
+
 #include "mainWindow.hpp"
 #include <nuklear.h>
 #include <GLFW/glfw3.h>
+#include "guiSkin.hpp"
 
 class GuiImpl
 {
@@ -43,8 +45,6 @@ public:
             memcpy(spec.buffer.data(), img, spec.buffer.size());
             fontTexture = std::make_shared<GpuTextureImpl>("font texture");
             fontTexture->loadTexture(spec);
-            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             nk_font_atlas_end(&atlas, nk_handle_id(fontTexture->id), &null);
@@ -71,6 +71,8 @@ public:
         config.shape_AA = NK_ANTI_ALIASING_ON;
         config.line_AA = NK_ANTI_ALIASING_ON;
         config.null = null;
+        
+        initializeGuiSkin(ctx, skinMedia, skinTexture);
         
         { // load shader
             shader = std::make_shared<GpuShader>();
@@ -744,6 +746,7 @@ public:
         dispatch(width, height);
     }
 
+    GuiSkinMedia skinMedia;
     nk_context ctx;
     nk_font_atlas atlas;
     nk_font *font;
@@ -759,6 +762,7 @@ public:
 
     MainWindow *window;
     std::shared_ptr<GpuTextureImpl> fontTexture;
+    std::shared_ptr<GpuTextureImpl> skinTexture;
     std::shared_ptr<GpuShader> shader;
     std::shared_ptr<GpuMeshImpl> mesh;
     

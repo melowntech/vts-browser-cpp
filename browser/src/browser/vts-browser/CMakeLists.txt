@@ -49,6 +49,7 @@ set(DATA_LIST
 	data/cube.obj
 	data/helper.jpg
 	data/fonts/roboto-regular.ttf
+	data/skins/gwen.png
 	data/shaders/color.frag.glsl
 	data/shaders/color.vert.glsl
 	data/shaders/gui.frag.glsl

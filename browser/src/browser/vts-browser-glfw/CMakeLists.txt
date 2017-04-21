@@ -5,12 +5,15 @@ set(HDR_LIST
 	mainWindow.hpp
 	gpuContext.hpp
 	threadName.hpp
+	guiSkin.hpp
 )
 
 set(SRC_LIST
 	dataThread.cpp
 	gpuContext.cpp
-	gui.cpp  main.cpp
+	gui.cpp
+	guiSkin.cpp
+	main.cpp
 	mainWindow.cpp
 )
 
@@ -27,7 +30,7 @@ add_custom_target(vts-browser-glfw-headers SOURCES "${HDR_LIST}")
 
 # install
 install(TARGETS vts-browser-glfw
-			RUNTIME DESTINATION bin
-			COMPONENT browser-glfw
+		RUNTIME DESTINATION bin
+		COMPONENT browser-glfw
 )
 

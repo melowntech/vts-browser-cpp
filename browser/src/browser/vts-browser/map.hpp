@@ -189,6 +189,9 @@ public:
     const NodeInfo findInfoSdsSampled(const NodeInfo &info,
                                       const vec2 &sdsPos);
     void resetPositionAltitude(double resetOffset);
+    void convertPositionSubjObj();
+    void positionToPhys(vec3 &center, vec3 &dir, vec3 &up);
+    double positionObjectiveDistance();
     
     // resources methods
     void dataInitialize(Fetcher *fetcher);

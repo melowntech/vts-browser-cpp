@@ -257,6 +257,92 @@ void MapImpl::resetPositionAltitude(double resetOffset)
     navigation.panZQueue.push(r);
 }
 
+void MapImpl::convertPositionSubjObj()
+{
+    vtslibs::registry::Position &pos = mapConfig->position;
+    vec3 center, dir, up;
+    positionToPhys(center, dir, up);
+    double dist = positionObjectiveDistance();
+    if (pos.type == vtslibs::registry::Position::Type::objective)
+        dist *= -1;
+    center += dir * dist;
+    pos.position = vecToUblas<math::Point3>(
+                mapConfig->convertor->physToNav(center));
+}
+
+void MapImpl::positionToPhys(vec3 &center, vec3 &dir, vec3 &up)
+{
+    vtslibs::registry::Position &pos = mapConfig->position;
+    
+    // camera-space vectors
+    vec3 rot = vecFromUblas<vec3>(pos.orientation);
+    center = vecFromUblas<vec3>(pos.position);
+    dir = vec3(1, 0, 0);
+    up = vec3(0, 0, -1);
+    
+    // apply rotation
+    mat3 tmp = upperLeftSubMatrix(rotationMatrix(2, degToRad(-rot(0))))
+            * upperLeftSubMatrix(rotationMatrix(1, degToRad(-rot(1))));
+    dir = tmp * dir;
+    up = tmp * up;
+    
+    // transform to physical srs
+    switch (mapConfig->srs.get
+            (mapConfig->referenceFrame.model.navigationSrs).type)
+    {
+    case vtslibs::registry::Srs::Type::projected:
+    {
+        // swap XY
+        std::swap(dir(0), dir(1));
+        std::swap(up(0), up(1));
+        // invert Z
+        dir(2) *= -1;
+        up(2) *= -1;
+        // add center of orbit (transform to navigation srs)
+        dir += center;
+        up += center;
+        // transform to physical srs
+        center = mapConfig->convertor->navToPhys(center);
+        dir = mapConfig->convertor->navToPhys(dir);
+        up = mapConfig->convertor->navToPhys(up);
+        // points -> vectors
+        dir = normalize(dir - center);
+        up = normalize(up - center);
+    } break;
+    case vtslibs::registry::Srs::Type::geographic:
+    {
+        // find lat-lon coordinates of points moved to north and east
+        vec3 n2 = mapConfig->convertor->navGeodesicDirect(center, 0, 100);
+        vec3 e2 = mapConfig->convertor->navGeodesicDirect(center, 90, 100);
+        // transform to physical srs
+        center = mapConfig->convertor->navToPhys(center);
+        vec3 n = mapConfig->convertor->navToPhys(n2);
+        vec3 e = mapConfig->convertor->navToPhys(e2);
+        // points -> vectors
+        n = normalize(n - center);
+        e = normalize(e - center);
+        // construct NED coordinate system
+        vec3 d = normalize(cross(n, e));
+        e = normalize(cross(n, d));
+        mat3 tmp = (mat3() << n, e, d).finished();
+        // rotate original vectors
+        dir = tmp * dir;
+        up = tmp * up;
+        dir = normalize(dir);
+        up = normalize(up);
+    } break;
+    default:
+        throw std::invalid_argument("not implemented navigation srs type");
+    }
+}
+
+double MapImpl::positionObjectiveDistance()
+{
+    vtslibs::registry::Position &pos = mapConfig->position;
+    return pos.verticalExtent
+            * 0.5 / tan(degToRad(pos.verticalFov * 0.5));
+}
+
 void MapImpl::rotate(const vec3 &value)
 {
     assert(mapConfig && *mapConfig);

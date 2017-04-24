@@ -618,9 +618,15 @@ void MapImpl::traverseClearing(std::shared_ptr<TraverseNode> &trav)
 }
 
 void MapImpl::updateCamera()
-{    
+{
     vtslibs::registry::Position &pos = mapConfig->position;
-    assert(pos.type == vtslibs::registry::Position::Type::objective);    
+    
+    // floating position
+    if (pos.heightMode == vtslibs::registry::Position::HeightMode::floating)
+    {
+        pos.heightMode = vtslibs::registry::Position::HeightMode::fixed;
+        resetPositionAltitude(pos.position[2]);
+    }
     assert(pos.heightMode == vtslibs::registry::Position::HeightMode::fixed);
     
     { // update and normalize camera position
@@ -685,71 +691,13 @@ void MapImpl::updateCamera()
         normalizeAngle(pos.orientation[2]);
         pos.orientation[1] = clamp(pos.orientation[1], 270, 350);
     }
-    
-    // camera-space vectors
-    vec3 center = vecFromUblas<vec3>(pos.position);
-    vec3 rot = vecFromUblas<vec3>(pos.orientation);
-    vec3 dir(1, 0, 0);
-    vec3 up(0, 0, -1);
-    
-    { // apply rotation
-        mat3 tmp = upperLeftSubMatrix(rotationMatrix(2, degToRad(-rot(0))))
-                * upperLeftSubMatrix(rotationMatrix(1, degToRad(-rot(1))));
-        dir = tmp * dir;
-        up = tmp * up;
-    }
-    
-    switch (mapConfig->srs.get
-            (mapConfig->referenceFrame.model.navigationSrs).type)
-    {
-    case vtslibs::registry::Srs::Type::projected:
-    {
-        // swap XY
-        std::swap(dir(0), dir(1));
-        std::swap(up(0), up(1));
-        // invert Z
-        dir(2) *= -1;
-        up(2) *= -1;
-        // add center of orbit (transform to navigation srs)
-        dir += center;
-        up += center;
-        // transform to physical srs
-        center = mapConfig->convertor->navToPhys(center);
-        dir = mapConfig->convertor->navToPhys(dir);
-        up = mapConfig->convertor->navToPhys(up);
-        // points -> vectors
-        dir = normalize(dir - center);
-        up = normalize(up - center);
-    } break;
-    case vtslibs::registry::Srs::Type::geographic:
-    {
-        // find lat-lon coordinates of points moved to north and east
-        vec3 n2 = mapConfig->convertor->navGeodesicDirect(center, 0, 100);
-        vec3 e2 = mapConfig->convertor->navGeodesicDirect(center, 90, 100);
-        // transform to physical srs
-        center = mapConfig->convertor->navToPhys(center);
-        vec3 n = mapConfig->convertor->navToPhys(n2);
-        vec3 e = mapConfig->convertor->navToPhys(e2);
-        // points -> vectors
-        n = normalize(n - center);
-        e = normalize(e - center);
-        // construct NED coordinate system
-        vec3 d = normalize(cross(n, e));
-        e = normalize(cross(n, d));
-        mat3 tmp = (mat3() << n, e, d).finished();
-        // rotate original vectors
-        dir = tmp * dir;
-        up = tmp * up;
-        dir = normalize(dir);
-        up = normalize(up);
-    } break;
-    default:
-        throw std::invalid_argument("not implemented navigation srs type");
-    }
-    
-    // camera distance from object position
-    double dist = pos.verticalExtent
-            * 0.5 / tan(degToRad(pos.verticalFov * 0.5));
+
+    vec3 center, dir, up;
+    positionToPhys(center, dir, up);
+
+    // camera view matrix
+    double dist = pos.type == vtslibs::registry::Position::Type::objective
+            ? positionObjectiveDistance() : 1;
     vec3 cameraPosPhys = center - dir * dist;
     if (mapFoundation->cameraOverrideEye)
         mapFoundation->cameraOverrideEye((double*)&cameraPosPhys);
@@ -759,12 +707,19 @@ void MapImpl::updateCamera()
         mapFoundation->cameraOverrideUp((double*)&up);
     mat4 view = lookAt(cameraPosPhys, center, up);
     if (mapFoundation->cameraOverrideView)
+    {
         mapFoundation->cameraOverrideView((double*)&view);
+        // update dir and up
+        cameraPosPhys = vec4to3(view * vec4(0, 0, 0, 1), true);
+        center = vec4to3(view * vec4(0, 0, -1, 1), true);
+        dir = vec4to3(view * vec4(0, 0, -1, 0), true);
+        up = vec4to3(view * vec4(0, 1, 0, 0), true);
+    }
     
     // camera projection matrix
     double near = std::max(2.0, dist * 0.1);
     double terrainAboveOrigin = length(mapConfig->convertor->navToPhys(
-        vec2to3(vec3to2(vecFromUblas<vec3>(mapConfig->position.position)), 0)));
+        vec2to3(vec3to2(vecFromUblas<vec3>(pos.position)), 0)));
     double cameraAboveOrigin = length(cameraPosPhys);
     double cameraToHorizon = cameraAboveOrigin > terrainAboveOrigin
             ? std::sqrt(cameraAboveOrigin * cameraAboveOrigin
@@ -868,14 +823,6 @@ bool MapImpl::prerequisitesCheck()
     {
         mapConfig->boundInfos[bl.id] = std::shared_ptr<BoundInfo>(
                     new BoundInfo(bl));
-    }
-    
-    if (mapConfig->position.heightMode
-            == vtslibs::registry::Position::HeightMode::floating)
-    {
-        mapConfig->position.heightMode
-                = vtslibs::registry::Position::HeightMode::fixed;
-        resetPositionAltitude(mapConfig->position.position[2]);
     }
     
     initialized = true;

@@ -78,6 +78,8 @@ public:
 
     void pan(const Point &value);
     void rotate(const Point &value);
+    void setPositionSubjective(bool subjective, bool convert);
+    bool getPositionSubjective() const;
     void setPositionPoint(const Point &point); /// navigation srs
     const Point getPositionPoint() const; /// navigation srs
     void setPositionRotation(const Point &point); /// degrees

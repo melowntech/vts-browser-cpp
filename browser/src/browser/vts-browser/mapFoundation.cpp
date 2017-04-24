@@ -236,6 +236,25 @@ DrawBatch &MapFoundation::drawBatch()
     return impl->draws;
 }
 
+void MapFoundation::setPositionSubjective(bool subjective, bool convert)
+{
+    if (!isMapConfigReady() || subjective == getPositionSubjective())
+        return;
+    if (convert)
+        impl->convertPositionSubjObj();
+    impl->mapConfig->position.type = subjective
+            ? vtslibs::registry::Position::Type::subjective
+            : vtslibs::registry::Position::Type::objective;
+}
+
+bool MapFoundation::getPositionSubjective() const
+{
+    if (!isMapConfigReady())
+        return false;
+    return impl->mapConfig->position.type
+            == vtslibs::registry::Position::Type::subjective;
+}
+
 void MapFoundation::setPositionPoint(const Point &point)
 {
     if (!isMapConfigReady())

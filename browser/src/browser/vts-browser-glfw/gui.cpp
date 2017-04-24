@@ -533,6 +533,14 @@ public:
             float ratio[] = { width * 0.4, width * 0.6 };
             nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
             char buffer[256];
+            { // subjective position
+                int subj = window->map->getPositionSubjective();
+                int prev = subj;
+                nk_label(&ctx, "Subjective:", NK_TEXT_LEFT);
+                nk_checkbox_label(&ctx, "", &subj);
+                if (subj != prev)
+                    window->map->setPositionSubjective(!!subj, true);
+            }
             { // position
 #define S(NAME, P, F) { \
                     nk_label(&ctx, NAME, NK_TEXT_LEFT); \

@@ -8,7 +8,7 @@
 namespace vts
 {
 
-void decodeObj(const Buffer &in,
+void decodeObj(const Buffer &in, uint32 &outFaceMode,
                Buffer &outVertices, Buffer &outIndices,
                uint32 &vertices, uint32 &indices);
 

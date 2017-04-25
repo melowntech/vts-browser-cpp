@@ -69,17 +69,9 @@ public:
     mat4 model;
     mat3f uvm;
     vec3f color;
-    bool external;
-    
-    enum class Type
-    {
-        Invalid,
-        Opaque,
-        Transparent,
-        WireBox,
-        Surrogate,
-        Corner,
-    } type;
+    double alpha;
+    bool externalUv;
+    bool translucent;
     
     RenderTask();
     bool ready() const;
@@ -88,16 +80,17 @@ public:
 class TraverseNode
 {
 public:
+    NodeInfo nodeInfo;
     vec3 cornersPhys[8];
     vec3 aabbPhys[2];
+    vec3 surrogatePhys;
     std::vector<std::shared_ptr<RenderTask>> draws;
     std::vector<std::shared_ptr<TraverseNode>> childs;
     const SurfaceStackItem *surface;
-    NodeInfo nodeInfo;
     uint32 lastAccessTime;
     uint32 flags;
     float texelSize;
-    float surrogate;
+    float surrogateValue;
     uint16 displaySize;
     Validity validity;
     bool empty;
@@ -230,11 +223,9 @@ public:
     void touchResources(std::shared_ptr<RenderTask> task);
     bool visibilityTest(const TraverseNode *trav);
     bool coarsenessTest(const TraverseNode *trav);
-    void convertRenderTasks(std::vector<DrawTask> &draws,
-                            std::vector<std::shared_ptr<RenderTask>> &renders,
-                            RenderTask::Type filter);
     Validity checkMetaNode(SurfaceInfo *surface, const TileId &nodeId,
                            const MetaNode *&node);
+    void renderNode(std::shared_ptr<TraverseNode> &trav);
     void traverseValidNode(std::shared_ptr<TraverseNode> &trav);
     bool traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav);
     bool traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav);

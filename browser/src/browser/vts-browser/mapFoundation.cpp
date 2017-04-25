@@ -194,7 +194,7 @@ bool MapFoundation::isMapRenderComplete() const
 {
     if (!isMapConfigReady())
         return false;
-    return !impl->draws.opaque.empty()
+    return !impl->draws.draws.empty()
             && impl->statistics.currentNodeUpdates == 0;
 }
 

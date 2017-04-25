@@ -28,9 +28,10 @@ public:
     uint32 maxConcurrentDownloads;
     uint32 maxNodeUpdatesPerFrame;
     uint32 navigationSamplesPerViewExtent;
-    bool renderWireBoxes;
+    
     bool renderSurrogates;
-    bool renderTileCorners;
+    bool renderMeshBoxes;
+    bool renderTileBoxes;
     bool renderObjectPosition;
     
     bool debugDetachedCamera;

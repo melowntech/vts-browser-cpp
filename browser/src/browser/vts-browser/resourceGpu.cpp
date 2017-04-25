@@ -38,7 +38,22 @@ GpuMeshSpec::GpuMeshSpec(const Buffer &buffer) :
     faceMode(FaceMode::Triangles)
 {
     uint32 dummy;
-    decodeObj(buffer, vertices, indices, verticesCount, dummy);
+    uint32 fm;
+    decodeObj(buffer, fm, vertices, indices, verticesCount, dummy);
+    switch (fm)
+    {
+    case 1:
+        faceMode = FaceMode::Points;
+        break;
+    case 2:
+        faceMode = FaceMode::Lines;
+        break;
+    case 3:
+        faceMode = FaceMode::Triangles;
+        break;
+    default:
+        throw std::invalid_argument("invalid face mode in obj");
+    }
 }
 
 GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0),

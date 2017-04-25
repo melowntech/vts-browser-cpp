@@ -197,15 +197,6 @@ bool MapImpl::coarsenessTest(const TraverseNode *trav)
     return result;
 }
 
-void MapImpl::convertRenderTasks(std::vector<DrawTask> &draws,
-                        std::vector<std::shared_ptr<RenderTask>> &renders,
-                        RenderTask::Type filter)
-{
-    for (std::shared_ptr<RenderTask> &r : renders)
-        if (r->type == filter)
-            draws.emplace_back(r.get(), this);
-}
-
 Validity MapImpl::checkMetaNode(SurfaceInfo *surface,
                                 const TileId &nodeId,
                                 const MetaNode *&node)
@@ -248,6 +239,76 @@ Validity MapImpl::checkMetaNode(SurfaceInfo *surface,
     return Validity::Invalid;
 }
 
+void MapImpl::renderNode(std::shared_ptr<TraverseNode> &trav)
+{
+    // meshes
+    for (std::shared_ptr<RenderTask> &r : trav->draws)
+    {
+        assert(r->ready());
+        draws.draws.emplace_back(r.get(), this);
+    }
+    
+    // surrogate
+    if (options.renderSurrogates)
+    {
+        RenderTask task;
+        task.mesh = getMeshRenderable("data/meshes/sphere.obj");
+        task.model = translationMatrix(trav->surrogatePhys)
+                * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
+        if (trav->surface)
+            task.color = trav->surface->color;
+        if (task.ready())
+            draws.draws.emplace_back(&task, this);
+    }
+    
+    // mesh box
+    if (options.renderMeshBoxes && !trav->draws.empty())
+    {
+        for (std::shared_ptr<RenderTask> &r : trav->draws)
+        {
+            if (r->translucent)
+                continue;
+            RenderTask task = *r;
+            task.mesh = getMeshRenderable("data/meshes/aabb.obj");
+            task.textureColor = nullptr;
+            task.textureMask = nullptr;
+            task.color = trav->surface->color;
+            if (task.ready())
+                draws.draws.emplace_back(&task, this);
+        }
+    }
+    
+    // tile box
+    if (options.renderTileBoxes)
+    {
+        RenderTask task;
+        task.mesh = getMeshRenderable("data/meshes/line.obj");
+        if (trav->surface)
+            task.color = trav->surface->color;
+        if (task.ready())
+        {
+            static const uint32 cora[] = {
+                0, 0, 1, 2, 4, 4, 5, 6, 0, 1, 2, 3
+            };
+            static const uint32 corb[] = {
+                1, 2, 3, 3, 5, 6, 7, 7, 4, 5, 6, 7
+            };
+            for (uint32 i = 0; i < 12; i++)
+            {
+                vec3 a = trav->cornersPhys[cora[i]];
+                vec3 b = trav->cornersPhys[corb[i]];
+                task.model = lookAt(a, b, vec3(0, 0, 1)).inverse()
+                        * scaleMatrix(length(vec3(b - a)));
+                draws.draws.emplace_back(&task, this);
+            }
+        }
+    }
+    
+    statistics.meshesRenderedTotal++;
+    statistics.meshesRenderedPerLod[std::min<uint32>(
+        trav->nodeInfo.nodeId().lod, MapStatistics::MaxLods-1)]++;
+}
+
 void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
 {    
     // node visibility
@@ -287,28 +348,7 @@ void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
     if (trav->empty)
         return;
     
-    // render the node
-    convertRenderTasks(draws.opaque, trav->draws,
-                       RenderTask::Type::Opaque);
-    convertRenderTasks(draws.transparent, trav->draws,
-                       RenderTask::Type::Transparent);
-    // render wireboxes
-    if (options.renderWireBoxes)
-        convertRenderTasks(draws.wires, trav->draws,
-                           RenderTask::Type::WireBox);
-    // render surrogate
-    if (options.renderSurrogates)
-        convertRenderTasks(draws.opaque, trav->draws,
-                           RenderTask::Type::Surrogate);
-    // render tile corners
-    if (options.renderTileCorners)
-        convertRenderTasks(draws.opaque, trav->draws,
-                           RenderTask::Type::Corner);
-    
-    statistics.meshesRenderedTotal++;
-    statistics.meshesRenderedPerLod[
-            std::min<uint32>(trav->nodeInfo.nodeId().lod,
-                             MapStatistics::MaxLods-1)]++;
+    renderNode(trav);
 }
 
 bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
@@ -360,7 +400,7 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
         trav->texelSize = node->texelSize;
         trav->displaySize = node->displaySize;
         trav->flags = node->flags();
-        trav->surrogate = node->geomExtents.surrogate;
+        trav->surrogateValue = node->geomExtents.surrogate;
         
         // corners
         if (!vtslibs::vts::empty(node->geomExtents)
@@ -393,17 +433,6 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
                 trav->cornersPhys[i] = f.cwiseProduct(eu - el) + el;
             }
         }
-        
-        for (const vec3 &c : trav->cornersPhys)
-        {
-            std::shared_ptr<RenderTask> r = std::make_shared<RenderTask>();
-            r->mesh = getMeshRenderable("data/cube.obj");
-            r->textureColor = getTexture("data/helper.jpg");
-            r->model = translationMatrix(c)
-                    * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
-            r->type = RenderTask::Type::Corner;
-            trav->draws.push_back(r);
-        }
     }
     
     if (trav->nodeInfo.distanceFromRoot() > 2)
@@ -430,15 +459,9 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
             vec2 exL = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
             vec3 sds = vec2to3((exU + exL) * 0.5,
                                node->geomExtents.surrogate);
-            vec3 phys = mapConfig->convertor->convert(sds, trav->nodeInfo.srs(),
+            trav->surrogatePhys = mapConfig->convertor->convert(sds,
+                                trav->nodeInfo.srs(),
                                 mapConfig->referenceFrame.model.physicalSrs);
-            std::shared_ptr<RenderTask> r = std::make_shared<RenderTask>();
-            r->mesh = getMeshRenderable("data/cube.obj");
-            r->textureColor = getTexture("data/helper.jpg");
-            r->model = translationMatrix(phys)
-                    * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
-            r->type = RenderTask::Type::Surrogate;
-            trav->draws.push_back(r);
         }
     }
     else
@@ -483,15 +506,6 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
         const MeshPart &part = meshAgg->submeshes[subMeshIndex];
         std::shared_ptr<GpuMesh> mesh = part.renderable;
         
-        { // wire box
-            RenderTask task;
-            task.mesh = getMeshRenderable("data/cube.obj");;
-            task.model = part.normToPhys;
-            task.color = trav->surface->color;
-            task.type = RenderTask::Type::WireBox;
-            newDraws.push_back(std::make_shared<RenderTask>(task));
-        }
-        
         // external bound textures
         if (part.externalUv)
         {
@@ -518,18 +532,20 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
             }
             for (BoundParamInfo &b : bls)
             {
-                RenderTask task;
-                task.meshAgg = meshAgg;
-                task.mesh = mesh;
-                task.model = part.normToPhys * scaleMatrix(1.001);
-                task.uvm = b.uvMatrix();
-                task.textureColor = getTexture(b.bound->urlExtTex(b.vars));
-                task.textureColor->impl->availTest = b.bound->availability;
-                task.external = true;
+                std::shared_ptr<RenderTask> task
+                        = std::make_shared<RenderTask>();
+                task->meshAgg = meshAgg;
+                task->mesh = mesh;
+                task->model = part.normToPhys * scaleMatrix(1.001);
+                task->uvm = b.uvMatrix();
+                task->textureColor = getTexture(b.bound->urlExtTex(b.vars));
+                task->textureColor->impl->availTest = b.bound->availability;
+                task->externalUv = true;
+                task->translucent = !!b.alpha;
+                task->alpha = b.alpha ? *b.alpha : 1;
                 if (!b.watertight)
-                    task.textureMask = getTexture(b.bound->urlMask(b.vars));
-                task.type = RenderTask::Type::Opaque;
-                newDraws.push_back(std::make_shared<RenderTask>(task));
+                    task->textureMask = getTexture(b.bound->urlMask(b.vars));
+                newDraws.push_back(task);
             }
             if (!bls.empty())
                 continue;
@@ -540,16 +556,16 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
         {
             UrlTemplate::Vars vars(nodeId,
                     vtslibs::vts::local(trav->nodeInfo), subMeshIndex);
-            RenderTask task;
-            task.meshAgg = meshAgg;
-            task.mesh = mesh;
-            task.model = part.normToPhys * scaleMatrix(1.001);
-            task.uvm = upperLeftSubMatrix(identityMatrix()).cast<float>();
-            task.textureColor = getTexture(
+            std::shared_ptr<RenderTask> task
+                    = std::make_shared<RenderTask>();
+            task->meshAgg = meshAgg;
+            task->mesh = mesh;
+            task->model = part.normToPhys * scaleMatrix(1.001);
+            task->uvm = upperLeftSubMatrix(identityMatrix()).cast<float>();
+            task->textureColor = getTexture(
                         trav->surface->surface->urlIntTex(vars));
-            task.external = false;
-            task.type = RenderTask::Type::Opaque;
-            newDraws.push_back(std::make_shared<RenderTask>(task));
+            task->externalUv = false;
+            newDraws.push_back(task);
         }
     }
     
@@ -766,13 +782,13 @@ void MapImpl::updateCamera()
     {
         vec3 phys = mapConfig->convertor->navToPhys(
                     vecFromUblas<vec3>(pos.position));
-        std::shared_ptr<RenderTask> r = std::make_shared<RenderTask>();
-        r->mesh = getMeshRenderable("data/cube.obj");
-        r->textureColor = getTexture("data/helper.jpg");
-        r->model = translationMatrix(phys)
+        RenderTask r;
+        r.mesh = getMeshRenderable("data/meshes/cube.obj");
+        r.textureColor = getTexture("data/textures/helper.jpg");
+        r.model = translationMatrix(phys)
                 * scaleMatrix(pos.verticalExtent * 0.015);
-        if (r->ready())
-            draws.opaque.emplace_back(r.get(), this);
+        if (r.ready())
+            draws.draws.emplace_back(&r, this);
     }
 }
 
@@ -843,9 +859,7 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
     renderer.windowHeight = windowHeight;
     
     statistics.currentNodeUpdates = 0;
-    draws.opaque.clear();
-    draws.transparent.clear();
-    draws.wires.clear();
+    draws.draws.clear();
     updateCamera();
     std::queue<std::shared_ptr<TraverseNode>>().swap(renderer.traverseQueue);
     renderer.traverseQueue.push(renderer.traverseRoot);

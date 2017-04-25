@@ -99,8 +99,7 @@ bool BoundParamInfo::operator <(const BoundParamInfo &rhs) const
 }
 
 DrawTask::DrawTask(RenderTask *r, MapImpl *m) :
-    mesh(nullptr), texColor(nullptr), texMask(nullptr),
-    alpha(1), externalUv(false)
+    mesh(nullptr), texColor(nullptr), texMask(nullptr)
 {
     mesh = r->mesh.get();
     texColor = r->textureColor.get();
@@ -109,12 +108,14 @@ DrawTask::DrawTask(RenderTask *r, MapImpl *m) :
     memcpy(this->mvp, mvp.data(), sizeof(mvp));
     memcpy(uvm, r->uvm.data(), sizeof(uvm));
     memcpy(color, r->color.data(), sizeof(color));
-    externalUv = r->external;
+    externalUv = r->externalUv;
+    translucent = r->translucent;
+    alpha = r->alpha;
 }
 
 RenderTask::RenderTask() : model(identityMatrix()),
     uvm(upperLeftSubMatrix(identityMatrix()).cast<float>()),
-    color(1,0,0), external(false), type(Type::Invalid)
+    color(1,1,1), alpha(1), externalUv(false), translucent(false)
 {}
 
 bool RenderTask::ready() const
@@ -133,7 +134,7 @@ bool RenderTask::ready() const
 TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
     : nodeInfo(nodeInfo), surface(nullptr), lastAccessTime(0),
       flags(0), texelSize(0), displaySize(0),
-      surrogate(vtslibs::vts::GeomExtents::invalidSurrogate),
+      surrogateValue(vtslibs::vts::GeomExtents::invalidSurrogate),
       validity(Validity::Indeterminate), empty(false)
 {
     { // initialize corners to NAN
@@ -142,6 +143,7 @@ TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
             n[i] = std::numeric_limits<double>::quiet_NaN();
         for (uint32 i = 0; i < 8; i++)
             cornersPhys[i] = n;
+        surrogatePhys = n;
     }
     { // initialize aabb to universe
         double di = std::numeric_limits<double>::infinity();

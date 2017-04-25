@@ -53,7 +53,7 @@ public:
             if (trav->nodeInfo.nodeId() == nodeInfo.nodeId()
                     || trav->childs.empty())
             {
-                result.emplace(trav->surrogate);
+                result.emplace(trav->surrogateValue);
                 return process(nullptr);
             }
             

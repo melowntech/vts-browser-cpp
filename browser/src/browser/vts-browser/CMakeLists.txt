@@ -46,16 +46,19 @@ set(SRC_LIST
 )
 
 set(DATA_LIST
-	data/cube.obj
-	data/helper.jpg
 	data/fonts/roboto-regular.ttf
-	data/skins/gwen.png
+	data/meshes/aabb.obj
+	data/meshes/cube.obj
+	data/meshes/line.obj
+	data/meshes/sphere.obj
 	data/shaders/color.frag.glsl
 	data/shaders/color.vert.glsl
 	data/shaders/gui.frag.glsl
 	data/shaders/gui.vert.glsl
-	data/shaders/tex.frag.glsl
-	data/shaders/tex.vert.glsl
+	data/shaders/texture.frag.glsl
+	data/shaders/texture.vert.glsl
+	data/textures/gwen.png
+	data/textures/helper.jpg
 )
 
 set(GEN_CODE "\#include <map>\n")

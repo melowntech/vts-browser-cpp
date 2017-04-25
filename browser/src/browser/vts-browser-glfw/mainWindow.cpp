@@ -75,9 +75,9 @@ MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
     { // load shader texture
         shaderTexture = std::make_shared<GpuShader>();
         vts::Buffer vert = readInternalMemoryBuffer(
-                    "data/shaders/tex.vert.glsl");
+                    "data/shaders/texture.vert.glsl");
         vts::Buffer frag = readInternalMemoryBuffer(
-                    "data/shaders/tex.frag.glsl");
+                    "data/shaders/texture.frag.glsl");
         shaderTexture->loadShaders(
             std::string(vert.data(), vert.size()),
             std::string(frag.data(), frag.size()));
@@ -96,7 +96,8 @@ MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
     
     { // load mesh mark
         meshMark = std::make_shared<GpuMeshImpl>("mesh_mark");
-        vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer("data/cube.obj"));
+        vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
+                                  "data/meshes/sphere.obj"));
         spec.attributes[0].enable = true;
         spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
         spec.attributes[0].components = 3;
@@ -185,21 +186,31 @@ void MainWindow::keyboardUnicodeCallback(unsigned int codepoint)
 
 void MainWindow::drawTexture(vts::DrawTask &t)
 {
-    shaderTexture->uniformMat4(0, t.mvp);
-    shaderTexture->uniformMat3(4, t.uvm);
-    shaderTexture->uniform(8, (int)t.externalUv);
-    if (t.texMask)
+    if (t.texColor)
     {
-        shaderTexture->uniform(9, 1);
-        glActiveTexture(GL_TEXTURE0 + 1);
-        dynamic_cast<GpuTextureImpl*>(t.texMask)->bind();
-        glActiveTexture(GL_TEXTURE0 + 0);
+        shaderTexture->bind();
+        shaderTexture->uniformMat4(0, t.mvp);
+        shaderTexture->uniformMat3(4, t.uvm);
+        shaderTexture->uniform(8, (int)t.externalUv);
+        if (t.texMask)
+        {
+            shaderTexture->uniform(9, 1);
+            glActiveTexture(GL_TEXTURE0 + 1);
+            dynamic_cast<GpuTextureImpl*>(t.texMask)->bind();
+            glActiveTexture(GL_TEXTURE0 + 0);
+        }
+        else
+            shaderTexture->uniform(9, 0);
+        GpuTextureImpl *tex = dynamic_cast<GpuTextureImpl*>(t.texColor);
+        shaderTexture->uniform(10, (int)tex->grayscale);
+        tex->bind();
     }
     else
-        shaderTexture->uniform(9, 0);
-    GpuTextureImpl *tex = dynamic_cast<GpuTextureImpl*>(t.texColor);
-    shaderTexture->uniform(10, (int)tex->grayscale);
-    tex->bind();
+    {
+        shaderColor->bind();
+        shaderColor->uniformMat4(0, t.mvp);
+        shaderColor->uniformVec3(8, t.color);
+    }
     GpuMeshImpl *m = dynamic_cast<GpuMeshImpl*>(t.mesh);
     m->bind();
     m->dispatch();
@@ -214,7 +225,7 @@ void MainWindow::drawColor(vts::DrawTask &t)
     m->dispatch();
 }
 
-void MainWindow::drawMarks(const Mark &m)
+void MainWindow::drawMark(const Mark &m)
 {
     vts::mat4 t = vts::translationMatrix(m.coord)
             * vts::scaleMatrix(map->getPositionViewExtent() * 0.005);
@@ -262,23 +273,14 @@ void MainWindow::run()
             map->renderTick(width, height); // calls camera overrides
             camViewProj = camProj * camView;
             vts::DrawBatch &draws = map->drawBatch();
-            shaderTexture->bind();
             glEnable(GL_CULL_FACE);
-            for (vts::DrawTask &t : draws.opaque)
+            for (vts::DrawTask &t : draws.draws)
                 drawTexture(t);
-            glEnable(GL_BLEND);
-            for (vts::DrawTask &t : draws.transparent)
-                drawTexture(t);
-            glDisable(GL_BLEND);
             shaderColor->bind();
             meshMark->bind();
             for (Mark &mark : marks)
-                drawMarks(mark);
+                drawMark(mark);
             glDisable(GL_CULL_FACE);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            for (vts::DrawTask &t : draws.wires)
-                drawColor(t);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             glBindVertexArray(0);
         }
         checkGl("renderTick");

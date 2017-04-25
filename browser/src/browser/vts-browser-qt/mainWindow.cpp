@@ -92,9 +92,9 @@ void MainWindow::initialize()
     { // load shader
         shader = std::make_shared<GpuShader>();
         vts::Buffer vert = readInternalMemoryBuffer(
-                    "data/shaders/tex.vert.glsl");
+                    "data/shaders/texture.vert.glsl");
         vts::Buffer frag = readInternalMemoryBuffer(
-                    "data/shaders/tex.frag.glsl");
+                    "data/shaders/texture.frag.glsl");
         shader->loadShaders(
             std::string(vert.data(), vert.size()),
             std::string(frag.data(), frag.size()));
@@ -130,8 +130,10 @@ void MainWindow::tick()
     { // draws
         vts::DrawBatch &draws = map->drawBatch();
         shader->bind();
-        for (vts::DrawTask &t : draws.opaque)
+        for (vts::DrawTask &t : draws.draws)
         {
+            if (t.translucent || !t.texColor)
+                continue;
             shader->uniformMat4(0, t.mvp);
             shader->uniformMat3(4, t.uvm);
             shader->uniform(8, (int)t.externalUv);

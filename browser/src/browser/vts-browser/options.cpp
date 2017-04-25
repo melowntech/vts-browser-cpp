@@ -6,11 +6,11 @@ namespace vts
 {
 
 MapOptions::MapOptions() :
-    renderWireBoxes(false),
+    renderMeshBoxes(false),
     renderSurrogates(false),
     renderObjectPosition(false),
     debugDetachedCamera(false),
-    renderTileCorners(false),
+    renderTileBoxes(false),
     debugDisableMeta5(false),
     navigationSamplesPerViewExtent(4),
     positionViewExtentMin(75),

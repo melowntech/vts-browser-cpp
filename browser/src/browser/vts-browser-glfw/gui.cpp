@@ -302,6 +302,7 @@ public:
             nk_label(&ctx, "", NK_TEXT_LEFT);
             if (optSensitivityDetails)
             {
+                nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
                 nk_label(&ctx, "Pan speed:", NK_TEXT_LEFT);
                 o.cameraSensitivityPan = nk_slide_float(&ctx,
                         0.1, o.cameraSensitivityPan, 3, 0.01);
@@ -404,20 +405,20 @@ public:
             
             // render mesh wire boxes
             nk_label(&ctx, "Display:", NK_TEXT_LEFT);
-            o.renderWireBoxes = nk_check_label(&ctx, "wireboxes",
-                                               o.renderWireBoxes);
+            o.renderMeshBoxes = nk_check_label(&ctx, "mesh boxes",
+                                               o.renderMeshBoxes);
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            
+            // render tile corners
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            o.renderTileBoxes = nk_check_label(&ctx, "tile boxes",
+                                                o.renderTileBoxes);
             nk_label(&ctx, "", NK_TEXT_LEFT);
             
             // render surrogates
             nk_label(&ctx, "", NK_TEXT_LEFT);
             o.renderSurrogates = nk_check_label(&ctx, "surrogates",
                                                 o.renderSurrogates);
-            nk_label(&ctx, "", NK_TEXT_LEFT);
-            
-            // render tile corners
-            nk_label(&ctx, "", NK_TEXT_LEFT);
-            o.renderTileCorners = nk_check_label(&ctx, "corners",
-                                                o.renderTileCorners);
             nk_label(&ctx, "", NK_TEXT_LEFT);
             
             // render objective position

@@ -14,7 +14,7 @@ std::shared_ptr<GpuTextureImpl> &tex)
     { // load texture
         tex = std::make_shared<GpuTextureImpl>("skin texture");
         vts::GpuTextureSpec spec(
-        vts::readInternalMemoryBuffer("data/skins/gwen.png"));
+        vts::readInternalMemoryBuffer("data/textures/gwen.png"));
         spec.verticalFlip = false;
         tex->loadTexture(spec);
         media.skin = tex->id;

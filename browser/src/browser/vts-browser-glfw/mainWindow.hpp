@@ -61,7 +61,7 @@ public:
     
     void drawTexture(vts::DrawTask &t);
     void drawColor(vts::DrawTask &t);
-    void drawMarks(const Mark &m);
+    void drawMark(const Mark &m);
     
     std::shared_ptr<vts::GpuTexture> createTexture(const std::string &name);
     std::shared_ptr<vts::GpuMesh> createMesh(const std::string &name);

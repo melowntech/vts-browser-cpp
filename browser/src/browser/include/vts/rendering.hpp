@@ -19,16 +19,15 @@ public:
     float color[3];
     float alpha;
     bool externalUv;
-    
+    bool translucent;
+
     DrawTask(class RenderTask *r, class MapImpl *m);
 };
 
 class VTS_API DrawBatch
 {
 public:
-    std::vector<DrawTask> opaque;
-    std::vector<DrawTask> transparent;
-    std::vector<DrawTask> wires;
+    std::vector<DrawTask> draws;
 };
 
 } // namespace vts

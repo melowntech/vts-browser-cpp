@@ -10,6 +10,9 @@
 #include <GLFW/glfw3.h>
 #include "guiSkin.hpp"
 
+Mark::Mark() : open(false)
+{}
+
 class GuiImpl
 {
 public:
@@ -23,7 +26,7 @@ public:
     GuiImpl(MainWindow *window) : window(window),
         consumeEvents(true), prepareFirst(true),
         statTraversedDetails(false), statRenderedDetails(false),
-        optSensitivityDetails(false)
+        optSensitivityDetails(false), positionSrs(2)
     {
         { // load font
             struct nk_font_config cfg;
@@ -536,32 +539,43 @@ public:
             { // subjective position
                 int subj = window->map->getPositionSubjective();
                 int prev = subj;
-                nk_label(&ctx, "Subjective:", NK_TEXT_LEFT);
-                nk_checkbox_label(&ctx, "", &subj);
+                nk_label(&ctx, "Type:", NK_TEXT_LEFT);
+                nk_checkbox_label(&ctx, "subjective", &subj);
                 if (subj != prev)
                     window->map->setPositionSubjective(!!subj, true);
             }
-            { // position
-#define S(NAME, P, F) { \
-                    nk_label(&ctx, NAME, NK_TEXT_LEFT); \
-                    sprintf(buffer, F, (P).x); \
-                    nk_label(&ctx, buffer, NK_TEXT_RIGHT); \
-                    nk_label(&ctx, "", NK_TEXT_LEFT); \
-                    sprintf(buffer, F, (P).y); \
-                    nk_label(&ctx, buffer, NK_TEXT_RIGHT); \
-                    nk_label(&ctx, "", NK_TEXT_LEFT); \
-                    sprintf(buffer, F, (P).z); \
-                    nk_label(&ctx, buffer, NK_TEXT_RIGHT); \
+            { // srs
+                static const char *names[] = {
+                    "Physical",
+                    "Navigation",
+                    "Public",
+                };
+                nk_label(&ctx, "Srs:", NK_TEXT_LEFT);
+                if (nk_combo_begin_label(&ctx,
+                                 names[positionSrs],
+                                 nk_vec2(nk_widget_width(&ctx), 200)))
+                {
+                    nk_layout_row_dynamic(&ctx, 16, 1);
+                    for (int i = 0; i < 3; i++)
+                        if (nk_combo_item_label(&ctx, names[i], NK_TEXT_LEFT))
+                            positionSrs = i;
+                    nk_combo_end(&ctx);
                 }
+            }
+            nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+            { // position
                 vts::Point n = window->map->getPositionPoint();
-                S("Pos. nav.:", n, "%.8f");
-                vts::Point ph = window->map->convert(n,
-                    vts::Srs::Navigation, vts::Srs::Physical);
-                S("Pos. phys.:", ph, "%.5f");
-                vts::Point pub = window->map->convert(n,
-                    vts::Srs::Navigation, vts::Srs::Public);
-                S("Pos. pub.:", pub, "%.8f");
-#undef S
+                n = window->map->convert(n, vts::Srs::Navigation,
+                                         (vts::Srs)positionSrs);
+                nk_label(&ctx, "X:", NK_TEXT_LEFT);
+                sprintf(buffer, "%.8f", n.x);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                nk_label(&ctx, "Y:", NK_TEXT_LEFT);
+                sprintf(buffer, "%.8f", n.y);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                nk_label(&ctx, "Z:", NK_TEXT_LEFT);
+                sprintf(buffer, "%.8f", n.z);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset altitude"))
                     window->map->resetPositionAltitude();
@@ -628,6 +642,7 @@ public:
                         if (nk_combo_item_label(&ctx, names[i].c_str(),
                                                 NK_TEXT_LEFT))
                         {
+                            window->marks.clear();
                             window->map->setMapConfigPath(names[i]);
                             nk_combo_end(&ctx);
                             nk_end(&ctx);
@@ -728,14 +743,66 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Marks", nk_rect(1000, 10, 200, 400), flags))
+        if (nk_begin(&ctx, "Marks", nk_rect(1000, 10, 250, 400), flags))
         {
             std::vector<Mark> &marks = window->marks;
             float width = nk_window_get_content_region_size(&ctx).x - 15;
-            float ratio[] = { width * 0.5, width * 0.5 };
+            float ratio[] = { width * 0.6, width * 0.4 };
             nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
             char buffer[256];
-            
+            Mark *prev = nullptr;
+            int i = 0;
+            double length = 0;
+            for (Mark &m : marks)
+            {
+                sprintf(buffer, "%d", (i + 1));
+                nk_checkbox_label(&ctx, buffer, &m.open);
+                double l = prev
+                        ? vts::length(vts::vec3(prev->coord - m.coord))
+                        : 0;
+                length += l;
+                sprintf(buffer, "%.3f", l);
+                nk_color c;
+                c.r = 255 * m.color(0);
+                c.g = 255 * m.color(1);
+                c.b = 255 * m.color(2);
+                c.a = 255;
+                nk_label_colored(&ctx, buffer, NK_TEXT_RIGHT, c);
+                if (m.open)
+                {
+                    vts::Point n;
+                    vts::vecToPoint(m.coord, n);
+                    n = window->map->convert(n, vts::Srs::Physical,
+                                             (vts::Srs)positionSrs);
+                    sprintf(buffer, "%.8f", n.x);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                    if (nk_button_label(&ctx, "Go"))
+                    {
+                        vts::vecToPoint(m.coord, n);
+                        n = window->map->convert(n, vts::Srs::Physical,
+                                                 vts::Srs::Navigation);
+                        window->map->setPositionPoint(n);
+                    }
+                    sprintf(buffer, "%.8f", n.y);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                    nk_label(&ctx, "", NK_TEXT_RIGHT);
+                    sprintf(buffer, "%.8f", n.z);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                    if (nk_button_label(&ctx, "Remove"))
+                    {
+                        marks.erase(marks.begin() + i);
+                        break;
+                    }
+                }
+                prev = &m;
+                i++;
+            }
+            nk_label(&ctx, "Total:", NK_TEXT_LEFT);
+            sprintf(buffer, "%.3f", length);
+            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            if (nk_button_label(&ctx, "Clear all"))
+                marks.clear();
         }
         nk_end(&ctx);
     }
@@ -769,6 +836,7 @@ public:
     int statTraversedDetails;
     int statRenderedDetails;
     int optSensitivityDetails;
+    int positionSrs;
 
     MainWindow *window;
     std::shared_ptr<GpuTextureImpl> fontTexture;

@@ -284,8 +284,8 @@ void MainWindow::run()
         checkGl("renderTick");
         
         double timeBeforeSwap = glfwGetTime();
-        gui.render(width, height);
         gui.input(); // calls glfwPollEvents()
+        gui.render(width, height);
         glfwSwapBuffers(window);
         double timeFrameFinish = glfwGetTime();
         timingProcess = timeBeforeSwap - timeFrameStart;
@@ -334,3 +334,4 @@ void MainWindow::cameraOverrideProj(double *mat)
     for (int i = 0; i < 16; i++)
         camProj(i) = mat[i];
 }
+

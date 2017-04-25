@@ -697,7 +697,7 @@ void MapImpl::updateCamera()
 
     // camera view matrix
     double dist = pos.type == vtslibs::registry::Position::Type::objective
-            ? positionObjectiveDistance() : 1;
+            ? positionObjectiveDistance() : 1e-5;
     vec3 cameraPosPhys = center - dir * dist;
     if (mapFoundation->cameraOverrideEye)
         mapFoundation->cameraOverrideEye((double*)&cameraPosPhys);

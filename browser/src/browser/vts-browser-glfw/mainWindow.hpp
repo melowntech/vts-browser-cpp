@@ -22,6 +22,9 @@ struct Mark
 {
     vts::vec3 coord;
     vts::vec3f color;
+    int open;
+    
+    Mark();
 };
 
 class MainWindow

@@ -459,7 +459,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 200, 400), flags))
+        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 500), flags))
         {
             vts::MapStatistics &s = window->map->statistics();
             float width = nk_window_get_content_region_size(&ctx).x - 15;
@@ -531,7 +531,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Position", nk_rect(480, 10, 200, 400), flags))
+        if (nk_begin(&ctx, "Position", nk_rect(530, 10, 200, 400), flags))
         {
             float width = nk_window_get_content_region_size(&ctx).x - 15;
             float ratio[] = { width * 0.4, width * 0.6 };
@@ -608,6 +608,9 @@ public:
             }
             { // fov
                 nk_label(&ctx, "Fov:", NK_TEXT_LEFT);
+                window->map->setPositionFov(nk_slide_float(&ctx, 10,
+                                    window->map->getPositionFov(), 100, 1));
+                nk_label(&ctx, "", NK_TEXT_LEFT);
                 sprintf(buffer, "%5.1f", window->map->getPositionFov());
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             }
@@ -622,7 +625,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Views", nk_rect(690, 10, 300, 400), flags))
+        if (nk_begin(&ctx, "Views", nk_rect(740, 10, 300, 400), flags))
         {
             float width = nk_window_get_content_region_size(&ctx).x - 15;
             
@@ -744,7 +747,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Marks", nk_rect(1000, 10, 250, 400), flags))
+        if (nk_begin(&ctx, "Marks", nk_rect(1050, 10, 250, 400), flags))
         {
             std::vector<Mark> &marks = window->marks;
             float width = nk_window_get_content_region_size(&ctx).x - 15;

@@ -281,7 +281,11 @@ void MapImpl::positionToPhys(vec3 &center, vec3 &dir, vec3 &up)
     up = vec3(0, 0, -1);
     
     // apply rotation
-    mat3 tmp = upperLeftSubMatrix(rotationMatrix(2, degToRad(-rot(0))))
+    double yaw = mapConfig->srs.get
+            (mapConfig->referenceFrame.model.navigationSrs).type
+            == vtslibs::registry::Srs::Type::projected
+            ? rot(0) : -rot(0);
+    mat3 tmp = upperLeftSubMatrix(rotationMatrix(2, degToRad(yaw)))
             * upperLeftSubMatrix(rotationMatrix(1, degToRad(-rot(1))));
     dir = tmp * dir;
     up = tmp * up;
@@ -348,18 +352,7 @@ void MapImpl::rotate(const vec3 &value)
     assert(mapConfig && *mapConfig);
     
     vtslibs::registry::Position &pos = mapConfig->position;
-    vec3 rot(value[0] * -0.2, value[1] * -0.1, 0);
-    switch (mapConfig->srs.get
-            (mapConfig->referenceFrame.model.navigationSrs).type)
-    {
-    case vtslibs::registry::Srs::Type::projected:
-        break; // do nothing
-    case vtslibs::registry::Srs::Type::geographic:
-        rot(0) *= -1;
-        break;
-    default:
-        throw std::invalid_argument("not implemented navigation srs type");
-    }
+    vec3 rot(value[0] * 0.2, value[1] * -0.1, 0);
     rot *= options.cameraSensitivityRotate;
     navigation.inertiaRotation += rot;
 }

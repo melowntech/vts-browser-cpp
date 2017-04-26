@@ -362,23 +362,19 @@ void MapImpl::pan(const vec3 &value)
     assert(mapConfig && *mapConfig);
     
     vtslibs::registry::Position &pos = mapConfig->position;
+    mat3 rot = upperLeftSubMatrix
+            (rotationMatrix(2, degToRad(-pos.orientation(0))));
+    vec3 move = vec3(-value[0], value[1], 0) * options.cameraSensitivityPan;
+    move = rot * move * (pos.verticalExtent / 800);
     switch (mapConfig->srs.get
             (mapConfig->referenceFrame.model.navigationSrs).type)
     {
     case vtslibs::registry::Srs::Type::projected:
     {
-        mat3 rot = upperLeftSubMatrix
-                (rotationMatrix(2, degToRad(pos.orientation(0))));
-        vec3 move = vec3(-value[0], value[1], 0) * options.cameraSensitivityPan;
-        move = rot * move * (pos.verticalExtent / 800);
         navigation.inertiaMotion += move;
     } break;
     case vtslibs::registry::Srs::Type::geographic:
     {
-        mat3 rot = upperLeftSubMatrix
-                (rotationMatrix(2, degToRad(-pos.orientation(0))));
-        vec3 move = vec3(-value[0], value[1], 0) * options.cameraSensitivityPan;
-        move = rot * move * (pos.verticalExtent / 800);
         vec3 p = vecFromUblas<vec3>(pos.position);
         p = mapConfig->convertor->navGeodesicDirect(p, 90, move(0));
         p = mapConfig->convertor->navGeodesicDirect(p, 0, move(1));

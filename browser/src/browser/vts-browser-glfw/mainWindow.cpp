@@ -104,6 +104,17 @@ MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
         spec.attributes[0].components = 3;
         meshMark->loadMesh(spec);
     }
+    
+    { // load mesh line
+        meshLine = std::make_shared<GpuMeshImpl>("mesh_line");
+        vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
+                                  "data/meshes/line.obj"));
+        assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Lines);
+        spec.attributes[0].enable = true;
+        spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
+        spec.attributes[0].components = 3;
+        meshLine->loadMesh(spec);
+    }
 }
 
 MainWindow::~MainWindow()
@@ -218,7 +229,7 @@ void MainWindow::drawVtsTask(vts::DrawTask &t)
     m->dispatch();
 }
 
-void MainWindow::drawMark(const Mark &m)
+void MainWindow::drawMark(const Mark &m, const Mark *prev)
 {
     vts::mat4 mvp = camViewProj
             * vts::translationMatrix(m.coord)
@@ -231,6 +242,14 @@ void MainWindow::drawMark(const Mark &m)
     t.mesh = meshMark.get();
     memcpy(t.mvp, mvpf.data(), sizeof(t.mvp));
     drawVtsTask(t);
+    if (prev)
+    {
+        t.mesh = meshLine.get();
+        mvp = camViewProj * vts::lookAt(m.coord, prev->coord);
+        mvpf = mvp.cast<float>();
+        memcpy(t.mvp, mvpf.data(), sizeof(t.mvp));
+        drawVtsTask(t);
+    }
 }
 
 void MainWindow::run()
@@ -277,8 +296,12 @@ void MainWindow::run()
                 drawVtsTask(t);
             shaderColor->bind();
             meshMark->bind();
+            Mark *prevMark = nullptr;
             for (Mark &mark : marks)
-                drawMark(mark);
+            {
+                drawMark(mark, prevMark);
+                prevMark = &mark;
+            }
             glBindVertexArray(0);
         }
         checkGl("renderTick");

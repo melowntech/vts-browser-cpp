@@ -35,6 +35,7 @@ VTS_API const mat4 frustumMatrix(double left, double right,
 VTS_API const mat4 perspectiveMatrix(double fovyDegs, double aspect,
                              double near, double far);
 VTS_API const mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up);
+VTS_API const mat4 lookAt(const vec3 &eye, const vec3 &target);
 VTS_API const mat3 upperLeftSubMatrix(const mat4 &mat);
 
 VTS_API const mat4 identityMatrix();
@@ -56,6 +57,8 @@ VTS_API const vec4f vec3to4f(vec3f v, float w);
 VTS_API const vec3f vec4to3f(vec4f v, bool division = false);
 VTS_API const vec3f vec2to3f(vec2f v, float w);
 VTS_API const vec2f vec3to2f(vec3f v, bool division = false);
+
+VTS_API const vec3 anyPerpendicular(const vec3 &v);
 
 VTS_API double degToRad(double angle);
 VTS_API double radToDeg(double angle);

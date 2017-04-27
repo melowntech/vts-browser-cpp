@@ -60,7 +60,7 @@ public:
     void colorizeMarks();
     
     void drawVtsTask(vts::DrawTask &t);
-    void drawMark(const Mark &m);
+    void drawMark(const Mark &m, const Mark *prev);
     
     std::shared_ptr<vts::GpuTexture> createTexture(const std::string &name);
     std::shared_ptr<vts::GpuMesh> createMesh(const std::string &name);
@@ -73,6 +73,7 @@ public:
     std::shared_ptr<GpuShader> shaderTexture;
     std::shared_ptr<GpuShader> shaderColor;
     std::shared_ptr<GpuMeshImpl> meshMark;
+    std::shared_ptr<GpuMeshImpl> meshLine;
     std::vector<Mark> marks;
     vts::mat4 camView;
     vts::mat4 camProj;

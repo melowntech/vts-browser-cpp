@@ -102,6 +102,13 @@ const mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up)
     return res;
 }
 
+const mat4 lookAt(const vec3 &a, const vec3 &b)
+{
+    vec3 d = b - a;
+    vec3 u = anyPerpendicular(d);
+    return lookAt(a, b, u).inverse() * scaleMatrix(length(d));
+}
+
 const mat4 identityMatrix()
 {
     return scaleMatrix(1);
@@ -294,6 +301,13 @@ const vec2f vec3to2f(vec3f v, bool division)
     res(0) = v(0);
     res(1) = v(1);
     return res;
+}
+
+const vec3 anyPerpendicular(const vec3 &v)
+{
+    vec3 a = abs(dot(normalize(v), vec3(0, 0, 1))) > 0.9
+                            ? vec3(0,1,0) : vec3(0,0,1);
+    return cross(v, a);
 }
 
 double clamp(double a, double min, double max)

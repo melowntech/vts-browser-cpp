@@ -298,10 +298,7 @@ void MapImpl::renderNode(std::shared_ptr<TraverseNode> &trav)
             {
                 vec3 a = trav->cornersPhys[cora[i]];
                 vec3 b = trav->cornersPhys[corb[i]];
-                vec3 u = abs(dot(normalize(vec3(b - a)), vec3(0, 0, 1))) > 0.9
-                        ? vec3(0,1,0) : vec3(0,0,1);
-                task.model = lookAt(a, b, u).inverse()
-                        * scaleMatrix(length(vec3(b - a)));
+                task.model = lookAt(a, b);
                 draws.draws.emplace_back(&task, this);
             }
         }

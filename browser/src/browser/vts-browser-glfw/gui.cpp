@@ -369,13 +369,6 @@ public:
             sprintf(buffer, "%3.1f", o.maxTexelToPixelScale);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             
-            // autoRotateSpeed
-            nk_label(&ctx, "Auto rotate:", NK_TEXT_LEFT);
-            o.autoRotateSpeed = nk_slide_float(&ctx,
-                    0, o.autoRotateSpeed, 1, 0.001);
-            sprintf(buffer, "%.2f", o.autoRotateSpeed);
-            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-            
             // maxResourcesMemory
             nk_label(&ctx, "Max memory:", NK_TEXT_LEFT);
             o.maxResourcesMemory = 1024 * 1024 * nk_slide_int(&ctx,
@@ -595,6 +588,14 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 sprintf(buffer, "%5.1f", r.z);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                { // autoRotateSpeed
+                    nk_label(&ctx, "Auto:", NK_TEXT_LEFT);
+                    window->map->setAutorotate(nk_slide_float(&ctx,
+                            0, window->map->getAutorotate(), 1, 0.001));
+                    nk_label(&ctx, "", NK_TEXT_LEFT);
+                    sprintf(buffer, "%.2f", window->map->getAutorotate());
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                }
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset rotation"))
                 {

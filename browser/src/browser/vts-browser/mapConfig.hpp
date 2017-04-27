@@ -69,6 +69,7 @@ public:
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
     std::vector<SurfaceStackItem> surfaceStack;
     std::shared_ptr<CsConvertor> convertor;
+    double autorotate;
 };
 
 class ExternalBoundLayer : public Resource,

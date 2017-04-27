@@ -16,7 +16,6 @@ MapOptions::MapOptions() :
     positionViewExtentMin(75),
     positionViewExtentMax(1e7),
     maxTexelToPixelScale(1.2),
-    autoRotateSpeed(0),
     maxResourcesMemory(1024*1024*1024),
     maxConcurrentDownloads(30),
     maxNodeUpdatesPerFrame(20),

@@ -344,6 +344,20 @@ void MapFoundation::resetPositionAltitude()
     impl->resetPositionAltitude(0);
 }
 
+void MapFoundation::setAutorotate(double rotate)
+{
+    if (!isMapConfigReady())
+        return;
+    impl->mapConfig->autorotate = rotate;
+}
+
+double MapFoundation::getAutorotate() const
+{
+    if (!isMapConfigReady())
+        return 0;
+    return impl->mapConfig->autorotate;
+}
+
 const Point MapFoundation::convert(const Point &point, Srs from, Srs to) const
 {
     if (!isMapConfigReady())

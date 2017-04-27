@@ -675,7 +675,7 @@ void MapImpl::updateCamera()
         { // orientation
             double cir = options.cameraInertiaRotate;
             assert(cir >= 0 && cir < 1);
-            navigation.inertiaRotation(0) += options.autoRotateSpeed;
+            navigation.inertiaRotation(0) += mapConfig->autorotate;
             pos.orientation += vecToUblas<math::Point3>((1.0 - cir) * 
                         navigation.inertiaRotation);
             navigation.inertiaRotation *= cir;

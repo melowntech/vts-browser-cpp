@@ -29,7 +29,7 @@ find_package(magic REQUIRED)
 find_package(JsonCPP REQUIRED)
 include_directories(${JSONCPP_INCLUDE_DIR})
 
-find_package(Eigen3 3.2 REQUIRED)
+find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
 find_package(LibProc REQUIRED)

@@ -12,7 +12,6 @@ public:
     MapOptions();
     ~MapOptions();
     
-    double autoRotateSpeed;
     double maxTexelToPixelScale;
     double positionViewExtentMin;
     double positionViewExtentMax;

@@ -1,5 +1,6 @@
 #include <utility/uri.hpp>
 #include <boost/algorithm/string.hpp>
+#include <vts-libs/vts/mapconfig-json.hpp>
 
 #include "resource.hpp"
 #include "mapConfig.hpp"
@@ -36,13 +37,21 @@ BoundInfo::BoundInfo(const BoundLayer &layer) : BoundLayer(layer)
 SurfaceStackItem::SurfaceStackItem() : alien(false)
 {}
 
-MapConfig::MapConfig(const std::string &name) : Resource(name)
+MapConfig::MapConfig(const std::string &name) : Resource(name), autorotate(0)
 {}
 
 void MapConfig::load(MapImpl *)
 {
     clear();
     vtslibs::vts::loadMapConfig(*this, impl->contentData, name);
+    
+    auto bo(vtslibs::vts::browserOptions(*this));
+    if (bo.isObject())
+    {
+        Json::Value r = bo["rotate"];
+        if (r.isDouble())
+            autorotate = r.asDouble() * 0.1;
+    }
     
     convertor = std::shared_ptr<CsConvertor>(CsConvertor::create(
                   referenceFrame.model.physicalSrs,
@@ -61,6 +70,7 @@ void MapConfig::clear()
     boundInfos.clear();
     surfaceStack.clear();
     convertor.reset();
+    autorotate = 0;
 }
 
 vtslibs::vts::SurfaceCommonConfig *MapConfig::findGlue(
@@ -239,7 +249,7 @@ ExternalBoundLayer::ExternalBoundLayer(const std::string &name)
 void ExternalBoundLayer::load(MapImpl *)
 {
     *(vtslibs::registry::BoundLayer*)this
-        = vtslibs::registry::loadBoundLayer(impl->contentData, name);
+            = vtslibs::registry::loadBoundLayer(impl->contentData, name);
 }
 
 } // namespace vts

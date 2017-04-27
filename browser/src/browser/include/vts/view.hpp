@@ -15,11 +15,13 @@ public:
     class BoundLayerInfo
     {
     public:
-        typedef std::map<std::string, BoundLayerInfo> Map;
+        typedef std::vector<BoundLayerInfo> Map;
         
+        std::string id;
         double alpha;
         
         BoundLayerInfo();
+        BoundLayerInfo(const std::string &id);
     };
     
     class SurfaceInfo

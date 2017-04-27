@@ -47,9 +47,9 @@ void getMapViewBoundLayers(
     out.clear();
     for (auto &&it : in)
     {
-        MapView::BoundLayerInfo b;
+        MapView::BoundLayerInfo b(it.id);
         b.alpha = it.alpha ? *it.alpha : 1;
-        out[it.id] = b;
+        out.push_back(b);
     }
 }
 
@@ -62,9 +62,9 @@ void setMapViewBoundLayers(
     for (auto &&it : in)
     {
         vtslibs::registry::View::BoundLayerParams b;
-        b.id = it.first;
-        if (it.second.alpha < 1 - 1e-7)
-            b.alpha = it.second.alpha;
+        b.id = it.id;
+        if (it.alpha < 1 - 1e-7)
+            b.alpha = it.alpha;
         out.push_back(b);
     }
 }
@@ -112,6 +112,10 @@ const vtslibs::registry::View setMapView(const MapView &value)
 } // namespace
 
 MapView::BoundLayerInfo::BoundLayerInfo() : alpha(1)
+{}
+
+MapView::BoundLayerInfo::BoundLayerInfo(const std::string &id) :
+    id(id), alpha(1)
 {}
 
 Point::Point() : x(0), y(0), z(0)

@@ -1,4 +1,5 @@
 #include <cstring>
+#include <set>
 
 #include <vts/map.hpp>
 #include <vts/statistics.hpp>
@@ -472,8 +473,10 @@ public:
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT); \
             }
             // general
-            S("Time processing:", (int)(1000 * window->timingProcess), " ms");
-            S("Time frame:", (int)(1000 * window->timingFrame), " ms");
+            S("Time map:", (int)(1000 * window->timingMapProcess), " ms");
+            S("Time app:", (int)(1000 * window->timingAppProcess), " ms");
+            S("Time gui:", (int)(1000 * window->timingGuiProcess), " ms");
+            S("Time frame:", (int)(1000 * window->timingTotalFrame), " ms");
             S("Frame index:", s.frameIndex, "");
             S("Downloading:", s.currentResourceDownloads, "");
             S("Node updates:", s.currentNodeUpdates, "");
@@ -618,6 +621,60 @@ public:
         nk_end(&ctx);
     }
 
+    bool prepareViewsBoundLayers(vts::MapView &view,
+                                 vts::MapView::BoundLayerInfo::Map &bl)
+    {
+        const std::vector<std::string> boundLayers
+                = window->map->getResourceBoundLayers();
+        std::set<std::string> bls(boundLayers.begin(), boundLayers.end());
+        float width = nk_window_get_content_region_size(&ctx).x - 15 - 10 - 25;
+        float ratio[] = { 10, width * 0.7, width * 0.3, 20};
+        nk_layout_row(&ctx, NK_STATIC, 16, 4, ratio);
+        bool changed = false;
+        int idx = 0;
+        for (auto &&bn : bl)
+        {
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            if (!nk_check_label(&ctx, bn.id.c_str(), 1))
+            {
+                bl.erase(bl.begin() + idx);
+                return true;
+            }
+            bls.erase(bn.id);
+            // alpha
+            double a2 = nk_slide_float(&ctx, 0.1, bn.alpha , 1, 0.1);
+            if (bn.alpha != a2)
+            {
+                bn.alpha = a2;
+                changed = true;
+            }
+            // arrows
+            if (idx > 0)
+            {
+                if (nk_button_label(&ctx, "S"))
+                {
+                    std::swap(bl[idx - 1], bl[idx]);
+                    return true;
+                }
+            }
+            else
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+            idx++;
+        }
+        for (auto &&bn : bls)
+        {
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            if (nk_check_label(&ctx, bn.c_str(), 0))
+            {
+                bl.push_back(vts::MapView::BoundLayerInfo(bn));
+                return true;
+            }
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+        }
+        return changed;
+    }
+    
     void prepareViews()
     {
         int flags = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE
@@ -683,8 +740,6 @@ public:
             { // surfaces
                 const std::vector<std::string> surfaces
                         = window->map->getResourceSurfaces();
-                const std::vector<std::string> boundLayers
-                        = window->map->getResourceBoundLayers();
                 for (const std::string &sn : surfaces)
                 {
                     float ratio[] = { width };
@@ -694,36 +749,8 @@ public:
                     if (v2)
                     { // bound layers
                         vts::MapView::SurfaceInfo &s = view.surfaces[sn];
-                        float ratio[] = { 10, (width - 10) * 0.7,
-                                          (width - 10) * 0.3 };
-                        nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
-                        for (const std::string &bn : boundLayers)
-                        {
-                            nk_label(&ctx, "", NK_TEXT_RIGHT);
-                            bool b1 = s.boundLayers.find(bn)
-                                            != s.boundLayers.end();
-                            bool b2 = nk_check_label(&ctx, bn.c_str(), b1);
-                            if (b2)
-                            { // alpha
-                                vts::MapView::BoundLayerInfo &b
-                                        = s.boundLayers[bn];
-                                double a1 = b.alpha;
-                                double a2 = nk_slide_float(&ctx, 0.1,
-                                                           a1 , 1, 0.1);
-                                if (a1 != a2)
-                                {
-                                    b.alpha = a2;
-                                    viewChanged = true;
-                                }
-                            }
-                            else
-                            {
-                                s.boundLayers.erase(bn);
-                                nk_label(&ctx, "", NK_TEXT_LEFT);
-                            }
-                            if (b1 != b2)
-                                viewChanged = true;
-                        }
+                        viewChanged = viewChanged
+                                || prepareViewsBoundLayers(view, s.boundLayers);
                     }
                     else
                         view.surfaces.erase(sn);

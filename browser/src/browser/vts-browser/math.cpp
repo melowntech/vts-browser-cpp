@@ -177,7 +177,6 @@ const vec3 max(const vec3 &a, const vec3 &b)
                 std::max(a(2), b(2)));
 }
 
-
 double degToRad(double angle)
 {
     return angle * M_PI / 180;
@@ -250,6 +249,46 @@ const vec3 vec2to3(vec2 v, double w)
 const vec2 vec3to2(vec3 v, bool division)
 {
     vec2 res;
+    if (division)
+        v = v / v(2);
+    res(0) = v(0);
+    res(1) = v(1);
+    return res;
+}
+
+const vec4f vec3to4f(vec3f v, float w)
+{
+    vec4f res;
+    res(0) = v(0);
+    res(1) = v(1);
+    res(2) = v(2);
+    res(3) = w;
+    return res;
+}
+
+const vec3f vec4to3f(vec4f v, bool division)
+{
+    vec3f res;
+    if (division)
+        v = v / v(3);
+    res(0) = v(0);
+    res(1) = v(1);
+    res(2) = v(2);
+    return res;
+}
+
+const vec3f vec2to3f(vec2f v, float w)
+{
+    vec3f res;
+    res(0) = v(0);
+    res(1) = v(1);
+    res(2) = w;
+    return res;
+}
+
+const vec2f vec3to2f(vec3f v, bool division)
+{
+    vec2f res;
     if (division)
         v = v / v(2);
     res(0) = v(0);

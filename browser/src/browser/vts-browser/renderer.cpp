@@ -97,7 +97,8 @@ Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
                                      uint32 subMeshIndex,
                                      BoundParamInfo::list &boundList)
 {
-    { // prepare all layers
+    // prepare all layers
+    {
         bool determined = true;
         auto it = boundList.begin();
         while (it != boundList.end())
@@ -118,16 +119,17 @@ Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
             return Validity::Indeterminate;
     }
     
-    // sort by depth and priority
+    // sort by depth
     std::stable_sort(boundList.begin(), boundList.end());
-    std::reverse(boundList.begin(), boundList.end()); // render in reverse
     
     // skip overlapping layers
+    std::reverse(boundList.begin(), boundList.end());
     auto it = boundList.begin(), et = boundList.end();
-    while (it != et && !it->watertight)
+    while (it != et && (!it->watertight || it->transparent))
         it++;
     if (it != et)
         boundList.erase(++it, et);
+    std::reverse(boundList.begin(), boundList.end());
     
     return Validity::Valid;
 }
@@ -256,7 +258,7 @@ void MapImpl::renderNode(std::shared_ptr<TraverseNode> &trav)
         task.model = translationMatrix(trav->surrogatePhys)
                 * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
         if (trav->surface)
-            task.color = trav->surface->color;
+            task.color = vec3to4f(trav->surface->color, task.color(3));
         if (task.ready())
             draws.draws.emplace_back(&task, this);
     }
@@ -266,13 +268,13 @@ void MapImpl::renderNode(std::shared_ptr<TraverseNode> &trav)
     {
         for (std::shared_ptr<RenderTask> &r : trav->draws)
         {
-            if (r->translucent)
+            if (r->transparent)
                 continue;
             RenderTask task = *r;
             task.mesh = getMeshRenderable("data/meshes/aabb.obj");
             task.textureColor = nullptr;
             task.textureMask = nullptr;
-            task.color = trav->surface->color;
+            task.color = vec4f(0, 0, 1, 1);
             if (task.ready())
                 draws.draws.emplace_back(&task, this);
         }
@@ -283,8 +285,7 @@ void MapImpl::renderNode(std::shared_ptr<TraverseNode> &trav)
     {
         RenderTask task;
         task.mesh = getMeshRenderable("data/meshes/line.obj");
-        if (trav->surface)
-            task.color = trav->surface->color;
+        task.color = vec4f(1, 0, 0, 1);
         if (task.ready())
         {
             static const uint32 cora[] = {
@@ -297,7 +298,9 @@ void MapImpl::renderNode(std::shared_ptr<TraverseNode> &trav)
             {
                 vec3 a = trav->cornersPhys[cora[i]];
                 vec3 b = trav->cornersPhys[corb[i]];
-                task.model = lookAt(a, b, vec3(0, 0, 1)).inverse()
+                vec3 u = abs(dot(normalize(vec3(b - a)), vec3(0, 0, 1))) > 0.9
+                        ? vec3(0,1,0) : vec3(0,0,1);
+                task.model = lookAt(a, b, u).inverse()
                         * scaleMatrix(length(vec3(b - a)));
                 draws.draws.emplace_back(&task, this);
             }
@@ -407,8 +410,8 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
                 && !trav->nodeInfo.srs().empty()
                 && !options.debugDisableMeta5)
         {
-            vec2 fl = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
-            vec2 fu = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
+            vec2 fl = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
+            vec2 fu = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
             vec3 el = vec2to3(fl, node->geomExtents.z.min);
             vec3 eu = vec2to3(fu, node->geomExtents.z.max);
             for (uint32 i = 0; i < 8; i++)
@@ -530,6 +533,7 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
             case Validity::Invalid:
                 continue;
             }
+            bool allTransparent = true;
             for (BoundParamInfo &b : bls)
             {
                 std::shared_ptr<RenderTask> task
@@ -541,13 +545,14 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
                 task->textureColor = getTexture(b.bound->urlExtTex(b.vars));
                 task->textureColor->impl->availTest = b.bound->availability;
                 task->externalUv = true;
-                task->translucent = !!b.alpha;
-                task->alpha = b.alpha ? *b.alpha : 1;
+                task->transparent = b.transparent;
+                allTransparent = allTransparent && b.transparent;
+                task->color(3) = b.alpha ? *b.alpha : 1;
                 if (!b.watertight)
                     task->textureMask = getTexture(b.bound->urlMask(b.vars));
                 newDraws.push_back(task);
             }
-            if (!bls.empty())
+            if (!allTransparent)
                 continue;
         }
         
@@ -565,7 +570,7 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
             task->textureColor = getTexture(
                         trav->surface->surface->urlIntTex(vars));
             task->externalUv = false;
-            newDraws.push_back(task);
+            newDraws.insert(newDraws.begin(), task);
         }
     }
     

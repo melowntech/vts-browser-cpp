@@ -98,6 +98,7 @@ MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
         meshMark = std::make_shared<GpuMeshImpl>("mesh_mark");
         vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
                                   "data/meshes/sphere.obj"));
+        assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Triangles);
         spec.attributes[0].enable = true;
         spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
         spec.attributes[0].components = 3;
@@ -184,7 +185,7 @@ void MainWindow::keyboardUnicodeCallback(unsigned int codepoint)
     // do nothing
 }
 
-void MainWindow::drawTexture(vts::DrawTask &t)
+void MainWindow::drawVtsTask(vts::DrawTask &t)
 {
     if (t.texColor)
     {
@@ -202,24 +203,16 @@ void MainWindow::drawTexture(vts::DrawTask &t)
         else
             shaderTexture->uniform(9, 0);
         GpuTextureImpl *tex = dynamic_cast<GpuTextureImpl*>(t.texColor);
-        shaderTexture->uniform(10, (int)tex->grayscale);
         tex->bind();
+        shaderTexture->uniform(10, (int)tex->grayscale);
+        shaderTexture->uniform(11, t.color[3]);
     }
     else
     {
         shaderColor->bind();
         shaderColor->uniformMat4(0, t.mvp);
-        shaderColor->uniformVec3(8, t.color);
+        shaderColor->uniformVec4(8, t.color);
     }
-    GpuMeshImpl *m = dynamic_cast<GpuMeshImpl*>(t.mesh);
-    m->bind();
-    m->dispatch();
-}
-
-void MainWindow::drawColor(vts::DrawTask &t)
-{
-    shaderColor->uniformMat4(0, t.mvp);
-    shaderColor->uniformVec3(8, t.color);
     GpuMeshImpl *m = dynamic_cast<GpuMeshImpl*>(t.mesh);
     m->bind();
     m->dispatch();
@@ -227,13 +220,17 @@ void MainWindow::drawColor(vts::DrawTask &t)
 
 void MainWindow::drawMark(const Mark &m)
 {
-    vts::mat4 t = vts::translationMatrix(m.coord)
+    vts::mat4 mvp = camViewProj
+            * vts::translationMatrix(m.coord)
             * vts::scaleMatrix(map->getPositionViewExtent() * 0.005);
-    vts::mat4 mvp = camViewProj * t;
     vts::mat4f mvpf = mvp.cast<float>();
-    shaderColor->uniformMat4(0, mvpf.data());
-    shaderColor->uniformVec3(8, m.color.data());
-    meshMark->dispatch();
+    vts::DrawTask t;
+    vts::vec4f c = vts::vec3to4f(m.color, 1);
+    for (int i = 0; i < 4; i++)
+        t.color[i] = c(i);
+    t.mesh = meshMark.get();
+    memcpy(t.mvp, mvpf.data(), sizeof(t.mvp));
+    drawVtsTask(t);
 }
 
 void MainWindow::run()
@@ -254,44 +251,50 @@ void MainWindow::run()
     gui.initialize(this);
     while (!glfwWindowShouldClose(window))
     {
+        checkGl("frame begin");
         double timeFrameStart = glfwGetTime();
         
-        checkGl("frame begin");
+        map->renderTick(width, height); // calls camera overrides
+        double timeMapRender = glfwGetTime();
 
         glClearColor(0.2, 0.2, 0.2, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
+        glEnable(GL_CULL_FACE);
         //glCullFace(GL_FRONT);
-
         width = 0;
         height = 0;
         glfwGetFramebufferSize(window, &width, &height);
         glViewport(0, 0, width, height);
         checkGl("frame");
-        
         { // draws
-            map->renderTick(width, height); // calls camera overrides
             camViewProj = camProj * camView;
             vts::DrawBatch &draws = map->drawBatch();
-            glEnable(GL_CULL_FACE);
             for (vts::DrawTask &t : draws.draws)
-                drawTexture(t);
+                drawVtsTask(t);
             shaderColor->bind();
             meshMark->bind();
             for (Mark &mark : marks)
                 drawMark(mark);
-            glDisable(GL_CULL_FACE);
             glBindVertexArray(0);
         }
         checkGl("renderTick");
+        double timeAppRender = glfwGetTime();
         
-        double timeBeforeSwap = glfwGetTime();
         gui.input(); // calls glfwPollEvents()
         gui.render(width, height);
+        double timeGui = glfwGetTime();
+        
         glfwSwapBuffers(window);
         double timeFrameFinish = glfwGetTime();
-        timingProcess = timeBeforeSwap - timeFrameStart;
-        timingFrame = timeFrameFinish - timeFrameStart;
+        
+        timingMapProcess = timeMapRender - timeFrameStart;
+        timingAppProcess = timeAppRender - timeMapRender;
+        timingGuiProcess = timeGui - timeAppRender;
+        timingTotalFrame = timeFrameFinish - timeFrameStart;
     }
     gui.finalize();
 }

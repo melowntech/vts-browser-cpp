@@ -59,8 +59,7 @@ public:
     void run();
     void colorizeMarks();
     
-    void drawTexture(vts::DrawTask &t);
-    void drawColor(vts::DrawTask &t);
+    void drawVtsTask(vts::DrawTask &t);
     void drawMark(const Mark &m);
     
     std::shared_ptr<vts::GpuTexture> createTexture(const std::string &name);
@@ -80,8 +79,10 @@ public:
     vts::mat4 camViewProj;
     double camNear, camFar;
     double mousePrevX, mousePrevY;
-    double timingProcess;
-    double timingFrame;
+    double timingMapProcess;
+    double timingAppProcess;
+    double timingGuiProcess;
+    double timingTotalFrame;
     int width, height;
     vts::MapFoundation *map;
     GLFWwindow *window;

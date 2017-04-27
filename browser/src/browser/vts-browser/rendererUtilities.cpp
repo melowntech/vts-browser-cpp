@@ -8,7 +8,7 @@ using vtslibs::registry::BoundLayer;
 
 BoundParamInfo::BoundParamInfo(const View::BoundLayerParams &params)
     : View::BoundLayerParams(params), bound(nullptr),
-      watertight(true), vars(0), orig(0), depth(0)
+      watertight(true), transparent(false), vars(0), orig(0), depth(0)
 {}
 
 const mat3f BoundParamInfo::uvMatrix() const
@@ -90,6 +90,8 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
                 == BoundLayer::MetaFlags::watertight;
     }
     
+    transparent = bound->isTransparent || (!!alpha && *alpha < 1);
+    
     return Validity::Valid;
 }
 
@@ -97,6 +99,11 @@ bool BoundParamInfo::operator <(const BoundParamInfo &rhs) const
 {
     return depth > rhs.depth;
 }
+
+DrawTask::DrawTask() :
+    mesh(nullptr), texColor(nullptr), texMask(nullptr),
+    externalUv(false), transparent(false)
+{}
 
 DrawTask::DrawTask(RenderTask *r, MapImpl *m) :
     mesh(nullptr), texColor(nullptr), texMask(nullptr)
@@ -109,13 +116,12 @@ DrawTask::DrawTask(RenderTask *r, MapImpl *m) :
     memcpy(uvm, r->uvm.data(), sizeof(uvm));
     memcpy(color, r->color.data(), sizeof(color));
     externalUv = r->externalUv;
-    translucent = r->translucent;
-    alpha = r->alpha;
+    transparent = r->transparent;
 }
 
 RenderTask::RenderTask() : model(identityMatrix()),
     uvm(upperLeftSubMatrix(identityMatrix()).cast<float>()),
-    color(1,1,1), alpha(1), externalUv(false), translucent(false)
+    color(1,1,1,1), externalUv(false), transparent(false)
 {}
 
 bool RenderTask::ready() const

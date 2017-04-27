@@ -57,6 +57,7 @@ public:
     BoundInfo *bound;
     int depth;
     bool watertight;
+    bool transparent;
 };
 
 class RenderTask
@@ -68,10 +69,9 @@ public:
     std::shared_ptr<GpuTexture> textureMask;
     mat4 model;
     mat3f uvm;
-    vec3f color;
-    double alpha;
+    vec4f color;
     bool externalUv;
-    bool translucent;
+    bool transparent;
     
     RenderTask();
     bool ready() const;

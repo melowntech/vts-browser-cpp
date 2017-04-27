@@ -16,11 +16,11 @@ public:
     class GpuTexture *texMask;
     float mvp[16];
     float uvm[9];
-    float color[3];
-    float alpha;
+    float color[4];
     bool externalUv;
-    bool translucent;
+    bool transparent;
 
+    DrawTask();
     DrawTask(class RenderTask *r, class MapImpl *m);
 };
 

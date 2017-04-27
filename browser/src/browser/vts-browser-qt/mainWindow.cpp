@@ -132,7 +132,7 @@ void MainWindow::tick()
         shader->bind();
         for (vts::DrawTask &t : draws.draws)
         {
-            if (t.translucent || !t.texColor)
+            if (t.transparent || !t.texColor)
                 continue;
             shader->uniformMat4(0, t.mvp);
             shader->uniformMat3(4, t.uvm);

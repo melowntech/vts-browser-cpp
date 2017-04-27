@@ -1,9 +1,9 @@
 # bootstrap build system
 cmake_minimum_required(VERSION 2.8.11)
+project(vts-browser-cpp)
+# by default, this is OSS build (can be overrided by customer machinery)
+set(BUILDSYS_DEFAULT_CUSTOMER_NAME oss)
 include(buildsys/cmake/buildsys.cmake)
-
-# project
-setup_project(vts-browser-cpp "${BUILDSYS_PACKAGE_VERSION}")
 
 # temporarily disable warnings-as-errors
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")

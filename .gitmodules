@@ -1,48 +1,48 @@
-[submodule "externals/vts-libs"]
-	path = externals/vts-libs
-	url = ssh://git@gitlab.citationtech.net:8022/vts/vts-libs.git
-[submodule "externals/buildsys/cmake"]
-	path = externals/buildsys/cmake
-	url = ssh://git@gitlab.citationtech.net:8022/buildsys/cmake.git
-[submodule "externals/buildsys/common"]
-	path = externals/buildsys/common
-	url = ssh://git@gitlab.citationtech.net:8022/buildsys/common.git
-[submodule "externals/geo"]
-	path = externals/geo
-	url = ssh://git@gitlab.citationtech.net:8022/lib/geo.git
-[submodule "externals/math"]
-	path = externals/math
-	url = ssh://git@gitlab.citationtech.net:8022/lib/math.git
-[submodule "externals/imgproc"]
-	path = externals/imgproc
-	url = ssh://git@gitlab.citationtech.net:8022/lib/imgproc.git
-[submodule "externals/utility"]
-	path = externals/utility
-	url = ssh://git@gitlab.citationtech.net:8022/lib/utility.git
-[submodule "externals/dbglog"]
-	path = externals/dbglog
-	url = ssh://git@gitlab.citationtech.net:8022/lib/dbglog.git
-[submodule "externals/jsoncpp"]
-	path = externals/jsoncpp
-	url = ssh://git@gitlab.citationtech.net:8022/lib/jsoncpp.git
-[submodule "externals/half"]
-	path = externals/half
-	url = ssh://git@gitlab.citationtech.net:8022/3rdparty/half.git
-[submodule "externals/geometry"]
-	path = externals/geometry
-	url = ssh://git@gitlab.citationtech.net:8022/lib/geometry.git
-[submodule "externals/service"]
-	path = externals/service
-	url = ssh://git@gitlab.citationtech.net:8022/lib/service.git
 [submodule "externals/glfw"]
 	path = externals/glfw
 	url = https://github.com/glfw/glfw.git
-[submodule "externals/http"]
-	path = externals/http
-	url = ssh://git@gitlab.citationtech.net:8022/lib/http.git
 [submodule "externals/lodepng"]
 	path = externals/lodepng
 	url = https://github.com/lvandeve/lodepng.git
 [submodule "externals/nuklear"]
 	path = externals/nuklear
 	url = https://github.com/vurtun/nuklear.git
+[submodule "externals/buildsys/common"]
+	path = externals/buildsys/common
+	url = https://github.com/Melown/buildsys-common.git
+[submodule "externals/buildsys/cmake"]
+	path = externals/buildsys/cmake
+	url = https://github.com/Melown/buildsys-cmake.git
+[submodule "externals/libdbglog"]
+	path = externals/libdbglog
+	url = https://github.com/Melown/libdbglog.git
+[submodule "externals/libgeo"]
+	path = externals/libgeo
+	url = https://github.com/Melown/libgeo.git
+[submodule "externals/libgeometry"]
+	path = externals/libgeometry
+	url = https://github.com/Melown/libgeometry.git
+[submodule "externals/half"]
+	path = externals/half
+	url = https://github.com/Melown/half.git
+[submodule "externals/libhttp"]
+	path = externals/libhttp
+	url = https://github.com/Melown/libhttp.git
+[submodule "externals/libimgproc"]
+	path = externals/libimgproc
+	url = https://github.com/Melown/libimgproc.git
+[submodule "externals/libjsoncpp"]
+	path = externals/libjsoncpp
+	url = https://github.com/Melown/libjsoncpp.git
+[submodule "externals/libmath"]
+	path = externals/libmath
+	url = https://github.com/Melown/libmath.git
+[submodule "externals/libservice"]
+	path = externals/libservice
+	url = https://github.com/Melown/libservice.git
+[submodule "externals/libutility"]
+	path = externals/libutility
+	url = https://github.com/Melown/libutility.git
+[submodule "externals/vts-libs"]
+	path = externals/vts-libs
+	url = https://github.com/Melown/vts-libs.git

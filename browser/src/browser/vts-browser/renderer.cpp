@@ -609,7 +609,7 @@ void MapImpl::traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly)
     touchResources(trav);
     
     // node update limit
-    if (statistics.currentNodeUpdates++ >= options.maxNodeUpdatesPerFrame)
+    if (statistics.currentNodeUpdates++ >= options.maxNodeUpdatesPerTick)
         return;
     
     // find surface
@@ -634,6 +634,13 @@ void MapImpl::traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly)
 
 void MapImpl::traverseClearing(std::shared_ptr<TraverseNode> &trav)
 {
+    TileId id = trav->nodeInfo.nodeId();
+    if (id.lod == 3)
+    {
+        if ((id.y * 8 + id.x) % 64 != statistics.frameIndex % 64)
+            return;
+    }
+    
     if (trav->lastAccessTime + 100 < statistics.frameIndex)
     {
         trav->clear();
@@ -860,6 +867,8 @@ bool MapImpl::prerequisitesCheck()
 
 void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
 {    
+    statistics.frameIndex++;
+    
     if (!prerequisitesCheck())
         return;
     
@@ -881,8 +890,6 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
         renderer.traverseQueue.pop();
     }
     traverseClearing(renderer.traverseRoot);
-    
-    statistics.frameIndex++;
 }
 
 } // namespace vts

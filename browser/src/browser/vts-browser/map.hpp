@@ -134,10 +134,10 @@ public:
         static const std::string invalidUrlFileName;
         
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
-        std::unordered_set<ResourceImpl*> prepareQue;
-        std::unordered_set<ResourceImpl*> prepareQueNew;
-        std::unordered_set<std::string> invalidUrl;
-        std::unordered_set<std::string> invalidUrlNew;
+        std::unordered_set<ResourceImpl*> prepareQueLocked;
+        std::unordered_set<ResourceImpl*> prepareQueNoLock;
+        std::unordered_set<std::string> invalidUrlLocked;
+        std::unordered_set<std::string> invalidUrlNoLock;
         std::string cachePath;
         boost::mutex mutPrepareQue;
         boost::mutex mutInvalidUrls;

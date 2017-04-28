@@ -43,7 +43,9 @@ void DataThread::run()
     while (!stop)
     {
         if (map->dataTick())
-            usleep(15000);
+            usleep(20000);
+        else
+            usleep(5000);
     }
     map->dataFinalize();
 }

@@ -383,11 +383,18 @@ public:
             sprintf(buffer, "%3d", o.maxConcurrentDownloads);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             
+            // maxResourceProcessesPerTick
+            nk_label(&ctx, "Max res. procs.:", NK_TEXT_LEFT);
+            o.maxResourceProcessesPerTick = nk_slide_int(&ctx,
+                    1, o.maxResourceProcessesPerTick, 50, 1);
+            sprintf(buffer, "%3d", o.maxResourceProcessesPerTick);
+            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            
             // maxNodeUpdatesPerFrame
             nk_label(&ctx, "Max updates:", NK_TEXT_LEFT);
-            o.maxNodeUpdatesPerFrame = nk_slide_int(&ctx,
-                    1, o.maxNodeUpdatesPerFrame, 50, 1);
-            sprintf(buffer, "%3d", o.maxNodeUpdatesPerFrame);
+            o.maxNodeUpdatesPerTick = nk_slide_int(&ctx,
+                    1, o.maxNodeUpdatesPerTick, 50, 1);
+            sprintf(buffer, "%3d", o.maxNodeUpdatesPerTick);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             
             // navigation samples per view extent

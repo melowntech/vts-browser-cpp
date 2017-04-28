@@ -27,7 +27,8 @@ public:
     double cameraInertiaRotate;
     uint64 maxResourcesMemory;
     uint32 maxConcurrentDownloads;
-    uint32 maxNodeUpdatesPerFrame;
+    uint32 maxNodeUpdatesPerTick;
+    uint32 maxResourceProcessesPerTick;
     uint32 navigationSamplesPerViewExtent;
     
     bool renderSurrogates;

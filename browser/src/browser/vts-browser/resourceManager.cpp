@@ -51,7 +51,7 @@ MapImpl::Resources::Resources(const std::string &cachePathVal,
             {
                 std::string line;
                 std::getline(f, line);
-                invalidUrl.insert(line);
+                invalidUrlNoLock.insert(line);
             }
             f.close();
         }
@@ -74,7 +74,7 @@ MapImpl::Resources::~Resources()
     {
         std::ofstream f;
         f.open(cachePath + invalidUrlFileName);
-        for (auto &&line : invalidUrl)
+        for (auto &&line : invalidUrlNoLock)
             f << line << '\n';
         f.close();
     }
@@ -104,7 +104,7 @@ void MapImpl::dataFinalize()
     LOG(info3) << "Data finalize";
     assert(resources.fetcher);
     resources.fetcher->finalize();
-    resources.prepareQue.clear();
+    resources.prepareQueLocked.clear();
 }
 
 void MapImpl::loadResource(ResourceImpl *r)
@@ -129,18 +129,18 @@ bool MapImpl::dataTick()
     
     { // sync invalid urls
         boost::lock_guard<boost::mutex> l(resources.mutInvalidUrls);
-        resources.invalidUrl.insert(resources.invalidUrlNew.begin(),
-                                    resources.invalidUrlNew.end());
-        resources.invalidUrlNew.clear();
+        resources.invalidUrlNoLock.insert(resources.invalidUrlLocked.begin(),
+                                    resources.invalidUrlLocked.end());
+        resources.invalidUrlLocked.clear();
     }
     
     std::vector<ResourceImpl*> res;
     { // sync resources
         boost::lock_guard<boost::mutex> l(resources.mutPrepareQue);
-        if (resources.prepareQue.empty())
-            return true; // sleep
-        res.reserve(resources.prepareQue.size());
-        for (ResourceImpl *r : resources.prepareQue)
+        if (resources.prepareQueLocked.empty())
+            return true; // all done
+        res.reserve(resources.prepareQueLocked.size());
+        for (ResourceImpl *r : resources.prepareQueLocked)
             res.push_back(r);
     }
     
@@ -149,8 +149,11 @@ bool MapImpl::dataTick()
         return a->priority > b->priority;
     });
     
+    uint32 processed = 0;
     for (ResourceImpl *r : res)
     {
+        if (processed++ >= options.maxResourceProcessesPerTick)
+            return false; // tasks left
         try
         {
 			if (r->state == ResourceImpl::State::downloaded)
@@ -160,8 +163,8 @@ bool MapImpl::dataTick()
             }
 			else if (r->state != ResourceImpl::State::initializing)
 				continue;
-            if (resources.invalidUrl.find(r->resource->name)
-                    != resources.invalidUrl.end())
+            if (resources.invalidUrlNoLock.find(r->resource->name)
+                    != resources.invalidUrlNoLock.end())
             {
                 statistics.resourcesIgnored++;
                 r->state = ResourceImpl::State::error;
@@ -199,7 +202,7 @@ bool MapImpl::dataTick()
         }
     }
     
-    return true; // sleep
+    return true; // all done
 }
 
 void MapImpl::fetchedFile(FetchTask *task)
@@ -284,7 +287,7 @@ void MapImpl::fetchedFile(FetchTask *task)
     {
         resource->contentData.free();
         boost::lock_guard<boost::mutex> l(resources.mutInvalidUrls);
-        resources.invalidUrlNew.insert(resource->resource->name);
+        resources.invalidUrlLocked.insert(resource->resource->name);
         return;
     }
     
@@ -297,23 +300,24 @@ void MapImpl::dataRenderInitialize()
 
 void MapImpl::dataRenderFinalize()
 {
-    resources.prepareQueNew.clear();
+    resources.prepareQueNoLock.clear();
     resources.resources.clear();
 }
 
 bool MapImpl::dataRenderTick()
 {
-    statistics.currentResourcePreparing = resources.prepareQueNew.size()
+    statistics.currentResourcePreparing = resources.prepareQueNoLock.size()
             + statistics.currentResourceDownloads;
-    // sync download queue
-    {
-        boost::lock_guard<boost::mutex> l(resources.mutPrepareQue);
-        std::swap(resources.prepareQueNew, resources.prepareQue);
+    if (statistics.frameIndex % 2)
+    { // sync download queue
+        {
+            boost::lock_guard<boost::mutex> l(resources.mutPrepareQue);
+            std::swap(resources.prepareQueNoLock, resources.prepareQueLocked);
+        }
+        resources.prepareQueNoLock.clear();
     }
-    resources.prepareQueNew.clear();
-    
-    // clear old resources
-    {
+    else
+    { // clear old resources
         std::vector<Resource*> res;
         res.reserve(resources.resources.size());
         uint64 memRamUse = 0;
@@ -370,7 +374,7 @@ void MapImpl::touchResource(std::shared_ptr<Resource> resource,
         // no break here
     case ResourceImpl::State::initializing:
     case ResourceImpl::State::downloaded:
-        resources.prepareQueNew.insert(resource->impl.get());
+        resources.prepareQueNoLock.insert(resource->impl.get());
         break;
     }
 }

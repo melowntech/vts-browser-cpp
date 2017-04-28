@@ -89,16 +89,59 @@ void MainWindow::initialize()
     map->renderInitialize();
     map->dataInitialize(fetcher);
     
-    { // load shader
-        shader = std::make_shared<GpuShader>();
+    { // load shaderColor
+        shaderColor = std::make_shared<GpuShader>();
+        vts::Buffer vert = readInternalMemoryBuffer(
+                    "data/shaders/color.vert.glsl");
+        vts::Buffer frag = readInternalMemoryBuffer(
+                    "data/shaders/color.frag.glsl");
+        shaderColor->loadShaders(
+            std::string(vert.data(), vert.size()),
+            std::string(frag.data(), frag.size()));
+    }
+    
+    { // load shaderTexture
+        shaderTexture = std::make_shared<GpuShader>();
         vts::Buffer vert = readInternalMemoryBuffer(
                     "data/shaders/texture.vert.glsl");
         vts::Buffer frag = readInternalMemoryBuffer(
                     "data/shaders/texture.frag.glsl");
-        shader->loadShaders(
+        shaderTexture->loadShaders(
             std::string(vert.data(), vert.size()),
             std::string(frag.data(), frag.size()));
     }
+}
+
+void MainWindow::draw(const vts::DrawTask &t)
+{
+    if (t.texColor)
+    {
+        shaderTexture->bind();
+        shaderTexture->uniformMat4(0, t.mvp);
+        shaderTexture->uniformMat3(4, t.uvm);
+        shaderTexture->uniform(8, (int)t.externalUv);
+        if (t.texMask)
+        {
+            shaderTexture->uniform(9, 1);
+            gl->glActiveTexture(GL_TEXTURE0 + 1);
+            dynamic_cast<GpuTextureImpl*>(t.texMask)->bind();
+            gl->glActiveTexture(GL_TEXTURE0 + 0);
+        }
+        else
+            shaderTexture->uniform(9, 0);
+        GpuTextureImpl *tex = dynamic_cast<GpuTextureImpl*>(t.texColor);
+        tex->bind();
+        shaderTexture->uniform(10, (int)tex->grayscale);
+        shaderTexture->uniform(11, t.color[3]);
+    }
+    else
+    {
+        shaderColor->bind();
+        shaderColor->uniformMat4(0, t.mvp);
+        shaderColor->uniformVec4(8, t.color);
+    }
+    GpuMeshImpl *m = dynamic_cast<GpuMeshImpl*>(t.mesh);
+    m->draw();
 }
 
 void MainWindow::tick()
@@ -118,38 +161,35 @@ void MainWindow::tick()
     gl->makeCurrent(this);
 
     QSize size = QWindow::size();
-    gl->glViewport(0, 0, size.width(), size.height());
+    gl->glViewport(0, 0, size.width(), size.height());    
     gl->glClearColor(0.2, 0.2, 0.2, 1);
     gl->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    gl->glEnable(GL_BLEND);
+    gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     gl->glEnable(GL_DEPTH_TEST);
-
-    map->dataTick();
-    map->renderTick(size.width(), size.height());
+    gl->glDepthFunc(GL_LEQUAL);
+    gl->glEnable(GL_CULL_FACE);
     
-    { // draws
-        vts::DrawBatch &draws = map->drawBatch();
-        shader->bind();
-        for (vts::DrawTask &t : draws.draws)
-        {
-            if (t.transparent || !t.texColor)
-                continue;
-            shader->uniformMat4(0, t.mvp);
-            shader->uniformMat3(4, t.uvm);
-            shader->uniform(8, (int)t.externalUv);
-            if (t.texMask)
-            {
-                shader->uniform(9, 1);
-                gl->glActiveTexture(GL_TEXTURE0 + 1);
-                dynamic_cast<GpuTextureImpl*>(t.texMask)->bind();
-                gl->glActiveTexture(GL_TEXTURE0 + 0);
-            }
-            else
-                shader->uniform(9, 0);
-            dynamic_cast<GpuTextureImpl*>(t.texColor)->bind();
-            dynamic_cast<GpuMeshImpl*>(t.mesh)->draw();
-        }
+    // release build -> catch exceptions and close the window
+    // debug build -> let the debugger handle the exceptions
+#ifdef NDEBUG
+    try
+    {
+#endif
+        
+        map->dataTick();
+        map->renderTick(size.width(), size.height());
+        
+        for (vts::DrawTask &t : map->drawBatch().draws)
+            draw(t);
+        
+#ifdef NDEBUG
     }
+    catch(...)
+    {
+        this->close();
+    }
+#endif
 
     gl->swapBuffers(this);
 }

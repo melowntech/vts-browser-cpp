@@ -276,6 +276,10 @@ void MainWindow::run()
         map->renderTick(width, height); // calls camera overrides
         double timeMapRender = glfwGetTime();
 
+        width = 0;
+        height = 0;
+        glfwGetFramebufferSize(window, &width, &height);
+        glViewport(0, 0, width, height);
         glClearColor(0.2, 0.2, 0.2, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_BLEND);
@@ -284,11 +288,8 @@ void MainWindow::run()
         glDepthFunc(GL_LEQUAL);
         glEnable(GL_CULL_FACE);
         //glCullFace(GL_FRONT);
-        width = 0;
-        height = 0;
-        glfwGetFramebufferSize(window, &width, &height);
-        glViewport(0, 0, width, height);
-        checkGl("frame");
+        checkGl("frame preparation");
+        
         { // draws
             camViewProj = camProj * camView;
             vts::DrawBatch &draws = map->drawBatch();
@@ -304,7 +305,8 @@ void MainWindow::run()
             }
             glBindVertexArray(0);
         }
-        checkGl("renderTick");
+        checkGl("frame draws");
+        
         double timeAppRender = glfwGetTime();
         
         gui.input(); // calls glfwPollEvents()

@@ -48,6 +48,7 @@ public:
     GpuTextureImpl(const std::string &name);
     void bind();
     void loadTexture(const vts::GpuTextureSpec &spec);
+    bool grayscale;
 };
 
 class GpuMeshImpl : public vts::GpuMesh

@@ -8,13 +8,15 @@
 void usage(char *argv[])
 {
     printf("Usage: %s <url>\n", argv[0]);
-    abort();
 }
 
 int main(int argc, char *argv[])
 {
     if (argc != 2)
+    {
         usage(argv);
+        return 2;
+    }
 
     QGuiApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
     QGuiApplication application(argc, argv);
@@ -35,6 +37,6 @@ int main(int argc, char *argv[])
     mainWindow.show();
     mainWindow.initialize();
     mainWindow.requestUpdate();
-
+    
     return application.exec();
 }

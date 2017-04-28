@@ -8,6 +8,7 @@ namespace vts
 {
     class MapFoundation;
     class Fetcher;
+    class DrawTask;
 }
 
 class MainWindow : public QWindow
@@ -29,6 +30,7 @@ private:
     void mousePress(class QMouseEvent *event);
     void mouseRelease(class QMouseEvent *event);
     void mouseWheel(class QWheelEvent *event);
+    void draw(const vts::DrawTask &task);
     
     std::shared_ptr<vts::GpuTexture> createTexture
         (const std::string &name);
@@ -39,7 +41,8 @@ private:
     QPoint mouseLastPosition;
     QPoint mouseOriginalPosition;
     
-    std::shared_ptr<GpuShader> shader;
+    std::shared_ptr<GpuShader> shaderTexture;
+    std::shared_ptr<GpuShader> shaderColor;
 };
 
 #endif

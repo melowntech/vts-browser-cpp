@@ -355,6 +355,8 @@ void MapImpl::rotate(const vec3 &value)
     vec3 rot(value[0] * 0.2, value[1] * -0.1, 0);
     rot *= options.cameraSensitivityRotate;
     navigation.inertiaRotation += rot;
+    
+    mapConfig->autorotate = 0;
 }
 
 void MapImpl::pan(const vec3 &value)
@@ -397,6 +399,8 @@ void MapImpl::pan(const vec3 &value)
         else
             navigation.panZQueue.back() = h;
     }
+    
+    mapConfig->autorotate = 0;
 }
 
 } // namespace vts

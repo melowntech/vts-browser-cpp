@@ -120,7 +120,8 @@ void GpuShader::uniform(vts::uint32 location, const int value)
 
 GpuTextureImpl::GpuTextureImpl(const std::string &name) :
     vts::GpuTexture(name),
-    QOpenGLTexture(QOpenGLTexture::Target2D)
+    QOpenGLTexture(QOpenGLTexture::Target2D),
+    grayscale(false)
 {}
 
 void GpuTextureImpl::bind()
@@ -130,11 +131,15 @@ void GpuTextureImpl::bind()
 
 void GpuTextureImpl::loadTexture(const vts::GpuTextureSpec &spec)
 {
+    if (isCreated())
+        destroy();
     QImage::Format format;
+    grayscale = false;
     switch (spec.components)
     {
     case 1:
         format = QImage::Format_Grayscale8;
+        grayscale = true;
         break;
     case 3:
         format = QImage::Format_RGB888;
@@ -145,14 +150,14 @@ void GpuTextureImpl::loadTexture(const vts::GpuTextureSpec &spec)
     default:
         throw std::invalid_argument("invalid texture components count");
     }
-    create();
-    setData(QImage((unsigned char*)spec.buffer.data(),
-                   spec.width, spec.height, format).mirrored());
     setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
     setMagnificationFilter(QOpenGLTexture::Linear);
     setWrapMode(QOpenGLTexture::ClampToEdge);
-    gpuMemoryCost = spec.buffer.size();
     setMaximumAnisotropy(16);
+    create();
+    setData(QImage((unsigned char*)spec.buffer.data(),
+                   spec.width, spec.height, format).mirrored());
+    gpuMemoryCost = spec.buffer.size();
 }
 
 GpuMeshImpl::GpuMeshImpl(const std::string &name) : vts::GpuMesh(name),

@@ -2,6 +2,7 @@
 
 #include <jpeglib.h>
 #include <lodepng/lodepng.h>
+#include <dbglog/dbglog.hpp>
 
 #include "image.hpp"
 
@@ -19,7 +20,7 @@ void decodePng(const Buffer &in, Buffer &out,
     unsigned res = lodepng_inspect(&width, &height, &state,
                                    (unsigned char*)in.data(), in.size());
     if (res != 0)
-        throw std::runtime_error("failed to decode png image");
+        LOGTHROW(err1, std::runtime_error) << "failed to decode png image";
     components = lodepng_get_channels(&state.info_png.color);
     unsigned char *tmp = nullptr;
     res = lodepng_decode_memory(&tmp, &width, &height,
@@ -28,7 +29,7 @@ void decodePng(const Buffer &in, Buffer &out,
     if (res != 0)
     {
         free(tmp);
-        throw std::runtime_error("failed to decode png image");
+        LOGTHROW(err1, std::runtime_error) << "failed to decode png image";
     }
     out = Buffer(width * height * components);
     memcpy(out.data(), tmp, out.size());
@@ -39,8 +40,9 @@ void jpegErrFunc(j_common_ptr cinfo)
 {
     char jpegLastErrorMsg[JMSG_LENGTH_MAX];
     (*(cinfo->err->format_message))(cinfo, jpegLastErrorMsg);
-    throw std::runtime_error(std::string("failed to decode jpeg image: ")
-                               + jpegLastErrorMsg);
+    LOGTHROW(err1, std::runtime_error)
+            << "failed to decode jpeg image: "
+            << jpegLastErrorMsg;
 }
 
 void decodeJpeg(const Buffer &in, Buffer &out,
@@ -84,7 +86,7 @@ void decodeImage(const Buffer &in, Buffer &out,
                  uint32 &width, uint32 &height, uint32 &components)
 {
     if (in.size() < 8)
-        throw std::runtime_error("invalid image data");
+        LOGTHROW(err1, std::runtime_error) << "invalid image data";
     static const unsigned char pngSignature[]
             = { 137, 80, 78, 71, 13, 10, 26, 10 };
     if (memcmp(in.data(), pngSignature, 8) == 0)

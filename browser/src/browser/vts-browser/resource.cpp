@@ -9,14 +9,14 @@ void writeLocalFileBuffer(const std::string &path, const Buffer &buffer)
                 boost::filesystem::path(path).parent_path());
     FILE *f = fopen(path.c_str(), "wb");
     if (!f)
-        throw std::runtime_error("failed to write file");
+        LOGTHROW(err1, std::runtime_error) << "failed to write file";
     if (fwrite(buffer.data(), buffer.size(), 1, f) != 1)
     {
         fclose(f);
-        throw std::runtime_error("failed to write file");
+        LOGTHROW(err1, std::runtime_error) << "failed to write file";
     }
     if (fclose(f) != 0)
-        throw std::runtime_error("failed to write file");
+        LOGTHROW(err1, std::runtime_error) << "failed to write file";
 }
 
 FetchTask::FetchTask(const std::string &url) : url(url), 
@@ -50,13 +50,14 @@ void ResourceImpl::saveToCache(MapImpl *map)
         writeLocalFileBuffer(map->convertNameToCache(resource->name),
                        contentData);
     }
-    catch(std::runtime_error &)
-    {}
+    catch (...)
+    {
+		// do nothing
+	}
 }
 
 void ResourceImpl::loadFromCache(MapImpl *map)
 {
-    code = 0;
     try
     {
         std::string path = map->convertNameToCache(resource->name);
@@ -64,26 +65,29 @@ void ResourceImpl::loadFromCache(MapImpl *map)
         code = 200;
         state = ResourceImpl::State::downloaded;
     }
-    catch (std::runtime_error &)
+    catch (...)
     {
-        LOG(err3) << "Error reading resource '" + resource->name
-                     + "'' from cache file";
+        LOG(err2) << "Error reading resource '"
+                  << resource->name
+                  << "'' from cache file";
+		code = 404;
     }
 }
 
 void ResourceImpl::loadFromInternalMemory()
 {
-    code = 0;
     try
     {
         contentData = readInternalMemoryBuffer(resource->name);
         code = 200;
         state = ResourceImpl::State::downloaded;
     }
-    catch (std::runtime_error &)
+    catch (...)
     {
-        LOG(err3) << "Error reading resource '" + resource->name
-                     + "'' from internal memory";
+        LOG(err2) << "Error reading resource '"
+                  << resource->name
+                  << "'' from internal memory";
+		code = 404;
     }
 }
 

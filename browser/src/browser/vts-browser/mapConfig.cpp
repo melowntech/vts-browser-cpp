@@ -43,6 +43,7 @@ MapConfig::MapConfig(const std::string &name) : Resource(name), autorotate(0)
 void MapConfig::load(MapImpl *)
 {
     clear();
+    LOG(info3) << "Loading map config '" << name << "'";
     vtslibs::vts::loadMapConfig(*this, impl->contentData, name);
     
     auto bo(vtslibs::vts::browserOptions(*this));

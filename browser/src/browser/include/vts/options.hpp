@@ -6,6 +6,8 @@
 namespace vts
 {
 
+VTS_API void setLogMask(const std::string &mask);
+
 class VTS_API MapOptions
 {
 public:
@@ -23,7 +25,7 @@ public:
     double cameraInertiaAltitude;
     double cameraInertiaZoom;
     double cameraInertiaRotate;
-    uint32 maxResourcesMemory;
+    uint64 maxResourcesMemory;
     uint32 maxConcurrentDownloads;
     uint32 maxNodeUpdatesPerFrame;
     uint32 navigationSamplesPerViewExtent;

@@ -588,14 +588,9 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 sprintf(buffer, "%5.1f", r.z);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                { // autoRotateSpeed
-                    nk_label(&ctx, "Auto:", NK_TEXT_LEFT);
-                    window->map->setAutorotate(nk_slide_float(&ctx,
-                            0, window->map->getAutorotate(), 1, 0.001));
-                    nk_label(&ctx, "", NK_TEXT_LEFT);
-                    sprintf(buffer, "%.2f", window->map->getAutorotate());
-                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                }
+                nk_label(&ctx, "Auto:", NK_TEXT_LEFT);
+                window->map->setAutorotate(nk_slide_float(&ctx,
+                        0, window->map->getAutorotate(), 1, 0.001));
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset rotation"))
                 {

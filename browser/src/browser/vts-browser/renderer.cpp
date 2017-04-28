@@ -12,7 +12,7 @@ inline bool testAndThrow(ResourceImpl::State state)
     switch (state)
     {
     case ResourceImpl::State::error:
-        throw std::runtime_error("MapConfig failed");
+        LOGTHROW(err3, std::runtime_error) << "MapConfig failed";
     case ResourceImpl::State::downloaded:
     case ResourceImpl::State::downloading:
     case ResourceImpl::State::finalizing:
@@ -21,7 +21,7 @@ inline bool testAndThrow(ResourceImpl::State state)
     case ResourceImpl::State::ready:
         return true;
     default:
-        assert(false);
+		assert(false);
     }
 }
 
@@ -47,19 +47,26 @@ inline const vec4 column(const mat4 &m, uint32 index)
 } // namespace
 
 void MapImpl::renderInitialize()
-{}
+{
+    LOG(info3) << "Render initialize";
+}
 
 void MapImpl::renderFinalize()
-{}
+{
+    LOG(info3) << "Render finalize";
+}
 
 void MapImpl::setMapConfigPath(const std::string &mapConfigPath)
 {
+    LOG(info3) << "Changing map config path to '" << mapConfigPath << "'";
     this->mapConfigPath = mapConfigPath;
     purgeHard();
 }
 
 void MapImpl::purgeHard()
 {
+    LOG(info2) << "Hard purge";
+    
     if (mapConfig && *mapConfig)
         mapConfig->impl->state = ResourceImpl::State::initializing;
     
@@ -73,6 +80,8 @@ void MapImpl::purgeHard()
 
 void MapImpl::purgeSoft()
 {
+    LOG(info2) << "Soft purge";
+    
     renderer.traverseRoot.reset();
     statistics.resetFrame();
     draws = DrawBatch();
@@ -607,7 +616,7 @@ void MapImpl::traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly)
     if (!trav->surface && !trav->empty && !traverseDetermineSurface(trav))
         return;
     
-    assert(trav->surface || trav->empty);
+    assert(!!trav->surface != trav->empty);
     
     if (trav->empty)
     {
@@ -702,7 +711,7 @@ void MapImpl::updateCamera()
             pos.position[1] = clamp(pos.position[1], -80, 80);
         } break;
         default:
-            throw std::invalid_argument("not implemented navigation srs type");
+			assert(false);
         }
         normalizeAngle(pos.orientation[0]);
         normalizeAngle(pos.orientation[1]);
@@ -844,6 +853,7 @@ bool MapImpl::prerequisitesCheck()
                     new BoundInfo(bl));
     }
     
+    LOG(info3) << "Render prerequisites ready";
     initialized = true;
     return true;
 }

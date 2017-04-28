@@ -42,7 +42,9 @@ public:
             func(task);
         }
         catch (...)
-        {}
+        {
+			// do nothing
+		}
         delete this;
     }
     

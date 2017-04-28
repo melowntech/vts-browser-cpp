@@ -13,6 +13,7 @@ MetaTile::MetaTile(const std::string &name) : Resource(name),
 
 void MetaTile::load(MapImpl *)
 {
+    LOG(info2) << "Loading meta tile '" << name << "'";
     *(vtslibs::vts::MetaTile*)this
             = vtslibs::vts::loadMetaTile(impl->contentData, 5, name);
     ramMemoryCost = this->size() * sizeof(vtslibs::vts::MetaNode);
@@ -23,11 +24,12 @@ NavTile::NavTile(const std::string &name) : Resource(name)
 
 void NavTile::load(MapImpl *)
 {
+    LOG(info2) << "Loading navigation tile '" << name << "'";
     GpuTextureSpec spec;
     decodeImage(impl->contentData, spec.buffer,
                 spec.width, spec.height, spec.components);
     if (spec.width != 256 || spec.height != 256 || spec.components != 1)
-        throw std::runtime_error("invalid navtile image");
+        LOGTHROW(err1, std::runtime_error) << "invalid navtile image";
     data.resize(256 * 256);
     memcpy(data.data(), spec.buffer.data(), 256 * 256);
 }
@@ -60,6 +62,8 @@ const mat4 findNormToPhys(const math::Extents3 &extents)
 
 void MeshAggregate::load(MapImpl *base)
 {
+    LOG(info2) << "Loading (aggregated) mesh '" << name << "'";
+    
     vtslibs::vts::NormalizedSubMesh::list meshes = vtslibs::vts::
             loadMeshProperNormalized(impl->contentData, name);
 
@@ -154,12 +158,15 @@ BoundMetaTile::BoundMetaTile(const std::string &name) : Resource(name)
 
 void BoundMetaTile::load(MapImpl *)
 {
+    LOG(info2) << "Loading bound meta tile '" << name << "'";
+    
     Buffer buffer = std::move(impl->contentData);
     GpuTextureSpec spec;
     decodeImage(buffer, spec.buffer,
                 spec.width, spec.height, spec.components);
     if (spec.buffer.size() != sizeof(flags))
-        throw std::runtime_error("bound meta tile has invalid resolution");
+        LOGTHROW(err1, std::runtime_error)
+                << "bound meta tile has invalid resolution";
     memcpy(flags, spec.buffer.data(), spec.buffer.size());
     ramMemoryCost = spec.buffer.size();
 }
@@ -169,6 +176,8 @@ BoundMaskTile::BoundMaskTile(const std::string &name) : Resource(name)
 
 void BoundMaskTile::load(MapImpl *base)
 {
+    LOG(info2) << "Loading bound mask tile '" << name << "'";
+    
     if (!texture)
         texture = std::dynamic_pointer_cast<GpuTexture>(
                     base->mapFoundation->createTexture(name + "#tex"));

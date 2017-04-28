@@ -13,7 +13,7 @@ void decodeObj(const Buffer &in, uint32 &outFaceMode,
     Buffer buf(in);
     geometry::Obj obj;
     if (!obj.parse(buf))
-        throw std::runtime_error("failed to decode obj file");
+        LOGTHROW(err1, std::runtime_error) << "failed to decode obj file";
 
     // find face mode
     outFaceMode = 3;

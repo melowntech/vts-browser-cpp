@@ -2,6 +2,7 @@
 #include <map>
 
 #include <vts/buffer.hpp>
+#include <dbglog/dbglog.hpp>
 
 std::map<std::string, std::pair<size_t, unsigned char *>> data_map;
 
@@ -65,7 +66,7 @@ void Buffer::allocate(uint32 size)
     this->size_ = size;
     data_ = (char*)malloc(size_);
     if (!data_)
-        throw std::runtime_error("not enough memory");
+        LOGTHROW(err2, std::runtime_error) << "not enough memory";
     setg(data_, data_, data_ + size_);
     clear();
 }
@@ -82,14 +83,15 @@ Buffer readLocalFileBuffer(const std::string &path)
 {
     FILE *f = fopen(path.c_str(), "rb");
     if (!f)
-        throw std::runtime_error("failed to read local file");
+        LOGTHROW(err1, std::runtime_error) << "failed to read local file";
     try
     {
         fseek(f, 0, SEEK_END);
         Buffer b(ftell(f));
         fseek(f, 0, SEEK_SET);
         if (fread(b.data(), b.size(), 1, f) != 1)
-            throw std::runtime_error("failed to read local file");
+            LOGTHROW(err1, std::runtime_error)
+                    << "failed to read local file";
         fclose(f);
         return b;
     }
@@ -104,11 +106,10 @@ Buffer readInternalMemoryBuffer(const std::string &path)
 {
     auto it = data_map.find(path);
     if (it == data_map.end())
-        throw std::runtime_error("internal resource not found");
+        LOGTHROW(err1, std::runtime_error) << "internal resource not found";
     Buffer b(it->second.first);
     memcpy(b.data(), it->second.second, b.size());
     return b;
 }
-
 
 } // namespace vts

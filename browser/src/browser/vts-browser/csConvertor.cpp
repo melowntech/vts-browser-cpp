@@ -7,6 +7,8 @@
 
 #include "csConvertor.hpp"
 
+// todo use void pj_set_finder( const char *(*)(const char *) );
+
 namespace vts
 {
 

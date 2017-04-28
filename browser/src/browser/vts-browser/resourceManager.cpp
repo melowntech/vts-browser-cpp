@@ -34,8 +34,8 @@ MapImpl::Resources::Resources(const std::string &cachePathVal,
     {
         cachePath = utility::homeDir().string();
         if (cachePath.empty())
-            throw std::runtime_error("invalid home dir, "
-                                     "the cache path must be defined");
+            LOGTHROW(err3, std::runtime_error)
+                    << "invalid home dir, the cache path must be defined";
         cachePath += "/.cache/vts-browser/";
     }
     if (cachePath.back() != '/')
@@ -57,7 +57,9 @@ MapImpl::Resources::Resources(const std::string &cachePathVal,
         }
     }
     catch (...)
-    {}
+    {
+		// do nothing
+	}
 }
 
 MapImpl::Resources::~Resources()
@@ -77,11 +79,14 @@ MapImpl::Resources::~Resources()
         f.close();
     }
     catch (...)
-    {}
+    {
+		// do nothing
+	}
 }
 
 void MapImpl::dataInitialize(Fetcher *fetcher)
 {
+    LOG(info3) << "Data initialize";
     if (!fetcher)
     {
         resources.destroyTheFetcher = true;
@@ -96,6 +101,8 @@ void MapImpl::dataInitialize(Fetcher *fetcher)
 
 void MapImpl::dataFinalize()
 {
+    LOG(info3) << "Data finalize";
+    assert(resources.fetcher);
     resources.fetcher->finalize();
     resources.prepareQue.clear();
 }
@@ -106,19 +113,18 @@ void MapImpl::loadResource(ResourceImpl *r)
     try
     {
         r->resource->load(this);
-        r->state = ResourceImpl::State::ready;
     }
-    catch (std::runtime_error &)
+    catch (...)
     {
-        LOG(err3) << "Error parsing resource '" + r->resource->name + "'";
-        statistics.resourcesFailed++;
-        r->state = ResourceImpl::State::error;
+		r->contentData.free();
+		throw;
     }
     r->contentData.free();
+    r->state = ResourceImpl::State::ready;
 }
 
 bool MapImpl::dataTick()
-{
+{    
     statistics.currentResourceDownloads = resources.downloads;
     
     { // sync invalid urls
@@ -145,16 +151,22 @@ bool MapImpl::dataTick()
     
     for (ResourceImpl *r : res)
     {
-        if (r->state == ResourceImpl::State::downloaded)
-            loadResource(r);
-        else if (r->state == ResourceImpl::State::initializing)
         try
         {
+			if (r->state == ResourceImpl::State::downloaded)
+            {
+				loadResource(r);
+                continue;
+            }
+			else if (r->state != ResourceImpl::State::initializing)
+				continue;
             if (resources.invalidUrl.find(r->resource->name)
                     != resources.invalidUrl.end())
             {
                 statistics.resourcesIgnored++;
                 r->state = ResourceImpl::State::error;
+				LOG(warn2) << "Ignoring resource '"
+						   << r->resource->name << "'";
             }
             else if (r->resource->name.find("://") == std::string::npos)
             {
@@ -165,24 +177,25 @@ bool MapImpl::dataTick()
             else if (r->resource->name.find(".json") == std::string::npos
                      && availableInCache(r->resource->name))
             {
+                statistics.resourcesDiskLoaded++;
                 r->state = ResourceImpl::State::downloading;
                 r->loadFromCache(this);
                 loadResource(r);
-                statistics.resourcesDiskLoaded++;
             }
             else if (resources.downloads < options.maxConcurrentDownloads)
             {
+                statistics.resourcesDownloaded++;
                 r->state = ResourceImpl::State::downloading;
                 resources.fetcher->fetch(r);
-                statistics.resourcesDownloaded++;
                 resources.downloads++;
             }
         }
-        catch (std::runtime_error &)
+        catch (std::exception &)
         {
-            LOG(err3) << "Error processing resource '"
-                         + r->resource->name + "'";
+			statistics.resourcesFailed++;
             r->state = ResourceImpl::State::error;
+            LOG(err3) << "Failed processing resource '"
+                      << r->resource->name << "'";
         }
     }
     
@@ -192,12 +205,13 @@ bool MapImpl::dataTick()
 void MapImpl::fetchedFile(FetchTask *task)
 {
     ResourceImpl *resource = dynamic_cast<ResourceImpl*>(task);
+    LOG(debug) << "Fetched file '" << resource->resource->name << "'";
     assert(resource->state == ResourceImpl::State::downloading);
     
     // handle error codes
     if (task->code >= 400 || task->code == 0)
     {
-        LOG(err3) << "Error in downloading '"
+        LOG(err3) << "Error downloading '"
                   << resource->resource->name << "', last url '"
                   << task->url << "', http code " << task->code;
         resource->state = ResourceImpl::State::error;
@@ -225,7 +239,12 @@ void MapImpl::fetchedFile(FetchTask *task)
             if (task->contentData.size() <= resource->availTest->size)
                 resource->state = ResourceImpl::State::error;
         default:
-            throw std::invalid_argument("invalid availability test type");
+			assert(false);
+        }
+        if (resource->state == ResourceImpl::State::error)
+        {
+            LOG(debug) << "Availability test failed for resource '"
+                       << resource->resource->name << "'";
         }
     }
     
@@ -250,6 +269,9 @@ void MapImpl::fetchedFile(FetchTask *task)
             {
                 task->url.swap(task->redirectUrl);
                 task->redirectUrl = "";
+                LOG(debug) << "Resource '"
+                           << resource->resource->name << "' redirected to '"
+                           << task->url << "'";
                 resources.fetcher->fetch(task);
                 return;
             }
@@ -276,7 +298,6 @@ void MapImpl::dataRenderInitialize()
 void MapImpl::dataRenderFinalize()
 {
     resources.prepareQueNew.clear();
-    //LOG(info3) << "Releasing " << resources.resources.size() << " resources";
     resources.resources.clear();
 }
 
@@ -284,17 +305,19 @@ bool MapImpl::dataRenderTick()
 {
     statistics.currentResourcePreparing = resources.prepareQueNew.size()
             + statistics.currentResourceDownloads;
-    { // sync download queue
+    // sync download queue
+    {
         boost::lock_guard<boost::mutex> l(resources.mutPrepareQue);
         std::swap(resources.prepareQueNew, resources.prepareQue);
     }
     resources.prepareQueNew.clear();
     
-    { // clear old resources
+    // clear old resources
+    {
         std::vector<Resource*> res;
         res.reserve(resources.resources.size());
-        uint32 memRamUse = 0;
-        uint32 memGpuUse = 0;
+        uint64 memRamUse = 0;
+        uint64 memGpuUse = 0;
         for (auto &&it : resources.resources)
         {
             memRamUse += it.second->ramMemoryCost;
@@ -305,7 +328,7 @@ bool MapImpl::dataRenderTick()
                     != ResourceImpl::State::downloading)
                 res.push_back(it.second.get());
         }
-        uint32 memUse = memRamUse + memGpuUse;
+        uint64 memUse = memRamUse + memGpuUse;
         if (memUse > options.maxResourcesMemory)
         {
             std::sort(res.begin(), res.end(), [](Resource *a, Resource *b){
@@ -324,6 +347,7 @@ bool MapImpl::dataRenderTick()
                 else
                 {
                     statistics.resourcesReleased++;
+                    LOG(info2) << "Releasing resource '" << it->name << "'";
                     resources.resources.erase(it->name);
                 }
             }
@@ -434,7 +458,7 @@ Validity MapImpl::getResourceValidity(const std::string &name)
     case ResourceImpl::State::ready:
         return Validity::Valid;
     default:
-        assert(false);
+		assert(false);
     }
 }
 
@@ -445,7 +469,9 @@ const std::string MapImpl::convertNameToCache(const std::string &path)
     std::string b = boost::filesystem::path(a).parent_path().string();
     std::string c = a.substr(b.length() + 1);
     if (b.empty() || c.empty())
-        throw std::runtime_error("invalid path for cache access");
+        LOGTHROW(err2, std::runtime_error)
+                << "Cannot convert path '" << path
+                << "' into a cache path";
     return resources.cachePath
             + convertNameToPath(b, false) + "/"
             + convertNameToPath(c, false);

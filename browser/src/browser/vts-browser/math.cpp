@@ -118,7 +118,8 @@ const mat4 rotationMatrix(int axis, double radians)
 {
     double ca(cos(radians)), sa(sin(radians));
 
-    switch (axis) {
+    switch (axis)
+    {
     case 0:
         return (mat4() <<
                 1,  0,  0, 0,
@@ -138,7 +139,7 @@ const mat4 rotationMatrix(int axis, double radians)
                 0,  0,  1, 0,
                 0,  0,  0, 1).finished();
     default:
-        throw "invalid rotation matrix axis";
+        assert(false);
     }
 }
 

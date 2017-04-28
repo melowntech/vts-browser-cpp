@@ -1,9 +1,13 @@
 #include <dbglog/dbglog.hpp>
-
 #include <vts/options.hpp>
 
 namespace vts
 {
+
+void setLogMask(const std::string &mask)
+{
+    dbglog::set_mask(mask);
+}
 
 MapOptions::MapOptions() :
     renderMeshBoxes(false),

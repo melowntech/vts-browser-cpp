@@ -36,7 +36,7 @@ inline const std::string srsConvert(MapConfig *config, Srs srs)
     case Srs::Public:
         return config->referenceFrame.model.publicSrs;
     default:
-        throw std::invalid_argument("Invalid srs");
+		assert(false);
     }
 }
 
@@ -129,11 +129,14 @@ MapFoundationOptions::MapFoundationOptions() : keepInvalidUrls(false)
 
 MapFoundation::MapFoundation(const MapFoundationOptions &options)
 {
+    LOG(info4) << "Creating map foundation";
     impl = std::shared_ptr<MapImpl>(new MapImpl(this, options));
 }
 
 MapFoundation::~MapFoundation()
-{}
+{
+    LOG(info4) << "Destroying map foundation";
+}
 
 void MapFoundation::dataInitialize(Fetcher *fetcher)
 {
@@ -335,7 +338,7 @@ void MapFoundation::setPositionJson(const std::string &position)
         return;
     Json::Value val;
     if (!Json::Reader().parse(position, val))
-        throw std::runtime_error("invalid position json");
+        LOGTHROW(err2, std::runtime_error) << "invalid position json";
     impl->mapConfig->position = vtslibs::registry::positionFromJson(val);
 }
 
@@ -422,7 +425,7 @@ void MapFoundation::setViewCurrent(const std::string &name)
         return;
     auto it = impl->mapConfig->namedViews.find(name);
     if (it == impl->mapConfig->namedViews.end())
-        throw std::runtime_error("invalid mapconfig view name");
+        LOGTHROW(err2, std::runtime_error) << "invalid mapconfig view name";
     impl->mapConfig->view = it->second;
     impl->purgeSoft();
     impl->mapConfigView = name;
@@ -439,7 +442,7 @@ void MapFoundation::getViewData(const std::string &name, MapView &view) const
     }
     auto it = impl->mapConfig->namedViews.find(name);
     if (it == impl->mapConfig->namedViews.end())
-        throw std::runtime_error("invalid mapconfig view name");
+        LOGTHROW(err2, std::runtime_error) << "invalid mapconfig view name";
     view = getMapView(it->second);
 }
 
@@ -465,7 +468,7 @@ const std::string MapFoundation::getViewJson(const std::string &name) const
                 impl->mapConfig->view, impl->mapConfig->boundLayers));
     auto it = impl->mapConfig->namedViews.find(name);
     if (it == impl->mapConfig->namedViews.end())
-        throw std::runtime_error("invalid mapconfig view name");
+        LOGTHROW(err2, std::runtime_error) << "invalid mapconfig view name";
     return Json::FastWriter().write(vtslibs::registry::asJson(it->second,
                         impl->mapConfig->boundLayers));
 }
@@ -477,7 +480,7 @@ void MapFoundation::setViewJson(const std::string &name,
         return;
     Json::Value val;
     if (!Json::Reader().parse(view, val))
-        throw std::runtime_error("invalid view json");
+        LOGTHROW(err2, std::runtime_error) << "invalid view json";
     if (name == "")
     {
         impl->mapConfig->view = vtslibs::registry::viewFromJson(val);

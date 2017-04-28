@@ -336,7 +336,7 @@ void MapImpl::positionToPhys(vec3 &center, vec3 &dir, vec3 &up)
         up = normalize(up);
     } break;
     default:
-        throw std::invalid_argument("not implemented navigation srs type");
+		assert(false);
     }
 }
 
@@ -383,7 +383,7 @@ void MapImpl::pan(const vec3 &value)
         navigation.inertiaMotion += p;
     } break;
     default:
-        throw std::invalid_argument("not implemented navigation srs type");
+		assert(false);
     }
     double cur = pos.verticalExtent + navigation.inertiaViewExtent;
     navigation.inertiaViewExtent += cur *

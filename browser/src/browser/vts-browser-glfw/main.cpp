@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <vts/map.hpp>
+#include <vts/options.hpp>
 #include "mainWindow.hpp"
 #include "dataThread.hpp"
 #include "threadName.hpp"
@@ -24,6 +25,8 @@ int main(int argc, char *argv[])
     try
     {
 #endif
+        //vts::setLogMask("ND");
+        
         int firstUrl = argc;
         for (int i = 1; i < argc; i++)
         {

@@ -1,6 +1,6 @@
-#version 440
+#version 330
 
-layout(binding = 0) uniform sampler2D Texture;
+uniform sampler2D Texture;
 
 in vec2 Frag_UV;
 in vec4 Frag_Color;

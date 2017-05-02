@@ -55,7 +55,19 @@ namespace vts
 MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
     map(nullptr), window(nullptr)
 {
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_STENCIL_BITS, 0);
+    glfwWindowHint(GLFW_DEPTH_BITS, 32);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifndef NDEBUG
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+#endif
+
     window = glfwCreateWindow(800, 600, "renderer-glfw", NULL, NULL);
+    if (!window)
+        throw std::runtime_error("Failed to create window "
+                                 "(unsupported OpenGL version?)");
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
     gladLoadGLLoader((GLADloadproc)&glfwGetProcAddress);
@@ -69,11 +81,13 @@ MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
     // check for extensions
     anisotropicFilteringAvailable
             = glfwExtensionSupported("GL_EXT_texture_filter_anisotropic");
+    openglDebugAvailable
+            = glfwExtensionSupported("GL_KHR_debug");
     
     initializeGpuContext();
     
     { // load shader texture
-        shaderTexture = std::make_shared<GpuShader>();
+        shaderTexture = std::make_shared<GpuShaderImpl>();
         vts::Buffer vert = readInternalMemoryBuffer(
                     "data/shaders/texture.vert.glsl");
         vts::Buffer frag = readInternalMemoryBuffer(
@@ -81,10 +95,21 @@ MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
         shaderTexture->loadShaders(
             std::string(vert.data(), vert.size()),
             std::string(frag.data(), frag.size()));
+        std::vector<vts::uint32> &uls = shaderTexture->uniformLocations;
+        GLuint id = shaderTexture->id;
+        uls.push_back(glGetUniformLocation(id, "uniMvp"));
+        uls.push_back(glGetUniformLocation(id, "uniUvMat"));
+        uls.push_back(glGetUniformLocation(id, "uniUvMode"));
+        uls.push_back(glGetUniformLocation(id, "uniMaskMode"));
+        uls.push_back(glGetUniformLocation(id, "uniTexMode"));
+        uls.push_back(glGetUniformLocation(id, "uniAlpha"));
+        glUseProgram(id);
+        glUniform1i(glGetUniformLocation(id, "texColor"), 0);
+        glUniform1i(glGetUniformLocation(id, "texMask"), 1);
     }
     
     { // load shader color
-        shaderColor = std::make_shared<GpuShader>();
+        shaderColor = std::make_shared<GpuShaderImpl>();
         vts::Buffer vert = readInternalMemoryBuffer(
                     "data/shaders/color.vert.glsl");
         vts::Buffer frag = readInternalMemoryBuffer(
@@ -92,6 +117,10 @@ MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
         shaderColor->loadShaders(
             std::string(vert.data(), vert.size()),
             std::string(frag.data(), frag.size()));
+        std::vector<vts::uint32> &uls = shaderColor->uniformLocations;
+        GLuint id = shaderColor->id;
+        uls.push_back(glGetUniformLocation(id, "uniMvp"));
+        uls.push_back(glGetUniformLocation(id, "uniColor"));
     }
     
     { // load mesh mark
@@ -202,27 +231,27 @@ void MainWindow::drawVtsTask(vts::DrawTask &t)
     {
         shaderTexture->bind();
         shaderTexture->uniformMat4(0, t.mvp);
-        shaderTexture->uniformMat3(4, t.uvm);
-        shaderTexture->uniform(8, (int)t.externalUv);
+        shaderTexture->uniformMat3(1, t.uvm);
+        shaderTexture->uniform(2, (int)t.externalUv);
         if (t.texMask)
         {
-            shaderTexture->uniform(9, 1);
+            shaderTexture->uniform(3, 1);
             glActiveTexture(GL_TEXTURE0 + 1);
             dynamic_cast<GpuTextureImpl*>(t.texMask)->bind();
             glActiveTexture(GL_TEXTURE0 + 0);
         }
         else
-            shaderTexture->uniform(9, 0);
+            shaderTexture->uniform(3, 0);
         GpuTextureImpl *tex = dynamic_cast<GpuTextureImpl*>(t.texColor);
         tex->bind();
-        shaderTexture->uniform(10, (int)tex->grayscale);
-        shaderTexture->uniform(11, t.color[3]);
+        shaderTexture->uniform(4, (int)tex->grayscale);
+        shaderTexture->uniform(5, t.color[3]);
     }
     else
     {
         shaderColor->bind();
         shaderColor->uniformMat4(0, t.mvp);
-        shaderColor->uniformVec4(8, t.color);
+        shaderColor->uniformVec4(1, t.color);
     }
     GpuMeshImpl *m = dynamic_cast<GpuMeshImpl*>(t.mesh);
     m->bind();

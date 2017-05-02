@@ -89,19 +89,8 @@ void MainWindow::initialize()
     map->renderInitialize();
     map->dataInitialize(fetcher);
     
-    { // load shaderColor
-        shaderColor = std::make_shared<GpuShader>();
-        vts::Buffer vert = readInternalMemoryBuffer(
-                    "data/shaders/color.vert.glsl");
-        vts::Buffer frag = readInternalMemoryBuffer(
-                    "data/shaders/color.frag.glsl");
-        shaderColor->loadShaders(
-            std::string(vert.data(), vert.size()),
-            std::string(frag.data(), frag.size()));
-    }
-    
     { // load shaderTexture
-        shaderTexture = std::make_shared<GpuShader>();
+        shaderTexture = std::make_shared<GpuShaderImpl>();
         vts::Buffer vert = readInternalMemoryBuffer(
                     "data/shaders/texture.vert.glsl");
         vts::Buffer frag = readInternalMemoryBuffer(
@@ -109,6 +98,33 @@ void MainWindow::initialize()
         shaderTexture->loadShaders(
             std::string(vert.data(), vert.size()),
             std::string(frag.data(), frag.size()));
+        std::vector<vts::uint32> &uls = shaderTexture->uniformLocations;
+        GpuShaderImpl *s = shaderTexture.get();
+        uls.push_back(s->uniformLocation("uniMvp"));
+        uls.push_back(s->uniformLocation("uniUvMat"));
+        uls.push_back(s->uniformLocation("uniUvMode"));
+        uls.push_back(s->uniformLocation("uniMaskMode"));
+        uls.push_back(s->uniformLocation("uniTexMode"));
+        uls.push_back(s->uniformLocation("uniAlpha"));
+        GLuint id = s->programId();
+        gl->glUseProgram(id);
+        gl->glUniform1i(gl->glGetUniformLocation(id, "texColor"), 0);
+        gl->glUniform1i(gl->glGetUniformLocation(id, "texMask"), 1);
+    }
+    
+    { // load shaderColor
+        shaderColor = std::make_shared<GpuShaderImpl>();
+        vts::Buffer vert = readInternalMemoryBuffer(
+                    "data/shaders/color.vert.glsl");
+        vts::Buffer frag = readInternalMemoryBuffer(
+                    "data/shaders/color.frag.glsl");
+        shaderColor->loadShaders(
+            std::string(vert.data(), vert.size()),
+            std::string(frag.data(), frag.size()));
+        std::vector<vts::uint32> &uls = shaderColor->uniformLocations;
+        GpuShaderImpl *s = shaderColor.get();
+        uls.push_back(s->uniformLocation("uniMvp"));
+        uls.push_back(s->uniformLocation("uniColor"));
     }
 }
 
@@ -118,27 +134,27 @@ void MainWindow::draw(const vts::DrawTask &t)
     {
         shaderTexture->bind();
         shaderTexture->uniformMat4(0, t.mvp);
-        shaderTexture->uniformMat3(4, t.uvm);
-        shaderTexture->uniform(8, (int)t.externalUv);
+        shaderTexture->uniformMat3(1, t.uvm);
+        shaderTexture->uniform(2, (int)t.externalUv);
         if (t.texMask)
         {
-            shaderTexture->uniform(9, 1);
+            shaderTexture->uniform(3, 1);
             gl->glActiveTexture(GL_TEXTURE0 + 1);
             dynamic_cast<GpuTextureImpl*>(t.texMask)->bind();
             gl->glActiveTexture(GL_TEXTURE0 + 0);
         }
         else
-            shaderTexture->uniform(9, 0);
+            shaderTexture->uniform(3, 0);
         GpuTextureImpl *tex = dynamic_cast<GpuTextureImpl*>(t.texColor);
         tex->bind();
-        shaderTexture->uniform(10, (int)tex->grayscale);
-        shaderTexture->uniform(11, t.color[3]);
+        shaderTexture->uniform(4, (int)tex->grayscale);
+        shaderTexture->uniform(5, t.color[3]);
     }
     else
     {
         shaderColor->bind();
         shaderColor->uniformMat4(0, t.mvp);
-        shaderColor->uniformVec4(8, t.color);
+        shaderColor->uniformVec4(1, t.color);
     }
     GpuMeshImpl *m = dynamic_cast<GpuMeshImpl*>(t.mesh);
     m->draw();

@@ -1,10 +1,11 @@
-#version 440
+#version 330
 
-layout(binding = 0) uniform sampler2D texColor;
-layout(binding = 1) uniform sampler2D texMask;
-layout(location = 9) uniform int uniMaskMode;
-layout(location = 10) uniform int uniTexMode;
-layout(location = 11) uniform float uniAlpha;
+uniform sampler2D texColor;
+uniform sampler2D texMask;
+
+uniform int uniMaskMode;
+uniform int uniTexMode;
+uniform float uniAlpha;
 
 layout(location = 0) out vec4 outColor;
 

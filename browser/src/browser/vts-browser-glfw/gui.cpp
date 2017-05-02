@@ -79,7 +79,7 @@ public:
         initializeGuiSkin(ctx, skinMedia, skinTexture);
         
         { // load shader
-            shader = std::make_shared<GpuShader>();
+            shader = std::make_shared<GpuShaderImpl>();
             vts::Buffer vert = vts::readInternalMemoryBuffer(
                         "data/shaders/gui.vert.glsl");
             vts::Buffer frag = vts::readInternalMemoryBuffer(
@@ -87,6 +87,11 @@ public:
             shader->loadShaders(
                 std::string(vert.data(), vert.size()),
                 std::string(frag.data(), frag.size()));
+            std::vector<vts::uint32> &uls = shader->uniformLocations;
+            GLuint id = shader->id;
+            uls.push_back(glGetUniformLocation(id, "ProjMtx"));
+            glUseProgram(id);
+            glUniform1i(glGetUniformLocation(id, "Texture"), 0);
         }
         
         { // prepare mesh buffers
@@ -142,7 +147,8 @@ public:
             };
             ortho[0][0] /= (GLfloat)width;
             ortho[1][1] /= (GLfloat)height;
-            glUniformMatrix4fv(0, 1, GL_FALSE, &ortho[0][0]);
+            glUniformMatrix4fv(shader->uniformLocations[0], 1,
+                    GL_FALSE, &ortho[0][0]);
         }
         
         { // upload buffer data
@@ -875,7 +881,7 @@ public:
     MainWindow *window;
     std::shared_ptr<GpuTextureImpl> fontTexture;
     std::shared_ptr<GpuTextureImpl> skinTexture;
-    std::shared_ptr<GpuShader> shader;
+    std::shared_ptr<GpuShaderImpl> shader;
     std::shared_ptr<GpuMeshImpl> mesh;
     
     static const int MaxVertexMemory = 512 * 1024;

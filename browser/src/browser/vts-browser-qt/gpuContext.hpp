@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 #include <QOpenGLContext>
-#include <QOpenGLFunctions_4_4_Core>
+#include <QOpenGLFunctions_3_3_Core>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLTexture>
 #include <QOpenGLBuffer>
@@ -12,7 +12,7 @@
 #include <QSurface>
 #include <vts/resources.hpp>
 
-class Gl : public QOpenGLContext, public QOpenGLFunctions_4_4_Core
+class Gl : public QOpenGLContext, public QOpenGLFunctions_3_3_Core
 {
 public:
     Gl(class QSurface *surface);
@@ -28,9 +28,10 @@ public:
     QSurface *surface;
 };
 
-class GpuShader : public QOpenGLShaderProgram
+class GpuShaderImpl : public QOpenGLShaderProgram
 {
 public:
+    GpuShaderImpl();
     void bind();
     void loadShaders(const std::string &vertexShader,
                      const std::string &fragmentShader);
@@ -38,8 +39,10 @@ public:
     void uniformMat3(vts::uint32 location, const float *value);
     void uniformVec4(vts::uint32 location, const float *value);
     void uniformVec3(vts::uint32 location, const float *value);
-    void uniform(vts::uint32 location, const float value);
-    void uniform(vts::uint32 location, const int value);
+    void uniform(vts::uint32 location, float value);
+    void uniform(vts::uint32 location, int value);
+    
+    std::vector<vts::uint32> uniformLocations;
 };
 
 class GpuTextureImpl : public QOpenGLTexture, public vts::GpuTexture

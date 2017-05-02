@@ -5,10 +5,10 @@
 #include <QImageReader>
 #include "gpuContext.hpp"
 
-QOpenGLFunctions_4_4_Core *gpuFunctions()
+QOpenGLFunctions_3_3_Core *gpuFunctions()
 {
     return QOpenGLContext::currentContext()
-            ->versionFunctions<QOpenGLFunctions_4_4_Core>();
+            ->versionFunctions<QOpenGLFunctions_3_3_Core>();
 }
 
 Gl::Gl(QSurface *surface) : surface(surface)
@@ -52,13 +52,18 @@ void Gl::onDebugMessage(const QOpenGLDebugMessage &message)
     qDebug() << message.id() << message.type() << message.message();
 }
 
-void GpuShader::bind()
+GpuShaderImpl::GpuShaderImpl()
+{
+    uniformLocations.reserve(20);
+}
+
+void GpuShaderImpl::bind()
 {
     if (!QOpenGLShaderProgram::bind())
         throw std::runtime_error("failed to bind gpu shader");
 }
 
-void GpuShader::loadShaders(const std::string &vertexShader,
+void GpuShaderImpl::loadShaders(const std::string &vertexShader,
                             const std::string &fragmentShader)
 {
     create();
@@ -73,50 +78,49 @@ void GpuShader::loadShaders(const std::string &vertexShader,
         throw std::runtime_error("failed to link shader program");
 }
 
-void GpuShader::uniformMat4(vts::uint32 location, const float *value)
+void GpuShaderImpl::uniformMat4(vts::uint32 location, const float *value)
 {
     QMatrix4x4 m;
     for (int j = 0; j < 4; j++)
         for (int i = 0; i < 4; i++)
             m(i, j) = value[j * 4 + i];
-    setUniformValue(location, m);
+    setUniformValue(uniformLocations[location], m);
 }
 
-void GpuShader::uniformMat3(vts::uint32 location, const float *value)
+void GpuShaderImpl::uniformMat3(vts::uint32 location, const float *value)
 {
     QMatrix3x3 m;
     for (int j = 0; j < 3; j++)
         for (int i = 0; i < 3; i++)
             m(i, j) = value[j * 3 + i];
-    setUniformValue(location, m);
+    setUniformValue(uniformLocations[location], m);
 }
 
-void GpuShader::uniformVec4(vts::uint32 location, const float *value)
+void GpuShaderImpl::uniformVec4(vts::uint32 location, const float *value)
 {
     QVector4D m;
     for (int i = 0; i < 4; i++)
         m[i] = value[i];
-    setUniformValue(location, m);
+    setUniformValue(uniformLocations[location], m);
 }
 
-void GpuShader::uniformVec3(vts::uint32 location, const float *value)
+void GpuShaderImpl::uniformVec3(vts::uint32 location, const float *value)
 {
     QVector3D m;
     for (int i = 0; i < 3; i++)
         m[i] = value[i];
-    setUniformValue(location, m);
+    setUniformValue(uniformLocations[location], m);
 }
 
-void GpuShader::uniform(vts::uint32 location, const float value)
+void GpuShaderImpl::uniform(vts::uint32 location, float value)
 {
-    setUniformValue(location, value);
+    setUniformValue(uniformLocations[location], value);
 }
 
-void GpuShader::uniform(vts::uint32 location, const int value)
+void GpuShaderImpl::uniform(vts::uint32 location, int value)
 {
-    setUniformValue(location, value);
+    setUniformValue(uniformLocations[location], value);
 }
-
 
 GpuTextureImpl::GpuTextureImpl(const std::string &name) :
     vts::GpuTexture(name),
@@ -167,7 +171,7 @@ GpuMeshImpl::GpuMeshImpl(const std::string &name) : vts::GpuMesh(name),
 
 void GpuMeshImpl::draw()
 {
-    QOpenGLFunctions_4_4_Core *gl = gpuFunctions();
+    QOpenGLFunctions_3_3_Core *gl = gpuFunctions();
     if (arrayObject.isCreated())
         arrayObject.bind();
     else

@@ -4,6 +4,7 @@
 #include "gpuContext.hpp"
 
 bool anisotropicFilteringAvailable = false;
+bool openglDebugAvailable = false;
 
 namespace
 {
@@ -93,13 +94,14 @@ namespace
         fprintf(stderr, "%d %s %s %s\t%s\n", id, src, tp, sevr, message);
         if (throwing)
             throw std::runtime_error(
-                    std::string("opengl problem: ") + message);
+                    std::string("opengl error: ") + message);
     }
 }
 
 void initializeGpuContext()
 {
-    glDebugMessageCallback(&openglErrorCallback, nullptr);
+    if (openglDebugAvailable)
+        glDebugMessageCallback(&openglErrorCallback, nullptr);
     checkGl("glDebugMessageCallback");
 }
 
@@ -122,39 +124,35 @@ void checkGl(const char *name)
         throw std::runtime_error("gl_invalid_framebuffer_operation");
     case GL_OUT_OF_MEMORY:
         throw std::runtime_error("gl_out_of_memory");
-    /*
-    case GL_STACK_UNDERFLOW:
-        throw std::runtime_error("gl_stack_underflow");
-    case GL_STACK_OVERFLOW:
-        throw std::runtime_error("gl_stack_overflow");
-    */
     default:
         throw std::runtime_error("gl_unknown_error");
     }
 }
 
-GpuShader::GpuShader() : id(0)
-{}
+GpuShaderImpl::GpuShaderImpl() : id(0)
+{
+    uniformLocations.reserve(20);
+}
 
-void GpuShader::clear()
+void GpuShaderImpl::clear()
 {
     if (id)
         glDeleteProgram(id);
     id = 0;
 }
 
-GpuShader::~GpuShader()
+GpuShaderImpl::~GpuShaderImpl()
 {
     clear();
 }
 
-void GpuShader::bind()
+void GpuShaderImpl::bind()
 {
     assert(id > 0);
     glUseProgram(id);
 }
 
-int GpuShader::loadShader(const std::string &source, int stage)
+int GpuShaderImpl::loadShader(const std::string &source, int stage)
 {
     GLuint s = glCreateShader(stage);
     try
@@ -187,7 +185,7 @@ int GpuShader::loadShader(const std::string &source, int stage)
     return s;
 }
 
-void GpuShader::loadShaders(const std::string &vertexShader,
+void GpuShaderImpl::loadShaders(const std::string &vertexShader,
                             const std::string &fragmentShader)
 {
     clear();
@@ -223,36 +221,35 @@ void GpuShader::loadShaders(const std::string &vertexShader,
     checkGl("load shader program");
 }
 
-void GpuShader::uniformMat4(vts::uint32 location, const float *value)
+void GpuShaderImpl::uniformMat4(vts::uint32 location, const float *value)
 {
-    glUniformMatrix4fv(location, 1, GL_FALSE, value);
+    glUniformMatrix4fv(uniformLocations[location], 1, GL_FALSE, value);
 }
 
-void GpuShader::uniformMat3(vts::uint32 location, const float *value)
+void GpuShaderImpl::uniformMat3(vts::uint32 location, const float *value)
 {
-    glUniformMatrix3fv(location, 1, GL_FALSE, value);
+    glUniformMatrix3fv(uniformLocations[location], 1, GL_FALSE, value);
 }
 
-void GpuShader::uniformVec4(vts::uint32 location, const float *value)
+void GpuShaderImpl::uniformVec4(vts::uint32 location, const float *value)
 {
-    glUniform4fv(location, 1, value);
+    glUniform4fv(uniformLocations[location], 1, value);
 }
 
-void GpuShader::uniformVec3(vts::uint32 location, const float *value)
+void GpuShaderImpl::uniformVec3(vts::uint32 location, const float *value)
 {
-    glUniform3fv(location, 1, value);
+    glUniform3fv(uniformLocations[location], 1, value);
 }
 
-void GpuShader::uniform(vts::uint32 location, const float value)
+void GpuShaderImpl::uniform(vts::uint32 location, const float value)
 {
-    glUniform1f(location, value);
+    glUniform1f(uniformLocations[location], value);
 }
 
-void GpuShader::uniform(vts::uint32 location, const int value)
+void GpuShaderImpl::uniform(vts::uint32 location, const int value)
 {
-    glUniform1i(location, value);
+    glUniform1i(uniformLocations[location], value);
 }
-
 
 GpuTextureImpl::GpuTextureImpl(const std::string &name) :
     vts::GpuTexture(name), id(0), grayscale(false)

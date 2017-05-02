@@ -1,6 +1,6 @@
-#version 440
+#version 330
 
-layout(location = 8) uniform vec4 uniColor;
+uniform vec4 uniColor;
 
 layout(location = 0) out vec4 outColor;
 

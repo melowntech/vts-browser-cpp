@@ -70,8 +70,8 @@ public:
     void cameraOverrideProj(double *mat);
     
     std::vector<std::string> mapConfigPaths;
-    std::shared_ptr<GpuShader> shaderTexture;
-    std::shared_ptr<GpuShader> shaderColor;
+    std::shared_ptr<GpuShaderImpl> shaderTexture;
+    std::shared_ptr<GpuShaderImpl> shaderColor;
     std::shared_ptr<GpuMeshImpl> meshMark;
     std::shared_ptr<GpuMeshImpl> meshLine;
     std::vector<Mark> marks;

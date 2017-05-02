@@ -2,22 +2,24 @@
 #define GPUCONTEXT_H_awfvgbhjk
 
 #include <string>
+#include <vector>
 #include <glad/glad.h>
 #include <vts/resources.hpp>
 
 extern bool anisotropicFilteringAvailable;
+extern bool openglDebugAvailable;
 
 void checkGl(const char *name = nullptr);
 
 void initializeGpuContext();
 
-class GpuShader
+class GpuShaderImpl
 {
 public:
     GLuint id;
 
-    GpuShader();
-    ~GpuShader();
+    GpuShaderImpl();
+    ~GpuShaderImpl();
     void clear();
     void bind();
     int loadShader(const std::string &source, int stage);
@@ -29,6 +31,8 @@ public:
     void uniformVec3(vts::uint32 location, const float *value);
     void uniform(vts::uint32 location, const float value);
     void uniform(vts::uint32 location, const int value);
+    
+    std::vector<vts::uint32> uniformLocations;
 };
 
 class GpuTextureImpl : public vts::GpuTexture

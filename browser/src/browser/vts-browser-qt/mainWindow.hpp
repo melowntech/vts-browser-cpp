@@ -41,8 +41,8 @@ private:
     QPoint mouseLastPosition;
     QPoint mouseOriginalPosition;
     
-    std::shared_ptr<GpuShader> shaderTexture;
-    std::shared_ptr<GpuShader> shaderColor;
+    std::shared_ptr<GpuShaderImpl> shaderTexture;
+    std::shared_ptr<GpuShaderImpl> shaderColor;
 };
 
 #endif

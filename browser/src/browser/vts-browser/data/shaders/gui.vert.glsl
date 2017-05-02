@@ -1,6 +1,6 @@
-#version 440
+#version 330
 
-layout(location = 0) uniform mat4 ProjMtx;
+uniform mat4 ProjMtx;
 
 layout(location = 0) in vec2 Position;
 layout(location = 1) in vec2 TexCoord;

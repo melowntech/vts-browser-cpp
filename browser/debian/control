@@ -28,6 +28,7 @@ Package: libvts-browser-dev
 Architecture: any
 Depends: ${misc:Depends}
 			, libvts-browser0 (= ${binary:Version})
+Suggests: libeigen3-dev (>= 3.1.0-1)
 Description: vts browser developer files
  developer files for vts browser library
 

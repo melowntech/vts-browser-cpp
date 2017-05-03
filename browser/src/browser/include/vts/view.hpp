@@ -2,6 +2,7 @@
 #define VIEW_H_wqfzugsahakwejgr
 
 #include <string>
+#include <vector>
 #include <map>
 
 #include "foundation.hpp"

@@ -17,7 +17,7 @@
 
 #include <vts/statistics.hpp>
 #include <vts/options.hpp>
-#include <vts/rendering.hpp>
+#include <vts/draws.hpp>
 #include <vts/resources.hpp>
 #include <vts/buffer.hpp>
 #include <vts/math.hpp>
@@ -104,16 +104,17 @@ public:
 class MapImpl
 {
 public:
-    MapImpl(class MapFoundation *mapFoundation,
-            const class MapFoundationOptions &options);
+    MapImpl(class Map *map,
+            const class MapCreateOptions &options);
 
-    class MapFoundation *const mapFoundation;
+    class Map *const map;
     std::shared_ptr<MapConfig> mapConfig;
     std::string mapConfigPath;
     std::string mapConfigView;
+    MapCallbacks callbacks;
     MapStatistics statistics;
     MapOptions options;
-    DrawBatch draws;
+    MapDraws draws;
     bool initialized;
     
     class Navigation

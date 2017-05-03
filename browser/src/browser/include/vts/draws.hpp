@@ -24,9 +24,11 @@ public:
     DrawTask(class RenderTask *r, class MapImpl *m);
 };
 
-class VTS_API DrawBatch
+class VTS_API MapDraws
 {
 public:
+    MapDraws();
+    
     std::vector<DrawTask> draws;
 };
 

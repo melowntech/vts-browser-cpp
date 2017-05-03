@@ -119,6 +119,11 @@ DrawTask::DrawTask(RenderTask *r, MapImpl *m) :
     transparent = r->transparent;
 }
 
+MapDraws::MapDraws()
+{
+    draws.reserve(2000);
+}
+
 RenderTask::RenderTask() : model(identityMatrix()),
     uvm(upperLeftSubMatrix(identityMatrix()).cast<float>()),
     color(1,1,1,1), externalUv(false), transparent(false)

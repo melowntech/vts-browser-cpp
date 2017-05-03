@@ -120,6 +120,7 @@ public:
 
     ~GuiImpl()
     {
+        nk_buffer_free(&cmds);
         nk_font_atlas_clear(&atlas);
         nk_free(&ctx);
     }

@@ -84,7 +84,7 @@ void MapImpl::purgeSoft()
     
     renderer.traverseRoot.reset();
     statistics.resetFrame();
-    draws = DrawBatch();
+    draws = MapDraws();
     mapConfigView = "";
     
     if (!mapConfig || !*mapConfig)
@@ -634,12 +634,14 @@ void MapImpl::traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly)
 
 void MapImpl::traverseClearing(std::shared_ptr<TraverseNode> &trav)
 {
+    /*
     TileId id = trav->nodeInfo.nodeId();
     if (id.lod == 3)
     {
         if ((id.y * 8 + id.x) % 64 != statistics.frameIndex % 64)
             return;
     }
+    */
     
     if (trav->lastAccessTime + 100 < statistics.frameIndex)
     {
@@ -733,16 +735,16 @@ void MapImpl::updateCamera()
     double dist = pos.type == vtslibs::registry::Position::Type::objective
             ? positionObjectiveDistance() : 1e-5;
     vec3 cameraPosPhys = center - dir * dist;
-    if (mapFoundation->cameraOverrideEye)
-        mapFoundation->cameraOverrideEye((double*)&cameraPosPhys);
-    if (mapFoundation->cameraOverrideTarget)
-        mapFoundation->cameraOverrideTarget((double*)&center);
-    if (mapFoundation->cameraOverrideUp)
-        mapFoundation->cameraOverrideUp((double*)&up);
+    if (callbacks.cameraOverrideEye)
+        callbacks.cameraOverrideEye((double*)&cameraPosPhys);
+    if (callbacks.cameraOverrideTarget)
+        callbacks.cameraOverrideTarget((double*)&center);
+    if (callbacks.cameraOverrideUp)
+        callbacks.cameraOverrideUp((double*)&up);
     mat4 view = lookAt(cameraPosPhys, center, up);
-    if (mapFoundation->cameraOverrideView)
+    if (callbacks.cameraOverrideView)
     {
-        mapFoundation->cameraOverrideView((double*)&view);
+        callbacks.cameraOverrideView((double*)&view);
         // update dir and up
         mat4 vi = view.inverse();
         cameraPosPhys = vec4to3(vi * vec4(0, 0, 0, 1), true);
@@ -767,11 +769,11 @@ void MapImpl::updateCamera()
     double far = cameraToHorizon + mountainsBehindHorizon;
     double fov = pos.verticalFov;
     double aspect = (double)renderer.windowWidth/(double)renderer.windowHeight;
-    if (mapFoundation->cameraOverrideFovAspectNearFar)
-        mapFoundation->cameraOverrideFovAspectNearFar(fov, aspect, near, far);
+    if (callbacks.cameraOverrideFovAspectNearFar)
+        callbacks.cameraOverrideFovAspectNearFar(fov, aspect, near, far);
     mat4 proj = perspectiveMatrix(fov, aspect, near, far);
-    if (mapFoundation->cameraOverrideProj)
-        mapFoundation->cameraOverrideProj((double*)&proj);
+    if (callbacks.cameraOverrideProj)
+        callbacks.cameraOverrideProj((double*)&proj);
     
     // few other variables
     renderer.viewProjRender = proj * view;

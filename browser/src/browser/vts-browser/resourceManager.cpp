@@ -384,7 +384,7 @@ std::shared_ptr<GpuTexture> MapImpl::getTexture(const std::string &name)
     auto it = resources.resources.find(name);
     if (it == resources.resources.end())
     {
-        resources.resources[name] = mapFoundation->createTexture(name);
+        resources.resources[name] = callbacks.createTexture(name);
         it = resources.resources.find(name);
     }
     touchResource(it->second);
@@ -396,7 +396,7 @@ std::shared_ptr<GpuMesh> MapImpl::getMeshRenderable(const std::string &name)
     auto it = resources.resources.find(name);
     if (it == resources.resources.end())
     {
-        resources.resources[name] = mapFoundation->createMesh(name);
+        resources.resources[name] = callbacks.createMesh(name);
         it = resources.resources.find(name);
     }
     touchResource(it->second);

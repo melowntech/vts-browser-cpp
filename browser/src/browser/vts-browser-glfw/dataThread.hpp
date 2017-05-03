@@ -7,7 +7,7 @@ class GLFWwindow;
 
 namespace vts
 {
-class MapFoundation;
+class Map;
 }
 
 class DataThread
@@ -18,7 +18,7 @@ public:
 
     void run();
 
-    vts::MapFoundation *map;
+    vts::Map *map;
     GLFWwindow* window;
     std::thread thr;
     volatile bool stop;

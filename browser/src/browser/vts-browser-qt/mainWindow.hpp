@@ -6,7 +6,7 @@
 
 namespace vts
 {
-    class MapFoundation;
+    class Map;
     class Fetcher;
     class DrawTask;
 }
@@ -22,7 +22,7 @@ public:
     void tick();
 
     Gl *gl;
-    vts::MapFoundation *map;
+    vts::Map *map;
     vts::Fetcher *fetcher;
 
 private:

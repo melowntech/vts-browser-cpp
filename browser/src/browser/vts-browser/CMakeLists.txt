@@ -7,7 +7,7 @@ set(PUB_HDR_LIST
 	../include/vts/resources.hpp
 	../include/vts/fetcher.hpp
 	../include/vts/map.hpp
-	../include/vts/rendering.hpp
+	../include/vts/draws.hpp
 	../include/vts/statistics.hpp
 	../include/vts/view.hpp
 	../include/vts/math.hpp
@@ -34,7 +34,7 @@ set(SRC_LIST
 	renderer.cpp
 	resourceMap.cpp
 	color.cpp
-	rendererUtilities.cpp
+	mapUtilities.cpp
 	mapConfig.cpp
 	navigation.cpp
 	resource.cpp
@@ -42,7 +42,7 @@ set(SRC_LIST
 	csConvertor.cpp
 	obj.cpp
 	resourceGpu.cpp
-	mapFoundation.cpp
+	mapApi.cpp
 )
 
 set(DATA_LIST

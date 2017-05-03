@@ -12,7 +12,7 @@ class GLFWwindow;
 namespace vts
 {
 
-class MapFoundation;
+class Map;
 class Resource;
 class DrawTask;
 
@@ -85,7 +85,7 @@ public:
     double timingGuiProcess;
     double timingTotalFrame;
     int width, height;
-    vts::MapFoundation *map;
+    vts::Map *map;
     GLFWwindow *window;
 };
 

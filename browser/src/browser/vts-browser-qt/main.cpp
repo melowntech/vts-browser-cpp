@@ -2,6 +2,7 @@
 #include <QGuiApplication>
 #include <QDebug>
 #include <vts/map.hpp>
+#include <vts/options.hpp>
 #include "mainWindow.hpp"
 #include "gpuContext.hpp"
 
@@ -21,15 +22,13 @@ int main(int argc, char *argv[])
     QGuiApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
     QGuiApplication application(argc, argv);
 
-    { // reset locale
-        char *locale = std::setlocale(LC_ALL, "C");
-        qDebug() << locale;
-    }
+    // reset locale
+    std::setlocale(LC_ALL, "C");
 
     MainWindow mainWindow;
 
-    vts::MapFoundationOptions options;
-    vts::MapFoundation map(options);
+    vts::MapCreateOptions options;
+    vts::Map map(options);
     map.setMapConfigPath(argv[1]);
 
     mainWindow.map = &map;

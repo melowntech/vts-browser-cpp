@@ -3,8 +3,9 @@
 #include <QWheelEvent>
 #include <QDebug>
 #include <vts/map.hpp>
-#include <vts/rendering.hpp>
+#include <vts/draws.hpp>
 #include <vts/buffer.hpp>
+#include <vts/options.hpp>
 #include "mainWindow.hpp"
 #include "gpuContext.hpp"
 #include "fetcher.hpp"
@@ -22,7 +23,7 @@ MainWindow::MainWindow() : gl(nullptr), isMouseDetached(false), fetcher(nullptr)
     setSurfaceType(QWindow::OpenGLSurface);
     gl = new Gl(this);
 
-    fetcher = new FetcherImpl();
+    //fetcher = new FetcherImpl();
 }
 
 MainWindow::~MainWindow()
@@ -169,9 +170,9 @@ void MainWindow::tick()
     if (!gl->isValid())
         throw std::runtime_error("invalid gl context");
     
-    map->createTexture = std::bind(&MainWindow::createTexture,
+    map->callbacks().createTexture = std::bind(&MainWindow::createTexture,
                                    this, std::placeholders::_1);
-    map->createMesh = std::bind(&MainWindow::createMesh,
+    map->callbacks().createMesh = std::bind(&MainWindow::createMesh,
                                 this, std::placeholders::_1);
 
     gl->makeCurrent(this);
@@ -196,7 +197,7 @@ void MainWindow::tick()
         map->dataTick();
         map->renderTick(size.width(), size.height());
         
-        for (vts::DrawTask &t : map->drawBatch().draws)
+        for (vts::DrawTask &t : map->draws().draws)
             draw(t);
         
 #ifdef NDEBUG

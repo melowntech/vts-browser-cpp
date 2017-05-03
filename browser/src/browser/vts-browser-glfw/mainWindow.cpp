@@ -3,9 +3,10 @@
 
 #include <vts/map.hpp>
 #include <vts/statistics.hpp>
-#include <vts/rendering.hpp>
+#include <vts/draws.hpp>
 #include <vts/buffer.hpp>
 #include <vts/resources.hpp>
+#include <vts/options.hpp>
 #include "mainWindow.hpp"
 #include <GLFW/glfw3.h>
 
@@ -283,15 +284,15 @@ void MainWindow::drawMark(const Mark &m, const Mark *prev)
 
 void MainWindow::run()
 {
-    map->createTexture = std::bind(&MainWindow::createTexture,
+    map->callbacks().createTexture = std::bind(&MainWindow::createTexture,
                                    this, std::placeholders::_1);
-    map->createMesh = std::bind(&MainWindow::createMesh,
+    map->callbacks().createMesh = std::bind(&MainWindow::createMesh,
                                 this, std::placeholders::_1);
-    map->cameraOverrideView = std::bind(&MainWindow::cameraOverrideView,
+    map->callbacks().cameraOverrideView = std::bind(&MainWindow::cameraOverrideView,
                                 this, std::placeholders::_1);
-    map->cameraOverrideProj = std::bind(&MainWindow::cameraOverrideProj,
+    map->callbacks().cameraOverrideProj = std::bind(&MainWindow::cameraOverrideProj,
                                 this, std::placeholders::_1);
-    map->cameraOverrideFovAspectNearFar = std::bind(
+    map->callbacks().cameraOverrideFovAspectNearFar = std::bind(
                 &MainWindow::cameraOverrideParam, this,
                 std::placeholders::_1, std::placeholders::_2,
                 std::placeholders::_3, std::placeholders::_4);
@@ -321,7 +322,7 @@ void MainWindow::run()
         
         { // draws
             camViewProj = camProj * camView;
-            vts::DrawBatch &draws = map->drawBatch();
+            vts::MapDraws &draws = map->draws();
             for (vts::DrawTask &t : draws.draws)
                 drawVtsTask(t);
             shaderColor->bind();

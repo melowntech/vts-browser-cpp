@@ -58,8 +58,8 @@ int main(int argc, char *argv[])
             return 2;
     
         {
-            vts::MapFoundationOptions options;
-            vts::MapFoundation map(options);
+            vts::MapCreateOptions options;
+            vts::Map map(options);
             map.setMapConfigPath(argv[firstUrl]);
             MainWindow main;
             for (int i = firstUrl; i < argc; i++)

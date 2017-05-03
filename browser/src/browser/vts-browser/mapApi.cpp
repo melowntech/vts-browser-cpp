@@ -124,67 +124,67 @@ Point::Point() : x(0), y(0), z(0)
 Point::Point(double x, double y, double z) : x(x), y(y), z(z)
 {}
 
-MapFoundationOptions::MapFoundationOptions() : keepInvalidUrls(false)
+MapCreateOptions::MapCreateOptions() : keepInvalidUrls(false)
 {}
 
-MapFoundation::MapFoundation(const MapFoundationOptions &options)
+Map::Map(const MapCreateOptions &options)
 {
-    LOG(info4) << "Creating map foundation";
+    LOG(info4) << "Creating map";
     impl = std::shared_ptr<MapImpl>(new MapImpl(this, options));
 }
 
-MapFoundation::~MapFoundation()
+Map::~Map()
 {
-    LOG(info4) << "Destroying map foundation";
+    LOG(info4) << "Destroying map";
 }
 
-void MapFoundation::dataInitialize(Fetcher *fetcher)
+void Map::dataInitialize(Fetcher *fetcher)
 {
     dbglog::thread_id("data");
     impl->dataInitialize(fetcher);
 }
 
-bool MapFoundation::dataTick()
+bool Map::dataTick()
 {
     return impl->dataTick();
 }
 
-void MapFoundation::dataFinalize()
+void Map::dataFinalize()
 {
     impl->dataFinalize();
 }
 
-void MapFoundation::renderInitialize()
+void Map::renderInitialize()
 {
     dbglog::thread_id("render");
     impl->dataRenderInitialize();
     impl->renderInitialize();
 }
 
-void MapFoundation::renderTick(uint32 width, uint32 height)
+void Map::renderTick(uint32 width, uint32 height)
 {
     impl->statistics.resetFrame();
     impl->dataRenderTick();
     impl->renderTick(width, height);
 }
 
-void MapFoundation::renderFinalize()
+void Map::renderFinalize()
 {
     impl->dataRenderFinalize();
     impl->renderFinalize();
 }
 
-void MapFoundation::setMapConfigPath(const std::string &mapConfigPath)
+void Map::setMapConfigPath(const std::string &mapConfigPath)
 {
     impl->setMapConfigPath(mapConfigPath);
 }
 
-const std::string MapFoundation::getMapConfigPath() const
+const std::string Map::getMapConfigPath() const
 {
     return impl->mapConfigPath;
 }
 
-void MapFoundation::purgeTraverseCache(bool hard)
+void Map::purgeTraverseCache(bool hard)
 {
     if (hard)
         impl->purgeHard();
@@ -192,12 +192,12 @@ void MapFoundation::purgeTraverseCache(bool hard)
         impl->purgeSoft();
 }
 
-bool MapFoundation::isMapConfigReady() const
+bool Map::isMapConfigReady() const
 {
     return impl->mapConfig && *impl->mapConfig;
 }
 
-bool MapFoundation::isMapRenderComplete() const
+bool Map::isMapRenderComplete() const
 {
     if (!isMapConfigReady())
         return false;
@@ -205,7 +205,7 @@ bool MapFoundation::isMapRenderComplete() const
             && impl->statistics.currentNodeUpdates == 0;
 }
 
-double MapFoundation::getMapRenderProgress() const
+double Map::getMapRenderProgress() const
 {
     if (!isMapConfigReady())
         return 0;
@@ -214,36 +214,41 @@ double MapFoundation::getMapRenderProgress() const
     return 0.5; // todo some better heuristic
 }
 
-void MapFoundation::pan(const Point &value)
+void Map::pan(const Point &value)
 {
     if (!isMapConfigReady())
         return;
     impl->pan(vecFromPoint(value));
 }
 
-void MapFoundation::rotate(const Point &value)
+void Map::rotate(const Point &value)
 {
     if (!isMapConfigReady())
         return;
     impl->rotate(vecFromPoint(value)); 
 }
 
-MapStatistics &MapFoundation::statistics()
+MapCallbacks &Map::callbacks()
+{
+    return impl->callbacks;
+}
+
+MapStatistics &Map::statistics()
 {
     return impl->statistics;
 }
 
-MapOptions &MapFoundation::options()
+MapOptions &Map::options()
 {
     return impl->options;
 }
 
-DrawBatch &MapFoundation::drawBatch()
+MapDraws &Map::draws()
 {
     return impl->draws;
 }
 
-void MapFoundation::setPositionSubjective(bool subjective, bool convert)
+void Map::setPositionSubjective(bool subjective, bool convert)
 {
     if (!isMapConfigReady() || subjective == getPositionSubjective())
         return;
@@ -254,7 +259,7 @@ void MapFoundation::setPositionSubjective(bool subjective, bool convert)
             : vtslibs::registry::Position::Type::objective;
 }
 
-bool MapFoundation::getPositionSubjective() const
+bool Map::getPositionSubjective() const
 {
     if (!isMapConfigReady())
         return false;
@@ -262,7 +267,7 @@ bool MapFoundation::getPositionSubjective() const
             == vtslibs::registry::Position::Type::subjective;
 }
 
-void MapFoundation::setPositionPoint(const Point &point)
+void Map::setPositionPoint(const Point &point)
 {
     if (!isMapConfigReady())
         return;
@@ -271,14 +276,14 @@ void MapFoundation::setPositionPoint(const Point &point)
     impl->navigation.inertiaMotion = vec3(0,0,0);
 }
 
-const Point MapFoundation::getPositionPoint() const
+const Point Map::getPositionPoint() const
 {
     if (!isMapConfigReady())
         return vecToPoint(vec3(0,0,0));
     return vecToPoint(vecFromUblas<vec3>(impl->mapConfig->position.position));
 }
 
-void MapFoundation::setPositionRotation(const Point &point)
+void Map::setPositionRotation(const Point &point)
 {
     if (!impl->mapConfig || !*impl->mapConfig)
         return;
@@ -287,7 +292,7 @@ void MapFoundation::setPositionRotation(const Point &point)
     impl->navigation.inertiaRotation = vec3(0,0,0);
 }
 
-const Point MapFoundation::getPositionRotation() const
+const Point Map::getPositionRotation() const
 {
     if (!isMapConfigReady())
         return vecToPoint(vec3(0,0,0));
@@ -295,7 +300,7 @@ const Point MapFoundation::getPositionRotation() const
                           impl->mapConfig->position.orientation));
 }
 
-void MapFoundation::setPositionViewExtent(double viewExtent)
+void Map::setPositionViewExtent(double viewExtent)
 {
     if (!isMapConfigReady())
         return;
@@ -303,28 +308,28 @@ void MapFoundation::setPositionViewExtent(double viewExtent)
     impl->navigation.inertiaViewExtent = 0;
 }
 
-double MapFoundation::getPositionViewExtent() const
+double Map::getPositionViewExtent() const
 {
     if (!isMapConfigReady())
         return 0;
     return impl->mapConfig->position.verticalExtent;
 }
 
-void MapFoundation::setPositionFov(double fov)
+void Map::setPositionFov(double fov)
 {
     if (!isMapConfigReady())
         return;
     impl->mapConfig->position.verticalFov = fov;
 }
 
-double MapFoundation::getPositionFov() const
+double Map::getPositionFov() const
 {
     if (!isMapConfigReady())
         return 0;
     return impl->mapConfig->position.verticalFov;
 }
 
-const std::string MapFoundation::getPositionJson() const
+const std::string Map::getPositionJson() const
 {
     if (!isMapConfigReady())
         return "";
@@ -332,7 +337,7 @@ const std::string MapFoundation::getPositionJson() const
                 vtslibs::registry::asJson(impl->mapConfig->position));
 }
 
-void MapFoundation::setPositionJson(const std::string &position)
+void Map::setPositionJson(const std::string &position)
 {
     if (!isMapConfigReady())
         return;
@@ -342,26 +347,26 @@ void MapFoundation::setPositionJson(const std::string &position)
     impl->mapConfig->position = vtslibs::registry::positionFromJson(val);
 }
 
-void MapFoundation::resetPositionAltitude()
+void Map::resetPositionAltitude()
 {
     impl->resetPositionAltitude(0);
 }
 
-void MapFoundation::setAutorotate(double rotate)
+void Map::setAutorotate(double rotate)
 {
     if (!isMapConfigReady())
         return;
     impl->mapConfig->autorotate = rotate;
 }
 
-double MapFoundation::getAutorotate() const
+double Map::getAutorotate() const
 {
     if (!isMapConfigReady())
         return 0;
     return impl->mapConfig->autorotate;
 }
 
-const Point MapFoundation::convert(const Point &point, Srs from, Srs to) const
+const Point Map::convert(const Point &point, Srs from, Srs to) const
 {
     if (!isMapConfigReady())
         return vecToPoint(vec3(0,0,0));
@@ -370,7 +375,7 @@ const Point MapFoundation::convert(const Point &point, Srs from, Srs to) const
                 srsConvert(impl->mapConfig.get(), to)));
 }
 
-const std::vector<std::string> MapFoundation::getResourceSurfaces() const
+const std::vector<std::string> Map::getResourceSurfaces() const
 {
     if (!isMapConfigReady())
         return {};
@@ -381,7 +386,7 @@ const std::vector<std::string> MapFoundation::getResourceSurfaces() const
     return std::move(names);
 }
 
-const std::vector<std::string> MapFoundation::getResourceBoundLayers() const
+const std::vector<std::string> Map::getResourceBoundLayers() const
 {
     if (!isMapConfigReady())
         return {};
@@ -391,7 +396,7 @@ const std::vector<std::string> MapFoundation::getResourceBoundLayers() const
     return std::move(names);
 }
 
-const std::vector<std::string> MapFoundation::getResourceFreeLayers() const
+const std::vector<std::string> Map::getResourceFreeLayers() const
 {
     if (!isMapConfigReady())
         return {};
@@ -401,7 +406,7 @@ const std::vector<std::string> MapFoundation::getResourceFreeLayers() const
     return std::move(names);
 }
 
-const std::vector<std::string> MapFoundation::getViewNames() const
+const std::vector<std::string> Map::getViewNames() const
 {
     if (!isMapConfigReady())
         return {};
@@ -412,14 +417,14 @@ const std::vector<std::string> MapFoundation::getViewNames() const
     return std::move(names);
 }
 
-const std::string MapFoundation::getViewCurrent() const
+const std::string Map::getViewCurrent() const
 {
     if (!isMapConfigReady())
         return "";
     return impl->mapConfigView;
 }
 
-void MapFoundation::setViewCurrent(const std::string &name)
+void Map::setViewCurrent(const std::string &name)
 {
     if (!isMapConfigReady())
         return;
@@ -431,7 +436,7 @@ void MapFoundation::setViewCurrent(const std::string &name)
     impl->mapConfigView = name;
 }
 
-void MapFoundation::getViewData(const std::string &name, MapView &view) const
+void Map::getViewData(const std::string &name, MapView &view) const
 {
     if (!isMapConfigReady())
         return;
@@ -446,7 +451,7 @@ void MapFoundation::getViewData(const std::string &name, MapView &view) const
     view = getMapView(it->second);
 }
 
-void MapFoundation::setViewData(const std::string &name, const MapView &view)
+void Map::setViewData(const std::string &name, const MapView &view)
 {
     if (!isMapConfigReady())
         return;
@@ -459,7 +464,7 @@ void MapFoundation::setViewData(const std::string &name, const MapView &view)
         impl->mapConfig->namedViews[name] = setMapView(view);
 }
 
-const std::string MapFoundation::getViewJson(const std::string &name) const
+const std::string Map::getViewJson(const std::string &name) const
 {
     if (!isMapConfigReady())
         return "";
@@ -473,7 +478,7 @@ const std::string MapFoundation::getViewJson(const std::string &name) const
                         impl->mapConfig->boundLayers));
 }
 
-void MapFoundation::setViewJson(const std::string &name,
+void Map::setViewJson(const std::string &name,
                                 const std::string &view)
 {
     if (!isMapConfigReady())
@@ -491,15 +496,14 @@ void MapFoundation::setViewJson(const std::string &name,
                 = vtslibs::registry::viewFromJson(val);
 }
 
-void MapFoundation::printDebugInfo()
+void Map::printDebugInfo()
 {
     impl->printDebugInfo();
 }
 
-MapImpl::MapImpl(MapFoundation *mapFoundation,
-                 const MapFoundationOptions &options) :
+MapImpl::MapImpl(Map *map, const MapCreateOptions &options) :
     resources(options.cachePath, options.keepInvalidUrls),
-    mapFoundation(mapFoundation), initialized(false)
+    map(map), initialized(false)
 {}
 
 void MapImpl::printDebugInfo()
@@ -516,12 +520,13 @@ void MapImpl::printDebugInfo()
         LOG(info3) << "mapconfig not ready";
         return;
     }
-    LOG(info3) << "Position: " << mapFoundation->getPositionJson();
-    LOG(info3) << "Named views: " << boost::join(mapFoundation->getViewNames(),
-                                                 ", ");
-    LOG(info3) << "Current view name: " << mapFoundation->getViewCurrent();
-    LOG(info3) << "Current view data: " << mapFoundation->getViewJson("");
+    LOG(info3) << "Position: " << map->getPositionJson();
+    LOG(info3) << "Named views: " << boost::join(map->getViewNames(), ", ");
+    LOG(info3) << "Current view name: " << map->getViewCurrent();
+    LOG(info3) << "Current view data: " << map->getViewJson("");
     mapConfig->printSurfaceStack();
+    
+    LOG(info3) << "Existing resources: " << ResourceImpl::exists;
 }
 
 } // namespace vts

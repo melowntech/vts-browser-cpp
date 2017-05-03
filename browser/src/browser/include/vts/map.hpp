@@ -3,7 +3,6 @@
 
 #include <string>
 #include <memory>
-#include <functional>
 #include <vector>
 
 #include "foundation.hpp"
@@ -19,36 +18,11 @@ enum class Srs
     Public,
 };
 
-class VTS_API MapFoundationOptions
+class VTS_API Map
 {
 public:
-    MapFoundationOptions();
-    
-    std::string cachePath;
-    bool keepInvalidUrls;
-};
-
-class VTS_API MapFoundation
-{
-public:
-    MapFoundation(const MapFoundationOptions &options);
-    virtual ~MapFoundation();
-    
-    // function callback to upload a texture to gpu
-    std::function<std::shared_ptr<class GpuTexture>(const std::string &)>
-            createTexture;
-    /// function callback to upload a mesh to gpu
-    std::function<std::shared_ptr<class GpuMesh>(const std::string &)>
-            createMesh;
-    
-    /// function callbacks for camera overrides (all in physical srs)
-    std::function<void(double*)> cameraOverrideEye;
-    std::function<void(double*)> cameraOverrideTarget;
-    std::function<void(double*)> cameraOverrideUp;
-    std::function<void(double&, double&, double&, double&)>
-                                        cameraOverrideFovAspectNearFar;
-    std::function<void(double*)> cameraOverrideView;
-    std::function<void(double*)> cameraOverrideProj;
+    Map(const class MapCreateOptions &options);
+    virtual ~Map();
     
     void setMapConfigPath(const std::string &mapConfigPath);
     const std::string getMapConfigPath() const;
@@ -72,9 +46,10 @@ public:
     void renderTick(uint32 width, uint32 height);
     void renderFinalize();
     
+    class MapCallbacks &callbacks();
     class MapStatistics &statistics();
     class MapOptions &options();
-    class DrawBatch &drawBatch();
+    class MapDraws &draws();
 
     void pan(const Point &value);
     void rotate(const Point &value);

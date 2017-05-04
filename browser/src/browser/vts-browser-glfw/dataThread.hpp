@@ -2,6 +2,7 @@
 #define DATATHREAD_H_wefvwehjzg
 
 #include <thread>
+#include <vts/fetcher.hpp>
 
 class GLFWwindow;
 
@@ -19,7 +20,8 @@ public:
     void run();
 
     vts::Map *map;
-    GLFWwindow* window;
+    GLFWwindow *window;
+    std::shared_ptr<vts::Fetcher> fetcher;
     std::thread thr;
     volatile bool stop;
 };

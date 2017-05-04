@@ -525,8 +525,6 @@ void MapImpl::printDebugInfo()
     LOG(info3) << "Current view name: " << map->getViewCurrent();
     LOG(info3) << "Current view data: " << map->getViewJson("");
     mapConfig->printSurfaceStack();
-    
-    LOG(info3) << "Existing resources: " << ResourceImpl::exists;
 }
 
 } // namespace vts

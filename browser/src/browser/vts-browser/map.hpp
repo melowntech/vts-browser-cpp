@@ -135,8 +135,8 @@ public:
         static const std::string invalidUrlFileName;
         
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
-        std::unordered_set<ResourceImpl*> prepareQueLocked;
-        std::unordered_set<ResourceImpl*> prepareQueNoLock;
+        std::unordered_set<std::shared_ptr<ResourceImpl>> prepareQueLocked;
+        std::unordered_set<std::shared_ptr<ResourceImpl>> prepareQueNoLock;
         std::unordered_set<std::string> invalidUrlLocked;
         std::unordered_set<std::string> invalidUrlNoLock;
         std::string cachePath;
@@ -144,7 +144,6 @@ public:
         boost::mutex mutInvalidUrls;
         std::atomic_uint downloads;
         Fetcher *fetcher;
-        bool destroyTheFetcher;
         
         Resources(const std::string &cachePath, bool keepInvalidUrls);
         ~Resources();
@@ -194,8 +193,8 @@ public:
     void dataRenderInitialize();
     void dataRenderFinalize();
     bool dataRenderTick();
-    void loadResource(ResourceImpl *r);
-    void fetchedFile(FetchTask *task);
+    void loadResource(std::shared_ptr<ResourceImpl> r);
+    void fetchedFile(std::shared_ptr<FetchTask> task);
     void touchResource(std::shared_ptr<Resource> resource, double priority = 0);
     std::shared_ptr<GpuTexture> getTexture(const std::string &name);
     std::shared_ptr<GpuMesh> getMeshRenderable(

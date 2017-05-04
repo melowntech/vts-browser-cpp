@@ -95,15 +95,9 @@ ResourceImpl::ResourceImpl(Resource *resource)
     : FetchTask(resource->name),
       resource(resource), state(State::initializing),
       lastAccessTick(0), priority(0)
-{
-    exists++;
-}
+{}
 
 ResourceImpl::~ResourceImpl()
-{
-    exists--;
-}
-
-std::atomic<uint32> ResourceImpl::exists;
+{}
 
 } // namespace vts

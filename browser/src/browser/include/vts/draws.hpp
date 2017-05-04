@@ -2,6 +2,7 @@
 #define RENDERING_H_erbgfhugfsugf
 
 #include <vector>
+#include <memory>
 
 #include "foundation.hpp"
 
@@ -11,9 +12,9 @@ namespace vts
 class VTS_API DrawTask
 {
 public:
-    class GpuMesh *mesh;
-    class GpuTexture *texColor;
-    class GpuTexture *texMask;
+    std::shared_ptr<class GpuMesh> mesh;
+    std::shared_ptr<class GpuTexture> texColor;
+    std::shared_ptr<class GpuTexture> texMask;
     float mvp[16];
     float uvm[9];
     float color[4];

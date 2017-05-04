@@ -18,15 +18,15 @@ class FetcherImpl;
 class Task
 {
 public:
-    Task(vts::FetchTask *task, vts::Fetcher::Func func)
+    Task(std::shared_ptr<vts::FetchTask> task,
+         vts::Fetcher::Func func, sint32 timeout)
         : query(task->url), task(task), func(func)
     {
-        query.timeout(-1);
+        query.timeout(timeout);
     }
     
     void done(http::ResourceFetcher::MultiQuery &&queries)
     {
-        task->code = 404;
         http::ResourceFetcher::Query &q = *queries.begin();
         if (q.valid())
         {
@@ -37,6 +37,8 @@ public:
             task->contentType = body.contentType;
             task->code = 200;
         }
+        else
+            task->code = q.ec().value();
         try
         {
             func(task);
@@ -50,13 +52,14 @@ public:
     
     http::ResourceFetcher::Query query;
     vts::Fetcher::Func func;
-    vts::FetchTask *task;
+    std::shared_ptr<vts::FetchTask> task;
 };
 
 class FetcherImpl : public Fetcher
 {
 public:
-    FetcherImpl() : fetcher(htt.fetcher())
+    FetcherImpl(uint32 threads, sint32 timeout) : fetcher(htt.fetcher()),
+        threads(threads), timeout(timeout)
     {}
 
     ~FetcherImpl()
@@ -65,7 +68,7 @@ public:
     void initialize(vts::Fetcher::Func func) override
     {
         this->func = func;
-        htt.startClient(4);
+        htt.startClient(threads);
     }
     
     void finalize() override
@@ -73,9 +76,9 @@ public:
         htt.stop();
     }
 
-    void fetch(vts::FetchTask *task) override
+    void fetch(std::shared_ptr<vts::FetchTask> task) override
     {
-        Task *t = new Task(task, func);
+        Task *t = new Task(task, func, timeout);
         fetcher.perform(t->query, std::bind(&Task::done, t,
                                             std::placeholders::_1));
     }
@@ -83,13 +86,15 @@ public:
     vts::Fetcher::Func func;
     http::Http htt;
     http::ResourceFetcher fetcher;
+    uint32 threads;
+    sint32 timeout;
 };
 
 } // namespace
 
-Fetcher *Fetcher::create()
+Fetcher *Fetcher::create(uint32 threads, sint32 timeout)
 {
-    return new FetcherImpl();
+    return new FetcherImpl(threads, timeout);
 }
 
 } // namespace vts

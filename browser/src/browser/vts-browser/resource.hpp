@@ -27,7 +27,7 @@ public:
     };
     
     ResourceImpl(Resource *resource);
-    ~ResourceImpl();
+    virtual ~ResourceImpl();
     
     void saveToCache(class MapImpl *map);
     void loadFromCache(class MapImpl *map);
@@ -38,8 +38,6 @@ public:
     double priority;
     std::atomic<State> state;
     uint32 lastAccessTick;
-    
-    static std::atomic<uint32> exists;
 };
 
 } // namespace vts

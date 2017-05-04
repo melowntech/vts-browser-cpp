@@ -23,7 +23,7 @@ MainWindow::MainWindow() : gl(nullptr), isMouseDetached(false), fetcher(nullptr)
     setSurfaceType(QWindow::OpenGLSurface);
     gl = new Gl(this);
 
-    //fetcher = new FetcherImpl();
+    fetcher = new FetcherImpl();
 }
 
 MainWindow::~MainWindow()
@@ -141,12 +141,12 @@ void MainWindow::draw(const vts::DrawTask &t)
         {
             shaderTexture->uniform(3, 1);
             gl->glActiveTexture(GL_TEXTURE0 + 1);
-            dynamic_cast<GpuTextureImpl*>(t.texMask)->bind();
+            dynamic_cast<GpuTextureImpl*>(t.texMask.get())->bind();
             gl->glActiveTexture(GL_TEXTURE0 + 0);
         }
         else
             shaderTexture->uniform(3, 0);
-        GpuTextureImpl *tex = dynamic_cast<GpuTextureImpl*>(t.texColor);
+        GpuTextureImpl *tex = dynamic_cast<GpuTextureImpl*>(t.texColor.get());
         tex->bind();
         shaderTexture->uniform(4, (int)tex->grayscale);
         shaderTexture->uniform(5, t.color[3]);
@@ -157,7 +157,7 @@ void MainWindow::draw(const vts::DrawTask &t)
         shaderColor->uniformMat4(0, t.mvp);
         shaderColor->uniformVec4(1, t.color);
     }
-    GpuMeshImpl *m = dynamic_cast<GpuMeshImpl*>(t.mesh);
+    GpuMeshImpl *m = dynamic_cast<GpuMeshImpl*>(t.mesh.get());
     m->draw();
 }
 

@@ -20,7 +20,7 @@ public:
     void initialize(Func func) override;
     void finalize() override;
     
-    void fetch(vts::FetchTask *task) override;
+    void fetch(std::shared_ptr<vts::FetchTask> task) override;
 
     std::shared_ptr<FetcherDetail> impl;
 };

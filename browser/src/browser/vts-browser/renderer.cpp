@@ -634,16 +634,14 @@ void MapImpl::traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly)
 
 void MapImpl::traverseClearing(std::shared_ptr<TraverseNode> &trav)
 {
-    /*
     TileId id = trav->nodeInfo.nodeId();
     if (id.lod == 3)
     {
         if ((id.y * 8 + id.x) % 64 != statistics.frameIndex % 64)
             return;
     }
-    */
     
-    if (trav->lastAccessTime + 100 < statistics.frameIndex)
+    if (trav->lastAccessTime + 5 < statistics.frameIndex)
     {
         trav->clear();
         return;
@@ -813,7 +811,10 @@ void MapImpl::updateCamera()
 }
 
 bool MapImpl::prerequisitesCheck()
-{    
+{
+    if (mapConfig)
+        touchResource(mapConfig, mapConfig->impl->priority);
+    
     if (initialized)
         return true;
     

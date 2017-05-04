@@ -27,8 +27,7 @@ std::shared_ptr<T> getMapResource(const std::string &name, MapImpl *map,
 
 MapImpl::Resources::Resources(const std::string &cachePathVal,
                               bool keepInvalidUrls)
-    : downloads(0), cachePath(cachePathVal),
-    destroyTheFetcher(false), fetcher(nullptr)
+    : downloads(0), cachePath(cachePathVal), fetcher(nullptr)
 {
     if (cachePath.empty())
     {
@@ -64,12 +63,6 @@ MapImpl::Resources::Resources(const std::string &cachePathVal,
 
 MapImpl::Resources::~Resources()
 {
-    if (destroyTheFetcher)
-    {
-        delete fetcher;
-        fetcher = nullptr;
-        destroyTheFetcher = false;
-    }
     try
     {
         std::ofstream f;
@@ -87,11 +80,7 @@ MapImpl::Resources::~Resources()
 void MapImpl::dataInitialize(Fetcher *fetcher)
 {
     LOG(info3) << "Data initialize";
-    if (!fetcher)
-    {
-        resources.destroyTheFetcher = true;
-        fetcher = Fetcher::create();
-    }
+    assert(fetcher);
     resources.fetcher = fetcher;
     Fetcher::Func func = std::bind(
                 &MapImpl::fetchedFile,
@@ -104,10 +93,11 @@ void MapImpl::dataFinalize()
     LOG(info3) << "Data finalize";
     assert(resources.fetcher);
     resources.fetcher->finalize();
+    resources.fetcher = nullptr;
     resources.prepareQueLocked.clear();
 }
 
-void MapImpl::loadResource(ResourceImpl *r)
+void MapImpl::loadResource(std::shared_ptr<ResourceImpl> r)
 {
     statistics.resourcesProcessLoaded++;
     try
@@ -134,23 +124,24 @@ bool MapImpl::dataTick()
         resources.invalidUrlLocked.clear();
     }
     
-    std::vector<ResourceImpl*> res;
+    std::vector<std::shared_ptr<ResourceImpl>> res;
     { // sync resources
         boost::lock_guard<boost::mutex> l(resources.mutPrepareQue);
         if (resources.prepareQueLocked.empty())
             return true; // all done
         res.reserve(resources.prepareQueLocked.size());
-        for (ResourceImpl *r : resources.prepareQueLocked)
+        for (std::shared_ptr<ResourceImpl> r : resources.prepareQueLocked)
             res.push_back(r);
     }
     
     // sort resources by priority
-    std::sort(res.begin(), res.end(), [](ResourceImpl *a, ResourceImpl *b){
-        return a->priority > b->priority;
-    });
+    std::sort(res.begin(), res.end(), [](
+              std::shared_ptr<ResourceImpl> a,
+              std::shared_ptr<ResourceImpl> b
+        ){ return a->priority > b->priority; });
     
     uint32 processed = 0;
-    for (ResourceImpl *r : res)
+    for (std::shared_ptr<ResourceImpl> r : res)
     {
         if (processed++ >= options.maxResourceProcessesPerTick)
             return false; // tasks left
@@ -205,9 +196,10 @@ bool MapImpl::dataTick()
     return true; // all done
 }
 
-void MapImpl::fetchedFile(FetchTask *task)
+void MapImpl::fetchedFile(std::shared_ptr<FetchTask> task)
 {
-    ResourceImpl *resource = dynamic_cast<ResourceImpl*>(task);
+    std::shared_ptr<ResourceImpl> resource
+            = std::dynamic_pointer_cast<ResourceImpl>(task);
     LOG(debug) << "Fetched file '" << resource->resource->name << "'";
     assert(resource->state == ResourceImpl::State::downloading);
     
@@ -308,16 +300,15 @@ bool MapImpl::dataRenderTick()
 {
     statistics.currentResourcePreparing = resources.prepareQueNoLock.size()
             + statistics.currentResourceDownloads;
-    if (statistics.frameIndex % 2)
     { // sync download queue
-        {
-            boost::lock_guard<boost::mutex> l(resources.mutPrepareQue);
-            std::swap(resources.prepareQueNoLock, resources.prepareQueLocked);
-        }
-        resources.prepareQueNoLock.clear();
+        boost::lock_guard<boost::mutex> l(resources.mutPrepareQue);
+        std::swap(resources.prepareQueNoLock, resources.prepareQueLocked);
     }
-    else
-    { // clear old resources
+    resources.prepareQueNoLock.clear();
+    
+    // clear old resources
+    if (statistics.frameIndex % 31 == 0)
+    {
         std::vector<Resource*> res;
         res.reserve(resources.resources.size());
         uint64 memRamUse = 0;
@@ -327,18 +318,16 @@ bool MapImpl::dataRenderTick()
             memRamUse += it.second->ramMemoryCost;
             memGpuUse += it.second->gpuMemoryCost;
             // consider long time not used resources only
-            if (it.second->impl->lastAccessTick + 100 < statistics.frameIndex
-                    && it.second.use_count() == 1 && it.second->impl->state
-                    != ResourceImpl::State::downloading)
+            if (it.second->impl->lastAccessTick + 100 < statistics.frameIndex)
                 res.push_back(it.second.get());
         }
         uint64 memUse = memRamUse + memGpuUse;
         if (memUse > options.maxResourcesMemory)
         {
             std::sort(res.begin(), res.end(), [](Resource *a, Resource *b){
-                if (a->impl->lastAccessTick == b->impl->lastAccessTick)
-                    return a->gpuMemoryCost + a->ramMemoryCost
-                            > b->gpuMemoryCost + b->ramMemoryCost;
+                //if (a->impl->lastAccessTick == b->impl->lastAccessTick)
+                //    return a->gpuMemoryCost + a->ramMemoryCost
+                //            > b->gpuMemoryCost + b->ramMemoryCost;
                 return a->impl->lastAccessTick < b->impl->lastAccessTick;
             });
             for (Resource *it : res)
@@ -358,8 +347,8 @@ bool MapImpl::dataRenderTick()
         }
         statistics.currentGpuMemUse = memGpuUse;
         statistics.currentRamMemUse = memRamUse;
-        statistics.currentResources = resources.resources.size();
     }
+    statistics.currentResources = resources.resources.size();
 }
 
 void MapImpl::touchResource(std::shared_ptr<Resource> resource,
@@ -374,7 +363,7 @@ void MapImpl::touchResource(std::shared_ptr<Resource> resource,
         // no break here
     case ResourceImpl::State::initializing:
     case ResourceImpl::State::downloaded:
-        resources.prepareQueNoLock.insert(resource->impl.get());
+        resources.prepareQueNoLock.insert(resource->impl);
         break;
     }
 }

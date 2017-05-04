@@ -54,7 +54,8 @@ namespace vts
 }
 
 MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
-    map(nullptr), window(nullptr)
+    map(nullptr), window(nullptr),
+    camNear(0), camFar(0)
 {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -238,12 +239,12 @@ void MainWindow::drawVtsTask(vts::DrawTask &t)
         {
             shaderTexture->uniform(3, 1);
             glActiveTexture(GL_TEXTURE0 + 1);
-            dynamic_cast<GpuTextureImpl*>(t.texMask)->bind();
+            dynamic_cast<GpuTextureImpl*>(t.texMask.get())->bind();
             glActiveTexture(GL_TEXTURE0 + 0);
         }
         else
             shaderTexture->uniform(3, 0);
-        GpuTextureImpl *tex = dynamic_cast<GpuTextureImpl*>(t.texColor);
+        GpuTextureImpl *tex = dynamic_cast<GpuTextureImpl*>(t.texColor.get());
         tex->bind();
         shaderTexture->uniform(4, (int)tex->grayscale);
         shaderTexture->uniform(5, t.color[3]);
@@ -254,7 +255,7 @@ void MainWindow::drawVtsTask(vts::DrawTask &t)
         shaderColor->uniformMat4(0, t.mvp);
         shaderColor->uniformVec4(1, t.color);
     }
-    GpuMeshImpl *m = dynamic_cast<GpuMeshImpl*>(t.mesh);
+    GpuMeshImpl *m = dynamic_cast<GpuMeshImpl*>(t.mesh.get());
     m->bind();
     m->dispatch();
 }
@@ -269,12 +270,12 @@ void MainWindow::drawMark(const Mark &m, const Mark *prev)
     vts::vec4f c = vts::vec3to4f(m.color, 1);
     for (int i = 0; i < 4; i++)
         t.color[i] = c(i);
-    t.mesh = meshMark.get();
+    t.mesh = meshMark;
     memcpy(t.mvp, mvpf.data(), sizeof(t.mvp));
     drawVtsTask(t);
     if (prev)
     {
-        t.mesh = meshLine.get();
+        t.mesh = meshLine;
         mvp = camViewProj * vts::lookAt(m.coord, prev->coord);
         mvpf = mvp.cast<float>();
         memcpy(t.mvp, mvpf.data(), sizeof(t.mvp));
@@ -285,12 +286,14 @@ void MainWindow::drawMark(const Mark &m, const Mark *prev)
 void MainWindow::run()
 {
     map->callbacks().createTexture = std::bind(&MainWindow::createTexture,
-                                   this, std::placeholders::_1);
+                                this, std::placeholders::_1);
     map->callbacks().createMesh = std::bind(&MainWindow::createMesh,
                                 this, std::placeholders::_1);
-    map->callbacks().cameraOverrideView = std::bind(&MainWindow::cameraOverrideView,
+    map->callbacks().cameraOverrideView
+            = std::bind(&MainWindow::cameraOverrideView,
                                 this, std::placeholders::_1);
-    map->callbacks().cameraOverrideProj = std::bind(&MainWindow::cameraOverrideProj,
+    map->callbacks().cameraOverrideProj
+            = std::bind(&MainWindow::cameraOverrideProj,
                                 this, std::placeholders::_1);
     map->callbacks().cameraOverrideFovAspectNearFar = std::bind(
                 &MainWindow::cameraOverrideParam, this,

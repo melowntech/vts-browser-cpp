@@ -38,7 +38,7 @@ public:
     /// returns percentage estimation of progress till complete render
     double getMapRenderProgress() const;
     
-    void dataInitialize(class Fetcher *fetcher = nullptr);
+    void dataInitialize(class Fetcher *fetcher);
     bool dataTick();
     void dataFinalize();
 

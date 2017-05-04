@@ -5,6 +5,8 @@ project(vts-browser-cpp)
 set(BUILDSYS_DEFAULT_CUSTOMER_NAME oss)
 include(buildsys/cmake/buildsys.cmake)
 
+enable_hidden_visibility()
+
 # temporarily disable warnings-as-errors
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")

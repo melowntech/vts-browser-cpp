@@ -2,6 +2,7 @@
 #define FETCHER_H_wjehfduj
 
 #include <string>
+#include <memory>
 #include <functional>
 
 #include "foundation.hpp"
@@ -30,16 +31,16 @@ struct VTS_API FetchTask
 class VTS_API Fetcher
 {
 public:
-    static Fetcher *create();
+    static Fetcher *create(uint32 threads = 2, sint32 timeout = 10000);
     
-    typedef std::function<void(FetchTask *)> Func;
+    typedef std::function<void(std::shared_ptr<FetchTask>)> Func;
     
     virtual ~Fetcher();
     
     virtual void initialize(Func func) = 0;
     virtual void finalize() = 0;
     
-    virtual void fetch(FetchTask *) = 0;
+    virtual void fetch(std::shared_ptr<FetchTask>) = 0;
 };
 
 } // namespace vts

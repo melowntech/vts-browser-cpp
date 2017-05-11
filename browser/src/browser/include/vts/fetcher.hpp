@@ -11,27 +11,50 @@
 namespace vts
 {
 
-struct VTS_API FetchTask
+class MapImpl;
+
+class VTS_API FetchTask
 {
-    FetchTask(const std::string &url);
+public:
+    FetchTask(const std::string &name);
     virtual ~FetchTask();
-    
+
     // query
     std::string url;
-    bool allowRedirects;
-    
+
     // reply
     std::string redirectUrl;
     std::string contentType;
     Buffer contentData;
     uint32 code;
     uint32 redirectionsCount;
+
+    // internals
+    const std::string name;
+    void saveToCache(MapImpl *map);
+    bool loadFromCache(MapImpl *map);
+    void loadFromInternalMemory();
+};
+
+class VTS_API FetcherOptions
+{
+public:
+    FetcherOptions();
+    
+    uint32 threads;
+    sint32 timeout;
+    
+    // curl options
+    uint32 maxHostConnections;
+    uint32 maxTotalConections;
+    uint32 maxCacheConections;
+    sint32 pipelining;
 };
 
 class VTS_API Fetcher
 {
 public:
-    static Fetcher *create(uint32 threads = 2, sint32 timeout = 10000);
+    static Fetcher *create(const FetcherOptions &options);
     
     typedef std::function<void(std::shared_ptr<FetchTask>)> Func;
     
@@ -39,7 +62,6 @@ public:
     
     virtual void initialize(Func func) = 0;
     virtual void finalize() = 0;
-    
     virtual void fetch(std::shared_ptr<FetchTask>) = 0;
 };
 

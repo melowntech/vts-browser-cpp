@@ -1,6 +1,8 @@
 # bootstrap build system
 cmake_minimum_required(VERSION 2.8.11)
 project(vts-browser-cpp)
+cmake_policy(SET CMP0045 OLD)
+
 # by default, this is OSS build (can be overrided by customer machinery)
 set(BUILDSYS_DEFAULT_CUSTOMER_NAME oss)
 include(buildsys/cmake/buildsys.cmake)
@@ -12,12 +14,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
 
 # 3rd party dependencies
-find_package(Boost 1.46 REQUIRED COMPONENTS thread program_options filesystem system date_time serialization regex chrono iostreams)
+find_package(Boost 1.46 REQUIRED
+	COMPONENTS thread program_options filesystem system
+				date_time serialization regex chrono iostreams)
 link_directories(${Boost_LIBRARY_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 
 find_package(GDAL REQUIRED)
-include_directories(${GDAL_INCLUDE_DIR})
+include_directories(SYSTEM ${GDAL_INCLUDE_DIR})
 find_package(Proj REQUIRED)
 include_directories(${PROJ_INCLUDE_DIR})
 find_package(GeographicLib REQUIRED)

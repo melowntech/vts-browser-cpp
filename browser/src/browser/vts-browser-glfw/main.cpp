@@ -26,6 +26,7 @@ int main(int argc, char *argv[])
     {
 #endif
         //vts::setLogMask("ND");
+        //vts::setLogMask("ALL");
         
         int firstUrl = argc;
         for (int i = 1; i < argc; i++)

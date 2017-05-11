@@ -15,15 +15,12 @@ class VTS_API Resource
 public:
     Resource(const std::string &name);
     virtual ~Resource();
-
-    virtual void load(class MapImpl *base) = 0;
-
+    
+    void setMemoryUsage(uint32 ram, uint32 gpu);
     operator bool () const;
     
-    const std::string name;
-    uint32 ramMemoryCost;
-    uint32 gpuMemoryCost;
-    
+    // internals
+    virtual void load(class MapImpl *base) = 0;
     std::shared_ptr<ResourceImpl> impl;
 };
 

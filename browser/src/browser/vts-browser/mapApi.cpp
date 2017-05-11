@@ -124,7 +124,7 @@ Point::Point() : x(0), y(0), z(0)
 Point::Point(double x, double y, double z) : x(x), y(y), z(z)
 {}
 
-MapCreateOptions::MapCreateOptions() : keepInvalidUrls(false)
+MapCreateOptions::MapCreateOptions()
 {}
 
 Map::Map(const MapCreateOptions &options)
@@ -141,36 +141,36 @@ Map::~Map()
 void Map::dataInitialize(Fetcher *fetcher)
 {
     dbglog::thread_id("data");
-    impl->dataInitialize(fetcher);
+    impl->resourceDataInitialize(fetcher);
 }
 
 bool Map::dataTick()
 {
-    return impl->dataTick();
+    return impl->resourceDataTick();
 }
 
 void Map::dataFinalize()
 {
-    impl->dataFinalize();
+    impl->resourceDataFinalize();
 }
 
 void Map::renderInitialize()
 {
     dbglog::thread_id("render");
-    impl->dataRenderInitialize();
+    impl->resourceRenderInitialize();
     impl->renderInitialize();
 }
 
 void Map::renderTick(uint32 width, uint32 height)
 {
     impl->statistics.resetFrame();
-    impl->dataRenderTick();
+    impl->resourceRenderTick();
     impl->renderTick(width, height);
 }
 
 void Map::renderFinalize()
 {
-    impl->dataRenderFinalize();
+    impl->resourceRenderFinalize();
     impl->renderFinalize();
 }
 
@@ -502,7 +502,7 @@ void Map::printDebugInfo()
 }
 
 MapImpl::MapImpl(Map *map, const MapCreateOptions &options) :
-    resources(options.cachePath, options.keepInvalidUrls),
+    resources(options.cachePath),
     map(map), initialized(false)
 {}
 

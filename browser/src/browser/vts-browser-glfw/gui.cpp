@@ -27,7 +27,7 @@ public:
     GuiImpl(MainWindow *window) : window(window),
         consumeEvents(true), prepareFirst(true),
         statTraversedDetails(false), statRenderedDetails(false),
-        optSensitivityDetails(false), positionSrs(2)
+        optSensitivityDetails(false), positionSrs(2), autoPan(0)
     {
         { // load font
             struct nk_font_config cfg;
@@ -587,6 +587,10 @@ public:
                 nk_label(&ctx, "Z:", NK_TEXT_LEFT);
                 sprintf(buffer, "%.8f", n.z);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                nk_label(&ctx, "Auto: ", NK_TEXT_LEFT);
+                nk_checkbox_label(&ctx, "", &autoPan);
+                if (autoPan)
+                    window->map->pan(vts::Point(0, 1, 0));
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset altitude"))
                     window->map->resetPositionAltitude();
@@ -612,6 +616,7 @@ public:
                     r.y = 270;
                     r.z = 0;
                     window->map->setPositionRotation(r);
+                    window->map->setAutorotate(0);
                 }
             }
             { // view extent
@@ -878,6 +883,7 @@ public:
     int statRenderedDetails;
     int optSensitivityDetails;
     int positionSrs;
+    int autoPan;
 
     MainWindow *window;
     std::shared_ptr<GpuTextureImpl> fontTexture;

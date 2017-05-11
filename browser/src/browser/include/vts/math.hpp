@@ -3,7 +3,7 @@
 
 #include <Eigen/Dense>
 
-#include <vts/foundation.hpp>
+#include "foundation.hpp"
 
 namespace vts
 {

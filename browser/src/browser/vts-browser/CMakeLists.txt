@@ -28,7 +28,7 @@ set(SRC_LIST
 	buffer.cpp
 	fetcher.cpp
 	options.cpp
-	resourceManager.cpp
+	mapResources.cpp
 	image.cpp
 	math.cpp
 	renderer.cpp
@@ -43,6 +43,7 @@ set(SRC_LIST
 	obj.cpp
 	resourceGpu.cpp
 	mapApi.cpp
+	fetchTask.cpp
 )
 
 set(DATA_LIST

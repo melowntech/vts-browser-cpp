@@ -31,6 +31,8 @@ private:
     uint32 size_;
 };
 
+VTS_API void writeLocalFileBuffer(const std::string &path,
+                                  const Buffer &buffer);
 VTS_API Buffer readLocalFileBuffer(const std::string &path);
 VTS_API Buffer readInternalMemoryBuffer(const std::string &path);
 

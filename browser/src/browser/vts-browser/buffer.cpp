@@ -1,5 +1,6 @@
 #include <cstring>
 #include <map>
+#include <boost/filesystem.hpp>
 
 #include <vts/buffer.hpp>
 #include <dbglog/dbglog.hpp>
@@ -77,6 +78,22 @@ void Buffer::free()
     ::free(data_);
     data_ = nullptr;
     size_ = 0;
+}
+
+void writeLocalFileBuffer(const std::string &path, const Buffer &buffer)
+{
+    boost::filesystem::create_directories(
+                boost::filesystem::path(path).parent_path());
+    FILE *f = fopen(path.c_str(), "wb");
+    if (!f)
+        LOGTHROW(err1, std::runtime_error) << "failed to write file";
+    if (fwrite(buffer.data(), buffer.size(), 1, f) != 1)
+    {
+        fclose(f);
+        LOGTHROW(err1, std::runtime_error) << "failed to write file";
+    }
+    if (fclose(f) != 0)
+        LOGTHROW(err1, std::runtime_error) << "failed to write file";
 }
 
 Buffer readLocalFileBuffer(const std::string &path)

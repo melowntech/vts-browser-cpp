@@ -24,7 +24,7 @@ GpuTexture::GpuTexture(const std::string &name) : Resource(name)
 
 void GpuTexture::load(class MapImpl *)
 {
-    LOG(info2) << "Loading gpu texture '" << name << "'";
+    LOG(info2) << "Loading gpu texture '" << impl->name << "'";
     GpuTextureSpec spec(impl->contentData);
     spec.verticalFlip = true;
     loadTexture(spec);
@@ -66,7 +66,7 @@ GpuMesh::GpuMesh(const std::string &name) : Resource(name)
 
 void GpuMesh::load(class MapImpl *)
 {
-    LOG(info2) << "Loading gpu mesh '" << name << "'";
+    LOG(info2) << "Loading gpu mesh '" << impl->name << "'";
     GpuMeshSpec spec(impl->contentData);
     spec.attributes[0].enable = true;
     spec.attributes[0].stride = sizeof(vec3f) + sizeof(vec2f);

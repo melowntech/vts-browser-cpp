@@ -132,20 +132,20 @@ public:
     class Resources
     {
     public:
-        static const std::string invalidUrlFileName;
+        static const std::string failedAvailTestFileName;
         
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
-        std::unordered_set<std::shared_ptr<ResourceImpl>> prepareQueLocked;
-        std::unordered_set<std::shared_ptr<ResourceImpl>> prepareQueNoLock;
-        std::unordered_set<std::string> invalidUrlLocked;
-        std::unordered_set<std::string> invalidUrlNoLock;
+        std::unordered_set<std::shared_ptr<Resource>> prepareQueLocked;
+        std::unordered_set<std::shared_ptr<Resource>> prepareQueNoLock;
+        std::unordered_set<std::string> failedAvailUrlLocked;
+        std::unordered_set<std::string> failedAvailUrlNoLock;
         std::string cachePath;
         boost::mutex mutPrepareQue;
-        boost::mutex mutInvalidUrls;
+        boost::mutex mutFailedAvailUrls;
         std::atomic_uint downloads;
         Fetcher *fetcher;
         
-        Resources(const std::string &cachePath, bool keepInvalidUrls);
+        Resources(const std::string &cachePath);
         ~Resources();
     } resources;
     
@@ -187,13 +187,13 @@ public:
     double positionObjectiveDistance();
     
     // resources methods
-    void dataInitialize(Fetcher *fetcher);
-    void dataFinalize();
-    bool dataTick();
-    void dataRenderInitialize();
-    void dataRenderFinalize();
-    bool dataRenderTick();
-    void loadResource(std::shared_ptr<ResourceImpl> r);
+    void resourceDataInitialize(Fetcher *fetcher);
+    void resourceDataFinalize();
+    bool resourceDataTick();
+    void resourceRenderInitialize();
+    void resourceRenderFinalize();
+    bool resourceRenderTick();
+    void loadResource(std::shared_ptr<Resource> r);
     void fetchedFile(std::shared_ptr<FetchTask> task);
     void touchResource(std::shared_ptr<Resource> resource, double priority = 0);
     std::shared_ptr<GpuTexture> getTexture(const std::string &name);

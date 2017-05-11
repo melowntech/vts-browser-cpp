@@ -1,4 +1,4 @@
-#include <utility/path.hpp>
+#include <utility/path.hpp> // homeDir
 #include <vts/map.hpp>
 
 #include "map.hpp"
@@ -25,8 +25,7 @@ std::shared_ptr<T> getMapResource(const std::string &name, MapImpl *map,
 
 } // namespace
 
-MapImpl::Resources::Resources(const std::string &cachePathVal,
-                              bool keepInvalidUrls)
+MapImpl::Resources::Resources(const std::string &cachePathVal)
     : downloads(0), cachePath(cachePathVal), fetcher(nullptr)
 {
     if (cachePath.empty())
@@ -41,16 +40,15 @@ MapImpl::Resources::Resources(const std::string &cachePathVal,
         cachePath += "/";
     try
     {
-        if (keepInvalidUrls && boost::filesystem::exists(
-                    cachePath + invalidUrlFileName))
+        if (boost::filesystem::exists(cachePath + failedAvailTestFileName))
         {
             std::ifstream f;
-            f.open(cachePath + invalidUrlFileName);
+            f.open(cachePath + failedAvailTestFileName);
             while (f.good())
             {
                 std::string line;
                 std::getline(f, line);
-                invalidUrlNoLock.insert(line);
+                failedAvailUrlNoLock.insert(line);
             }
             f.close();
         }
@@ -66,8 +64,8 @@ MapImpl::Resources::~Resources()
     try
     {
         std::ofstream f;
-        f.open(cachePath + invalidUrlFileName);
-        for (auto &&line : invalidUrlNoLock)
+        f.open(cachePath + failedAvailTestFileName);
+        for (auto &&line : failedAvailUrlNoLock)
             f << line << '\n';
         f.close();
     }
@@ -77,7 +75,7 @@ MapImpl::Resources::~Resources()
 	}
 }
 
-void MapImpl::dataInitialize(Fetcher *fetcher)
+void MapImpl::resourceDataInitialize(Fetcher *fetcher)
 {
     LOG(info3) << "Data initialize";
     assert(fetcher);
@@ -88,7 +86,7 @@ void MapImpl::dataInitialize(Fetcher *fetcher)
     fetcher->initialize(func);
 }
 
-void MapImpl::dataFinalize()
+void MapImpl::resourceDataFinalize()
 {
     LOG(info3) << "Data finalize";
     assert(resources.fetcher);
@@ -97,99 +95,99 @@ void MapImpl::dataFinalize()
     resources.prepareQueLocked.clear();
 }
 
-void MapImpl::loadResource(std::shared_ptr<ResourceImpl> r)
+void MapImpl::loadResource(std::shared_ptr<Resource> r)
 {
     statistics.resourcesProcessLoaded++;
     try
     {
-        r->resource->load(this);
+        r->load(this);
     }
     catch (...)
     {
-		r->contentData.free();
+		r->impl->contentData.free();
 		throw;
     }
-    r->contentData.free();
-    r->state = ResourceImpl::State::ready;
+    r->impl->contentData.free();
+    r->impl->state = ResourceImpl::State::ready;
 }
 
-bool MapImpl::dataTick()
+bool MapImpl::resourceDataTick()
 {    
     statistics.currentResourceDownloads = resources.downloads;
     
-    { // sync invalid urls
-        boost::lock_guard<boost::mutex> l(resources.mutInvalidUrls);
-        resources.invalidUrlNoLock.insert(resources.invalidUrlLocked.begin(),
-                                    resources.invalidUrlLocked.end());
-        resources.invalidUrlLocked.clear();
+    { // sync failed avail urls
+        boost::lock_guard<boost::mutex> l(resources.mutFailedAvailUrls);
+        resources.failedAvailUrlNoLock.insert(
+                    resources.failedAvailUrlLocked.begin(),
+                    resources.failedAvailUrlLocked.end());
+        resources.failedAvailUrlLocked.clear();
     }
     
-    std::vector<std::shared_ptr<ResourceImpl>> res;
+    std::vector<std::shared_ptr<Resource>> res;
     { // sync resources
         boost::lock_guard<boost::mutex> l(resources.mutPrepareQue);
         if (resources.prepareQueLocked.empty())
             return true; // all done
         res.reserve(resources.prepareQueLocked.size());
-        for (std::shared_ptr<ResourceImpl> r : resources.prepareQueLocked)
+        for (std::shared_ptr<Resource> r : resources.prepareQueLocked)
             res.push_back(r);
     }
     
     // sort resources by priority
     std::sort(res.begin(), res.end(), [](
-              std::shared_ptr<ResourceImpl> a,
-              std::shared_ptr<ResourceImpl> b
-        ){ return a->priority > b->priority; });
+              std::shared_ptr<Resource> a,
+              std::shared_ptr<Resource> b
+        ){ return a->impl->priority > b->impl->priority; });
     
     uint32 processed = 0;
-    for (std::shared_ptr<ResourceImpl> r : res)
+    for (std::shared_ptr<Resource> r : res)
     {
         if (processed++ >= options.maxResourceProcessesPerTick)
             return false; // tasks left
         try
         {
-			if (r->state == ResourceImpl::State::downloaded)
+			if (r->impl->state == ResourceImpl::State::downloaded)
             {
 				loadResource(r);
                 continue;
             }
-			else if (r->state != ResourceImpl::State::initializing)
+			else if (r->impl->state != ResourceImpl::State::initializing)
 				continue;
-            if (resources.invalidUrlNoLock.find(r->resource->name)
-                    != resources.invalidUrlNoLock.end())
+            if (resources.failedAvailUrlNoLock.find(r->impl->name)
+                    != resources.failedAvailUrlNoLock.end())
             {
                 statistics.resourcesIgnored++;
-                r->state = ResourceImpl::State::error;
-				LOG(warn2) << "Ignoring resource '"
-						   << r->resource->name << "'";
+                r->impl->state = ResourceImpl::State::error;
+				LOG(debug) << "Ignoring resource '"
+						   << r->impl->name
+                           << "', becouse it is on failed-avail-test list";
             }
-            else if (r->resource->name.find("://") == std::string::npos)
+            else if (r->impl->name.find("://") == std::string::npos)
             {
-                r->state = ResourceImpl::State::downloading;
-                r->loadFromInternalMemory();
+                r->impl->loadFromInternalMemory();
                 loadResource(r);
             }
-            else if (r->resource->name.find(".json") == std::string::npos
-                     && availableInCache(r->resource->name))
+            else if (r->impl->name.find(".json") == std::string::npos
+                     && r->impl->loadFromCache(this))
             {
                 statistics.resourcesDiskLoaded++;
-                r->state = ResourceImpl::State::downloading;
-                r->loadFromCache(this);
                 loadResource(r);
             }
             else if (resources.downloads < options.maxConcurrentDownloads)
             {
                 statistics.resourcesDownloaded++;
-                r->state = ResourceImpl::State::downloading;
-                resources.fetcher->fetch(r);
+                r->impl->state = ResourceImpl::State::downloading;
+                resources.fetcher->fetch(r->impl);
                 resources.downloads++;
             }
         }
-        catch (std::exception &)
+        catch (std::exception &e)
         {
 			statistics.resourcesFailed++;
-            r->state = ResourceImpl::State::error;
+            r->impl->state = ResourceImpl::State::error;
             LOG(err3) << "Failed processing resource '"
-                      << r->resource->name << "'";
+                      << r->impl->name
+                      << "', exception: " << e.what();
         }
     }
     
@@ -200,76 +198,61 @@ void MapImpl::fetchedFile(std::shared_ptr<FetchTask> task)
 {
     std::shared_ptr<ResourceImpl> resource
             = std::dynamic_pointer_cast<ResourceImpl>(task);
-    LOG(debug) << "Fetched file '" << resource->resource->name << "'";
+    assert(resource);
+    LOG(debug) << "Fetched file '" << resource->name << "'";
+    
+    if (resource->state == ResourceImpl::State::finalizing)
+    {
+        statistics.resourcesReleased--; // uhm..
+        resource->state = ResourceImpl::State::downloading;
+    }
     assert(resource->state == ResourceImpl::State::downloading);
     
-    // handle error codes
-    if (task->code >= 400 || task->code == 0)
+    // handle error or invalid codes
+    if (resource->code >= 400 || resource->code < 200)
     {
         LOG(err3) << "Error downloading '"
-                  << resource->resource->name << "', last url '"
-                  << task->url << "', http code " << task->code;
+                  << resource->name
+                  << "', http code " << resource->code;
         resource->state = ResourceImpl::State::error;
     }
     
     // availability tests
-    if (resource->state == ResourceImpl::State::downloading
-            && resource->availTest)
+    if (resource->state == ResourceImpl::State::downloading)
     {
-        switch (resource->availTest->type)
+        if (!resource->performAvailTest())
         {
-        case vtslibs::registry::BoundLayer
-        ::Availability::Type::negativeCode:
-            if (resource->availTest->codes.find(task->code)
-                    == resource->availTest->codes.end())
-                resource->state = ResourceImpl::State::error;
-            break;
-        case vtslibs::registry::BoundLayer
-        ::Availability::Type::negativeType:
-            if (resource->availTest->mime == task->contentType)
-                resource->state = ResourceImpl::State::error;
-            break;
-        case vtslibs::registry::BoundLayer
-        ::Availability::Type::negativeSize:
-            if (task->contentData.size() <= resource->availTest->size)
-                resource->state = ResourceImpl::State::error;
-        default:
-			assert(false);
-        }
-        if (resource->state == ResourceImpl::State::error)
-        {
+            {
+                boost::lock_guard<boost::mutex> l(resources.mutFailedAvailUrls);
+                resources.failedAvailUrlLocked.insert(resource->name);
+            }
             LOG(debug) << "Availability test failed for resource '"
-                       << resource->resource->name << "'";
+                       << resource->name << "'";
+            resource->state = ResourceImpl::State::error;
         }
     }
     
     // handle redirections
-    if (resource->state == ResourceImpl::State::downloading)
+    if (resource->state == ResourceImpl::State::downloading
+            && resource->code >= 300 && resource->code < 400)
     {
-        switch (task->code)
+        if (resource->redirectionsCount++ > 5)
         {
-        case 301:
-        case 302:
-        case 303:
-        case 307:
-        case 308:
-            if (task->redirectionsCount++ > 5)
-            {
-                LOG(err3) << "Too many redirections in '"
-                          << resource->resource->name << "', last url '"
-                          << task->url << "', http code " << task->code;
-                resource->state = ResourceImpl::State::error;
-            }
-            else
-            {
-                task->url.swap(task->redirectUrl);
-                task->redirectUrl = "";
-                LOG(debug) << "Resource '"
-                           << resource->resource->name << "' redirected to '"
-                           << task->url << "'";
-                resources.fetcher->fetch(task);
-                return;
-            }
+            LOG(err3) << "Too many redirections in '"
+                      << resource->name << "', last url '"
+                      << resource->url << "', http code " << resource->code;
+            resource->state = ResourceImpl::State::error;
+        }
+        else
+        {
+            resource->url.swap(resource->redirectUrl);
+            resource->redirectUrl = "";
+            LOG(debug) << "Resource '"
+                       << resource->name << "' redirected to '"
+                       << resource->url << "', http code " << resource->code;
+            resources.fetcher->fetch(task);
+            // do not decrease the downloads counter here
+            return;
         }
     }
     
@@ -278,8 +261,6 @@ void MapImpl::fetchedFile(std::shared_ptr<FetchTask> task)
     if (resource->state == ResourceImpl::State::error)
     {
         resource->contentData.free();
-        boost::lock_guard<boost::mutex> l(resources.mutInvalidUrls);
-        resources.invalidUrlLocked.insert(resource->resource->name);
         return;
     }
     
@@ -287,16 +268,16 @@ void MapImpl::fetchedFile(std::shared_ptr<FetchTask> task)
     resource->state = ResourceImpl::State::downloaded;
 }
 
-void MapImpl::dataRenderInitialize()
+void MapImpl::resourceRenderInitialize()
 {}
 
-void MapImpl::dataRenderFinalize()
+void MapImpl::resourceRenderFinalize()
 {
     resources.prepareQueNoLock.clear();
     resources.resources.clear();
 }
 
-bool MapImpl::dataRenderTick()
+bool MapImpl::resourceRenderTick()
 {
     statistics.currentResourcePreparing = resources.prepareQueNoLock.size()
             + statistics.currentResourceDownloads;
@@ -315,8 +296,8 @@ bool MapImpl::dataRenderTick()
         uint64 memGpuUse = 0;
         for (auto &&it : resources.resources)
         {
-            memRamUse += it.second->ramMemoryCost;
-            memGpuUse += it.second->gpuMemoryCost;
+            memRamUse += it.second->impl->ramMemoryCost;
+            memGpuUse += it.second->impl->gpuMemoryCost;
             // consider long time not used resources only
             if (it.second->impl->lastAccessTick + 100 < statistics.frameIndex)
                 res.push_back(it.second.get());
@@ -334,14 +315,14 @@ bool MapImpl::dataRenderTick()
             {
                 if (memUse <= options.maxResourcesMemory)
                     break;
-                memUse -= it->gpuMemoryCost + it->ramMemoryCost;
+                memUse -= it->impl->gpuMemoryCost + it->impl->ramMemoryCost;
                 if (it->impl->state != ResourceImpl::State::finalizing)
                     it->impl->state = ResourceImpl::State::finalizing;
                 else
                 {
                     statistics.resourcesReleased++;
-                    LOG(info2) << "Releasing resource '" << it->name << "'";
-                    resources.resources.erase(it->name);
+                    LOG(info2) << "Releasing resource '" << it->impl->name << "'";
+                    resources.resources.erase(it->impl->name);
                 }
             }
         }
@@ -363,7 +344,7 @@ void MapImpl::touchResource(std::shared_ptr<Resource> resource,
         // no break here
     case ResourceImpl::State::initializing:
     case ResourceImpl::State::downloaded:
-        resources.prepareQueNoLock.insert(resource->impl);
+        resources.prepareQueNoLock.insert(resource);
         break;
     }
 }
@@ -455,48 +436,7 @@ Validity MapImpl::getResourceValidity(const std::string &name)
     }
 }
 
-const std::string MapImpl::convertNameToCache(const std::string &path)
-{
-    uint32 p = path.find("://");
-    std::string a = p == std::string::npos ? path : path.substr(p + 3);
-    std::string b = boost::filesystem::path(a).parent_path().string();
-    std::string c = a.substr(b.length() + 1);
-    if (b.empty() || c.empty())
-        LOGTHROW(err2, std::runtime_error)
-                << "Cannot convert path '" << path
-                << "' into a cache path";
-    return resources.cachePath
-            + convertNameToPath(b, false) + "/"
-            + convertNameToPath(c, false);
-}
-
-bool MapImpl::availableInCache(const std::string &name)
-{
-    std::string path = convertNameToCache(name);
-    return boost::filesystem::exists(path);
-}
-
-const std::string MapImpl::convertNameToPath(std::string path,
-                                           bool preserveSlashes)
-{
-    path = boost::filesystem::path(path).normalize().string();
-    std::string res;
-    res.reserve(path.size());
-    for (char it : path)
-    {
-        if ((it >= 'a' && it <= 'z')
-         || (it >= 'A' && it <= 'Z')
-         || (it >= '0' && it <= '9')
-         || (it == '-' || it == '.'))
-            res += it;
-        else if (preserveSlashes && (it == '/' || it == '\\'))
-            res += '/';
-        else
-            res += '_';
-    }
-    return res;
-}
-
-const std::string MapImpl::Resources::invalidUrlFileName = "invalidUrl.txt";
+const std::string MapImpl::Resources::failedAvailTestFileName
+                        = "failedAvailTestUrls.txt";
 
 } // namespace vts

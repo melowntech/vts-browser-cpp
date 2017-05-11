@@ -13,10 +13,10 @@ MetaTile::MetaTile(const std::string &name) : Resource(name),
 
 void MetaTile::load(MapImpl *)
 {
-    LOG(info2) << "Loading meta tile '" << name << "'";
+    LOG(info2) << "Loading meta tile '" << impl->name << "'";
     *(vtslibs::vts::MetaTile*)this
-            = vtslibs::vts::loadMetaTile(impl->contentData, 5, name);
-    ramMemoryCost = this->size() * sizeof(vtslibs::vts::MetaNode);
+            = vtslibs::vts::loadMetaTile(impl->contentData, 5, impl->name);
+    impl->ramMemoryCost = this->size() * sizeof(vtslibs::vts::MetaNode);
 }
 
 NavTile::NavTile(const std::string &name) : Resource(name)
@@ -24,7 +24,7 @@ NavTile::NavTile(const std::string &name) : Resource(name)
 
 void NavTile::load(MapImpl *)
 {
-    LOG(info2) << "Loading navigation tile '" << name << "'";
+    LOG(info2) << "Loading navigation tile '" << impl->name << "'";
     GpuTextureSpec spec;
     decodeImage(impl->contentData, spec.buffer,
                 spec.width, spec.height, spec.components);
@@ -62,10 +62,10 @@ const mat4 findNormToPhys(const math::Extents3 &extents)
 
 void MeshAggregate::load(MapImpl *base)
 {
-    LOG(info2) << "Loading (aggregated) mesh '" << name << "'";
+    LOG(info2) << "Loading (aggregated) mesh '" << impl->name << "'";
     
     vtslibs::vts::NormalizedSubMesh::list meshes = vtslibs::vts::
-            loadMeshProperNormalized(impl->contentData, name);
+            loadMeshProperNormalized(impl->contentData, impl->name);
 
     submeshes.clear();
     submeshes.reserve(meshes.size());
@@ -79,7 +79,7 @@ void MeshAggregate::load(MapImpl *base)
         std::shared_ptr<GpuMesh> gm
                 = std::dynamic_pointer_cast<GpuMesh>
                 (base->callbacks.createMesh
-                 (name + "#" + tmp));
+                 (impl->name + "#" + tmp));
 
         uint32 vertexSize = sizeof(vec3f);
         if (m.tc.size())
@@ -144,12 +144,12 @@ void MeshAggregate::load(MapImpl *base)
         submeshes.push_back(part);
     }
 
-    gpuMemoryCost = 0;
-    ramMemoryCost = meshes.size() * sizeof(MeshPart);
+    impl->gpuMemoryCost = 0;
+    impl->ramMemoryCost = meshes.size() * sizeof(MeshPart);
     for (auto &&it : submeshes)
     {
-        gpuMemoryCost += it.renderable->gpuMemoryCost;
-        ramMemoryCost += it.renderable->ramMemoryCost;
+        impl->gpuMemoryCost += it.renderable->impl->gpuMemoryCost;
+        impl->ramMemoryCost += it.renderable->impl->ramMemoryCost;
     }
 }
 
@@ -158,7 +158,7 @@ BoundMetaTile::BoundMetaTile(const std::string &name) : Resource(name)
 
 void BoundMetaTile::load(MapImpl *)
 {
-    LOG(info2) << "Loading bound meta tile '" << name << "'";
+    LOG(info2) << "Loading bound meta tile '" << impl->name << "'";
     
     Buffer buffer = std::move(impl->contentData);
     GpuTextureSpec spec;
@@ -168,7 +168,7 @@ void BoundMetaTile::load(MapImpl *)
         LOGTHROW(err1, std::runtime_error)
                 << "bound meta tile has invalid resolution";
     memcpy(flags, spec.buffer.data(), spec.buffer.size());
-    ramMemoryCost = spec.buffer.size();
+    impl->ramMemoryCost = spec.buffer.size();
 }
 
 BoundMaskTile::BoundMaskTile(const std::string &name) : Resource(name)
@@ -176,19 +176,19 @@ BoundMaskTile::BoundMaskTile(const std::string &name) : Resource(name)
 
 void BoundMaskTile::load(MapImpl *base)
 {
-    LOG(info2) << "Loading bound mask tile '" << name << "'";
+    LOG(info2) << "Loading bound mask tile '" << impl->name << "'";
     
     if (!texture)
         texture = std::dynamic_pointer_cast<GpuTexture>(
-                    base->callbacks.createTexture(name + "#tex"));
+                    base->callbacks.createTexture(impl->name + "#tex"));
     
     Buffer buffer = std::move(impl->contentData);
     GpuTextureSpec spec;
     decodeImage(buffer, spec.buffer,
                 spec.width, spec.height, spec.components);
     texture->loadTexture(spec);
-    gpuMemoryCost = texture->gpuMemoryCost;
-    ramMemoryCost = texture->ramMemoryCost;
+    impl->gpuMemoryCost = texture->impl->gpuMemoryCost;
+    impl->ramMemoryCost = texture->impl->ramMemoryCost;
 }
 
 } // namespace vts

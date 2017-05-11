@@ -26,18 +26,17 @@ public:
         finalizing,
     };
     
-    ResourceImpl(Resource *resource);
+    ResourceImpl(const std::string &name);
     virtual ~ResourceImpl();
-    
-    void saveToCache(class MapImpl *map);
-    void loadFromCache(class MapImpl *map);
-    void loadFromInternalMemory();
+
+    bool performAvailTest() const;
     
     boost::optional<vtslibs::registry::BoundLayer::Availability> availTest;
-    Resource *const resource;
     double priority;
     std::atomic<State> state;
     uint32 lastAccessTick;
+    uint32 ramMemoryCost;
+    uint32 gpuMemoryCost;
 };
 
 } // namespace vts

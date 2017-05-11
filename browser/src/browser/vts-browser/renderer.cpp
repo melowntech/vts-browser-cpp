@@ -831,7 +831,7 @@ bool MapImpl::prerequisitesCheck()
         {
             if (!bl.external())
                 continue;
-            std::string url = convertPath(bl.url, mapConfig->name);
+            std::string url = convertPath(bl.url, mapConfig->impl->name);
             std::shared_ptr<ExternalBoundLayer> r = getExternalBoundLayer(url);
             if (!testAndThrow(r->impl->state))
                 ok = false;

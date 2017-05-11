@@ -17,7 +17,6 @@ public:
     MapCreateOptions();
     
     std::string cachePath;
-    bool keepInvalidUrls;
 };
 
 class VTS_API MapOptions

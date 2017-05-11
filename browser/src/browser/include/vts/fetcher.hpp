@@ -31,6 +31,7 @@ public:
 
     // internals
     const std::string name;
+    
     void saveToCache(MapImpl *map);
     bool loadFromCache(MapImpl *map);
     void loadFromInternalMemory();

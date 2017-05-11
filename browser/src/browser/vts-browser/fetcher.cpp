@@ -30,8 +30,8 @@ public:
 class FetcherImpl : public Fetcher
 {
 public:
-    FetcherImpl(const FetcherOptions &options) : fetcher(htt.fetcher()),
-        options(options)
+    FetcherImpl(const FetcherOptions &options) : options(options),
+        fetcher(htt.fetcher())
     {}
 
     ~FetcherImpl()
@@ -129,9 +129,9 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
 FetcherOptions::FetcherOptions()
     : threads(1),
       timeout(-1),
-      maxCacheConections(0),
       maxHostConnections(0),
       maxTotalConections(3),
+      maxCacheConections(0),
       pipelining(2)
 {}
 

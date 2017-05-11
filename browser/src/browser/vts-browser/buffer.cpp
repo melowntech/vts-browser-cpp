@@ -10,28 +10,24 @@ std::map<std::string, std::pair<size_t, unsigned char *>> data_map;
 namespace vts
 {
 
-Buffer::Buffer() : data_(nullptr), size_(0), std::istream(this)
+Buffer::Buffer() : data_(nullptr), size_(0)
 {}
 
-Buffer::Buffer(uint32 size) : data_(nullptr), size_(size), std::istream(this)
+Buffer::Buffer(uint32 size) : data_(nullptr), size_(size)
 {
     allocate(size);
 }
 
-Buffer::Buffer(const Buffer &other) : data_(nullptr), size_(other.size_),
-    std::istream(this)
+Buffer::Buffer(const Buffer &other) : data_(nullptr), size_(other.size_)
 {
     allocate(size_);
     memcpy(data_, other.data_, size_);
 }
 
-Buffer::Buffer(Buffer &&other) : data_(other.data_), size_(other.size_),
-    std::istream(this)
+Buffer::Buffer(Buffer &&other) : data_(other.data_), size_(other.size_)
 {
     other.data_ = nullptr;
     other.size_ = 0;
-    setg(data_, data_, data_ + size_);
-    clear();
 }
 
 Buffer::~Buffer()
@@ -46,6 +42,7 @@ Buffer &Buffer::operator = (const Buffer &other)
     this->free();
     allocate(other.size_);
     memcpy(data_, other.data_, size_);
+    return *this;
 }
 
 Buffer &Buffer::operator = (Buffer &&other)
@@ -57,8 +54,7 @@ Buffer &Buffer::operator = (Buffer &&other)
     data_ = other.data_;
     other.data_ = nullptr;
     other.size_ = 0;
-    setg(data_, data_, data_ + size_);
-    clear();
+    return *this;
 }
 
 void Buffer::allocate(uint32 size)
@@ -68,13 +64,10 @@ void Buffer::allocate(uint32 size)
     data_ = (char*)malloc(size_);
     if (!data_)
         LOGTHROW(err2, std::runtime_error) << "not enough memory";
-    setg(data_, data_, data_ + size_);
-    clear();
 }
 
 void Buffer::free()
 {
-    setg(nullptr, nullptr, nullptr);
     ::free(data_);
     data_ = nullptr;
     size_ = 0;
@@ -128,5 +121,16 @@ Buffer readInternalMemoryBuffer(const std::string &path)
     memcpy(b.data(), it->second.second, b.size());
     return b;
 }
+
+namespace detail
+{
+
+Wrapper::Wrapper(const Buffer &b) : std::istream(this)
+{
+    setg(b.data(), b.data(), b.data() + b.size());
+    clear();
+}
+
+} // namespace
 
 } // namespace vts

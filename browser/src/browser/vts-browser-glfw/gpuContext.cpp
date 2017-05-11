@@ -12,9 +12,9 @@ namespace
                                       GLenum type,
                                       GLenum id,
                                       GLenum severity,
-                                      GLsizei length,
+                                      GLsizei, // length
                                       const GLchar *message,
-                                      const void *user)
+                                      const void *) // user
     {
         if (id == 131185 && type == GL_DEBUG_TYPE_OTHER)
             return;
@@ -377,7 +377,7 @@ void GpuMeshImpl::bind()
         if (vio)
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vio);
         
-        for (int i = 0; i < sizeof(vts::GpuMeshSpec::attributes)
+        for (unsigned i = 0; i < sizeof(vts::GpuMeshSpec::attributes)
              / sizeof(vts::GpuMeshSpec::VertexAttribute); i++)
         {
             vts::GpuMeshSpec::VertexAttribute &a = spec.attributes[i];
@@ -386,7 +386,7 @@ void GpuMeshImpl::bind()
                 glEnableVertexAttribArray(i);
                 glVertexAttribPointer(i, a.components, (GLenum)a.type,
                                       a.normalized ? GL_TRUE : GL_FALSE,
-                                      a.stride, (void*)a.offset);
+                                      a.stride, (void*)(intptr_t)a.offset);
             }
             else
                 glDisableVertexAttribArray(i);

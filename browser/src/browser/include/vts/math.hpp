@@ -77,7 +77,7 @@ template<class T, class U>
 const T vecFromUblas(const U &u)
 {
     T res;
-    for (int i = 0; i < u.size(); i++)
+    for (unsigned i = 0; i < u.size(); i++)
         res(i) = u[i];
     return res;
 }
@@ -86,7 +86,7 @@ template<class U, class T>
 const U vecToUblas(const T &t)
 {
     U res;
-    for (int i = 0; i < res.size(); i++)
+    for (unsigned i = 0; i < res.size(); i++)
         res[i] = t(i);
     return res;
 }

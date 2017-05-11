@@ -36,13 +36,13 @@ private:
         (const std::string &name);
     std::shared_ptr<vts::GpuMesh> createMesh
         (const std::string &name);
-
-    bool isMouseDetached;
-    QPoint mouseLastPosition;
-    QPoint mouseOriginalPosition;
     
     std::shared_ptr<GpuShaderImpl> shaderTexture;
     std::shared_ptr<GpuShaderImpl> shaderColor;
+    
+    QPoint mouseLastPosition;
+    QPoint mouseOriginalPosition;
+    bool isMouseDetached;
 };
 
 #endif

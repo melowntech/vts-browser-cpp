@@ -9,7 +9,7 @@
 namespace vts
 {
 
-class VTS_API Buffer : public std::istream, protected std::streambuf
+class VTS_API Buffer
 {
 public:
     Buffer();
@@ -35,6 +35,17 @@ VTS_API void writeLocalFileBuffer(const std::string &path,
                                   const Buffer &buffer);
 VTS_API Buffer readLocalFileBuffer(const std::string &path);
 VTS_API Buffer readInternalMemoryBuffer(const std::string &path);
+
+namespace detail
+{
+
+class Wrapper : protected std::streambuf, public std::istream
+{
+public:
+    Wrapper(const Buffer &b);
+};
+
+} // detail
 
 } // namespace vts
 

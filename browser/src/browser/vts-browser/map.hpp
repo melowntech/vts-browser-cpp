@@ -140,9 +140,9 @@ public:
         std::unordered_set<std::string> failedAvailUrlLocked;
         std::unordered_set<std::string> failedAvailUrlNoLock;
         std::string cachePath;
+        std::atomic_uint downloads;
         boost::mutex mutPrepareQue;
         boost::mutex mutFailedAvailUrls;
-        std::atomic_uint downloads;
         Fetcher *fetcher;
         
         Resources(const std::string &cachePath);
@@ -192,7 +192,7 @@ public:
     bool resourceDataTick();
     void resourceRenderInitialize();
     void resourceRenderFinalize();
-    bool resourceRenderTick();
+    void resourceRenderTick();
     void loadResource(std::shared_ptr<Resource> r);
     void fetchedFile(std::shared_ptr<FetchTask> task);
     void touchResource(std::shared_ptr<Resource> resource, double priority = 0);

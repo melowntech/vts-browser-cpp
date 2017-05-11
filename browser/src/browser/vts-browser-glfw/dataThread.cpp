@@ -13,8 +13,8 @@ namespace
     }
 }
 
-DataThread::DataThread(GLFWwindow *shared) : window(nullptr),
-    map(nullptr), stop(false)
+DataThread::DataThread(GLFWwindow *shared) : map(nullptr),
+    window(nullptr), stop(false)
 {
     fetcher = std::shared_ptr<vts::Fetcher>(vts::Fetcher::create(
                                                 vts::FetcherOptions()));

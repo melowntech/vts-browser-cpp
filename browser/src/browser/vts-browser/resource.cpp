@@ -37,7 +37,7 @@ bool ResourceImpl::performAvailTest() const
             return false;
         break;
     case vtslibs::registry::BoundLayer::Availability::Type::negativeSize:
-        if (contentData.size() <= availTest->size)
+        if (contentData.size() <= (unsigned)availTest->size)
             return false;
         break;
     default:
@@ -47,9 +47,8 @@ bool ResourceImpl::performAvailTest() const
 }
 
 ResourceImpl::ResourceImpl(const std::string &name)
-    : FetchTask(name), state(State::initializing),
-      gpuMemoryCost(0), ramMemoryCost(0),
-      lastAccessTick(0), priority(0)
+    : FetchTask(name), state(State::initializing), priority(0),
+      lastAccessTick(0), ramMemoryCost(0), gpuMemoryCost(0)
 {}
 
 ResourceImpl::~ResourceImpl()

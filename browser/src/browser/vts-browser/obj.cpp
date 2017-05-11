@@ -10,10 +10,12 @@ void decodeObj(const Buffer &in, uint32 &outFaceMode,
                Buffer &outVertices, Buffer &,
                uint32 &vertices, uint32 &indices)
 {
-    Buffer buf(in);
     geometry::Obj obj;
-    if (!obj.parse(buf))
+    detail::Wrapper w(in);
+    if (!obj.parse(w))
+    {
         LOGTHROW(err1, std::runtime_error) << "failed to decode obj file";
+    }
 
     // find face mode
     outFaceMode = 3;

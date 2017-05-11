@@ -7,8 +7,8 @@ using vtslibs::registry::View;
 using vtslibs::registry::BoundLayer;
 
 BoundParamInfo::BoundParamInfo(const View::BoundLayerParams &params)
-    : View::BoundLayerParams(params), bound(nullptr),
-      watertight(true), transparent(false), vars(0), orig(0), depth(0)
+    : View::BoundLayerParams(params), orig(0), vars(0),
+      bound(nullptr), depth(0), watertight(true), transparent(false)
 {}
 
 const mat3f BoundParamInfo::uvMatrix() const
@@ -80,6 +80,8 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
             return Validity::Indeterminate;
         case Validity::Invalid:
             return Validity::Invalid;
+        case Validity::Valid:
+            break;
         }        
         uint8 f = bmt->flags[(vars.tileId.y & 255) * 256
                 + (vars.tileId.x & 255)];
@@ -144,9 +146,9 @@ bool RenderTask::ready() const
 
 TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
     : nodeInfo(nodeInfo), surface(nullptr), lastAccessTime(0),
-      flags(0), texelSize(0), displaySize(0),
+      flags(0), texelSize(0),
       surrogateValue(vtslibs::vts::GeomExtents::invalidSurrogate),
-      validity(Validity::Indeterminate), empty(false)
+      displaySize(0), validity(Validity::Indeterminate), empty(false)
 {
     { // initialize corners to NAN
         vec3 n;
@@ -185,8 +187,8 @@ bool TraverseNode::ready() const
     return true;
 }
 
-MapImpl::Renderer::Renderer() : metaTileBinaryOrder(0),
-    windowWidth(0), windowHeight(0)
+MapImpl::Renderer::Renderer() :
+    windowWidth(0), windowHeight(0), metaTileBinaryOrder(0)
 {}
 
 } // namespace vts

@@ -118,11 +118,17 @@ MapView::BoundLayerInfo::BoundLayerInfo(const std::string &id) :
     id(id), alpha(1)
 {}
 
-Point::Point() : x(0), y(0), z(0)
-{}
+Point::Point()
+{
+    data[0] = data[1] = data[2] = 0;
+}
 
-Point::Point(double x, double y, double z) : x(x), y(y), z(z)
-{}
+Point::Point(double x, double y, double z)
+{
+    data[0] = x;
+    data[1] = y;
+    data[2] = z;
+}
 
 MapCreateOptions::MapCreateOptions()
 {}
@@ -502,8 +508,7 @@ void Map::printDebugInfo()
 }
 
 MapImpl::MapImpl(Map *map, const MapCreateOptions &options) :
-    resources(options.cachePath),
-    map(map), initialized(false)
+    map(map), initialized(false), resources(options.cachePath)
 {}
 
 void MapImpl::printDebugInfo()

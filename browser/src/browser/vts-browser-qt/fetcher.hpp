@@ -4,12 +4,7 @@
 #include <memory>
 #include <vts/fetcher.hpp>
 
-namespace
-{
-
 class FetcherDetail;
-
-} // namespace
 
 class FetcherImpl : public vts::Fetcher
 {

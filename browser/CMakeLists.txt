@@ -1,17 +1,14 @@
 # bootstrap build system
 cmake_minimum_required(VERSION 2.8.11)
-project(vts-browser-cpp)
+project(vts-browser)
 cmake_policy(SET CMP0045 OLD)
+cmake_policy(SET CMP0043 OLD)
 
 # by default, this is OSS build (can be overrided by customer machinery)
 set(BUILDSYS_DEFAULT_CUSTOMER_NAME oss)
 include(buildsys/cmake/buildsys.cmake)
 
 enable_hidden_visibility()
-
-# temporarily disable warnings-as-errors
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
 
 # 3rd party dependencies
 find_package(Boost 1.46 REQUIRED
@@ -41,6 +38,9 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 find_package(LibProc REQUIRED)
 include_directories(${LIBPROC_INCLUDE_DIR})
 
+find_package(glfw3 REQUIRED)
+include_directories(${GLFW3_INCLUDE_DIR})
+
 # dependencies
 add_subdirectory(src/dbglog)
 add_subdirectory(src/utility)
@@ -53,9 +53,11 @@ add_subdirectory(src/geo)
 add_subdirectory(src/half)
 add_subdirectory(src/http)
 add_subdirectory(src/glad)
-include(src/glfw.cmake)
-include(src/lodepng.cmake)
-include(src/nuklear.cmake)
+add_subdirectory(src/lodepng)
+add_subdirectory(src/nuklear)
+
+include_directories(src/lodepng)
+include_directories(src/nuklear)
 
 # vts libraries
 buildsys_nobuild_target(vts-libs)

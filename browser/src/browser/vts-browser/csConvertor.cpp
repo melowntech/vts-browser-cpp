@@ -107,6 +107,7 @@ public:
         return res;
     }
 
+    const vtslibs::registry::Registry &registry;
     vtslibs::vts::CsConvertor navToPhys_;
     vtslibs::vts::CsConvertor physToNav_;
     vtslibs::vts::CsConvertor navToPub_;
@@ -116,7 +117,6 @@ public:
     std::unordered_map<std::string, std::unordered_map<std::string,
             std::shared_ptr<vtslibs::vts::CsConvertor>>> convertors;
     boost::optional<GeographicLib::Geodesic> geodesic_;
-    const vtslibs::registry::Registry &registry;
 };
 
 CsConvertor *CsConvertor::create(const std::string &phys,

@@ -5,8 +5,8 @@
 namespace vts
 {
 
-FetchTask::FetchTask(const std::string &name) : name(name), url(name),
-    code(0), redirectionsCount(0)
+FetchTask::FetchTask(const std::string &name) : url(name),
+    code(0), redirectionsCount(0), name(name)
 {}
 
 FetchTask::~FetchTask()
@@ -61,7 +61,7 @@ void FetchTask::loadFromInternalMemory()
 
 const std::string MapImpl::convertNameToCache(const std::string &path)
 {
-    uint32 p = path.find("://");
+    auto p = path.find("://");
     std::string a = p == std::string::npos ? path : path.substr(p + 3);
     std::string b = boost::filesystem::path(a).parent_path().string();
     std::string c = a.substr(b.length() + 1);

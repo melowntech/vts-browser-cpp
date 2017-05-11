@@ -123,8 +123,8 @@ void GpuShaderImpl::uniform(vts::uint32 location, int value)
 }
 
 GpuTextureImpl::GpuTextureImpl(const std::string &name) :
-    vts::GpuTexture(name),
     QOpenGLTexture(QOpenGLTexture::Target2D),
+    vts::GpuTexture(name),
     grayscale(false)
 {}
 
@@ -181,7 +181,7 @@ void GpuMeshImpl::draw()
         vertexBuffer.bind();
         if (indexBuffer.isCreated())
             indexBuffer.bind();
-        for (int i = 0; i < sizeof(vts::GpuMeshSpec::attributes)
+        for (unsigned i = 0; i < sizeof(vts::GpuMeshSpec::attributes)
              / sizeof(vts::GpuMeshSpec::VertexAttribute); i++)
         {
             vts::GpuMeshSpec::VertexAttribute &a = spec.attributes[i];
@@ -190,7 +190,7 @@ void GpuMeshImpl::draw()
                 gl->glEnableVertexAttribArray(i);
                 gl->glVertexAttribPointer(i, a.components, (GLenum)a.type,
                                           a.normalized ? GL_TRUE : GL_FALSE,
-                                          a.stride, (void*)a.offset);
+                                          a.stride, (void*)(intptr_t)a.offset);
             }
             else
                 gl->glDisableVertexAttribArray(i);

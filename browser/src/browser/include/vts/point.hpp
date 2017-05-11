@@ -11,17 +11,11 @@ struct VTS_API Point
     Point();
     Point(double x, double y, double z);
     
-    union
-    {
-        struct
-        {
-            double data[3];
-        };
-        struct
-        {
-            double x, y, z;
-        };
-    };
+    double &x() { return data[0]; }
+    double &y() { return data[1]; }
+    double &z() { return data[2]; }
+    
+    double data[3];
 };
 
 } // namespace vts

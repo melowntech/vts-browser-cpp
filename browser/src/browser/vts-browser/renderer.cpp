@@ -503,6 +503,8 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
         // no break here
     case Validity::Indeterminate:
         return false;
+    case Validity::Valid:
+        break;
     }
     
     bool determined = true;
@@ -538,6 +540,8 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
                 // no break here
             case Validity::Invalid:
                 continue;
+            case Validity::Valid:
+                break;
             }
             bool allTransparent = true;
             for (BoundParamInfo &b : bls)

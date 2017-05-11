@@ -26,7 +26,7 @@ std::shared_ptr<T> getMapResource(const std::string &name, MapImpl *map,
 } // namespace
 
 MapImpl::Resources::Resources(const std::string &cachePathVal)
-    : downloads(0), cachePath(cachePathVal), fetcher(nullptr)
+    : cachePath(cachePathVal), downloads(0), fetcher(nullptr)
 {
     if (cachePath.empty())
     {
@@ -277,7 +277,7 @@ void MapImpl::resourceRenderFinalize()
     resources.resources.clear();
 }
 
-bool MapImpl::resourceRenderTick()
+void MapImpl::resourceRenderTick()
 {
     statistics.currentResourcePreparing = resources.prepareQueNoLock.size()
             + statistics.currentResourceDownloads;
@@ -345,6 +345,10 @@ void MapImpl::touchResource(std::shared_ptr<Resource> resource,
     case ResourceImpl::State::initializing:
     case ResourceImpl::State::downloaded:
         resources.prepareQueNoLock.insert(resource);
+        break;
+    case ResourceImpl::State::downloading:
+    case ResourceImpl::State::ready:
+    case ResourceImpl::State::error:
         break;
     }
 }

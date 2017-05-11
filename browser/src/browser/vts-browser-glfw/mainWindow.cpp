@@ -53,9 +53,10 @@ namespace vts
     class MapImpl;
 }
 
-MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
-    map(nullptr), window(nullptr),
-    camNear(0), camFar(0)
+MainWindow::MainWindow() :
+    camNear(0), camFar(0),
+    mousePrevX(0), mousePrevY(0),
+    map(nullptr), window(nullptr)
 {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -63,7 +64,7 @@ MainWindow::MainWindow() : mousePrevX(0), mousePrevY(0),
     glfwWindowHint(GLFW_DEPTH_BITS, 32);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifndef NDEBUG
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 #endif
 
     window = glfwCreateWindow(800, 600, "renderer-glfw", NULL, NULL);
@@ -189,18 +190,18 @@ void MainWindow::mousePositionCallback(double xpos, double ypos)
     mousePrevY = ypos;
 }
 
-void MainWindow::mouseButtonCallback(int button, int action, int mods)
+void MainWindow::mouseButtonCallback(int, int, int)
 {
     // do nothing
 }
 
-void MainWindow::mouseScrollCallback(double xoffset, double yoffset)
+void MainWindow::mouseScrollCallback(double, double yoffset)
 {
     vts::Point diff(0, 0, yoffset * 120);
     map->pan(diff);
 }
 
-void MainWindow::keyboardCallback(int key, int scancode, int action, int mods)
+void MainWindow::keyboardCallback(int key, int, int action, int)
 {
     // marks
     if (action == GLFW_RELEASE && key == GLFW_KEY_M)
@@ -222,7 +223,7 @@ void MainWindow::keyboardCallback(int key, int scancode, int action, int mods)
     }
 }
 
-void MainWindow::keyboardUnicodeCallback(unsigned int codepoint)
+void MainWindow::keyboardUnicodeCallback(unsigned int)
 {
     // do nothing
 }
@@ -379,7 +380,7 @@ std::shared_ptr<vts::GpuMesh> MainWindow::createMesh(
     return std::make_shared<GpuMeshImpl>(name);
 }
 
-void MainWindow::cameraOverrideParam(double &fov, double &aspect,
+void MainWindow::cameraOverrideParam(double &, double &,
                                      double &near, double &far)
 {
     camNear = near;

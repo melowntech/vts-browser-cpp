@@ -4,9 +4,6 @@
 #include <QtNetwork/QAuthenticator>
 #include "fetcher.hpp"
 
-namespace
-{
-
 class FetcherDetail : public QNetworkAccessManager
 {
 public:
@@ -64,8 +61,6 @@ void FetcherDetail::fetch(std::shared_ptr<vts::FetchTask> task)
     t->reply = get(request);
     connect(t->reply, &QNetworkReply::finished, t, &FetchTask::finished);
 }
-
-} // namespace
 
 FetcherImpl::FetcherImpl() : impl(nullptr)
 {

@@ -32,6 +32,7 @@ class GpuShaderImpl : public QOpenGLShaderProgram
 {
 public:
     GpuShaderImpl();
+    
     void bind();
     void loadShaders(const std::string &vertexShader,
                      const std::string &fragmentShader);
@@ -49,8 +50,10 @@ class GpuTextureImpl : public QOpenGLTexture, public vts::GpuTexture
 {
 public:
     GpuTextureImpl(const std::string &name);
+    
     void bind();
     void loadTexture(const vts::GpuTextureSpec &spec);
+    
     bool grayscale;
 };
 
@@ -58,6 +61,7 @@ class GpuMeshImpl : public vts::GpuMesh
 {
 public:
     GpuMeshImpl(const std::string &name);
+    
     void draw();
     void loadMesh(const vts::GpuMeshSpec &spec);
 

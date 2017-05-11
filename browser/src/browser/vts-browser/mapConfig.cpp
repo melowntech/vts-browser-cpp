@@ -44,7 +44,8 @@ void MapConfig::load(MapImpl *)
 {
     clear();
     LOG(info3) << "Loading map config '" << impl->name << "'";
-    vtslibs::vts::loadMapConfig(*this, impl->contentData, impl->name);
+    detail::Wrapper w(impl->contentData);
+    vtslibs::vts::loadMapConfig(*this, w, impl->name);
     
     auto bo(vtslibs::vts::browserOptions(*this));
     if (bo.isObject())
@@ -249,8 +250,9 @@ ExternalBoundLayer::ExternalBoundLayer(const std::string &name)
 
 void ExternalBoundLayer::load(MapImpl *)
 {
+    detail::Wrapper w(impl->contentData);
     *(vtslibs::registry::BoundLayer*)this
-            = vtslibs::registry::loadBoundLayer(impl->contentData, impl->name);
+            = vtslibs::registry::loadBoundLayer(w, impl->name);
 }
 
 } // namespace vts

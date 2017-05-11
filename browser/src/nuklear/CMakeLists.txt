@@ -1,7 +1,7 @@
 define_module(LIBRARY nuklear=0 DEPENDS)
 
-include_directories(src/nuklear)
-configure_file(src/nuklear/nuklear.h nuklear.c)
+include_directories(nuklear)
+configure_file(nuklear/nuklear.h nuklear.c)
 add_library(nuklear STATIC ${CMAKE_CURRENT_BINARY_DIR}/nuklear.c)
 buildsys_library(nuklear)
 target_compile_definitions(nuklear PRIVATE -DNK_IMPLEMENTATION)
@@ -13,6 +13,7 @@ set(NUKLEAR_COMPONENTS
 	-DNK_INCLUDE_VERTEX_BUFFER_OUTPUT
 	-DNK_INCLUDE_FONT_BAKING
 )
+set(NUKLEAR_COMPONENTS ${NUKLEAR_COMPONENTS} PARENT_SCOPE)
 
 target_compile_definitions(nuklear PUBLIC ${NUKLEAR_COMPONENTS})
 

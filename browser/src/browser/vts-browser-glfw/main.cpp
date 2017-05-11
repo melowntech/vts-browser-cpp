@@ -7,7 +7,7 @@
 #include "threadName.hpp"
 #include <GLFW/glfw3.h>
 
-void errorCallback(int error, const char* description)
+void errorCallback(int, const char* description)
 {
     fprintf(stderr, "GLFW error: %s\n", description);
 }

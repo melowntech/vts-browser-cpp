@@ -80,19 +80,19 @@ public:
     
     std::vector<CornerRequest> corners;
     
-    const vec2 navPos;
     boost::optional<NodeInfo> nodeInfo;
+    boost::optional<double> result;
+    const vec2 navPos;
     vec2 sds;
     vec2 interpol;
-    boost::optional<double> result;
     double resetOffset;
     
-    HeightRequest(const vec2 &navPos) :
-        navPos(navPos), resetOffset(std::numeric_limits<double>::quiet_NaN()),
+    HeightRequest(const vec2 &navPos) : navPos(navPos),
         sds(std::numeric_limits<double>::quiet_NaN(),
             std::numeric_limits<double>::quiet_NaN()),
         interpol(std::numeric_limits<double>::quiet_NaN(),
-                 std::numeric_limits<double>::quiet_NaN())
+                 std::numeric_limits<double>::quiet_NaN()),
+        resetOffset(std::numeric_limits<double>::quiet_NaN())
     {}
     
     Validity process(class MapImpl *map)
@@ -199,7 +199,6 @@ void MapImpl::checkPanZQueue()
     
     // apply the height to the camera
     assert(nh == nh);
-    double h = mapConfig->position.position[2];
     if (task.resetOffset == task.resetOffset)
         mapConfig->position.position[2] = nh + task.resetOffset;
     else if (navigation.lastPanZShift)
@@ -351,7 +350,6 @@ void MapImpl::rotate(const vec3 &value)
 {
     assert(mapConfig && *mapConfig);
     
-    vtslibs::registry::Position &pos = mapConfig->position;
     vec3 rot(value[0] * 0.2, value[1] * -0.1, 0);
     rot *= options.cameraSensitivityRotate;
     navigation.inertiaRotation += rot;

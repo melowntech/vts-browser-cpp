@@ -14,8 +14,9 @@ MetaTile::MetaTile(const std::string &name) : Resource(name),
 void MetaTile::load(MapImpl *)
 {
     LOG(info2) << "Loading meta tile '" << impl->name << "'";
+    detail::Wrapper w(impl->contentData);
     *(vtslibs::vts::MetaTile*)this
-            = vtslibs::vts::loadMetaTile(impl->contentData, 5, impl->name);
+            = vtslibs::vts::loadMetaTile(w, 5, impl->name);
     impl->ramMemoryCost = this->size() * sizeof(vtslibs::vts::MetaNode);
 }
 
@@ -64,8 +65,9 @@ void MeshAggregate::load(MapImpl *base)
 {
     LOG(info2) << "Loading (aggregated) mesh '" << impl->name << "'";
     
+    detail::Wrapper w(impl->contentData);
     vtslibs::vts::NormalizedSubMesh::list meshes = vtslibs::vts::
-            loadMeshProperNormalized(impl->contentData, impl->name);
+            loadMeshProperNormalized(w, impl->name);
 
     submeshes.clear();
     submeshes.reserve(meshes.size());

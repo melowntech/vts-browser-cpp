@@ -10,20 +10,9 @@ void setLogMask(const std::string &mask)
 }
 
 MapOptions::MapOptions() :
-    renderMeshBoxes(false),
-    renderSurrogates(false),
-    renderObjectPosition(false),
-    debugDetachedCamera(false),
-    renderTileBoxes(false),
-    debugDisableMeta5(false),
-    navigationSamplesPerViewExtent(4),
+    maxTexelToPixelScale(1.2),
     positionViewExtentMin(75),
     positionViewExtentMax(1e7),
-    maxTexelToPixelScale(1.2),
-    maxResourcesMemory(512 * 1024 * 1024),
-    maxConcurrentDownloads(10),
-    maxNodeUpdatesPerTick(10),
-    maxResourceProcessesPerTick(5),
     cameraSensitivityPan(1),
     cameraSensitivityAltitude(1),
     cameraSensitivityZoom(1),
@@ -31,7 +20,18 @@ MapOptions::MapOptions() :
     cameraInertiaPan(0.8),
     cameraInertiaAltitude(0.95),
     cameraInertiaZoom(0.8),
-    cameraInertiaRotate(0.8)
+    cameraInertiaRotate(0.8),
+    maxResourcesMemory(512 * 1024 * 1024),
+    maxConcurrentDownloads(10),
+    maxNodeUpdatesPerTick(10),
+    maxResourceProcessesPerTick(5),
+    navigationSamplesPerViewExtent(4),
+    renderSurrogates(false),
+    renderMeshBoxes(false),
+    renderTileBoxes(false),
+    renderObjectPosition(false),
+    debugDetachedCamera(false),
+    debugDisableMeta5(false)
 {}
 
 MapOptions::~MapOptions()

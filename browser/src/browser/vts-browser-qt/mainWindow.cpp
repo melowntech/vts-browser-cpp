@@ -12,7 +12,7 @@
 
 using vts::readInternalMemoryBuffer;
 
-MainWindow::MainWindow() : gl(nullptr), isMouseDetached(false), fetcher(nullptr)
+MainWindow::MainWindow() : gl(nullptr), fetcher(nullptr), isMouseDetached(false)
 {
     QSurfaceFormat format;
     format.setVersion(4, 4);
@@ -48,10 +48,10 @@ void MainWindow::mouseMove(QMouseEvent *event)
     mouseLastPosition = event->globalPos();
 }
 
-void MainWindow::mousePress(QMouseEvent *event)
+void MainWindow::mousePress(QMouseEvent *)
 {}
 
-void MainWindow::mouseRelease(QMouseEvent *event)
+void MainWindow::mouseRelease(QMouseEvent *)
 {}
 
 void MainWindow::mouseWheel(QWheelEvent *event)

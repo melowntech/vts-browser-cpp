@@ -19,10 +19,10 @@ public:
 
     void run();
 
-    vts::Map *map;
-    GLFWwindow *window;
     std::shared_ptr<vts::Fetcher> fetcher;
     std::thread thr;
+    vts::Map *map;
+    GLFWwindow *window;
     volatile bool stop;
 };
 

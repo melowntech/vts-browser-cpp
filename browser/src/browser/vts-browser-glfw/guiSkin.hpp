@@ -4,7 +4,7 @@
 #include <memory>
 
 #include <glad/glad.h>
-#include <nuklear.h>
+#include <nuklear/nuklear.h>
 
 struct GuiSkinMedia
 {

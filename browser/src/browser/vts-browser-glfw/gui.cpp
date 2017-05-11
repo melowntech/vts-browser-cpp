@@ -7,7 +7,7 @@
 #include <vts/view.hpp>
 
 #include "mainWindow.hpp"
-#include <nuklear.h>
+#include <nuklear/nuklear.h>
 #include <GLFW/glfw3.h>
 #include "guiSkin.hpp"
 
@@ -24,10 +24,10 @@ public:
         nk_byte col[4];
     };
     
-    GuiImpl(MainWindow *window) : window(window),
-        consumeEvents(true), prepareFirst(true),
+    GuiImpl(MainWindow *window) :
         statTraversedDetails(false), statRenderedDetails(false),
-        optSensitivityDetails(false), positionSrs(2), autoPan(0)
+        optSensitivityDetails(false), positionSrs(2), autoPan(0),
+        window(window), consumeEvents(true), prepareFirst(true)
     {
         { // load font
             struct nk_font_config cfg;
@@ -300,7 +300,7 @@ public:
         {
             vts::MapOptions &o = window->map->options();
             float width = nk_window_get_content_region_size(&ctx).x - 15;
-            float ratio[] = { width * 0.4, width * 0.5, width * 0.1 };
+            float ratio[] = { width * 0.4f, width * 0.5f, width * 0.1f };
             nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
             char buffer[256];
             
@@ -380,7 +380,7 @@ public:
             nk_label(&ctx, "Max memory:", NK_TEXT_LEFT);
             o.maxResourcesMemory = 1024 * 1024 * nk_slide_int(&ctx,
                     128, o.maxResourcesMemory / 1024 / 1024, 2048, 32);
-            sprintf(buffer, "%3d", o.maxResourcesMemory / 1024 / 1024);
+            sprintf(buffer, "%3d", (int)(o.maxResourcesMemory / 1024 / 1024));
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             
             // maxConcurrentDownloads
@@ -471,7 +471,7 @@ public:
         {
             vts::MapStatistics &s = window->map->statistics();
             float width = nk_window_get_content_region_size(&ctx).x - 15;
-            float ratio[] = { width * 0.5, width * 0.5 };
+            float ratio[] = { width * 0.5f, width * 0.5f };
             nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
             char buffer[256];
 #define S(NAME, VAL, UNIT) { \
@@ -487,7 +487,7 @@ public:
             S("Frame index:", s.frameIndex, "");
             S("Downloading:", s.currentResourceDownloads, "");
             S("Node updates:", s.currentNodeUpdates, "");
-            S("Gpu Memory:", s.currentGpuMemUse / 1024 / 1024, " MB");
+            S("Gpu Memory:", (int)(s.currentGpuMemUse / 1024 / 1024), " MB");
             S("Nav. lod:", s.lastHeightRequestLod, "");
             nk_label(&ctx, "Z range:", NK_TEXT_LEFT);
             sprintf(buffer, "%0.0f - %0.0f", window->camNear, window->camFar);
@@ -507,7 +507,7 @@ public:
             nk_checkbox_label(&ctx, "details", &statTraversedDetails);
             if (statTraversedDetails)
             {
-                for (int i = 0; i < vts::MapStatistics::MaxLods; i++)
+                for (unsigned i = 0; i < vts::MapStatistics::MaxLods; i++)
                 {
                     if (s.metaNodesTraversedPerLod[i] == 0)
                         continue;
@@ -521,7 +521,7 @@ public:
             nk_checkbox_label(&ctx, "details", &statRenderedDetails);
             if (statRenderedDetails)
             {
-                for (int i = 0; i < vts::MapStatistics::MaxLods; i++)
+                for (unsigned i = 0; i < vts::MapStatistics::MaxLods; i++)
                 {
                     if (s.meshesRenderedPerLod[i] == 0)
                         continue;
@@ -544,7 +544,7 @@ public:
         if (nk_begin(&ctx, "Position", nk_rect(530, 10, 200, 400), flags))
         {
             float width = nk_window_get_content_region_size(&ctx).x - 15;
-            float ratio[] = { width * 0.4, width * 0.6 };
+            float ratio[] = { width * 0.4f, width * 0.6f };
             nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
             char buffer[256];
             { // subjective position
@@ -579,13 +579,13 @@ public:
                 n = window->map->convert(n, vts::Srs::Navigation,
                                          (vts::Srs)positionSrs);
                 nk_label(&ctx, "X:", NK_TEXT_LEFT);
-                sprintf(buffer, "%.8f", n.x);
+                sprintf(buffer, "%.8f", n.x());
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Y:", NK_TEXT_LEFT);
-                sprintf(buffer, "%.8f", n.y);
+                sprintf(buffer, "%.8f", n.y());
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Z:", NK_TEXT_LEFT);
-                sprintf(buffer, "%.8f", n.z);
+                sprintf(buffer, "%.8f", n.z());
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Auto: ", NK_TEXT_LEFT);
                 nk_checkbox_label(&ctx, "", &autoPan);
@@ -598,13 +598,13 @@ public:
             { // rotation
                 vts::Point r = window->map->getPositionRotation();
                 nk_label(&ctx, "Rotation:", NK_TEXT_LEFT);
-                sprintf(buffer, "%5.1f", r.x);
+                sprintf(buffer, "%5.1f", r.x());
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
-                sprintf(buffer, "%5.1f", r.y);
+                sprintf(buffer, "%5.1f", r.y());
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
-                sprintf(buffer, "%5.1f", r.z);
+                sprintf(buffer, "%5.1f", r.z());
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Auto:", NK_TEXT_LEFT);
                 window->map->setAutorotate(nk_slide_float(&ctx,
@@ -612,9 +612,9 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset rotation"))
                 {
-                    r.x = 0;
-                    r.y = 270;
-                    r.z = 0;
+                    r.x() = 0;
+                    r.y() = 270;
+                    r.z() = 0;
                     window->map->setPositionRotation(r);
                     window->map->setAutorotate(0);
                 }
@@ -636,14 +636,14 @@ public:
         nk_end(&ctx);
     }
 
-    bool prepareViewsBoundLayers(vts::MapView &view,
+    bool prepareViewsBoundLayers(vts::MapView &,
                                  vts::MapView::BoundLayerInfo::Map &bl)
     {
         const std::vector<std::string> boundLayers
                 = window->map->getResourceBoundLayers();
         std::set<std::string> bls(boundLayers.begin(), boundLayers.end());
         float width = nk_window_get_content_region_size(&ctx).x - 15 - 10 - 25;
-        float ratio[] = { 10, width * 0.7, width * 0.3, 20};
+        float ratio[] = { 10, width * 0.7f, width * 0.3f, 20};
         nk_layout_row(&ctx, NK_STATIC, 16, 4, ratio);
         bool changed = false;
         int idx = 0;
@@ -703,7 +703,7 @@ public:
             
             if (window->mapConfigPaths.size() > 1)
             { // mapconfig selector
-                float ratio[] = { width * 0.2, width * 0.8 };
+                float ratio[] = { width * 0.2f, width * 0.8f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 nk_label(&ctx, "Config:", NK_TEXT_LEFT);
                 if (nk_combo_begin_label(&ctx,
@@ -731,7 +731,7 @@ public:
             
             if (!window->map->getViewNames().empty())
             { // view selector
-                float ratio[] = { width * 0.2, width * 0.8 };
+                float ratio[] = { width * 0.2f, width * 0.8f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 nk_label(&ctx, "View:", NK_TEXT_LEFT);
                 if (nk_combo_begin_label(&ctx,
@@ -793,7 +793,7 @@ public:
         {
             std::vector<Mark> &marks = window->marks;
             float width = nk_window_get_content_region_size(&ctx).x - 15;
-            float ratio[] = { width * 0.6, width * 0.4 };
+            float ratio[] = { width * 0.6f, width * 0.4f };
             nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
             char buffer[256];
             Mark *prev = nullptr;
@@ -820,7 +820,7 @@ public:
                     vts::vecToPoint(m.coord, n);
                     n = window->map->convert(n, vts::Srs::Physical,
                                              (vts::Srs)positionSrs);
-                    sprintf(buffer, "%.8f", n.x);
+                    sprintf(buffer, "%.8f", n.x());
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                     if (nk_button_label(&ctx, "Go"))
                     {
@@ -829,10 +829,10 @@ public:
                                                  vts::Srs::Navigation);
                         window->map->setPositionPoint(n);
                     }
-                    sprintf(buffer, "%.8f", n.y);
+                    sprintf(buffer, "%.8f", n.y());
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                     nk_label(&ctx, "", NK_TEXT_RIGHT);
-                    sprintf(buffer, "%.8f", n.z);
+                    sprintf(buffer, "%.8f", n.z());
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                     if (nk_button_label(&ctx, "Remove"))
                     {
@@ -853,7 +853,7 @@ public:
         nk_end(&ctx);
     }
     
-    void prepare(int width, int height)
+    void prepare(int, int)
     {
         prepareOptions();
         prepareStatistics();
@@ -868,6 +868,11 @@ public:
         prepare(width, height);
         dispatch(width, height);
     }
+    
+    std::shared_ptr<GpuTextureImpl> fontTexture;
+    std::shared_ptr<GpuTextureImpl> skinTexture;
+    std::shared_ptr<GpuShaderImpl> shader;
+    std::shared_ptr<GpuMeshImpl> mesh;
 
     GuiSkinMedia skinMedia;
     nk_context ctx;
@@ -876,20 +881,16 @@ public:
     nk_buffer cmds;
     nk_convert_config config;
     nk_draw_null_texture null;
-    bool consumeEvents;
-    bool prepareFirst;
 
     int statTraversedDetails;
     int statRenderedDetails;
     int optSensitivityDetails;
     int positionSrs;
     int autoPan;
-
+    
     MainWindow *window;
-    std::shared_ptr<GpuTextureImpl> fontTexture;
-    std::shared_ptr<GpuTextureImpl> skinTexture;
-    std::shared_ptr<GpuShaderImpl> shader;
-    std::shared_ptr<GpuMeshImpl> mesh;
+    bool consumeEvents;
+    bool prepareFirst;
     
     static const int MaxVertexMemory = 512 * 1024;
     static const int MaxElementMemory = 128 * 1024;

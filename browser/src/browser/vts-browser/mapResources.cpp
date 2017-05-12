@@ -436,8 +436,9 @@ Validity MapImpl::getResourceValidity(const std::string &name)
     case ResourceImpl::State::ready:
         return Validity::Valid;
     default:
-		assert(false);
+        LOGTHROW(fatal, std::invalid_argument) << "Invalid resource state";
     }
+    throw; // shut up compiler warning
 }
 
 const std::string MapImpl::Resources::failedAvailTestFileName

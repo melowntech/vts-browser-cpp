@@ -21,8 +21,9 @@ inline bool testAndThrow(ResourceImpl::State state)
     case ResourceImpl::State::ready:
         return true;
     default:
-		assert(false);
+        LOGTHROW(fatal, std::invalid_argument) << "Invalid resource state";
     }
+    throw; // shut up compiler warning
 }
 
 inline void normalizeAngle(double &a)
@@ -232,7 +233,7 @@ Validity MapImpl::checkMetaNode(SurfaceInfo *surface,
     case Validity::Valid:
         break;
     default:
-        assert(false);
+        LOGTHROW(fatal, std::invalid_argument) << "Invalid resource state";
     }
 
     assert(pn);
@@ -385,7 +386,7 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
         case Validity::Valid:
             break;
         default:
-            assert(false);
+            LOGTHROW(fatal, std::invalid_argument) << "Invalid resource state";
         }
         assert(n);
         for (uint32 i = 0; i < 4; i++)
@@ -722,7 +723,8 @@ void MapImpl::updateCamera()
             pos.position[1] = clamp(pos.position[1], -80, 80);
         } break;
         default:
-			assert(false);
+            LOGTHROW(fatal, std::invalid_argument)
+                    << "Invalid navigation srs type";
         }
         normalizeAngle(pos.orientation[0]);
         normalizeAngle(pos.orientation[1]);

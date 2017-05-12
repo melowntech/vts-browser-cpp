@@ -1,3 +1,5 @@
+#include <dbglog/dbglog.hpp>
+
 #include <vts/map.hpp>
 #include <vts/math.hpp>
 
@@ -139,8 +141,10 @@ const mat4 rotationMatrix(int axis, double radians)
                 0,  0,  1, 0,
                 0,  0,  0, 1).finished();
     default:
-        assert(false);
+        LOGTHROW(fatal, std::invalid_argument)
+                << "Invalid rotation axis index";
     }
+    throw; // shut up compiler warning
 }
 
 const mat4 scaleMatrix(double sx, double sy, double sz)

@@ -46,7 +46,8 @@ public:
             case Validity::Valid:
                 break;
             default:
-                assert(false);
+				LOGTHROW(fatal, std::invalid_argument)
+						<< "Invalid resource state";
             }
             
             // check id
@@ -194,7 +195,7 @@ void MapImpl::checkPanZQueue()
         nh = *task.result;
         break;
     default:
-        assert(false);
+        LOGTHROW(fatal, std::invalid_argument) << "Invalid resource state";
     }
     
     // apply the height to the camera
@@ -222,7 +223,8 @@ const std::pair<NodeInfo, vec2> MapImpl::findInfoNavRoot(const vec2 &navPos)
             continue;
         return std::make_pair(ni, sds);
     }
-    assert(false);
+    LOGTHROW(fatal, std::invalid_argument) << "Impossible position";
+    throw; // shut up compiler warning
 }
 
 const NodeInfo MapImpl::findInfoSdsSampled(const NodeInfo &info,
@@ -241,7 +243,8 @@ const NodeInfo MapImpl::findInfoSdsSampled(const NodeInfo &info,
             continue;
         return findInfoSdsSampled(ni, sdsPos);
     }
-    assert(false);
+    LOGTHROW(fatal, std::invalid_argument) << "Impossible position";
+    throw; // shut up compiler warning
 }
 
 void MapImpl::resetPositionAltitude(double resetOffset)
@@ -335,7 +338,7 @@ void MapImpl::positionToPhys(vec3 &center, vec3 &dir, vec3 &up)
         up = normalize(up);
     } break;
     default:
-		assert(false);
+        LOGTHROW(fatal, std::invalid_argument) << "Invalid srs type";
     }
 }
 
@@ -383,7 +386,7 @@ void MapImpl::pan(const vec3 &value)
         navigation.inertiaMotion += p;
     } break;
     default:
-		assert(false);
+        LOGTHROW(fatal, std::invalid_argument) << "Invalid srs type";
     }
     double cur = pos.verticalExtent + navigation.inertiaViewExtent;
     navigation.inertiaViewExtent += cur *

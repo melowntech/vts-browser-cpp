@@ -36,8 +36,9 @@ inline const std::string srsConvert(MapConfig *config, Srs srs)
     case Srs::Public:
         return config->referenceFrame.model.publicSrs;
     default:
-		assert(false);
+        LOGTHROW(fatal, std::invalid_argument) << "Invalid srs";
     }
+    throw;
 }
 
 void getMapViewBoundLayers(

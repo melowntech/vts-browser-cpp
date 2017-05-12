@@ -53,7 +53,7 @@ GpuMeshSpec::GpuMeshSpec(const Buffer &buffer) :
         faceMode = FaceMode::Triangles;
         break;
     default:
-		assert(false);
+        LOGTHROW(fatal, std::invalid_argument) << "Invalid face mode";
     }
 }
 

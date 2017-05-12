@@ -41,7 +41,7 @@ bool ResourceImpl::performAvailTest() const
             return false;
         break;
     default:
-        assert(false);
+        LOGTHROW(fatal, std::invalid_argument) << "Invalid available test type";
     }
     return true;
 }

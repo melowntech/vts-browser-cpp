@@ -1,4 +1,6 @@
 #include <vts/map.hpp>
+#include <vts/exceptions.hpp>
+
 #include "map.hpp"
 
 namespace vts
@@ -12,7 +14,7 @@ inline bool testAndThrow(ResourceImpl::State state)
     switch (state)
     {
     case ResourceImpl::State::error:
-        LOGTHROW(err3, std::runtime_error) << "MapConfig failed";
+        LOGTHROW(err3, MapConfigException) << "MapConfig failed";
     case ResourceImpl::State::downloaded:
     case ResourceImpl::State::downloading:
     case ResourceImpl::State::finalizing:

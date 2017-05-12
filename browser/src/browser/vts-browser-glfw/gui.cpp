@@ -588,9 +588,9 @@ public:
                 sprintf(buffer, "%.8f", n.z());
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Auto: ", NK_TEXT_LEFT);
-                nk_checkbox_label(&ctx, "", &autoPan);
-                if (autoPan)
-                    window->map->pan(vts::Point(0, 1, 0));
+                nk_slider_float(&ctx, 0, &autoPan, 3, 0.1);
+                if (std::abs(autoPan) > 1e-6f)
+                    window->map->pan(vts::Point(0, autoPan, 0));
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset altitude"))
                     window->map->resetPositionAltitude();
@@ -886,7 +886,7 @@ public:
     int statRenderedDetails;
     int optSensitivityDetails;
     int positionSrs;
-    int autoPan;
+    float autoPan;
     
     MainWindow *window;
     bool consumeEvents;

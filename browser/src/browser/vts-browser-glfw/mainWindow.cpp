@@ -7,6 +7,7 @@
 #include <vts/buffer.hpp>
 #include <vts/resources.hpp>
 #include <vts/options.hpp>
+#include <vts/exceptions.hpp>
 #include "mainWindow.hpp"
 #include <GLFW/glfw3.h>
 
@@ -307,7 +308,16 @@ void MainWindow::run()
         checkGl("frame begin");
         double timeFrameStart = glfwGetTime();
         
-        map->renderTick(width, height); // calls camera overrides
+        try
+        {
+            map->renderTick(width, height); // calls camera overrides
+        }
+        catch (const vts::MapConfigException &)
+        {
+            map->setMapConfigPath("");
+            if (mapConfigPaths.size() <= 1)
+                throw;
+        }
         double timeMapRender = glfwGetTime();
 
         width = 0;

@@ -12,6 +12,7 @@ set(PUB_HDR_LIST
 	../include/vts/view.hpp
 	../include/vts/math.hpp
 	../include/vts/point.hpp
+	../include/vts/exceptions.hpp
 )
 
 set(HDR_LIST
@@ -44,6 +45,7 @@ set(SRC_LIST
 	resourceGpu.cpp
 	mapApi.cpp
 	fetchTask.cpp
+	exceptions.cpp
 )
 
 set(DATA_LIST

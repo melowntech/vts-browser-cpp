@@ -13,7 +13,7 @@ class ResourceImpl;
 class VTS_API Resource
 {
 public:
-    Resource(const std::string &name);
+    Resource(const std::string &name, bool allowDiskCache);
     virtual ~Resource();
     
     void setMemoryUsage(uint32 ram, uint32 gpu);

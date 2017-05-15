@@ -719,7 +719,8 @@ public:
                                                 NK_TEXT_LEFT))
                         {
                             window->marks.clear();
-                            window->map->setMapConfigPath(names[i]);
+                            window->map->setMapConfigPath(names[i],
+                                                          window->authPath);
                             nk_combo_end(&ctx);
                             nk_end(&ctx);
                             return;

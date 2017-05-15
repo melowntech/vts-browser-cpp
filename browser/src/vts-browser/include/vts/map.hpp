@@ -24,7 +24,8 @@ public:
     Map(const class MapCreateOptions &options);
     virtual ~Map();
     
-    void setMapConfigPath(const std::string &mapConfigPath);
+    void setMapConfigPath(const std::string &mapConfigPath,
+                          const std::string &authPath = "");
     const std::string getMapConfigPath() const;
     void purgeTraverseCache(bool hard);
     

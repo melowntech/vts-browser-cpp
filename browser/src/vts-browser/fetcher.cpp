@@ -57,7 +57,7 @@ public:
 
     void fetch(std::shared_ptr<FetchTask> task) override
     {
-        task->code = 0;
+        task->replyCode = 0;
         auto t = std::make_shared<Task>(this, task);
         fetcher.perform(t->query, std::bind(&Task::done, t,
                                             std::placeholders::_1));
@@ -70,9 +70,11 @@ public:
 };
 
 Task::Task(FetcherImpl *impl, std::shared_ptr<FetchTask> task)
-    : impl(impl), query(task->url), task(task), called(false)
+    : impl(impl), query(task->queryUrl), task(task), called(false)
 {
     query.timeout(impl->options.timeout);
+    for (auto it : task->queryHeaders)
+        query.addOption(it.first, it.second);
 }
 
 Task::~Task()
@@ -91,11 +93,11 @@ Task::~Task()
 void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
 {
     assert(queries.size() == 1);
-    assert(task->code == 0);
+    assert(task->replyCode == 0);
     assert(!called);
     called = true;
     http::ResourceFetcher::Query &q = *queries.begin();
-    task->code = q.ec().value();
+    task->replyCode = q.ec().value();
     if (q.exc())
     {
         try
@@ -105,7 +107,7 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
         catch (std::exception &e)
         {
             LOG(err2) << "Exception <" <<  e.what()
-                      << "> in download of '" << task->url << "'";
+                      << "> in download of '" << task->queryUrl << "'";
         }
         catch (...)
         {
@@ -119,7 +121,7 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
         memcpy(task->contentData.data(), body.data.data(),
                body.data.size());
         task->contentType = body.contentType;
-        task->code = 200;
+        task->replyCode = 200;
     }
     impl->func(task);
 }

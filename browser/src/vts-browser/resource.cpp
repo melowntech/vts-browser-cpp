@@ -3,9 +3,9 @@
 namespace vts
 {
 
-Resource::Resource(const std::string &name)
+Resource::Resource(const std::string &name, bool allowDiskCache)
 {
-    impl = std::make_shared<ResourceImpl>(name);
+    impl = std::make_shared<ResourceImpl>(name, allowDiskCache);
 }
 
 Resource::~Resource()
@@ -29,7 +29,7 @@ bool ResourceImpl::performAvailTest() const
     switch (availTest->type)
     {
     case vtslibs::registry::BoundLayer::Availability::Type::negativeCode:
-        if (availTest->codes.find(code) == availTest->codes.end())
+        if (availTest->codes.find(replyCode) == availTest->codes.end())
             return false;
         break;
     case vtslibs::registry::BoundLayer::Availability::Type::negativeType:
@@ -46,9 +46,10 @@ bool ResourceImpl::performAvailTest() const
     return true;
 }
 
-ResourceImpl::ResourceImpl(const std::string &name)
+ResourceImpl::ResourceImpl(const std::string &name, bool allowDiskCache)
     : FetchTask(name), state(State::initializing), priority(0),
-      lastAccessTick(0), ramMemoryCost(0), gpuMemoryCost(0)
+      lastAccessTick(0), ramMemoryCost(0), gpuMemoryCost(0),
+      allowDiskCache(allowDiskCache)
 {}
 
 ResourceImpl::~ResourceImpl()

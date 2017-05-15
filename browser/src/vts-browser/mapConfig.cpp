@@ -37,13 +37,14 @@ BoundInfo::BoundInfo(const BoundLayer &layer) : BoundLayer(layer)
 SurfaceStackItem::SurfaceStackItem() : alien(false)
 {}
 
-MapConfig::MapConfig(const std::string &name) : Resource(name), autorotate(0)
+MapConfig::MapConfig(const std::string &name) : Resource(name, false),
+    autorotate(0)
 {}
 
 void MapConfig::load(MapImpl *)
 {
     clear();
-    LOG(info3) << "Loading map config '" << impl->name << "'";
+    LOG(info3) << "Parsing map config '" << impl->name << "'";
     detail::Wrapper w(impl->contentData);
     vtslibs::vts::loadMapConfig(*this, w, impl->name);
     
@@ -245,7 +246,7 @@ void MapConfig::generateSurfaceStack()
 }
 
 ExternalBoundLayer::ExternalBoundLayer(const std::string &name)
-    : Resource(name)
+    : Resource(name, false)
 {}
 
 void ExternalBoundLayer::load(MapImpl *)

@@ -1,4 +1,4 @@
-define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus lodepng)
+define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus http>=1.2 lodepng)
 
 set(PUB_HDR_LIST
 	include/vts/buffer.hpp
@@ -23,6 +23,7 @@ set(HDR_LIST
 	csConvertor.hpp
 	obj.hpp
 	resource.hpp
+	auth.hpp
 )
 
 set(SRC_LIST
@@ -46,6 +47,7 @@ set(SRC_LIST
 	mapApi.cpp
 	fetchTask.cpp
 	exceptions.cpp
+	auth.cpp
 )
 
 set(DATA_LIST

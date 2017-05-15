@@ -69,6 +69,7 @@ public:
     void cameraOverrideView(double *mat);
     void cameraOverrideProj(double *mat);
     
+    std::string authPath;
     std::vector<std::string> mapConfigPaths;
     std::shared_ptr<GpuShaderImpl> shaderTexture;
     std::shared_ptr<GpuShaderImpl> shaderColor;

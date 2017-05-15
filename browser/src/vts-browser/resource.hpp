@@ -26,7 +26,7 @@ public:
         finalizing,
     };
     
-    ResourceImpl(const std::string &name);
+    ResourceImpl(const std::string &name, bool allowDiskCache);
     virtual ~ResourceImpl();
 
     bool performAvailTest() const;
@@ -37,6 +37,7 @@ public:
     uint32 lastAccessTick;
     uint32 ramMemoryCost;
     uint32 gpuMemoryCost;
+    bool allowDiskCache;
 };
 
 } // namespace vts

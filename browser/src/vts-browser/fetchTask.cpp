@@ -5,8 +5,8 @@
 namespace vts
 {
 
-FetchTask::FetchTask(const std::string &name) : url(name),
-    code(0), redirectionsCount(0), name(name)
+FetchTask::FetchTask(const std::string &name) : queryUrl(name),
+    replyCode(0), redirectionsCount(0), name(name)
 {}
 
 FetchTask::~FetchTask()
@@ -32,14 +32,14 @@ bool FetchTask::loadFromCache(MapImpl *map)
         if (!boost::filesystem::exists(path))
             return false;
         contentData = readLocalFileBuffer(path);
-        code = 200;
+        replyCode = 200;
         return true;
     }
     catch (...)
     {
         LOG(err2) << "Error reading resource '"
                   << name << "' from cache file";
-		code = 404;
+		replyCode = 404;
     }
     return false;
 }
@@ -49,13 +49,13 @@ void FetchTask::loadFromInternalMemory()
     try
     {
         contentData = readInternalMemoryBuffer(name);
-        code = 200;
+        replyCode = 200;
     }
     catch (...)
     {
         LOG(err2) << "Error reading resource '"
                   << name << "' from internal memory";
-		code = 404;
+		replyCode = 404;
     }
 }
 

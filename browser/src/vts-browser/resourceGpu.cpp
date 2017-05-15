@@ -19,7 +19,7 @@ GpuTextureSpec::GpuTextureSpec(const Buffer &buffer)
     decodeImage(buffer, this->buffer, width, height, components);
 }
 
-GpuTexture::GpuTexture(const std::string &name) : Resource(name)
+GpuTexture::GpuTexture(const std::string &name) : Resource(name, true)
 {}
 
 void GpuTexture::load(class MapImpl *)
@@ -61,7 +61,7 @@ GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0),
     components(0), type(Type::Float), enable(false), normalized(false)
 {}
 
-GpuMesh::GpuMesh(const std::string &name) : Resource(name)
+GpuMesh::GpuMesh(const std::string &name) : Resource(name, true)
 {}
 
 void GpuMesh::load(class MapImpl *)

@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include <map>
 
 #include "foundation.hpp"
 #include "buffer.hpp"
@@ -20,16 +21,17 @@ public:
     virtual ~FetchTask();
 
     // query
-    std::string url;
+    std::string queryUrl;
+    std::map<std::string, std::string> queryHeaders;
 
     // reply
-    std::string redirectUrl;
+    std::string replyRedirectUrl;
     std::string contentType;
     Buffer contentData;
-    uint32 code;
-    uint32 redirectionsCount;
+    uint32 replyCode;
 
     // internals
+    uint32 redirectionsCount;
     const std::string name;
     
     void saveToCache(MapImpl *map);

@@ -167,8 +167,7 @@ bool MapImpl::resourceDataTick()
                 r->impl->loadFromInternalMemory();
                 loadResource(r);
             }
-            else if (r->impl->name.find(".json") == std::string::npos
-                     && r->impl->loadFromCache(this))
+            else if (r->impl->allowDiskCache && r->impl->loadFromCache(this))
             {
                 statistics.resourcesDiskLoaded++;
                 loadResource(r);
@@ -177,6 +176,9 @@ bool MapImpl::resourceDataTick()
             {
                 statistics.resourcesDownloaded++;
                 r->impl->state = ResourceImpl::State::downloading;
+                r->impl->queryHeaders.clear();
+                if (auth)
+                    auth->authorize(r);
                 resources.fetcher->fetch(r->impl);
                 resources.downloads++;
             }
@@ -209,11 +211,11 @@ void MapImpl::fetchedFile(std::shared_ptr<FetchTask> task)
     assert(resource->state == ResourceImpl::State::downloading);
     
     // handle error or invalid codes
-    if (resource->code >= 400 || resource->code < 200)
+    if (resource->replyCode >= 400 || resource->replyCode < 200)
     {
         LOG(err3) << "Error downloading '"
                   << resource->name
-                  << "', http code " << resource->code;
+                  << "', http code " << resource->replyCode;
         resource->state = ResourceImpl::State::error;
     }
     
@@ -234,22 +236,22 @@ void MapImpl::fetchedFile(std::shared_ptr<FetchTask> task)
     
     // handle redirections
     if (resource->state == ResourceImpl::State::downloading
-            && resource->code >= 300 && resource->code < 400)
+            && resource->replyCode >= 300 && resource->replyCode < 400)
     {
         if (resource->redirectionsCount++ > 5)
         {
             LOG(err3) << "Too many redirections in '"
                       << resource->name << "', last url '"
-                      << resource->url << "', http code " << resource->code;
+                      << resource->queryUrl << "', http code " << resource->replyCode;
             resource->state = ResourceImpl::State::error;
         }
         else
         {
-            resource->url.swap(resource->redirectUrl);
-            resource->redirectUrl = "";
+            resource->queryUrl.swap(resource->replyRedirectUrl);
+            resource->replyRedirectUrl = "";
             LOG(debug) << "Resource '"
                        << resource->name << "' redirected to '"
-                       << resource->url << "', http code " << resource->code;
+                       << resource->queryUrl << "', http code " << resource->replyCode;
             resources.fetcher->fetch(task);
             // do not decrease the downloads counter here
             return;
@@ -332,6 +334,11 @@ void MapImpl::resourceRenderTick()
     statistics.currentResources = resources.resources.size();
 }
 
+void MapImpl::touchResource(std::shared_ptr<Resource> resource)
+{
+    touchResource(resource, resource->impl->priority);
+}
+
 void MapImpl::touchResource(std::shared_ptr<Resource> resource,
                             double priority)
 {
@@ -377,6 +384,12 @@ std::shared_ptr<GpuMesh> MapImpl::getMeshRenderable(const std::string &name)
     return std::dynamic_pointer_cast<GpuMesh>(it->second);
 }
 
+std::shared_ptr<AuthJson> MapImpl::getAuth(const std::string &name)
+{
+    return getMapResource<AuthJson>(name, this,
+                    std::numeric_limits<double>::infinity());
+}
+
 std::shared_ptr<MapConfig> MapImpl::getMapConfig(const std::string &name)
 {
     return getMapResource<MapConfig>(name, this,
@@ -385,7 +398,7 @@ std::shared_ptr<MapConfig> MapImpl::getMapConfig(const std::string &name)
 
 std::shared_ptr<MetaTile> MapImpl::getMetaTile(const std::string &name)
 {
-    return getMapResource<MetaTile>(name, this, 1e5);
+    return getMapResource<MetaTile>(name, this);
 }
 
 std::shared_ptr<NavTile> MapImpl::getNavTile(

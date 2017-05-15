@@ -7,7 +7,7 @@
 namespace vts
 {
 
-MetaTile::MetaTile(const std::string &name) : Resource(name),
+MetaTile::MetaTile(const std::string &name) : Resource(name, true),
     vtslibs::vts::MetaTile(vtslibs::vts::TileId(), 0)
 {}
 
@@ -20,7 +20,7 @@ void MetaTile::load(MapImpl *)
     impl->ramMemoryCost = this->size() * sizeof(vtslibs::vts::MetaNode);
 }
 
-NavTile::NavTile(const std::string &name) : Resource(name)
+NavTile::NavTile(const std::string &name) : Resource(name, true)
 {}
 
 void NavTile::load(MapImpl *)
@@ -45,7 +45,7 @@ MeshPart::MeshPart() : textureLayer(0), surfaceReference(0),
     internalUv(false), externalUv(false)
 {}
 
-MeshAggregate::MeshAggregate(const std::string &name) : Resource(name)
+MeshAggregate::MeshAggregate(const std::string &name) : Resource(name, true)
 {}
 
 namespace {
@@ -155,7 +155,7 @@ void MeshAggregate::load(MapImpl *base)
     }
 }
 
-BoundMetaTile::BoundMetaTile(const std::string &name) : Resource(name)
+BoundMetaTile::BoundMetaTile(const std::string &name) : Resource(name, true)
 {}
 
 void BoundMetaTile::load(MapImpl *)
@@ -173,7 +173,7 @@ void BoundMetaTile::load(MapImpl *)
     impl->ramMemoryCost = spec.buffer.size();
 }
 
-BoundMaskTile::BoundMaskTile(const std::string &name) : Resource(name)
+BoundMaskTile::BoundMaskTile(const std::string &name) : Resource(name, true)
 {}
 
 void BoundMaskTile::load(MapImpl *base)

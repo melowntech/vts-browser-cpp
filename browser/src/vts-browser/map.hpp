@@ -23,6 +23,7 @@
 #include <vts/math.hpp>
 
 #include "mapConfig.hpp"
+#include "auth.hpp"
 #include "resource.hpp"
 #include "resourceMap.hpp"
 
@@ -109,8 +110,10 @@ public:
 
     class Map *const map;
     std::shared_ptr<MapConfig> mapConfig;
+    std::shared_ptr<AuthJson> auth;
     std::string mapConfigPath;
     std::string mapConfigView;
+    std::string authPath;
     MapCallbacks callbacks;
     MapStatistics statistics;
     MapOptions options;
@@ -168,7 +171,8 @@ public:
     } renderer;
     
     // map foundation methods
-    void setMapConfigPath(const std::string &mapConfigPath);
+    void setMapConfigPath(const std::string &mapConfigPath,
+                          const std::string &authPath);
     void purgeHard();
     void purgeSoft();
     void printDebugInfo();
@@ -195,10 +199,12 @@ public:
     void resourceRenderTick();
     void loadResource(std::shared_ptr<Resource> r);
     void fetchedFile(std::shared_ptr<FetchTask> task);
-    void touchResource(std::shared_ptr<Resource> resource, double priority = 0);
+    void touchResource(std::shared_ptr<Resource> resource);
+    void touchResource(std::shared_ptr<Resource> resource, double priority);
     std::shared_ptr<GpuTexture> getTexture(const std::string &name);
     std::shared_ptr<GpuMesh> getMeshRenderable(
             const std::string &name);
+    std::shared_ptr<AuthJson> getAuth(const std::string &name);
     std::shared_ptr<MapConfig> getMapConfig(const std::string &name);
     std::shared_ptr<MetaTile> getMetaTile(const std::string &name);
     std::shared_ptr<NavTile> getNavTile(const std::string &name);

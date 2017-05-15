@@ -34,9 +34,6 @@
 [submodule "externals/libmath"]
 	path = externals/libmath
 	url = https://github.com/Melown/libmath.git
-[submodule "externals/libservice"]
-	path = externals/libservice
-	url = https://github.com/Melown/libservice.git
 [submodule "externals/libutility"]
 	path = externals/libutility
 	url = https://github.com/Melown/libutility.git

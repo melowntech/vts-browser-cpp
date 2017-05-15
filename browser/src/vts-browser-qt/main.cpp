@@ -8,12 +8,12 @@
 
 void usage(char *argv[])
 {
-    printf("Usage: %s <url>\n", argv[0]);
+    printf("Usage: %s <mapconfig-url> [auth-url]\n", argv[0]);
 }
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2)
+    if (argc < 2 || argc > 3)
     {
         usage(argv);
         return 2;
@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 
     vts::MapCreateOptions options;
     vts::Map map(options);
-    map.setMapConfigPath(argv[1]);
+    map.setMapConfigPath(argv[1], argc >= 3 ? argv[2] : "");
 
     mainWindow.map = &map;
     mainWindow.resize(QSize(800, 600));

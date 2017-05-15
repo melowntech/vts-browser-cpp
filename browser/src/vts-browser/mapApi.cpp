@@ -181,9 +181,10 @@ void Map::renderFinalize()
     impl->renderFinalize();
 }
 
-void Map::setMapConfigPath(const std::string &mapConfigPath)
+void Map::setMapConfigPath(const std::string &mapConfigPath,
+                           const std::string &authPath)
 {
-    impl->setMapConfigPath(mapConfigPath);
+    impl->setMapConfigPath(mapConfigPath, authPath);
 }
 
 const std::string Map::getMapConfigPath() const

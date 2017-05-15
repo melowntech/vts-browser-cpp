@@ -14,7 +14,9 @@ void errorCallback(int, const char* description)
 
 void usage(char *argv[])
 {
-    printf("Usage: %s [options] [--] <url> [url]...\n", argv[0]);
+    printf("Usage: %s [options] [--] <config-url> [config-url]...\n", argv[0]);
+    printf("Options:\n");
+    printf("\t--auth=<url>\n\t\tAuthentication url.");
 }
 
 int main(int argc, char *argv[])
@@ -28,9 +30,12 @@ int main(int argc, char *argv[])
         //vts::setLogMask("ND");
         //vts::setLogMask("ALL");
         
+        const char *auth = "";
         int firstUrl = argc;
+        
         for (int i = 1; i < argc; i++)
         {
+            // --
             if (argv[i][0] != '-')
             {
                 firstUrl = i;
@@ -42,7 +47,19 @@ int main(int argc, char *argv[])
                 break;
             }
             
-            // todo handle options
+            // --auth=
+            if (strncmp(argv[i], "--auth=", 7) == 0)
+            {
+                const char *a = argv[i] + 7;
+                if (a[0] == 0)
+                {
+                    fprintf(stderr, "Missing auth url.\n");
+                    usage(argv);
+                    return 4;
+                }
+                auth = a;
+                continue;
+            }
             
             fprintf(stderr, "Unknown option '%s'\n", argv[i]);
             usage(argv);
@@ -61,10 +78,11 @@ int main(int argc, char *argv[])
         {
             vts::MapCreateOptions options;
             vts::Map map(options);
-            map.setMapConfigPath(argv[firstUrl]);
             MainWindow main;
             for (int i = firstUrl; i < argc; i++)
                 main.mapConfigPaths.push_back(argv[i]);
+            main.authPath = auth;
+            map.setMapConfigPath(argv[firstUrl], auth);
             DataThread data(main.window);
             main.map = &map;
             data.map = &map;

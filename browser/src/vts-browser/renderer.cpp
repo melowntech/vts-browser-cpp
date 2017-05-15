@@ -9,12 +9,12 @@ namespace vts
 namespace
 {
 
-inline bool testAndThrow(ResourceImpl::State state)
+inline bool testAndThrow(ResourceImpl::State state, const std::string &message)
 {
     switch (state)
     {
     case ResourceImpl::State::error:
-        LOGTHROW(err3, MapConfigException) << "MapConfig failed";
+        LOGTHROW(err3, MapConfigException) << message;
     case ResourceImpl::State::downloaded:
     case ResourceImpl::State::downloading:
     case ResourceImpl::State::finalizing:
@@ -59,10 +59,14 @@ void MapImpl::renderFinalize()
     LOG(info3) << "Render finalize";
 }
 
-void MapImpl::setMapConfigPath(const std::string &mapConfigPath)
+void MapImpl::setMapConfigPath(const std::string &mapConfigPath,
+                               const std::string &authPath)
 {
-    LOG(info3) << "Changing map config path to '" << mapConfigPath << "'";
+    LOG(info3) << "Changing map config path to '" << mapConfigPath << "', "
+               << (!authPath.empty() ? "using" : "without")
+               << " authentication";
     this->mapConfigPath = mapConfigPath;
+    this->authPath = authPath;
     purgeHard();
 }
 
@@ -70,10 +74,13 @@ void MapImpl::purgeHard()
 {
     LOG(info2) << "Hard purge";
     
+    if (auth && *auth)
+        auth->impl->state = ResourceImpl::State::initializing;
     if (mapConfig && *mapConfig)
         mapConfig->impl->state = ResourceImpl::State::initializing;
     
     initialized = false;
+    auth.reset();
     mapConfig.reset();
     navigation.lastPanZShift.reset();
     std::queue<std::shared_ptr<class HeightRequest>>()
@@ -820,8 +827,14 @@ void MapImpl::updateCamera()
 
 bool MapImpl::prerequisitesCheck()
 {
+    if (auth)
+    {
+        auth->checkTime();
+        touchResource(auth);
+    }
+    
     if (mapConfig)
-        touchResource(mapConfig, mapConfig->impl->priority);
+        touchResource(mapConfig);
     
     if (initialized)
         return true;
@@ -829,8 +842,15 @@ bool MapImpl::prerequisitesCheck()
     if (mapConfigPath.empty())
         return false;
     
+    if (!authPath.empty())
+    {
+        auth = getAuth(authPath);
+        if (!testAndThrow(auth->impl->state, "Authentication failure."))
+            return false;
+    }
+    
     mapConfig = getMapConfig(mapConfigPath);
-    if (!testAndThrow(mapConfig->impl->state))
+    if (!testAndThrow(mapConfig->impl->state, "Map config failure."))
         return false;
     
     { // load external bound layers
@@ -841,7 +861,7 @@ bool MapImpl::prerequisitesCheck()
                 continue;
             std::string url = convertPath(bl.url, mapConfig->impl->name);
             std::shared_ptr<ExternalBoundLayer> r = getExternalBoundLayer(url);
-            if (!testAndThrow(r->impl->state))
+            if (!testAndThrow(r->impl->state, "External bound layer failure."))
                 ok = false;
             else
             {

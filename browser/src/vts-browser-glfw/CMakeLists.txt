@@ -17,6 +17,9 @@ set(SRC_LIST
 	mainWindow.cpp
 )
 
+find_package(glfw3 REQUIRED)
+include_directories(${GLFW3_INCLUDE_DIR})
+
 add_executable(vts-browser-glfw ${SRC_LIST} ${HDR_LIST})
 buildsys_binary(vts-browser-glfw)
 target_link_libraries(vts-browser-glfw ${MODULE_LIBRARIES} glfw)

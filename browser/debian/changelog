@@ -1,3 +1,10 @@
+vts-browser (0ubuntu3) melown-xenial; urgency=medium
+
+  * Support for libcurl with http2
+  * Reduced memory usage
+
+ -- Tomas Maly <tomas.maly@melown.com>  Fri, 12 May 2017 14:19:49 +0200
+
 vts-browser (0ubuntu2) melown-xenial; urgency=medium
 
   * Support for OpenGL 3.3

@@ -1,18 +1,18 @@
-define_module(LIBRARY vts-browser DEPENDS vts-libs-core http lodepng)
+define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus lodepng)
 
 set(PUB_HDR_LIST
-	../include/vts/buffer.hpp
-	../include/vts/foundation.hpp
-	../include/vts/options.hpp
-	../include/vts/resources.hpp
-	../include/vts/fetcher.hpp
-	../include/vts/map.hpp
-	../include/vts/draws.hpp
-	../include/vts/statistics.hpp
-	../include/vts/view.hpp
-	../include/vts/math.hpp
-	../include/vts/point.hpp
-	../include/vts/exceptions.hpp
+	include/vts/buffer.hpp
+	include/vts/foundation.hpp
+	include/vts/options.hpp
+	include/vts/resources.hpp
+	include/vts/fetcher.hpp
+	include/vts/map.hpp
+	include/vts/draws.hpp
+	include/vts/statistics.hpp
+	include/vts/view.hpp
+	include/vts/math.hpp
+	include/vts/point.hpp
+	include/vts/exceptions.hpp
 )
 
 set(HDR_LIST

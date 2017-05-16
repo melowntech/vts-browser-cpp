@@ -140,9 +140,10 @@ FetcherOptions::FetcherOptions()
 Fetcher::~Fetcher()
 {}
 
-Fetcher *Fetcher::create(const FetcherOptions &options)
+std::shared_ptr<Fetcher> Fetcher::create(const FetcherOptions &options)
 {
-    return new FetcherImpl(options);
+    return std::dynamic_pointer_cast<Fetcher>(
+                std::make_shared<FetcherImpl>(options));
 }
 
 } // namespace vts

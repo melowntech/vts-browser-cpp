@@ -16,8 +16,7 @@ namespace
 DataThread::DataThread(GLFWwindow *shared) : map(nullptr),
     window(nullptr), stop(false)
 {
-    fetcher = std::shared_ptr<vts::Fetcher>(vts::Fetcher::create(
-                                                vts::FetcherOptions()));
+    fetcher = vts::Fetcher::create(vts::FetcherOptions());
     window = glfwCreateWindow(1, 1, "data context", NULL, shared);
     glfwSetWindowUserPointer(window, this);
     glfwHideWindow(window);

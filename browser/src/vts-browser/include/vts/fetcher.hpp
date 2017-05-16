@@ -57,7 +57,7 @@ public:
 class VTS_API Fetcher
 {
 public:
-    static Fetcher *create(const FetcherOptions &options);
+    static std::shared_ptr<Fetcher> create(const FetcherOptions &options);
     
     typedef std::function<void(std::shared_ptr<FetchTask>)> Func;
     

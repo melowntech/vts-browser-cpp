@@ -17,6 +17,7 @@ public:
     MapCreateOptions();
     
     std::string cachePath;
+    bool disableCache;
 };
 
 class VTS_API MapOptions

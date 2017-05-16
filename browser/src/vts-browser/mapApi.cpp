@@ -131,7 +131,7 @@ Point::Point(double x, double y, double z)
     data[2] = z;
 }
 
-MapCreateOptions::MapCreateOptions()
+MapCreateOptions::MapCreateOptions() : disableCache(false)
 {}
 
 Map::Map(const MapCreateOptions &options)
@@ -510,7 +510,7 @@ void Map::printDebugInfo()
 }
 
 MapImpl::MapImpl(Map *map, const MapCreateOptions &options) :
-    map(map), initialized(false), resources(options.cachePath)
+    map(map), initialized(false), resources(options)
 {}
 
 void MapImpl::printDebugInfo()

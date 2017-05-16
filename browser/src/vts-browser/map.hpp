@@ -147,8 +147,9 @@ public:
         boost::mutex mutPrepareQue;
         boost::mutex mutFailedAvailUrls;
         Fetcher *fetcher;
+        bool disableCache;
         
-        Resources(const std::string &cachePath);
+        Resources(const MapCreateOptions &options);
         ~Resources();
     } resources;
     

@@ -54,7 +54,7 @@ add_subdirectory(src/vts-browser)
 find_package(glfw3 QUIET)
 
 # build glfw browser only when glfw3 library is found
-if(GLFW3_FOUND
+if(GLFW3_INCLUDE_DIR
     AND NOT DEFINED BUILDSYS_NOBUILD_TARGET_vts-browser-glfw)
   include_directories(${GLFW3_INCLUDE_DIR})
   add_subdirectory(src/glad)

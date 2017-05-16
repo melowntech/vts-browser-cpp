@@ -25,54 +25,61 @@ std::shared_ptr<T> getMapResource(const std::string &name, MapImpl *map,
 
 } // namespace
 
-MapImpl::Resources::Resources(const std::string &cachePathVal)
-    : cachePath(cachePathVal), downloads(0), fetcher(nullptr)
+MapImpl::Resources::Resources(const MapCreateOptions &options)
+    : cachePath(options.cachePath), downloads(0), fetcher(nullptr),
+      disableCache(options.disableCache)
 {
-    if (cachePath.empty())
+    if (!disableCache)
     {
-        cachePath = utility::homeDir().string();
         if (cachePath.empty())
-            LOGTHROW(err3, std::runtime_error)
-                    << "invalid home dir, the cache path must be defined";
-        cachePath += "/.cache/vts-browser/";
-    }
-    if (cachePath.back() != '/')
-        cachePath += "/";
-    try
-    {
-        if (boost::filesystem::exists(cachePath + failedAvailTestFileName))
         {
-            std::ifstream f;
-            f.open(cachePath + failedAvailTestFileName);
-            while (f.good())
+            cachePath = utility::homeDir().string();
+            if (cachePath.empty())
+                LOGTHROW(err3, std::runtime_error)
+                        << "invalid home dir, the cache path must be defined";
+            cachePath += "/.cache/vts-browser/";
+        }
+        if (cachePath.back() != '/')
+            cachePath += "/";
+        try
+        {
+            if (boost::filesystem::exists(cachePath + failedAvailTestFileName))
             {
-                std::string line;
-                std::getline(f, line);
-                failedAvailUrlNoLock.insert(line);
+                std::ifstream f;
+                f.open(cachePath + failedAvailTestFileName);
+                while (f.good())
+                {
+                    std::string line;
+                    std::getline(f, line);
+                    failedAvailUrlNoLock.insert(line);
+                }
+                f.close();
             }
-            f.close();
+        }
+        catch (...)
+        {
+            // do nothing
         }
     }
-    catch (...)
-    {
-		// do nothing
-	}
 }
 
 MapImpl::Resources::~Resources()
 {
-    try
+    if (!disableCache)
     {
-        std::ofstream f;
-        f.open(cachePath + failedAvailTestFileName);
-        for (auto &&line : failedAvailUrlNoLock)
-            f << line << '\n';
-        f.close();
+        try
+        {
+            std::ofstream f;
+            f.open(cachePath + failedAvailTestFileName);
+            for (auto &&line : failedAvailUrlNoLock)
+                f << line << '\n';
+            f.close();
+        }
+        catch (...)
+        {
+            // do nothing
+        }
     }
-    catch (...)
-    {
-		// do nothing
-	}
 }
 
 void MapImpl::resourceDataInitialize(Fetcher *fetcher)
@@ -167,7 +174,8 @@ bool MapImpl::resourceDataTick()
                 r->impl->loadFromInternalMemory();
                 loadResource(r);
             }
-            else if (r->impl->allowDiskCache && r->impl->loadFromCache(this))
+            else if (!resources.disableCache && r->impl->allowDiskCache
+                     && r->impl->loadFromCache(this))
             {
                 statistics.resourcesDiskLoaded++;
                 loadResource(r);
@@ -266,7 +274,8 @@ void MapImpl::fetchedFile(std::shared_ptr<FetchTask> task)
         return;
     }
     
-    resource->saveToCache(this);
+    if (!resources.disableCache)
+        resource->saveToCache(this);
     resource->state = ResourceImpl::State::downloaded;
 }
 

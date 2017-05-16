@@ -1,3 +1,6 @@
+# QT has some problems with COMPILE_DEFINITIONS_*
+cmake_policy(SET CMP0043 OLD)
+
 define_module(BINARY vts-browser-qt DEPENDS vts-browser)
 
 set(HDR_LIST
@@ -13,7 +16,6 @@ set(SRC_LIST
 	mainWindow.cpp
 )
 
-find_package(Qt5Gui REQUIRED)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 

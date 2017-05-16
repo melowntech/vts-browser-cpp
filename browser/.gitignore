@@ -5,4 +5,7 @@
 /*.map
 /obj-*
 
+bin
+lib
+build.*
 

@@ -2,9 +2,6 @@
 cmake_minimum_required(VERSION 2.8.11)
 project(vts-browser)
 
-cmake_policy(SET CMP0045 OLD)
-cmake_policy(SET CMP0043 OLD)
-
 # by default, this is OSS build (can be overrided by customer machinery)
 set(BUILDSYS_DEFAULT_CUSTOMER_NAME oss)
 include(buildsys/cmake/buildsys.cmake)
@@ -16,8 +13,8 @@ find_package(JPEG REQUIRED)
 find_package(PNG REQUIRED)
 find_package(CURL REQUIRED)
 find_package(Boost 1.46 REQUIRED
-			COMPONENTS thread program_options filesystem system
-				date_time serialization regex chrono iostreams)
+  COMPONENTS thread program_options filesystem system
+  date_time serialization regex chrono iostreams)
 link_directories(${Boost_LIBRARY_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 find_package(GDAL REQUIRED)
@@ -53,15 +50,23 @@ add_subdirectory(src/vts-libs)
 include_directories(src/vts-browser/include)
 add_subdirectory(src/vts-browser)
 
-if(NOT DEFINED BUILDSYS_NOBUILD_TARGET_vts-browser-glfw)
-	add_subdirectory(src/glad)
-	add_subdirectory(src/nuklear)
-	include_directories(src/nuklear)
-	add_subdirectory(src/vts-browser-glfw)
+# glfw-based example browser
+find_package(glfw3 QUIET)
+
+# build glfw browser only when glfw3 library is found
+if(GLFW3_FOUND
+    AND NOT DEFINED BUILDSYS_NOBUILD_TARGET_vts-browser-glfw)
+  include_directories(${GLFW3_INCLUDE_DIR})
+  add_subdirectory(src/glad)
+  add_subdirectory(src/nuklear)
+  include_directories(src/nuklear)
+  add_subdirectory(src/vts-browser-glfw)
 endif()
 
-if(NOT DEFINED BUILDSYS_NOBUILD_TARGET_vts-browser-qt)
-	add_subdirectory(src/vts-browser-qt)
+# QT5-based example browser
+find_package(Qt5Gui QUIET)
+
+if(Qt5Gui_FOUND
+    AND NOT DEFINED BUILDSYS_NOBUILD_TARGET_vts-browser-qt)
+  add_subdirectory(src/vts-browser-qt)
 endif()
-
-

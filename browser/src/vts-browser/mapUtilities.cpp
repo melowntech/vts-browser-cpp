@@ -188,7 +188,7 @@ bool TraverseNode::ready() const
 }
 
 MapImpl::Renderer::Renderer() :
-    windowWidth(0), windowHeight(0), metaTileBinaryOrder(0)
+    windowWidth(0), windowHeight(0)
 {}
 
 } // namespace vts

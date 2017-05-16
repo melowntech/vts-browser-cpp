@@ -165,7 +165,6 @@ public:
         vec3 cameraPosPhys;
         uint32 windowWidth;
         uint32 windowHeight;
-        uint32 metaTileBinaryOrder;
         
         Renderer();
     } renderer;

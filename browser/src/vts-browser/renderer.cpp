@@ -14,7 +14,7 @@ inline bool testAndThrow(ResourceImpl::State state, const std::string &message)
     switch (state)
     {
     case ResourceImpl::State::error:
-        LOGTHROW(err3, MapConfigException) << message;
+        LOGTHROW(err4, MapConfigException) << message;
     case ResourceImpl::State::downloaded:
     case ResourceImpl::State::downloading:
     case ResourceImpl::State::finalizing:
@@ -107,9 +107,10 @@ void MapImpl::purgeSoft()
 
 const TileId MapImpl::roundId(TileId nodeId)
 {
+    uint32 metaTileBinaryOrder = mapConfig->referenceFrame.metaBinaryOrder;
     return TileId (nodeId.lod,
-   (nodeId.x >> renderer.metaTileBinaryOrder) << renderer.metaTileBinaryOrder,
-   (nodeId.y >> renderer.metaTileBinaryOrder) << renderer.metaTileBinaryOrder);
+       (nodeId.x >> metaTileBinaryOrder) << metaTileBinaryOrder,
+       (nodeId.y >> metaTileBinaryOrder) << metaTileBinaryOrder);
 }
 
 Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
@@ -881,8 +882,6 @@ bool MapImpl::prerequisitesCheck()
     }
     
     purgeSoft();
-    
-    renderer.metaTileBinaryOrder = mapConfig->referenceFrame.metaBinaryOrder;
 
     mapConfig->boundInfos.clear();
     for (auto &&bl : mapConfig->boundLayers)

@@ -22,7 +22,7 @@ const std::string extractUrlHost(const std::string &url)
     if (b == std::string::npos)
         b = url.length();
     
-    return url.substr(a, b - a + 1);
+    return url.substr(a, b - a);
 }
 
 uint64 currentTime()
@@ -34,7 +34,7 @@ uint64 currentTime()
 } // namespace
 
 AuthJson::AuthJson(const std::string &name) :
-    Resource(name, false)
+    Resource(name, false), timeValid(0), timeParsed(0)
 {}
 
 void AuthJson::load(class MapImpl *)
@@ -50,6 +50,7 @@ void AuthJson::load(class MapImpl *)
     timeValid = expires - now;
     timeParsed = currentTime();
     Json::Value hostnamesJson = root["hostnames"];
+    hostnames.clear();
     for (auto it : hostnamesJson)
         hostnames.insert(it.asString());
     token = root["token"].asString();
@@ -71,7 +72,8 @@ void AuthJson::checkTime()
 
 void AuthJson::authorize(std::shared_ptr<Resource> resource)
 {
-    if (hostnames.find(extractUrlHost(resource->impl->name)) == hostnames.end())
+    std::string h = extractUrlHost(resource->impl->name);
+    if (hostnames.find(h) == hostnames.end())
         return;
     resource->impl->queryHeaders["Accept"] = std::string()
             + "token/" + token + ", */*";

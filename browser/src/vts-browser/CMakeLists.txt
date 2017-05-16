@@ -1,3 +1,6 @@
+# Bump shared library version here
+set(vts-browser_SO_VERSION 0.0.0)
+
 define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus http>=1.2 lodepng)
 
 set(PUB_HDR_LIST
@@ -87,23 +90,62 @@ buildsys_position_independent(${MODULE_LIBRARIES})
 
 add_library(vts-browser SHARED ${SRC_LIST})
 buildsys_library(vts-browser)
-buildsys_soversion(vts-browser 0.0.0)
-target_link_libraries(vts-browser ${MODULE_LIBRARIES})
+buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})
+
+# all libraries are PRIVATE -> do not forward static libraries out
+target_link_libraries(vts-browser PRIVATE ${MODULE_LIBRARIES})
 buildsys_target_compile_definitions(vts-browser ${MODULE_DEFINITIONS})
 
 # trick QtCreator into showing some additional files
 add_custom_target(vts-browser-headers SOURCES ${HDR_LIST} ${PUB_HDR_LIST})
 
-# install
-install(TARGETS vts-browser
-			RUNTIME DESTINATION bin
-			LIBRARY DESTINATION lib
-			COMPONENT browser
-)
+#######################################################################
+# Install
 
+set(INCLUDE_INSTALL_DIR include)
+set(LIB_INSTALL_DIR lib)
+set(BIN_INSTALL_DIR bin)
+set(SHARE_INSTALL_DIR share)
+set(VTSBROWSER_LIBRARIES vts-browser)
+
+# headers
 install(FILES ${PUB_HDR_LIST}
-			DESTINATION include/vts
-			COMPONENT browser-dev
-)
+  DESTINATION ${INCLUDE_INSTALL_DIR}/vts
+  COMPONENT browser-dev
+  )
 
+# library and binaries
+install(TARGETS vts-browser
+  EXPORT vts-browser
+  RUNTIME DESTINATION ${BIN_INSTALL}
+  LIBRARY DESTINATION ${LIB_INSTALL_DIR}
+  COMPONENT browser
+  )
 
+install(EXPORT vts-browser
+  DESTINATION ${SHARE_INSTALL_DIR}/vts-browser
+  COMPONENT browser
+  )
+
+# VtsBrowserConfig.cmake and VtsBrowserVersion.cmake
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(
+  VtsBrowserConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfig.cmake
+  INSTALL_DESTINATION ${SHARE_INSTALL_DIR}/vts-browser
+  PATH_VARS INCLUDE_INSTALL_DIR
+  )
+
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfigVersion.cmake
+  VERSION ${vts-browser_SO_VERSION}
+  COMPATIBILITY SameMajorVersion
+  )
+
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfig.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfigVersion.cmake
+  DESTINATION ${SHARE_INSTALL_DIR}/vts-browser
+  COMPONENT browser-dev
+  )

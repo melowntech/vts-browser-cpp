@@ -210,13 +210,7 @@ void MapImpl::fetchedFile(std::shared_ptr<FetchTask> task)
             = std::dynamic_pointer_cast<ResourceImpl>(task);
     assert(resource);
     LOG(debug) << "Fetched file '" << resource->name << "'";
-    
-    if (resource->state == ResourceImpl::State::finalizing)
-    {
-        statistics.resourcesReleased--; // uhm..
-        resource->state = ResourceImpl::State::downloading;
-    }
-    assert(resource->state == ResourceImpl::State::downloading);
+    resource->state = ResourceImpl::State::downloading;
     
     // handle error or invalid codes
     if (resource->replyCode >= 400 || resource->replyCode < 200)

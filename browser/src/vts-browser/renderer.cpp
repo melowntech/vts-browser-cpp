@@ -74,14 +74,15 @@ void MapImpl::purgeHard()
 {
     LOG(info2) << "Hard purge";
     
-    if (auth && *auth)
+    if (auth)
         auth->impl->state = ResourceImpl::State::initializing;
-    if (mapConfig && *mapConfig)
+    if (mapConfig)
         mapConfig->impl->state = ResourceImpl::State::initializing;
     
     initialized = false;
     auth.reset();
     mapConfig.reset();
+    renderer.credits.purge();
     navigation.lastPanZShift.reset();
     std::queue<std::shared_ptr<class HeightRequest>>()
             .swap(navigation.panZQueue);
@@ -324,6 +325,12 @@ void MapImpl::renderNode(std::shared_ptr<TraverseNode> &trav)
         }
     }
     
+    // credits
+    for (auto it : trav->credits)
+        renderer.credits.hit(Credits::Scope::Imagery, it,
+                             trav->nodeInfo.distanceFromRoot());
+    
+    // statistics
     statistics.meshesRenderedTotal++;
     statistics.meshesRenderedPerLod[std::min<uint32>(
         trav->nodeInfo.nodeId().lod, MapStatistics::MaxLods-1)]++;
@@ -376,6 +383,7 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
     assert(!trav->surface);
     assert(!trav->empty);
     assert(trav->draws.empty());
+    assert(trav->credits.empty());
     const TileId nodeId = trav->nodeInfo.nodeId();
     SurfaceStackItem *topmost = nullptr;
     const MetaNode *node = nullptr;
@@ -470,6 +478,10 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
     {
         assert(node);
         trav->surface = topmost;
+        
+        // credits
+        for (auto it : node->credits())
+            trav->credits.push_back(it);
 
         // surrogate
         if (vtslibs::vts::GeomExtents::validSurrogate(
@@ -520,6 +532,7 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
     
     bool determined = true;
     std::vector<std::shared_ptr<RenderTask>> newDraws;
+    std::vector<vtslibs::registry::CreditId> newCredits;
     
     // iterate over all submeshes
     for (uint32 subMeshIndex = 0, e = meshAgg->submeshes.size();
@@ -557,11 +570,23 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
             bool allTransparent = true;
             for (BoundParamInfo &b : bls)
             {
+                { // credits
+                    BoundInfo *l = b.bound;
+                    assert(l);
+                    for (auto &it : l->credits)
+                    {
+                        auto c = renderer.credits.find(it.first);
+                        if (c)
+                            newCredits.push_back(*c);
+                    }
+                }
+                
+                // draw task
                 std::shared_ptr<RenderTask> task
                         = std::make_shared<RenderTask>();
                 task->meshAgg = meshAgg;
                 task->mesh = mesh;
-                task->model = part.normToPhys * scaleMatrix(1.001);
+                task->model = part.normToPhys;
                 task->uvm = b.uvMatrix();
                 task->textureColor = getTexture(b.bound->urlExtTex(b.vars));
                 task->textureColor->impl->availTest = b.bound->availability;
@@ -586,7 +611,7 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
                     = std::make_shared<RenderTask>();
             task->meshAgg = meshAgg;
             task->mesh = mesh;
-            task->model = part.normToPhys * scaleMatrix(1.001);
+            task->model = part.normToPhys;
             task->uvm = upperLeftSubMatrix(identityMatrix()).cast<float>();
             task->textureColor = getTexture(
                         trav->surface->surface->urlIntTex(vars));
@@ -596,7 +621,12 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
     }
     
     if (determined)
-        trav->draws.insert(trav->draws.end(), newDraws.begin(), newDraws.end());
+    {
+        trav->draws.insert(trav->draws.end(),
+                           newDraws.begin(), newDraws.end());
+        trav->credits.insert(trav->credits.end(),
+                             newCredits.begin(), newCredits.end());
+    }
     
     return determined;
 }
@@ -883,11 +913,14 @@ bool MapImpl::prerequisitesCheck()
     
     purgeSoft();
 
+    renderer.credits.merge(mapConfig.get());
     mapConfig->boundInfos.clear();
-    for (auto &&bl : mapConfig->boundLayers)
+    for (auto &bl : mapConfig->boundLayers)
     {
-        mapConfig->boundInfos[bl.id] = std::shared_ptr<BoundInfo>(
-                    new BoundInfo(bl));
+        for (auto &c : bl.credits)
+            if (c.second)
+                renderer.credits.merge(*c.second);
+        mapConfig->boundInfos[bl.id] = std::make_shared<BoundInfo>(bl);
     }
     
     LOG(info3) << "Render prerequisites ready";
@@ -902,6 +935,7 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
     if (!prerequisitesCheck())
         return;
     
+    assert(!auth || *auth);
     assert(mapConfig && *mapConfig);
     assert(mapConfig->convertor);
     assert(renderer.traverseRoot);
@@ -920,6 +954,7 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
         renderer.traverseQueue.pop();
     }
     traverseClearing(renderer.traverseRoot);
+    renderer.credits.tick(credits);
 }
 
 } // namespace vts

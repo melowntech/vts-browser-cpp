@@ -51,6 +51,7 @@ public:
     class MapStatistics &statistics();
     class MapOptions &options();
     class MapDraws &draws();
+    class MapCredits &credits();
 
     void pan(const Point &value);
     void rotate(const Point &value);

@@ -21,11 +21,13 @@
 #include <vts/resources.hpp>
 #include <vts/buffer.hpp>
 #include <vts/math.hpp>
+#include <vts/credits.hpp>
 
 #include "mapConfig.hpp"
 #include "auth.hpp"
 #include "resource.hpp"
 #include "resourceMap.hpp"
+#include "credits.hpp"
 
 namespace vts
 {
@@ -87,6 +89,7 @@ public:
     vec3 surrogatePhys;
     std::vector<std::shared_ptr<RenderTask>> draws;
     std::vector<std::shared_ptr<TraverseNode>> childs;
+    std::vector<vtslibs::registry::CreditId> credits;
     const SurfaceStackItem *surface;
     uint32 lastAccessTime;
     uint32 flags;
@@ -118,6 +121,7 @@ public:
     MapStatistics statistics;
     MapOptions options;
     MapDraws draws;
+    MapCredits credits;
     bool initialized;
     
     class Navigation
@@ -156,6 +160,7 @@ public:
     class Renderer
     {
     public:
+        Credits credits;
         std::shared_ptr<TraverseNode> traverseRoot;
         std::queue<std::shared_ptr<TraverseNode>> traverseQueue;
         mat4 viewProj;

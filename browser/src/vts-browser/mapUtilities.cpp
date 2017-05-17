@@ -173,6 +173,7 @@ void TraverseNode::clear()
 {
     draws.clear();
     childs.clear();
+    credits.clear();
     surface = nullptr;
     empty = false;
     if (validity == Validity::Valid)

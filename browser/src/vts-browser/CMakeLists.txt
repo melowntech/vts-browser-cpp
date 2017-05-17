@@ -13,6 +13,7 @@ set(PUB_HDR_LIST
 	include/vts/math.hpp
 	include/vts/point.hpp
 	include/vts/exceptions.hpp
+	include/vts/credits.hpp
 )
 
 set(HDR_LIST
@@ -24,6 +25,7 @@ set(HDR_LIST
 	obj.hpp
 	resource.hpp
 	auth.hpp
+	credits.hpp
 )
 
 set(SRC_LIST
@@ -48,6 +50,7 @@ set(SRC_LIST
 	fetchTask.cpp
 	exceptions.cpp
 	auth.cpp
+	credits.cpp
 )
 
 set(DATA_LIST

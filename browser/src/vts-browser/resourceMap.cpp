@@ -138,7 +138,8 @@ void MeshAggregate::load(MapImpl *base)
 
         MeshPart part;
         part.renderable = gm;
-        part.normToPhys = findNormToPhys(meshes[mi].extents);
+        part.normToPhys = findNormToPhys(meshes[mi].extents) 
+                * scaleMatrix(1.001);
         part.internalUv = spec.attributes[1].enable;
         part.externalUv = spec.attributes[2].enable;
         part.textureLayer = m.textureLayer ? *m.textureLayer : 0;

@@ -62,8 +62,6 @@ void MapConfig::load(MapImpl *)
                   referenceFrame.model.publicSrs,
                   *this
                   ));
-    
-    generateSurfaceStack();
 }
 
 void MapConfig::clear()

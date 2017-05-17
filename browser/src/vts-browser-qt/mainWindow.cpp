@@ -6,6 +6,7 @@
 #include <vts/draws.hpp>
 #include <vts/buffer.hpp>
 #include <vts/options.hpp>
+#include <vts/credits.hpp>
 #include "mainWindow.hpp"
 #include "gpuContext.hpp"
 #include "fetcher.hpp"
@@ -196,9 +197,11 @@ void MainWindow::tick()
         
         map->dataTick();
         map->renderTick(size.width(), size.height());
-        
         for (vts::DrawTask &t : map->draws().draws)
             draw(t);
+        std::string creditLine = std::string() + "vts-browser-qt: "
+                + map->credits().textShort();
+        setTitle(QString::fromUtf8(creditLine.c_str(), creditLine.size()));
         
 #ifdef NDEBUG
     }

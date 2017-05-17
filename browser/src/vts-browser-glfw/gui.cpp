@@ -467,12 +467,15 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 500), flags))
+        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 520), flags))
         {
             vts::MapStatistics &s = window->map->statistics();
             float width = nk_window_get_content_region_size(&ctx).x - 15;
             float ratio[] = { width * 0.5f, width * 0.5f };
             nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+            nk_label(&ctx, "Loading:", NK_TEXT_LEFT);
+            nk_prog(&ctx, (int)(1000 * window->map->getMapRenderProgress()),
+                    1000, false);
             char buffer[256];
 #define S(NAME, VAL, UNIT) { \
                 nk_label(&ctx, NAME, NK_TEXT_LEFT); \

@@ -256,6 +256,11 @@ MapDraws &Map::draws()
     return impl->draws;
 }
 
+MapCredits &Map::credits()
+{
+    return impl->credits;
+}
+
 void Map::setPositionSubjective(bool subjective, bool convert)
 {
     if (!isMapConfigReady() || subjective == getPositionSubjective())

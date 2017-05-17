@@ -8,6 +8,7 @@
 #include <vts/resources.hpp>
 #include <vts/options.hpp>
 #include <vts/exceptions.hpp>
+#include <vts/credits.hpp>
 #include "mainWindow.hpp"
 #include <GLFW/glfw3.h>
 
@@ -358,6 +359,9 @@ void MainWindow::run()
         double timeGui = glfwGetTime();
         
         glfwSwapBuffers(window);
+        std::string creditLine = std::string() + "vts-browser-glfw: "
+                + map->credits().textFull();
+        glfwSetWindowTitle(window, creditLine.c_str());
         double timeFrameFinish = glfwGetTime();
         
         timingMapProcess = timeMapRender - timeFrameStart;

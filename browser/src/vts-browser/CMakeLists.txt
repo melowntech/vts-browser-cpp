@@ -123,7 +123,7 @@ install(TARGETS vts-browser
   )
 
 install(EXPORT vts-browser
-  DESTINATION ${SHARE_INSTALL_DIR}/vts-browser
+  DESTINATION ${SHARE_INSTALL_DIR}/VtsBrowser
   COMPONENT browser
   )
 
@@ -133,7 +133,7 @@ include(CMakePackageConfigHelpers)
 configure_package_config_file(
   VtsBrowserConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfig.cmake
-  INSTALL_DESTINATION ${SHARE_INSTALL_DIR}/vts-browser
+  INSTALL_DESTINATION ${SHARE_INSTALL_DIR}/VtsBrowser
   PATH_VARS INCLUDE_INSTALL_DIR
   )
 
@@ -146,6 +146,6 @@ write_basic_package_version_file(
 install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfig.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfigVersion.cmake
-  DESTINATION ${SHARE_INSTALL_DIR}/vts-browser
+  DESTINATION ${SHARE_INSTALL_DIR}/VtsBrowser
   COMPONENT browser-dev
   )

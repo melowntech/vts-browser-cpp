@@ -1,4 +1,4 @@
-define_module(BINARY vts-browser-glfw DEPENDS vts-browser nuklear glad)
+define_module(BINARY vts-browser-glfw DEPENDS vts-browser nuklear glad THREADS)
 
 set(HDR_LIST
 	dataThread.hpp

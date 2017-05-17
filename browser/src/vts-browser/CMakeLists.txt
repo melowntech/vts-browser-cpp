@@ -91,16 +91,13 @@ list(APPEND SRC_LIST ${CMAKE_CURRENT_BINARY_DIR}/data_map.cpp)
 
 buildsys_position_independent(${MODULE_LIBRARIES})
 
-add_library(vts-browser SHARED ${SRC_LIST})
+add_library(vts-browser SHARED ${SRC_LIST} ${HDR_LIST} ${PUB_HDR_LIST})
 buildsys_library(vts-browser)
 buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})
 
 # all libraries are PRIVATE -> do not forward static libraries out
 target_link_libraries(vts-browser PRIVATE ${MODULE_LIBRARIES})
 buildsys_target_compile_definitions(vts-browser ${MODULE_DEFINITIONS})
-
-# trick QtCreator into showing some additional files
-add_custom_target(vts-browser-headers SOURCES ${HDR_LIST} ${PUB_HDR_LIST})
 
 #######################################################################
 # Install

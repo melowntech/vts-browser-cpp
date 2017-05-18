@@ -51,15 +51,17 @@ include_directories(src/vts-browser/include)
 add_subdirectory(src/vts-browser)
 
 # glfw-based example browser
-find_package(glfw3 QUIET)
+find_package(glfw3)
 
 # build glfw browser only when glfw3 library is found
 if(GLFW3_INCLUDE_DIR
     AND NOT DEFINED BUILDSYS_NOBUILD_TARGET_vts-browser-glfw)
   include_directories(${GLFW3_INCLUDE_DIR})
+  include_directories(src/glad)
+  include_directories(src/nuklear)
+
   add_subdirectory(src/glad)
   add_subdirectory(src/nuklear)
-  include_directories(src/nuklear)
   add_subdirectory(src/vts-browser-glfw)
 endif()
 

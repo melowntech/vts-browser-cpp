@@ -8,7 +8,6 @@ set(glad_SOURCES
 	KHR/khrplatform.h
 )
 
-include_directories(.)
 add_library(glad STATIC ${glad_SOURCES})
 buildsys_library(glad)
 target_link_libraries(glad ${MODULE_LIBRARIES} dl)

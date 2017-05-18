@@ -16,7 +16,7 @@ void usage(char *argv[])
 {
     printf("Usage: %s [options] [--] <config-url> [config-url]...\n", argv[0]);
     printf("Options:\n");
-    printf("\t--auth=<url>\n\t\tAuthentication url.");
+    printf("\t--auth=<url>\n\t\tAuthentication url.\n");
 }
 
 int main(int argc, char *argv[])

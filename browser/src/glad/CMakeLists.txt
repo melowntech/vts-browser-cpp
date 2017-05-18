@@ -5,8 +5,10 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
 
 set(glad_SOURCES
 	glad.c
+	KHR/khrplatform.h
 )
 
+include_directories(.)
 add_library(glad STATIC ${glad_SOURCES})
 buildsys_library(glad)
 target_link_libraries(glad ${MODULE_LIBRARIES} dl)

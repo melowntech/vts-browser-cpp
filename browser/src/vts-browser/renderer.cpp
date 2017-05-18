@@ -75,9 +75,9 @@ void MapImpl::purgeHard()
     LOG(info2) << "Hard purge";
     
     if (auth)
-        auth->impl->state = ResourceImpl::State::initializing;
+        auth->impl->state = ResourceImpl::State::finalizing;
     if (mapConfig)
-        mapConfig->impl->state = ResourceImpl::State::initializing;
+        mapConfig->impl->state = ResourceImpl::State::finalizing;
     
     initialized = false;
     auth.reset();

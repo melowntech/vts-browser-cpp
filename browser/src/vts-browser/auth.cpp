@@ -45,6 +45,12 @@ void AuthJson::load(class MapImpl *)
         detail::Wrapper w(impl->contentData);
         w >> root;
     }
+    int status = root["status"].asInt();
+    if (status != 200)
+    {
+        LOGTHROW(err3, std::runtime_error) << "Authentication failure ("
+                                           << status << ")";
+    }
     uint64 expires = root["expires"].asUInt64();
     uint64 now = root["now"].asUInt64();
     timeValid = expires - now;

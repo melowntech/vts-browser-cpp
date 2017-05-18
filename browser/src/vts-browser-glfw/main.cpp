@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     {
 #endif
         //vts::setLogMask("ND");
-        //vts::setLogMask("ALL");
+        vts::setLogMask("ALL");
         
         const char *auth = "";
         int firstUrl = argc;

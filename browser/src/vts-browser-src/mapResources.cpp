@@ -1,6 +1,6 @@
 #include <utility/path.hpp> // homeDir
-#include <vts/map.hpp>
 
+#include "include/vts-browser/map.hpp"
 #include "map.hpp"
 
 namespace vts

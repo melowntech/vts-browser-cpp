@@ -1,6 +1,9 @@
+#ifndef CREDITS_edfgvbbnk
+#define CREDITS_edfgvbbnk
+
 #include <vts-libs/registry.hpp>
 
-#include <vts/credits.hpp>
+#include "include/vts-browser/credits.hpp"
 
 namespace vtslibs { namespace vts {
 
@@ -45,3 +48,5 @@ private:
 };
 
 } // namespace vts
+
+#endif

@@ -1,6 +1,6 @@
 #include <vts-libs/vts/meshio.hpp>
-#include <vts/map.hpp>
 
+#include "include/vts-browser/map.hpp"
 #include "map.hpp"
 #include "image.hpp"
 

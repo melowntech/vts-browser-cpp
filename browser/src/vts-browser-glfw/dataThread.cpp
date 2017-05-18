@@ -1,5 +1,5 @@
 #include <unistd.h> // usleep
-#include <vts/map.hpp>
+#include <vts-browser/map.hpp>
 #include "dataThread.hpp"
 #include "threadName.hpp"
 #include "gpuContext.hpp"

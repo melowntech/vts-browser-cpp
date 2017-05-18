@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <glad/glad.h>
-#include <vts/resources.hpp>
+#include <vts-browser/resources.hpp>
 
 extern bool anisotropicFilteringAvailable;
 extern bool openglDebugAvailable;

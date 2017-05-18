@@ -1,6 +1,6 @@
 #include <geometry/parse-obj.hpp>
-#include <vts/math.hpp>
 
+#include "include/vts-browser/math.hpp"
 #include "obj.hpp"
 
 namespace vts
@@ -27,15 +27,6 @@ void decodeObj(const Buffer &in, uint32 &outFaceMode,
         std::sort(v, v + 3);
         uint32 j = std::unique(v, v + 3) - v;
         outFaceMode = std::min(outFaceMode, j);
-        
-        /* this triggers a warning in g++
-        for (uint32 i = 1; i < outFaceMode; i++)
-        {
-            for (uint32 j = 0; j < i; j++)
-                if (of.v[i] == of.v[j])
-                    outFaceMode--;
-        }
-        */
     }
     
     struct F

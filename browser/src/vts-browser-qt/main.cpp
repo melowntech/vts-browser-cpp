@@ -1,8 +1,8 @@
 #include <clocale>
 #include <QGuiApplication>
 #include <QDebug>
-#include <vts/map.hpp>
-#include <vts/options.hpp>
+#include <vts-browser/map.hpp>
+#include <vts-browser/options.hpp>
 #include "mainWindow.hpp"
 #include "gpuContext.hpp"
 

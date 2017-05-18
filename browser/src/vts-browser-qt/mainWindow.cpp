@@ -2,11 +2,11 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QDebug>
-#include <vts/map.hpp>
-#include <vts/draws.hpp>
-#include <vts/buffer.hpp>
-#include <vts/options.hpp>
-#include <vts/credits.hpp>
+#include <vts-browser/map.hpp>
+#include <vts-browser/draws.hpp>
+#include <vts-browser/buffer.hpp>
+#include <vts-browser/options.hpp>
+#include <vts-browser/credits.hpp>
 #include "mainWindow.hpp"
 #include "gpuContext.hpp"
 #include "fetcher.hpp"

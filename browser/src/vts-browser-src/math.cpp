@@ -1,7 +1,7 @@
 #include <dbglog/dbglog.hpp>
 
-#include <vts/map.hpp>
-#include <vts/math.hpp>
+#include "include/vts-browser/map.hpp"
+#include "include/vts-browser/math.hpp"
 
 namespace vts
 {

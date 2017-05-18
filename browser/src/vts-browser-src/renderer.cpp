@@ -1,6 +1,5 @@
-#include <vts/map.hpp>
-#include <vts/exceptions.hpp>
-
+#include "include/vts-browser/map.hpp"
+#include "include/vts-browser/exceptions.hpp"
 #include "map.hpp"
 
 namespace vts

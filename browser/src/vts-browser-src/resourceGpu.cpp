@@ -1,8 +1,8 @@
 #include <vts-libs/registry/referenceframe.hpp>
-#include <vts/resources.hpp>
-#include <vts/buffer.hpp>
-#include <vts/math.hpp>
 
+#include "include/vts-browser/resources.hpp"
+#include "include/vts-browser/buffer.hpp"
+#include "include/vts-browser/math.hpp"
 #include "resource.hpp"
 #include "image.hpp"
 #include "obj.hpp"

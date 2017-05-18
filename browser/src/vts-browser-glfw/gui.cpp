@@ -1,10 +1,10 @@
 #include <cstring>
 #include <set>
 
-#include <vts/map.hpp>
-#include <vts/statistics.hpp>
-#include <vts/options.hpp>
-#include <vts/view.hpp>
+#include <vts-browser/map.hpp>
+#include <vts-browser/statistics.hpp>
+#include <vts-browser/options.hpp>
+#include <vts-browser/view.hpp>
 
 #include "mainWindow.hpp"
 #include <nuklear/nuklear.h>

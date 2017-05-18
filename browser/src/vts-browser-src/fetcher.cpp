@@ -1,10 +1,9 @@
 #include <functional>
 #include <unistd.h> // usleep
-
 #include <http/http.hpp>
 #include <http/resourcefetcher.hpp>
 
-#include <vts/fetcher.hpp>
+#include "include/vts-browser/fetcher.hpp"
 
 namespace vts
 {

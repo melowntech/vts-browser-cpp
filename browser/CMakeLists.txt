@@ -47,8 +47,8 @@ buildsys_nobuild_target(vts-libs)
 add_subdirectory(src/vts-libs)
 
 # browser
-include_directories(src/vts-browser/include)
-add_subdirectory(src/vts-browser)
+add_subdirectory(src/vts-browser-src)
+include_directories(src/vts-browser-src/include)
 
 # glfw-based example browser
 find_package(glfw3)
@@ -56,9 +56,9 @@ find_package(glfw3)
 # build glfw browser only when glfw3 library is found
 if(GLFW3_INCLUDE_DIR
     AND NOT DEFINED BUILDSYS_NOBUILD_TARGET_vts-browser-glfw)
-  include_directories(${GLFW3_INCLUDE_DIR})
   include_directories(src/glad)
   include_directories(src/nuklear)
+  include_directories(${GLFW3_INCLUDE_DIR})
 
   add_subdirectory(src/glad)
   add_subdirectory(src/nuklear)
@@ -72,3 +72,4 @@ if(Qt5Gui_FOUND
     AND NOT DEFINED BUILDSYS_NOBUILD_TARGET_vts-browser-qt)
   add_subdirectory(src/vts-browser-qt)
 endif()
+

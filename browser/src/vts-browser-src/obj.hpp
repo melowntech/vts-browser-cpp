@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include <vts/buffer.hpp>
+#include "include/vts-browser/buffer.hpp"
 
 namespace vts
 {

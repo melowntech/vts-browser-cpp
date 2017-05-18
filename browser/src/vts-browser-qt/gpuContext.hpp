@@ -10,7 +10,7 @@
 #include <QOpenGLBuffer>
 #include <QOpenGLVertexArrayObject>
 #include <QSurface>
-#include <vts/resources.hpp>
+#include <vts-browser/resources.hpp>
 
 class Gl : public QOpenGLContext, public QOpenGLFunctions_3_3_Core
 {

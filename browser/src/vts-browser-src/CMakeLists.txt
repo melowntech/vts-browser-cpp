@@ -4,19 +4,19 @@ set(vts-browser_SO_VERSION 0.0.0)
 define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus http>=1.2 lodepng)
 
 set(PUB_HDR_LIST
-	include/vts/buffer.hpp
-	include/vts/foundation.hpp
-	include/vts/options.hpp
-	include/vts/resources.hpp
-	include/vts/fetcher.hpp
-	include/vts/map.hpp
-	include/vts/draws.hpp
-	include/vts/statistics.hpp
-	include/vts/view.hpp
-	include/vts/math.hpp
-	include/vts/point.hpp
-	include/vts/exceptions.hpp
-	include/vts/credits.hpp
+	include/vts-browser/buffer.hpp
+	include/vts-browser/foundation.hpp
+	include/vts-browser/options.hpp
+	include/vts-browser/resources.hpp
+	include/vts-browser/fetcher.hpp
+	include/vts-browser/map.hpp
+	include/vts-browser/draws.hpp
+	include/vts-browser/statistics.hpp
+	include/vts-browser/view.hpp
+	include/vts-browser/math.hpp
+	include/vts-browser/point.hpp
+	include/vts-browser/exceptions.hpp
+	include/vts-browser/credits.hpp
 )
 
 set(HDR_LIST

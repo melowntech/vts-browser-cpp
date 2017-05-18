@@ -3,12 +3,11 @@
 
 #include <string>
 #include <unordered_map>
-
 #include <vts-libs/registry/referenceframe.hpp>
 #include <vts-libs/vts/mapconfig.hpp>
 #include <vts-libs/vts/urltemplate.hpp>
-#include <vts/resources.hpp>
 
+#include "include/vts-browser/resources.hpp"
 #include "csConvertor.hpp"
 
 namespace vts

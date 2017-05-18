@@ -15,13 +15,13 @@
 #include <dbglog/dbglog.hpp>
 #include <utility/uri.hpp>
 
-#include <vts/statistics.hpp>
-#include <vts/options.hpp>
-#include <vts/draws.hpp>
-#include <vts/resources.hpp>
-#include <vts/buffer.hpp>
-#include <vts/math.hpp>
-#include <vts/credits.hpp>
+#include "include/vts-browser/statistics.hpp"
+#include "include/vts-browser/options.hpp"
+#include "include/vts-browser/draws.hpp"
+#include "include/vts-browser/resources.hpp"
+#include "include/vts-browser/buffer.hpp"
+#include "include/vts-browser/math.hpp"
+#include "include/vts-browser/credits.hpp"
 
 #include "mapConfig.hpp"
 #include "auth.hpp"

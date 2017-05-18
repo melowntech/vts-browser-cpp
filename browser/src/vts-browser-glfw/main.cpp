@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
-#include <vts/map.hpp>
-#include <vts/options.hpp>
+#include <vts-browser/map.hpp>
+#include <vts-browser/options.hpp>
 #include "mainWindow.hpp"
 #include "dataThread.hpp"
 #include "threadName.hpp"

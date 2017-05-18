@@ -2,7 +2,7 @@
 #define FETCHERIMPL_H_djghfubhj
 
 #include <memory>
-#include <vts/fetcher.hpp>
+#include <vts-browser/fetcher.hpp>
 
 class FetcherDetail;
 

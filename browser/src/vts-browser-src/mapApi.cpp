@@ -1,8 +1,8 @@
-#include <vts/map.hpp>
-#include <vts/view.hpp>
 #include <vts-libs/registry/json.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include "include/vts-browser/map.hpp"
+#include "include/vts-browser/view.hpp"
 #include "map.hpp"
 
 namespace vts

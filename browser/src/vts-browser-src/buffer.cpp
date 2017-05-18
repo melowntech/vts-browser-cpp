@@ -1,9 +1,9 @@
 #include <cstring>
 #include <map>
 #include <boost/filesystem.hpp>
-
-#include <vts/buffer.hpp>
 #include <dbglog/dbglog.hpp>
+
+#include "include/vts-browser/buffer.hpp"
 
 std::map<std::string, std::pair<size_t, unsigned char *>> data_map;
 

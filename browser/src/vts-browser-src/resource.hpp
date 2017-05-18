@@ -3,12 +3,11 @@
 
 #include <string>
 #include <atomic>
-
 #include <vts-libs/registry/referenceframe.hpp>
 #include <boost/optional.hpp>
 
-#include <vts/resources.hpp>
-#include <vts/fetcher.hpp>
+#include "include/vts-browser/resources.hpp"
+#include "include/vts-browser/fetcher.hpp"
 
 namespace vts
 {

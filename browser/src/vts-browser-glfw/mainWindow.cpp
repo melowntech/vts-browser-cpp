@@ -1,14 +1,14 @@
 #include <limits>
 #include <cmath>
 
-#include <vts/map.hpp>
-#include <vts/statistics.hpp>
-#include <vts/draws.hpp>
-#include <vts/buffer.hpp>
-#include <vts/resources.hpp>
-#include <vts/options.hpp>
-#include <vts/exceptions.hpp>
-#include <vts/credits.hpp>
+#include <vts-browser/map.hpp>
+#include <vts-browser/statistics.hpp>
+#include <vts-browser/draws.hpp>
+#include <vts-browser/buffer.hpp>
+#include <vts-browser/resources.hpp>
+#include <vts-browser/options.hpp>
+#include <vts-browser/exceptions.hpp>
+#include <vts-browser/credits.hpp>
 #include "mainWindow.hpp"
 #include <GLFW/glfw3.h>
 

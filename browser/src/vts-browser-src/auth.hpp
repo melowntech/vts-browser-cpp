@@ -5,7 +5,7 @@
 #include <string>
 #include <memory>
 
-#include <vts/resources.hpp>
+#include "include/vts-browser/resources.hpp"
 
 namespace vts
 {

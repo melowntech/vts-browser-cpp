@@ -3,8 +3,8 @@
 
 #include <vector>
 
-#include <vts/point.hpp>
-#include <vts/math.hpp>
+#include <vts-browser/point.hpp>
+#include <vts-browser/math.hpp>
 #include "gpuContext.hpp"
 
 class GLFWwindow;

@@ -3,12 +3,11 @@
 
 #include <memory>
 #include <string>
-
 #include <vts-libs/vts/metatile.hpp>
 #include <vts-libs/registry/referenceframe.hpp>
 
-#include <vts/resources.hpp>
-#include <vts/math.hpp>
+#include "include/vts-browser/resources.hpp"
+#include "include/vts-browser/math.hpp"
 
 namespace vts
 {

@@ -8,18 +8,18 @@ namespace vts
 namespace
 {
 
-inline bool testAndThrow(ResourceImpl::State state, const std::string &message)
+inline bool testAndThrow(FetchTaskImpl::State state, const std::string &message)
 {
     switch (state)
     {
-    case ResourceImpl::State::error:
+    case FetchTaskImpl::State::error:
         LOGTHROW(err4, MapConfigException) << message;
-    case ResourceImpl::State::downloaded:
-    case ResourceImpl::State::downloading:
-    case ResourceImpl::State::finalizing:
-    case ResourceImpl::State::initializing:
+    case FetchTaskImpl::State::downloaded:
+    case FetchTaskImpl::State::downloading:
+    case FetchTaskImpl::State::finalizing:
+    case FetchTaskImpl::State::initializing:
         return false;
-    case ResourceImpl::State::ready:
+    case FetchTaskImpl::State::ready:
         return true;
     default:
         LOGTHROW(fatal, std::invalid_argument) << "Invalid resource state";
@@ -48,6 +48,10 @@ inline const vec4 column(const mat4 &m, uint32 index)
 
 } // namespace
 
+MapImpl::Renderer::Renderer() :
+    windowWidth(0), windowHeight(0)
+{}
+
 void MapImpl::renderInitialize()
 {
     LOG(info3) << "Render initialize";
@@ -74,9 +78,9 @@ void MapImpl::purgeHard()
     LOG(info2) << "Hard purge";
     
     if (auth)
-        auth->impl->state = ResourceImpl::State::finalizing;
+        auth->impl->state = FetchTaskImpl::State::finalizing;
     if (mapConfig)
-        mapConfig->impl->state = ResourceImpl::State::finalizing;
+        mapConfig->impl->state = FetchTaskImpl::State::finalizing;
     
     initialized = false;
     auth.reset();
@@ -219,7 +223,7 @@ bool MapImpl::coarsenessTest(const TraverseNode *trav)
     return result;
 }
 
-Validity MapImpl::checkMetaNode(SurfaceInfo *surface,
+Validity MapImpl::checkMetaNode(MapConfig::SurfaceInfo *surface,
                                 const TileId &nodeId,
                                 const MetaNode *&node)
 {
@@ -384,7 +388,7 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
     assert(trav->draws.empty());
     assert(trav->credits.empty());
     const TileId nodeId = trav->nodeInfo.nodeId();
-    SurfaceStackItem *topmost = nullptr;
+    MapConfig::SurfaceStackItem *topmost = nullptr;
     const MetaNode *node = nullptr;
     bool childsAvailable[4] = {false, false, false, false};
     bool determined = true;
@@ -570,7 +574,7 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
             for (BoundParamInfo &b : bls)
             {
                 { // credits
-                    BoundInfo *l = b.bound;
+                    MapConfig::BoundInfo *l = b.bound;
                     assert(l);
                     for (auto &it : l->credits)
                     {
@@ -889,20 +893,21 @@ bool MapImpl::prerequisitesCheck()
         {
             if (!bl.external())
                 continue;
-            std::string url = convertPath(bl.url, mapConfig->impl->name);
+            std::string url = MapConfig::convertPath(bl.url,
+                                                     mapConfig->impl->name);
             std::shared_ptr<ExternalBoundLayer> r = getExternalBoundLayer(url);
             if (!testAndThrow(r->impl->state, "External bound layer failure."))
                 ok = false;
             else
             {
                 r->id = bl.id;
-                r->url = convertPath(r->url, url);
+                r->url = MapConfig::convertPath(r->url, url);
                 if (r->metaUrl)
-                    r->metaUrl = convertPath(*r->metaUrl, url);
+                    r->metaUrl = MapConfig::convertPath(*r->metaUrl, url);
                 if (r->maskUrl)
-                    r->maskUrl = convertPath(*r->maskUrl, url);
+                    r->maskUrl = MapConfig::convertPath(*r->maskUrl, url);
                 if (r->creditsUrl)
-                    r->creditsUrl = convertPath(*r->creditsUrl, url);
+                    r->creditsUrl = MapConfig::convertPath(*r->creditsUrl, url);
                 mapConfig->boundLayers.replace(*r);
             }
         }
@@ -919,7 +924,8 @@ bool MapImpl::prerequisitesCheck()
         for (auto &c : bl.credits)
             if (c.second)
                 renderer.credits.merge(*c.second);
-        mapConfig->boundInfos[bl.id] = std::make_shared<BoundInfo>(bl);
+        mapConfig->boundInfos[bl.id]
+                = std::make_shared<MapConfig::BoundInfo>(bl);
     }
     
     LOG(info3) << "Render prerequisites ready";

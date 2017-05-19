@@ -1,6 +1,7 @@
 #ifndef RESOURCES_H_jhsegfshg
 #define RESOURCES_H_jhsegfshg
 
+#include <vector>
 #include <memory>
 
 #include "buffer.hpp"
@@ -8,42 +9,26 @@
 namespace vts
 {
 
-class ResourceImpl;
-
-class VTS_API Resource
+class VTS_API ResourceInfo
 {
 public:
-    Resource(const std::string &name, bool allowDiskCache);
-    virtual ~Resource();
+    ResourceInfo();
     
-    void setMemoryUsage(uint32 ram, uint32 gpu);
-    operator bool () const;
-    
-    // internals
-    virtual void load(class MapImpl *base) = 0;
-    std::shared_ptr<ResourceImpl> impl;
+    std::shared_ptr<void> userData;
+    uint32 ramMemoryCost;
+    uint32 gpuMemoryCost;
 };
 
 class VTS_API GpuTextureSpec
 {
 public:
     GpuTextureSpec();
-    GpuTextureSpec(const Buffer &buffer);
-
+    GpuTextureSpec(const Buffer &buffer); // decode jpg or png file
+    void verticalFlip();
+    
     uint32 width, height;
     uint32 components; // 1, 2, 3 or 4
     Buffer buffer;
-    bool verticalFlip;
-};
-
-class VTS_API GpuTexture : public Resource
-{
-public:
-    GpuTexture(const std::string &name);
-
-    virtual void loadTexture(const GpuTextureSpec &spec) = 0;
-
-    void load(class MapImpl *base) override;
 };
 
 class VTS_API GpuMeshSpec
@@ -77,24 +62,14 @@ public:
     };
 
     GpuMeshSpec();
-    GpuMeshSpec(const Buffer &buffer);
+    GpuMeshSpec(const Buffer &buffer); // decode obj file
 
     Buffer vertices;
     Buffer indices;
-    VertexAttribute attributes[3];
+    std::vector<VertexAttribute> attributes;
     uint32 verticesCount;
     uint32 indicesCount;
     FaceMode faceMode;
-};
-
-class VTS_API GpuMesh : public Resource
-{
-public:
-    GpuMesh(const std::string &name);
-
-    virtual void loadMesh(const GpuMeshSpec &spec) = 0;
-
-    void load(class MapImpl *base) override;
 };
 
 } // namespace vts

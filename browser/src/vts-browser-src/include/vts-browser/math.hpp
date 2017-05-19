@@ -67,9 +67,6 @@ VTS_API double modulo(double a, double m);
 VTS_API double interpolate(double a, double b, double f);
 VTS_API double clamp(double a, double min, double max);
 
-VTS_API void vecFromPoint(const struct Point &in, vec3 &out);
-VTS_API void vecToPoint(const vec3 &in, struct Point &out);
-
 VTS_API const vec3f convertRgbToHsv(const vec3f &inColor);
 VTS_API const vec3f convertHsvToRgb(const vec3f &inColor);
 

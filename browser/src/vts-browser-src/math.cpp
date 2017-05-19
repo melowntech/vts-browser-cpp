@@ -321,17 +321,5 @@ double clamp(double a, double min, double max)
     return std::max(std::min(a, max), min);
 }
 
-void vecToPoint(const vts::vec3 &in, Point &out)
-{
-    for (uint32 i = 0; i < 3; i++)
-        out.data[i] = in(i);
-}
-
-void vecFromPoint(const Point &in, vts::vec3 &out)
-{
-    for (uint32 i = 0; i < 3; i++)
-        out(i) = in.data[i];
-}
-
 } // namespace vts
 

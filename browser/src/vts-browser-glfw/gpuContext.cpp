@@ -251,8 +251,8 @@ void GpuShaderImpl::uniform(vts::uint32 location, const int value)
     glUniform1i(uniformLocations[location], value);
 }
 
-GpuTextureImpl::GpuTextureImpl(const std::string &name) :
-    vts::GpuTexture(name), id(0), grayscale(false)
+GpuTextureImpl::GpuTextureImpl() :
+    id(0), grayscale(false)
 {}
 
 void GpuTextureImpl::clear()
@@ -299,25 +299,12 @@ GLenum GpuTextureImpl::findFormat(const vts::GpuTextureSpec &spec)
     }
 }
 
-void GpuTextureImpl::loadTexture(const vts::GpuTextureSpec &spec)
+void GpuTextureImpl::loadTexture(vts::ResourceInfo &info,
+                                 const vts::GpuTextureSpec &spec)
 {
     clear();
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
-    if (spec.verticalFlip)
-    { // vertical flip
-        unsigned lineSize = spec.width * spec.components;
-        vts::Buffer buffer(lineSize);
-        for (unsigned y = 0; y < spec.height / 2; y++)
-        {
-            char *a = spec.buffer.data() + y * lineSize;
-            char *b = spec.buffer.data()
-                    + (spec.height - y - 1) * lineSize;
-            memcpy(buffer.data(), a, lineSize);
-            memcpy(a, b, lineSize);
-            memcpy(b, buffer.data(), lineSize);
-        }
-    }
     glTexImage2D(GL_TEXTURE_2D, 0, findInternalFormat(spec),
                  spec.width, spec.height, 0,
                  findFormat(spec), GL_UNSIGNED_BYTE, spec.buffer.data());
@@ -340,10 +327,10 @@ void GpuTextureImpl::loadTexture(const vts::GpuTextureSpec &spec)
     
     glFinish();
     checkGl("load texture");
-    setMemoryUsage(0, spec.buffer.size());
+    info.gpuMemoryCost = spec.buffer.size();
 }
 
-GpuMeshImpl::GpuMeshImpl(const std::string &name) : vts::GpuMesh(name),
+GpuMeshImpl::GpuMeshImpl() :
     vao(0), vbo(0), vio(0)
 {}
 
@@ -377,8 +364,7 @@ void GpuMeshImpl::bind()
         if (vio)
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vio);
         
-        for (unsigned i = 0; i < sizeof(vts::GpuMeshSpec::attributes)
-             / sizeof(vts::GpuMeshSpec::VertexAttribute); i++)
+        for (unsigned i = 0; i < spec.attributes.size(); i++)
         {
             vts::GpuMeshSpec::VertexAttribute &a = spec.attributes[i];
             if (a.enable)
@@ -405,7 +391,8 @@ void GpuMeshImpl::dispatch()
     checkGl("dispatch mesh");
 }
 
-void GpuMeshImpl::loadMesh(const vts::GpuMeshSpec &spec)
+void GpuMeshImpl::loadMesh(vts::ResourceInfo &info,
+                           const vts::GpuMeshSpec &spec)
 {
     clear();
     this->spec = std::move(spec);
@@ -427,8 +414,8 @@ void GpuMeshImpl::loadMesh(const vts::GpuMeshSpec &spec)
     glDeleteVertexArrays(1, &vao);
     glFinish();
     checkGl("load mesh");
-    setMemoryUsage(sizeof(GpuMeshImpl),
-                   spec.vertices.size() + spec.indices.size());
+    info.ramMemoryCost = sizeof(GpuMeshImpl);
+    info.gpuMemoryCost = spec.vertices.size() + spec.indices.size();
     this->spec.vertices.free();
     this->spec.indices.free();
 }

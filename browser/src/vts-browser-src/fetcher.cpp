@@ -30,42 +30,46 @@ class FetcherImpl : public Fetcher
 {
 public:
     FetcherImpl(const FetcherOptions &options) : options(options),
-        fetcher(htt.fetcher())
+        fetcher(htt.fetcher()), status(0)
     {}
-
+    
     ~FetcherImpl()
-    {}
-
-    void initialize(Fetcher::Func func) override
     {
-        LOG(info2) << "Initializing fetcher";
-        this->func = func;
+        assert(status == 0 || status == 2);
+    }
+    
+    virtual void initialize() override
+    {
+        assert(status == 0);
         http::ContentFetcher::Options o;
         o.maxCacheConections = options.maxCacheConections;
         o.maxHostConnections = options.maxHostConnections;
         o.maxTotalConections = options.maxTotalConections;
         o.pipelining = options.pipelining;
         htt.startClient(options.threads, &o);
+        status = 1;
     }
     
-    void finalize() override
+    virtual void finalize() override
     {
-        LOG(info2) << "Finalizing fetcher";
+        assert(status == 1);
         htt.stop();
+        status = 2;
     }
 
-    void fetch(std::shared_ptr<FetchTask> task) override
+    void fetch(const std::shared_ptr<FetchTask> &task) override
     {
-        task->replyCode = 0;
+        assert(status == 1);
+        assert(task->replyCode == 0);
         auto t = std::make_shared<Task>(this, task);
         fetcher.perform(t->query, std::bind(&Task::done, t,
                                             std::placeholders::_1));
     }
 
     const FetcherOptions options;
-    vts::Fetcher::Func func;
     http::Http htt;
     http::ResourceFetcher fetcher;
+    int status;
 };
 
 Task::Task(FetcherImpl *impl, std::shared_ptr<FetchTask> task)
@@ -81,7 +85,7 @@ Task::~Task()
     try // destructor must not throw
     {
         if (!called)
-            impl->func(task);
+            task->fetchDone();
     }
     catch(...)
     {
@@ -122,7 +126,7 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
         task->contentType = body.contentType;
         task->replyCode = 200;
     }
-    impl->func(task);
+    task->fetchDone();
 }
 
 } // namespace

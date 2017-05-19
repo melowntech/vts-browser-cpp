@@ -7,9 +7,7 @@
 class FetcherDetail : public QNetworkAccessManager
 {
 public:
-    void fetch(std::shared_ptr<vts::FetchTask> task);
-
-    FetcherImpl::Func func;
+    void fetch(const std::shared_ptr<vts::FetchTask> &task);
 };
 
 class FetchTask : public QObject
@@ -44,7 +42,7 @@ public:
             }
         }
 
-        fetcher->func(task);
+        task->fetchDone();
         delete this;
     }
 
@@ -53,7 +51,7 @@ public:
     QNetworkReply *reply;
 };
 
-void FetcherDetail::fetch(std::shared_ptr<vts::FetchTask> task)
+void FetcherDetail::fetch(const std::shared_ptr<vts::FetchTask> &task)
 {
     FetchTask *t = new FetchTask(this, task);
     QUrl url(QString::fromUtf8(t->task->queryUrl.data(),
@@ -76,15 +74,13 @@ FetcherImpl::FetcherImpl() : impl(nullptr)
 FetcherImpl::~FetcherImpl()
 {}
 
-void FetcherImpl::initialize(Func func)
-{
-    impl->func = func;
-}
+void FetcherImpl::initialize()
+{}
 
 void FetcherImpl::finalize()
 {}
 
-void FetcherImpl::fetch(std::shared_ptr<vts::FetchTask> task)
+void FetcherImpl::fetch(const std::shared_ptr<vts::FetchTask> &task)
 {
     return impl->fetch(task);
 }

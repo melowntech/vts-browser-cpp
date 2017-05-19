@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     {
 #endif
         //vts::setLogMask("ND");
-        vts::setLogMask("ALL");
+        //vts::setLogMask("ALL");
         
         const char *auth = "";
         int firstUrl = argc;
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
             return 2;
     
         {
-            vts::MapCreateOptions options;
+            vts::MapCreateOptions options("vts-browser-glfw");
             vts::Map map(options);
             MainWindow main;
             for (int i = firstUrl; i < argc; i++)
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
             setThreadName("main");
             main.run();
         }
-    
+
         glfwTerminate();
         return 0;
 #ifdef NDEBUG

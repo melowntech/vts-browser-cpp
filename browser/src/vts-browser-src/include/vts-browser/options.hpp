@@ -14,8 +14,9 @@ VTS_API void setLogMask(const std::string &mask);
 class VTS_API MapCreateOptions
 {
 public:
-    MapCreateOptions();
+    MapCreateOptions(const std::string &clientId);
     
+    std::string clientId;
     std::string cachePath;
     bool disableCache;
 };
@@ -56,11 +57,11 @@ class VTS_API MapCallbacks
 {
 public:
     // function callback to upload a texture to gpu
-    std::function<std::shared_ptr<class GpuTexture>(const std::string &)>
-            createTexture;
+    std::function<void(class ResourceInfo &, const class GpuTextureSpec &)>
+            loadTexture;
     /// function callback to upload a mesh to gpu
-    std::function<std::shared_ptr<class GpuMesh>(const std::string &)>
-            createMesh;
+    std::function<void(class ResourceInfo &, const class GpuMeshSpec &)>
+            loadMesh;
     
     /// function callbacks for camera overrides (all in physical srs)
     std::function<void(double*)> cameraOverrideEye;

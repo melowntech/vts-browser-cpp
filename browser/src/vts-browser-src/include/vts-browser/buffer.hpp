@@ -39,7 +39,7 @@ VTS_API Buffer readInternalMemoryBuffer(const std::string &path);
 namespace detail
 {
 
-class Wrapper : protected std::streambuf, public std::istream
+class VTS_API Wrapper : protected std::streambuf, public std::istream
 {
 public:
     Wrapper(const Buffer &b);

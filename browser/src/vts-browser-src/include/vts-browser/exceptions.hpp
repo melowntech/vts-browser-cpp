@@ -15,6 +15,12 @@ public:
     MapConfigException(const std::string &what_arg);
 };
 
+class VTS_API AuthException : public std::runtime_error
+{
+public:
+    AuthException(const std::string &what_arg);
+};
+
 } // namespace vts
 
 #endif

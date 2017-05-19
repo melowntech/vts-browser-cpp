@@ -12,11 +12,11 @@ void initializeGuiSkin(nk_context &ctx, GuiSkinMedia &media,
 std::shared_ptr<GpuTextureImpl> &tex)
 {
     { // load texture
-        tex = std::make_shared<GpuTextureImpl>("skin texture");
+        tex = std::make_shared<GpuTextureImpl>();
         vts::GpuTextureSpec spec(
         vts::readInternalMemoryBuffer("data/textures/gwen.png"));
-        spec.verticalFlip = false;
-        tex->loadTexture(spec);
+        vts::ResourceInfo info;
+        tex->loadTexture(info, spec);
         media.skin = tex->id;
     }
 

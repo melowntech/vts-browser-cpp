@@ -12,60 +12,64 @@
 namespace vts
 {
 
-class MapImpl;
-
 class VTS_API FetchTask
 {
 public:
-    FetchTask(const std::string &name);
-    virtual ~FetchTask();
-
+    enum class ResourceType
+    {
+        General,
+        MapConfig,
+        AuthConfig,
+        BoundLayerConfig,
+        BoundMetaTile,
+        BoundMaskTile,
+        MetaTile,
+        Mesh,
+        MeshPart,
+        Texture,
+        NavTile,
+    };
+    const ResourceType resourceType;
+    
     // query
     std::string queryUrl;
     std::map<std::string, std::string> queryHeaders;
 
     // reply
-    std::string replyRedirectUrl;
-    std::string contentType;
     Buffer contentData;
+    std::string contentType;
+    std::string replyRedirectUrl;
     uint32 replyCode;
 
-    // internals
-    uint32 redirectionsCount;
-    const std::string name;
-    
-    void saveToCache(MapImpl *map);
-    bool loadFromCache(MapImpl *map);
-    void loadFromInternalMemory();
+    FetchTask(const std::string &url, ResourceType resourceType);
+    virtual ~FetchTask();
+    virtual void fetchDone() = 0;
 };
 
 class VTS_API FetcherOptions
 {
 public:
     FetcherOptions();
-    
+
     uint32 threads;
     sint32 timeout;
-    
+
     // curl options
     uint32 maxHostConnections;
     uint32 maxTotalConections;
     uint32 maxCacheConections;
-    sint32 pipelining;
+    sint32 pipelining; // 0, 1, 2 or 3
 };
 
 class VTS_API Fetcher
 {
 public:
     static std::shared_ptr<Fetcher> create(const FetcherOptions &options);
-    
-    typedef std::function<void(std::shared_ptr<FetchTask>)> Func;
-    
+
     virtual ~Fetcher();
-    
-    virtual void initialize(Func func) = 0;
+    virtual void initialize() = 0;
     virtual void finalize() = 0;
-    virtual void fetch(std::shared_ptr<FetchTask>) = 0;
+    virtual void fetch(const std::shared_ptr<FetchTask> &) = 0;
 };
 
 } // namespace vts

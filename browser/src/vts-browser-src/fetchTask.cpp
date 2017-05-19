@@ -1,18 +1,72 @@
-#include "include/vts-browser/fetcher.hpp"
 #include "map.hpp"
 
 namespace vts
 {
 
-FetchTask::FetchTask(const std::string &name) : queryUrl(name),
-    replyCode(0), redirectionsCount(0), name(name)
+FetchTask::FetchTask(const std::string &url, ResourceType resourceType) :
+    resourceType(resourceType), queryUrl(url), replyCode(0)
 {}
 
 FetchTask::~FetchTask()
 {}
 
-void FetchTask::saveToCache(MapImpl *map)
+FetchTaskImpl::FetchTaskImpl(vts::MapImpl *map, const std::string &name,
+                             FetchTask::ResourceType resourceType)
+    : FetchTask(name, resourceType), name(name), map(map),
+      state(State::initializing), priority(0), redirectionsCount(0),
+      lastAccessTick(0)
 {
+    queryHeaders["X-Vts-Client-Id"] = map->clientId;
+    if (map->auth)
+        map->auth->authorize(this);
+}
+
+FetchTaskImpl::~FetchTaskImpl()
+{}
+
+bool FetchTaskImpl::performAvailTest() const
+{
+    if (!availTest)
+        return true;
+    switch (availTest->type)
+    {
+    case vtslibs::registry::BoundLayer::Availability::Type::negativeCode:
+        if (availTest->codes.find(replyCode) == availTest->codes.end())
+            return false;
+        break;
+    case vtslibs::registry::BoundLayer::Availability::Type::negativeType:
+        if (availTest->mime == contentType)
+            return false;
+        break;
+    case vtslibs::registry::BoundLayer::Availability::Type::negativeSize:
+        if (contentData.size() <= (unsigned)availTest->size)
+            return false;
+        break;
+    default:
+        LOGTHROW(fatal, std::invalid_argument) << "Invalid available test type";
+    }
+    return true;
+}
+
+bool FetchTaskImpl::allowDiskCache() const
+{
+    if (map->resources.disableCache)
+        return false;
+    switch (resourceType)
+    {
+    case ResourceType::AuthConfig:
+    case ResourceType::MapConfig:
+    case ResourceType::BoundLayerConfig:
+        return false;
+    default:
+        return true;
+    }
+}
+
+void FetchTaskImpl::saveToCache()
+{
+    assert(!map->resources.disableCache);
+    assert(replyCode == 200);
     try
     {
         writeLocalFileBuffer(map->convertNameToCache(name), contentData);
@@ -23,8 +77,9 @@ void FetchTask::saveToCache(MapImpl *map)
 	}
 }
 
-bool FetchTask::loadFromCache(MapImpl *map)
+bool FetchTaskImpl::loadFromCache()
 {
+    assert(allowDiskCache());
     try
     {
         std::string path = map->convertNameToCache(name);
@@ -43,7 +98,7 @@ bool FetchTask::loadFromCache(MapImpl *map)
     return false;
 }
 
-void FetchTask::loadFromInternalMemory()
+void FetchTaskImpl::loadFromInternalMemory()
 {
     try
     {
@@ -58,40 +113,9 @@ void FetchTask::loadFromInternalMemory()
     }
 }
 
-const std::string MapImpl::convertNameToCache(const std::string &path)
+void FetchTaskImpl::fetchDone()
 {
-    auto p = path.find("://");
-    std::string a = p == std::string::npos ? path : path.substr(p + 3);
-    std::string b = boost::filesystem::path(a).parent_path().string();
-    std::string c = a.substr(b.length() + 1);
-    if (b.empty() || c.empty())
-        LOGTHROW(err2, std::runtime_error)
-                << "Cannot convert path '" << path
-                << "' into a cache path";
-    return resources.cachePath
-            + convertNameToPath(b, false) + "/"
-            + convertNameToPath(c, false);
-}
-
-const std::string MapImpl::convertNameToPath(std::string path,
-                                           bool preserveSlashes)
-{
-    path = boost::filesystem::path(path).normalize().string();
-    std::string res;
-    res.reserve(path.size());
-    for (char it : path)
-    {
-        if ((it >= 'a' && it <= 'z')
-         || (it >= 'A' && it <= 'Z')
-         || (it >= '0' && it <= '9')
-         || (it == '-' || it == '.'))
-            res += it;
-        else if (preserveSlashes && (it == '/' || it == '\\'))
-            res += '/';
-        else
-            res += '_';
-    }
-    return res;
+    map->fetchedFile(this);
 }
 
 } // namespace vts

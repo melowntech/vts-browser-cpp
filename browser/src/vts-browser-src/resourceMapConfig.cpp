@@ -2,29 +2,22 @@
 #include <boost/algorithm/string.hpp>
 #include <vts-libs/vts/mapconfig-json.hpp>
 
-#include "resource.hpp"
-#include "mapConfig.hpp"
+#include "resources.hpp"
 
 namespace vts
 {
 
-const std::string convertPath(const std::string &path,
-                              const std::string &parent)
-{
-    return utility::Uri(parent).resolve(path).str();
-}
-
-SurfaceInfo::SurfaceInfo(const SurfaceCommonConfig &surface,
+MapConfig::SurfaceInfo::SurfaceInfo(const SurfaceCommonConfig &surface,
                          const std::string &parentPath)
     : SurfaceCommonConfig(surface)
 {
-    urlMeta.parse(convertPath(urls3d->meta, parentPath));
-    urlMesh.parse(convertPath(urls3d->mesh, parentPath));
-    urlIntTex.parse(convertPath(urls3d->texture, parentPath));
-    urlNav.parse(convertPath(urls3d->nav, parentPath));
+    urlMeta.parse(MapConfig::convertPath(urls3d->meta, parentPath));
+    urlMesh.parse(MapConfig::convertPath(urls3d->mesh, parentPath));
+    urlIntTex.parse(MapConfig::convertPath(urls3d->texture, parentPath));
+    urlNav.parse(MapConfig::convertPath(urls3d->nav, parentPath));
 }
 
-BoundInfo::BoundInfo(const BoundLayer &layer) : BoundLayer(layer)
+MapConfig::BoundInfo::BoundInfo(const BoundLayer &layer) : BoundLayer(layer)
 {
     urlExtTex.parse(url);
     if (metaUrl)
@@ -34,14 +27,14 @@ BoundInfo::BoundInfo(const BoundLayer &layer) : BoundLayer(layer)
     }
 }
 
-SurfaceStackItem::SurfaceStackItem() : alien(false)
+MapConfig::SurfaceStackItem::SurfaceStackItem() : alien(false)
 {}
 
-MapConfig::MapConfig(const std::string &name) : Resource(name, false),
+MapConfig::MapConfig() :
     autorotate(0)
 {}
 
-void MapConfig::load(MapImpl *)
+void MapConfig::load()
 {
     clear();
     LOG(info3) << "Parsing map config '" << impl->name << "'";
@@ -74,6 +67,12 @@ void MapConfig::clear()
     autorotate = 0;
 }
 
+const std::string MapConfig::convertPath(const std::string &path,
+                                         const std::string &parent)
+{
+    return utility::Uri(parent).resolve(path).str();
+}
+
 vtslibs::vts::SurfaceCommonConfig *MapConfig::findGlue(
         const vtslibs::vts::Glue::Id &id)
 {
@@ -95,7 +94,7 @@ vtslibs::vts::SurfaceCommonConfig *MapConfig::findSurface(const std::string &id)
     return nullptr;
 }
 
-BoundInfo *MapConfig::getBoundInfo(const std::string &id)
+MapConfig::BoundInfo *MapConfig::getBoundInfo(const std::string &id)
 {
     auto it = boundInfos.find(id);
     if (it == boundInfos.end())
@@ -243,11 +242,7 @@ void MapConfig::generateSurfaceStack()
     }
 }
 
-ExternalBoundLayer::ExternalBoundLayer(const std::string &name)
-    : Resource(name, false)
-{}
-
-void ExternalBoundLayer::load(MapImpl *)
+void ExternalBoundLayer::load()
 {
     detail::Wrapper w(impl->contentData);
     *(vtslibs::registry::BoundLayer*)this

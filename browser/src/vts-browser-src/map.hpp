@@ -1,32 +1,20 @@
 #ifndef MAP_H_cvukikljqwdf
 #define MAP_H_cvukikljqwdf
 
-#include <string>
-#include <memory>
 #include <queue>
-#include <atomic>
-#include <unordered_map>
-#include <unordered_set>
-
 #include <boost/thread/mutex.hpp>
-#include <boost/optional/optional_io.hpp>
+//#include <boost/optional/optional_io.hpp>
 #include <vts-libs/vts/urltemplate.hpp>
 #include <vts-libs/vts/nodeinfo.hpp>
 #include <dbglog/dbglog.hpp>
-#include <utility/uri.hpp>
+//#include <utility/uri.hpp>
 
 #include "include/vts-browser/statistics.hpp"
 #include "include/vts-browser/options.hpp"
 #include "include/vts-browser/draws.hpp"
-#include "include/vts-browser/resources.hpp"
-#include "include/vts-browser/buffer.hpp"
 #include "include/vts-browser/math.hpp"
-#include "include/vts-browser/credits.hpp"
 
-#include "mapConfig.hpp"
-#include "auth.hpp"
-#include "resource.hpp"
-#include "resourceMap.hpp"
+#include "resources.hpp"
 #include "credits.hpp"
 
 namespace vts
@@ -57,7 +45,7 @@ public:
     
     UrlTemplate::Vars orig;
     UrlTemplate::Vars vars;
-    BoundInfo *bound;
+    MapConfig::BoundInfo *bound;
     int depth;
     bool watertight;
     bool transparent;
@@ -67,9 +55,9 @@ class RenderTask
 {
 public:
     std::shared_ptr<MeshAggregate> meshAgg;
-    std::shared_ptr<GpuMesh> mesh;
-    std::shared_ptr<GpuTexture> textureColor;
-    std::shared_ptr<GpuTexture> textureMask;
+    std::shared_ptr<Resource> mesh;
+    std::shared_ptr<Resource> textureColor;
+    std::shared_ptr<Resource> textureMask;
     mat4 model;
     mat3f uvm;
     vec4f color;
@@ -90,7 +78,7 @@ public:
     std::vector<std::shared_ptr<RenderTask>> draws;
     std::vector<std::shared_ptr<TraverseNode>> childs;
     std::vector<vtslibs::registry::CreditId> credits;
-    const SurfaceStackItem *surface;
+    const MapConfig::SurfaceStackItem *surface;
     uint32 lastAccessTime;
     uint32 flags;
     float texelSize;
@@ -113,10 +101,11 @@ public:
 
     class Map *const map;
     std::shared_ptr<MapConfig> mapConfig;
-    std::shared_ptr<AuthJson> auth;
+    std::shared_ptr<AuthConfig> auth;
     std::string mapConfigPath;
     std::string mapConfigView;
     std::string authPath;
+    std::string clientId;
     MapCallbacks callbacks;
     MapStatistics statistics;
     MapOptions options;
@@ -148,9 +137,9 @@ public:
         std::unordered_set<std::string> failedAvailUrlNoLock;
         std::string cachePath;
         std::atomic_uint downloads;
+        std::shared_ptr<Fetcher> fetcher;
         boost::mutex mutPrepareQue;
         boost::mutex mutFailedAvailUrls;
-        Fetcher *fetcher;
         bool disableCache;
         
         Resources(const MapCreateOptions &options);
@@ -175,7 +164,7 @@ public:
         Renderer();
     } renderer;
     
-    // map foundation methods
+    // map api methods
     void setMapConfigPath(const std::string &mapConfigPath,
                           const std::string &authPath);
     void purgeHard();
@@ -196,20 +185,21 @@ public:
     double positionObjectiveDistance();
     
     // resources methods
-    void resourceDataInitialize(Fetcher *fetcher);
+    void resourceDataInitialize(const std::shared_ptr<Fetcher> &fetcher);
     void resourceDataFinalize();
     bool resourceDataTick();
     void resourceRenderInitialize();
     void resourceRenderFinalize();
     void resourceRenderTick();
-    void loadResource(std::shared_ptr<Resource> r);
-    void fetchedFile(std::shared_ptr<FetchTask> task);
-    void touchResource(std::shared_ptr<Resource> resource);
-    void touchResource(std::shared_ptr<Resource> resource, double priority);
+    void fetchedFile(FetchTaskImpl *task);
+    void loadResource(const std::shared_ptr<Resource> &resource);
+    void touchResource(const std::shared_ptr<Resource> &resource);
+    void touchResource(const std::shared_ptr<Resource> &resource,
+                       double priority);
     std::shared_ptr<GpuTexture> getTexture(const std::string &name);
     std::shared_ptr<GpuMesh> getMeshRenderable(
             const std::string &name);
-    std::shared_ptr<AuthJson> getAuth(const std::string &name);
+    std::shared_ptr<AuthConfig> getAuth(const std::string &name);
     std::shared_ptr<MapConfig> getMapConfig(const std::string &name);
     std::shared_ptr<MetaTile> getMetaTile(const std::string &name);
     std::shared_ptr<NavTile> getNavTile(const std::string &name);
@@ -234,7 +224,7 @@ public:
     void touchResources(std::shared_ptr<RenderTask> task);
     bool visibilityTest(const TraverseNode *trav);
     bool coarsenessTest(const TraverseNode *trav);
-    Validity checkMetaNode(SurfaceInfo *surface, const TileId &nodeId,
+    Validity checkMetaNode(MapConfig::SurfaceInfo *surface, const TileId &nodeId,
                            const MetaNode *&node);
     void renderNode(std::shared_ptr<TraverseNode> &trav);
     void traverseValidNode(std::shared_ptr<TraverseNode> &trav);

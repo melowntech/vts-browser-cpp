@@ -46,24 +46,24 @@ public:
     std::vector<vts::uint32> uniformLocations;
 };
 
-class GpuTextureImpl : public QOpenGLTexture, public vts::GpuTexture
+class GpuTextureImpl : public QOpenGLTexture
 {
 public:
-    GpuTextureImpl(const std::string &name);
+    GpuTextureImpl();
     
     void bind();
-    void loadTexture(const vts::GpuTextureSpec &spec);
+    void loadTexture(vts::ResourceInfo &info, const vts::GpuTextureSpec &spec);
     
     bool grayscale;
 };
 
-class GpuMeshImpl : public vts::GpuMesh
+class GpuMeshImpl
 {
 public:
-    GpuMeshImpl(const std::string &name);
+    GpuMeshImpl();
     
     void draw();
-    void loadMesh(const vts::GpuMeshSpec &spec);
+    void loadMesh(vts::ResourceInfo &info, const vts::GpuMeshSpec &spec);
 
     QOpenGLVertexArrayObject arrayObject;
     QOpenGLBuffer vertexBuffer;

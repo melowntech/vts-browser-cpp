@@ -41,14 +41,14 @@ public:
             font = nk_font_atlas_add_from_memory(&atlas,
                 buffer.data(), buffer.size(), 14, &cfg);
             vts::GpuTextureSpec spec;
-            spec.verticalFlip = false;
             const void* img = nk_font_atlas_bake(&atlas,
                 (int*)&spec.width, (int*)&spec.height, NK_FONT_ATLAS_RGBA32);
             spec.components = 4;
             spec.buffer.allocate(spec.width * spec.height * spec.components);
             memcpy(spec.buffer.data(), img, spec.buffer.size());
-            fontTexture = std::make_shared<GpuTextureImpl>("font texture");
-            fontTexture->loadTexture(spec);
+            fontTexture = std::make_shared<GpuTextureImpl>();
+            vts::ResourceInfo info;
+            fontTexture->loadTexture(info, spec);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             nk_font_atlas_end(&atlas, nk_handle_id(fontTexture->id), &null);
@@ -95,7 +95,7 @@ public:
         }
         
         { // prepare mesh buffers
-            mesh = std::make_shared<GpuMeshImpl>("gui mesh");
+            mesh = std::make_shared<GpuMeshImpl>();
             glGenVertexArrays(1, &mesh->vao);
             glGenBuffers(1, &mesh->vbo);
             glGenBuffers(1, &mesh->vio);
@@ -578,36 +578,42 @@ public:
             }
             nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
             { // position
-                vts::Point n = window->map->getPositionPoint();
-                n = window->map->convert(n, vts::Srs::Navigation,
+                double n[3];
+                window->map->getPositionPoint(n);
+                window->map->convert(n, n, vts::Srs::Navigation,
                                          (vts::Srs)positionSrs);
                 nk_label(&ctx, "X:", NK_TEXT_LEFT);
-                sprintf(buffer, "%.8f", n.x());
+                sprintf(buffer, "%.8f", n[0]);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Y:", NK_TEXT_LEFT);
-                sprintf(buffer, "%.8f", n.y());
+                sprintf(buffer, "%.8f", n[1]);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Z:", NK_TEXT_LEFT);
-                sprintf(buffer, "%.8f", n.z());
+                sprintf(buffer, "%.8f", n[2]);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Auto: ", NK_TEXT_LEFT);
                 nk_slider_float(&ctx, 0, &autoPan, 3, 0.1);
                 if (std::abs(autoPan) > 1e-6f)
-                    window->map->pan(vts::Point(0, autoPan, 0));
+                {
+                    n[0] = n[2] = 0;
+                    n[1] = autoPan;
+                    window->map->pan(n);
+                }
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset altitude"))
                     window->map->resetPositionAltitude();
             }
             { // rotation
-                vts::Point r = window->map->getPositionRotation();
+                double n[3];
+                window->map->getPositionRotation(n);
                 nk_label(&ctx, "Rotation:", NK_TEXT_LEFT);
-                sprintf(buffer, "%5.1f", r.x());
+                sprintf(buffer, "%5.1f", n[0]);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
-                sprintf(buffer, "%5.1f", r.y());
+                sprintf(buffer, "%5.1f", n[1]);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
-                sprintf(buffer, "%5.1f", r.z());
+                sprintf(buffer, "%5.1f", n[2]);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Auto:", NK_TEXT_LEFT);
                 window->map->setAutorotate(nk_slide_float(&ctx,
@@ -615,10 +621,9 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset rotation"))
                 {
-                    r.x() = 0;
-                    r.y() = 270;
-                    r.z() = 0;
-                    window->map->setPositionRotation(r);
+                    n[0] = n[2] = 0;
+                    n[1] = 270;
+                    window->map->setPositionRotation(n);
                     window->map->setAutorotate(0);
                 }
             }
@@ -820,23 +825,22 @@ public:
                 nk_label_colored(&ctx, buffer, NK_TEXT_RIGHT, c);
                 if (m.open)
                 {
-                    vts::Point n;
-                    vts::vecToPoint(m.coord, n);
-                    n = window->map->convert(n, vts::Srs::Physical,
+                    double n[3] = { m.coord(0), m.coord(1), m.coord(2) };
+                    window->map->convert(n, n, vts::Srs::Physical,
                                              (vts::Srs)positionSrs);
-                    sprintf(buffer, "%.8f", n.x());
+                    sprintf(buffer, "%.8f", n[0]);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                     if (nk_button_label(&ctx, "Go"))
                     {
-                        vts::vecToPoint(m.coord, n);
-                        n = window->map->convert(n, vts::Srs::Physical,
+                        double n[3] = { m.coord(0), m.coord(1), m.coord(2) };
+                        window->map->convert(n, n, vts::Srs::Physical,
                                                  vts::Srs::Navigation);
                         window->map->setPositionPoint(n);
                     }
-                    sprintf(buffer, "%.8f", n.y());
+                    sprintf(buffer, "%.8f", n[1]);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                     nk_label(&ctx, "", NK_TEXT_RIGHT);
-                    sprintf(buffer, "%.8f", n.z());
+                    sprintf(buffer, "%.8f", n[2]);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                     if (nk_button_label(&ctx, "Remove"))
                     {

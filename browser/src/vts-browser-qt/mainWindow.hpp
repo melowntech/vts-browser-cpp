@@ -23,7 +23,7 @@ public:
 
     Gl *gl;
     vts::Map *map;
-    vts::Fetcher *fetcher;
+    std::shared_ptr<vts::Fetcher> fetcher;
 
 private:
     void mouseMove(class QMouseEvent *event);
@@ -32,10 +32,8 @@ private:
     void mouseWheel(class QWheelEvent *event);
     void draw(const vts::DrawTask &task);
     
-    std::shared_ptr<vts::GpuTexture> createTexture
-        (const std::string &name);
-    std::shared_ptr<vts::GpuMesh> createMesh
-        (const std::string &name);
+    void loadTexture(vts::ResourceInfo &info, const vts::GpuTextureSpec &spec);
+    void loadMesh(vts::ResourceInfo &info, const vts::GpuMeshSpec &spec);
     
     std::shared_ptr<GpuShaderImpl> shaderTexture;
     std::shared_ptr<GpuShaderImpl> shaderColor;

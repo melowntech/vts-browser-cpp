@@ -1,54 +1,62 @@
-#include <vts-libs/vts/meshio.hpp>
-
-#include "include/vts-browser/map.hpp"
 #include "map.hpp"
-#include "image.hpp"
+#include "obj.hpp"
 
 namespace vts
 {
 
-MetaTile::MetaTile(const std::string &name) : Resource(name, true),
-    vtslibs::vts::MetaTile(vtslibs::vts::TileId(), 0)
+GpuMeshSpec::GpuMeshSpec() : verticesCount(0), indicesCount(0),
+    faceMode(FaceMode::Triangles)
 {}
 
-void MetaTile::load(MapImpl *)
+GpuMeshSpec::GpuMeshSpec(const Buffer &buffer) :
+    verticesCount(0), indicesCount(0),
+    faceMode(FaceMode::Triangles)
 {
-    LOG(info2) << "Loading meta tile '" << impl->name << "'";
-    detail::Wrapper w(impl->contentData);
-    *(vtslibs::vts::MetaTile*)this
-            = vtslibs::vts::loadMetaTile(w, 5, impl->name);
-    impl->ramMemoryCost = this->size() * sizeof(vtslibs::vts::MetaNode);
+    uint32 dummy;
+    uint32 fm;
+    decodeObj(buffer, fm, vertices, indices, verticesCount, dummy);
+    switch (fm)
+    {
+    case 1:
+        faceMode = FaceMode::Points;
+        break;
+    case 2:
+        faceMode = FaceMode::Lines;
+        break;
+    case 3:
+        faceMode = FaceMode::Triangles;
+        break;
+    default:
+        LOGTHROW(fatal, std::invalid_argument) << "Invalid face mode";
+    }
 }
 
-NavTile::NavTile(const std::string &name) : Resource(name, true)
+GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0),
+    components(0), type(Type::Float), enable(false), normalized(false)
 {}
 
-void NavTile::load(MapImpl *)
+void GpuMesh::load()
 {
-    LOG(info2) << "Loading navigation tile '" << impl->name << "'";
-    GpuTextureSpec spec;
-    decodeImage(impl->contentData, spec.buffer,
-                spec.width, spec.height, spec.components);
-    if (spec.width != 256 || spec.height != 256 || spec.components != 1)
-        LOGTHROW(err1, std::runtime_error) << "invalid navtile image";
-    data.resize(256 * 256);
-    memcpy(data.data(), spec.buffer.data(), 256 * 256);
-}
-
-vec2 NavTile::sds2px(const vec2 &point, const math::Extents2 &extents)
-{
-    return vecFromUblas<vec2>(vtslibs::vts::NavTile::sds2px(
-                                  vecToUblas<math::Point2>(point), extents));
+    LOG(info2) << "Loading gpu mesh '" << impl->name << "'";
+    GpuMeshSpec spec(impl->contentData);
+    spec.attributes.resize(3);
+    spec.attributes[0].enable = true;
+    spec.attributes[0].stride = sizeof(vec3f) + sizeof(vec2f);
+    spec.attributes[0].components = 3;
+    spec.attributes[1].enable = true;
+    spec.attributes[1].stride = spec.attributes[0].stride;
+    spec.attributes[1].components = 2;
+    spec.attributes[1].offset = sizeof(vec3f);
+    spec.attributes[2] = spec.attributes[1];
+    impl->map->callbacks.loadMesh(info, spec);
 }
 
 MeshPart::MeshPart() : textureLayer(0), surfaceReference(0),
     internalUv(false), externalUv(false)
 {}
 
-MeshAggregate::MeshAggregate(const std::string &name) : Resource(name, true)
-{}
-
 namespace {
+
 const mat4 findNormToPhys(const math::Extents3 &extents)
 {
     vec3 u = vecFromUblas<vec3>(extents.ur);
@@ -59,9 +67,10 @@ const mat4 findNormToPhys(const math::Extents3 &extents)
     mat4 tr = translationMatrix(c);
     return tr * sc;
 }
-}
 
-void MeshAggregate::load(MapImpl *base)
+} // namespace
+
+void MeshAggregate::load()
 {
     LOG(info2) << "Loading (aggregated) mesh '" << impl->name << "'";
     
@@ -78,10 +87,10 @@ void MeshAggregate::load(MapImpl *base)
 
         char tmp[10];
         sprintf(tmp, "%d", mi);
-        std::shared_ptr<GpuMesh> gm
-                = std::dynamic_pointer_cast<GpuMesh>
-                (base->callbacks.createMesh
-                 (impl->name + "#" + tmp));
+        std::shared_ptr<GpuMesh> gm = std::make_shared<GpuMesh>();
+        gm->impl = std::make_shared<FetchTaskImpl>(impl->map,
+                    std::string(impl->name) + "#" + tmp,
+                    FetchTask::ResourceType::MeshPart);
 
         uint32 vertexSize = sizeof(vec3f);
         if (m.tc.size())
@@ -90,6 +99,7 @@ void MeshAggregate::load(MapImpl *base)
             vertexSize += sizeof(vec2f);
 
         GpuMeshSpec spec;
+        spec.attributes.resize(3);
         spec.verticesCount = m.faces.size() * 3;
         spec.vertices.allocate(spec.verticesCount * vertexSize);
         uint32 offset = 0;
@@ -133,8 +143,8 @@ void MeshAggregate::load(MapImpl *base)
             offset += m.faces.size() * sizeof(vec2f) * 3;
         }
 
-        gm->loadMesh(spec);
-        gm->impl->state = ResourceImpl::State::ready;
+        impl->map->callbacks.loadMesh(gm->info, spec);
+        gm->impl->state = FetchTaskImpl::State::ready;
 
         MeshPart part;
         part.renderable = gm;
@@ -147,51 +157,13 @@ void MeshAggregate::load(MapImpl *base)
         submeshes.push_back(part);
     }
 
-    impl->gpuMemoryCost = 0;
-    impl->ramMemoryCost = meshes.size() * sizeof(MeshPart);
+    info.gpuMemoryCost = 0;
+    info.ramMemoryCost = meshes.size() * sizeof(MeshPart);
     for (auto &&it : submeshes)
     {
-        impl->gpuMemoryCost += it.renderable->impl->gpuMemoryCost;
-        impl->ramMemoryCost += it.renderable->impl->ramMemoryCost;
+        info.gpuMemoryCost += it.renderable->info.gpuMemoryCost;
+        info.ramMemoryCost += it.renderable->info.ramMemoryCost;
     }
-}
-
-BoundMetaTile::BoundMetaTile(const std::string &name) : Resource(name, true)
-{}
-
-void BoundMetaTile::load(MapImpl *)
-{
-    LOG(info2) << "Loading bound meta tile '" << impl->name << "'";
-    
-    Buffer buffer = std::move(impl->contentData);
-    GpuTextureSpec spec;
-    decodeImage(buffer, spec.buffer,
-                spec.width, spec.height, spec.components);
-    if (spec.buffer.size() != sizeof(flags))
-        LOGTHROW(err1, std::runtime_error)
-                << "bound meta tile has invalid resolution";
-    memcpy(flags, spec.buffer.data(), spec.buffer.size());
-    impl->ramMemoryCost = spec.buffer.size();
-}
-
-BoundMaskTile::BoundMaskTile(const std::string &name) : Resource(name, true)
-{}
-
-void BoundMaskTile::load(MapImpl *base)
-{
-    LOG(info2) << "Loading bound mask tile '" << impl->name << "'";
-    
-    if (!texture)
-        texture = std::dynamic_pointer_cast<GpuTexture>(
-                    base->callbacks.createTexture(impl->name + "#tex"));
-    
-    Buffer buffer = std::move(impl->contentData);
-    GpuTextureSpec spec;
-    decodeImage(buffer, spec.buffer,
-                spec.width, spec.height, spec.components);
-    texture->loadTexture(spec);
-    impl->gpuMemoryCost = texture->impl->gpuMemoryCost;
-    impl->ramMemoryCost = texture->impl->ramMemoryCost;
 }
 
 } // namespace vts

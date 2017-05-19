@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "foundation.hpp"
-#include "point.hpp"
 
 namespace vts
 {
@@ -39,7 +38,7 @@ public:
     /// returns percentage estimation of progress till complete render
     double getMapRenderProgress() const;
     
-    void dataInitialize(class Fetcher *fetcher);
+    void dataInitialize(const std::shared_ptr<class Fetcher> &fetcher);
     bool dataTick();
     void dataFinalize();
 
@@ -53,14 +52,14 @@ public:
     class MapDraws &draws();
     class MapCredits &credits();
 
-    void pan(const Point &value);
-    void rotate(const Point &value);
+    void pan(const double value[3]);
+    void rotate(const double value[3]);
     void setPositionSubjective(bool subjective, bool convert);
     bool getPositionSubjective() const;
-    void setPositionPoint(const Point &point); /// navigation srs
-    const Point getPositionPoint() const; /// navigation srs
-    void setPositionRotation(const Point &point); /// degrees
-    const Point getPositionRotation() const; /// degrees
+    void setPositionPoint(const double point[3]); /// navigation srs
+    void getPositionPoint(double point[3]) const; /// navigation srs
+    void setPositionRotation(const double point[3]); /// degrees
+    void getPositionRotation(double point[3]) const; /// degrees
     void setPositionViewExtent(double viewExtent); /// physical length
     double getPositionViewExtent() const; /// physical length
     void setPositionFov(double fov); /// degrees
@@ -71,7 +70,8 @@ public:
     void setAutorotate(double rotate);
     double getAutorotate() const;
     
-    const Point convert(const Point &point, Srs from, Srs to) const;
+    void convert(const double pointFrom[3], double pointTo[3],
+                Srs srsFrom, Srs srsTo) const;
     
     const std::vector<std::string> getResourceSurfaces() const;
     const std::vector<std::string> getResourceBoundLayers() const;

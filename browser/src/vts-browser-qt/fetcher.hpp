@@ -12,10 +12,9 @@ public:
     FetcherImpl();
     ~FetcherImpl();
 
-    void initialize(Func func) override;
+    void initialize() override;
     void finalize() override;
-    
-    void fetch(std::shared_ptr<vts::FetchTask> task) override;
+    void fetch(const std::shared_ptr<vts::FetchTask> &task) override;
 
     std::shared_ptr<FetcherDetail> impl;
 };

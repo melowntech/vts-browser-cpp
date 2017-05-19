@@ -35,7 +35,7 @@ public:
     std::vector<vts::uint32> uniformLocations;
 };
 
-class GpuTextureImpl : public vts::GpuTexture
+class GpuTextureImpl
 {
 public:
     GLuint id;
@@ -44,25 +44,25 @@ public:
     static GLenum findInternalFormat(const vts::GpuTextureSpec &spec);
     static GLenum findFormat(const vts::GpuTextureSpec &spec);
     
-    GpuTextureImpl(const std::string &name);
+    GpuTextureImpl();
     ~GpuTextureImpl();
     void clear();
     void bind();
-    void loadTexture(const vts::GpuTextureSpec &spec) override;
+    void loadTexture(vts::ResourceInfo &info, const vts::GpuTextureSpec &spec);
 };
 
-class GpuMeshImpl : public vts::GpuMesh
+class GpuMeshImpl
 {
 public:
     vts::GpuMeshSpec spec;
     GLuint vao, vbo, vio;
 
-    GpuMeshImpl(const std::string &name);
+    GpuMeshImpl();
     ~GpuMeshImpl();
     void clear();
     void bind();
     void dispatch();
-    void loadMesh(const vts::GpuMeshSpec &spec) override;
+    void loadMesh(vts::ResourceInfo &info, const vts::GpuMeshSpec &spec);
 };
 
 #endif

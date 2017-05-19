@@ -39,7 +39,7 @@ void DataThread::run()
     while (!stop && !map)
         usleep(1000);
     setThreadName("downloader"); // the downloader threads inherits the name
-    map->dataInitialize(fetcher.get());
+    map->dataInitialize(fetcher);
     setThreadName("data");
     while (!stop)
     {

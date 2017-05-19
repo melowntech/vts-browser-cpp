@@ -3,8 +3,8 @@
 
 #include <vector>
 
-#include <vts-browser/point.hpp>
 #include <vts-browser/math.hpp>
+#include <vts-browser/resources.hpp>
 #include "gpuContext.hpp"
 
 class GLFWwindow;
@@ -62,8 +62,8 @@ public:
     void drawVtsTask(vts::DrawTask &t);
     void drawMark(const Mark &m, const Mark *prev);
     
-    std::shared_ptr<vts::GpuTexture> createTexture(const std::string &name);
-    std::shared_ptr<vts::GpuMesh> createMesh(const std::string &name);
+    void loadTexture(vts::ResourceInfo &info, const vts::GpuTextureSpec &spec);
+    void loadMesh(vts::ResourceInfo &info, const vts::GpuMeshSpec &spec);
     void cameraOverrideParam(double &fov, double &aspect,
                              double &near, double &far);
     void cameraOverrideView(double *mat);

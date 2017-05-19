@@ -1,18 +1,19 @@
-#ifndef RESOURCE_H_seghioqnh
-#define RESOURCE_H_seghioqnh
+#ifndef FETCHTASK_H_erbgfhufjgf
+#define FETCHTASK_H_erbgfhufjgf
 
 #include <string>
 #include <atomic>
 #include <vts-libs/registry/referenceframe.hpp>
 #include <boost/optional.hpp>
 
-#include "include/vts-browser/resources.hpp"
 #include "include/vts-browser/fetcher.hpp"
 
 namespace vts
 {
 
-class ResourceImpl : public FetchTask
+class MapImpl;
+
+class FetchTaskImpl : public FetchTask
 {
 public:
     enum class State
@@ -25,18 +26,24 @@ public:
         finalizing,
     };
     
-    ResourceImpl(const std::string &name, bool allowDiskCache);
-    virtual ~ResourceImpl();
+    FetchTaskImpl(MapImpl *map, const std::string &name,
+                 FetchTask::ResourceType resourceType);
+    virtual ~FetchTaskImpl();
 
     bool performAvailTest() const;
-    
+    bool allowDiskCache() const;
+    void saveToCache();
+    bool loadFromCache();
+    void loadFromInternalMemory();
+    virtual void fetchDone() override;
+
+    const std::string name;
+    MapImpl *const map;
     boost::optional<vtslibs::registry::BoundLayer::Availability> availTest;
     std::atomic<State> state;
     double priority;
+    uint32 redirectionsCount;    
     uint32 lastAccessTick;
-    uint32 ramMemoryCost;
-    uint32 gpuMemoryCost;
-    bool allowDiskCache;
 };
 
 } // namespace vts

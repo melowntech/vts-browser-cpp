@@ -1,5 +1,5 @@
-#ifndef RENDERING_H_erbgfhugfsugf
-#define RENDERING_H_erbgfhugfsugf
+#ifndef DRAWS_H_qwedfzugvsdfh
+#define DRAWS_H_qwedfzugvsdfh
 
 #include <vector>
 #include <memory>
@@ -12,9 +12,9 @@ namespace vts
 class VTS_API DrawTask
 {
 public:
-    std::shared_ptr<class GpuMesh> mesh;
-    std::shared_ptr<class GpuTexture> texColor;
-    std::shared_ptr<class GpuTexture> texMask;
+    std::shared_ptr<void> mesh;
+    std::shared_ptr<void> texColor;
+    std::shared_ptr<void> texMask;
     float mvp[16];
     float uvm[9];
     float color[4];

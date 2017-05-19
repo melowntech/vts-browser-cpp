@@ -24,27 +24,24 @@ MainWindow::MainWindow() : gl(nullptr), fetcher(nullptr), isMouseDetached(false)
     setSurfaceType(QWindow::OpenGLSurface);
     gl = new Gl(this);
 
-    fetcher = new FetcherImpl();
+    fetcher = std::make_shared<FetcherImpl>();
 }
 
 MainWindow::~MainWindow()
-{
-    delete fetcher;
-}
+{}
 
 void MainWindow::mouseMove(QMouseEvent *event)
 {
     QPoint diff = event->globalPos() - mouseLastPosition;
+    double n[3] = { (double)diff.x(), (double)diff.y(), 0 };
     if (event->buttons() & Qt::LeftButton)
     { // pan
-        vts::Point value(diff.x(), diff.y(), 0);
-        map->pan(value);
+        map->pan(n);
     }
     if ((event->buttons() & Qt::RightButton)
         || (event->buttons() & Qt::MiddleButton))
     { // rotate
-        vts::Point value(diff.x(), diff.y(), 0);
-        map->rotate(value);
+        map->rotate(n);
     }
     mouseLastPosition = event->globalPos();
 }
@@ -57,8 +54,8 @@ void MainWindow::mouseRelease(QMouseEvent *)
 
 void MainWindow::mouseWheel(QWheelEvent *event)
 {
-    vts::Point value(0, 0, event->angleDelta().y());
-    map->pan(value);
+    double n[3] = { 0, 0, (double)event->angleDelta().y() };
+    map->pan(n);
 }
 
 bool MainWindow::event(QEvent *event)
@@ -142,12 +139,12 @@ void MainWindow::draw(const vts::DrawTask &t)
         {
             shaderTexture->uniform(3, 1);
             gl->glActiveTexture(GL_TEXTURE0 + 1);
-            dynamic_cast<GpuTextureImpl*>(t.texMask.get())->bind();
+            ((GpuTextureImpl*)t.texMask.get())->bind();
             gl->glActiveTexture(GL_TEXTURE0 + 0);
         }
         else
             shaderTexture->uniform(3, 0);
-        GpuTextureImpl *tex = dynamic_cast<GpuTextureImpl*>(t.texColor.get());
+        GpuTextureImpl *tex = (GpuTextureImpl*)t.texColor.get();
         tex->bind();
         shaderTexture->uniform(4, (int)tex->grayscale);
         shaderTexture->uniform(5, t.color[3]);
@@ -158,7 +155,7 @@ void MainWindow::draw(const vts::DrawTask &t)
         shaderColor->uniformMat4(0, t.mvp);
         shaderColor->uniformVec4(1, t.color);
     }
-    GpuMeshImpl *m = dynamic_cast<GpuMeshImpl*>(t.mesh.get());
+    GpuMeshImpl *m = (GpuMeshImpl*)t.mesh.get();
     m->draw();
 }
 
@@ -171,10 +168,10 @@ void MainWindow::tick()
     if (!gl->isValid())
         throw std::runtime_error("invalid gl context");
     
-    map->callbacks().createTexture = std::bind(&MainWindow::createTexture,
-                                   this, std::placeholders::_1);
-    map->callbacks().createMesh = std::bind(&MainWindow::createMesh,
-                                this, std::placeholders::_1);
+    map->callbacks().loadTexture = std::bind(&MainWindow::loadTexture, this,
+                std::placeholders::_1, std::placeholders::_2);
+    map->callbacks().loadMesh = std::bind(&MainWindow::loadMesh, this,
+                std::placeholders::_1, std::placeholders::_2);
 
     gl->makeCurrent(this);
 
@@ -214,15 +211,19 @@ void MainWindow::tick()
     gl->swapBuffers(this);
 }
 
-std::shared_ptr<vts::GpuTexture> MainWindow::createTexture(
-        const std::string &name)
+void MainWindow::loadTexture(vts::ResourceInfo &info,
+                             const vts::GpuTextureSpec &spec)
 {
-    return std::make_shared<GpuTextureImpl>(name);
+    auto r = std::make_shared<GpuTextureImpl>();
+    r->loadTexture(info, spec);
+    info.userData = r;
 }
 
-std::shared_ptr<vts::GpuMesh> MainWindow::createMesh(
-        const std::string &name)
+void MainWindow::loadMesh(vts::ResourceInfo &info,
+                          const vts::GpuMeshSpec &spec)
 {
-    return std::make_shared<GpuMeshImpl>(name);
+    auto r = std::make_shared<GpuMeshImpl>();
+    r->loadMesh(info, spec);
+    info.userData = r;
 }
 

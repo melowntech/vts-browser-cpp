@@ -11,20 +11,6 @@ namespace vts
 namespace
 {
 
-inline const vec3 vecFromPoint(const Point &in)
-{
-    vec3 r;
-    vecFromPoint(in, r);
-    return r;
-}
-
-inline const Point vecToPoint(const vec3 &in)
-{
-    Point r;
-    vecToPoint(in, r);
-    return r;
-}
-
 inline const std::string srsConvert(MapConfig *config, Srs srs)
 {
     switch(srs)
@@ -119,19 +105,8 @@ MapView::BoundLayerInfo::BoundLayerInfo(const std::string &id) :
     id(id), alpha(1)
 {}
 
-Point::Point()
-{
-    data[0] = data[1] = data[2] = 0;
-}
-
-Point::Point(double x, double y, double z)
-{
-    data[0] = x;
-    data[1] = y;
-    data[2] = z;
-}
-
-MapCreateOptions::MapCreateOptions() : disableCache(false)
+MapCreateOptions::MapCreateOptions(const std::string &clientId) :
+    clientId(clientId), disableCache(false)
 {}
 
 Map::Map(const MapCreateOptions &options)
@@ -145,7 +120,7 @@ Map::~Map()
     LOG(info4) << "Destroying map";
 }
 
-void Map::dataInitialize(Fetcher *fetcher)
+void Map::dataInitialize(const std::shared_ptr<Fetcher> &fetcher)
 {
     dbglog::thread_id("data");
     impl->resourceDataInitialize(fetcher);
@@ -222,18 +197,18 @@ double Map::getMapRenderProgress() const
     return 0.5; // todo some better heuristic
 }
 
-void Map::pan(const Point &value)
+void Map::pan(const double value[3])
 {
     if (!isMapConfigReady())
         return;
-    impl->pan(vecFromPoint(value));
+    impl->pan(vec3(value[0], value[1], value[2]));
 }
 
-void Map::rotate(const Point &value)
+void Map::rotate(const double value[3])
 {
     if (!isMapConfigReady())
         return;
-    impl->rotate(vecFromPoint(value)); 
+    impl->rotate(vec3(value[0], value[1], value[2])); 
 }
 
 MapCallbacks &Map::callbacks()
@@ -280,37 +255,40 @@ bool Map::getPositionSubjective() const
             == vtslibs::registry::Position::Type::subjective;
 }
 
-void Map::setPositionPoint(const Point &point)
+void Map::setPositionPoint(const double point[3])
 {
     if (!isMapConfigReady())
         return;
     impl->mapConfig->position.position
-            = vecToUblas<math::Point3>(vecFromPoint(point));
+            = math::Point3(point[0], point[1], point[2]);
     impl->navigation.inertiaMotion = vec3(0,0,0);
 }
 
-const Point Map::getPositionPoint() const
+void Map::getPositionPoint(double point[3]) const
 {
     if (!isMapConfigReady())
-        return vecToPoint(vec3(0,0,0));
-    return vecToPoint(vecFromUblas<vec3>(impl->mapConfig->position.position));
+        return;
+    auto p = impl->mapConfig->position.position;
+    for (int i = 0; i < 3; i++)
+        point[i] = p[i];
 }
 
-void Map::setPositionRotation(const Point &point)
+void Map::setPositionRotation(const double point[])
 {
     if (!impl->mapConfig || !*impl->mapConfig)
         return;
     impl->mapConfig->position.orientation
-            = vecToUblas<math::Point3>(vecFromPoint(point));
+            = math::Point3(point[0], point[1], point[2]);
     impl->navigation.inertiaRotation = vec3(0,0,0);
 }
 
-const Point Map::getPositionRotation() const
+void Map::getPositionRotation(double point[]) const
 {
     if (!isMapConfigReady())
-        return vecToPoint(vec3(0,0,0));
-    return vecToPoint(vecFromUblas<vec3>(
-                          impl->mapConfig->position.orientation));
+        return;
+    auto p = impl->mapConfig->position.orientation;
+    for (int i = 0; i < 3; i++)
+        point[i] = p[i];
 }
 
 void Map::setPositionViewExtent(double viewExtent)
@@ -379,13 +357,18 @@ double Map::getAutorotate() const
     return impl->mapConfig->autorotate;
 }
 
-const Point Map::convert(const Point &point, Srs from, Srs to) const
+void Map::convert(const double pointFrom[3], double pointTo[3],
+                  Srs srsFrom, Srs srsTo) const
 {
     if (!isMapConfigReady())
-        return vecToPoint(vec3(0,0,0));
-    return vecToPoint(impl->mapConfig->convertor->convert(vecFromPoint(point),
-                srsConvert(impl->mapConfig.get(), from),
-                srsConvert(impl->mapConfig.get(), to)));
+        return;
+    
+    vec3 a(pointFrom[0], pointFrom[1], pointFrom[2]);
+    a = impl->mapConfig->convertor->convert(a,
+                    srsConvert(impl->mapConfig.get(), srsFrom),
+                    srsConvert(impl->mapConfig.get(), srsTo));
+    for (int i = 0; i < 3; i++)
+        pointTo[i] = a(i);
 }
 
 const std::vector<std::string> Map::getResourceSurfaces() const
@@ -515,7 +498,8 @@ void Map::printDebugInfo()
 }
 
 MapImpl::MapImpl(Map *map, const MapCreateOptions &options) :
-    map(map), initialized(false), resources(options)
+    map(map), clientId(options.clientId), initialized(false),
+    resources(options)
 {}
 
 void MapImpl::printDebugInfo()

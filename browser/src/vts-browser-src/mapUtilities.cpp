@@ -110,9 +110,11 @@ DrawTask::DrawTask() :
 DrawTask::DrawTask(RenderTask *r, MapImpl *m) :
     mesh(nullptr), texColor(nullptr), texMask(nullptr)
 {
-    mesh = r->mesh;
-    texColor = r->textureColor;
-    texMask = r->textureMask;
+    mesh = r->mesh->info.userData;
+    if (r->textureColor)
+        texColor = r->textureColor->info.userData;
+    if (r->textureMask)
+        texMask = r->textureMask->info.userData;
     mat4f mvp = (m->renderer.viewProjRender * r->model).cast<float>();
     memcpy(this->mvp, mvp.data(), sizeof(mvp));
     memcpy(uvm, r->uvm.data(), sizeof(uvm));
@@ -188,9 +190,42 @@ bool TraverseNode::ready() const
     return true;
 }
 
-MapImpl::Renderer::Renderer() :
-    windowWidth(0), windowHeight(0)
-{}
+const std::string MapImpl::convertNameToCache(const std::string &path)
+{
+    auto p = path.find("://");
+    std::string a = p == std::string::npos ? path : path.substr(p + 3);
+    std::string b = boost::filesystem::path(a).parent_path().string();
+    std::string c = a.substr(b.length() + 1);
+    if (b.empty() || c.empty())
+        LOGTHROW(err2, std::runtime_error)
+                << "Cannot convert path '" << path
+                << "' into a cache path";
+    return resources.cachePath
+            + convertNameToPath(b, false) + "/"
+            + convertNameToPath(c, false);
+}
+
+const std::string MapImpl::convertNameToPath(std::string path,
+                                           bool preserveSlashes)
+{
+    path = boost::filesystem::path(path).normalize().string();
+    std::string res;
+    res.reserve(path.size());
+    for (char it : path)
+    {
+        if ((it >= 'a' && it <= 'z')
+         || (it >= 'A' && it <= 'Z')
+         || (it >= '0' && it <= '9')
+         || (it == '-' || it == '.'))
+            res += it;
+        else if (preserveSlashes && (it == '/' || it == '\\'))
+            res += '/';
+        else
+            res += '_';
+    }
+    return res;
+}
+
 
 } // namespace vts
 

@@ -129,25 +129,29 @@ MainWindow::MainWindow() :
     }
     
     { // load mesh mark
-        meshMark = std::make_shared<GpuMeshImpl>("mesh_mark");
+        meshMark = std::make_shared<GpuMeshImpl>();
         vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
                                   "data/meshes/sphere.obj"));
         assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Triangles);
+        spec.attributes.resize(1);
         spec.attributes[0].enable = true;
         spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
         spec.attributes[0].components = 3;
-        meshMark->loadMesh(spec);
+        vts::ResourceInfo info;
+        meshMark->loadMesh(info, spec);
     }
     
     { // load mesh line
-        meshLine = std::make_shared<GpuMeshImpl>("mesh_line");
+        meshLine = std::make_shared<GpuMeshImpl>();
         vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
                                   "data/meshes/line.obj"));
         assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Lines);
+        spec.attributes.resize(1);
         spec.attributes[0].enable = true;
         spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
         spec.attributes[0].components = 3;
-        meshLine->loadMesh(spec);
+        vts::ResourceInfo info;
+        meshLine->loadMesh(info, spec);
     }
 }
 
@@ -161,7 +165,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::mousePositionCallback(double xpos, double ypos)
 {
-    vts::Point diff(xpos - mousePrevX, ypos - mousePrevY, 0);
+    double p[3] = { xpos - mousePrevX, ypos - mousePrevY, 0 };
     int mode = 0;
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
     {
@@ -182,10 +186,10 @@ void MainWindow::mousePositionCallback(double xpos, double ypos)
     switch (mode)
     {
     case 1:
-        map->pan(diff);
+        map->pan(p);
         break;
     case 2:
-        map->rotate(diff);
+        map->rotate(p);
         break;
     }
     mousePrevX = xpos;
@@ -199,8 +203,8 @@ void MainWindow::mouseButtonCallback(int, int, int)
 
 void MainWindow::mouseScrollCallback(double, double yoffset)
 {
-    vts::Point diff(0, 0, yoffset * 120);
-    map->pan(diff);
+    double p[3] = { 0, 0, yoffset * 120 };
+    map->pan(p);
 }
 
 void MainWindow::keyboardCallback(int key, int, int action, int)
@@ -242,12 +246,13 @@ void MainWindow::drawVtsTask(vts::DrawTask &t)
         {
             shaderTexture->uniform(3, 1);
             glActiveTexture(GL_TEXTURE0 + 1);
-            dynamic_cast<GpuTextureImpl*>(t.texMask.get())->bind();
+            
+            ((GpuTextureImpl*)t.texMask.get())->bind();
             glActiveTexture(GL_TEXTURE0 + 0);
         }
         else
             shaderTexture->uniform(3, 0);
-        GpuTextureImpl *tex = dynamic_cast<GpuTextureImpl*>(t.texColor.get());
+        GpuTextureImpl *tex = (GpuTextureImpl*)t.texColor.get();
         tex->bind();
         shaderTexture->uniform(4, (int)tex->grayscale);
         shaderTexture->uniform(5, t.color[3]);
@@ -258,7 +263,7 @@ void MainWindow::drawVtsTask(vts::DrawTask &t)
         shaderColor->uniformMat4(0, t.mvp);
         shaderColor->uniformVec4(1, t.color);
     }
-    GpuMeshImpl *m = dynamic_cast<GpuMeshImpl*>(t.mesh.get());
+    GpuMeshImpl *m = (GpuMeshImpl*)t.mesh.get();
     m->bind();
     m->dispatch();
 }
@@ -286,12 +291,28 @@ void MainWindow::drawMark(const Mark &m, const Mark *prev)
     }
 }
 
+void MainWindow::loadTexture(vts::ResourceInfo &info,
+                             const vts::GpuTextureSpec &spec)
+{
+    auto r = std::make_shared<GpuTextureImpl>();
+    r->loadTexture(info, spec);
+    info.userData = r;
+}
+
+void MainWindow::loadMesh(vts::ResourceInfo &info,
+                          const vts::GpuMeshSpec &spec)
+{
+    auto r = std::make_shared<GpuMeshImpl>();
+    r->loadMesh(info, spec);
+    info.userData = r;
+}
+
 void MainWindow::run()
 {
-    map->callbacks().createTexture = std::bind(&MainWindow::createTexture,
-                                this, std::placeholders::_1);
-    map->callbacks().createMesh = std::bind(&MainWindow::createMesh,
-                                this, std::placeholders::_1);
+    map->callbacks().loadTexture = std::bind(&MainWindow::loadTexture, this,
+                std::placeholders::_1, std::placeholders::_2);
+    map->callbacks().loadMesh = std::bind(&MainWindow::loadMesh, this,
+                std::placeholders::_1, std::placeholders::_2);
     map->callbacks().cameraOverrideView
             = std::bind(&MainWindow::cameraOverrideView,
                                 this, std::placeholders::_1);
@@ -380,18 +401,6 @@ void MainWindow::colorizeMarks()
     int index = 0;
     for (Mark &m : marks)
         m.color = vts::convertHsvToRgb(vts::vec3f(index++ * mul, 1, 1));
-}
-
-std::shared_ptr<vts::GpuTexture> MainWindow::createTexture(
-        const std::string &name)
-{
-    return std::make_shared<GpuTextureImpl>(name);
-}
-
-std::shared_ptr<vts::GpuMesh> MainWindow::createMesh(
-        const std::string &name)
-{
-    return std::make_shared<GpuMeshImpl>(name);
 }
 
 void MainWindow::cameraOverrideParam(double &, double &,

@@ -53,7 +53,9 @@ public:
     class MapCredits &credits();
 
     void pan(const double value[3]);
+    void pan(const double (&value)[3]);
     void rotate(const double value[3]);
+    void rotate(const double (&value)[3]);
     void setPositionSubjective(bool subjective, bool convert);
     bool getPositionSubjective() const;
     void setPositionPoint(const double point[3]); /// navigation srs
@@ -90,6 +92,11 @@ public:
 private:
     std::shared_ptr<class MapImpl> impl;
 };
+
+// Inline definition
+
+inline void Map::pan(const double (&value)[3]) { pan(&value[0]); }
+inline void Map::rotate(const double (&value)[3]) { rotate(&value[0]); }
 
 } // namespace vts
 

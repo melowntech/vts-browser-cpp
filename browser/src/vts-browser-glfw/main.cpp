@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
                 main.mapConfigPaths.push_back(argv[i]);
             main.authPath = auth;
             map.setMapConfigPath(argv[firstUrl], auth);
-            DataThread data(main.window);
+            DataThread data(main.window, &main.timingDataFrame);
             main.map = &map;
             data.map = &map;
             setThreadName("main");

@@ -85,6 +85,7 @@ public:
     double timingAppProcess;
     double timingGuiProcess;
     double timingTotalFrame;
+    double timingDataFrame;
     int width, height;
     vts::Map *map;
     GLFWwindow *window;

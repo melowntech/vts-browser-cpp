@@ -467,7 +467,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 520), flags))
+        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 530), flags))
         {
             vts::MapStatistics &s = window->map->statistics();
             float width = nk_window_get_content_region_size(&ctx).x - 15;
@@ -487,6 +487,7 @@ public:
             S("Time app:", (int)(1000 * window->timingAppProcess), " ms");
             S("Time gui:", (int)(1000 * window->timingGuiProcess), " ms");
             S("Time frame:", (int)(1000 * window->timingTotalFrame), " ms");
+            S("Time data:", (int)(1000 * window->timingDataFrame), " ms");
             S("Frame index:", s.frameIndex, "");
             S("Downloading:", s.currentResourceDownloads, "");
             S("Node updates:", s.currentNodeUpdates, "");

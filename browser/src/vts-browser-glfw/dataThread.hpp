@@ -14,7 +14,7 @@ class Map;
 class DataThread
 {
 public:
-    DataThread(GLFWwindow *shared);
+    DataThread(GLFWwindow *shared, double *timing);
     ~DataThread();
 
     void run();
@@ -23,6 +23,7 @@ public:
     std::thread thr;
     vts::Map *map;
     GLFWwindow *window;
+    double *timing;
     volatile bool stop;
 };
 

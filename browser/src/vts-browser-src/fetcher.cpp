@@ -30,36 +30,38 @@ class FetcherImpl : public Fetcher
 {
 public:
     FetcherImpl(const FetcherOptions &options) : options(options),
-        fetcher(htt.fetcher()), status(0)
+        fetcher(htt.fetcher()), initCount(0)
     {}
     
     ~FetcherImpl()
     {
-        assert(status == 0 || status == 2);
+        assert(initCount == 0);
     }
     
     virtual void initialize() override
     {
-        assert(status == 0);
-        http::ContentFetcher::Options o;
-        o.maxCacheConections = options.maxCacheConections;
-        o.maxHostConnections = options.maxHostConnections;
-        o.maxTotalConections = options.maxTotalConections;
-        o.pipelining = options.pipelining;
-        htt.startClient(options.threads, &o);
-        status = 1;
+        if (initCount++ == 0)
+        {
+            http::ContentFetcher::Options o;
+            o.maxCacheConections = options.maxCacheConections;
+            o.maxHostConnections = options.maxHostConnections;
+            o.maxTotalConections = options.maxTotalConections;
+            o.pipelining = options.pipelining;
+            htt.startClient(options.threads, &o);
+        }
     }
     
     virtual void finalize() override
     {
-        assert(status == 1);
-        htt.stop();
-        status = 2;
+        if (--initCount == 0)
+        {
+            htt.stop();
+        }
     }
 
     void fetch(const std::shared_ptr<FetchTask> &task) override
     {
-        assert(status == 1);
+        assert(initCount > 0);
         assert(task->replyCode == 0);
         auto t = std::make_shared<Task>(this, task);
         fetcher.perform(t->query, std::bind(&Task::done, t,
@@ -69,7 +71,7 @@ public:
     const FetcherOptions options;
     http::Http htt;
     http::ResourceFetcher fetcher;
-    int status;
+    int initCount;
 };
 
 Task::Task(FetcherImpl *impl, std::shared_ptr<FetchTask> task)

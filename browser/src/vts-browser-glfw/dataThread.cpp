@@ -13,8 +13,8 @@ namespace
     }
 }
 
-DataThread::DataThread(GLFWwindow *shared) : map(nullptr),
-    window(nullptr), stop(false)
+DataThread::DataThread(GLFWwindow *shared, double *timing) : map(nullptr),
+    window(nullptr), timing(timing), stop(false)
 {
     fetcher = vts::Fetcher::create(vts::FetcherOptions());
     window = glfwCreateWindow(1, 1, "data context", NULL, shared);
@@ -43,7 +43,11 @@ void DataThread::run()
     setThreadName("data");
     while (!stop)
     {
-        if (map->dataTick())
+        double timeFrameStart = glfwGetTime();
+        bool a = map->dataTick();
+        double timeFrameEnd = glfwGetTime();
+        *timing = timeFrameEnd - timeFrameStart;
+        if (a)
             usleep(20000);
         else
             usleep(5000);

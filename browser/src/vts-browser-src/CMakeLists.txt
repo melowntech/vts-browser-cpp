@@ -76,7 +76,7 @@ set(VTSBROWSER_LIBRARIES vts-browser)
 
 # headers
 install(FILES ${PUB_HDR_LIST}
-  DESTINATION ${INCLUDE_INSTALL_DIR}/vts
+  DESTINATION ${INCLUDE_INSTALL_DIR}/vts-browser
   COMPONENT browser-dev
   )
 
@@ -90,7 +90,7 @@ install(TARGETS vts-browser
 
 install(EXPORT vts-browser
   DESTINATION ${SHARE_INSTALL_DIR}/VtsBrowser
-  COMPONENT browser
+  COMPONENT browser-dev
   )
 
 # VtsBrowserConfig.cmake and VtsBrowserVersion.cmake

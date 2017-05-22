@@ -3,7 +3,7 @@
 namespace vts
 {
 
-const vec3f convertRgbToHsv(const vec3f &inColor)
+vec3f convertRgbToHsv(const vec3f &inColor)
 {
     vec3f outColor;
     float minColor = inColor[0] < inColor[1] ? inColor[0] : inColor[1];
@@ -31,7 +31,7 @@ const vec3f convertRgbToHsv(const vec3f &inColor)
     return outColor;
 }
 
-const vec3f convertHsvToRgb(const vec3f &inColor)
+vec3f convertHsvToRgb(const vec3f &inColor)
 {
     vec3f outColor;
     if (inColor[1] <= 0)

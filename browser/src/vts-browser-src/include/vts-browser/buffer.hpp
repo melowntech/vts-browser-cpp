@@ -25,7 +25,7 @@ public:
 
     char *data() const { return data_; }
     uint32 size() const { return size_; }
-    
+
 private:
     char *data_;
     uint32 size_;

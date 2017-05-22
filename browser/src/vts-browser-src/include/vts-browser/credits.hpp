@@ -28,8 +28,8 @@ public:
     Scope imagery;
     Scope data;
     
-    const std::string textShort() const;
-    const std::string textFull() const;
+    std::string textShort() const;
+    std::string textFull() const;
 };
 
 } // namespace vts

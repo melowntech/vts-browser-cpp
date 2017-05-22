@@ -162,7 +162,7 @@ void Map::setMapConfigPath(const std::string &mapConfigPath,
     impl->setMapConfigPath(mapConfigPath, authPath);
 }
 
-const std::string Map::getMapConfigPath() const
+const std::string &Map::getMapConfigPath() const
 {
     return impl->mapConfigPath;
 }
@@ -185,7 +185,8 @@ bool Map::isMapRenderComplete() const
     if (!isMapConfigReady())
         return false;
     return !impl->draws.draws.empty()
-            && impl->statistics.currentNodeUpdates == 0;
+            && impl->statistics.currentNodeUpdates == 0
+            && impl->statistics.currentResourcePreparing == 0;
 }
 
 double Map::getMapRenderProgress() const
@@ -204,11 +205,21 @@ void Map::pan(const double value[3])
     impl->pan(vec3(value[0], value[1], value[2]));
 }
 
+void Map::pan(const double (&value)[3])
+{
+    pan(&value[0]);
+}
+
 void Map::rotate(const double value[3])
 {
     if (!isMapConfigReady())
         return;
     impl->rotate(vec3(value[0], value[1], value[2])); 
+}
+
+void Map::rotate(const double (&value)[3])
+{
+    rotate(&value[0]);
 }
 
 MapCallbacks &Map::callbacks()
@@ -264,6 +275,11 @@ void Map::setPositionPoint(const double point[3])
     impl->navigation.inertiaMotion = vec3(0,0,0);
 }
 
+void Map::setPositionPoint(const double (&point)[3])
+{
+    setPositionPoint(&point[0]);
+}
+
 void Map::getPositionPoint(double point[3]) const
 {
     if (!isMapConfigReady())
@@ -280,6 +296,11 @@ void Map::setPositionRotation(const double point[])
     impl->mapConfig->position.orientation
             = math::Point3(point[0], point[1], point[2]);
     impl->navigation.inertiaRotation = vec3(0,0,0);
+}
+
+void Map::setPositionRotation(const double (&point)[3])
+{
+    setPositionRotation(&point[0]);
 }
 
 void Map::getPositionRotation(double point[]) const
@@ -320,7 +341,7 @@ double Map::getPositionFov() const
     return impl->mapConfig->position.verticalFov;
 }
 
-const std::string Map::getPositionJson() const
+std::string Map::getPositionJson() const
 {
     if (!isMapConfigReady())
         return "";
@@ -402,7 +423,7 @@ const std::vector<std::string> Map::getResourceFreeLayers() const
     return std::move(names);
 }
 
-const std::vector<std::string> Map::getViewNames() const
+std::vector<std::string> Map::getViewNames() const
 {
     if (!isMapConfigReady())
         return {};
@@ -413,7 +434,7 @@ const std::vector<std::string> Map::getViewNames() const
     return std::move(names);
 }
 
-const std::string Map::getViewCurrent() const
+std::string Map::getViewCurrent() const
 {
     if (!isMapConfigReady())
         return "";
@@ -460,7 +481,7 @@ void Map::setViewData(const std::string &name, const MapView &view)
         impl->mapConfig->namedViews[name] = setMapView(view);
 }
 
-const std::string Map::getViewJson(const std::string &name) const
+std::string Map::getViewJson(const std::string &name) const
 {
     if (!isMapConfigReady())
         return "";

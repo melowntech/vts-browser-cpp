@@ -9,6 +9,16 @@ void setLogMask(const std::string &mask)
     dbglog::set_mask(mask);
 }
 
+void setLogConsole(bool enable)
+{
+    dbglog::log_console(enable);
+}
+
+void setLogFile(const std::string &filename)
+{
+    dbglog::log_file(filename);
+}
+
 MapOptions::MapOptions() :
     maxTexelToPixelScale(1.2),
     positionViewExtentMin(75),

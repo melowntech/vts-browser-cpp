@@ -25,17 +25,17 @@ public:
     
     void setMapConfigPath(const std::string &mapConfigPath,
                           const std::string &authPath = "");
-    const std::string getMapConfigPath() const;
+    const std::string &getMapConfigPath() const;
     void purgeTraverseCache(bool hard);
     
     /// returns whether the map config has been downloaded
     /// and parsed successfully
     /// most other functions will not work until this is ready
     bool isMapConfigReady() const;
-    /// returns whether the map has had all resources needed for complete
+    /// returns whether the map has all resources needed for complete
     /// render
     bool isMapRenderComplete() const;
-    /// returns percentage estimation of progress till complete render
+    /// returns estimation of progress till complete render
     double getMapRenderProgress() const;
     
     void dataInitialize(const std::shared_ptr<class Fetcher> &fetcher);
@@ -59,14 +59,16 @@ public:
     void setPositionSubjective(bool subjective, bool convert);
     bool getPositionSubjective() const;
     void setPositionPoint(const double point[3]); /// navigation srs
+    void setPositionPoint(const double (&point)[3]); /// navigation srs
     void getPositionPoint(double point[3]) const; /// navigation srs
     void setPositionRotation(const double point[3]); /// degrees
+    void setPositionRotation(const double (&point)[3]); /// degrees
     void getPositionRotation(double point[3]) const; /// degrees
     void setPositionViewExtent(double viewExtent); /// physical length
     double getPositionViewExtent() const; /// physical length
     void setPositionFov(double fov); /// degrees
     double getPositionFov() const; /// degrees
-    const std::string getPositionJson() const;
+    std::string getPositionJson() const;
     void setPositionJson(const std::string &position);
     void resetPositionAltitude();
     void setAutorotate(double rotate);
@@ -79,12 +81,12 @@ public:
     const std::vector<std::string> getResourceBoundLayers() const;
     const std::vector<std::string> getResourceFreeLayers() const;
     
-    const std::vector<std::string> getViewNames() const;
-    const std::string getViewCurrent() const;
+    std::vector<std::string> getViewNames() const;
+    std::string getViewCurrent() const;
     void setViewCurrent(const std::string &name);
     void getViewData(const std::string &name, class MapView &view) const;
     void setViewData(const std::string &name, const class MapView &view);
-    const std::string getViewJson(const std::string &name) const;
+    std::string getViewJson(const std::string &name) const;
     void setViewJson(const std::string &name, const std::string &view);
     
     void printDebugInfo();
@@ -92,11 +94,6 @@ public:
 private:
     std::shared_ptr<class MapImpl> impl;
 };
-
-// Inline definition
-
-inline void Map::pan(const double (&value)[3]) { pan(&value[0]); }
-inline void Map::rotate(const double (&value)[3]) { rotate(&value[0]); }
 
 } // namespace vts
 

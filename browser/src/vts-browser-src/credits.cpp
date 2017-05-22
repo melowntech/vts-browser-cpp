@@ -114,7 +114,7 @@ Credits::Hit::Hit(vtslibs::registry::CreditId id)
     : id(id), hits(0), maxLod(0)
 {}
 
-const std::string MapCredits::textShort() const
+std::string MapCredits::textShort() const
 {
     std::string result;
     result.reserve(200);
@@ -133,7 +133,7 @@ const std::string MapCredits::textShort() const
     return result;
 }
 
-const std::string MapCredits::textFull() const
+std::string MapCredits::textFull() const
 {
     std::string result;
     result.reserve(1000);

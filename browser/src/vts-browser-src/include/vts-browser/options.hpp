@@ -10,6 +10,8 @@ namespace vts
 {
 
 VTS_API void setLogMask(const std::string &mask);
+VTS_API void setLogConsole(bool enable);
+VTS_API void setLogFile(const std::string &filename);
 
 class VTS_API MapCreateOptions
 {

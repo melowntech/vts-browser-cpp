@@ -6,7 +6,7 @@
 namespace vts
 {
 
-const vec3 cross(const vec3 &a, const vec3 &b)
+vec3 cross(const vec3 &a, const vec3 &b)
 {
     return vec3(
         a(1) * b(2) - a(2) * b(1),
@@ -35,12 +35,12 @@ double length(const vec2 &a)
     return sqrt(dot(a, a));
 }
 
-const vec3 normalize(const vec3 &a)
+vec3 normalize(const vec3 &a)
 {
     return a / length(a);
 }
 
-const mat4 frustumMatrix(double left, double right,
+mat4 frustumMatrix(double left, double right,
                    double bottom, double top,
                    double near, double far)
 {
@@ -55,7 +55,7 @@ const mat4 frustumMatrix(double left, double right,
             0, 0, -1, 0).finished();
 }
 
-const mat4 perspectiveMatrix(double fovyDegs, double aspect,
+mat4 perspectiveMatrix(double fovyDegs, double aspect,
                              double near, double far)
 {
     double ymax = near * tanf(fovyDegs * M_PI / 360.0);
@@ -66,19 +66,19 @@ const mat4 perspectiveMatrix(double fovyDegs, double aspect,
 namespace
 {
 
-inline double &at(mat3 &a, uint32 i)
+double &at(mat3 &a, uint32 i)
 {
     return a(i % 3, i / 3);
 }
 
-inline double &at(mat4 &a, uint32 i)
+double &at(mat4 &a, uint32 i)
 {
     return a(i % 4, i / 4);
 }
 
 } // namespace
 
-const mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up)
+mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up)
 {
     vec3 f = normalize(target - eye);
     vec3 u = normalize(up);
@@ -104,19 +104,19 @@ const mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up)
     return res;
 }
 
-const mat4 lookAt(const vec3 &a, const vec3 &b)
+mat4 lookAt(const vec3 &a, const vec3 &b)
 {
     vec3 d = b - a;
     vec3 u = anyPerpendicular(d);
     return lookAt(a, b, u).inverse() * scaleMatrix(length(d));
 }
 
-const mat4 identityMatrix()
+mat4 identityMatrix()
 {
     return scaleMatrix(1);
 }
 
-const mat4 rotationMatrix(int axis, double radians)
+mat4 rotationMatrix(int axis, double radians)
 {
     double ca(cos(radians)), sa(sin(radians));
 
@@ -147,7 +147,7 @@ const mat4 rotationMatrix(int axis, double radians)
     throw; // shut up compiler warning
 }
 
-const mat4 scaleMatrix(double sx, double sy, double sz)
+mat4 scaleMatrix(double sx, double sy, double sz)
 {
     return (mat4() <<
             sx,  0,  0, 0,
@@ -156,12 +156,12 @@ const mat4 scaleMatrix(double sx, double sy, double sz)
             0,  0,  0, 1).finished();
 }
 
-const mat4 scaleMatrix(double s)
+mat4 scaleMatrix(double s)
 {
     return scaleMatrix(s, s, s);
 }
 
-const mat4 translationMatrix(double tx, double ty, double tz)
+mat4 translationMatrix(double tx, double ty, double tz)
 {
     return (mat4() <<
             1, 0, 0, tx,
@@ -170,19 +170,19 @@ const mat4 translationMatrix(double tx, double ty, double tz)
             0, 0, 0, 1).finished();
 }
 
-const mat4 translationMatrix(const vec3 &vec)
+mat4 translationMatrix(const vec3 &vec)
 {
     return translationMatrix(vec(0), vec(1), vec(2));
 }
 
-const vec3 min(const vec3 &a, const vec3 &b)
+vec3 min(const vec3 &a, const vec3 &b)
 {
     return vec3(std::min(a(0), b(0)),
                 std::min(a(1), b(1)),
                 std::min(a(2), b(2)));
 }
 
-const vec3 max(const vec3 &a, const vec3 &b)
+vec3 max(const vec3 &a, const vec3 &b)
 {
     return vec3(std::max(a(0), b(0)),
                 std::max(a(1), b(1)),
@@ -199,7 +199,7 @@ double radToDeg(double angle)
     return angle * 180 / M_PI;
 }
 
-const mat3 upperLeftSubMatrix(const mat4 &m)
+mat3 upperLeftSubMatrix(const mat4 &m)
 {
     mat4 mat(m);
     mat3 res;
@@ -228,7 +228,7 @@ double interpolate(double a, double b, double f)
     return (b - a) * f + a;
 }
 
-const vec4 vec3to4(vec3 v, double w)
+vec4 vec3to4(vec3 v, double w)
 {
     vec4 res;
     res(0) = v(0);
@@ -238,7 +238,7 @@ const vec4 vec3to4(vec3 v, double w)
     return res;
 }
 
-const vec3 vec4to3(vec4 v, bool division)
+vec3 vec4to3(vec4 v, bool division)
 {
     vec3 res;
     if (division)
@@ -249,7 +249,7 @@ const vec3 vec4to3(vec4 v, bool division)
     return res;
 }
 
-const vec3 vec2to3(vec2 v, double w)
+vec3 vec2to3(vec2 v, double w)
 {
     vec3 res;
     res(0) = v(0);
@@ -258,7 +258,7 @@ const vec3 vec2to3(vec2 v, double w)
     return res;
 }
 
-const vec2 vec3to2(vec3 v, bool division)
+vec2 vec3to2(vec3 v, bool division)
 {
     vec2 res;
     if (division)
@@ -268,7 +268,7 @@ const vec2 vec3to2(vec3 v, bool division)
     return res;
 }
 
-const vec4f vec3to4f(vec3f v, float w)
+vec4f vec3to4f(vec3f v, float w)
 {
     vec4f res;
     res(0) = v(0);
@@ -278,7 +278,7 @@ const vec4f vec3to4f(vec3f v, float w)
     return res;
 }
 
-const vec3f vec4to3f(vec4f v, bool division)
+vec3f vec4to3f(vec4f v, bool division)
 {
     vec3f res;
     if (division)
@@ -289,7 +289,7 @@ const vec3f vec4to3f(vec4f v, bool division)
     return res;
 }
 
-const vec3f vec2to3f(vec2f v, float w)
+vec3f vec2to3f(vec2f v, float w)
 {
     vec3f res;
     res(0) = v(0);
@@ -298,7 +298,7 @@ const vec3f vec2to3f(vec2f v, float w)
     return res;
 }
 
-const vec2f vec3to2f(vec3f v, bool division)
+vec2f vec3to2f(vec3f v, bool division)
 {
     vec2f res;
     if (division)
@@ -308,7 +308,7 @@ const vec2f vec3to2f(vec3f v, bool division)
     return res;
 }
 
-const vec3 anyPerpendicular(const vec3 &v)
+vec3 anyPerpendicular(const vec3 &v)
 {
     vec3 a = abs(dot(normalize(v), vec3(0, 0, 1))) > 0.9
                             ? vec3(0,1,0) : vec3(0,0,1);

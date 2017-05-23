@@ -26,7 +26,7 @@ public:
     
     GuiImpl(MainWindow *window) :
         statTraversedDetails(false), statRenderedDetails(false),
-        optSensitivityDetails(false), positionSrs(2), autoPan(0),
+        optSensitivityDetails(false), posAutoDetails(false), positionSrs(2),
         window(window), consumeEvents(true), prepareFirst(true)
     {
         { // load font
@@ -368,7 +368,29 @@ public:
                 }
                 nk_label(&ctx, "", NK_TEXT_LEFT);
             }
-                
+            
+            // navigation mode
+            {
+                static const char *names[] = {
+                    "Azimuthal",
+                    "Free",
+                    "Dynamic",
+                };
+                nk_label(&ctx, "Navigation:", NK_TEXT_LEFT);
+                if (nk_combo_begin_label(&ctx,
+                                 names[(int)o.navigationMode],
+                                 nk_vec2(nk_widget_width(&ctx), 200)))
+                {
+                    nk_layout_row_dynamic(&ctx, 16, 1);
+                    for (int i = 0; i < 3; i++)
+                        if (nk_combo_item_label(&ctx, names[i], NK_TEXT_LEFT))
+                            o.navigationMode
+                                    = (vts::MapOptions::NavigationMode)i;
+                    nk_combo_end(&ctx);
+                }
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+            }
+            
             // maxTexelToPixelScale
             nk_label(&ctx, "Detail control:", NK_TEXT_LEFT);
             o.maxTexelToPixelScale = nk_slide_float(&ctx,
@@ -592,14 +614,6 @@ public:
                 nk_label(&ctx, "Z:", NK_TEXT_LEFT);
                 sprintf(buffer, "%.8f", n[2]);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                nk_label(&ctx, "Auto: ", NK_TEXT_LEFT);
-                nk_slider_float(&ctx, 0, &autoPan, 3, 0.1);
-                if (std::abs(autoPan) > 1e-6f)
-                {
-                    n[0] = n[2] = 0;
-                    n[1] = autoPan;
-                    window->map->pan(n);
-                }
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset altitude"))
                     window->map->resetPositionAltitude();
@@ -616,17 +630,9 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 sprintf(buffer, "%5.1f", n[2]);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                nk_label(&ctx, "Auto:", NK_TEXT_LEFT);
-                window->map->setAutorotate(nk_slide_float(&ctx,
-                        0, window->map->getAutorotate(), 1, 0.001));
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset rotation"))
-                {
-                    n[0] = n[2] = 0;
-                    n[1] = 270;
-                    window->map->setPositionRotation(n);
-                    window->map->setAutorotate(0);
-                }
+                    window->map->resetPositionRotation(false);
             }
             { // view extent
                 nk_label(&ctx, "View extent:", NK_TEXT_LEFT);
@@ -640,6 +646,27 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 sprintf(buffer, "%5.1f", window->map->getPositionFov());
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            }
+            // auto movement
+            nk_label(&ctx, "Automatic:", NK_TEXT_LEFT);
+            nk_checkbox_label(&ctx, "", &posAutoDetails);
+            if (posAutoDetails)
+            {
+                double d[3];
+                window->map->getAutoMotion(d);
+                for (int i = 0; i < 3; i++)
+                {
+                    nk_label(&ctx, i == 0 ? "Move:" : "", NK_TEXT_LEFT);
+                    d[i] = nk_slide_float(&ctx, 0, d[i], 5, 0.05);
+                }
+                window->map->setAutoMotion(d);
+                window->map->getAutoRotation(d);
+                for (int i = 0; i < 3; i++)
+                {
+                    nk_label(&ctx, i == 0 ? "Rotate:" : "", NK_TEXT_LEFT);
+                    d[i] = nk_slide_float(&ctx, 0, d[i], 1, 0.01);
+                }
+                window->map->setAutoRotation(d);
             }
         }
         nk_end(&ctx);
@@ -894,8 +921,8 @@ public:
     int statTraversedDetails;
     int statRenderedDetails;
     int optSensitivityDetails;
+    int posAutoDetails;
     int positionSrs;
-    float autoPan;
     
     MainWindow *window;
     bool consumeEvents;

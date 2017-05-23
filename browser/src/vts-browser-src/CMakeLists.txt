@@ -58,6 +58,7 @@ include(data.cmake)
 buildsys_position_independent(${MODULE_LIBRARIES})
 
 add_library(vts-browser SHARED ${SRC_LIST} ${HDR_LIST} ${PUB_HDR_LIST})
+#target_compile_options(vts-browser PRIVATE -Wl,--no-undefined)
 buildsys_library(vts-browser)
 buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})
 

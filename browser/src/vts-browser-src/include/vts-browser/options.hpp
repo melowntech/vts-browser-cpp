@@ -29,6 +29,13 @@ public:
     MapOptions();
     ~MapOptions();
     
+    enum class NavigationMode
+    {
+        Azimuthal,
+        Free,
+        Dynamic,
+    };
+    
     double maxTexelToPixelScale;
     double positionViewExtentMin;
     double positionViewExtentMax;
@@ -40,11 +47,14 @@ public:
     double cameraInertiaAltitude;
     double cameraInertiaZoom;
     double cameraInertiaRotate;
+    double navigationLatitudeThreshold;
     uint64 maxResourcesMemory;
     uint32 maxConcurrentDownloads;
     uint32 maxNodeUpdatesPerTick;
     uint32 maxResourceProcessesPerTick;
     uint32 navigationSamplesPerViewExtent;
+    
+    NavigationMode navigationMode;
     
     bool renderSurrogates;
     bool renderMeshBoxes;

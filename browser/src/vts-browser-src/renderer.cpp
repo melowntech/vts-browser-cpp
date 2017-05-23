@@ -27,11 +27,6 @@ inline bool testAndThrow(FetchTaskImpl::State state, const std::string &message)
     throw; // shut up compiler warning
 }
 
-inline void normalizeAngle(double &a)
-{
-    a = modulo(a, 360);
-}
-
 inline const vec3 lowerUpperCombine(uint32 i)
 {
     vec3 res;
@@ -701,82 +696,12 @@ void MapImpl::traverseClearing(std::shared_ptr<TraverseNode> &trav)
 
 void MapImpl::updateCamera()
 {
-    vtslibs::registry::Position &pos = mapConfig->position;
-    
-    // floating position
-    if (pos.heightMode == vtslibs::registry::Position::HeightMode::floating)
-    {
-        pos.heightMode = vtslibs::registry::Position::HeightMode::fixed;
-        resetPositionAltitude(pos.position[2]);
-    }
-    assert(pos.heightMode == vtslibs::registry::Position::HeightMode::fixed);
-    
-    { // update and normalize camera position
-        checkPanZQueue();
-        
-        // limit zoom
-        pos.verticalExtent = clamp(pos.verticalExtent,
-                                   options.positionViewExtentMin,
-                                   options.positionViewExtentMax);
-        
-        // apply inertia
-        { // position
-            double cip = options.cameraInertiaPan;
-            double cia = options.cameraInertiaAltitude;
-            assert(cip >= 0 && cip < 1);
-            assert(cia >= 0 && cia < 1);
-            vec2 curXY = vec3to2(vecFromUblas<vec3>(pos.position));
-            vec2 inrXY = vec3to2(navigation.inertiaMotion);
-            double curZ = pos.position[2];
-            double inrZ = navigation.inertiaMotion[2];
-            curXY += (1.0 - cip) * inrXY;
-            inrXY *= cip;
-            curZ += (1.0 - cia) * inrZ;
-            inrZ *= cia;
-            pos.position = vecToUblas<math::Point3>(vec2to3(curXY, curZ));
-            navigation.inertiaMotion = vec2to3(inrXY, inrZ);
-        }
-        { // orientation
-            double cir = options.cameraInertiaRotate;
-            assert(cir >= 0 && cir < 1);
-            navigation.inertiaRotation(0) += mapConfig->autorotate;
-            pos.orientation += vecToUblas<math::Point3>((1.0 - cir) * 
-                        navigation.inertiaRotation);
-            navigation.inertiaRotation *= cir;
-        }
-        { // vertical view extent
-            double ciz = options.cameraInertiaZoom;
-            assert(ciz >= 0 && ciz < 1);
-            pos.verticalExtent += navigation.inertiaViewExtent * (1.0 - ciz);
-            navigation.inertiaViewExtent *= ciz;
-        }
-        
-        // normalize
-        switch (mapConfig->srs.get
-                (mapConfig->referenceFrame.model.navigationSrs).type)
-        {
-        case vtslibs::registry::Srs::Type::projected:
-        {
-            // nothing
-        } break;
-        case vtslibs::registry::Srs::Type::geographic:
-        {
-            pos.position[0] = modulo(pos.position[0] + 180, 360) - 180;
-            assert(pos.position[0] >= -180 && pos.position[0] <= 180);
-            pos.position[1] = clamp(pos.position[1], -80, 80);
-        } break;
-        default:
-            LOGTHROW(fatal, std::invalid_argument)
-                    << "Invalid navigation srs type";
-        }
-        normalizeAngle(pos.orientation[0]);
-        normalizeAngle(pos.orientation[1]);
-        normalizeAngle(pos.orientation[2]);
-        pos.orientation[1] = clamp(pos.orientation[1], 270, 350);
-    }
+    updateNavigation();
 
     vec3 center, dir, up;
-    positionToPhys(center, dir, up);
+    mapconfigPositionToCamera(center, dir, up);
+
+    vtslibs::registry::Position &pos = mapConfig->position;
 
     // camera view matrix
     double dist = pos.type == vtslibs::registry::Position::Type::objective
@@ -927,6 +852,8 @@ bool MapImpl::prerequisitesCheck()
         mapConfig->boundInfos[bl.id]
                 = std::make_shared<MapConfig::BoundInfo>(bl);
     }
+    
+    navigation.autoRotation(0) = mapConfig->browserOptions.autorotate;
     
     LOG(info3) << "Render prerequisites ready";
     initialized = true;

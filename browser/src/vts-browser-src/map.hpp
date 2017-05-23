@@ -118,9 +118,12 @@ public:
     public:
         vec3 inertiaMotion;
         vec3 inertiaRotation;
+        vec3 autoMotion;
+        vec3 autoRotation;
         double inertiaViewExtent;
         std::queue<std::shared_ptr<class HeightRequest>> panZQueue;
         boost::optional<double> lastPanZShift;
+        MapOptions::NavigationMode navigationMode;
         
         Navigation();
     } navigation;
@@ -172,6 +175,7 @@ public:
     void printDebugInfo();
     
     // navigation
+    void panImpl(const vec3 &value);
     void pan(const vec3 &value);
     void rotate(const vec3 &value);
     void checkPanZQueue();
@@ -180,9 +184,13 @@ public:
     const NodeInfo findInfoSdsSampled(const NodeInfo &info,
                                       const vec2 &sdsPos);
     void resetPositionAltitude(double resetOffset);
+    void resetPositionRotation(bool immediate);
+    void resetNavigationMode();
     void convertPositionSubjObj();
-    void positionToPhys(vec3 &center, vec3 &dir, vec3 &up);
+    void mapconfigPositionToCamera(vec3 &center, vec3 &dir, vec3 &up);
     double positionObjectiveDistance();
+    void checkNavigationMode();
+    void updateNavigation();
     
     // resources methods
     void resourceDataInitialize(const std::shared_ptr<Fetcher> &fetcher);

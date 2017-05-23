@@ -30,8 +30,11 @@ MapConfig::BoundInfo::BoundInfo(const BoundLayer &layer) : BoundLayer(layer)
 MapConfig::SurfaceStackItem::SurfaceStackItem() : alien(false)
 {}
 
-MapConfig::MapConfig() :
+MapConfig::BrowserOptions::BrowserOptions() :
     autorotate(0)
+{}
+
+MapConfig::MapConfig()
 {}
 
 void MapConfig::load()
@@ -46,7 +49,7 @@ void MapConfig::load()
     {
         Json::Value r = bo["rotate"];
         if (r.isDouble())
-            autorotate = r.asDouble() * 0.1;
+            browserOptions.autorotate = r.asDouble() * 0.1;
     }
     
     convertor = std::shared_ptr<CsConvertor>(CsConvertor::create(
@@ -64,7 +67,7 @@ void MapConfig::clear()
     boundInfos.clear();
     surfaceStack.clear();
     convertor.reset();
-    autorotate = 0;
+    browserOptions.autorotate = 0;
 }
 
 const std::string MapConfig::convertPath(const std::string &path,

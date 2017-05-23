@@ -364,18 +364,56 @@ void Map::resetPositionAltitude()
     impl->resetPositionAltitude(0);
 }
 
-void Map::setAutorotate(double rotate)
+void Map::resetPositionRotation(bool immediate)
+{
+    impl->resetPositionRotation(immediate);
+}
+
+void Map::resetNavigationMode()
+{
+    impl->resetNavigationMode();
+}
+
+void Map::setAutoMotion(const double value[3])
 {
     if (!isMapConfigReady())
         return;
-    impl->mapConfig->autorotate = rotate;
+    for (int i = 0; i < 3; i++)
+        impl->navigation.autoMotion[i] = value[i];
 }
 
-double Map::getAutorotate() const
+void Map::setAutoMotion(const double (&value)[3])
+{
+    setAutoMotion(&value[0]);
+}
+
+void Map::getAutoMotion(double value[3]) const
 {
     if (!isMapConfigReady())
-        return 0;
-    return impl->mapConfig->autorotate;
+        return;
+    for (int i = 0; i < 3; i++)
+        value[i] = impl->navigation.autoMotion[i];
+}
+
+void Map::setAutoRotation(const double value[3])
+{
+    if (!isMapConfigReady())
+        return;
+    for (int i = 0; i < 3; i++)
+        impl->navigation.autoRotation[i] = value[i];
+}
+
+void Map::setAutoRotation(const double (&value)[3])
+{
+    setAutoRotation(&value[0]);
+}
+
+void Map::getAutoRotation(double value[3]) const
+{
+    if (!isMapConfigReady())
+        return;
+    for (int i = 0; i < 3; i++)
+        value[i] = impl->navigation.autoRotation[i];
 }
 
 void Map::convert(const double pointFrom[3], double pointTo[3],

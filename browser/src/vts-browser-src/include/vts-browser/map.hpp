@@ -71,8 +71,14 @@ public:
     std::string getPositionJson() const;
     void setPositionJson(const std::string &position);
     void resetPositionAltitude();
-    void setAutorotate(double rotate);
-    double getAutorotate() const;
+    void resetPositionRotation(bool immediate);
+    void resetNavigationMode();
+    void setAutoMotion(const double value[3]);
+    void setAutoMotion(const double (&value)[3]);
+    void getAutoMotion(double value[3]) const;
+    void setAutoRotation(const double value[3]);
+    void setAutoRotation(const double (&value)[3]);
+    void getAutoRotation(double value[3]) const;
     
     void convert(const double pointFrom[3], double pointTo[3],
                 Srs srsFrom, Srs srsTo) const;

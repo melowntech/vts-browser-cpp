@@ -92,6 +92,14 @@ public:
         bool alien;
     };
     
+    class BrowserOptions
+    {
+    public:
+        BrowserOptions();
+        
+        double autorotate;
+    };
+    
     MapConfig();
     void load() override;
     void clear();
@@ -109,7 +117,7 @@ public:
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
     std::vector<SurfaceStackItem> surfaceStack;
     std::shared_ptr<CsConvertor> convertor;
-    double autorotate;
+    BrowserOptions browserOptions;
 };
 
 class ExternalBoundLayer : public Resource,

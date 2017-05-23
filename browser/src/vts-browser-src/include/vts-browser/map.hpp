@@ -51,11 +51,12 @@ public:
     class MapOptions &options();
     class MapDraws &draws();
     class MapCredits &credits();
-
+    
     void pan(const double value[3]);
     void pan(const double (&value)[3]);
     void rotate(const double value[3]);
     void rotate(const double (&value)[3]);
+    void zoom(double value);
     void setPositionSubjective(bool subjective, bool convert);
     bool getPositionSubjective() const;
     void setPositionPoint(const double point[3]); /// navigation srs

@@ -40,11 +40,9 @@ public:
     double positionViewExtentMin;
     double positionViewExtentMax;
     double cameraSensitivityPan;
-    double cameraSensitivityAltitude;
     double cameraSensitivityZoom;
     double cameraSensitivityRotate;
     double cameraInertiaPan;
-    double cameraInertiaAltitude;
     double cameraInertiaZoom;
     double cameraInertiaRotate;
     double navigationLatitudeThreshold;

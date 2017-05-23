@@ -116,8 +116,9 @@ mat4 identityMatrix()
     return scaleMatrix(1);
 }
 
-mat4 rotationMatrix(int axis, double radians)
+mat4 rotationMatrix(int axis, double degrees)
 {
+    double radians = degToRad(degrees);
     double ca(cos(radians)), sa(sin(radians));
 
     switch (axis)

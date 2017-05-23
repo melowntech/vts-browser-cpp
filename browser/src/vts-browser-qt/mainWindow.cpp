@@ -54,8 +54,7 @@ void MainWindow::mouseRelease(QMouseEvent *)
 
 void MainWindow::mouseWheel(QWheelEvent *event)
 {
-    double n[3] = { 0, 0, (double)event->angleDelta().y() };
-    map->pan(n);
+    map->zoom((double)event->angleDelta().y());
 }
 
 bool MainWindow::event(QEvent *event)

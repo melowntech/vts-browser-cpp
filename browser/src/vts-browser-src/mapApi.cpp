@@ -222,6 +222,13 @@ void Map::rotate(const double (&value)[3])
     rotate(&value[0]);
 }
 
+void Map::zoom(double value)
+{
+    if (!isMapConfigReady())
+        return;
+    impl->zoom(value);
+}
+
 MapCallbacks &Map::callbacks()
 {
     return impl->callbacks;
@@ -361,16 +368,22 @@ void Map::setPositionJson(const std::string &position)
 
 void Map::resetPositionAltitude()
 {
+    if (!isMapConfigReady())
+        return;
     impl->resetPositionAltitude(0);
 }
 
 void Map::resetPositionRotation(bool immediate)
 {
+    if (!isMapConfigReady())
+        return;
     impl->resetPositionRotation(immediate);
 }
 
 void Map::resetNavigationMode()
 {
+    if (!isMapConfigReady())
+        return;
     impl->resetNavigationMode();
 }
 
@@ -421,7 +434,6 @@ void Map::convert(const double pointFrom[3], double pointTo[3],
 {
     if (!isMapConfigReady())
         return;
-    
     vec3 a(pointFrom[0], pointFrom[1], pointFrom[2]);
     a = impl->mapConfig->convertor->convert(a,
                     srsConvert(impl->mapConfig.get(), srsFrom),

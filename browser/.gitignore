@@ -4,6 +4,7 @@
 /callgrind.out.*
 /*.map
 /obj-*
+/.vscode
 
 bin
 lib

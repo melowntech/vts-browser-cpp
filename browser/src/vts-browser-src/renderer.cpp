@@ -699,7 +699,7 @@ void MapImpl::updateCamera()
     updateNavigation();
 
     vec3 center, dir, up;
-    mapconfigPositionToCamera(center, dir, up);
+    positionToCamera(center, dir, up);
 
     vtslibs::registry::Position &pos = mapConfig->position;
 

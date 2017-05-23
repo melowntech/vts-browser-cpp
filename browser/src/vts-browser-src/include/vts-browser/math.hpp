@@ -39,7 +39,7 @@ VTS_API mat4 lookAt(const vec3 &eye, const vec3 &target);
 VTS_API mat3 upperLeftSubMatrix(const mat4 &mat);
 
 VTS_API mat4 identityMatrix();
-VTS_API mat4 rotationMatrix(int axis, double radians);
+VTS_API mat4 rotationMatrix(int axis, double degrees);
 VTS_API mat4 scaleMatrix(double sx, double sy, double sz);
 VTS_API mat4 scaleMatrix(double s);
 VTS_API mat4 translationMatrix(double tx, double ty, double tz);

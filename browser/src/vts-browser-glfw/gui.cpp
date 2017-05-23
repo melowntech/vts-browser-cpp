@@ -316,11 +316,6 @@ public:
                         0.1, o.cameraSensitivityPan, 3, 0.01);
                 sprintf(buffer, "%4.2f", o.cameraSensitivityPan);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                nk_label(&ctx, "Vertical speed:", NK_TEXT_LEFT);
-                o.cameraSensitivityAltitude = nk_slide_float(&ctx,
-                        0.1, o.cameraSensitivityAltitude, 3, 0.01);
-                sprintf(buffer, "%4.2f", o.cameraSensitivityAltitude);
-                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Zoom speed:", NK_TEXT_LEFT);
                 o.cameraSensitivityZoom = nk_slide_float(&ctx,
                         0.1, o.cameraSensitivityZoom, 3, 0.01);
@@ -336,11 +331,6 @@ public:
                 o.cameraInertiaPan = nk_slide_float(&ctx,
                         0, o.cameraInertiaPan, 0.99, 0.01);
                 sprintf(buffer, "%4.2f", o.cameraInertiaPan);
-                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                nk_label(&ctx, "Vertical inertia:", NK_TEXT_LEFT);
-                o.cameraInertiaAltitude = nk_slide_float(&ctx,
-                        0, o.cameraInertiaAltitude, 0.99, 0.01);
-                sprintf(buffer, "%4.2f", o.cameraInertiaAltitude);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Zoom inertia:", NK_TEXT_LEFT);
                 o.cameraInertiaZoom = nk_slide_float(&ctx,
@@ -358,11 +348,9 @@ public:
                 {
                     vts::MapOptions d;
                     o.cameraSensitivityPan       = d.cameraSensitivityPan;
-                    o.cameraSensitivityAltitude  = d.cameraSensitivityAltitude;
                     o.cameraSensitivityZoom      = d.cameraSensitivityZoom;
                     o.cameraSensitivityRotate    = d.cameraSensitivityRotate;
                     o.cameraInertiaPan           = d.cameraInertiaPan;
-                    o.cameraInertiaAltitude      = d.cameraInertiaAltitude;
                     o.cameraInertiaZoom          = d.cameraInertiaZoom;
                     o.cameraInertiaRotate        = d.cameraInertiaRotate;
                 }
@@ -657,14 +645,14 @@ public:
                 for (int i = 0; i < 3; i++)
                 {
                     nk_label(&ctx, i == 0 ? "Move:" : "", NK_TEXT_LEFT);
-                    d[i] = nk_slide_float(&ctx, 0, d[i], 5, 0.05);
+                    d[i] = nk_slide_float(&ctx, -5, d[i], 5, 0.2);
                 }
                 window->map->setAutoMotion(d);
                 window->map->getAutoRotation(d);
                 for (int i = 0; i < 3; i++)
                 {
                     nk_label(&ctx, i == 0 ? "Rotate:" : "", NK_TEXT_LEFT);
-                    d[i] = nk_slide_float(&ctx, 0, d[i], 1, 0.01);
+                    d[i] = nk_slide_float(&ctx, -1, d[i], 1, 0.05);
                 }
                 window->map->setAutoRotation(d);
             }

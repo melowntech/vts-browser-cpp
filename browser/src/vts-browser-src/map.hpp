@@ -3,11 +3,9 @@
 
 #include <queue>
 #include <boost/thread/mutex.hpp>
-//#include <boost/optional/optional_io.hpp>
 #include <vts-libs/vts/urltemplate.hpp>
 #include <vts-libs/vts/nodeinfo.hpp>
 #include <dbglog/dbglog.hpp>
-//#include <utility/uri.hpp>
 
 #include "include/vts-browser/statistics.hpp"
 #include "include/vts-browser/options.hpp"
@@ -175,10 +173,10 @@ public:
     void printDebugInfo();
     
     // navigation
-    void panImpl(const vec3 &value);
     void pan(const vec3 &value);
     void rotate(const vec3 &value);
-    void checkPanZQueue();
+    void zoom(double value);
+    void checkPanZQueue(double &height);
     const std::pair<vtslibs::vts::NodeInfo, vec2> findInfoNavRoot(
             const vec2 &navPos);
     const NodeInfo findInfoSdsSampled(const NodeInfo &info,
@@ -187,9 +185,8 @@ public:
     void resetPositionRotation(bool immediate);
     void resetNavigationMode();
     void convertPositionSubjObj();
-    void mapconfigPositionToCamera(vec3 &center, vec3 &dir, vec3 &up);
+    void positionToCamera(vec3 &center, vec3 &dir, vec3 &up);
     double positionObjectiveDistance();
-    void checkNavigationMode();
     void updateNavigation();
     
     // resources methods

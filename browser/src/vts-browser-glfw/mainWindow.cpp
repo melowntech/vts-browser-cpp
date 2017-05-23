@@ -203,8 +203,7 @@ void MainWindow::mouseButtonCallback(int, int, int)
 
 void MainWindow::mouseScrollCallback(double, double yoffset)
 {
-    double p[3] = { 0, 0, yoffset * 120 };
-    map->pan(p);
+    map->zoom(yoffset * 120);
 }
 
 void MainWindow::keyboardCallback(int key, int, int action, int)

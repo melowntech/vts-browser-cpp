@@ -15,9 +15,9 @@ inline void normalizeAngle(double &a)
 } // namespace
 
 MapImpl::Navigation::Navigation() :
-    inertiaMotion(0,0,0), inertiaRotation(0,0,0),
     autoMotion(0,0,0), autoRotation(0,0,0),
-    inertiaViewExtent(0), navigationMode(MapOptions::NavigationMode::Azimuthal)
+    inertiaMotion(0,0,0), inertiaRotation(0,0,0),
+    inertiaViewExtent(0), mode(MapOptions::NavigationMode::Azimuthal)
 {}
 
 class HeightRequest
@@ -296,10 +296,10 @@ void MapImpl::resetPositionRotation(bool immediate)
 
 void MapImpl::resetNavigationMode()
 {
-    if (navigation.navigationMode == MapOptions::NavigationMode::Dynamic)
-        navigation.navigationMode = MapOptions::NavigationMode::Azimuthal;
+    if (options.navigationMode == MapOptions::NavigationMode::Dynamic)
+        navigation.mode = MapOptions::NavigationMode::Azimuthal;
     else
-        navigation.navigationMode = options.navigationMode;
+        navigation.mode = options.navigationMode;
 }
 
 void MapImpl::convertPositionSubjObj()
@@ -361,8 +361,8 @@ void MapImpl::positionToCamera(vec3 &center, vec3 &dir, vec3 &up)
     case vtslibs::registry::Srs::Type::geographic:
     {
         // find lat-lon coordinates of points moved to north and east
-        vec3 n2 = mapConfig->convertor->navGeodesicDirect(center, 0, 100);
-        vec3 e2 = mapConfig->convertor->navGeodesicDirect(center, 90, 100);
+        vec3 n2 = mapConfig->convertor->navGeodesicDirect(center, 100, 0);
+        vec3 e2 = mapConfig->convertor->navGeodesicDirect(center, 100, 90);
         // transform to physical srs
         center = mapConfig->convertor->navToPhys(center);
         vec3 n = mapConfig->convertor->navToPhys(n2);
@@ -443,27 +443,28 @@ void MapImpl::updateNavigation()
         case vtslibs::registry::Srs::Type::geographic:
         {
             vec3 &p = position;
-            // todo change to single geodesic
-            p = mapConfig->convertor->navGeodesicDirect(p, 90, move(0));
-            p = mapConfig->convertor->navGeodesicDirect(p, 0, move(1));
+            
+            double ang1 = radToDeg(atan2(move(0), move(1)));
+            double ang2;
+            double dist = length(move);
+            p = mapConfig->convertor->navGeodesicDirect(p, dist, ang1, ang2);
             p(0) = modulo(p(0) + 180, 360) - 180;
     
             // try to switch to free mode
             if (options.navigationMode == MapOptions::NavigationMode::Dynamic)
             {
                 if (abs(p(1)) >= options.navigationLatitudeThreshold - 1e-5)
-                    navigation.navigationMode
-                            = MapOptions::NavigationMode::Free;
+                    navigation.mode = MapOptions::NavigationMode::Free;
             }
             else
-                navigation.navigationMode = options.navigationMode;
+                navigation.mode = options.navigationMode;
     
             // limit latitude
-            switch (navigation.navigationMode)
+            switch (navigation.mode)
             {
             case MapOptions::NavigationMode::Free:
             { // wraps on poles
-                // todo
+                rotation(0) += ang2 - ang1;
             } break;
             case MapOptions::NavigationMode::Azimuthal:
             { // clamp
@@ -520,7 +521,7 @@ void MapImpl::updateNavigation()
 
 void MapImpl::pan(const vec3 &value)
 {
-    const vec3 scale(-1, 1, 0);
+    const vec3 scale(-1, 1, 1);
     for (int i = 0; i < 3; i++)
         navigation.inertiaMotion(i) += value[i] * scale(i)
                 * options.cameraSensitivityPan;
@@ -529,11 +530,13 @@ void MapImpl::pan(const vec3 &value)
 
 void MapImpl::rotate(const vec3 &value)
 {
-    const vec3 scale(0.2, -0.1, 0);
+    const vec3 scale(0.2, -0.1, 0.2);
     for (int i = 0; i < 3; i++)
         navigation.inertiaRotation(i) += value[i] * scale(i)
                 * options.cameraSensitivityRotate;
     navigation.autoMotion = navigation.autoRotation = vec3(0, 0, 0);
+    if (options.navigationMode == MapOptions::NavigationMode::Dynamic)
+        navigation.mode = MapOptions::NavigationMode::Free;
 }
 
 void MapImpl::zoom(double value)

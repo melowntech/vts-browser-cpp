@@ -35,7 +35,7 @@ MapOptions::MapOptions() :
     maxNodeUpdatesPerTick(10),
     maxResourceProcessesPerTick(5),
     navigationSamplesPerViewExtent(4),
-    navigationMode(NavigationMode::Azimuthal),
+    navigationMode(NavigationMode::Dynamic),
     renderSurrogates(false),
     renderMeshBoxes(false),
     renderTileBoxes(false),

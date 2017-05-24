@@ -35,9 +35,11 @@ public:
     virtual const vec3 convert(const vec3 &value,
                                const std::string &from,
                                const std::string &to) = 0;
-
-    virtual const vec3 navGeodesicDirect(const vec3 &position,
-                                         double azimuth, double distance) = 0;
+    
+    virtual const vec3 navGeodesicDirect(const vec3 &position, double distance,
+                                    double azimuthIn, double &azimuthOut) = 0;
+    virtual const vec3 navGeodesicDirect(const vec3 &position, double distance,
+                                    double azimuthIn) = 0;
 };
 
 } // namespace vts

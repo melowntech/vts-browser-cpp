@@ -97,14 +97,21 @@ public:
         return vecFromUblas<vec3>((*p)(vecFromUblas<math::Point3>(value)));
     }
 
-    const vec3 navGeodesicDirect(const vec3 &position,
-                                 double azimuth, double distance) override
+    const vec3 navGeodesicDirect(const vec3 &position, double distance,
+                                 double azimuthIn, double &azimuthOut) override
     {
         vec3 res;
-        geodesic_->Direct(position(1), position(0),
-                          azimuth, distance, res(1), res(0));
+        geodesic_->Direct(position(1), position(0), azimuthIn,
+                          distance, res(1), res(0), azimuthOut);
         res(2) = position(2);
         return res;
+    }
+    
+    const vec3 navGeodesicDirect(const vec3 &position, double distance,
+                                 double azimuthIn) override
+    {
+        double a;
+        return navGeodesicDirect(position, distance, azimuthIn, a);
     }
 
     const vtslibs::registry::Registry &registry;

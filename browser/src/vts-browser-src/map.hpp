@@ -114,14 +114,14 @@ public:
     class Navigation
     {
     public:
-        vec3 inertiaMotion;
-        vec3 inertiaRotation;
         vec3 autoMotion;
         vec3 autoRotation;
+        vec3 inertiaMotion;
+        vec3 inertiaRotation;
         double inertiaViewExtent;
         std::queue<std::shared_ptr<class HeightRequest>> panZQueue;
         boost::optional<double> lastPanZShift;
-        MapOptions::NavigationMode navigationMode;
+        MapOptions::NavigationMode mode;
         
         Navigation();
     } navigation;

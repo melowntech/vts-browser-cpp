@@ -65,31 +65,33 @@ void MapImpl::setMapConfigPath(const std::string &mapConfigPath,
                << " authentication";
     this->mapConfigPath = mapConfigPath;
     this->authPath = authPath;
-    purgeHard();
+    purgeMapConfig();
 }
 
-void MapImpl::purgeHard()
+void MapImpl::purgeMapConfig()
 {
-    LOG(info2) << "Hard purge";
+    LOG(info2) << "Purge map config";
     
     if (auth)
-        auth->impl->state = FetchTaskImpl::State::finalizing;
+        auth->fetch->state = FetchTaskImpl::State::finalizing;
     if (mapConfig)
-        mapConfig->impl->state = FetchTaskImpl::State::finalizing;
+        mapConfig->fetch->state = FetchTaskImpl::State::finalizing;
     
     initialized = false;
     auth.reset();
     mapConfig.reset();
     renderer.credits.purge();
+    resetNavigationMode();
+    navigation.autoMotion = navigation.autoRotation = vec3(0, 0, 0);
     navigation.lastPanZShift.reset();
     std::queue<std::shared_ptr<class HeightRequest>>()
             .swap(navigation.panZQueue);
-    purgeSoft();
+    purgeTraverseCache();
 }
 
-void MapImpl::purgeSoft()
+void MapImpl::purgeTraverseCache()
 {
-    LOG(info2) << "Soft purge";
+    LOG(info2) << "Purge traverse cache";
     
     renderer.traverseRoot.reset();
     statistics.resetFrame();
@@ -587,7 +589,7 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
                 task->model = part.normToPhys;
                 task->uvm = b.uvMatrix();
                 task->textureColor = getTexture(b.bound->urlExtTex(b.vars));
-                task->textureColor->impl->availTest = b.bound->availability;
+                task->textureColor->fetch->availTest = b.bound->availability;
                 task->externalUv = true;
                 task->transparent = b.transparent;
                 allTransparent = allTransparent && b.transparent;
@@ -804,12 +806,12 @@ bool MapImpl::prerequisitesCheck()
     if (!authPath.empty())
     {
         auth = getAuth(authPath);
-        if (!testAndThrow(auth->impl->state, "Authentication failure."))
+        if (!testAndThrow(auth->fetch->state, "Authentication failure."))
             return false;
     }
     
     mapConfig = getMapConfig(mapConfigPath);
-    if (!testAndThrow(mapConfig->impl->state, "Map config failure."))
+    if (!testAndThrow(mapConfig->fetch->state, "Map config failure."))
         return false;
     
     { // load external bound layers
@@ -819,9 +821,9 @@ bool MapImpl::prerequisitesCheck()
             if (!bl.external())
                 continue;
             std::string url = MapConfig::convertPath(bl.url,
-                                                     mapConfig->impl->name);
+                                                     mapConfig->fetch->name);
             std::shared_ptr<ExternalBoundLayer> r = getExternalBoundLayer(url);
-            if (!testAndThrow(r->impl->state, "External bound layer failure."))
+            if (!testAndThrow(r->fetch->state, "External bound layer failure."))
                 ok = false;
             else
             {
@@ -840,7 +842,7 @@ bool MapImpl::prerequisitesCheck()
             return false;
     }
     
-    purgeSoft();
+    purgeTraverseCache();
 
     renderer.credits.merge(mapConfig.get());
     mapConfig->boundInfos.clear();

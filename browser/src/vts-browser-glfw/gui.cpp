@@ -451,14 +451,15 @@ public:
                                                 o.debugDetachedCamera);
             nk_label(&ctx, "", NK_TEXT_LEFT);
             
-            { // debug disable meta 5
+            // debug disable meta 5
+            {
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 bool old = o.debugDisableMeta5;
                 o.debugDisableMeta5 = nk_check_label(&ctx, "disable meta5",
                                                     o.debugDisableMeta5);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (old != o.debugDisableMeta5)
-                    window->map->purgeTraverseCache(false);
+                    window->map->purgeTraverseCache();
             }
             
             // print debug info
@@ -477,7 +478,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 530), flags))
+        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 550), flags))
         {
             vts::MapStatistics &s = window->map->statistics();
             float width = nk_window_get_content_region_size(&ctx).x - 15;
@@ -501,7 +502,10 @@ public:
             S("Frame index:", s.frameIndex, "");
             S("Downloading:", s.currentResourceDownloads, "");
             S("Node updates:", s.currentNodeUpdates, "");
-            S("Gpu Memory:", (int)(s.currentGpuMemUse / 1024 / 1024), " MB");
+            S("Resources gpu mem.:", \
+                            (int)(s.currentGpuMemUse / 1024 / 1024), " MB");
+            S("Resources ram mem.:", \
+                            (int)(s.currentRamMemUse / 1024 / 1024), " MB");
             S("Nav. lod:", s.lastHeightRequestLod, "");
             nk_label(&ctx, "Z range:", NK_TEXT_LEFT);
             sprintf(buffer, "%0.0f - %0.0f", window->camNear, window->camFar);
@@ -588,7 +592,8 @@ public:
                 }
             }
             nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
-            { // position
+            // position
+            {
                 double n[3];
                 window->map->getPositionPoint(n);
                 window->map->convert(n, n, vts::Srs::Navigation,
@@ -606,7 +611,8 @@ public:
                 if (nk_button_label(&ctx, "Reset altitude"))
                     window->map->resetPositionAltitude();
             }
-            { // rotation
+            // rotation
+            {
                 double n[3];
                 window->map->getPositionRotation(n);
                 nk_label(&ctx, "Rotation:", NK_TEXT_LEFT);
@@ -622,12 +628,14 @@ public:
                 if (nk_button_label(&ctx, "Reset rotation"))
                     window->map->resetPositionRotation(false);
             }
-            { // view extent
+            // view extent
+            {
                 nk_label(&ctx, "View extent:", NK_TEXT_LEFT);
                 sprintf(buffer, "%10.1f", window->map->getPositionViewExtent());
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             }
-            { // fov
+            // fov
+            {
                 nk_label(&ctx, "Fov:", NK_TEXT_LEFT);
                 window->map->setPositionFov(nk_slide_float(&ctx, 10,
                                     window->map->getPositionFov(), 100, 1));
@@ -636,25 +644,27 @@ public:
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             }
             // auto movement
-            nk_label(&ctx, "Automatic:", NK_TEXT_LEFT);
-            nk_checkbox_label(&ctx, "", &posAutoDetails);
-            if (posAutoDetails)
             {
-                double d[3];
-                window->map->getAutoMotion(d);
-                for (int i = 0; i < 3; i++)
+                nk_label(&ctx, "Automatic:", NK_TEXT_LEFT);
+                nk_checkbox_label(&ctx, "", &posAutoDetails);
+                if (posAutoDetails)
                 {
-                    nk_label(&ctx, i == 0 ? "Move:" : "", NK_TEXT_LEFT);
-                    d[i] = nk_slide_float(&ctx, -5, d[i], 5, 0.2);
+                    double d[3];
+                    window->map->getAutoMotion(d);
+                    for (int i = 0; i < 3; i++)
+                    {
+                        nk_label(&ctx, i == 0 ? "Move:" : "", NK_TEXT_LEFT);
+                        d[i] = nk_slide_float(&ctx, -5, d[i], 5, 0.2);
+                    }
+                    window->map->setAutoMotion(d);
+                    window->map->getAutoRotation(d);
+                    for (int i = 0; i < 3; i++)
+                    {
+                        nk_label(&ctx, i == 0 ? "Rotate:" : "", NK_TEXT_LEFT);
+                        d[i] = nk_slide_float(&ctx, -1, d[i], 1, 0.05);
+                    }
+                    window->map->setAutoRotation(d);
                 }
-                window->map->setAutoMotion(d);
-                window->map->getAutoRotation(d);
-                for (int i = 0; i < 3; i++)
-                {
-                    nk_label(&ctx, i == 0 ? "Rotate:" : "", NK_TEXT_LEFT);
-                    d[i] = nk_slide_float(&ctx, -1, d[i], 1, 0.05);
-                }
-                window->map->setAutoRotation(d);
             }
         }
         nk_end(&ctx);

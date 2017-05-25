@@ -327,7 +327,8 @@ void GpuTextureImpl::loadTexture(vts::ResourceInfo &info,
     
     glFinish();
     checkGl("load texture");
-    info.gpuMemoryCost = spec.buffer.size();
+    info.ramMemoryCost += sizeof(*this);
+    info.gpuMemoryCost += spec.buffer.size();
 }
 
 GpuMeshImpl::GpuMeshImpl() :
@@ -414,8 +415,8 @@ void GpuMeshImpl::loadMesh(vts::ResourceInfo &info,
     glDeleteVertexArrays(1, &vao);
     glFinish();
     checkGl("load mesh");
-    info.ramMemoryCost = sizeof(GpuMeshImpl);
-    info.gpuMemoryCost = spec.vertices.size() + spec.indices.size();
+    info.ramMemoryCost += sizeof(*this);
+    info.gpuMemoryCost += spec.vertices.size() + spec.indices.size();
     this->spec.vertices.free();
     this->spec.indices.free();
 }

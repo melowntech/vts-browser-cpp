@@ -168,15 +168,15 @@ public:
     // map api methods
     void setMapConfigPath(const std::string &mapConfigPath,
                           const std::string &authPath);
-    void purgeHard();
-    void purgeSoft();
+    void purgeMapConfig();
+    void purgeTraverseCache();
     void printDebugInfo();
     
     // navigation
     void pan(const vec3 &value);
     void rotate(const vec3 &value);
     void zoom(double value);
-    void checkPanZQueue(double &height);
+    void checkPanZQueue();
     const std::pair<vtslibs::vts::NodeInfo, vec2> findInfoNavRoot(
             const vec2 &navPos);
     const NodeInfo findInfoSdsSampled(const NodeInfo &info,

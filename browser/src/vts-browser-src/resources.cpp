@@ -17,7 +17,7 @@ std::shared_ptr<T> getMapResource(MapImpl *map, const std::string &name,
     if (it == map->resources.resources.end())
     {
         auto r = std::make_shared<T>();
-        r->impl = std::make_shared<FetchTaskImpl>(map, name, resourceType);
+        r->fetch = std::make_shared<FetchTaskImpl>(map, name, resourceType);
         map->resources.resources[name] = r;
         it = map->resources.resources.find(name);
     }
@@ -35,7 +35,7 @@ Resource::~Resource()
 
 Resource::operator bool() const
 {
-    return impl->state == FetchTaskImpl::State::ready;
+    return fetch->state == FetchTaskImpl::State::ready;
 }
 
 MapImpl::Resources::Resources(const MapCreateOptions &options)
@@ -114,6 +114,7 @@ void MapImpl::resourceDataFinalize()
 
 void MapImpl::loadResource(const std::shared_ptr<Resource> &resource)
 {
+    resource->info.gpuMemoryCost = resource->info.ramMemoryCost = 0;
     statistics.resourcesProcessLoaded++;
     try
     {
@@ -121,11 +122,11 @@ void MapImpl::loadResource(const std::shared_ptr<Resource> &resource)
     }
     catch (...)
     {
-		resource->impl->contentData.free();
+		resource->fetch->contentData.free();
 		throw;
     }
-    resource->impl->contentData.free();
-    resource->impl->state = FetchTaskImpl::State::ready;
+    resource->fetch->contentData.free();
+    resource->fetch->state = FetchTaskImpl::State::ready;
 }
 
 bool MapImpl::resourceDataTick()
@@ -154,7 +155,7 @@ bool MapImpl::resourceDataTick()
     std::sort(res.begin(), res.end(), [](
               std::shared_ptr<Resource> a,
               std::shared_ptr<Resource> b
-        ){ return a->impl->priority > b->impl->priority; });
+        ){ return a->fetch->priority > b->fetch->priority; });
     
     uint32 processed = 0;
     for (std::shared_ptr<Resource> r : res)
@@ -163,28 +164,28 @@ bool MapImpl::resourceDataTick()
             return false; // tasks left
         try
         {
-			if (r->impl->state == FetchTaskImpl::State::downloaded)
+			if (r->fetch->state == FetchTaskImpl::State::downloaded)
             {
 				loadResource(r);
                 continue;
             }
-			else if (r->impl->state != FetchTaskImpl::State::initializing)
+			else if (r->fetch->state != FetchTaskImpl::State::initializing)
 				continue;
-            if (resources.failedAvailUrlNoLock.find(r->impl->name)
+            if (resources.failedAvailUrlNoLock.find(r->fetch->name)
                     != resources.failedAvailUrlNoLock.end())
             {
                 statistics.resourcesIgnored++;
-                r->impl->state = FetchTaskImpl::State::error;
+                r->fetch->state = FetchTaskImpl::State::error;
 				LOG(debug) << "Ignoring resource '"
-						   << r->impl->name
+						   << r->fetch->name
                            << "', becouse it is on failed-avail-test list";
             }
-            else if (r->impl->name.find("://") == std::string::npos)
+            else if (r->fetch->name.find("://") == std::string::npos)
             {
-                r->impl->loadFromInternalMemory();
+                r->fetch->loadFromInternalMemory();
                 loadResource(r);
             }
-            else if (r->impl->allowDiskCache() && r->impl->loadFromCache())
+            else if (r->fetch->allowDiskCache() && r->fetch->loadFromCache())
             {
                 statistics.resourcesDiskLoaded++;
                 loadResource(r);
@@ -192,18 +193,18 @@ bool MapImpl::resourceDataTick()
             else if (resources.downloads < options.maxConcurrentDownloads)
             {
                 statistics.resourcesDownloaded++;
-                r->impl->state = FetchTaskImpl::State::downloading;
-                r->impl->replyCode = 0;
-                resources.fetcher->fetch(r->impl);
+                r->fetch->state = FetchTaskImpl::State::downloading;
+                r->fetch->replyCode = 0;
+                resources.fetcher->fetch(r->fetch);
                 resources.downloads++;
             }
         }
         catch (std::exception &e)
         {
 			statistics.resourcesFailed++;
-            r->impl->state = FetchTaskImpl::State::error;
+            r->fetch->state = FetchTaskImpl::State::error;
             LOG(err3) << "Failed processing resource '"
-                      << r->impl->name
+                      << r->fetch->name
                       << "', exception: " << e.what();
         }
     }
@@ -309,7 +310,7 @@ void MapImpl::resourceRenderTick()
             memRamUse += it.second->info.ramMemoryCost;
             memGpuUse += it.second->info.gpuMemoryCost;
             // consider long time not used resources only
-            if (it.second->impl->lastAccessTick + 100 < statistics.frameIndex)
+            if (it.second->fetch->lastAccessTick + 100 < statistics.frameIndex)
                 res.push_back(it.second.get());
         }
         uint64 memUse = memRamUse + memGpuUse;
@@ -319,21 +320,21 @@ void MapImpl::resourceRenderTick()
                 //if (a->impl->lastAccessTick == b->impl->lastAccessTick)
                 //    return a->gpuMemoryCost + a->ramMemoryCost
                 //            > b->gpuMemoryCost + b->ramMemoryCost;
-                return a->impl->lastAccessTick < b->impl->lastAccessTick;
+                return a->fetch->lastAccessTick < b->fetch->lastAccessTick;
             });
             for (Resource *it : res)
             {
                 if (memUse <= options.maxResourcesMemory)
                     break;
                 memUse -= it->info.gpuMemoryCost + it->info.ramMemoryCost;
-                if (it->impl->state != FetchTaskImpl::State::finalizing)
-                    it->impl->state = FetchTaskImpl::State::finalizing;
+                if (it->fetch->state != FetchTaskImpl::State::finalizing)
+                    it->fetch->state = FetchTaskImpl::State::finalizing;
                 else
                 {
                     statistics.resourcesReleased++;
                     LOG(info2) << "Releasing resource '"
-                               << it->impl->name << "'";
-                    resources.resources.erase(it->impl->name);
+                               << it->fetch->name << "'";
+                    resources.resources.erase(it->fetch->name);
                 }
             }
         }
@@ -345,18 +346,18 @@ void MapImpl::resourceRenderTick()
 
 void MapImpl::touchResource(const std::shared_ptr<Resource> &resource)
 {
-    touchResource(resource, resource->impl->priority);
+    touchResource(resource, resource->fetch->priority);
 }
 
 void MapImpl::touchResource(const std::shared_ptr<Resource> &resource,
                             double priority)
 {
-    resource->impl->lastAccessTick = statistics.frameIndex;
-    resource->impl->priority = priority;
-    switch (resource->impl->state)
+    resource->fetch->lastAccessTick = statistics.frameIndex;
+    resource->fetch->priority = priority;
+    switch (resource->fetch->state)
     {
     case FetchTaskImpl::State::finalizing:
-        resource->impl->state = FetchTaskImpl::State::initializing;
+        resource->fetch->state = FetchTaskImpl::State::initializing;
         // no break here
     case FetchTaskImpl::State::initializing:
     case FetchTaskImpl::State::downloaded:
@@ -439,7 +440,7 @@ Validity MapImpl::getResourceValidity(const std::string &name)
     auto it = resources.resources.find(name);
     if (it == resources.resources.end())
         return Validity::Invalid;
-    switch (it->second->impl->state)
+    switch (it->second->fetch->state)
     {
     case FetchTaskImpl::State::error:
         return Validity::Invalid;

@@ -29,10 +29,11 @@ void GpuTextureSpec::verticalFlip()
 
 void GpuTexture::load()
 {
-    LOG(info2) << "Loading gpu texture '" << impl->name << "'";
-    GpuTextureSpec spec(impl->contentData);
+    LOG(info2) << "Loading gpu texture '" << fetch->name << "'";
+    GpuTextureSpec spec(fetch->contentData);
     spec.verticalFlip();
-    impl->map->callbacks.loadTexture(info, spec);
+    fetch->map->callbacks.loadTexture(info, spec);
+    info.ramMemoryCost += sizeof(*this);
 }
 
 } // namespace vts

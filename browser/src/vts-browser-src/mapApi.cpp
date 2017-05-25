@@ -167,12 +167,11 @@ const std::string &Map::getMapConfigPath() const
     return impl->mapConfigPath;
 }
 
-void Map::purgeTraverseCache(bool hard)
+void Map::purgeTraverseCache()
 {
-    if (hard)
-        impl->purgeHard();
-    else
-        impl->purgeSoft();
+    if (!isMapConfigReady())
+        return;
+    impl->purgeTraverseCache();
 }
 
 bool Map::isMapConfigReady() const
@@ -290,13 +289,17 @@ void Map::setPositionPoint(const double (&point)[3])
 void Map::getPositionPoint(double point[3]) const
 {
     if (!isMapConfigReady())
+    {
+        for (int i = 0; i < 3; i++)
+            point[i] = 0;
         return;
+    }
     auto p = impl->mapConfig->position.position;
     for (int i = 0; i < 3; i++)
         point[i] = p[i];
 }
 
-void Map::setPositionRotation(const double point[])
+void Map::setPositionRotation(const double point[3])
 {
     if (!impl->mapConfig || !*impl->mapConfig)
         return;
@@ -310,10 +313,14 @@ void Map::setPositionRotation(const double (&point)[3])
     setPositionRotation(&point[0]);
 }
 
-void Map::getPositionRotation(double point[]) const
+void Map::getPositionRotation(double point[3]) const
 {
     if (!isMapConfigReady())
+    {
+        for (int i = 0; i < 3; i++)
+            point[i] = 0;
         return;
+    }
     auto p = impl->mapConfig->position.orientation;
     for (int i = 0; i < 3; i++)
         point[i] = p[i];
@@ -403,9 +410,13 @@ void Map::setAutoMotion(const double (&value)[3])
 void Map::getAutoMotion(double value[3]) const
 {
     if (!isMapConfigReady())
+    {
+        for (int i = 0; i < 3; i++)
+            value[i] = 0;
         return;
+    }
     for (int i = 0; i < 3; i++)
-        value[i] = impl->navigation.autoMotion[i];
+        value[i] = impl->navigation.autoMotion(i);
 }
 
 void Map::setAutoRotation(const double value[3])
@@ -424,9 +435,13 @@ void Map::setAutoRotation(const double (&value)[3])
 void Map::getAutoRotation(double value[3]) const
 {
     if (!isMapConfigReady())
+    {
+        for (int i = 0; i < 3; i++)
+            value[i] = 0;
         return;
+    }
     for (int i = 0; i < 3; i++)
-        value[i] = impl->navigation.autoRotation[i];
+        value[i] = impl->navigation.autoRotation(i);
 }
 
 void Map::convert(const double pointFrom[3], double pointTo[3],
@@ -499,7 +514,7 @@ void Map::setViewCurrent(const std::string &name)
     if (it == impl->mapConfig->namedViews.end())
         LOGTHROW(err2, std::runtime_error) << "invalid mapconfig view name";
     impl->mapConfig->view = it->second;
-    impl->purgeSoft();
+    impl->purgeTraverseCache();
     impl->mapConfigView = name;
 }
 
@@ -525,7 +540,7 @@ void Map::setViewData(const std::string &name, const MapView &view)
     if (name == "")
     {
         impl->mapConfig->view = setMapView(view);
-        impl->purgeSoft();
+        impl->purgeTraverseCache();
     }
     else
         impl->mapConfig->namedViews[name] = setMapView(view);
@@ -556,7 +571,7 @@ void Map::setViewJson(const std::string &name,
     if (name == "")
     {
         impl->mapConfig->view = vtslibs::registry::viewFromJson(val);
-        impl->purgeSoft();
+        impl->purgeTraverseCache();
     }
     else
         impl->mapConfig->namedViews[name]

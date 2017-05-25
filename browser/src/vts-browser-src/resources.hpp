@@ -26,7 +26,7 @@ public:
     operator bool () const;
     
     ResourceInfo info;
-    std::shared_ptr<FetchTaskImpl> impl;
+    std::shared_ptr<FetchTaskImpl> fetch;
 };
 
 class GpuMesh : public Resource

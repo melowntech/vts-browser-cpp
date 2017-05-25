@@ -26,7 +26,7 @@ public:
     void setMapConfigPath(const std::string &mapConfigPath,
                           const std::string &authPath = "");
     const std::string &getMapConfigPath() const;
-    void purgeTraverseCache(bool hard);
+    void purgeTraverseCache();
     
     /// returns whether the map config has been downloaded
     /// and parsed successfully

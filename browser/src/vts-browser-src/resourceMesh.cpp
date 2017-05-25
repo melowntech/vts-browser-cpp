@@ -37,8 +37,8 @@ GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0),
 
 void GpuMesh::load()
 {
-    LOG(info2) << "Loading gpu mesh '" << impl->name << "'";
-    GpuMeshSpec spec(impl->contentData);
+    LOG(info2) << "Loading gpu mesh '" << fetch->name << "'";
+    GpuMeshSpec spec(fetch->contentData);
     spec.attributes.resize(3);
     spec.attributes[0].enable = true;
     spec.attributes[0].stride = sizeof(vec3f) + sizeof(vec2f);
@@ -48,7 +48,8 @@ void GpuMesh::load()
     spec.attributes[1].components = 2;
     spec.attributes[1].offset = sizeof(vec3f);
     spec.attributes[2] = spec.attributes[1];
-    impl->map->callbacks.loadMesh(info, spec);
+    fetch->map->callbacks.loadMesh(info, spec);
+    info.ramMemoryCost += sizeof(*this);
 }
 
 MeshPart::MeshPart() : textureLayer(0), surfaceReference(0),
@@ -72,11 +73,11 @@ const mat4 findNormToPhys(const math::Extents3 &extents)
 
 void MeshAggregate::load()
 {
-    LOG(info2) << "Loading (aggregated) mesh '" << impl->name << "'";
+    LOG(info2) << "Loading (aggregated) mesh '" << fetch->name << "'";
     
-    detail::Wrapper w(impl->contentData);
+    detail::Wrapper w(fetch->contentData);
     vtslibs::vts::NormalizedSubMesh::list meshes = vtslibs::vts::
-            loadMeshProperNormalized(w, impl->name);
+            loadMeshProperNormalized(w, fetch->name);
 
     submeshes.clear();
     submeshes.reserve(meshes.size());
@@ -88,8 +89,8 @@ void MeshAggregate::load()
         char tmp[10];
         sprintf(tmp, "%d", mi);
         std::shared_ptr<GpuMesh> gm = std::make_shared<GpuMesh>();
-        gm->impl = std::make_shared<FetchTaskImpl>(impl->map,
-                    std::string(impl->name) + "#" + tmp,
+        gm->fetch = std::make_shared<FetchTaskImpl>(fetch->map,
+                    std::string(fetch->name) + "#" + tmp,
                     FetchTask::ResourceType::MeshPart);
 
         uint32 vertexSize = sizeof(vec3f);
@@ -143,8 +144,8 @@ void MeshAggregate::load()
             offset += m.faces.size() * sizeof(vec2f) * 3;
         }
 
-        impl->map->callbacks.loadMesh(gm->info, spec);
-        gm->impl->state = FetchTaskImpl::State::ready;
+        fetch->map->callbacks.loadMesh(gm->info, spec);
+        gm->fetch->state = FetchTaskImpl::State::ready;
 
         MeshPart part;
         part.renderable = gm;
@@ -157,8 +158,7 @@ void MeshAggregate::load()
         submeshes.push_back(part);
     }
 
-    info.gpuMemoryCost = 0;
-    info.ramMemoryCost = meshes.size() * sizeof(MeshPart);
+    info.ramMemoryCost += sizeof(*this) + meshes.size() * sizeof(MeshPart);
     for (auto &&it : submeshes)
     {
         info.gpuMemoryCost += it.renderable->info.gpuMemoryCost;

@@ -161,7 +161,8 @@ void GpuTextureImpl::loadTexture(vts::ResourceInfo &info,
     create();
     setData(QImage((unsigned char*)spec.buffer.data(),
                    spec.width, spec.height, format));
-    info.gpuMemoryCost = spec.buffer.size();
+    info.ramMemoryCost += sizeof(*this);
+    info.gpuMemoryCost += spec.buffer.size();
 }
 
 GpuMeshImpl::GpuMeshImpl() :
@@ -218,6 +219,7 @@ void GpuMeshImpl::loadMesh(vts::ResourceInfo &info,
         indexBuffer.bind();
         indexBuffer.allocate(spec.indices.data(), spec.indices.size());
     }
-    info.gpuMemoryCost = spec.vertices.size() + spec.indices.size();
+    info.ramMemoryCost += sizeof(*this);
+    info.gpuMemoryCost += spec.vertices.size() + spec.indices.size();
     arrayObject.destroy();
 }

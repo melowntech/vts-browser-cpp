@@ -40,9 +40,9 @@ MapConfig::MapConfig()
 void MapConfig::load()
 {
     clear();
-    LOG(info3) << "Parsing map config '" << impl->name << "'";
-    detail::Wrapper w(impl->contentData);
-    vtslibs::vts::loadMapConfig(*this, w, impl->name);
+    LOG(info3) << "Parsing map config '" << fetch->name << "'";
+    detail::Wrapper w(fetch->contentData);
+    vtslibs::vts::loadMapConfig(*this, w, fetch->name);
     
     auto bo(vtslibs::vts::browserOptions(*this));
     if (bo.isObject())
@@ -194,13 +194,13 @@ void MapConfig::generateSurfaceStack()
         {
             SurfaceStackItem i;
             i.surface = std::shared_ptr<SurfaceInfo> (new SurfaceInfo(
-                    *findGlue(g.id), impl->name));
+                    *findGlue(g.id), fetch->name));
             i.surface->name = g.id;
             surfaceStack.push_back(i);
         }
         SurfaceStackItem i;
         i.surface = std::shared_ptr<SurfaceInfo> (new SurfaceInfo(
-                    *findSurface(ts.tilesetId), impl->name));
+                    *findSurface(ts.tilesetId), fetch->name));
         i.surface->name = { ts.tilesetId };
         surfaceStack.push_back(i);
     }
@@ -243,13 +243,16 @@ void MapConfig::generateSurfaceStack()
             it->color = convertHsvToRgb(c);
         }
     }
+    
+    // memory use
+    info.ramMemoryCost += sizeof(*this);
 }
 
 void ExternalBoundLayer::load()
 {
-    detail::Wrapper w(impl->contentData);
+    detail::Wrapper w(fetch->contentData);
     *(vtslibs::registry::BoundLayer*)this
-            = vtslibs::registry::loadBoundLayer(w, impl->name);
+            = vtslibs::registry::loadBoundLayer(w, fetch->name);
 }
 
 } // namespace vts

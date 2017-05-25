@@ -44,7 +44,7 @@ void AuthConfig::load()
     {
         Json::Value root;
         {
-            detail::Wrapper w(impl->contentData);
+            detail::Wrapper w(fetch->contentData);
             w >> root;
         }
         int status = root["status"].asInt();
@@ -67,7 +67,7 @@ void AuthConfig::load()
         for (auto it : hostnamesJson)
             hostnames.insert(it.asString());
         token = root["token"].asString();
-        //LOG(info3) << "token: " << token;
+        info.ramMemoryCost += sizeof(*this);
     }
     catch (Json::Exception &e)
     {
@@ -78,13 +78,13 @@ void AuthConfig::load()
 
 void AuthConfig::checkTime()
 {
-    if (impl->state == FetchTaskImpl::State::ready)
+    if (fetch->state == FetchTaskImpl::State::ready)
     {
         uint64 t = currentTime();
         if (t + 60 > timeParsed + timeValid)
         {
             // force redownload
-            impl->state = FetchTaskImpl::State::initializing;
+            fetch->state = FetchTaskImpl::State::initializing;
         }
     }
 }

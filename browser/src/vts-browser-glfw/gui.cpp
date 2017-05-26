@@ -51,10 +51,9 @@ public:
 
         // load font
         {
-            struct nk_font_config cfg;
-            memset(&cfg, 0, sizeof(cfg));
+            struct nk_font_config cfg = nk_font_config(0);
             cfg.oversample_h = 3;
-            cfg.oversample_v = 3;
+            cfg.oversample_v = 2;
             cfg.range = FontUnicodeRanges;
             nk_font_atlas_init_default(&atlas);
             nk_font_atlas_begin(&atlas);
@@ -960,11 +959,21 @@ public:
                     else
                         sprintf(buffer, "%.1lf m", r.distance);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                    nk_label(&ctx, r.region.c_str(), NK_TEXT_LEFT);
-                    if (nk_button_label(&ctx, "Go"))
+                    nk_label(&ctx, (std::string("   ") + r.region).c_str(),
+                             NK_TEXT_LEFT);
+                    if (r.radius > 0 && r.position[0] == r.position[0])
                     {
-                        // todo
+                        if (nk_button_label(&ctx, "Go"))
+                        {
+                            window->map->setPositionSubjective(false, false);
+                            window->map->setPositionPoint(r.position);
+                            window->map->setPositionViewExtent(r.radius * 2);
+                            window->map->resetPositionRotation(false);
+                            window->map->resetPositionAltitude();
+                        }
                     }
+                    else
+                        nk_label(&ctx, "", NK_TEXT_LEFT);
                 }
             }
         }

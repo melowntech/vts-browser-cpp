@@ -60,6 +60,7 @@ public:
     bool renderMeshBoxes;
     bool renderTileBoxes;
     bool renderObjectPosition;
+    bool searchResultsFilter;
     
     bool debugDetachedCamera;
     bool debugDisableMeta5;

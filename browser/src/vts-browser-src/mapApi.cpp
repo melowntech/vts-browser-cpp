@@ -276,6 +276,13 @@ void Map::setPositionPoint(const double point[3])
 {
     if (!isMapConfigReady())
         return;
+    if (impl->mapConfig->srs.get(
+                impl->mapConfig->referenceFrame.model.navigationSrs).type
+                   == vtslibs::registry::Srs::Type::geographic)
+    {
+        assert(point[0] >= -180 && point[0] <= 180);
+        assert(point[1] >= -90 && point[1] <= 90);
+    }
     impl->mapConfig->position.position
             = math::Point3(point[0], point[1], point[2]);
     impl->navigation.inertiaMotion = vec3(0,0,0);
@@ -303,6 +310,9 @@ void Map::setPositionRotation(const double point[3])
 {
     if (!impl->mapConfig || !*impl->mapConfig)
         return;
+    assert(point[0] == point[0]);
+    assert(point[1] == point[1]);
+    assert(point[2] == point[2]);
     impl->mapConfig->position.orientation
             = math::Point3(point[0], point[1], point[2]);
     impl->navigation.inertiaRotation = vec3(0,0,0);
@@ -330,6 +340,7 @@ void Map::setPositionViewExtent(double viewExtent)
 {
     if (!isMapConfigReady())
         return;
+    assert(viewExtent == viewExtent);
     impl->mapConfig->position.verticalExtent = viewExtent;
     impl->navigation.inertiaViewExtent = 0;
 }
@@ -345,6 +356,7 @@ void Map::setPositionFov(double fov)
 {
     if (!isMapConfigReady())
         return;
+    assert(fov > 0 && fov < 180);
     impl->mapConfig->position.verticalFov = fov;
 }
 

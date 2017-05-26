@@ -56,37 +56,37 @@ public:
                     &physToPub_, DummyDeleter());
     }
     
-    const vec3 navToPhys(const vec3 &value) override
+    vec3 navToPhys(const vec3 &value) override
     {
         return vecFromUblas<vec3>(navToPhys_(vecToUblas<math::Point3d>(value)));
     }
 
-    const vec3 physToNav(const vec3 &value) override
+    vec3 physToNav(const vec3 &value) override
     {
         return vecFromUblas<vec3>(physToNav_(vecToUblas<math::Point3d>(value)));
     }
 
-    const vec3 navToPub(const vec3 &value) override
+    vec3 navToPub(const vec3 &value) override
     {
         return vecFromUblas<vec3>(navToPub_(vecToUblas<math::Point3d>(value)));
     }
 
-    const vec3 pubToNav(const vec3 &value) override
+    vec3 pubToNav(const vec3 &value) override
     {
         return vecFromUblas<vec3>(pubToNav_(vecToUblas<math::Point3d>(value)));
     }
 
-    const vec3 pubToPhys(const vec3 &value) override
+    vec3 pubToPhys(const vec3 &value) override
     {
         return vecFromUblas<vec3>(pubToPhys_(vecToUblas<math::Point3d>(value)));
     }
 
-    const vec3 physToPub(const vec3 &value) override
+    vec3 physToPub(const vec3 &value) override
     {
         return vecFromUblas<vec3>(physToPub_(vecToUblas<math::Point3d>(value)));
     }
     
-    const vec3 convert(const vec3 &value,
+    vec3 convert(const vec3 &value,
                                     const std::string &from,
                                     const std::string &to) override
     {
@@ -97,7 +97,7 @@ public:
         return vecFromUblas<vec3>((*p)(vecFromUblas<math::Point3>(value)));
     }
 
-    const vec3 navGeodesicDirect(const vec3 &position, double distance,
+    vec3 navGeodesicDirect(const vec3 &position, double distance,
                                  double azimuthIn, double &azimuthOut) override
     {
         vec3 res;
@@ -107,11 +107,18 @@ public:
         return res;
     }
     
-    const vec3 navGeodesicDirect(const vec3 &position, double distance,
+    vec3 navGeodesicDirect(const vec3 &position, double distance,
                                  double azimuthIn) override
     {
         double a;
         return navGeodesicDirect(position, distance, azimuthIn, a);
+    }
+    
+    double navGeodesicDistance(const vec3 &a, const vec3 &b) override
+    {
+        double r;
+        geodesic_->Inverse(a(1), a(0), b(1), b(0), r);
+        return r;
     }
 
     const vtslibs::registry::Registry &registry;

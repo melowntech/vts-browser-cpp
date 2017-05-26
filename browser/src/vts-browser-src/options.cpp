@@ -42,6 +42,7 @@ MapOptions::MapOptions() :
     renderMeshBoxes(false),
     renderTileBoxes(false),
     renderObjectPosition(false),
+    searchResultsFilter(true),
     debugDetachedCamera(false),
     debugDisableMeta5(false)
 {}

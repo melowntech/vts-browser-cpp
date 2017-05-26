@@ -3,6 +3,18 @@
 namespace vts
 {
 
+namespace
+{
+
+void initializeFetchTask(MapImpl *map, FetchTaskImpl *task)
+{
+    task->queryHeaders["X-Vts-Client-Id"] = map->clientId;
+    if (map->auth)
+        map->auth->authorize(task);
+}
+
+} // namespace
+
 FetchTask::FetchTask(const std::string &url, ResourceType resourceType) :
     resourceType(resourceType), queryUrl(url), replyCode(0)
 {}
@@ -10,15 +22,12 @@ FetchTask::FetchTask(const std::string &url, ResourceType resourceType) :
 FetchTask::~FetchTask()
 {}
 
-FetchTaskImpl::FetchTaskImpl(vts::MapImpl *map, const std::string &name,
-                             FetchTask::ResourceType resourceType)
-    : FetchTask(name, resourceType), name(name), map(map),
-      state(State::initializing), priority(0), redirectionsCount(0),
-      lastAccessTick(0)
+FetchTaskImpl::FetchTaskImpl(MapImpl *map, const std::string &name,
+                             FetchTask::ResourceType resourceType) :
+    FetchTask(name, resourceType), name(name), map(map),
+    state(State::initializing), redirectionsCount(0)
 {
-    queryHeaders["X-Vts-Client-Id"] = map->clientId;
-    if (map->auth)
-        map->auth->authorize(this);
+    initializeFetchTask(map, this);
 }
 
 FetchTaskImpl::~FetchTaskImpl()

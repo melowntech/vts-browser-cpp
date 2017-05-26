@@ -28,6 +28,7 @@ public:
         MeshPart,
         Texture,
         NavTile,
+        Search,
     };
     const ResourceType resourceType;
     

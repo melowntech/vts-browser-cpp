@@ -96,6 +96,10 @@ public:
     std::string getViewJson(const std::string &name) const;
     void setViewJson(const std::string &name, const std::string &view);
     
+    std::shared_ptr<class SearchTask> search(const std::string &query);
+    std::shared_ptr<class SearchTask> search(const std::string &query, const double point[3]);
+    std::shared_ptr<class SearchTask> search(const std::string &query, const double (&point)[3]);
+    
     void printDebugInfo();
 
 private:

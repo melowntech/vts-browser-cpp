@@ -9,6 +9,7 @@
 
 #include "include/vts-browser/statistics.hpp"
 #include "include/vts-browser/options.hpp"
+#include "include/vts-browser/search.hpp"
 #include "include/vts-browser/draws.hpp"
 #include "include/vts-browser/math.hpp"
 
@@ -139,6 +140,7 @@ public:
         std::string cachePath;
         std::atomic_uint downloads;
         std::shared_ptr<Fetcher> fetcher;
+        std::deque<std::weak_ptr<SearchTask>> searchTasks;
         boost::mutex mutPrepareQue;
         boost::mutex mutFailedAvailUrls;
         bool disableCache;
@@ -213,7 +215,9 @@ public:
             const std::string &name);
     std::shared_ptr<BoundMetaTile> getBoundMetaTile(const std::string &name);
     std::shared_ptr<BoundMaskTile> getBoundMaskTile(const std::string &name);
+    std::shared_ptr<SearchTaskImpl> getSearchImpl(const std::string &name);
     Validity getResourceValidity(const std::string &name);
+    Validity getResourceValidity(const std::shared_ptr<Resource> &resource);
     const std::string convertNameToCache(const std::string &path);
     bool availableInCache(const std::string &name);
     const std::string convertNameToPath(std::string path, bool preserveSlashes);
@@ -239,6 +243,11 @@ public:
     void traverseClearing(std::shared_ptr<TraverseNode> &trav);
     void updateCamera();
     bool prerequisitesCheck();
+    
+    // search
+    std::shared_ptr<SearchTask> search(const std::string &query,
+                                       const double point[3]);
+    void updateSearch();
 };
 
 } // namespace vts

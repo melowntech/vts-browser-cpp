@@ -36,6 +36,8 @@ public:
         Dynamic,
     };
     
+    std::string searchUrl;
+    
     double maxTexelToPixelScale;
     double positionViewExtentMin;
     double positionViewExtentMax;

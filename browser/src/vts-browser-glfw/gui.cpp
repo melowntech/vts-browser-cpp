@@ -5,11 +5,28 @@
 #include <vts-browser/statistics.hpp>
 #include <vts-browser/options.hpp>
 #include <vts-browser/view.hpp>
+#include <vts-browser/search.hpp>
 
 #include "mainWindow.hpp"
 #include <nuklear/nuklear.h>
 #include <GLFW/glfw3.h>
 #include "guiSkin.hpp"
+
+namespace
+{
+
+const nk_rune FontUnicodeRanges[] = {
+    // 0x0020, 0x007F, // Basic Latin
+    // 0x00A0, 0x00FF, // Latin-1 Supplement
+    // 0x0100, 0x017F, // Latin Extended-A
+    // 0x0180, 0x024F, // Latin Extended-B
+    // 0x0300, 0x036F, // Combining Diacritical Marks
+    // 0x0400, 0x04FF, // Cyrillic
+    0x0001, 0x5000, // all multilingual characters
+    0
+};
+
+} // namespace
 
 Mark::Mark() : open(false)
 {}
@@ -23,17 +40,22 @@ public:
         float uv[2];
         nk_byte col[4];
     };
-    
+
     GuiImpl(MainWindow *window) :
         statTraversedDetails(false), statRenderedDetails(false),
-        optSensitivityDetails(false), posAutoDetails(false), positionSrs(2),
-        window(window), consumeEvents(true), prepareFirst(true)
+        optSensitivityDetails(false), posAutoDetails(false),
+        positionSrs(2), window(window), prepareFirst(true)
     {
-        { // load font
+        searchText[0] = 0;
+        searchTextPrev[0] = 0;
+
+        // load font
+        {
             struct nk_font_config cfg;
             memset(&cfg, 0, sizeof(cfg));
-            cfg.oversample_h = 6;
-            cfg.oversample_v = 6;
+            cfg.oversample_h = 3;
+            cfg.oversample_v = 3;
+            cfg.range = FontUnicodeRanges;
             nk_font_atlas_init_default(&atlas);
             nk_font_atlas_begin(&atlas);
             vts::Buffer buffer = vts::readInternalMemoryBuffer(
@@ -49,14 +71,17 @@ public:
             fontTexture = std::make_shared<GpuTextureImpl>();
             vts::ResourceInfo info;
             fontTexture->loadTexture(info, spec);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             nk_font_atlas_end(&atlas, nk_handle_id(fontTexture->id), &null);
+
+            // lodepng_encode32_file("font_atlas.png",
+            //     (unsigned char*)spec.buffer.data(), spec.width, spec.height);
         }
-        
+
         nk_init_default(&ctx, &font->handle);
         nk_buffer_init_default(&cmds);
-        
+
         static const nk_draw_vertex_layout_element vertex_layout[] =
         {
             { NK_VERTEX_POSITION, NK_FORMAT_FLOAT, 0 },
@@ -75,10 +100,11 @@ public:
         config.shape_AA = NK_ANTI_ALIASING_ON;
         config.line_AA = NK_ANTI_ALIASING_ON;
         config.null = null;
-        
+
         initializeGuiSkin(ctx, skinMedia, skinTexture);
-        
-        { // load shader
+
+        // load shader
+        {
             shader = std::make_shared<GpuShaderImpl>();
             vts::Buffer vert = vts::readInternalMemoryBuffer(
                         "data/shaders/gui.vert.glsl");
@@ -93,8 +119,9 @@ public:
             glUseProgram(id);
             glUniform1i(glGetUniformLocation(id, "Texture"), 0);
         }
-        
-        { // prepare mesh buffers
+
+        // prepare mesh buffers
+        {
             mesh = std::make_shared<GpuMeshImpl>();
             glGenVertexArrays(1, &mesh->vao);
             glGenBuffers(1, &mesh->vbo);
@@ -200,69 +227,65 @@ public:
 
     void input()
     {
-        consumeEvents = nk_item_is_any_active(&ctx);
+        auto &win = window->window;
         nk_input_begin(&ctx);
         glfwPollEvents();
-        nk_input_key(&ctx, NK_KEY_DEL, glfwGetKey(window->window,
-                GLFW_KEY_DELETE) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_ENTER, glfwGetKey(window->window,
-                GLFW_KEY_ENTER) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_TAB, glfwGetKey(window->window,
-                GLFW_KEY_TAB) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_BACKSPACE, glfwGetKey(window->window,
-                GLFW_KEY_BACKSPACE) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_LEFT, glfwGetKey(window->window,
-                GLFW_KEY_LEFT) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_RIGHT, glfwGetKey(window->window,
-                GLFW_KEY_RIGHT) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_UP, glfwGetKey(window->window,
-                GLFW_KEY_UP) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_DOWN, glfwGetKey(window->window,
-                GLFW_KEY_DOWN) == GLFW_PRESS);
-        if (glfwGetKey(window->window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ||
-            glfwGetKey(window->window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS)
+        
+        // some code copied from the demos
+        
+        nk_input_key(&ctx, NK_KEY_DEL, glfwGetKey(win, GLFW_KEY_DELETE) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_ENTER, glfwGetKey(win, GLFW_KEY_ENTER) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_TAB, glfwGetKey(win, GLFW_KEY_TAB) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_BACKSPACE, glfwGetKey(win, GLFW_KEY_BACKSPACE) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_UP, glfwGetKey(win, GLFW_KEY_UP) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_DOWN, glfwGetKey(win, GLFW_KEY_DOWN) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_TEXT_START, glfwGetKey(win, GLFW_KEY_HOME) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_TEXT_END, glfwGetKey(win, GLFW_KEY_END) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_SCROLL_START, glfwGetKey(win, GLFW_KEY_HOME) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_SCROLL_END, glfwGetKey(win, GLFW_KEY_END) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_SCROLL_DOWN, glfwGetKey(win, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_SCROLL_UP, glfwGetKey(win, GLFW_KEY_PAGE_UP) == GLFW_PRESS);
+        nk_input_key(&ctx, NK_KEY_SHIFT, glfwGetKey(win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(win, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS);
+        
+        if (glfwGetKey(win, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(win, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS)
         {
-            nk_input_key(&ctx, NK_KEY_COPY, glfwGetKey(window->window,
-                    GLFW_KEY_C) == GLFW_PRESS);
-            nk_input_key(&ctx, NK_KEY_PASTE, glfwGetKey(window->window,
-                    GLFW_KEY_P) == GLFW_PRESS);
-            nk_input_key(&ctx, NK_KEY_CUT, glfwGetKey(window->window,
-                    GLFW_KEY_X) == GLFW_PRESS);
-            nk_input_key(&ctx, NK_KEY_CUT, glfwGetKey(window->window,
-                    GLFW_KEY_E) == GLFW_PRESS);
-            nk_input_key(&ctx, NK_KEY_SHIFT, 1);
-        } 
+            nk_input_key(&ctx, NK_KEY_COPY, glfwGetKey(win, GLFW_KEY_C) == GLFW_PRESS);
+            nk_input_key(&ctx, NK_KEY_PASTE, glfwGetKey(win, GLFW_KEY_V) == GLFW_PRESS);
+            nk_input_key(&ctx, NK_KEY_CUT, glfwGetKey(win, GLFW_KEY_X) == GLFW_PRESS);
+            nk_input_key(&ctx, NK_KEY_TEXT_UNDO, glfwGetKey(win, GLFW_KEY_Z) == GLFW_PRESS);
+            nk_input_key(&ctx, NK_KEY_TEXT_REDO, glfwGetKey(win, GLFW_KEY_R) == GLFW_PRESS);
+            nk_input_key(&ctx, NK_KEY_TEXT_WORD_LEFT, glfwGetKey(win, GLFW_KEY_LEFT) == GLFW_PRESS);
+            nk_input_key(&ctx, NK_KEY_TEXT_WORD_RIGHT, glfwGetKey(win, GLFW_KEY_RIGHT) == GLFW_PRESS);
+            nk_input_key(&ctx, NK_KEY_TEXT_LINE_START, glfwGetKey(win, GLFW_KEY_B) == GLFW_PRESS);
+            nk_input_key(&ctx, NK_KEY_TEXT_LINE_END, glfwGetKey(win, GLFW_KEY_E) == GLFW_PRESS);
+        }
         else
         {
+            nk_input_key(&ctx, NK_KEY_LEFT, glfwGetKey(win, GLFW_KEY_LEFT) == GLFW_PRESS);
+            nk_input_key(&ctx, NK_KEY_RIGHT, glfwGetKey(win, GLFW_KEY_RIGHT) == GLFW_PRESS);
             nk_input_key(&ctx, NK_KEY_COPY, 0);
             nk_input_key(&ctx, NK_KEY_PASTE, 0);
             nk_input_key(&ctx, NK_KEY_CUT, 0);
-            nk_input_key(&ctx, NK_KEY_SHIFT, 0);
         }
+        
         double x, y;
         glfwGetCursorPos(window->window, &x, &y);
         nk_input_motion(&ctx, (int)x, (int)y);
-        nk_input_button(&ctx, NK_BUTTON_LEFT, (int)x, (int)y,
-                        glfwGetMouseButton(window->window,
-                        GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
-        nk_input_button(&ctx, NK_BUTTON_MIDDLE, (int)x, (int)y,
-                        glfwGetMouseButton(window->window,
-                        GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS);
-        nk_input_button(&ctx, NK_BUTTON_RIGHT, (int)x, (int)y,
-                        glfwGetMouseButton(window->window,
-                        GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS);
+        nk_input_button(&ctx, NK_BUTTON_LEFT, (int)x, (int)y, glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
+        nk_input_button(&ctx, NK_BUTTON_MIDDLE, (int)x, (int)y, glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS);
+        nk_input_button(&ctx, NK_BUTTON_RIGHT, (int)x, (int)y, glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS);
         nk_input_end(&ctx);
     }
 
     void mousePositionCallback(double xpos, double ypos)
     {
-        if (!consumeEvents)
+        if (!nk_item_is_any_active(&ctx))
             window->mousePositionCallback(xpos, ypos);
     }
-    
+
     void mouseButtonCallback(int button, int action, int mods)
     {
-        if (!consumeEvents)
+        if (!nk_item_is_any_active(&ctx))
             window->mouseButtonCallback(button, action, mods);
     }
 
@@ -272,20 +295,21 @@ public:
         pos.x = xoffset;
         pos.y = yoffset;
         nk_input_scroll(&ctx, pos);
-        if (!consumeEvents)
+        if (!nk_item_is_any_active(&ctx))
             window->mouseScrollCallback(xoffset, yoffset);
     }
-    
+
     void keyboardCallback(int key, int scancode, int action, int mods)
     {
-        if (!consumeEvents)
+        if (!nk_item_is_any_active(&ctx))
             window->keyboardCallback(key, scancode, action, mods);
     }
-    
+
     void keyboardUnicodeCallback(unsigned int codepoint)
     {
-        nk_input_unicode(&ctx, codepoint);
-        if (!consumeEvents)
+        if ((signed)codepoint > 0)
+            nk_input_unicode(&ctx, codepoint);
+        if (!nk_item_is_any_active(&ctx))
             window->keyboardUnicodeCallback(codepoint);
     }
 
@@ -723,7 +747,7 @@ public:
         }
         return changed;
     }
-    
+
     void prepareViews()
     {
         int flags = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE
@@ -735,10 +759,11 @@ public:
         {
             float width = nk_window_get_content_region_size(&ctx).x - 15;
             
+            // mapconfig selector
             if (window->mapConfigPaths.size() > 1)
-            { // mapconfig selector
+            {
                 float ratio[] = { width * 0.2f, width * 0.8f };
-                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+                nk_layout_row(&ctx, NK_STATIC, 20, 2, ratio);
                 nk_label(&ctx, "Config:", NK_TEXT_LEFT);
                 if (nk_combo_begin_label(&ctx,
                                  window->map->getMapConfigPath().c_str(),
@@ -764,10 +789,11 @@ public:
                 }
             }
             
+            // view selector
             if (!window->map->getViewNames().empty())
-            { // view selector
+            {
                 float ratio[] = { width * 0.2f, width * 0.8f };
-                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+                nk_layout_row(&ctx, NK_STATIC, 20, 2, ratio);
                 nk_label(&ctx, "View:", NK_TEXT_LEFT);
                 if (nk_combo_begin_label(&ctx,
                                  window->map->getViewCurrent().c_str(),
@@ -787,7 +813,8 @@ public:
             bool viewChanged = false;
             vts::MapView view;
             window->map->getViewData("", view);
-            { // surfaces
+            // surfaces
+            {
                 const std::vector<std::string> surfaces
                         = window->map->getResourceSurfaces();
                 for (const std::string &sn : surfaces)
@@ -808,7 +835,8 @@ public:
                         viewChanged = true;
                 }
             }
-            { // free layers
+            // free layers
+            {
                 // todo
             }
             if (viewChanged)
@@ -886,7 +914,63 @@ public:
         }
         nk_end(&ctx);
     }
-    
+
+    void prepareSearch()
+    {
+        int flags = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE
+                | NK_WINDOW_SCALABLE | NK_WINDOW_TITLE
+                | NK_WINDOW_MINIMIZABLE;
+        if (prepareFirst)
+            flags |= NK_WINDOW_MINIMIZED;
+        if (nk_begin(&ctx, "Search", nk_rect(1310, 10, 350, 500), flags))
+        {
+            float width = nk_window_get_content_region_size(&ctx).x - 15;
+            // search query
+            {
+                float ratio[] = { width * 0.2f, width * 0.8f };
+                nk_layout_row(&ctx, NK_STATIC, 20, 2, ratio);
+                nk_label(&ctx, "Query:", NK_TEXT_LEFT);
+                int len = strlen(searchText);
+                nk_edit_string(&ctx, NK_EDIT_FIELD, searchText, &len,
+                                       MaxSearchTextLength - 1, nullptr);
+                searchText[len] = 0;
+                if (strcmp(searchText, searchTextPrev) != 0)
+                {
+                    if (nk_utf_len(searchText, len) >= 3)
+                        search = window->map->search(searchText);
+                    else
+                        search.reset();
+                    strcpy(searchTextPrev, searchText);
+                }
+            }
+            // search results
+            if (search && search->done)
+            {
+                float ratio[] = { width * 0.8f, width * 0.2f };
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+                char buffer[200];
+                std::vector<vts::SearchItem> &res = search->results;
+                for (auto &r : res)
+                {
+                    nk_label(&ctx, r.title.c_str(), NK_TEXT_LEFT);
+                    if (r.distance >= 1e6)
+                        sprintf(buffer, "%.1lf Mm", r.distance / 1e6);
+                    else if (r.distance >= 1e3)
+                        sprintf(buffer, "%.1lf km", r.distance / 1e3);
+                    else
+                        sprintf(buffer, "%.1lf m", r.distance);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                    nk_label(&ctx, r.region.c_str(), NK_TEXT_LEFT);
+                    if (nk_button_label(&ctx, "Go"))
+                    {
+                        // todo
+                    }
+                }
+            }
+        }
+        nk_end(&ctx);
+    }
+
     void prepare(int, int)
     {
         prepareOptions();
@@ -894,6 +978,7 @@ public:
         preparePosition();
         prepareViews();
         prepareMarks();
+        prepareSearch();
         prepareFirst = false;
     }
 
@@ -902,11 +987,16 @@ public:
         prepare(width, height);
         dispatch(width, height);
     }
-    
+
+    static const int MaxSearchTextLength = 200;
+    char searchText[MaxSearchTextLength];
+    char searchTextPrev[MaxSearchTextLength];
+
     std::shared_ptr<GpuTextureImpl> fontTexture;
     std::shared_ptr<GpuTextureImpl> skinTexture;
     std::shared_ptr<GpuShaderImpl> shader;
     std::shared_ptr<GpuMeshImpl> mesh;
+    std::shared_ptr<vts::SearchTask> search;
 
     GuiSkinMedia skinMedia;
     nk_context ctx;
@@ -921,13 +1011,12 @@ public:
     int optSensitivityDetails;
     int posAutoDetails;
     int positionSrs;
-    
+
     MainWindow *window;
-    bool consumeEvents;
     bool prepareFirst;
-    
-    static const int MaxVertexMemory = 512 * 1024;
-    static const int MaxElementMemory = 128 * 1024;
+
+    static const int MaxVertexMemory = 4 * 1024 * 1024;
+    static const int MaxElementMemory = 4 * 1024 * 1024;
 };
 
 void MainWindow::Gui::mousePositionCallback(double xpos, double ypos)

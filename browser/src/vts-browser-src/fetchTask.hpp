@@ -41,9 +41,7 @@ public:
     MapImpl *const map;
     boost::optional<vtslibs::registry::BoundLayer::Availability> availTest;
     std::atomic<State> state;
-    double priority;
-    uint32 redirectionsCount;    
-    uint32 lastAccessTick;
+    uint32 redirectionsCount;
 };
 
 } // namespace vts

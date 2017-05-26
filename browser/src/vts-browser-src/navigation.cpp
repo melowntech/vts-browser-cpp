@@ -505,9 +505,9 @@ void MapImpl::updateNavigation()
     }
 
     // normalize angles
-    normalizeAngle(rotation[0]);
+    for (int i = 0; i < 3; i++)
+        normalizeAngle(rotation[i]);
     rotation[1] = clamp(rotation[1], 270, 350);
-    normalizeAngle(rotation[2]);
     
     // assert position
     if (mapConfig->srs.get(mapConfig->referenceFrame.model.navigationSrs).type

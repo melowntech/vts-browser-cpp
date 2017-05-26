@@ -27,7 +27,8 @@ std::shared_ptr<T> getMapResource(MapImpl *map, const std::string &name,
 
 } // namespace
 
-Resource::Resource()
+Resource::Resource() : 
+    priority(0), lastAccessTick(0)
 {}
 
 Resource::~Resource()
@@ -155,7 +156,7 @@ bool MapImpl::resourceDataTick()
     std::sort(res.begin(), res.end(), [](
               std::shared_ptr<Resource> a,
               std::shared_ptr<Resource> b
-        ){ return a->fetch->priority > b->fetch->priority; });
+        ){ return a->priority > b->priority; });
     
     uint32 processed = 0;
     for (std::shared_ptr<Resource> r : res)
@@ -310,7 +311,7 @@ void MapImpl::resourceRenderTick()
             memRamUse += it.second->info.ramMemoryCost;
             memGpuUse += it.second->info.gpuMemoryCost;
             // consider long time not used resources only
-            if (it.second->fetch->lastAccessTick + 100 < statistics.frameIndex)
+            if (it.second->lastAccessTick + 100 < statistics.frameIndex)
                 res.push_back(it.second.get());
         }
         uint64 memUse = memRamUse + memGpuUse;
@@ -320,7 +321,7 @@ void MapImpl::resourceRenderTick()
                 //if (a->impl->lastAccessTick == b->impl->lastAccessTick)
                 //    return a->gpuMemoryCost + a->ramMemoryCost
                 //            > b->gpuMemoryCost + b->ramMemoryCost;
-                return a->fetch->lastAccessTick < b->fetch->lastAccessTick;
+                return a->lastAccessTick < b->lastAccessTick;
             });
             for (Resource *it : res)
             {
@@ -346,14 +347,14 @@ void MapImpl::resourceRenderTick()
 
 void MapImpl::touchResource(const std::shared_ptr<Resource> &resource)
 {
-    touchResource(resource, resource->fetch->priority);
+    touchResource(resource, resource->priority);
 }
 
 void MapImpl::touchResource(const std::shared_ptr<Resource> &resource,
                             double priority)
 {
-    resource->fetch->lastAccessTick = statistics.frameIndex;
-    resource->fetch->priority = priority;
+    resource->lastAccessTick = statistics.frameIndex;
+    resource->priority = priority;
     switch (resource->fetch->state)
     {
     case FetchTaskImpl::State::finalizing:
@@ -435,12 +436,23 @@ std::shared_ptr<BoundMaskTile> MapImpl::getBoundMaskTile(
                     FetchTask::ResourceType::BoundMaskTile);
 }
 
+std::shared_ptr<SearchTaskImpl> MapImpl::getSearchImpl(const std::string &name)
+{
+    return getMapResource<SearchTaskImpl>(this, name,
+                    FetchTask::ResourceType::Search);
+}
+
 Validity MapImpl::getResourceValidity(const std::string &name)
 {
     auto it = resources.resources.find(name);
     if (it == resources.resources.end())
         return Validity::Invalid;
-    switch (it->second->fetch->state)
+    return getResourceValidity(it->second);
+}
+
+Validity MapImpl::getResourceValidity(const std::shared_ptr<Resource> &resource)
+{
+    switch (resource->fetch->state)
     {
     case FetchTaskImpl::State::error:
         return Validity::Invalid;
@@ -458,7 +470,7 @@ Validity MapImpl::getResourceValidity(const std::string &name)
 }
 
 const std::string MapImpl::Resources::failedAvailTestFileName
-= "failedAvailTestUrls.txt";
+                    = "failedAvailTestUrls.txt";
 
 ResourceInfo::ResourceInfo() :
     ramMemoryCost(0), gpuMemoryCost(0)

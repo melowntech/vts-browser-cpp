@@ -20,6 +20,8 @@ void setLogFile(const std::string &filename)
 }
 
 MapOptions::MapOptions() :
+    searchUrl("https://n1.windyty.com/search.php?q={query}&format=json"
+              "&lang=en-US&addressdetails=1&limit=20"),
     maxTexelToPixelScale(1.2),
     positionViewExtentMin(75),
     positionViewExtentMax(1e7),

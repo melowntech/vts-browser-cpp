@@ -574,8 +574,31 @@ void Map::setViewJson(const std::string &name,
         impl->purgeTraverseCache();
     }
     else
+    {
         impl->mapConfig->namedViews[name]
                 = vtslibs::registry::viewFromJson(val);
+    }
+}
+
+std::shared_ptr<SearchTask> Map::search(const std::string &query)
+{
+    if (!isMapConfigReady())
+        return {};
+    return search(query, impl->mapConfig->position.position.data().begin());
+}
+
+std::shared_ptr<SearchTask> Map::search(const std::string &query,
+                                        const double point[3])
+{
+    if (!isMapConfigReady())
+        return {};
+    return impl->search(query, point);
+}
+
+std::shared_ptr<SearchTask> Map::search(const std::string &query,
+                                        const double (&point)[3])
+{
+    return search(query, &point[0]);
 }
 
 void Map::printDebugInfo()

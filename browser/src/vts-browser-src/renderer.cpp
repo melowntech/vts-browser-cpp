@@ -889,6 +889,7 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
     }
     traverseClearing(renderer.traverseRoot);
     renderer.credits.tick(credits);
+    updateSearch();
 }
 
 } // namespace vts

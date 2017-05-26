@@ -27,6 +27,9 @@ public:
     
     ResourceInfo info;
     std::shared_ptr<FetchTaskImpl> fetch;
+    
+    double priority;
+    uint32 lastAccessTick;
 };
 
 class GpuMesh : public Resource
@@ -179,6 +182,14 @@ public:
     std::vector<unsigned char> data;
     
     static vec2 sds2px(const vec2 &point, const math::Extents2 &extents);
+};
+
+class SearchTaskImpl : public Resource
+{
+public:
+    void load() override;
+    
+    Buffer data;
 };
 
 } // namespace vts

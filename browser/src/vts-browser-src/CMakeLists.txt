@@ -16,6 +16,7 @@ set(PUB_HDR_LIST
 	include/vts-browser/math.hpp
 	include/vts-browser/exceptions.hpp
 	include/vts-browser/credits.hpp
+	include/vts-browser/search.hpp
 )
 
 set(HDR_LIST
@@ -51,6 +52,7 @@ set(SRC_LIST
 	resources.cpp
 	resourceTexture.cpp
 	statistics.cpp
+	search.cpp
 )
 
 include(data.cmake)

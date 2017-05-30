@@ -237,7 +237,7 @@ void MapImpl::fetchedFile(FetchTaskImpl *task)
                 boost::lock_guard<boost::mutex> l(resources.mutFailedAvailUrls);
                 resources.failedAvailUrlLocked.insert(task->name);
             }
-            LOG(debug) << "Availability test failed for task '"
+            LOG(info1) << "Availability test failed for task '"
                        << task->name << "'";
             task->state = FetchTaskImpl::State::error;
         }
@@ -260,7 +260,7 @@ void MapImpl::fetchedFile(FetchTaskImpl *task)
         {
             task->queryUrl.swap(task->replyRedirectUrl);
             task->replyRedirectUrl = "";
-            LOG(debug) << "task '"
+            LOG(info1) << "task '"
                        << task->name << "' redirected to '"
                        << task->queryUrl << "', http code " << task->replyCode;
             task->replyCode = 0;

@@ -46,8 +46,42 @@ double distance(MapImpl *map, const double a[], const double b[],
     return def;
 }
 
-void filterSearchResults(MapImpl *, const std::shared_ptr<SearchTask> &task)
+bool populated(const SearchItem &a)
 {
+    return a.type == "hamlet"
+        || a.type == "village"
+        || a.type == "town"
+        || a.type == "city";
+}
+
+void filterSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
+{
+    // dedupe
+    if (task->results.size() > 1)
+    {
+        std::stable_sort(task->results.begin(), task->results.end(),
+            [](const SearchItem &a, const SearchItem &b){
+            if (a.displayName == b.displayName)
+                return populated(a) > populated(b);
+            return false;
+        });
+        task->results.erase(
+                    std::unique(task->results.begin(), task->results.end(),
+                                [](const SearchItem &a, const SearchItem &b){
+            return a.displayName == b.displayName;
+        }), task->results.end());
+    }
+    
+    // filter results, that are close to each other
+    if (task->results.size() > 1)
+    {
+        task->results.erase(
+                    std::unique(task->results.begin(), task->results.end(),
+                                [map](SearchItem &a, SearchItem &b){
+            return distance(map, a.position, b.position) < 1e4;
+        }), task->results.end());
+    }
+    
     // update some fields
     for (SearchItem &it : task->results)
     {
@@ -61,12 +95,12 @@ void filterSearchResults(MapImpl *, const std::shared_ptr<SearchTask> &task)
         }
         // region
         {
-            if (!it.state.empty())
-                it.region = it.state;
+            if (!it.county.empty())
+                it.region = it.county;
             else if (!it.stateDistrict.empty())
                 it.region = it.stateDistrict;
             else
-                it.region = it.county;
+                it.region = it.state;
             auto s = it.region.find(" - ");
             if (s != std::string::npos)
                 it.region = it.region.substr(0, s);
@@ -76,9 +110,13 @@ void filterSearchResults(MapImpl *, const std::shared_ptr<SearchTask> &task)
             it.title = it.road;
     }
     
-    // filter results, that are close to each other
-    
     // reshake hits by distance
+    std::stable_sort(task->results.begin(), task->results.end(),
+                     [](const SearchItem &a, const SearchItem &b){
+        return a.importance < 0.4 && b.importance < 0.4
+                && std::abs(a.importance - b.importance) < 0.06
+                && a.distance < b.distance;
+    });
 }
 
 double vtod(Json::Value &v)
@@ -140,7 +178,7 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
                     { r[3], r[0], 0 },
                     { r[3], r[1], 0 }
                 };
-                t.radius = 0;
+                t.radius = 3333;
                 for (int i = 0; i < 4; i++)
                 {
                     latlonToNav(map, bbs[i]);
@@ -148,6 +186,7 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
                                         distance(map, t.position, bbs[i]));
                 }
             }
+            t.importance = vtod(it["importance"]);
             task->results.push_back(t);
         }
         if (map->options.searchResultsFilter)
@@ -196,6 +235,7 @@ std::shared_ptr<SearchTask> MapImpl::search(const std::string &query,
 {
     auto t = std::make_shared<SearchTask>(query, point);
     t->impl = getSearchImpl(generateSearchUrl(this, query));
+    t->impl->fetch->queryHeaders["Accept-Language"] = "en-US,en";
     resources.searchTasks.push_back(t);
     return t;
 }

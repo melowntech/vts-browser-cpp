@@ -44,7 +44,7 @@ public:
     GuiImpl(MainWindow *window) :
         statTraversedDetails(false), statRenderedDetails(false),
         optSensitivityDetails(false), posAutoDetails(false),
-        positionSrs(2), window(window), prepareFirst(true)
+        positionSrs(2), searchDetails(-1), window(window), prepareFirst(true)
     {
         searchText[0] = 0;
         searchTextPrev[0] = 0;
@@ -931,7 +931,7 @@ public:
                 nk_label(&ctx, "Query:", NK_TEXT_LEFT);
                 int len = strlen(searchText);
                 nk_edit_string(&ctx, NK_EDIT_FIELD, searchText, &len,
-                                       MaxSearchTextLength - 1, nullptr);
+                        MaxSearchTextLength - 1, nullptr);
                 searchText[len] = 0;
                 if (strcmp(searchText, searchTextPrev) != 0)
                 {
@@ -940,27 +940,20 @@ public:
                     else
                         search.reset();
                     strcpy(searchTextPrev, searchText);
+                    searchDetails = -1;
                 }
             }
             // search results
             if (search && search->done)
             {
-                float ratio[] = { width * 0.8f, width * 0.2f };
-                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 char buffer[200];
                 std::vector<vts::SearchItem> &res = search->results;
+                int index = 0;
                 for (auto &r : res)
                 {
+                    float ratio[] = { width * 0.8f, width * 0.2f };
+                    nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                     nk_label(&ctx, r.title.c_str(), NK_TEXT_LEFT);
-                    if (r.distance >= 1e6)
-                        sprintf(buffer, "%.1lf Mm", r.distance / 1e6);
-                    else if (r.distance >= 1e3)
-                        sprintf(buffer, "%.1lf km", r.distance / 1e3);
-                    else
-                        sprintf(buffer, "%.1lf m", r.distance);
-                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                    nk_label(&ctx, (std::string("   ") + r.region).c_str(),
-                             NK_TEXT_LEFT);
                     if (r.radius > 0 && r.position[0] == r.position[0])
                     {
                         if (nk_button_label(&ctx, "Go"))
@@ -974,6 +967,48 @@ public:
                     }
                     else
                         nk_label(&ctx, "", NK_TEXT_LEFT);
+                    bool details = nk_check_label(&ctx, r.region.c_str(),
+                                                  searchDetails == index);
+                    if (r.distance >= 1e3)
+                        sprintf(buffer, "%.1lf km", r.distance / 1e3);
+                    else
+                        sprintf(buffer, "%.1lf m", r.distance);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                    if (details)
+                    {
+                        searchDetails = index;
+                        float ratio[] = { width * 0.2f, width * 0.8f };
+                        nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+                        nk_label(&ctx, "Name:", NK_TEXT_LEFT);
+                        nk_label(&ctx, r.displayName.c_str(), NK_TEXT_LEFT);
+                        nk_label(&ctx, "Type:", NK_TEXT_LEFT);
+                        nk_label(&ctx, r.type.c_str(), NK_TEXT_LEFT);
+                        nk_label(&ctx, "Road:", NK_TEXT_LEFT);
+                        nk_label(&ctx, r.road.c_str(), NK_TEXT_LEFT);
+                        nk_label(&ctx, "City:", NK_TEXT_LEFT);
+                        nk_label(&ctx, r.city.c_str(), NK_TEXT_LEFT);
+                        nk_label(&ctx, "County:", NK_TEXT_LEFT);
+                        nk_label(&ctx, r.county.c_str(), NK_TEXT_LEFT);
+                        nk_label(&ctx, "State:", NK_TEXT_LEFT);
+                        nk_label(&ctx, r.state.c_str(), NK_TEXT_LEFT);
+                        nk_label(&ctx, "Number:", NK_TEXT_LEFT);
+                        nk_label(&ctx, r.houseNumber.c_str(), NK_TEXT_LEFT);
+                        nk_label(&ctx, "District:", NK_TEXT_LEFT);
+                        nk_label(&ctx, r.stateDistrict.c_str(), NK_TEXT_LEFT);
+                        nk_label(&ctx, "Country:", NK_TEXT_LEFT);
+                        nk_label(&ctx, r.country.c_str(), NK_TEXT_LEFT);
+                        nk_label(&ctx, "Code:", NK_TEXT_LEFT);
+                        nk_label(&ctx, r.countryCode.c_str(), NK_TEXT_LEFT);
+                        nk_label(&ctx, "Importance:", NK_TEXT_LEFT);
+                        sprintf(buffer, "%lf", r.importance);
+                        nk_label(&ctx, buffer, NK_TEXT_LEFT);
+                        nk_label(&ctx, "Radius:", NK_TEXT_LEFT);
+                        sprintf(buffer, "%lf", r.radius);
+                        nk_label(&ctx, buffer, NK_TEXT_LEFT);
+                    }
+                    else if (searchDetails == index)
+                        searchDetails = -1;
+                    index++;
                 }
             }
         }
@@ -1020,6 +1055,7 @@ public:
     int optSensitivityDetails;
     int posAutoDetails;
     int positionSrs;
+    int searchDetails;
 
     MainWindow *window;
     bool prepareFirst;

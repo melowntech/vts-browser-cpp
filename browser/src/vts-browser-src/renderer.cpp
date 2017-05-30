@@ -726,7 +726,7 @@ void MapImpl::updateCamera()
         dir = vec4to3(vi * vec4(0, 0, -1, 0), false);
         up = vec4to3(vi * vec4(0, 1, 0, 0), false);
     }
-    
+
     // camera projection matrix
     double near = std::max(2.0, dist * 0.1);
     double terrainAboveOrigin = length(mapConfig->convertor->navToPhys(
@@ -745,10 +745,11 @@ void MapImpl::updateCamera()
     double aspect = (double)renderer.windowWidth/(double)renderer.windowHeight;
     if (callbacks.cameraOverrideFovAspectNearFar)
         callbacks.cameraOverrideFovAspectNearFar(fov, aspect, near, far);
+    fov = clamp(fov, 1, 179);
     mat4 proj = perspectiveMatrix(fov, aspect, near, far);
     if (callbacks.cameraOverrideProj)
         callbacks.cameraOverrideProj((double*)&proj);
-    
+
     // few other variables
     renderer.viewProjRender = proj * view;
     if (!options.debugDetachedCamera)
@@ -770,7 +771,7 @@ void MapImpl::updateCamera()
         }
         renderer.cameraPosPhys = cameraPosPhys;
     }
-    
+
     // render object position
     if (options.renderObjectPosition)
     {

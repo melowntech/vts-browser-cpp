@@ -54,6 +54,7 @@ public:
 
     uint32 threads;
     sint32 timeout;
+    bool extraFileLog;
 
     // curl options
     uint32 maxHostConnections;

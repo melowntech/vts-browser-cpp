@@ -19,6 +19,7 @@ public:
     Task(FetcherImpl *impl, std::shared_ptr<FetchTask> task);
     ~Task();
     void done(http::ResourceFetcher::MultiQuery &&queries);
+    void finish();
     
     FetcherImpl *const impl;
     http::ResourceFetcher::Query query;
@@ -30,12 +31,24 @@ class FetcherImpl : public Fetcher
 {
 public:
     FetcherImpl(const FetcherOptions &options) : options(options),
-        fetcher(htt.fetcher()), initCount(0)
-    {}
+        fetcher(htt.fetcher()), initCount(0), extraLog(nullptr)
+    {
+        if (options.extraFileLog)
+        {
+            extraLog = fopen("downloads.log", "at");
+            if (extraLog)
+                fprintf(extraLog, "starting download log\n");
+        }
+    }
     
     ~FetcherImpl()
     {
         assert(initCount == 0);
+        if (extraLog)
+        {
+            fprintf(extraLog, "download log ended\n");
+            fclose(extraLog);
+        }
     }
     
     virtual void initialize() override
@@ -66,12 +79,15 @@ public:
         auto t = std::make_shared<Task>(this, task);
         fetcher.perform(t->query, std::bind(&Task::done, t,
                                             std::placeholders::_1));
+        if (extraLog)
+            fprintf(extraLog, "init %s\n", task->queryUrl.c_str());
     }
 
     const FetcherOptions options;
     http::Http htt;
     http::ResourceFetcher fetcher;
     int initCount;
+    FILE *extraLog;
 };
 
 Task::Task(FetcherImpl *impl, std::shared_ptr<FetchTask> task)
@@ -87,7 +103,7 @@ Task::~Task()
     try // destructor must not throw
     {
         if (!called)
-            task->fetchDone();
+            finish();
     }
     catch(...)
     {
@@ -128,6 +144,17 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
         task->contentType = body.contentType;
         task->replyCode = 200;
     }
+    finish();
+}
+
+void Task::finish()
+{
+    if (impl->extraLog)
+    {
+        fprintf(impl->extraLog, "done %s %d %s %d\n",
+                task->queryUrl.c_str(), task->replyCode,
+                task->contentType.c_str(), task->contentData.size());
+    }
     task->fetchDone();
 }
 
@@ -136,6 +163,7 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
 FetcherOptions::FetcherOptions()
     : threads(1),
       timeout(-1),
+      extraFileLog(false),
       maxHostConnections(0),
       maxTotalConections(3),
       maxCacheConections(0),

@@ -1,3 +1,11 @@
+vts-browser (0ubuntu4) melown-xenial; urgency=medium
+
+  * Free navigation
+  * Search
+  * Credits
+
+ -- Tomas Maly <tomas.maly@melown.com>  Tue, 30 May 2017 14:30:00 +0200
+
 vts-browser (0ubuntu3) melown-xenial; urgency=medium
 
   * Support for libcurl with http2

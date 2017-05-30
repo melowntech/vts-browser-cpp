@@ -36,7 +36,7 @@ MapOptions::MapOptions() :
     maxConcurrentDownloads(10),
     maxNodeUpdatesPerTick(10),
     maxResourceProcessesPerTick(5),
-    navigationSamplesPerViewExtent(4),
+    navigationSamplesPerViewExtent(8),
     navigationMode(NavigationMode::Dynamic),
     renderSurrogates(false),
     renderMeshBoxes(false),

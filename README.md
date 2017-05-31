@@ -21,7 +21,7 @@ However, for a convenience, a make shortcuts exists.
 ```
 git clone --recursive https://github.com/Melown/vts-browser-cpp.git
 cd vts-browser-cpp/browser
-make -j5 Release
+make
 ```
 
 ### Dependencies

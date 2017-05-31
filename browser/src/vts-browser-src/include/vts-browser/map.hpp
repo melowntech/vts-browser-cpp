@@ -48,12 +48,12 @@ class VTS_API Map
 public:
     Map(const class MapCreateOptions &options);
     virtual ~Map();
-    
+
     void setMapConfigPath(const std::string &mapConfigPath,
                           const std::string &authPath = "");
     const std::string &getMapConfigPath() const;
     void purgeTraverseCache();
-    
+
     /// returns whether the map config has been downloaded
     /// and parsed successfully
     /// most other functions will not work until this is ready
@@ -63,7 +63,7 @@ public:
     bool isMapRenderComplete() const;
     /// returns estimation of progress till complete render
     double getMapRenderProgress() const;
-    
+
     void dataInitialize(const std::shared_ptr<class Fetcher> &fetcher);
     bool dataTick();
     void dataFinalize();
@@ -71,13 +71,13 @@ public:
     void renderInitialize();
     void renderTick(uint32 width, uint32 height);
     void renderFinalize();
-    
+
     class MapCallbacks &callbacks();
     class MapStatistics &statistics();
     class MapOptions &options();
     class MapDraws &draws();
     class MapCredits &credits();
-    
+
     void pan(const double value[3]);
     void pan(const double (&value)[3]);
     void rotate(const double value[3]);
@@ -106,14 +106,14 @@ public:
     void setAutoRotation(const double value[3]);
     void setAutoRotation(const double (&value)[3]);
     void getAutoRotation(double value[3]) const;
-    
+
     void convert(const double pointFrom[3], double pointTo[3],
                 Srs srsFrom, Srs srsTo) const;
-    
+
     const std::vector<std::string> getResourceSurfaces() const;
     const std::vector<std::string> getResourceBoundLayers() const;
     const std::vector<std::string> getResourceFreeLayers() const;
-    
+
     std::vector<std::string> getViewNames() const;
     std::string getViewCurrent() const;
     void setViewCurrent(const std::string &name);
@@ -121,13 +121,13 @@ public:
     void setViewData(const std::string &name, const class MapView &view);
     std::string getViewJson(const std::string &name) const;
     void setViewJson(const std::string &name, const std::string &view);
-    
+
     std::shared_ptr<class SearchTask> search(const std::string &query);
     std::shared_ptr<class SearchTask> search(const std::string &query,
                                 const double point[3]); // navigation srs
     std::shared_ptr<class SearchTask> search(const std::string &query,
                                 const double (&point)[3]); // navigation srs
-    
+
     void printDebugInfo();
 
 private:

@@ -45,7 +45,6 @@ int main(int argc, char *argv[])
         return 2;
     }
 
-    QGuiApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
     QGuiApplication application(argc, argv);
 
     // reset locale

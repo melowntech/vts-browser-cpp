@@ -559,7 +559,7 @@ void MapImpl::updateNavigation()
 
 void MapImpl::pan(const vec3 &value)
 {
-    const vec3 scale(-1, 1, 1);
+    const vec3 scale(-2, 2, 2);
     for (int i = 0; i < 3; i++)
         navigation.inertiaMotion(i) += value[i] * scale(i)
                 * options.cameraSensitivityPan;

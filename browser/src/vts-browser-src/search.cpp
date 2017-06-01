@@ -204,7 +204,7 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
                     { r[3], r[0], 0 },
                     { r[3], r[1], 0 }
                 };
-                t.radius = 3333;
+                t.radius = 0;
                 for (int i = 0; i < 4; i++)
                 {
                     latlonToNav(map, bbs[i]);

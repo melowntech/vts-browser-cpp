@@ -980,13 +980,14 @@ public:
                     float ratio[] = { width * 0.8f, width * 0.2f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                     nk_label(&ctx, r.title.c_str(), NK_TEXT_LEFT);
-                    if (r.radius > 0 && r.position[0] == r.position[0])
+                    if (r.position[0] == r.position[0])
                     {
                         if (nk_button_label(&ctx, "Go"))
                         {
                             window->map->setPositionSubjective(false, false);
                             window->map->setPositionPoint(r.position);
-                            window->map->setPositionViewExtent(r.radius * 2);
+                            window->map->setPositionViewExtent(
+                                        std::max(6667.0, r.radius * 2));
                             window->map->resetPositionRotation(false);
                             window->map->resetPositionAltitude();
                         }

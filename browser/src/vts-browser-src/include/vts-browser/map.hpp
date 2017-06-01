@@ -51,7 +51,7 @@ public:
 
     void setMapConfigPath(const std::string &mapConfigPath,
                           const std::string &authPath = "");
-    const std::string &getMapConfigPath() const;
+    std::string &getMapConfigPath() const;
     void purgeTraverseCache();
 
     /// returns whether the map config has been downloaded
@@ -110,9 +110,9 @@ public:
     void convert(const double pointFrom[3], double pointTo[3],
                 Srs srsFrom, Srs srsTo) const;
 
-    const std::vector<std::string> getResourceSurfaces() const;
-    const std::vector<std::string> getResourceBoundLayers() const;
-    const std::vector<std::string> getResourceFreeLayers() const;
+    std::vector<std::string> getResourceSurfaces() const;
+    std::vector<std::string> getResourceBoundLayers() const;
+    std::vector<std::string> getResourceFreeLayers() const;
 
     std::vector<std::string> getViewNames() const;
     std::string getViewCurrent() const;

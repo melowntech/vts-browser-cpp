@@ -188,7 +188,7 @@ void Map::setMapConfigPath(const std::string &mapConfigPath,
     impl->setMapConfigPath(mapConfigPath, authPath);
 }
 
-const std::string &Map::getMapConfigPath() const
+std::string &Map::getMapConfigPath() const
 {
     return impl->mapConfigPath;
 }
@@ -495,7 +495,7 @@ void Map::convert(const double pointFrom[3], double pointTo[3],
         pointTo[i] = a(i);
 }
 
-const std::vector<std::string> Map::getResourceSurfaces() const
+std::vector<std::string> Map::getResourceSurfaces() const
 {
     if (!isMapConfigReady())
         return {};
@@ -506,7 +506,7 @@ const std::vector<std::string> Map::getResourceSurfaces() const
     return std::move(names);
 }
 
-const std::vector<std::string> Map::getResourceBoundLayers() const
+std::vector<std::string> Map::getResourceBoundLayers() const
 {
     if (!isMapConfigReady())
         return {};
@@ -516,7 +516,7 @@ const std::vector<std::string> Map::getResourceBoundLayers() const
     return std::move(names);
 }
 
-const std::vector<std::string> Map::getResourceFreeLayers() const
+std::vector<std::string> Map::getResourceFreeLayers() const
 {
     if (!isMapConfigReady())
         return {};

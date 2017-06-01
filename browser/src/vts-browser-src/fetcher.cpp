@@ -112,7 +112,7 @@ public:
     const FetcherOptions options;
     http::Http htt;
     http::ResourceFetcher fetcher;
-    int initCount;
+    std::atomic<int> initCount;
     FILE *extraLog;
 };
 

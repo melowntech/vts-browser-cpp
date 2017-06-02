@@ -550,7 +550,8 @@ void Map::setViewCurrent(const std::string &name)
         return;
     auto it = impl->mapConfig->namedViews.find(name);
     if (it == impl->mapConfig->namedViews.end())
-        LOGTHROW(err2, std::runtime_error) << "invalid mapconfig view name";
+        LOGTHROW(err2, std::runtime_error)
+                << "specified mapconfig view could not be found";
     impl->mapConfig->view = it->second;
     impl->purgeTraverseCache();
     impl->mapConfigView = name;
@@ -560,14 +561,10 @@ void Map::getViewData(const std::string &name, MapView &view) const
 {
     if (!isMapConfigReady())
         return;
-    if (name == "")
-    {
-        view = getMapView(impl->mapConfig->view);
-        return;
-    }
     auto it = impl->mapConfig->namedViews.find(name);
     if (it == impl->mapConfig->namedViews.end())
-        LOGTHROW(err2, std::runtime_error) << "invalid mapconfig view name";
+        LOGTHROW(err2, std::runtime_error)
+                << "specified mapconfig view could not be found";
     view = getMapView(it->second);
 }
 
@@ -575,13 +572,23 @@ void Map::setViewData(const std::string &name, const MapView &view)
 {
     if (!isMapConfigReady())
         return;
-    if (name == "")
+    impl->mapConfig->namedViews[name] = setMapView(view);
+    if (name == getViewCurrent())
     {
-        impl->mapConfig->view = setMapView(view);
+        impl->mapConfig->view = impl->mapConfig->namedViews[name];
         impl->purgeTraverseCache();
     }
-    else
-        impl->mapConfig->namedViews[name] = setMapView(view);
+}
+
+void Map::removeView(const std::string &name)
+{
+    if (!isMapConfigReady())
+        return;
+    if (name == getViewCurrent())
+        LOGTHROW(err2, std::runtime_error)
+                << "named mapconfig view cannot be erased, "
+                   "because it is beeing used";
+    impl->mapConfig->namedViews.erase(name);
 }
 
 std::string Map::getViewJson(const std::string &name) const
@@ -593,7 +600,8 @@ std::string Map::getViewJson(const std::string &name) const
                 impl->mapConfig->view, impl->mapConfig->boundLayers));
     auto it = impl->mapConfig->namedViews.find(name);
     if (it == impl->mapConfig->namedViews.end())
-        LOGTHROW(err2, std::runtime_error) << "invalid mapconfig view name";
+        LOGTHROW(err2, std::runtime_error)
+                << "specified mapconfig view could not be found";
     return Json::FastWriter().write(vtslibs::registry::asJson(it->second,
                         impl->mapConfig->boundLayers));
 }
@@ -604,18 +612,11 @@ void Map::setViewJson(const std::string &name,
     if (!isMapConfigReady())
         return;
     Json::Value val;
-    if (!Json::Reader().parse(view, val))
-        LOGTHROW(err2, std::runtime_error) << "invalid view json";
-    if (name == "")
-    {
-        impl->mapConfig->view = vtslibs::registry::viewFromJson(val);
-        impl->purgeTraverseCache();
-    }
-    else
-    {
-        impl->mapConfig->namedViews[name]
-                = vtslibs::registry::viewFromJson(val);
-    }
+    Json::Reader r;
+    if (!r.parse(view, val))
+        LOGTHROW(err2, std::runtime_error) << "invalid view json: "
+                                           << r.getFormattedErrorMessages();
+    setViewData(name, getMapView(vtslibs::registry::viewFromJson(val)));
 }
 
 std::shared_ptr<SearchTask> Map::search(const std::string &query)

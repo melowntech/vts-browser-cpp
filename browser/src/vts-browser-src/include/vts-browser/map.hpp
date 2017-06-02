@@ -119,6 +119,7 @@ public:
     void setViewCurrent(const std::string &name);
     void getViewData(const std::string &name, class MapView &view) const;
     void setViewData(const std::string &name, const class MapView &view);
+    void removeView(const std::string &name);
     std::string getViewJson(const std::string &name) const;
     void setViewJson(const std::string &name, const std::string &view);
 

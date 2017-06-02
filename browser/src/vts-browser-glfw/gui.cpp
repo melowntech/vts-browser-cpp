@@ -749,7 +749,7 @@ public:
             // arrows
             if (idx > 0)
             {
-                if (nk_button_label(&ctx, "S"))
+                if (nk_button_label(&ctx, "^"))
                 {
                     std::swap(bl[idx - 1], bl[idx]);
                     return true;
@@ -783,7 +783,7 @@ public:
         if (nk_begin(&ctx, "Views", nk_rect(740, 10, 300, 400), flags))
         {
             float width = nk_window_get_content_region_size(&ctx).x - 15;
-            
+
             // mapconfig selector
             if (window->mapConfigPaths.size() > 1)
             {
@@ -813,59 +813,65 @@ public:
                     nk_combo_end(&ctx);
                 }
             }
-            
-            // view selector
-            if (!window->map->getViewNames().empty())
+
+            std::vector<std::string> names = window->map->getViewNames();
+            if (!names.empty())
             {
-                float ratio[] = { width * 0.2f, width * 0.8f };
-                nk_layout_row(&ctx, NK_STATIC, 20, 2, ratio);
-                nk_label(&ctx, "View:", NK_TEXT_LEFT);
-                if (nk_combo_begin_label(&ctx,
-                                 window->map->getViewCurrent().c_str(),
-                                 nk_vec2(nk_widget_width(&ctx), 200)))
+                // view selector
+                if (names.size() > 1)
                 {
-                    std::vector<std::string> names
-                            = window->map->getViewNames();
-                    nk_layout_row_dynamic(&ctx, 16, 1);
-                    for (int i = 0, e = names.size(); i < e; i++)
-                        if (nk_combo_item_label(&ctx, names[i].c_str(),
-                                                NK_TEXT_LEFT))
-                            window->map->setViewCurrent(names[i]);
-                    nk_combo_end(&ctx);
-                }
-            }
-            
-            bool viewChanged = false;
-            vts::MapView view;
-            window->map->getViewData("", view);
-            // surfaces
-            {
-                const std::vector<std::string> surfaces
-                        = window->map->getResourceSurfaces();
-                for (const std::string &sn : surfaces)
-                {
-                    float ratio[] = { width };
-                    nk_layout_row(&ctx, NK_STATIC, 16, 1, ratio);
-                    bool v1 = view.surfaces.find(sn) != view.surfaces.end();
-                    bool v2 = nk_check_label(&ctx, sn.c_str(), v1);
-                    if (v2)
-                    { // bound layers
-                        vts::MapView::SurfaceInfo &s = view.surfaces[sn];
-                        viewChanged = viewChanged
-                                || prepareViewsBoundLayers(view, s.boundLayers);
+                    float ratio[] = { width * 0.2f, width * 0.8f };
+                    nk_layout_row(&ctx, NK_STATIC, 20, 2, ratio);
+                    nk_label(&ctx, "View:", NK_TEXT_LEFT);
+                    if (nk_combo_begin_label(&ctx,
+                                     window->map->getViewCurrent().c_str(),
+                                     nk_vec2(nk_widget_width(&ctx), 200)))
+                    {
+                        nk_layout_row_dynamic(&ctx, 16, 1);
+                        for (int i = 0, e = names.size(); i < e; i++)
+                            if (nk_combo_item_label(&ctx, names[i].c_str(),
+                                                    NK_TEXT_LEFT))
+                                window->map->setViewCurrent(names[i]);
+                        nk_combo_end(&ctx);
                     }
-                    else
-                        view.surfaces.erase(sn);
-                    if (v1 != v2)
-                        viewChanged = true;
+                }
+
+                // current view
+                bool viewChanged = false;
+                vts::MapView view;
+                window->map->getViewData(window->map->getViewCurrent(), view);
+                // surfaces
+                {
+                    const std::vector<std::string> surfaces
+                            = window->map->getResourceSurfaces();
+                    for (const std::string &sn : surfaces)
+                    {
+                        float ratio[] = { width };
+                        nk_layout_row(&ctx, NK_STATIC, 16, 1, ratio);
+                        bool v1 = view.surfaces.find(sn) != view.surfaces.end();
+                        bool v2 = nk_check_label(&ctx, sn.c_str(), v1);
+                        if (v2)
+                        { // bound layers
+                            vts::MapView::SurfaceInfo &s = view.surfaces[sn];
+                            viewChanged = viewChanged
+                                || prepareViewsBoundLayers(view, s.boundLayers);
+                        }
+                        else
+                            view.surfaces.erase(sn);
+                        if (v1 != v2)
+                            viewChanged = true;
+                    }
+                }
+                // free layers
+                {
+                    // todo
+                }
+                if (viewChanged)
+                {
+                    window->map->setViewData("", view);
+                    window->map->setViewCurrent("");
                 }
             }
-            // free layers
-            {
-                // todo
-            }
-            if (viewChanged)
-                window->map->setViewData("", view);
         }
         nk_end(&ctx);
     }

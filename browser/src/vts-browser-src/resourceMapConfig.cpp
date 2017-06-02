@@ -69,7 +69,7 @@ void MapConfig::load()
     LOG(info3) << "Parsing map config '" << fetch->name << "'";
     detail::Wrapper w(fetch->contentData);
     vtslibs::vts::loadMapConfig(*this, w, fetch->name);
-    
+
     auto bo(vtslibs::vts::browserOptions(*this));
     if (bo.isObject())
     {
@@ -77,13 +77,15 @@ void MapConfig::load()
         if (r.isDouble())
             browserOptions.autorotate = r.asDouble() * 0.1;
     }
-    
+
     convertor = std::shared_ptr<CsConvertor>(CsConvertor::create(
                   referenceFrame.model.physicalSrs,
                   referenceFrame.model.navigationSrs,
                   referenceFrame.model.publicSrs,
                   *this
                   ));
+
+    namedViews[""] = view;
 }
 
 void MapConfig::clear()

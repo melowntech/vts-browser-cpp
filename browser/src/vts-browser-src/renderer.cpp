@@ -820,27 +820,27 @@ bool MapImpl::prerequisitesCheck()
         auth->checkTime();
         touchResource(auth);
     }
-    
+
     if (mapConfig)
         touchResource(mapConfig);
-    
+
     if (initialized)
         return true;
-    
+
     if (mapConfigPath.empty())
         return false;
-    
+
     if (!authPath.empty())
     {
         auth = getAuth(authPath);
         if (!testAndThrow(auth->fetch->state, "Authentication failure."))
             return false;
     }
-    
+
     mapConfig = getMapConfig(mapConfigPath);
     if (!testAndThrow(mapConfig->fetch->state, "Map config failure."))
         return false;
-    
+
     { // load external bound layers
         bool ok = true;
         for (auto &&bl : mapConfig->boundLayers)
@@ -868,7 +868,7 @@ bool MapImpl::prerequisitesCheck()
         if (!ok)
             return false;
     }
-    
+
     purgeTraverseCache();
 
     renderer.credits.merge(mapConfig.get());
@@ -881,9 +881,9 @@ bool MapImpl::prerequisitesCheck()
         mapConfig->boundInfos[bl.id]
                 = std::make_shared<MapConfig::BoundInfo>(bl);
     }
-    
+
     navigation.autoRotation(0) = mapConfig->browserOptions.autorotate;
-    
+
     LOG(info3) << "Render prerequisites ready";
     initialized = true;
     return true;

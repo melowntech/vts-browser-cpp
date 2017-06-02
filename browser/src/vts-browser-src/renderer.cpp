@@ -142,7 +142,7 @@ const TileId MapImpl::roundId(TileId nodeId)
 
 Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
                                      uint32 subMeshIndex,
-                                     BoundParamInfo::list &boundList)
+                                     BoundParamInfo::List &boundList)
 {
     // prepare all layers
     {
@@ -165,9 +165,6 @@ Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
         if (!determined)
             return Validity::Indeterminate;
     }
-    
-    // sort by depth
-    std::stable_sort(boundList.begin(), boundList.end());
     
     // skip overlapping layers
     std::reverse(boundList.begin(), boundList.end());
@@ -578,7 +575,7 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
                 surfaceName = trav->surface->surface->name.back();
             const vtslibs::registry::View::BoundLayerParams::list &boundList
                     = mapConfig->view.surfaces[surfaceName];
-            BoundParamInfo::list bls(boundList.begin(), boundList.end());
+            BoundParamInfo::List bls(boundList.begin(), boundList.end());
             if (part.textureLayer)
                 bls.push_back(BoundParamInfo(
                         vtslibs::registry::View::BoundLayerParams(

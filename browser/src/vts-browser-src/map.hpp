@@ -60,13 +60,12 @@ enum class Validity
 class BoundParamInfo : public vtslibs::registry::View::BoundLayerParams
 {
 public:
-    typedef std::vector<BoundParamInfo> list;
+    typedef std::vector<BoundParamInfo> List;
 
     BoundParamInfo(const vtslibs::registry::View::BoundLayerParams &params);
     const mat3f uvMatrix() const;
     Validity prepare(const NodeInfo &nodeInfo, class MapImpl *impl,
                  uint32 subMeshIndex);
-    bool operator < (const BoundParamInfo &rhs) const;
     
     UrlTemplate::Vars orig;
     UrlTemplate::Vars vars;
@@ -254,7 +253,7 @@ public:
     void renderTick(uint32 windowWidth, uint32 windowHeight);
     const TileId roundId(TileId nodeId);
     Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
-                           BoundParamInfo::list &boundList);
+                           BoundParamInfo::List &boundList);
     void touchResources(std::shared_ptr<TraverseNode> trav);
     void touchResources(std::shared_ptr<RenderTask> task);
     bool visibilityTest(const TraverseNode *trav);

@@ -78,8 +78,7 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
     orig = vars = UrlTemplate::Vars(nodeInfo.nodeId(), local(nodeInfo),
                                     subMeshIndex);
     
-    depth = std::max(nodeInfo.nodeId().lod - bound->lodRange.max, 0)
-            + orig.localId.lod - vars.localId.lod;
+    depth = std::max(nodeInfo.nodeId().lod - bound->lodRange.max, 0);
     
     if (depth > 0)
     {
@@ -121,11 +120,6 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
     transparent = bound->isTransparent || (!!alpha && *alpha < 1);
     
     return Validity::Valid;
-}
-
-bool BoundParamInfo::operator <(const BoundParamInfo &rhs) const
-{
-    return depth > rhs.depth;
 }
 
 DrawTask::DrawTask() :

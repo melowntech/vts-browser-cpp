@@ -61,6 +61,7 @@ public:
     void saveToCache();
     bool loadFromCache();
     void loadFromInternalMemory();
+    void loadFromLocalFile();
     virtual void fetchDone() override;
 
     const std::string name;

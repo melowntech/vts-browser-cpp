@@ -44,6 +44,7 @@ DataThread::DataThread(GLFWwindow *shared, double *timing) : map(nullptr),
 {
     vts::FetcherOptions options;
     fetcher = vts::Fetcher::create(options);
+    glfwWindowHint(GLFW_VISIBLE, false);
     window = glfwCreateWindow(1, 1, "data context", NULL, shared);
     glfwSetWindowUserPointer(window, this);
     glfwHideWindow(window);

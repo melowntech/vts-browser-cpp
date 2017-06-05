@@ -61,6 +61,7 @@ public:
 
     void mousePositionCallback(double xpos, double ypos);
     void mouseButtonCallback(int button, int action, int mods);
+    void mouseDblClickCallback(int mods);
     void mouseScrollCallback(double xoffset, double yoffset);
     void keyboardCallback(int key, int scancode, int action, int mods);
     void keyboardUnicodeCallback(unsigned int codepoint);
@@ -84,6 +85,7 @@ public:
     
     void run();
     void colorizeMarks();
+    vts::vec3 getWorldPositionFromCursor();
     
     void drawVtsTask(vts::DrawTask &t);
     void drawMark(const Mark &m, const Mark *prev);
@@ -112,7 +114,9 @@ public:
     double timingGuiProcess;
     double timingTotalFrame;
     double timingDataFrame;
+    double dblClickInitTime;
     int width, height;
+    int dblClickState;
     vts::Map *map;
     GLFWwindow *window;
 };

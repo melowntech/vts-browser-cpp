@@ -26,6 +26,7 @@
 
 #include <limits>
 #include <cmath>
+#include <cstdio>
 
 #include <vts-browser/map.hpp>
 #include <vts-browser/statistics.hpp>
@@ -78,12 +79,15 @@ void keyboardUnicodeCallback(GLFWwindow *window, unsigned int codepoint)
 
 namespace vts
 {
+
     class MapImpl;
-}
+    
+} // namespace vts
 
 MainWindow::MainWindow() :
     camNear(0), camFar(0),
     mousePrevX(0), mousePrevY(0),
+    dblClickInitTime(0), dblClickState(0),
     map(nullptr), window(nullptr)
 {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -94,7 +98,8 @@ MainWindow::MainWindow() :
 #ifndef NDEBUG
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 #endif
-
+    
+    glfwWindowHint(GLFW_VISIBLE, true);
     window = glfwCreateWindow(800, 600, "renderer-glfw", NULL, NULL);
     if (!window)
         throw std::runtime_error("Failed to create window "
@@ -222,9 +227,51 @@ void MainWindow::mousePositionCallback(double xpos, double ypos)
     mousePrevY = ypos;
 }
 
-void MainWindow::mouseButtonCallback(int, int, int)
+void MainWindow::mouseButtonCallback(int button, int action, int mods)
 {
-    // do nothing
+    static const double dblClickThreshold = 0.25;
+    //fprintf(stderr, "before button %d action %d mod %d state %d\n", button, action, mods, dblClickState);
+    if (button == GLFW_MOUSE_BUTTON_LEFT)
+    {
+        double n = glfwGetTime();
+        switch (action)
+        {
+        case GLFW_PRESS:
+            if (dblClickState == 2 && dblClickInitTime + dblClickThreshold > n)
+            {
+                mouseDblClickCallback(mods);
+                dblClickState = 0;
+            }
+            else
+            {
+                dblClickInitTime = n;
+                dblClickState = 1;
+            }
+            break;
+        case GLFW_RELEASE:
+            if (dblClickState == 1 && dblClickInitTime + dblClickThreshold > n)
+                dblClickState = 2;
+            else
+                dblClickState = 0;
+            break;
+        }
+    }
+    else
+    {
+        dblClickInitTime = 0;
+        dblClickState = 0;
+    }
+    //fprintf(stderr, "after button %d action %d mod %d state %d\n", button, action, mods, dblClickState);
+}
+
+void MainWindow::mouseDblClickCallback(int)
+{
+    //fprintf(stderr, "double click\n");
+    vts::vec3 posPhys = getWorldPositionFromCursor();
+    double posNav[3];
+    map->convert(posPhys.data(), posNav,
+                 vts::Srs::Physical, vts::Srs::Navigation);
+    map->setPositionPoint(posNav);
 }
 
 void MainWindow::mouseScrollCallback(double, double yoffset)
@@ -237,18 +284,8 @@ void MainWindow::keyboardCallback(int key, int, int action, int)
     // marks
     if (action == GLFW_RELEASE && key == GLFW_KEY_M)
     {
-        double x, y;
-        glfwGetCursorPos(window, &x, &y);
-        y = height - y - 1;
-        float depth = std::numeric_limits<float>::quiet_NaN();
-        glReadPixels((int)x, (int)y, 1, 1,
-                     GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
-        depth = depth * 2 - 1;
-        x = x / width * 2 - 1;
-        y = y / height * 2 - 1;
         Mark mark;
-        mark.coord = vts::vec4to3(camViewProj.inverse()
-                                  * vts::vec4(x, y, depth, 1), true);
+        mark.coord = getWorldPositionFromCursor();
         marks.push_back(mark);
         colorizeMarks();
     }
@@ -405,9 +442,12 @@ void MainWindow::run()
         double timeGui = glfwGetTime();
         
         glfwSwapBuffers(window);
-        std::string creditLine = std::string() + "vts-browser-glfw: "
-                + map->credits().textFull();
-        glfwSetWindowTitle(window, creditLine.c_str());
+        if (map->statistics().frameIndex % 120 == 0)
+        {
+            std::string creditLine = std::string() + "vts-browser-glfw: "
+                    + map->credits().textFull();
+            glfwSetWindowTitle(window, creditLine.c_str());
+        }
         double timeFrameFinish = glfwGetTime();
         
         timingMapProcess = timeMapRender - timeFrameStart;
@@ -426,6 +466,21 @@ void MainWindow::colorizeMarks()
     int index = 0;
     for (Mark &m : marks)
         m.color = vts::convertHsvToRgb(vts::vec3f(index++ * mul, 1, 1));
+}
+
+vts::vec3 MainWindow::getWorldPositionFromCursor()
+{
+    double x, y;
+    glfwGetCursorPos(window, &x, &y);
+    y = height - y - 1;
+    float depth = std::numeric_limits<float>::quiet_NaN();
+    glReadPixels((int)x, (int)y, 1, 1,
+                 GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+    depth = depth * 2 - 1;
+    x = x / width * 2 - 1;
+    y = y / height * 2 - 1;
+    return vts::vec4to3(camViewProj.inverse()
+                              * vts::vec4(x, y, depth, 1), true);
 }
 
 void MainWindow::cameraOverrideParam(double &, double &,

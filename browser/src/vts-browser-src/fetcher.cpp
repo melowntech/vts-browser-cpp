@@ -144,12 +144,35 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
     assert(!called);
     called = true;
     http::ResourceFetcher::Query &q = *queries.begin();
-    task->replyCode = q.ec().value();
-    if (q.exc())
+    if (q.valid())
+    {
+        const http::ResourceFetcher::Query::Body &body = q.get();
+        if (body.redirect)
+        {
+            task->replyCode = body.redirect.value();
+        }
+        else
+        {
+            task->contentData.allocate(body.data.size());
+            memcpy(task->contentData.data(), body.data.data(),
+                   body.data.size());
+            task->contentType = body.contentType;
+            task->replyCode = 200;
+        }
+    }
+    else if (q.ec())
+    {
+        task->replyCode = q.ec().value();
+    }
+    else if (q.exc())
     {
         try
         {
             std::rethrow_exception(q.exc());
+        }
+        catch (std::error_code &e)
+        {
+            task->replyCode = e.value();
         }
         catch (std::exception &e)
         {
@@ -160,15 +183,6 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
         {
             // do nothing
         }
-    }
-    else if (q.valid())
-    {
-        const http::ResourceFetcher::Query::Body &body = q.get();
-        task->contentData.allocate(body.data.size());
-        memcpy(task->contentData.data(), body.data.data(),
-               body.data.size());
-        task->contentType = body.contentType;
-        task->replyCode = 200;
     }
     finish();
 }

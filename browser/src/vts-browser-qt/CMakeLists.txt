@@ -3,6 +3,8 @@ cmake_policy(SET CMP0043 OLD)
 
 define_module(BINARY vts-browser-qt DEPENDS vts-browser)
 
+message(STATUS "configuring vts-browser-qt")
+
 set(HDR_LIST
 	fetcher.hpp
 	gpuContext.hpp

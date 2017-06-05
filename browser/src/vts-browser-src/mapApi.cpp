@@ -312,6 +312,9 @@ void Map::setPositionPoint(const double point[3])
     impl->mapConfig->position.position
             = math::Point3(point[0], point[1], point[2]);
     impl->navigation.inertiaMotion = vec3(0,0,0);
+    impl->navigation.lastPanZShift.reset();
+    std::queue<std::shared_ptr<class HeightRequest>>()
+            .swap(impl->navigation.panZQueue);
 }
 
 void Map::setPositionPoint(const double (&point)[3])

@@ -838,7 +838,8 @@ bool MapImpl::prerequisitesCheck()
     if (!testAndThrow(mapConfig->fetch->state, "Map config failure."))
         return false;
 
-    { // load external bound layers
+    // load external bound layers
+    {
         bool ok = true;
         for (auto &&bl : mapConfig->boundLayers)
         {

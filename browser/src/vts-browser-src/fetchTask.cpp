@@ -148,6 +148,21 @@ void FetchTaskImpl::loadFromInternalMemory()
     }
 }
 
+void FetchTaskImpl::loadFromLocalFile()
+{
+    try
+    {
+        contentData = readLocalFileBuffer(name);
+        replyCode = 200;
+    }
+    catch (...)
+    {
+        LOG(err2) << "Error reading resource '"
+                  << name << "' from local file";
+		replyCode = 404;
+    }
+}
+
 void FetchTaskImpl::fetchDone()
 {
     map->fetchedFile(this);

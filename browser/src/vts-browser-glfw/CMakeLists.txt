@@ -1,5 +1,7 @@
 define_module(BINARY vts-browser-glfw DEPENDS vts-browser nuklear glad THREADS)
 
+message(STATUS "configuring vts-browser-glfw")
+
 set(HDR_LIST
 	dataThread.hpp
 	mainWindow.hpp

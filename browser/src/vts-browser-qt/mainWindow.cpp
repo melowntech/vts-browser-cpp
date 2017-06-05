@@ -230,6 +230,7 @@ void MainWindow::tick()
     catch(...)
     {
         this->close();
+        return;
     }
 #endif
 

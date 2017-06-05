@@ -205,11 +205,12 @@ bool MapImpl::resourceDataTick()
                 r->fetch->state = FetchTaskImpl::State::error;
 				LOG(debug) << "Ignoring resource '"
 						   << r->fetch->name
-                           << "', becouse it is on failed-avail-test list";
+                           << "', because it is on failed-avail-test list";
             }
             else if (r->fetch->name.find("://") == std::string::npos)
             {
-                r->fetch->loadFromInternalMemory();
+                //r->fetch->loadFromInternalMemory();
+                r->fetch->loadFromLocalFile();
                 loadResource(r);
             }
             else if (r->fetch->allowDiskCache() && r->fetch->loadFromCache())

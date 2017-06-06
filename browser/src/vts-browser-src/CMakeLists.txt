@@ -1,8 +1,6 @@
 # Bump shared library version here
 set(vts-browser_SO_VERSION 0.0.0)
 
-message(STATUS "configuring vts-browser-src")
-
 define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus http>=1.2 lodepng)
 
 set(PUB_HDR_LIST

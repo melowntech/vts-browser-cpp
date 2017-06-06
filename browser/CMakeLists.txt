@@ -53,19 +53,21 @@ include_directories(src/vts-browser-src/include)
 # glfw-based example browser
 find_package(glfw3)
 if (GLFW3_INCLUDE_DIR AND NOT DEFINED GLFW3_FOUND)
-	set(GLFW3_FOUND 1)
+  set(GLFW3_FOUND 1)
 endif()
 
 # build glfw browser only when glfw3 library is found
 if(GLFW3_FOUND
     AND NOT DEFINED BUILDSYS_NOBUILD_TARGET_vts-browser-glfw)
+  message(STATUS "including vts-browser-glfw")
   include_directories(src/glad)
   include_directories(src/nuklear)
   include_directories(${GLFW3_INCLUDE_DIR})
-
   add_subdirectory(src/glad)
   add_subdirectory(src/nuklear)
   add_subdirectory(src/vts-browser-glfw)
+else()
+  message(STATUS "excluding vts-browser-glfw")
 endif()
 
 # QT5-based example browser
@@ -73,6 +75,9 @@ find_package(Qt5Gui QUIET)
 
 if(Qt5Gui_FOUND
     AND NOT DEFINED BUILDSYS_NOBUILD_TARGET_vts-browser-qt)
+  message(STATUS "including vts-browser-qt")
   add_subdirectory(src/vts-browser-qt)
+else()
+  message(STATUS "excluding vts-browser-qt")
 endif()
 

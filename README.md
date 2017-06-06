@@ -17,10 +17,10 @@ We make no attempt on maintaining ABI nor API compatibility at this moment.
 ## Api Documentation
 
 vts-browser-cpp api documentation is available at the
-[wiki](https://github.com/Melown/vts-browser-cpp/wiki)
+[wiki](https://github.com/Melown/vts-browser-cpp/wiki).
 
 Documentation for the whole VTS maps technology is at
-[read the docs](https://melown.readthedocs.io)
+[read the docs](https://melown.readthedocs.io).
 
 ## Install from Melown Repository
 
@@ -41,10 +41,10 @@ make
 And run the example application.
 
 ```bash
-bin/vts-browser-glfw <mapconfig url>
+bin/vts-browser-glfw <mapconfig-url>
 ```
 
-### Dependencies
+### Build Dependencies
 
 Required packages to build the library.
 

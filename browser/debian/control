@@ -12,7 +12,7 @@ Build-Depends: debhelper (>= 7.0.50~)
                , libjsoncpp-dev
                , qt5-default
 Standards-Version: 3.8.4
-Homepage: https://www.melown.com/maps
+Homepage: https://github.com/Melown/vts-browser-cpp
 
 Package: libvts-browser0
 Architecture: any

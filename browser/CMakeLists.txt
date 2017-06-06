@@ -52,12 +52,9 @@ include_directories(src/vts-browser-src/include)
 
 # glfw-based example browser
 find_package(glfw3)
-if (GLFW3_INCLUDE_DIR AND NOT DEFINED GLFW3_FOUND)
-  set(GLFW3_FOUND 1)
-endif()
 
 # build glfw browser only when glfw3 library is found
-if(GLFW3_FOUND
+if(glfw3_FOUND AND DEFINED GLFW3_INCLUDE_DIR
     AND NOT DEFINED BUILDSYS_NOBUILD_TARGET_vts-browser-glfw)
   message(STATUS "including vts-browser-glfw")
   include_directories(src/glad)
@@ -80,4 +77,16 @@ if(Qt5Gui_FOUND
 else()
   message(STATUS "excluding vts-browser-qt")
 endif()
+
+
+
+
+#get_cmake_property(_variableNames VARIABLES)
+#foreach (_variableName ${_variableNames})
+#    message(STATUS "${_variableName}=${${_variableName}}")
+#endforeach()
+
+
+
+
 

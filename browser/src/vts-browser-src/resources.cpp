@@ -209,8 +209,8 @@ bool MapImpl::resourceDataTick()
             }
             else if (r->fetch->name.find("://") == std::string::npos)
             {
-                //r->fetch->loadFromInternalMemory();
-                r->fetch->loadFromLocalFile();
+                r->fetch->loadFromInternalMemory();
+                //r->fetch->loadFromLocalFile();
                 loadResource(r);
             }
             else if (r->fetch->allowDiskCache() && r->fetch->loadFromCache())

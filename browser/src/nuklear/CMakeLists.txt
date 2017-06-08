@@ -5,6 +5,7 @@ configure_file(nuklear/nuklear.h nuklear.c)
 add_library(nuklear STATIC ${CMAKE_CURRENT_BINARY_DIR}/nuklear.c)
 buildsys_library(nuklear)
 target_compile_definitions(nuklear PRIVATE -DNK_IMPLEMENTATION)
+target_compile_options(nuklear PRIVATE -Wno-error)
 
 set(NUKLEAR_COMPONENTS
 	-DNK_INCLUDE_FIXED_TYPES

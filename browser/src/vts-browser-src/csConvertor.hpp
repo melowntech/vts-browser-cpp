@@ -66,6 +66,9 @@ public:
                               double azimuthIn, double &azimuthOut) = 0;
     virtual vec3 navGeodesicDirect(const vec3 &position, double distance,
                                     double azimuthIn) = 0;
+    virtual void navGeodesicInverse(const vec3 &posA, const vec3 &posB,
+                    double &distance, double &azimuthA, double &azimuthB) = 0;
+    virtual double navGeodesicAzimuth(const vec3 &a, const vec3 &b) = 0;
     virtual double navGeodesicDistance(const vec3 &a, const vec3 &b) = 0;
 };
 

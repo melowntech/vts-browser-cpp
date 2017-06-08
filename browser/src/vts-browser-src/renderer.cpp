@@ -141,8 +141,7 @@ const TileId MapImpl::roundId(TileId nodeId)
 }
 
 Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
-                                     uint32 subMeshIndex,
-                                     BoundParamInfo::List &boundList)
+        uint32 subMeshIndex, BoundParamInfo::List &boundList, double priority)
 {
     // prepare all layers
     {
@@ -150,7 +149,7 @@ Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
         auto it = boundList.begin();
         while (it != boundList.end())
         {
-            switch (it->prepare(nodeInfo, this, subMeshIndex))
+            switch (it->prepare(nodeInfo, this, subMeshIndex, priority))
             {
             case Validity::Invalid:
                 it = boundList.erase(it);
@@ -178,14 +177,14 @@ Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
     return Validity::Valid;
 }
 
-void MapImpl::touchResources(std::shared_ptr<TraverseNode> trav)
+void MapImpl::touchResources(const std::shared_ptr<TraverseNode> &trav)
 {
     trav->lastAccessTime = statistics.frameIndex;
     for (auto &&it : trav->draws)
         touchResources(it);
 }
 
-void MapImpl::touchResources(std::shared_ptr<RenderTask> task)
+void MapImpl::touchResources(const std::shared_ptr<RenderTask> &task)
 {
     if (task->meshAgg)
         touchResource(task->meshAgg);
@@ -195,7 +194,7 @@ void MapImpl::touchResources(std::shared_ptr<RenderTask> task)
         touchResource(task->textureMask);
 }
 
-bool MapImpl::visibilityTest(const TraverseNode *trav)
+bool MapImpl::visibilityTest(const std::shared_ptr<TraverseNode> &trav)
 {    
     for (uint32 i = 0; i < 6; i++)
     {
@@ -211,7 +210,7 @@ bool MapImpl::visibilityTest(const TraverseNode *trav)
     return true;
 }
 
-bool MapImpl::coarsenessTest(const TraverseNode *trav)
+bool MapImpl::coarsenessTest(const std::shared_ptr<TraverseNode> &trav)
 {
     bool applyTexelSize = trav->flags & MetaNode::Flag::applyTexelSize;
     bool applyDisplaySize = trav->flags & MetaNode::Flag::applyDisplaySize;
@@ -243,22 +242,26 @@ bool MapImpl::coarsenessTest(const TraverseNode *trav)
     return result;
 }
 
+Validity MapImpl::returnValidMetaNode(MapConfig::SurfaceInfo *surface,
+                const TileId &nodeId, const MetaNode *&node, double priority)
+{
+    std::string name = surface->urlMeta(UrlTemplate::Vars(roundId(nodeId)));
+    std::shared_ptr<MetaTile> t = getMetaTile(name);
+    updatePriority(t, priority);
+    Validity val = getResourceValidity(t);
+    if (val == Validity::Valid)
+        node = t->get(nodeId, std::nothrow);
+    return val;
+}
+
 Validity MapImpl::checkMetaNode(MapConfig::SurfaceInfo *surface,
-                                const TileId &nodeId,
-                                const MetaNode *&node)
+                const TileId &nodeId, const MetaNode *&node, double priority)
 {
     if (nodeId.lod == 0)
-    {
-        std::string name = surface->urlMeta(UrlTemplate::Vars(roundId(nodeId)));
-        std::shared_ptr<MetaTile> t = getMetaTile(name);
-        Validity val = getResourceValidity(name);
-        if (val == Validity::Valid)
-            node = t->get(nodeId, std::nothrow);
-        return val;
-    }
+        return returnValidMetaNode(surface, nodeId, node, priority);
     
     const MetaNode *pn = nullptr;
-    switch (checkMetaNode(surface, vtslibs::vts::parent(nodeId), pn))
+    switch (checkMetaNode(surface, vtslibs::vts::parent(nodeId), pn, priority))
     {
     case Validity::Invalid:
         return Validity::Invalid;
@@ -273,19 +276,12 @@ Validity MapImpl::checkMetaNode(MapConfig::SurfaceInfo *surface,
     assert(pn);
     uint32 idx = (nodeId.x % 2) + (nodeId.y % 2) * 2;
     if (pn->flags() & (MetaNode::Flag::ulChild << idx))
-    {
-        std::string name = surface->urlMeta(UrlTemplate::Vars(roundId(nodeId)));
-        std::shared_ptr<MetaTile> t = getMetaTile(name);
-        Validity val = getResourceValidity(name);
-        if (val == Validity::Valid)
-            node = t->get(nodeId, std::nothrow);
-        return val;
-    }
+        return returnValidMetaNode(surface, nodeId, node, priority);
     
     return Validity::Invalid;
 }
 
-void MapImpl::renderNode(std::shared_ptr<TraverseNode> &trav)
+void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
 {
     // meshes
     for (std::shared_ptr<RenderTask> &r : trav->draws)
@@ -299,6 +295,7 @@ void MapImpl::renderNode(std::shared_ptr<TraverseNode> &trav)
     {
         RenderTask task;
         task.mesh = getMeshRenderable("data/meshes/sphere.obj");
+        task.mesh->priority = std::numeric_limits<float>::infinity();
         task.model = translationMatrix(trav->surrogatePhys)
                 * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
         if (trav->surface)
@@ -316,6 +313,7 @@ void MapImpl::renderNode(std::shared_ptr<TraverseNode> &trav)
                 continue;
             RenderTask task = *r;
             task.mesh = getMeshRenderable("data/meshes/aabb.obj");
+            task.mesh->priority = std::numeric_limits<float>::infinity();
             task.textureColor = nullptr;
             task.textureMask = nullptr;
             task.color = vec4f(0, 0, 1, 1);
@@ -329,6 +327,7 @@ void MapImpl::renderNode(std::shared_ptr<TraverseNode> &trav)
     {
         RenderTask task;
         task.mesh = getMeshRenderable("data/meshes/line.obj");
+        task.mesh->priority = std::numeric_limits<float>::infinity();
         task.color = vec4f(1, 0, 0, 1);
         if (task.ready())
         {
@@ -359,16 +358,16 @@ void MapImpl::renderNode(std::shared_ptr<TraverseNode> &trav)
         trav->nodeInfo.nodeId().lod, MapStatistics::MaxLods-1)]++;
 }
 
-void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
+void MapImpl::traverseValidNode(const std::shared_ptr<TraverseNode> &trav)
 {    
     // node visibility
-    if (!visibilityTest(trav.get()))
+    if (!visibilityTest(trav))
         return;
     
     touchResources(trav);
     
     // check children
-    if (!trav->childs.empty() && !coarsenessTest(trav.get()))
+    if (!trav->childs.empty() && !coarsenessTest(trav))
     {
         bool allOk = true;
         for (std::shared_ptr<TraverseNode> &t : trav->childs)
@@ -389,7 +388,15 @@ void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
         }
         if (allOk)
         {
+            std::vector<std::shared_ptr<TraverseNode>> ts;
             for (std::shared_ptr<TraverseNode> &t : trav->childs)
+                ts.push_back(t);
+            std::sort(ts.begin(), ts.end(), [this](
+                      const std::shared_ptr<TraverseNode> &a,
+                      const std::shared_ptr<TraverseNode> &b){
+                return computeTravDistance(a) < computeTravDistance(b);
+            });
+            for (std::shared_ptr<TraverseNode> &t : ts)
                 renderer.traverseQueue.push(t);
             return;
         }
@@ -401,7 +408,8 @@ void MapImpl::traverseValidNode(std::shared_ptr<TraverseNode> &trav)
     renderNode(trav);
 }
 
-bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
+bool MapImpl::traverseDetermineSurface(
+        const std::shared_ptr<TraverseNode> &trav)
 {
     assert(!trav->surface);
     assert(!trav->empty);
@@ -412,12 +420,13 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
     const MetaNode *node = nullptr;
     bool childsAvailable[4] = {false, false, false, false};
     bool determined = true;
-    
+    float priority = computeResourcePriority(trav);
+
     // find topmost nonempty surface
     for (auto &&it : mapConfig->surfaceStack)
     {
         const MetaNode *n = nullptr;
-        switch (checkMetaNode(it.surface.get(), nodeId, n))
+        switch (checkMetaNode(it.surface.get(), nodeId, n, priority))
         {
         case Validity::Indeterminate:
             determined = false;
@@ -445,7 +454,7 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
     }
     if (!determined)
         return false;
-    
+
     if (node)
     {
         trav->texelSize = node->texelSize;
@@ -485,9 +494,10 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
             }
         }
     }
-    
+
+    // aabb
     if (trav->nodeInfo.distanceFromRoot() > 2)
-    { // aabb
+    {
         trav->aabbPhys[0] = trav->aabbPhys[1] = trav->cornersPhys[0];
         for (const vec3 &it : trav->cornersPhys)
         {
@@ -495,7 +505,7 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
             trav->aabbPhys[1] = max(trav->aabbPhys[1], it);
         }
     }
-    
+
     // surface
     if (topmost)
     {
@@ -521,7 +531,7 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
     }
     else
         trav->empty = true;
-    
+
     // prepare children
     vtslibs::vts::Children childs = vtslibs::vts::children(nodeId);
     for (uint32 i = 0; i < 4; i++)
@@ -530,18 +540,21 @@ bool MapImpl::traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav)
             trav->childs.push_back(std::make_shared<TraverseNode>(
                                        trav->nodeInfo.child(childs[i])));
     }
-    
+
     return true;
 }
 
-bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
+bool MapImpl::traverseDetermineBoundLayers(
+        const std::shared_ptr<TraverseNode> &trav)
 {
     const TileId nodeId = trav->nodeInfo.nodeId();
+    float priority = computeResourcePriority(trav);
     
     // aggregate mesh
     std::string meshAggName = trav->surface->surface->urlMesh(
             UrlTemplate::Vars(nodeId, vtslibs::vts::local(trav->nodeInfo)));
     std::shared_ptr<MeshAggregate> meshAgg = getMeshAggregate(meshAggName);
+    meshAgg->priority = priority;
     switch (getResourceValidity(meshAggName))
     {
     case Validity::Invalid:
@@ -580,7 +593,8 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
                 bls.push_back(BoundParamInfo(
                         vtslibs::registry::View::BoundLayerParams(
                         mapConfig->boundLayers.get(part.textureLayer).id)));
-            switch (reorderBoundLayers(trav->nodeInfo, subMeshIndex, bls))
+            switch (reorderBoundLayers(trav->nodeInfo, subMeshIndex,
+                                       bls, priority))
             {
             case Validity::Indeterminate:
                 determined = false;
@@ -593,7 +607,8 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
             bool allTransparent = true;
             for (BoundParamInfo &b : bls)
             {
-                { // credits
+                // credits
+                {
                     MapConfig::BoundInfo *l = b.bound;
                     assert(l);
                     for (auto &it : l->credits)
@@ -612,13 +627,17 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
                 task->model = part.normToPhys;
                 task->uvm = b.uvMatrix();
                 task->textureColor = getTexture(b.bound->urlExtTex(b.vars));
+                task->textureColor->priority = priority;
                 task->textureColor->fetch->availTest = b.bound->availability;
                 task->externalUv = true;
                 task->transparent = b.transparent;
                 allTransparent = allTransparent && b.transparent;
                 task->color(3) = b.alpha ? *b.alpha : 1;
                 if (!b.watertight)
+                {
                     task->textureMask = getTexture(b.bound->urlMask(b.vars));
+                    task->textureMask->priority = priority;
+                }
                 newDraws.push_back(task);
             }
             if (!allTransparent)
@@ -630,14 +649,14 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
         {
             UrlTemplate::Vars vars(nodeId,
                     vtslibs::vts::local(trav->nodeInfo), subMeshIndex);
-            std::shared_ptr<RenderTask> task
-                    = std::make_shared<RenderTask>();
+            std::shared_ptr<RenderTask> task = std::make_shared<RenderTask>();
             task->meshAgg = meshAgg;
             task->mesh = mesh;
             task->model = part.normToPhys;
             task->uvm = upperLeftSubMatrix(identityMatrix()).cast<float>();
             task->textureColor = getTexture(
                         trav->surface->surface->urlIntTex(vars));
+            task->textureColor->priority = priority;
             task->externalUv = false;
             newDraws.insert(newDraws.begin(), task);
         }
@@ -654,7 +673,7 @@ bool MapImpl::traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav)
     return determined;
 }
 
-void MapImpl::traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly)
+void MapImpl::traverse(const std::shared_ptr<TraverseNode> &trav, bool loadOnly)
 {
     if (trav->validity == Validity::Invalid)
         return;
@@ -700,7 +719,7 @@ void MapImpl::traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly)
     trav->validity = Validity::Valid;
 }
 
-void MapImpl::traverseClearing(std::shared_ptr<TraverseNode> &trav)
+void MapImpl::traverseClearing(const std::shared_ptr<TraverseNode> &trav)
 {
     TileId id = trav->nodeInfo.nodeId();
     if (id.lod == 3)
@@ -802,7 +821,9 @@ void MapImpl::updateCamera()
                     vecFromUblas<vec3>(pos.position));
         RenderTask r;
         r.mesh = getMeshRenderable("data/meshes/cube.obj");
+        r.mesh->priority = std::numeric_limits<float>::infinity();
         r.textureColor = getTexture("data/textures/helper.jpg");
+        r.textureColor->priority = std::numeric_limits<float>::infinity();
         r.model = translationMatrix(phys)
                 * scaleMatrix(pos.verticalExtent * 0.015);
         if (r.ready())

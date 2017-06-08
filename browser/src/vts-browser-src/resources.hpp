@@ -54,7 +54,8 @@ public:
     ResourceInfo info;
     std::shared_ptr<FetchTaskImpl> fetch;
     
-    double priority;
+    float priority;
+    float priorityCopy;
     uint32 lastAccessTick;
 };
 
@@ -153,6 +154,7 @@ class ExternalBoundLayer : public Resource,
         public vtslibs::registry::BoundLayer
 {
 public:
+    ExternalBoundLayer();
     void load() override;
 };
 

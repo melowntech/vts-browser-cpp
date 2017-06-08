@@ -65,7 +65,7 @@ public:
     BoundParamInfo(const vtslibs::registry::View::BoundLayerParams &params);
     const mat3f uvMatrix() const;
     Validity prepare(const NodeInfo &nodeInfo, class MapImpl *impl,
-                 uint32 subMeshIndex);
+                 uint32 subMeshIndex, double priority);
     
     UrlTemplate::Vars orig;
     UrlTemplate::Vars vars;
@@ -136,7 +136,7 @@ public:
     MapDraws draws;
     MapCredits credits;
     bool initialized;
-    
+
     class Navigation
     {
     public:
@@ -151,17 +151,18 @@ public:
         
         Navigation();
     } navigation;
-    
+
     class Resources
     {
     public:
         static const std::string failedAvailTestFileName;
-        
+
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
         std::unordered_set<std::shared_ptr<Resource>> prepareQueLocked;
         std::unordered_set<std::shared_ptr<Resource>> prepareQueNoLock;
         std::unordered_set<std::string> failedAvailUrlLocked;
         std::unordered_set<std::string> failedAvailUrlNoLock;
+
         std::string cachePath;
         std::atomic_uint downloads;
         std::shared_ptr<Fetcher> fetcher;
@@ -173,7 +174,7 @@ public:
         Resources(const MapCreateOptions &options);
         ~Resources();
     } resources;
-    
+
     class Renderer
     {
     public:
@@ -191,14 +192,14 @@ public:
         
         Renderer();
     } renderer;
-    
+
     // map api methods
     void setMapConfigPath(const std::string &mapConfigPath,
                           const std::string &authPath);
     void purgeMapConfig();
     void purgeTraverseCache();
     void printDebugInfo();
-    
+
     // navigation
     void pan(const vec3 &value);
     void rotate(const vec3 &value);
@@ -215,7 +216,7 @@ public:
     void positionToCamera(vec3 &center, vec3 &dir, vec3 &up);
     double positionObjectiveDistance();
     void updateNavigation();
-    
+
     // resources methods
     void resourceDataInitialize(const std::shared_ptr<Fetcher> &fetcher);
     void resourceDataFinalize();
@@ -226,8 +227,6 @@ public:
     void fetchedFile(FetchTaskImpl *task);
     void loadResource(const std::shared_ptr<Resource> &resource);
     void touchResource(const std::shared_ptr<Resource> &resource);
-    void touchResource(const std::shared_ptr<Resource> &resource,
-                       double priority);
     std::shared_ptr<GpuTexture> getTexture(const std::string &name);
     std::shared_ptr<GpuMesh> getMeshRenderable(
             const std::string &name);
@@ -246,29 +245,36 @@ public:
     const std::string convertNameToCache(const std::string &path);
     bool availableInCache(const std::string &name);
     const std::string convertNameToPath(std::string path, bool preserveSlashes);
-    
+    double computeTravDistance(const std::shared_ptr<TraverseNode> &trav);
+    float computeResourcePriority(const std::shared_ptr<TraverseNode> &trav);
+    static void updatePriority(const std::shared_ptr<Resource> &resource,
+                        float priority);
+
     // renderer methods
     void renderInitialize();
     void renderFinalize();
     void renderTick(uint32 windowWidth, uint32 windowHeight);
     const TileId roundId(TileId nodeId);
     Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
-                           BoundParamInfo::List &boundList);
-    void touchResources(std::shared_ptr<TraverseNode> trav);
-    void touchResources(std::shared_ptr<RenderTask> task);
-    bool visibilityTest(const TraverseNode *trav);
-    bool coarsenessTest(const TraverseNode *trav);
-    Validity checkMetaNode(MapConfig::SurfaceInfo *surface, const TileId &nodeId,
-                           const MetaNode *&node);
-    void renderNode(std::shared_ptr<TraverseNode> &trav);
-    void traverseValidNode(std::shared_ptr<TraverseNode> &trav);
-    bool traverseDetermineSurface(std::shared_ptr<TraverseNode> &trav);
-    bool traverseDetermineBoundLayers(std::shared_ptr<TraverseNode> &trav);
-    void traverse(std::shared_ptr<TraverseNode> &trav, bool loadOnly);
-    void traverseClearing(std::shared_ptr<TraverseNode> &trav);
+                           BoundParamInfo::List &boundList, double priority);
+    void touchResources(const std::shared_ptr<TraverseNode> &trav);
+    void touchResources(const std::shared_ptr<RenderTask> &task);
+    bool visibilityTest(const std::shared_ptr<TraverseNode> &trav);
+    bool coarsenessTest(const std::shared_ptr<TraverseNode> &trav);
+    Validity returnValidMetaNode(MapConfig::SurfaceInfo *surface,
+                const TileId &nodeId, const MetaNode *&node, double priority);
+    Validity checkMetaNode(MapConfig::SurfaceInfo *surface,
+                const TileId &nodeId, const MetaNode *&node, double priority);
+    void renderNode(const std::shared_ptr<TraverseNode> &trav);
+    void traverseValidNode(const std::shared_ptr<TraverseNode> &trav);
+    bool traverseDetermineSurface(const std::shared_ptr<TraverseNode> &trav);
+    bool traverseDetermineBoundLayers(
+            const std::shared_ptr<TraverseNode> &trav);
+    void traverse(const std::shared_ptr<TraverseNode> &trav, bool loadOnly);
+    void traverseClearing(const std::shared_ptr<TraverseNode> &trav);
     void updateCamera();
     bool prerequisitesCheck();
-    
+
     // search
     std::shared_ptr<SearchTask> search(const std::string &query,
                                        const double point[3]);

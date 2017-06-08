@@ -54,7 +54,8 @@ std::shared_ptr<T> getMapResource(MapImpl *map, const std::string &name,
 } // namespace
 
 Resource::Resource() : 
-    priority(0), lastAccessTick(0)
+    priority(std::numeric_limits<float>::quiet_NaN()),
+    priorityCopy(std::numeric_limits<float>::quiet_NaN()), lastAccessTick(0)
 {}
 
 Resource::~Resource()
@@ -149,6 +150,16 @@ void MapImpl::loadResource(const std::shared_ptr<Resource> &resource)
     }
     catch (...)
     {
+        try
+        {
+            writeLocalFileBuffer(std::string() + "corrupted/"
+                             + convertNameToPath(resource->fetch->name, false),
+                             resource->fetch->contentData);
+        }
+        catch(...)
+        {
+            // do nothing
+        }
 		resource->fetch->contentData.free();
 		throw;
     }
@@ -168,8 +179,9 @@ bool MapImpl::resourceDataTick()
         resources.failedAvailUrlLocked.clear();
     }
     
+    // sync resources
     std::vector<std::shared_ptr<Resource>> res;
-    { // sync resources
+    {
         boost::lock_guard<boost::mutex> l(resources.mutPrepareQue);
         if (resources.prepareQueLocked.empty())
             return true; // all done
@@ -179,11 +191,24 @@ bool MapImpl::resourceDataTick()
     }
     
     // sort resources by priority
+    for (auto &&it : res)
+    {
+#ifndef NDEBUG
+        if (!(it->priority == it->priority))
+        {
+            LOG(warn3) << "resource <"
+                       << it->fetch->name
+                       << "> does not have assigned priority";
+        }
+#endif
+        it->priorityCopy = it->priority;
+        it->priority *= 0.2;
+    }    
     std::sort(res.begin(), res.end(), [](
-              std::shared_ptr<Resource> a,
-              std::shared_ptr<Resource> b
-        ){ return a->priority > b->priority; });
-    
+              const std::shared_ptr<Resource> &a,
+              const std::shared_ptr<Resource> &b
+        ){ return a->priorityCopy > b->priorityCopy; });
+
     uint32 processed = 0;
     for (std::shared_ptr<Resource> r : res)
     {
@@ -374,14 +399,7 @@ void MapImpl::resourceRenderTick()
 
 void MapImpl::touchResource(const std::shared_ptr<Resource> &resource)
 {
-    touchResource(resource, resource->priority);
-}
-
-void MapImpl::touchResource(const std::shared_ptr<Resource> &resource,
-                            double priority)
-{
     resource->lastAccessTick = statistics.frameIndex;
-    resource->priority = priority;
     switch (resource->fetch->state)
     {
     case FetchTaskImpl::State::finalizing:

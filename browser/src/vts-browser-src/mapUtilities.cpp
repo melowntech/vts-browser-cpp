@@ -56,13 +56,14 @@ const mat3f BoundParamInfo::uvMatrix() const
 }
 
 Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
-                             uint32 subMeshIndex)
+                             uint32 subMeshIndex, double priority)
 {    
     bound = impl->mapConfig->getBoundInfo(id);
     if (!bound)
         return Validity::Indeterminate;
-    
-    { // check lodRange and tileRange
+
+    // check lodRange and tileRange
+    {
         TileId t = nodeInfo.nodeId();
         int m = bound->lodRange.min;
         if (t.lod < m)
@@ -74,12 +75,11 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
         if (t.y < bound->tileRange.ll[1] || t.y > bound->tileRange.ur[1])
             return Validity::Invalid;
     }
-    
+
     orig = vars = UrlTemplate::Vars(nodeInfo.nodeId(), local(nodeInfo),
                                     subMeshIndex);
-    
+
     depth = std::max(nodeInfo.nodeId().lod - bound->lodRange.max, 0);
-    
     if (depth > 0)
     {
         vars.tileId.lod -= depth;
@@ -89,9 +89,10 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
         vars.localId.x >>= depth;
         vars.localId.y >>= depth;
     }
-    
+
+    // bound meta node
     if (bound->metaUrl)
-    { // bound meta node
+    {
         UrlTemplate::Vars v(vars);
         v.tileId.x &= ~255;
         v.tileId.y &= ~255;
@@ -99,7 +100,8 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
         v.localId.y &= ~255;
         std::string boundName = bound->urlMeta(v);
         std::shared_ptr<BoundMetaTile> bmt = impl->getBoundMetaTile(boundName);
-        switch (impl->getResourceValidity(boundName))
+        MapImpl::updatePriority(bmt, priority);
+        switch (impl->getResourceValidity(bmt))
         {
         case Validity::Indeterminate:
             return Validity::Indeterminate;
@@ -107,7 +109,7 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
             return Validity::Invalid;
         case Validity::Valid:
             break;
-        }        
+        }
         uint8 f = bmt->flags[(vars.tileId.y & 255) * 256
                 + (vars.tileId.x & 255)];
         if ((f & BoundLayer::MetaFlags::available)
@@ -116,9 +118,9 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
         watertight = (f & BoundLayer::MetaFlags::watertight)
                 == BoundLayer::MetaFlags::watertight;
     }
-    
+
     transparent = bound->isTransparent || (!!alpha && *alpha < 1);
-    
+
     return Validity::Valid;
 }
 
@@ -172,7 +174,8 @@ TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
       surrogateValue(vtslibs::vts::GeomExtents::invalidSurrogate),
       displaySize(0), validity(Validity::Indeterminate), empty(false)
 {
-    { // initialize corners to NAN
+    // initialize corners to NAN
+    {
         vec3 n;
         for (uint32 i = 0; i < 3; i++)
             n[i] = std::numeric_limits<double>::quiet_NaN();
@@ -180,7 +183,8 @@ TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
             cornersPhys[i] = n;
         surrogatePhys = n;
     }
-    { // initialize aabb to universe
+    // initialize aabb to universe
+    {
         double di = std::numeric_limits<double>::infinity();
         vec3 vi(di, di, di);
         aabbPhys[0] = -vi;
@@ -244,6 +248,30 @@ const std::string MapImpl::convertNameToPath(std::string path,
             res += '_';
     }
     return res;
+}
+
+double MapImpl::computeTravDistance(const std::shared_ptr<TraverseNode> &trav)
+{
+    double dist = std::numeric_limits<double>::infinity();
+    vec3 center = renderer.cameraPosPhys;
+    for (auto &it : trav->cornersPhys)
+        dist = std::min(dist, length(vec3(it - center)));
+    return dist;
+}
+
+float MapImpl::computeResourcePriority(
+        const std::shared_ptr<TraverseNode> &trav)
+{
+    return (float)(1e6 / (computeTravDistance(trav) + 1));
+}
+
+void MapImpl::updatePriority(const std::shared_ptr<Resource> &r,
+                             float priority)
+{
+    if (r->priority == r->priority)
+        r->priority = std::max(r->priority, priority);
+    else
+        r->priority = priority;
 }
 
 

@@ -140,11 +140,25 @@ public:
         return navGeodesicDirect(position, distance, azimuthIn, a);
     }
     
+    void navGeodesicInverse(const vec3 &a, const vec3 &b,
+            double &distance, double &azimuthA, double &azimuthB) override
+    {
+        geodesic_->Inverse(a(1), a(0), b(1), b(0),
+                           distance, azimuthA, azimuthB);
+    }
+    
+    double navGeodesicAzimuth(const vec3 &a, const vec3 &b) override
+    {
+        double d, a1, a2;
+        navGeodesicInverse(a, b, d, a1, a2);
+        return a1;
+    }
+    
     double navGeodesicDistance(const vec3 &a, const vec3 &b) override
     {
-        double r;
-        geodesic_->Inverse(a(1), a(0), b(1), b(0), r);
-        return r;
+        double d, a1, a2;
+        navGeodesicInverse(a, b, d, a1, a2);
+        return d;
     }
 
     const vtslibs::registry::Registry &registry;

@@ -61,7 +61,9 @@ uint64 currentTime()
 
 AuthConfig::AuthConfig() :
     timeValid(0), timeParsed(0)
-{}
+{
+    priority = std::numeric_limits<float>::infinity();
+}
 
 void AuthConfig::load()
 {

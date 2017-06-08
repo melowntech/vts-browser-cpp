@@ -61,7 +61,9 @@ MapConfig::BrowserOptions::BrowserOptions() :
 {}
 
 MapConfig::MapConfig()
-{}
+{
+    priority = std::numeric_limits<float>::infinity();
+}
 
 void MapConfig::load()
 {
@@ -274,6 +276,11 @@ void MapConfig::generateSurfaceStack()
     
     // memory use
     info.ramMemoryCost += sizeof(*this);
+}
+
+ExternalBoundLayer::ExternalBoundLayer()
+{
+    priority = std::numeric_limits<float>::infinity();
 }
 
 void ExternalBoundLayer::load()

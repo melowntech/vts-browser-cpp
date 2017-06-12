@@ -47,8 +47,8 @@ buildsys_nobuild_target(vts-libs)
 add_subdirectory(src/vts-libs)
 
 # browser library
-add_subdirectory(src/vts-browser-src)
-include_directories(src/vts-browser-src/include)
+add_subdirectory(src/vts-browser-lib)
+include_directories(src/vts-browser-lib/include)
 
 # glfw-based example browser
 find_package(glfw3)

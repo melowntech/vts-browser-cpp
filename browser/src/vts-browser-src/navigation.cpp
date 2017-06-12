@@ -38,12 +38,34 @@ inline void normalizeAngle(double &a)
     a = modulo(a, 360);
 }
 
+inline double angularDiff(double a, double b)
+{
+    assert(a >= 0 && a <= 360);
+    assert(b >= 0 && b <= 360);
+    double c = b - a;
+    if (c > 180)
+        c = c - 360;
+    else if (c < -180)
+        c = c + 360;
+    assert(c >= -180 && c <= 180);
+    return c;
+}
+
+inline vec3 angularDiff(const vec3 &a, const vec3 &b)
+{
+    return vec3(
+        angularDiff(a(0), b(0)),
+        angularDiff(a(1), b(1)),
+        angularDiff(a(2), b(2))
+    );
+}
+
 } // namespace
 
 MapImpl::Navigation::Navigation() :
     autoMotion(0,0,0), autoRotation(0,0,0),
-    inertiaMotion(0,0,0), inertiaRotation(0,0,0),
-    inertiaViewExtent(0), mode(MapOptions::NavigationMode::Azimuthal)
+    targetPoint(0,0,0), changeRotation(0,0,0),
+    targetViewExtent(0), mode(MapOptions::NavigationMode::Azimuthal)
 {}
 
 class HeightRequest
@@ -206,7 +228,7 @@ public:
             interpolate(*corners[2].result, *corners[3].result, interpol(0)),
             interpolate(*corners[0].result, *corners[1].result, interpol(0)),
             interpol(1));
-        height = map->mapConfig->convertor->convert(vec2to3(sds, height),
+        height = map->convertor->convert(vec2to3(sds, height),
             nodeInfo->srs(),
             map->mapConfig->referenceFrame.model.navigationSrs)(2);
         result.emplace(height);
@@ -238,10 +260,9 @@ void MapImpl::checkPanZQueue()
     // apply the height to the camera
     assert(nh == nh);
     if (task.resetOffset == task.resetOffset)
-        navigation.inertiaMotion(2) += nh + task.resetOffset
-                - mapConfig->position.position[2];
+        navigation.targetPoint(2) = nh + task.resetOffset;
     else if (navigation.lastPanZShift)
-        navigation.inertiaMotion(2) += nh - *navigation.lastPanZShift;
+        navigation.targetPoint(2) += nh - *navigation.lastPanZShift;
     navigation.lastPanZShift.emplace(nh);
     navigation.panZQueue.pop();
 }
@@ -253,13 +274,19 @@ const std::pair<NodeInfo, vec2> MapImpl::findInfoNavRoot(const vec2 &navPos)
         if (it.second.partitioning.mode
                 != vtslibs::registry::PartitioningMode::bisection)
             continue;
-        NodeInfo ni(mapConfig->referenceFrame, it.first,
-                    false, *mapConfig);
-        vec2 sds = vec3to2(mapConfig->convertor->convert(vec2to3(navPos, 0),
-            mapConfig->referenceFrame.model.navigationSrs, it.second.srs));
-        if (!ni.inside(vecToUblas<math::Point2>(sds)))
-            continue;
-        return std::make_pair(ni, sds);
+        NodeInfo ni(mapConfig->referenceFrame, it.first, false, *mapConfig);
+        try
+        {
+            vec2 sds = vec3to2(convertor->convert(vec2to3(navPos, 0),
+                mapConfig->referenceFrame.model.navigationSrs, it.second.srs));
+            if (!ni.inside(vecToUblas<math::Point2>(sds)))
+                continue;
+            return std::make_pair(ni, sds);
+        }
+        catch(const std::exception &)
+        {
+            // do nothing
+        }
     }
     LOGTHROW(fatal, std::invalid_argument) << "Impossible position";
     throw; // shut up compiler warning
@@ -287,7 +314,7 @@ const NodeInfo MapImpl::findInfoSdsSampled(const NodeInfo &info,
 
 void MapImpl::resetPositionAltitude(double resetOffset)
 {
-    navigation.inertiaMotion(2) = navigation.autoMotion(2) = 0;
+    navigation.targetPoint(2) = navigation.autoMotion(2) = 0;
     navigation.lastPanZShift.reset();
     std::queue<std::shared_ptr<class HeightRequest>>().swap(
                 navigation.panZQueue);
@@ -297,36 +324,17 @@ void MapImpl::resetPositionAltitude(double resetOffset)
     navigation.panZQueue.push(r);
 }
 
-void MapImpl::resetPositionRotation(bool immediate)
-{
-    vtslibs::registry::Position &pos = mapConfig->position;
-    if (immediate)
-    {
-        navigation.inertiaRotation = vec3(0,0,0);
-        pos.orientation = math::Point3(0,270,0);
-    }
-    else
-    {
-        vec3 c = -vecFromUblas<vec3>(pos.orientation);
-        for (int i = 0; i < 3; i++)
-            normalizeAngle(c(i));
-        if (c(0) > 180)
-            c(0) = c(0) - 360;
-        c(1) = c(1) - 90;
-        if (c(2) > 180)
-            c(2) = c(2) - 360;
-        navigation.inertiaRotation = c;
-    }
-    navigation.autoMotion = navigation.autoRotation = vec3(0,0,0);
-    resetNavigationMode();
-}
-
 void MapImpl::resetNavigationMode()
 {
     if (options.navigationMode == MapOptions::NavigationMode::Dynamic)
         navigation.mode = MapOptions::NavigationMode::Azimuthal;
     else
         navigation.mode = options.navigationMode;
+}
+
+void MapImpl::resetAuto()
+{
+    navigation.autoMotion = navigation.autoRotation = vec3(0,0,0);
 }
 
 void MapImpl::convertPositionSubjObj()
@@ -338,8 +346,7 @@ void MapImpl::convertPositionSubjObj()
     if (pos.type == vtslibs::registry::Position::Type::objective)
         dist *= -1;
     center += dir * dist;
-    pos.position = vecToUblas<math::Point3>(
-                mapConfig->convertor->physToNav(center));
+    pos.position = vecToUblas<math::Point3>(convertor->physToNav(center));
 }
 
 void MapImpl::positionToCamera(vec3 &center, vec3 &dir, vec3 &up)
@@ -381,9 +388,9 @@ void MapImpl::positionToCamera(vec3 &center, vec3 &dir, vec3 &up)
         dir += center;
         up += center;
         // transform to physical srs
-        center = mapConfig->convertor->navToPhys(center);
-        dir = mapConfig->convertor->navToPhys(dir);
-        up = mapConfig->convertor->navToPhys(up);
+        center = convertor->navToPhys(center);
+        dir = convertor->navToPhys(dir);
+        up = convertor->navToPhys(up);
         // points -> vectors
         dir = normalize(dir - center);
         up = normalize(up - center);
@@ -391,12 +398,12 @@ void MapImpl::positionToCamera(vec3 &center, vec3 &dir, vec3 &up)
     case vtslibs::registry::Srs::Type::geographic:
     {
         // find lat-lon coordinates of points moved to north and east
-        vec3 n2 = mapConfig->convertor->navGeodesicDirect(center, 100, 0);
-        vec3 e2 = mapConfig->convertor->navGeodesicDirect(center, 100, 90);
+        vec3 n2 = convertor->geoDirect(center, 100, 0);
+        vec3 e2 = convertor->geoDirect(center, 100, 90);
         // transform to physical srs
-        center = mapConfig->convertor->navToPhys(center);
-        vec3 n = mapConfig->convertor->navToPhys(n2);
-        vec3 e = mapConfig->convertor->navToPhys(e2);
+        center = convertor->navToPhys(center);
+        vec3 n = convertor->navToPhys(n2);
+        vec3 e = convertor->navToPhys(e2);
         // points -> vectors
         n = normalize(n - center);
         e = normalize(e - center);
@@ -422,6 +429,22 @@ double MapImpl::positionObjectiveDistance()
             * 0.5 / tan(degToRad(pos.verticalFov * 0.5));
 }
 
+void MapImpl::initializeNavigation()
+{
+    convertor = CoordManip::create(
+                  mapConfig->referenceFrame.model.physicalSrs,
+                  mapConfig->referenceFrame.model.navigationSrs,
+                  mapConfig->referenceFrame.model.publicSrs,
+                  *mapConfig);
+
+    navigation.targetPoint = vecFromUblas<vec3>(mapConfig->position.position);
+    navigation.changeRotation = vec3(0,0,0);
+    navigation.targetViewExtent = mapConfig->position.verticalExtent;
+    navigation.autoRotation(0) = mapConfig->browserOptions.autorotate;
+    for (int i = 0; i < 3; i++)
+        normalizeAngle(mapConfig->position.orientation[i]);
+}
+
 void MapImpl::updateNavigation()
 {
     assert(options.cameraInertiaPan >= 0
@@ -436,152 +459,238 @@ void MapImpl::updateNavigation()
     checkPanZQueue();
 
     vtslibs::registry::Position &pos = mapConfig->position;
-    vec3 position = vecFromUblas<vec3>(pos.position);
-    vec3 rotation = vecFromUblas<vec3>(pos.orientation);
+    vec3 p = vecFromUblas<vec3>(pos.position);
+    vec3 r = vecFromUblas<vec3>(pos.orientation);
 
     // floating position
     if (pos.heightMode == vtslibs::registry::Position::HeightMode::floating)
     {
         pos.heightMode = vtslibs::registry::Position::HeightMode::fixed;
-        resetPositionAltitude(position(2));
+        resetPositionAltitude(p(2));
     }
     assert(pos.heightMode == vtslibs::registry::Position::HeightMode::fixed);
 
     // limit zoom
-    pos.verticalExtent = clamp(pos.verticalExtent,
-                               options.positionViewExtentMin,
-                               options.positionViewExtentMax);
+    navigation.targetViewExtent = clamp(navigation.targetViewExtent,
+                                       options.positionViewExtentMin,
+                                       options.positionViewExtentMax);
 
-    // apply auto motion & rotate
-    navigation.inertiaMotion += navigation.autoMotion;
-    navigation.inertiaRotation += navigation.autoRotation;
+    // auto
+    navigation.changeRotation += navigation.autoRotation;
+    panImpl(navigation.autoMotion, 1);
     
-    // position inertia
+    // apply pan
+    switch (mapConfig->navigationType())
     {
-        vec3 move = navigation.inertiaMotion
-                * (1.0 - options.cameraInertiaPan);
-        navigation.inertiaMotion *= options.cameraInertiaPan;
-        mat3 rot = upperLeftSubMatrix(rotationMatrix(2, -rotation(0)));
-        move = rot * move;
-        double v = pos.verticalExtent / 800;
-        move = move.cwiseProduct(vec3(v, v, 1));
-        switch (mapConfig->srs.get(
-                    mapConfig->referenceFrame.model.navigationSrs).type)
+    case vtslibs::registry::Srs::Type::projected:
+    {
+        p += (navigation.targetPoint - p)
+                * (1 - options.cameraInertiaPan);
+    } break;
+    case vtslibs::registry::Srs::Type::geographic:
+    {
+        // try to switch to free mode
+        if (options.navigationMode == MapOptions::NavigationMode::Dynamic)
         {
-        case vtslibs::registry::Srs::Type::projected:
+            if (abs(navigation.targetPoint(1))
+                    > options.navigationLatitudeThreshold - 1e-5)
+                navigation.mode = MapOptions::NavigationMode::Free;
+        }
+        else
+            navigation.mode = options.navigationMode;
+
+        // move
+        switch (navigation.mode)
         {
-            position += move;
+        case MapOptions::NavigationMode::Free:
+        {
+            double dist, azi1, azi2;
+            convertor->geoInverse(p, navigation.targetPoint, dist, azi1, azi2);
+            dist *= (1 - options.cameraInertiaPan);
+            p = convertor->geoDirect(p, dist, azi1, azi2);
+            r(0) += azi2 - azi1;
         } break;
-        case vtslibs::registry::Srs::Type::geographic:
+        case MapOptions::NavigationMode::Azimuthal:
         {
-            vec3 &p = position;
-            
-            double ang1 = radToDeg(atan2(move(0), move(1)));
-            double ang2;
-            double dist = length(vec3to2(move));
-            p = mapConfig->convertor->navGeodesicDirect(p, dist, ang1, ang2);
-            p(0) = modulo(p(0) + 180, 360) - 180;
-            p(2) += move(2);
-    
-            // try to switch to free mode
-            if (options.navigationMode == MapOptions::NavigationMode::Dynamic)
-            {
-                if (abs(p(1)) >= options.navigationLatitudeThreshold - 1e-5)
-                    navigation.mode = MapOptions::NavigationMode::Free;
-            }
-            else
-                navigation.mode = options.navigationMode;
-    
-            // limit latitude
-            switch (navigation.mode)
-            {
-            case MapOptions::NavigationMode::Free:
-            { // wraps on poles
-                rotation(0) += ang2 - ang1;
-            } break;
-            case MapOptions::NavigationMode::Azimuthal:
-            { // clamp
-                p(1) = clamp(p(1),
-                        -options.navigationLatitudeThreshold,
-                        options.navigationLatitudeThreshold);
-            } break;
-            default:
-                LOGTHROW(fatal, std::invalid_argument)
-                        << "Invalid navigation mode";
-            }
+            navigation.targetPoint(1) = clamp(navigation.targetPoint(1),
+                    -options.navigationLatitudeThreshold,
+                    options.navigationLatitudeThreshold);
+            for (int i = 0; i < 2; i++)
+                p(i) += angularDiff(p(i) + 180, navigation.targetPoint(i) + 180)
+                    * (1 - options.cameraInertiaPan);
         } break;
         default:
-            LOGTHROW(fatal, std::invalid_argument) << "Invalid srs type";
+            LOGTHROW(fatal, std::invalid_argument) << "invalid navigation mode";
         }
+        
+        p(0) = modulo(p(0) + 180, 360) - 180;
+        p(2) += (navigation.targetPoint(2) - p(2))
+                * (1 - options.cameraInertiaPan);
+    } break;
+    default:
+        LOGTHROW(fatal, std::invalid_argument) << "invalid navigation srs";
     }
 
-    // rotation inertia
-    {
-        rotation += navigation.inertiaRotation
-                * (1.0 - options.cameraInertiaRotate);
-        navigation.inertiaRotation *= options.cameraInertiaRotate;
-    }
-
-    // zoom inertia
-    {
-        double c = navigation.inertiaViewExtent
-                * (1.0 - options.cameraInertiaZoom);
-        navigation.inertiaViewExtent *= options.cameraInertiaZoom;
-        pos.verticalExtent *= pow(1.001, -c);
-    }
-
-    // normalize angles
+    // apply rotation & zoom inertia
+    r += navigation.changeRotation
+            * (1 - options.cameraInertiaRotate);
+    navigation.changeRotation *= options.cameraInertiaRotate;
+    pos.verticalExtent += (navigation.targetViewExtent - pos.verticalExtent)
+            * (1 - options.cameraInertiaZoom);
+    
     for (int i = 0; i < 3; i++)
-        normalizeAngle(rotation[i]);
-    rotation[1] = clamp(rotation[1], 270, 350);
-    
-    // assert position
-    if (mapConfig->srs.get(mapConfig->referenceFrame.model.navigationSrs).type
-            == vtslibs::registry::Srs::Type::geographic)
+        normalizeAngle(r[i]);
+    r[1] = clamp(r[1], 270, 350);
+
+    // asserts
+    assert(r(0) >= 0 && r(0) < 360);
+    assert(r(1) >= 0 && r(1) < 360);
+    assert(r(2) >= 0 && r(2) < 360);
+    if (mapConfig->navigationType() == vtslibs::registry::Srs::Type::geographic)
     {
-        assert(position[0] >= -180 && position[0] <= 180);
-        assert(position[1] >= -90 && position[1] <= 90);
+        assert(p(0) >= -180 && p(0) <= 180);
+        assert(p(1) >= -90 && p(1) <= 90);
     }
-    
+
     // vertical camera adjustment
     {
-        auto h = std::make_shared<HeightRequest>(vec3to2(position));
+        auto h = std::make_shared<HeightRequest>(vec3to2(p));
         if (navigation.panZQueue.size() < 2)
             navigation.panZQueue.push(h);
         else
             navigation.panZQueue.back() = h;
     }
-    
+
     // store changed values
-    pos.position = vecToUblas<math::Point3>(position);
-    pos.orientation = vecToUblas<math::Point3>(rotation);
+    pos.position = vecToUblas<math::Point3>(p);
+    pos.orientation = vecToUblas<math::Point3>(r);
 }
 
 void MapImpl::pan(const vec3 &value)
 {
-    const vec3 scale(-2, 2, 2);
-    for (int i = 0; i < 3; i++)
-        navigation.inertiaMotion(i) += value[i] * scale(i)
-                * options.cameraSensitivityPan;
-    navigation.autoMotion = navigation.autoRotation = vec3(0, 0, 0);
+    panImpl(value, options.cameraSensitivityPan);
+    resetAuto();
+}
+
+void MapImpl::panImpl(const vec3 &value, double speed)
+{
+    vtslibs::registry::Position &pos = mapConfig->position;
+
+    double h = 1;
+    if (mapConfig->navigationType() == vtslibs::registry::Srs::Type::geographic
+            && navigation.mode == MapOptions::NavigationMode::Azimuthal)
+    {
+        // slower pan near poles
+        h = std::cos(pos.position[1] * 3.14159 / 180);
+    }
+    
+    // pan speed depends on zoom level
+    double v = pos.verticalExtent / 800;
+    vec3 move = value.cwiseProduct(vec3(-2 * v * h, 2 * v, 2) * speed);
+
+    double azi = pos.orientation(0);
+    if (mapConfig->navigationType() == vtslibs::registry::Srs::Type::geographic
+            && navigation.mode == MapOptions::NavigationMode::Free)
+    {
+        // camera rotation taken from current (aka previous) target position
+        // this prevents strange turning near poles
+        double d, a1, a2;
+        convertor->geoInverse(
+                    vecFromUblas<vec3>(pos.position),
+                    navigation.targetPoint, d, a1, a2);
+        azi += a2 - a1;
+    }
+    
+    // the move is rotated by the camera
+    mat3 rot = upperLeftSubMatrix(rotationMatrix(2, -azi));
+    move = rot * move;
+
+    switch (mapConfig->navigationType())
+    {
+    case vtslibs::registry::Srs::Type::projected:
+    {
+        navigation.targetPoint += move;
+        // todo periodicity
+    } break;
+    case vtslibs::registry::Srs::Type::geographic:
+    {
+        vec3 p = navigation.targetPoint;
+        double ang1 = radToDeg(atan2(move(0), move(1)));
+        double ang2;
+        double dist = length(vec3to2(move));
+        p = convertor->geoDirect(p, dist, ang1, ang2);
+        p(0) = modulo(p(0) + 180, 360) - 180;
+        p(2) += move(2);
+        // ignore the pan, if it would cause too rapid direction change
+        switch (navigation.mode)
+        {
+        case MapOptions::NavigationMode::Azimuthal:
+            if (abs(angularDiff(pos.position[0] + 180, p(0) + 180)) < 90)
+                navigation.targetPoint = p;
+            break;
+        case MapOptions::NavigationMode::Free:
+            if (convertor->geoArcDist(vecFromUblas<vec3>(pos.position), p) < 90)
+                navigation.targetPoint = p;
+            break;
+        default:
+            LOGTHROW(fatal, std::runtime_error) << "invalid navigation mode";
+        }
+    } break;
+    default:
+        LOGTHROW(fatal, std::runtime_error) << "invalid navigation srs";
+    }
 }
 
 void MapImpl::rotate(const vec3 &value)
 {
-    const vec3 scale(0.2, -0.1, 0.2);
-    for (int i = 0; i < 3; i++)
-        navigation.inertiaRotation(i) += value[i] * scale(i)
-                * options.cameraSensitivityRotate;
-    navigation.autoMotion = navigation.autoRotation = vec3(0, 0, 0);
+    navigation.changeRotation += value.cwiseProduct(vec3(0.2, -0.1, 0.2)
+                                        * options.cameraSensitivityRotate);
     if (options.navigationMode == MapOptions::NavigationMode::Dynamic)
         navigation.mode = MapOptions::NavigationMode::Free;
+    resetAuto();
 }
 
 void MapImpl::zoom(double value)
 {
-    navigation.inertiaViewExtent += value
-            * options.cameraSensitivityZoom;
-    navigation.autoMotion = navigation.autoRotation = vec3(0, 0, 0);
+    double c = value * options.cameraSensitivityZoom;
+    navigation.targetViewExtent *= pow(1.001, -c);
+    resetAuto();
+}
+
+void MapImpl::setPoint(const vec3 &point, bool immediate)
+{
+    navigation.targetPoint = point;
+    if (immediate)
+    {
+        mapConfig->position.position = vecToUblas<math::Point3>(point);
+        navigation.lastPanZShift.reset();
+        std::queue<std::shared_ptr<class HeightRequest>>()
+                .swap(navigation.panZQueue) ;
+    }
+    resetAuto();
+}
+
+void MapImpl::setRotation(const vec3 &euler, bool immediate)
+{
+    if (immediate)
+    {
+        mapConfig->position.orientation = vecToUblas<math::Point3>(euler);
+        navigation.changeRotation = vec3(0,0,0);
+    }
+    else
+    {
+        navigation.changeRotation = angularDiff(
+                    vecFromUblas<vec3>(mapConfig->position.orientation), euler);
+    }
+    resetAuto();
+}
+
+void MapImpl::setViewExtent(double viewExtent, bool immediate)
+{
+    navigation.targetViewExtent = viewExtent;
+    if (immediate)
+        mapConfig->position.verticalExtent = viewExtent;
+    resetAuto();
 }
 
 } // namespace vts

@@ -229,8 +229,7 @@ void MainWindow::mousePositionCallback(double xpos, double ypos)
 
 void MainWindow::mouseButtonCallback(int button, int action, int mods)
 {
-    static const double dblClickThreshold = 0.25;
-    //fprintf(stderr, "before button %d action %d mod %d state %d\n", button, action, mods, dblClickState);
+    static const double dblClickThreshold = 0.22;
     if (button == GLFW_MOUSE_BUTTON_LEFT)
     {
         double n = glfwGetTime();
@@ -261,17 +260,17 @@ void MainWindow::mouseButtonCallback(int button, int action, int mods)
         dblClickInitTime = 0;
         dblClickState = 0;
     }
-    //fprintf(stderr, "after button %d action %d mod %d state %d\n", button, action, mods, dblClickState);
 }
 
 void MainWindow::mouseDblClickCallback(int)
 {
-    //fprintf(stderr, "double click\n");
     vts::vec3 posPhys = getWorldPositionFromCursor();
+    if (posPhys(0) != posPhys(0))
+        return;
     double posNav[3];
     map->convert(posPhys.data(), posNav,
                  vts::Srs::Physical, vts::Srs::Navigation);
-    map->setPositionPoint(posNav);
+    map->setPositionPoint(posNav, false);
 }
 
 void MainWindow::mouseScrollCallback(double, double yoffset)
@@ -286,6 +285,8 @@ void MainWindow::keyboardCallback(int key, int, int action, int)
     {
         Mark mark;
         mark.coord = getWorldPositionFromCursor();
+        if (mark.coord(0) != mark.coord(0))
+            return;
         marks.push_back(mark);
         colorizeMarks();
     }
@@ -396,10 +397,12 @@ void MainWindow::run()
         {
             map->renderTick(width, height); // calls camera overrides
         }
-        catch (const vts::MapConfigException &)
+        catch (const vts::MapConfigException &e)
         {
-            map->setMapConfigPath("");
-            if (mapConfigPaths.size() <= 1)
+            fprintf(stderr, "Exception: %s\n", e.what());
+            if (mapConfigPaths.size() > 1)
+                map->setMapConfigPath("");
+            else
                 throw;
         }
         double timeMapRender = glfwGetTime();
@@ -476,6 +479,8 @@ vts::vec3 MainWindow::getWorldPositionFromCursor()
     float depth = std::numeric_limits<float>::quiet_NaN();
     glReadPixels((int)x, (int)y, 1, 1,
                  GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+    if (depth > 1 - 1e-7)
+        depth = std::numeric_limits<float>::quiet_NaN();
     depth = depth * 2 - 1;
     x = x / width * 2 - 1;
     y = y / height * 2 - 1;

@@ -90,6 +90,7 @@ public:
     
     bool debugDetachedCamera;
     bool debugDisableMeta5;
+    bool debugSaveCorruptedFiles;
 };
 
 class VTS_API MapCallbacks

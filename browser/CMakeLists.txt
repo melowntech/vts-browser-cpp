@@ -46,7 +46,7 @@ buildsys_nobuild_target(vts-libs-core)
 buildsys_nobuild_target(vts-libs)
 add_subdirectory(src/vts-libs)
 
-# browser
+# browser library
 add_subdirectory(src/vts-browser-src)
 include_directories(src/vts-browser-src/include)
 
@@ -79,16 +79,4 @@ if(Qt5Gui_FOUND
 else()
   message(STATUS "excluding vts-browser-qt")
 endif()
-
-
-
-
-#get_cmake_property(_variableNames VARIABLES)
-#foreach (_variableName ${_variableNames})
-#    message(STATUS "${_variableName}=${${_variableName}}")
-#endforeach()
-
-
-
-
 

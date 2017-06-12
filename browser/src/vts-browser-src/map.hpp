@@ -41,6 +41,7 @@
 
 #include "resources.hpp"
 #include "credits.hpp"
+#include "coordsManip.hpp"
 
 namespace vts
 {
@@ -125,6 +126,7 @@ public:
 
     class Map *const map;
     std::shared_ptr<MapConfig> mapConfig;
+    std::shared_ptr<CoordManip> convertor;
     std::shared_ptr<AuthConfig> auth;
     std::string mapConfigPath;
     std::string mapConfigView;
@@ -142,9 +144,9 @@ public:
     public:
         vec3 autoMotion;
         vec3 autoRotation;
-        vec3 inertiaMotion;
-        vec3 inertiaRotation;
-        double inertiaViewExtent;
+        vec3 targetPoint;
+        vec3 changeRotation;
+        double targetViewExtent;
         std::queue<std::shared_ptr<class HeightRequest>> panZQueue;
         boost::optional<double> lastPanZShift;
         MapOptions::NavigationMode mode;
@@ -202,19 +204,24 @@ public:
 
     // navigation
     void pan(const vec3 &value);
+    void panImpl(const vec3 &value, double speed);
     void rotate(const vec3 &value);
     void zoom(double value);
+    void setPoint(const vec3 &point, bool immediate);
+    void setRotation(const vec3 &euler, bool immediate);
+    void setViewExtent(double viewExtent, bool immediate);
     void checkPanZQueue();
     const std::pair<vtslibs::vts::NodeInfo, vec2> findInfoNavRoot(
             const vec2 &navPos);
     const NodeInfo findInfoSdsSampled(const NodeInfo &info,
                                       const vec2 &sdsPos);
     void resetPositionAltitude(double resetOffset);
-    void resetPositionRotation(bool immediate);
     void resetNavigationMode();
+    void resetAuto();
     void convertPositionSubjObj();
     void positionToCamera(vec3 &center, vec3 &dir, vec3 &up);
     double positionObjectiveDistance();
+    void initializeNavigation();
     void updateNavigation();
 
     // resources methods

@@ -31,7 +31,9 @@
 #include <GeographicLib/Geodesic.hpp>
 #include <ogr_spatialref.h>
 
-#include "csConvertor.hpp"
+#include "coordsManip.hpp"
+
+#include <gdalwarper.h>
 
 // todo use void pj_set_finder( const char *(*)(const char *) );
 
@@ -40,17 +42,30 @@ namespace vts
 
 namespace
 {
-    struct DummyDeleter
-    {
-        void operator()(vtslibs::vts::CsConvertor *)
-        {}
-    };
+
+void GDALErrorHandlerEmpty(CPLErr, int, const char *)
+{
+    // do nothing    
 }
 
-class CsConvertorImpl : public CsConvertor
+struct gdalInitClass
+{
+    gdalInitClass()
+    {
+        CPLSetErrorHandler(&GDALErrorHandlerEmpty);
+    }
+} gdalInitInstance;
+
+struct DummyDeleter
+{
+    void operator()(vtslibs::vts::CsConvertor *)
+    {}
+};
+
+class CoordManipImpl : public CoordManip
 {
 public:
-    CsConvertorImpl(const std::string &phys,
+    CoordManipImpl(const std::string &phys,
                     const std::string &nav,
                     const std::string &pub,
                     const vtslibs::registry::Registry &registry) :
@@ -112,8 +127,7 @@ public:
         return vecFromUblas<vec3>(physToPub_(vecToUblas<math::Point3d>(value)));
     }
     
-    vec3 convert(const vec3 &value,
-                                    const std::string &from,
+    vec3 convert(const vec3 &value, const std::string &from,
                                     const std::string &to) override
     {
         std::shared_ptr<vtslibs::vts::CsConvertor> &p = convertors[from][to];
@@ -123,7 +137,7 @@ public:
         return vecFromUblas<vec3>((*p)(vecFromUblas<math::Point3>(value)));
     }
 
-    vec3 navGeodesicDirect(const vec3 &position, double distance,
+    vec3 geoDirect(const vec3 &position, double distance,
                                  double azimuthIn, double &azimuthOut) override
     {
         vec3 res;
@@ -133,32 +147,38 @@ public:
         return res;
     }
     
-    vec3 navGeodesicDirect(const vec3 &position, double distance,
+    vec3 geoDirect(const vec3 &position, double distance,
                                  double azimuthIn) override
     {
         double a;
-        return navGeodesicDirect(position, distance, azimuthIn, a);
+        return geoDirect(position, distance, azimuthIn, a);
     }
     
-    void navGeodesicInverse(const vec3 &a, const vec3 &b,
+    void geoInverse(const vec3 &a, const vec3 &b,
             double &distance, double &azimuthA, double &azimuthB) override
     {
         geodesic_->Inverse(a(1), a(0), b(1), b(0),
                            distance, azimuthA, azimuthB);
     }
     
-    double navGeodesicAzimuth(const vec3 &a, const vec3 &b) override
+    double geoAzimuth(const vec3 &a, const vec3 &b) override
     {
         double d, a1, a2;
-        navGeodesicInverse(a, b, d, a1, a2);
+        geoInverse(a, b, d, a1, a2);
         return a1;
     }
     
-    double navGeodesicDistance(const vec3 &a, const vec3 &b) override
+    double geoDistance(const vec3 &a, const vec3 &b) override
     {
         double d, a1, a2;
-        navGeodesicInverse(a, b, d, a1, a2);
+        geoInverse(a, b, d, a1, a2);
         return d;
+    }
+    
+    double geoArcDist(const vec3 &a, const vec3 &b) override
+    {
+        double dummy;
+        return geodesic_->Inverse(a(1), a(0), b(1), b(0), dummy);
     }
 
     const vtslibs::registry::Registry &registry;
@@ -173,15 +193,17 @@ public:
     boost::optional<GeographicLib::Geodesic> geodesic_;
 };
 
-CsConvertor *CsConvertor::create(const std::string &phys,
+} // namespace
+
+std::shared_ptr<CoordManip> CoordManip::create(const std::string &phys,
                                  const std::string &nav,
                                  const std::string &pub,
                                  const vtslibs::registry::Registry &registry)
 {
-    return new CsConvertorImpl(phys, nav, pub, registry);
+    return std::make_shared<CoordManipImpl>(phys, nav, pub, registry);
 }
 
-CsConvertor::~CsConvertor()
+CoordManip::~CoordManip()
 {}
 
 } // namespace vts

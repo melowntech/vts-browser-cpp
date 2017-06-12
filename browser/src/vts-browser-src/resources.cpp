@@ -150,15 +150,18 @@ void MapImpl::loadResource(const std::shared_ptr<Resource> &resource)
     }
     catch (...)
     {
-        try
+        if (options.debugSaveCorruptedFiles)
         {
-            writeLocalFileBuffer(std::string() + "corrupted/"
+            try
+            {
+                writeLocalFileBuffer(std::string() + "corrupted/"
                              + convertNameToPath(resource->fetch->name, false),
                              resource->fetch->contentData);
-        }
-        catch(...)
-        {
-            // do nothing
+            }
+            catch(...)
+            {
+                // do nothing
+            }
         }
 		resource->fetch->contentData.free();
 		throw;

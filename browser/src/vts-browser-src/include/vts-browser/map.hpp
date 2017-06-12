@@ -85,20 +85,19 @@ public:
     void zoom(double value);
     void setPositionSubjective(bool subjective, bool convert);
     bool getPositionSubjective() const;
-    void setPositionPoint(const double point[3]); /// navigation srs
-    void setPositionPoint(const double (&point)[3]); /// navigation srs
-    void getPositionPoint(double point[3]) const; /// navigation srs
-    void setPositionRotation(const double point[3]); /// degrees
-    void setPositionRotation(const double (&point)[3]); /// degrees
-    void getPositionRotation(double point[3]) const; /// degrees
-    void setPositionViewExtent(double viewExtent); /// physical length
-    double getPositionViewExtent() const; /// physical length
-    void setPositionFov(double fov); /// degrees
-    double getPositionFov() const; /// degrees
+    void setPositionPoint(const double point[3], bool immediate);
+    void setPositionPoint(const double (&point)[3], bool immediate);
+    void getPositionPoint(double point[3]) const;
+    void setPositionRotation(const double point[3], bool immediate);
+    void setPositionRotation(const double (&point)[3], bool immediate);
+    void getPositionRotation(double point[3]) const;
+    void setPositionViewExtent(double viewExtent, bool immediate);
+    double getPositionViewExtent() const;
+    void setPositionFov(double fov);
+    double getPositionFov() const;
     std::string getPositionJson() const;
     void setPositionJson(const std::string &position);
     void resetPositionAltitude();
-    void resetPositionRotation(bool immediate);
     void resetNavigationMode();
     void setAutoMotion(const double value[3]);
     void setAutoMotion(const double (&value)[3]);
@@ -125,9 +124,9 @@ public:
 
     std::shared_ptr<class SearchTask> search(const std::string &query);
     std::shared_ptr<class SearchTask> search(const std::string &query,
-                                const double point[3]); // navigation srs
+                                const double point[3]);
     std::shared_ptr<class SearchTask> search(const std::string &query,
-                                const double (&point)[3]); // navigation srs
+                                const double (&point)[3]);
 
     void printDebugInfo();
 

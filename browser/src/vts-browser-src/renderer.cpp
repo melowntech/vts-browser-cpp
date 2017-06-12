@@ -474,7 +474,7 @@ bool MapImpl::traverseDetermineSurface(
             for (uint32 i = 0; i < 8; i++)
             {
                 vec3 f = lowerUpperCombine(i).cwiseProduct(eu - el) + el;
-                f = mapConfig->convertor->convert(f, trav->nodeInfo.srs(),
+                f = convertor->convert(f, trav->nodeInfo.srs(),
                             mapConfig->referenceFrame.model.physicalSrs);
                 trav->cornersPhys[i] = f;
             }
@@ -524,7 +524,7 @@ bool MapImpl::traverseDetermineSurface(
             vec2 exL = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
             vec3 sds = vec2to3((exU + exL) * 0.5,
                                node->geomExtents.surrogate);
-            trav->surrogatePhys = mapConfig->convertor->convert(sds,
+            trav->surrogatePhys = convertor->convert(sds,
                                 trav->nodeInfo.srs(),
                                 mapConfig->referenceFrame.model.physicalSrs);
         }
@@ -771,7 +771,7 @@ void MapImpl::updateCamera()
 
     // camera projection matrix
     double near = std::max(2.0, dist * 0.1);
-    double terrainAboveOrigin = length(mapConfig->convertor->navToPhys(
+    double terrainAboveOrigin = length(convertor->navToPhys(
         vec2to3(vec3to2(vecFromUblas<vec3>(pos.position)), 0)));
     double cameraAboveOrigin = length(cameraPosPhys);
     double cameraToHorizon = cameraAboveOrigin > terrainAboveOrigin
@@ -817,8 +817,7 @@ void MapImpl::updateCamera()
     // render object position
     if (options.renderObjectPosition)
     {
-        vec3 phys = mapConfig->convertor->navToPhys(
-                    vecFromUblas<vec3>(pos.position));
+        vec3 phys = convertor->navToPhys(vecFromUblas<vec3>(pos.position));
         RenderTask r;
         r.mesh = getMeshRenderable("data/meshes/cube.obj");
         r.mesh->priority = std::numeric_limits<float>::infinity();
@@ -901,9 +900,9 @@ bool MapImpl::prerequisitesCheck()
                 = std::make_shared<MapConfig::BoundInfo>(bl);
     }
 
-    navigation.autoRotation(0) = mapConfig->browserOptions.autorotate;
+    initializeNavigation();
 
-    LOG(info3) << "Render prerequisites ready";
+    LOG(info3) << "Map config ready";
     initialized = true;
     return true;
 }
@@ -917,7 +916,7 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
     
     assert(!auth || *auth);
     assert(mapConfig && *mapConfig);
-    assert(mapConfig->convertor);
+    assert(convertor);
     assert(renderer.traverseRoot);
     
     renderer.windowWidth = windowWidth;

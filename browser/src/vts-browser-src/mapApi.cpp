@@ -202,7 +202,7 @@ void Map::purgeTraverseCache()
 
 bool Map::isMapConfigReady() const
 {
-    return impl->mapConfig && *impl->mapConfig;
+    return impl->mapConfig && *impl->mapConfig && impl->convertor;
 }
 
 bool Map::isMapRenderComplete() const
@@ -298,28 +298,25 @@ bool Map::getPositionSubjective() const
             == vtslibs::registry::Position::Type::subjective;
 }
 
-void Map::setPositionPoint(const double point[3])
+void Map::setPositionPoint(const double point[3], bool immediate)
 {
     if (!isMapConfigReady())
         return;
-    if (impl->mapConfig->srs.get(
-                impl->mapConfig->referenceFrame.model.navigationSrs).type
+    assert(point[0] == point[0]);
+    assert(point[1] == point[1]);
+    assert(point[2] == point[2]);
+    if (impl->mapConfig->navigationType()
                    == vtslibs::registry::Srs::Type::geographic)
     {
         assert(point[0] >= -180 && point[0] <= 180);
         assert(point[1] >= -90 && point[1] <= 90);
     }
-    impl->mapConfig->position.position
-            = math::Point3(point[0], point[1], point[2]);
-    impl->navigation.inertiaMotion = vec3(0,0,0);
-    impl->navigation.lastPanZShift.reset();
-    std::queue<std::shared_ptr<class HeightRequest>>()
-            .swap(impl->navigation.panZQueue);
+    impl->setPoint(vec3(point[0], point[1], point[2]), immediate);
 }
 
-void Map::setPositionPoint(const double (&point)[3])
+void Map::setPositionPoint(const double (&point)[3], bool immediate)
 {
-    setPositionPoint(&point[0]);
+    setPositionPoint(&point[0], immediate);
 }
 
 void Map::getPositionPoint(double point[3]) const
@@ -335,21 +332,19 @@ void Map::getPositionPoint(double point[3]) const
         point[i] = p[i];
 }
 
-void Map::setPositionRotation(const double point[3])
+void Map::setPositionRotation(const double point[3], bool immediate)
 {
     if (!impl->mapConfig || !*impl->mapConfig)
         return;
     assert(point[0] == point[0]);
     assert(point[1] == point[1]);
     assert(point[2] == point[2]);
-    impl->mapConfig->position.orientation
-            = math::Point3(point[0], point[1], point[2]);
-    impl->navigation.inertiaRotation = vec3(0,0,0);
+    impl->setRotation(vec3(point[0], point[1], point[2]), immediate);
 }
 
-void Map::setPositionRotation(const double (&point)[3])
+void Map::setPositionRotation(const double (&point)[3], bool immediate)
 {
-    setPositionRotation(&point[0]);
+    setPositionRotation(&point[0], immediate);
 }
 
 void Map::getPositionRotation(double point[3]) const
@@ -365,13 +360,12 @@ void Map::getPositionRotation(double point[3]) const
         point[i] = p[i];
 }
 
-void Map::setPositionViewExtent(double viewExtent)
+void Map::setPositionViewExtent(double viewExtent, bool immediate)
 {
     if (!isMapConfigReady())
         return;
     assert(viewExtent == viewExtent);
-    impl->mapConfig->position.verticalExtent = viewExtent;
-    impl->navigation.inertiaViewExtent = 0;
+    impl->setViewExtent(viewExtent, immediate);
 }
 
 double Map::getPositionViewExtent() const
@@ -419,13 +413,6 @@ void Map::resetPositionAltitude()
     if (!isMapConfigReady())
         return;
     impl->resetPositionAltitude(0);
-}
-
-void Map::resetPositionRotation(bool immediate)
-{
-    if (!isMapConfigReady())
-        return;
-    impl->resetPositionRotation(immediate);
 }
 
 void Map::resetNavigationMode()
@@ -491,7 +478,7 @@ void Map::convert(const double pointFrom[3], double pointTo[3],
     if (!isMapConfigReady())
         return;
     vec3 a(pointFrom[0], pointFrom[1], pointFrom[2]);
-    a = impl->mapConfig->convertor->convert(a,
+    a = impl->convertor->convert(a,
                     srsConvert(impl->mapConfig.get(), srsFrom),
                     srsConvert(impl->mapConfig.get(), srsTo));
     for (int i = 0; i < 3; i++)

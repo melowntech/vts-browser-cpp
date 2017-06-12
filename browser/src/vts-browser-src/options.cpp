@@ -54,10 +54,10 @@ MapOptions::MapOptions() :
     cameraSensitivityPan(1),
     cameraSensitivityZoom(1),
     cameraSensitivityRotate(1),
-    cameraInertiaPan(0.85),
-    cameraInertiaZoom(0.85),
-    cameraInertiaRotate(0.85),
-    navigationLatitudeThreshold(80),
+    cameraInertiaPan(0.9),
+    cameraInertiaZoom(0.9),
+    cameraInertiaRotate(0.9),
+    navigationLatitudeThreshold(75),
     maxResourcesMemory(512 * 1024 * 1024),
     maxConcurrentDownloads(10),
     maxNodeUpdatesPerTick(10),
@@ -70,7 +70,8 @@ MapOptions::MapOptions() :
     renderObjectPosition(false),
     searchResultsFilter(true),
     debugDetachedCamera(false),
-    debugDisableMeta5(false)
+    debugDisableMeta5(false),
+    debugSaveCorruptedFiles(true)
 {}
 
 MapOptions::~MapOptions()

@@ -37,7 +37,6 @@
 
 #include "include/vts-browser/resources.hpp"
 #include "include/vts-browser/math.hpp"
-#include "csConvertor.hpp"
 #include "fetchTask.hpp"
 
 namespace vts
@@ -135,6 +134,7 @@ public:
     void clear();
     static const std::string convertPath(const std::string &path,
                                          const std::string &parent);
+    vtslibs::registry::Srs::Type navigationType() const;
     
     vtslibs::vts::SurfaceCommonConfig *findGlue(
             const vtslibs::vts::Glue::Id &id);
@@ -146,7 +146,6 @@ public:
     std::unordered_map<std::string, std::shared_ptr<SurfaceInfo>> surfaceInfos;
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
     std::vector<SurfaceStackItem> surfaceStack;
-    std::shared_ptr<CsConvertor> convertor;
     BrowserOptions browserOptions;
 };
 

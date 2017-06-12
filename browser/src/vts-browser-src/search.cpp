@@ -67,7 +67,7 @@ double distance(MapImpl *map, const double a[], const double b[],
     case vtslibs::registry::Srs::Type::projected:
         return length(vec3(vb - va));
     case vtslibs::registry::Srs::Type::geographic:
-        return map->mapConfig->convertor->navGeodesicDistance(va, vb);
+        return map->convertor->geoDistance(va, vb);
     }
     return def;
 }

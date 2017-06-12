@@ -675,7 +675,10 @@ public:
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset rotation"))
-                    window->map->resetPositionRotation(false);
+                {
+                    window->map->setPositionRotation({0,270,0}, false);
+                    window->map->resetNavigationMode();;
+                }
             }
             // view extent
             {
@@ -920,7 +923,7 @@ public:
                         double n[3] = { m.coord(0), m.coord(1), m.coord(2) };
                         window->map->convert(n, n, vts::Srs::Physical,
                                                  vts::Srs::Navigation);
-                        window->map->setPositionPoint(n);
+                        window->map->setPositionPoint(n, false);
                     }
                     sprintf(buffer, "%.8f", n[1]);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
@@ -991,10 +994,10 @@ public:
                         if (nk_button_label(&ctx, "Go"))
                         {
                             window->map->setPositionSubjective(false, false);
-                            window->map->setPositionPoint(r.position);
+                            window->map->setPositionPoint(r.position, false);
                             window->map->setPositionViewExtent(
-                                        std::max(6667.0, r.radius * 2));
-                            window->map->resetPositionRotation(false);
+                                        std::max(6667.0, r.radius * 2), false);
+                            window->map->setPositionRotation({0,270,0}, false);
                             window->map->resetPositionAltitude();
                         }
                     }

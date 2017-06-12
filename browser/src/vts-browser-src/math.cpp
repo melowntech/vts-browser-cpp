@@ -247,6 +247,9 @@ double modulo(double a, double m)
     a = std::fmod(a, m);
     if (a < 0)
         a += m;
+    if (!(a < m))
+        a = 0;
+    assert(a >= 0 && a < m);
     return a;
 }
 

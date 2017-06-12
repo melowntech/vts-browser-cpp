@@ -41,15 +41,15 @@ class Registry;
 namespace vts
 {
 
-class CsConvertor
+class CoordManip
 {
 public:
-    static CsConvertor *create(const std::string &phys,
+    static std::shared_ptr<CoordManip> create(const std::string &phys,
                                const std::string &nav,
                                const std::string &pub,
                                const vtslibs::registry::Registry &registry);
 
-    virtual ~CsConvertor();
+    virtual ~CoordManip();
 
     virtual vec3 navToPhys(const vec3 &value) = 0;
     virtual vec3 physToNav(const vec3 &value) = 0;
@@ -62,14 +62,15 @@ public:
                          const std::string &from,
                          const std::string &to) = 0;
 
-    virtual vec3 navGeodesicDirect(const vec3 &position, double distance,
+    virtual vec3 geoDirect(const vec3 &position, double distance,
                               double azimuthIn, double &azimuthOut) = 0;
-    virtual vec3 navGeodesicDirect(const vec3 &position, double distance,
+    virtual vec3 geoDirect(const vec3 &position, double distance,
                                     double azimuthIn) = 0;
-    virtual void navGeodesicInverse(const vec3 &posA, const vec3 &posB,
+    virtual void geoInverse(const vec3 &posA, const vec3 &posB,
                     double &distance, double &azimuthA, double &azimuthB) = 0;
-    virtual double navGeodesicAzimuth(const vec3 &a, const vec3 &b) = 0;
-    virtual double navGeodesicDistance(const vec3 &a, const vec3 &b) = 0;
+    virtual double geoAzimuth(const vec3 &a, const vec3 &b) = 0;
+    virtual double geoDistance(const vec3 &a, const vec3 &b) = 0;
+    virtual double geoArcDist(const vec3 &a, const vec3 &b) = 0;
 };
 
 } // namespace vts

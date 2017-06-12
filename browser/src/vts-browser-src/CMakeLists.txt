@@ -20,7 +20,7 @@ set(PUB_HDR_LIST
 )
 
 set(HDR_LIST
-	csConvertor.hpp
+	coordsManip.hpp
 	image.hpp
 	map.hpp
 	resources.hpp
@@ -33,7 +33,7 @@ set(SRC_LIST
 	buffer.cpp
 	color.cpp
 	credits.cpp
-	csConvertor.cpp
+	coordsManip.cpp
 	exceptions.cpp
 	fetcher.cpp
 	fetchTask.cpp

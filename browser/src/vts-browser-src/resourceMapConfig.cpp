@@ -80,13 +80,6 @@ void MapConfig::load()
             browserOptions.autorotate = r.asDouble() * 0.1;
     }
 
-    convertor = std::shared_ptr<CsConvertor>(CsConvertor::create(
-                  referenceFrame.model.physicalSrs,
-                  referenceFrame.model.navigationSrs,
-                  referenceFrame.model.publicSrs,
-                  *this
-                  ));
-
     namedViews[""] = view;
 }
 
@@ -96,7 +89,6 @@ void MapConfig::clear()
     surfaceInfos.clear();
     boundInfos.clear();
     surfaceStack.clear();
-    convertor.reset();
     browserOptions.autorotate = 0;
 }
 
@@ -104,6 +96,11 @@ const std::string MapConfig::convertPath(const std::string &path,
                                          const std::string &parent)
 {
     return utility::Uri(parent).resolve(path).str();
+}
+
+vtslibs::registry::Srs::Type MapConfig::navigationType() const
+{
+    return srs.get(referenceFrame.model.navigationSrs).type;
 }
 
 vtslibs::vts::SurfaceCommonConfig *MapConfig::findGlue(

@@ -104,9 +104,6 @@ public:
                 return Validity::Indeterminate;
             case Validity::Valid:
                 break;
-            default:
-				LOGTHROW(fatal, std::invalid_argument)
-						<< "Invalid resource state";
             }
             
             // check id
@@ -213,8 +210,6 @@ public:
                     break;
                 case Validity::Valid:
                     break;
-                default:
-                    assert(false);
                 }
             }
             if (!determined)
@@ -253,8 +248,6 @@ void MapImpl::checkPanZQueue()
     case Validity::Valid:
         nh = *task.result;
         break;
-    default:
-        LOGTHROW(fatal, std::invalid_argument) << "Invalid resource state";
     }
 
     // apply the height to the camera
@@ -373,8 +366,7 @@ void MapImpl::positionToCamera(vec3 &center, vec3 &dir, vec3 &up)
     }
     
     // transform to physical srs
-    switch (mapConfig->srs.get
-            (mapConfig->referenceFrame.model.navigationSrs).type)
+    switch (mapConfig->navigationType())
     {
     case vtslibs::registry::Srs::Type::projected:
     {
@@ -417,8 +409,8 @@ void MapImpl::positionToCamera(vec3 &center, vec3 &dir, vec3 &up)
         dir = normalize(dir);
         up = normalize(up);
     } break;
-    default:
-        LOGTHROW(fatal, std::invalid_argument) << "Invalid srs type";
+    case vtslibs::registry::Srs::Type::cartesian:
+        LOGTHROW(fatal, std::invalid_argument) << "Invalid navigation srs type";
     }
 }
 
@@ -519,16 +511,16 @@ void MapImpl::updateNavigation()
                 p(i) += angularDiff(p(i) + 180, navigation.targetPoint(i) + 180)
                     * (1 - options.cameraInertiaPan);
         } break;
-        default:
-            LOGTHROW(fatal, std::invalid_argument) << "invalid navigation mode";
+        case MapOptions::NavigationMode::Dynamic:
+            LOGTHROW(fatal, std::invalid_argument) << "Invalid navigation mode";
         }
         
         p(0) = modulo(p(0) + 180, 360) - 180;
         p(2) += (navigation.targetPoint(2) - p(2))
                 * (1 - options.cameraInertiaPan);
     } break;
-    default:
-        LOGTHROW(fatal, std::invalid_argument) << "invalid navigation srs";
+    case vtslibs::registry::Srs::Type::cartesian:
+        LOGTHROW(fatal, std::invalid_argument) << "Invalid navigation srs type";
     }
 
     // apply rotation & zoom inertia
@@ -632,12 +624,12 @@ void MapImpl::panImpl(const vec3 &value, double speed)
             if (convertor->geoArcDist(vecFromUblas<vec3>(pos.position), p) < 90)
                 navigation.targetPoint = p;
             break;
-        default:
-            LOGTHROW(fatal, std::runtime_error) << "invalid navigation mode";
+        case MapOptions::NavigationMode::Dynamic:
+            LOGTHROW(fatal, std::invalid_argument) << "Invalid navigation mode";
         }
     } break;
-    default:
-        LOGTHROW(fatal, std::runtime_error) << "invalid navigation srs";
+    case vtslibs::registry::Srs::Type::cartesian:
+        LOGTHROW(fatal, std::invalid_argument) << "Invalid navigation srs type";
     }
 }
 

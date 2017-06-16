@@ -53,7 +53,7 @@ GpuMeshSpec::GpuMeshSpec(const Buffer &buffer) :
         faceMode = FaceMode::Triangles;
         break;
     default:
-        LOGTHROW(fatal, std::invalid_argument) << "Invalid face mode";
+        LOGTHROW(err2, std::invalid_argument) << "Invalid face mode";
     }
 }
 
@@ -61,10 +61,14 @@ GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0),
     components(0), type(Type::Float), enable(false), normalized(false)
 {}
 
+GpuMesh::GpuMesh(MapImpl *map, const std::string &name) :
+    Resource(map, name, FetchTask::ResourceType::MeshPart)
+{}
+
 void GpuMesh::load()
 {
-    LOG(info2) << "Loading gpu mesh '" << fetch->name << "'";
-    GpuMeshSpec spec(fetch->contentData);
+    LOG(info2) << "Loading gpu mesh '" << name << "'";
+    GpuMeshSpec spec(contentData);
     spec.attributes.resize(3);
     spec.attributes[0].enable = true;
     spec.attributes[0].stride = sizeof(vec3f) + sizeof(vec2f);
@@ -74,11 +78,12 @@ void GpuMesh::load()
     spec.attributes[1].components = 2;
     spec.attributes[1].offset = sizeof(vec3f);
     spec.attributes[2] = spec.attributes[1];
-    fetch->map->callbacks.loadMesh(info, spec);
+    map->callbacks.loadMesh(info, spec);
     info.ramMemoryCost += sizeof(*this);
 }
 
-MeshPart::MeshPart() : textureLayer(0), surfaceReference(0),
+MeshPart::MeshPart() :
+    textureLayer(0), surfaceReference(0),
     internalUv(false), externalUv(false)
 {}
 
@@ -97,13 +102,17 @@ const mat4 findNormToPhys(const math::Extents3 &extents)
 
 } // namespace
 
+MeshAggregate::MeshAggregate(MapImpl *map, const std::string &name) :
+    Resource(map, name, FetchTask::ResourceType::Mesh)
+{}
+
 void MeshAggregate::load()
 {
-    LOG(info2) << "Loading (aggregated) mesh '" << fetch->name << "'";
+    LOG(info2) << "Loading (aggregated) mesh '" << name << "'";
     
-    detail::Wrapper w(fetch->contentData);
+    detail::Wrapper w(contentData);
     vtslibs::vts::NormalizedSubMesh::list meshes = vtslibs::vts::
-            loadMeshProperNormalized(w, fetch->name);
+            loadMeshProperNormalized(w, name);
 
     submeshes.clear();
     submeshes.reserve(meshes.size());
@@ -114,10 +123,8 @@ void MeshAggregate::load()
 
         char tmp[10];
         sprintf(tmp, "%d", mi);
-        std::shared_ptr<GpuMesh> gm = std::make_shared<GpuMesh>();
-        gm->fetch = std::make_shared<FetchTaskImpl>(fetch->map,
-                    std::string(fetch->name) + "#" + tmp,
-                    FetchTask::ResourceType::MeshPart);
+        std::shared_ptr<GpuMesh> gm = std::make_shared<GpuMesh>(map,
+            name + "#" + tmp);
 
         uint32 vertexSize = sizeof(vec3f);
         if (m.tc.size())
@@ -170,8 +177,8 @@ void MeshAggregate::load()
             offset += m.faces.size() * sizeof(vec2f) * 3;
         }
 
-        fetch->map->callbacks.loadMesh(gm->info, spec);
-        gm->fetch->state = FetchTaskImpl::State::ready;
+        map->callbacks.loadMesh(gm->info, spec);
+        gm->state = Resource::State::ready;
 
         MeshPart part;
         part.renderable = gm;

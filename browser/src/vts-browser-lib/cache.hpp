@@ -24,52 +24,32 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FETCHTASK_H_erbgfhufjgf
-#define FETCHTASK_H_erbgfhufjgf
+#ifndef CACHE_werfzugsjsef
+#define CACHE_werfzugsjsef
 
 #include <string>
-#include <atomic>
-#include <vts-libs/registry/referenceframe.hpp>
-#include <boost/optional.hpp>
+#include <ctime>
+#include <memory>
 
-#include "include/vts-browser/fetcher.hpp"
+#include "include/vts-browser/buffer.hpp"
 
 namespace vts
 {
 
-class MapImpl;
-
-class FetchTaskImpl : public FetchTask
+class Cache
 {
 public:
-    enum class State
-    {
-        initializing,
-        downloading,
-        downloaded,
-        ready,
-        error,
-        finalizing,
-    };
+    virtual ~Cache();
+
+    virtual bool read(std::string name, Buffer &buffer,
+                      std::time_t &expires) = 0;
+    virtual void write(std::string name, const Buffer &buffer,
+                       std::time_t expires) = 0;
     
-    FetchTaskImpl(MapImpl *map, const std::string &name,
-                 FetchTask::ResourceType resourceType);
-    virtual ~FetchTaskImpl();
-
-    bool performAvailTest() const;
-    bool allowDiskCache() const;
-    void saveToCache();
-    bool loadFromCache();
-    void loadFromInternalMemory();
-    void loadFromLocalFile();
-    virtual void fetchDone() override;
-
-    const std::string name;
-    MapImpl *const map;
-    boost::optional<vtslibs::registry::BoundLayer::Availability> availTest;
-    std::atomic<State> state;
-    uint32 redirectionsCount;
+    static std::shared_ptr<Cache> create(const class MapCreateOptions &options);
 };
+
+std::string convertNameToPath(std::string path, bool preserveSlashes);
 
 } // namespace vts
 

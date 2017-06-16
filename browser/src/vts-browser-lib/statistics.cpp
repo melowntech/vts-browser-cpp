@@ -53,6 +53,7 @@ void MapStatistics::resetAll()
     currentResources = 0;
     lastHeightRequestLod = 0;
     currentResourcePreparing = 0;
+    debug = 0;
 }
 
 void MapStatistics::resetFrame()
@@ -65,6 +66,7 @@ void MapStatistics::resetFrame()
         meshesRenderedPerLod[i] = 0;
         metaNodesTraversedPerLod[i] = 0;
     }
+    frameIndex++;
 }
 
 } // namespace vts

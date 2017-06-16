@@ -5,6 +5,7 @@
 /*.map
 /obj-*
 /.vscode
+/corrupted
 
 bin
 lib

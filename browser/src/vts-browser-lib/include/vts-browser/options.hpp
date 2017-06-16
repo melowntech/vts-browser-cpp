@@ -47,13 +47,13 @@ public:
     std::string clientId;
     std::string cachePath;
     bool disableCache;
+    bool hashCachePaths;
 };
 
 class VTS_API MapOptions
 {
 public:
     MapOptions();
-    ~MapOptions();
     
     enum class NavigationMode
     {
@@ -79,6 +79,8 @@ public:
     uint32 maxNodeUpdatesPerTick;
     uint32 maxResourceProcessesPerTick;
     uint32 navigationSamplesPerViewExtent;
+    uint32 maxFetchRedirections;
+    uint32 maxFetchRetries;
     
     NavigationMode navigationMode;
     
@@ -87,6 +89,7 @@ public:
     bool renderTileBoxes;
     bool renderObjectPosition;
     bool searchResultsFilter;
+    bool enableRuntimeResourceExpiration; // experimental
     
     bool debugDetachedCamera;
     bool debugDisableMeta5;

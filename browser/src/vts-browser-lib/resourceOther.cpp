@@ -32,25 +32,30 @@
 namespace vts
 {
 
-MetaTile::MetaTile() : 
+MetaTile::MetaTile(vts::MapImpl *map, const std::string &name) :
+    Resource(map, name, FetchTask::ResourceType::MetaTile),
     vtslibs::vts::MetaTile(vtslibs::vts::TileId(), 0)
 {}
 
 void MetaTile::load()
 {
-    LOG(info2) << "Loading meta tile '" << fetch->name << "'";
-    detail::Wrapper w(fetch->contentData);
+    LOG(info2) << "Loading meta tile '" << name << "'";
+    detail::Wrapper w(contentData);
     *(vtslibs::vts::MetaTile*)this
-            = vtslibs::vts::loadMetaTile(w, 5, fetch->name);
+            = vtslibs::vts::loadMetaTile(w, 5, name);
     info.ramMemoryCost += sizeof(*this);
     info.ramMemoryCost += size() * sizeof(vtslibs::vts::MetaNode);
 }
 
+NavTile::NavTile(MapImpl *map, const std::string &name) :
+    Resource(map, name, FetchTask::ResourceType::NavTile)
+{}
+
 void NavTile::load()
 {
-    LOG(info2) << "Loading navigation tile '" << fetch->name << "'";
+    LOG(info2) << "Loading navigation tile '" << name << "'";
     GpuTextureSpec spec;
-    decodeImage(fetch->contentData, spec.buffer,
+    decodeImage(contentData, spec.buffer,
                 spec.width, spec.height, spec.components);
     if (spec.width != 256 || spec.height != 256 || spec.components != 1)
         LOGTHROW(err1, std::runtime_error) << "invalid navtile image";
@@ -66,11 +71,15 @@ vec2 NavTile::sds2px(const vec2 &point, const math::Extents2 &extents)
                                   vecToUblas<math::Point2>(point), extents));
 }
 
+BoundMetaTile::BoundMetaTile(MapImpl *map, const std::string &name) :
+    Resource(map, name, FetchTask::ResourceType::BoundMetaTile)
+{}
+
 void BoundMetaTile::load()
 {
-    LOG(info2) << "Loading bound meta tile '" << fetch->name << "'";
+    LOG(info2) << "Loading bound meta tile '" << name << "'";
     
-    Buffer buffer = std::move(fetch->contentData);
+    Buffer buffer = std::move(contentData);
     GpuTextureSpec spec;
     decodeImage(buffer, spec.buffer,
                 spec.width, spec.height, spec.components);
@@ -82,20 +91,24 @@ void BoundMetaTile::load()
     info.ramMemoryCost += spec.buffer.size();
 }
 
+BoundMaskTile::BoundMaskTile(MapImpl *map, const std::string &name) :
+    Resource(map, name, FetchTask::ResourceType::BoundMaskTile)
+{}
+
 void BoundMaskTile::load()
 {
-    LOG(info2) << "Loading bound mask tile '" << fetch->name << "'";
+    LOG(info2) << "Loading bound mask tile '" << name << "'";
     
     if (!texture)
     {
-        texture = std::make_shared<GpuTexture>();
+        texture = std::make_shared<GpuTexture>(map, name + "#texture");
     }
     
-    Buffer buffer = std::move(fetch->contentData);
+    Buffer buffer = std::move(contentData);
     GpuTextureSpec spec;
     decodeImage(buffer, spec.buffer,
                 spec.width, spec.height, spec.components);
-    fetch->map->callbacks.loadTexture(info, spec);
+    map->callbacks.loadTexture(info, spec);
     info.gpuMemoryCost += texture->info.gpuMemoryCost;
     info.ramMemoryCost += texture->info.ramMemoryCost;
     info.ramMemoryCost += sizeof(*this);

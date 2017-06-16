@@ -157,7 +157,13 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
             memcpy(task->contentData.data(), body.data.data(),
                    body.data.size());
             task->contentType = body.contentType;
+            task->replyExpires = body.expires;
             task->replyCode = 200;
+            
+            // testing start
+            //if (rand() % 50 == 42)
+            //    task->replyCode = 900;
+            // testing end
         }
     }
     else if (q.ec())
@@ -176,8 +182,8 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
         }
         catch (std::exception &e)
         {
-            LOG(err2) << "Exception <" <<  e.what()
-                      << "> in download of '" << task->queryUrl << "'";
+            LOG(err1) << "Exception <" <<  e.what()
+                      << "> in download of <" << task->queryUrl << ">";
         }
         catch (...)
         {
@@ -202,7 +208,7 @@ void Task::finish()
 
 FetcherOptions::FetcherOptions()
     : threads(1),
-      timeout(-1),
+      timeout(30000),
       extraFileLog(false),
       maxHostConnections(0),
       maxTotalConections(3),

@@ -25,8 +25,8 @@ set(HDR_LIST
 	map.hpp
 	resources.hpp
 	credits.hpp
-	fetchTask.hpp
 	obj.hpp
+	cache.hpp
 )
 
 set(SRC_LIST
@@ -36,7 +36,6 @@ set(SRC_LIST
 	coordsManip.cpp
 	exceptions.cpp
 	fetcher.cpp
-	fetchTask.cpp
 	image.cpp
 	mapApi.cpp
 	mapUtilities.cpp
@@ -53,6 +52,7 @@ set(SRC_LIST
 	resourceTexture.cpp
 	statistics.cpp
 	search.cpp
+	cache.cpp
 )
 
 include(data.cmake)

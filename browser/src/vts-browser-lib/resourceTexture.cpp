@@ -53,12 +53,16 @@ void GpuTextureSpec::verticalFlip()
     }
 }
 
+GpuTexture::GpuTexture(MapImpl *map, const std::string &name) :
+    Resource(map, name, FetchTask::ResourceType::Texture)
+{}
+
 void GpuTexture::load()
 {
-    LOG(info2) << "Loading gpu texture '" << fetch->name << "'";
-    GpuTextureSpec spec(fetch->contentData);
+    LOG(info2) << "Loading gpu texture '" << name << "'";
+    GpuTextureSpec spec(contentData);
     spec.verticalFlip();
-    fetch->map->callbacks.loadTexture(info, spec);
+    map->callbacks.loadTexture(info, spec);
     info.ramMemoryCost += sizeof(*this);
 }
 

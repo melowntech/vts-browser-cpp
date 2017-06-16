@@ -42,6 +42,7 @@
 #include "resources.hpp"
 #include "credits.hpp"
 #include "coordsManip.hpp"
+#include "cache.hpp"
 
 namespace vts
 {
@@ -111,11 +112,26 @@ public:
     uint16 displaySize;
     Validity validity;
     bool empty;
-    
+
+    static std::atomic<sint32> instanceCounter;
+
     TraverseNode(const NodeInfo &nodeInfo);
     ~TraverseNode();
     void clear();
     bool ready() const;
+    double distancePhys(const vec3 &point) const;
+};
+
+class TraverseQueueItem
+{
+public:
+    TraverseQueueItem(const std::shared_ptr<TraverseNode> &trav,
+                      float priority);
+    
+    std::shared_ptr<TraverseNode> trav;
+    float priority;
+    
+    bool operator < (const TraverseQueueItem &other) const;
 };
 
 class MapImpl
@@ -128,6 +144,7 @@ public:
     std::shared_ptr<MapConfig> mapConfig;
     std::shared_ptr<CoordManip> convertor;
     std::shared_ptr<AuthConfig> auth;
+    std::shared_ptr<Cache> cache;
     std::string mapConfigPath;
     std::string mapConfigView;
     std::string authPath;
@@ -157,24 +174,15 @@ public:
     class Resources
     {
     public:
-        static const std::string failedAvailTestFileName;
-
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
-        std::unordered_set<std::shared_ptr<Resource>> prepareQueLocked;
-        std::unordered_set<std::shared_ptr<Resource>> prepareQueNoLock;
-        std::unordered_set<std::string> failedAvailUrlLocked;
-        std::unordered_set<std::string> failedAvailUrlNoLock;
+        std::vector<std::shared_ptr<Resource>> resourcesCopy;
+        boost::mutex mutResourcesCopy;
 
-        std::string cachePath;
         std::atomic_uint downloads;
         std::shared_ptr<Fetcher> fetcher;
         std::deque<std::weak_ptr<SearchTask>> searchTasks;
-        boost::mutex mutPrepareQue;
-        boost::mutex mutFailedAvailUrls;
-        bool disableCache;
         
-        Resources(const MapCreateOptions &options);
-        ~Resources();
+        Resources();
     } resources;
 
     class Renderer
@@ -182,13 +190,14 @@ public:
     public:
         Credits credits;
         std::shared_ptr<TraverseNode> traverseRoot;
-        std::queue<std::shared_ptr<TraverseNode>> traverseQueue;
+        std::priority_queue<TraverseQueueItem> traverseQueue;
         mat4 viewProj;
         mat4 viewProjRender;
         vec4 frustumPlanes[6];
         vec3 perpendicularUnitVector;
         vec3 forwardUnitVector;
         vec3 cameraPosPhys;
+        vec3 focusPosPhys;
         uint32 windowWidth;
         uint32 windowHeight;
         
@@ -231,13 +240,12 @@ public:
     void resourceRenderInitialize();
     void resourceRenderFinalize();
     void resourceRenderTick();
-    void fetchedFile(FetchTaskImpl *task);
-    void loadResource(const std::shared_ptr<Resource> &resource);
     void touchResource(const std::shared_ptr<Resource> &resource);
+    void resourceLoad(const std::shared_ptr<Resource> &resource);
     std::shared_ptr<GpuTexture> getTexture(const std::string &name);
     std::shared_ptr<GpuMesh> getMeshRenderable(
             const std::string &name);
-    std::shared_ptr<AuthConfig> getAuth(const std::string &name);
+    std::shared_ptr<AuthConfig> getAuthConfig(const std::string &name);
     std::shared_ptr<MapConfig> getMapConfig(const std::string &name);
     std::shared_ptr<MetaTile> getMetaTile(const std::string &name);
     std::shared_ptr<NavTile> getNavTile(const std::string &name);
@@ -246,16 +254,10 @@ public:
             const std::string &name);
     std::shared_ptr<BoundMetaTile> getBoundMetaTile(const std::string &name);
     std::shared_ptr<BoundMaskTile> getBoundMaskTile(const std::string &name);
-    std::shared_ptr<SearchTaskImpl> getSearchImpl(const std::string &name);
+    std::shared_ptr<SearchTaskImpl> getSearchTask(const std::string &name);
     Validity getResourceValidity(const std::string &name);
     Validity getResourceValidity(const std::shared_ptr<Resource> &resource);
-    const std::string convertNameToCache(const std::string &path);
-    bool availableInCache(const std::string &name);
-    const std::string convertNameToPath(std::string path, bool preserveSlashes);
-    double computeTravDistance(const std::shared_ptr<TraverseNode> &trav);
     float computeResourcePriority(const std::shared_ptr<TraverseNode> &trav);
-    static void updatePriority(const std::shared_ptr<Resource> &resource,
-                        float priority);
 
     // renderer methods
     void renderInitialize();
@@ -281,6 +283,7 @@ public:
     void traverseClearing(const std::shared_ptr<TraverseNode> &trav);
     void updateCamera();
     bool prerequisitesCheck();
+    void emptyTraverseQueue();
 
     // search
     std::shared_ptr<SearchTask> search(const std::string &query,

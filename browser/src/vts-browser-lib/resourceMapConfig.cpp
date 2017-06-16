@@ -60,7 +60,8 @@ MapConfig::BrowserOptions::BrowserOptions() :
     autorotate(0)
 {}
 
-MapConfig::MapConfig()
+MapConfig::MapConfig(MapImpl *map, const std::string &name)
+    : Resource(map, name, FetchTask::ResourceType::MapConfig)
 {
     priority = std::numeric_limits<float>::infinity();
 }
@@ -68,9 +69,9 @@ MapConfig::MapConfig()
 void MapConfig::load()
 {
     clear();
-    LOG(info3) << "Parsing map config '" << fetch->name << "'";
-    detail::Wrapper w(fetch->contentData);
-    vtslibs::vts::loadMapConfig(*this, w, fetch->name);
+    LOG(info3) << "Parsing map config '" << name << "'";
+    detail::Wrapper w(contentData);
+    vtslibs::vts::loadMapConfig(*this, w, name);
 
     auto bo(vtslibs::vts::browserOptions(*this));
     if (bo.isObject())
@@ -221,13 +222,13 @@ void MapConfig::generateSurfaceStack()
         {
             SurfaceStackItem i;
             i.surface = std::shared_ptr<SurfaceInfo> (new SurfaceInfo(
-                    *findGlue(g.id), fetch->name));
+                    *findGlue(g.id), name));
             i.surface->name = g.id;
             surfaceStack.push_back(i);
         }
         SurfaceStackItem i;
         i.surface = std::shared_ptr<SurfaceInfo> (new SurfaceInfo(
-                    *findSurface(ts.tilesetId), fetch->name));
+                    *findSurface(ts.tilesetId), name));
         i.surface->name = { ts.tilesetId };
         surfaceStack.push_back(i);
     }
@@ -275,16 +276,17 @@ void MapConfig::generateSurfaceStack()
     info.ramMemoryCost += sizeof(*this);
 }
 
-ExternalBoundLayer::ExternalBoundLayer()
+ExternalBoundLayer::ExternalBoundLayer(MapImpl *map, const std::string &name)
+    : Resource(map, name, FetchTask::ResourceType::BoundLayerConfig)
 {
     priority = std::numeric_limits<float>::infinity();
 }
 
 void ExternalBoundLayer::load()
 {
-    detail::Wrapper w(fetch->contentData);
+    detail::Wrapper w(contentData);
     *(vtslibs::registry::BoundLayer*)this
-            = vtslibs::registry::loadBoundLayer(w, fetch->name);
+            = vtslibs::registry::loadBoundLayer(w, name);
 }
 
 } // namespace vts

@@ -89,7 +89,9 @@ void Buffer::allocate(uint32 size)
     this->size_ = size;
     data_ = (char*)malloc(size_);
     if (!data_)
-        LOGTHROW(err2, std::runtime_error) << "not enough memory";
+        LOGTHROW(err2, std::runtime_error)
+                << "Not enough memory for buffer allocation, requested "
+                << size << " bytes";
 }
 
 void Buffer::free()
@@ -105,29 +107,33 @@ void writeLocalFileBuffer(const std::string &path, const Buffer &buffer)
                 boost::filesystem::path(path).parent_path());
     FILE *f = fopen(path.c_str(), "wb");
     if (!f)
-        LOGTHROW(err1, std::runtime_error) << "failed to write file";
+        LOGTHROW(err1, std::runtime_error) << "Failed to write file <"
+                                           << path << ">";
     if (fwrite(buffer.data(), buffer.size(), 1, f) != 1)
     {
         fclose(f);
-        LOGTHROW(err1, std::runtime_error) << "failed to write file";
+        LOGTHROW(err1, std::runtime_error) << "Failed to write file <"
+                                           << path << ">";
     }
     if (fclose(f) != 0)
-        LOGTHROW(err1, std::runtime_error) << "failed to write file";
+        LOGTHROW(err1, std::runtime_error) << "Failed to write file <"
+                                           << path << ">";
 }
 
 Buffer readLocalFileBuffer(const std::string &path)
 {
     FILE *f = fopen(path.c_str(), "rb");
     if (!f)
-        LOGTHROW(err1, std::runtime_error) << "failed to read local file";
+        LOGTHROW(err1, std::runtime_error) << "Failed to read file <"
+                                           << path << ">";
     try
     {
         fseek(f, 0, SEEK_END);
         Buffer b(ftell(f));
         fseek(f, 0, SEEK_SET);
         if (fread(b.data(), b.size(), 1, f) != 1)
-            LOGTHROW(err1, std::runtime_error)
-                    << "failed to read local file";
+            LOGTHROW(err1, std::runtime_error) << "Failed to read file <"
+                                               << path << ">";
         fclose(f);
         return b;
     }
@@ -142,7 +148,8 @@ Buffer readInternalMemoryBuffer(const std::string &path)
 {
     auto it = data_map.find(path);
     if (it == data_map.end())
-        LOGTHROW(err1, std::runtime_error) << "internal resource not found";
+        LOGTHROW(err1, std::runtime_error) << "Internal buffer <"
+                                           << path << "> not found";
     Buffer b(it->second.first);
     memcpy(b.data(), it->second.second, b.size());
     return b;

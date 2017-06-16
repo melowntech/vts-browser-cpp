@@ -59,7 +59,8 @@ uint64 currentTime()
 
 } // namespace
 
-AuthConfig::AuthConfig() :
+AuthConfig::AuthConfig(MapImpl *map, const std::string &name) :
+    Resource(map, name, FetchTask::ResourceType::AuthConfig),
     timeValid(0), timeParsed(0)
 {
     priority = std::numeric_limits<float>::infinity();
@@ -72,7 +73,7 @@ void AuthConfig::load()
     {
         Json::Value root;
         {
-            detail::Wrapper w(fetch->contentData);
+            detail::Wrapper w(contentData);
             w >> root;
         }
         int status = root["status"].asInt();
@@ -106,18 +107,18 @@ void AuthConfig::load()
 
 void AuthConfig::checkTime()
 {
-    if (fetch->state == FetchTaskImpl::State::ready)
+    if (state == Resource::State::ready)
     {
         uint64 t = currentTime();
         if (t + 60 > timeParsed + timeValid)
         {
             // force redownload
-            fetch->state = FetchTaskImpl::State::initializing;
+            state = Resource::State::initializing;
         }
     }
 }
 
-void AuthConfig::authorize(FetchTaskImpl *task)
+void AuthConfig::authorize(Resource *task)
 {
     std::string h = extractUrlHost(task->name);
     if (hostnames.find(h) == hostnames.end())

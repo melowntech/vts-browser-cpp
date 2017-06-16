@@ -53,8 +53,7 @@ int main(int argc, char *argv[])
     try
     {
 #endif
-        //vts::setLogMask("ND");
-        //vts::setLogMask("ALL");
+        //vts::setLogMask("I2E2W2");
         
         const char *auth = "";
         int firstUrl = argc;

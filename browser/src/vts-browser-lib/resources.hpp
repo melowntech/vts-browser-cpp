@@ -29,54 +29,82 @@
 
 #include <memory>
 #include <string>
+#include <atomic>
 #include <unordered_map>
 #include <unordered_set>
 #include <vts-libs/vts/mapconfig.hpp>
 #include <vts-libs/vts/urltemplate.hpp>
 #include <vts-libs/vts/metatile.hpp>
+#include <boost/optional.hpp>
 
 #include "include/vts-browser/resources.hpp"
 #include "include/vts-browser/math.hpp"
-#include "fetchTask.hpp"
+#include "include/vts-browser/fetcher.hpp"
 
 namespace vts
 {
 
-class Resource
+class MapImpl;
+
+class Resource : public FetchTask
 {
 public:
-    Resource();
+    enum class State
+    {
+        initializing,
+        downloading,
+        downloaded,
+        ready,
+        errorFatal,
+        errorRetry,
+        availFail,
+        finalizing,
+    };
+
+    Resource(MapImpl *map, const std::string &name,
+             FetchTask::ResourceType resourceType);
     virtual ~Resource();
     virtual void load() = 0;
+    void fetchDone() override;
+    void processLoad(); // calls load
+    bool performAvailTest() const;
+    void updatePriority(float priority);
     operator bool () const;
-    
+
     ResourceInfo info;
-    std::shared_ptr<FetchTaskImpl> fetch;
-    
+    const std::string name;
+    MapImpl *const map;
+    boost::optional<vtslibs::registry::BoundLayer::Availability> availTest;
+    std::atomic<State> state;
+    std::time_t retryTime;
+    uint32 retryNumber;
+    uint32 redirectionsCount;
+    uint32 lastAccessTick;
     float priority;
     float priorityCopy;
-    uint32 lastAccessTick;
 };
 
 class GpuMesh : public Resource
 {
 public:
+    GpuMesh(MapImpl *map, const std::string &name);
     void load() override;
 };
 
 class GpuTexture : public Resource
 {
 public:
+    GpuTexture(MapImpl *map, const std::string &name);
     void load() override;
 };
 
 class AuthConfig : public Resource
 {
 public:
-    AuthConfig();
+    AuthConfig(MapImpl *map, const std::string &name);
     void load() override;
     void checkTime();
-    void authorize(FetchTaskImpl *task);
+    void authorize(Resource *task);
 
 private:
     std::string token;
@@ -129,7 +157,7 @@ public:
         double autorotate;
     };
     
-    MapConfig();
+    MapConfig(MapImpl *map, const std::string &name);
     void load() override;
     void clear();
     static const std::string convertPath(const std::string &path,
@@ -153,13 +181,14 @@ class ExternalBoundLayer : public Resource,
         public vtslibs::registry::BoundLayer
 {
 public:
-    ExternalBoundLayer();
+    ExternalBoundLayer(MapImpl *map, const std::string &name);
     void load() override;
 };
 
 class BoundMetaTile : public Resource
 {
 public:
+    BoundMetaTile(MapImpl *map, const std::string &name);
     void load() override;
 
     uint8 flags[vtslibs::registry::BoundLayer::rasterMetatileWidth
@@ -169,6 +198,7 @@ public:
 class BoundMaskTile : public Resource
 {
 public:
+    BoundMaskTile(MapImpl *map, const std::string &name);
     void load() override;
 
     std::shared_ptr<GpuTexture> texture;
@@ -177,7 +207,7 @@ public:
 class MetaTile : public Resource, public vtslibs::vts::MetaTile
 {
 public:
-    MetaTile();
+    MetaTile(MapImpl *map, const std::string &name);
     void load() override;
 };
 
@@ -196,6 +226,7 @@ public:
 class MeshAggregate : public Resource
 {
 public:
+    MeshAggregate(MapImpl *map, const std::string &name);
     void load() override;
 
     std::vector<MeshPart> submeshes;
@@ -204,6 +235,7 @@ public:
 class NavTile : public Resource
 {
 public:
+    NavTile(MapImpl *map, const std::string &name);
     void load() override;
     
     std::vector<unsigned char> data;
@@ -214,6 +246,7 @@ public:
 class SearchTaskImpl : public Resource
 {
 public:
+    SearchTaskImpl(MapImpl *map, const std::string &name);
     void load() override;
     
     Buffer data;

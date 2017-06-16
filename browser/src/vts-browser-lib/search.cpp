@@ -166,7 +166,7 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
             if (!r.parse(w, root, false))
                 LOGTHROW(err2, std::runtime_error)
                         << "failed to parse search result json, url: '"
-                        << task->impl->fetch->name << "', error: '"
+                        << task->impl->name << "', error: '"
                         << r.getFormattedErrorMessages() << "'";
         }
         for (Json::Value &it : root)
@@ -221,23 +221,27 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
     catch (const Json::Exception &e)
     {
         LOG(err3) << "failed to process search results, url: '"
-                  << task->impl->fetch->name << "', query: '"
+                  << task->impl->name << "', query: '"
                   << task->query << "', error: '"
                   << e.what() << "'";
     }
     catch (...)
     {
         LOG(err3) << "failed to process search results, url: '"
-                  << task->impl->fetch->name << "', query: '"
+                  << task->impl->name << "', query: '"
                   << task->query << "'";
     }
 }
 
 } // namespace
 
+SearchTaskImpl::SearchTaskImpl(MapImpl *map, const std::string &name) :
+    Resource(map, name, FetchTask::ResourceType::Search)
+{}
+
 void SearchTaskImpl::load()
 {
-    data = std::move(fetch->contentData);
+    data = std::move(contentData);
 }
 
 SearchItem::SearchItem() :
@@ -260,9 +264,9 @@ std::shared_ptr<SearchTask> MapImpl::search(const std::string &query,
                                             const double point[3])
 {
     auto t = std::make_shared<SearchTask>(query, point);
-    t->impl = getSearchImpl(generateSearchUrl(this, query));
+    t->impl = getSearchTask(generateSearchUrl(this, query));
     t->impl->priority = std::numeric_limits<double>::infinity();
-    t->impl->fetch->queryHeaders["Accept-Language"] = "en-US,en";
+    t->impl->queryHeaders["Accept-Language"] = "en-US,en";
     resources.searchTasks.push_back(t);
     return t;
 }

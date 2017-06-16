@@ -31,6 +31,7 @@
 #include <memory>
 #include <functional>
 #include <map>
+#include <ctime>
 
 #include "foundation.hpp"
 #include "buffer.hpp"
@@ -66,6 +67,7 @@ public:
     Buffer contentData;
     std::string contentType;
     std::string replyRedirectUrl;
+    std::time_t replyExpires;
     uint32 replyCode;
 
     FetchTask(const std::string &url, ResourceType resourceType);

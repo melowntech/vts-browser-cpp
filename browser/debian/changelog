@@ -1,3 +1,10 @@
+vts-browser (0ubuntu5) melown-xenial; urgency=medium
+
+  * Improved navigation, dblclick
+  * Prioritized downloads
+
+ -- Tomas Maly <tomas.maly@melown.com>  Mon, 12 Jun 2017 17:06:01 +0200
+
 vts-browser (0ubuntu4) melown-xenial; urgency=medium
 
   * Free navigation

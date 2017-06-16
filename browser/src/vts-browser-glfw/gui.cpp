@@ -527,7 +527,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 550), flags))
+        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 600), flags))
         {
             vts::MapStatistics &s = window->map->statistics();
             float width = nk_window_get_content_region_size(&ctx).x - 15;
@@ -568,6 +568,7 @@ public:
             S("Res. released:", s.resourcesReleased, "");
             S("Res. ignored:", s.resourcesIgnored, "");
             S("Res. failed:", s.resourcesFailed, "");
+            S("Debug: ", s.debug, "");
             // traversed
             S("Traversed:", s.metaNodesTraversedTotal, "");
             nk_label(&ctx, "", NK_TEXT_LEFT);

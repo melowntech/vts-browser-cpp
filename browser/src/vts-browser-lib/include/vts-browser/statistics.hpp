@@ -68,6 +68,10 @@ public:
     uint32 currentResourcePreparing;
     uint32 lastHeightRequestLod;
     uint32 currentNodeUpdates;
+    
+    // debug
+    
+    uint32 debug;
 };
 
 } // namespace vts

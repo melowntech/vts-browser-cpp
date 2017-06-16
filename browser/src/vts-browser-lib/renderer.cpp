@@ -34,23 +34,22 @@ namespace vts
 namespace
 {
 
-inline bool testAndThrow(FetchTaskImpl::State state, const std::string &message)
+inline bool testAndThrow(Resource::State state, const std::string &message)
 {
     switch (state)
     {
-    case FetchTaskImpl::State::error:
-        LOGTHROW(err4, MapConfigException) << message;
-    case FetchTaskImpl::State::downloaded:
-    case FetchTaskImpl::State::downloading:
-    case FetchTaskImpl::State::finalizing:
-    case FetchTaskImpl::State::initializing:
+    case Resource::State::errorRetry:
+    case Resource::State::downloaded:
+    case Resource::State::downloading:
+    case Resource::State::finalizing:
+    case Resource::State::initializing:
         return false;
-    case FetchTaskImpl::State::ready:
+    case Resource::State::ready:
         return true;
     default:
-        LOGTHROW(fatal, std::invalid_argument) << "Invalid resource state";
+        LOGTHROW(err4, MapConfigException) << message;
+        throw;
     }
-    throw; // shut up compiler warning
 }
 
 inline const vec3 lowerUpperCombine(uint32 i)
@@ -99,9 +98,9 @@ void MapImpl::purgeMapConfig()
     LOG(info2) << "Purge map config";
     
     if (auth)
-        auth->fetch->state = FetchTaskImpl::State::finalizing;
+        auth->state = Resource::State::finalizing;
     if (mapConfig)
-        mapConfig->fetch->state = FetchTaskImpl::State::finalizing;
+        mapConfig->state = Resource::State::finalizing;
     
     initialized = false;
     auth.reset();
@@ -247,7 +246,7 @@ Validity MapImpl::returnValidMetaNode(MapConfig::SurfaceInfo *surface,
 {
     std::string name = surface->urlMeta(UrlTemplate::Vars(roundId(nodeId)));
     std::shared_ptr<MetaTile> t = getMetaTile(name);
-    updatePriority(t, priority);
+    t->updatePriority(priority);
     Validity val = getResourceValidity(t);
     if (val == Validity::Valid)
         node = t->get(nodeId, std::nothrow);
@@ -269,8 +268,6 @@ Validity MapImpl::checkMetaNode(MapConfig::SurfaceInfo *surface,
         return Validity::Indeterminate;
     case Validity::Valid:
         break;
-    default:
-        LOGTHROW(fatal, std::invalid_argument) << "Invalid resource state";
     }
 
     assert(pn);
@@ -359,11 +356,11 @@ void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
 }
 
 void MapImpl::traverseValidNode(const std::shared_ptr<TraverseNode> &trav)
-{    
+{
     // node visibility
     if (!visibilityTest(trav))
         return;
-    
+
     touchResources(trav);
     
     // check children
@@ -390,14 +387,8 @@ void MapImpl::traverseValidNode(const std::shared_ptr<TraverseNode> &trav)
         {
             std::vector<std::shared_ptr<TraverseNode>> ts;
             for (std::shared_ptr<TraverseNode> &t : trav->childs)
-                ts.push_back(t);
-            std::sort(ts.begin(), ts.end(), [this](
-                      const std::shared_ptr<TraverseNode> &a,
-                      const std::shared_ptr<TraverseNode> &b){
-                return computeTravDistance(a) < computeTravDistance(b);
-            });
-            for (std::shared_ptr<TraverseNode> &t : ts)
-                renderer.traverseQueue.push(t);
+                renderer.traverseQueue.push(TraverseQueueItem(
+                        t, computeResourcePriority(t)));
             return;
         }
     }
@@ -435,8 +426,6 @@ bool MapImpl::traverseDetermineSurface(
             continue;
         case Validity::Valid:
             break;
-        default:
-            LOGTHROW(fatal, std::invalid_argument) << "Invalid resource state";
         }
         assert(n);
         for (uint32 i = 0; i < 4; i++)
@@ -628,7 +617,7 @@ bool MapImpl::traverseDetermineBoundLayers(
                 task->uvm = b.uvMatrix();
                 task->textureColor = getTexture(b.bound->urlExtTex(b.vars));
                 task->textureColor->priority = priority;
-                task->textureColor->fetch->availTest = b.bound->availability;
+                task->textureColor->availTest = b.bound->availability;
                 task->externalUv = true;
                 task->transparent = b.transparent;
                 allTransparent = allTransparent && b.transparent;
@@ -675,15 +664,15 @@ bool MapImpl::traverseDetermineBoundLayers(
 
 void MapImpl::traverse(const std::shared_ptr<TraverseNode> &trav, bool loadOnly)
 {
-    if (trav->validity == Validity::Invalid)
-        return;
-    
     // statistics
     statistics.metaNodesTraversedTotal++;
     statistics.metaNodesTraversedPerLod[
             std::min<uint32>(trav->nodeInfo.nodeId().lod,
                              MapStatistics::MaxLods-1)]++;
-    
+
+    if (trav->validity == Validity::Invalid)
+        return;
+
     // valid node
     if (trav->validity == Validity::Valid)
     {
@@ -692,29 +681,29 @@ void MapImpl::traverse(const std::shared_ptr<TraverseNode> &trav, bool loadOnly)
         traverseValidNode(trav);
         return;
     }
-    
+
     touchResources(trav);
-    
+
     // node update limit
     if (statistics.currentNodeUpdates++ >= options.maxNodeUpdatesPerTick)
         return;
-    
+
     // find surface
     if (!trav->surface && !trav->empty && !traverseDetermineSurface(trav))
         return;
-    
+
     assert(!!trav->surface != trav->empty);
-    
+
     if (trav->empty)
     {
         trav->validity = Validity::Valid;
         return;
     }
-    
+
     // prepare render batch
     if (!traverseDetermineBoundLayers(trav))
         return;
-    
+
     // make node valid
     trav->validity = Validity::Valid;
 }
@@ -764,7 +753,8 @@ void MapImpl::updateCamera()
         // update dir and up
         mat4 vi = view.inverse();
         cameraPosPhys = vec4to3(vi * vec4(0, 0, 0, 1), true);
-        center = vec4to3(vi * vec4(0, 0, -1, 1), true);
+        center = cameraPosPhys + vec4to3(vi * vec4(0, 0, -1, 0), false) * dist;
+        //center = vec4to3(vi * vec4(0, 0, -1, 1), true);
         dir = vec4to3(vi * vec4(0, 0, -1, 0), false);
         up = vec4to3(vi * vec4(0, 1, 0, 0), false);
     }
@@ -812,6 +802,7 @@ void MapImpl::updateCamera()
             renderer.frustumPlanes[5] = c3 - c2;
         }
         renderer.cameraPosPhys = cameraPosPhys;
+        renderer.focusPosPhys = center;
     }
 
     // render object position
@@ -849,13 +840,13 @@ bool MapImpl::prerequisitesCheck()
 
     if (!authPath.empty())
     {
-        auth = getAuth(authPath);
-        if (!testAndThrow(auth->fetch->state, "Authentication failure."))
+        auth = getAuthConfig(authPath);
+        if (!testAndThrow(auth->state, "Authentication failure."))
             return false;
     }
 
     mapConfig = getMapConfig(mapConfigPath);
-    if (!testAndThrow(mapConfig->fetch->state, "Map config failure."))
+    if (!testAndThrow(mapConfig->state, "Map config failure."))
         return false;
 
     // load external bound layers
@@ -865,10 +856,9 @@ bool MapImpl::prerequisitesCheck()
         {
             if (!bl.external())
                 continue;
-            std::string url = MapConfig::convertPath(bl.url,
-                                                     mapConfig->fetch->name);
+            std::string url = MapConfig::convertPath(bl.url, mapConfig->name);
             std::shared_ptr<ExternalBoundLayer> r = getExternalBoundLayer(url);
-            if (!testAndThrow(r->fetch->state, "External bound layer failure."))
+            if (!testAndThrow(r->state, "External bound layer failure."))
                 ok = false;
             else
             {
@@ -908,9 +898,7 @@ bool MapImpl::prerequisitesCheck()
 }
 
 void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
-{    
-    statistics.frameIndex++;
-    
+{
     if (!prerequisitesCheck())
         return;
     
@@ -925,16 +913,19 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
     statistics.currentNodeUpdates = 0;
     draws.draws.clear();
     updateCamera();
-    std::queue<std::shared_ptr<TraverseNode>>().swap(renderer.traverseQueue);
-    renderer.traverseQueue.push(renderer.traverseRoot);
+    emptyTraverseQueue();
+    renderer.traverseQueue.push(TraverseQueueItem(renderer.traverseRoot, 0));
     while (!renderer.traverseQueue.empty())
     {
-        traverse(renderer.traverseQueue.front(), false);
+        TraverseQueueItem t = renderer.traverseQueue.top();
         renderer.traverseQueue.pop();
+        traverse(t.trav, false);
     }
     traverseClearing(renderer.traverseRoot);
     renderer.credits.tick(credits);
     updateSearch();
+    
+    statistics.debug = TraverseNode::instanceCounter;
 }
 
 } // namespace vts

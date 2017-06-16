@@ -45,6 +45,10 @@ void setLogFile(const std::string &filename)
     dbglog::log_file(filename);
 }
 
+MapCreateOptions::MapCreateOptions(const std::string &clientId) :
+    clientId(clientId), disableCache(false), hashCachePaths(true)
+{}
+
 MapOptions::MapOptions() :
     searchUrl("https://n1.windyty.com/search.php?format=json"
               "&addressdetails=1&limit=20&q={query}"),
@@ -63,18 +67,18 @@ MapOptions::MapOptions() :
     maxNodeUpdatesPerTick(10),
     maxResourceProcessesPerTick(5),
     navigationSamplesPerViewExtent(8),
+    maxFetchRedirections(5),
+    maxFetchRetries(10),
     navigationMode(NavigationMode::Dynamic),
     renderSurrogates(false),
     renderMeshBoxes(false),
     renderTileBoxes(false),
     renderObjectPosition(false),
     searchResultsFilter(true),
+    enableRuntimeResourceExpiration(false),
     debugDetachedCamera(false),
     debugDisableMeta5(false),
     debugSaveCorruptedFiles(true)
-{}
-
-MapOptions::~MapOptions()
 {}
 
 } // namespace vts

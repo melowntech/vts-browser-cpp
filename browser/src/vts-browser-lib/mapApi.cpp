@@ -49,8 +49,8 @@ inline const std::string srsConvert(MapConfig *config, Srs srs)
         return config->referenceFrame.model.publicSrs;
     default:
         LOGTHROW(fatal, std::invalid_argument) << "Invalid srs";
+        throw;
     }
-    throw;
 }
 
 void getMapViewBoundLayers(
@@ -131,10 +131,6 @@ MapView::BoundLayerInfo::BoundLayerInfo(const std::string &id) :
     id(id), alpha(1)
 {}
 
-MapCreateOptions::MapCreateOptions(const std::string &clientId) :
-    clientId(clientId), disableCache(false)
-{}
-
 Map::Map(const MapCreateOptions &options)
 {
     LOG(info4) << "Creating map";
@@ -172,8 +168,8 @@ void Map::renderInitialize()
 void Map::renderTick(uint32 width, uint32 height)
 {
     impl->statistics.resetFrame();
-    impl->resourceRenderTick();
     impl->renderTick(width, height);
+    impl->resourceRenderTick();
 }
 
 void Map::renderFinalize()
@@ -636,8 +632,8 @@ void Map::printDebugInfo()
 }
 
 MapImpl::MapImpl(Map *map, const MapCreateOptions &options) :
-    map(map), clientId(options.clientId), initialized(false),
-    resources(options)
+    map(map), cache(Cache::create(options.cachePath)),
+    clientId(options.clientId), initialized(false)
 {}
 
 void MapImpl::printDebugInfo()

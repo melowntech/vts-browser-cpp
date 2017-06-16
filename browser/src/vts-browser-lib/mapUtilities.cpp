@@ -100,7 +100,7 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
         v.localId.y &= ~255;
         std::string boundName = bound->urlMeta(v);
         std::shared_ptr<BoundMetaTile> bmt = impl->getBoundMetaTile(boundName);
-        MapImpl::updatePriority(bmt, priority);
+        bmt->updatePriority(priority);
         switch (impl->getResourceValidity(bmt))
         {
         case Validity::Indeterminate:
@@ -174,6 +174,8 @@ TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
       surrogateValue(vtslibs::vts::GeomExtents::invalidSurrogate),
       displaySize(0), validity(Validity::Indeterminate), empty(false)
 {
+    instanceCounter++;
+    
     // initialize corners to NAN
     {
         vec3 n;
@@ -193,7 +195,19 @@ TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
 }
 
 TraverseNode::~TraverseNode()
-{}
+{
+    instanceCounter--;
+}
+
+double TraverseNode::distancePhys(const vec3 &point) const
+{
+    double dist = std::numeric_limits<double>::infinity();
+    for (auto &it : cornersPhys)
+        dist = std::min(dist, length(vec3(it - point)));
+    return dist;
+}
+
+std::atomic<sint32> TraverseNode::instanceCounter;
 
 void TraverseNode::clear()
 {
@@ -214,66 +228,27 @@ bool TraverseNode::ready() const
     return true;
 }
 
-const std::string MapImpl::convertNameToCache(const std::string &path)
-{
-    auto p = path.find("://");
-    std::string a = p == std::string::npos ? path : path.substr(p + 3);
-    std::string b = boost::filesystem::path(a).parent_path().string();
-    std::string c = a.substr(b.length() + 1);
-    if (b.empty() || c.empty())
-        LOGTHROW(err2, std::runtime_error)
-                << "Cannot convert path '" << path
-                << "' into a cache path";
-    return resources.cachePath
-            + convertNameToPath(b, false) + "/"
-            + convertNameToPath(c, false);
-}
-
-const std::string MapImpl::convertNameToPath(std::string path,
-                                           bool preserveSlashes)
-{
-    path = boost::filesystem::path(path).normalize().string();
-    std::string res;
-    res.reserve(path.size());
-    for (char it : path)
-    {
-        if ((it >= 'a' && it <= 'z')
-         || (it >= 'A' && it <= 'Z')
-         || (it >= '0' && it <= '9')
-         || (it == '-' || it == '.'))
-            res += it;
-        else if (preserveSlashes && (it == '/' || it == '\\'))
-            res += '/';
-        else
-            res += '_';
-    }
-    return res;
-}
-
-double MapImpl::computeTravDistance(const std::shared_ptr<TraverseNode> &trav)
-{
-    double dist = std::numeric_limits<double>::infinity();
-    vec3 center = renderer.cameraPosPhys;
-    for (auto &it : trav->cornersPhys)
-        dist = std::min(dist, length(vec3(it - center)));
-    return dist;
-}
-
 float MapImpl::computeResourcePriority(
         const std::shared_ptr<TraverseNode> &trav)
 {
-    return (float)(1e6 / (computeTravDistance(trav) + 1));
+    return (float)(1e6 / (trav->distancePhys(renderer.focusPosPhys) + 1));
 }
 
-void MapImpl::updatePriority(const std::shared_ptr<Resource> &r,
-                             float priority)
+TraverseQueueItem::TraverseQueueItem(const std::shared_ptr<TraverseNode> &trav,
+                                     float priority) :
+    trav(trav), priority(priority)
+{}
+
+bool TraverseQueueItem::operator < (const TraverseQueueItem &other) const
 {
-    if (r->priority == r->priority)
-        r->priority = std::max(r->priority, priority);
-    else
-        r->priority = priority;
+    return priority < other.priority;
 }
 
+void MapImpl::emptyTraverseQueue()
+{
+    while (!renderer.traverseQueue.empty())
+        renderer.traverseQueue.pop();
+}
 
 } // namespace vts
 

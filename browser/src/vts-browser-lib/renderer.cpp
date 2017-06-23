@@ -106,8 +106,8 @@ void MapImpl::purgeMapConfig()
     auth.reset();
     mapConfig.reset();
     renderer.credits.purge();
-    resetNavigationMode();
-    navigation.autoMotion = navigation.autoRotation = vec3(0, 0, 0);
+    resetNavigationGeographicMode();
+    navigation.autoRotation = 0;
     navigation.lastPanZShift.reset();
     std::queue<std::shared_ptr<class HeightRequest>>()
             .swap(navigation.panZQueue);
@@ -288,7 +288,7 @@ void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
     }
     
     // surrogate
-    if (options.renderSurrogates)
+    if (options.debugRenderSurrogates)
     {
         RenderTask task;
         task.mesh = getMeshRenderable("data/meshes/sphere.obj");
@@ -302,7 +302,7 @@ void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
     }
     
     // mesh box
-    if (options.renderMeshBoxes && !trav->draws.empty())
+    if (options.debugRenderMeshBoxes && !trav->draws.empty())
     {
         for (std::shared_ptr<RenderTask> &r : trav->draws)
         {
@@ -320,7 +320,7 @@ void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
     }
     
     // tile box
-    if (options.renderTileBoxes)
+    if (options.debugRenderTileBoxes)
     {
         RenderTask task;
         task.mesh = getMeshRenderable("data/meshes/line.obj");
@@ -618,6 +618,16 @@ bool MapImpl::traverseDetermineBoundLayers(
                 task->textureColor = getTexture(b.bound->urlExtTex(b.vars));
                 task->textureColor->priority = priority;
                 task->textureColor->availTest = b.bound->availability;
+                switch (getResourceValidity(task->textureColor))
+                {
+                case Validity::Indeterminate:
+                    determined = false;
+                    // no break here
+                case Validity::Invalid:
+                    continue;
+                case Validity::Valid:
+                    break;
+                }
                 task->externalUv = true;
                 task->transparent = b.transparent;
                 allTransparent = allTransparent && b.transparent;
@@ -626,6 +636,16 @@ bool MapImpl::traverseDetermineBoundLayers(
                 {
                     task->textureMask = getTexture(b.bound->urlMask(b.vars));
                     task->textureMask->priority = priority;
+                    switch (getResourceValidity(task->textureMask))
+                    {
+                    case Validity::Indeterminate:
+                        determined = false;
+                        // no break here
+                    case Validity::Invalid:
+                        continue;
+                    case Validity::Valid:
+                        break;
+                    }
                 }
                 newDraws.push_back(task);
             }
@@ -646,6 +666,16 @@ bool MapImpl::traverseDetermineBoundLayers(
             task->textureColor = getTexture(
                         trav->surface->surface->urlIntTex(vars));
             task->textureColor->priority = priority;
+            switch (getResourceValidity(task->textureColor))
+            {
+            case Validity::Indeterminate:
+                determined = false;
+                // no break here
+            case Validity::Invalid:
+                continue;
+            case Validity::Valid:
+                break;
+            }
             task->externalUv = false;
             newDraws.insert(newDraws.begin(), task);
         }
@@ -761,23 +791,43 @@ void MapImpl::updateCamera()
 
     // camera projection matrix
     double near = std::max(2.0, dist * 0.1);
-    double terrainAboveOrigin = length(convertor->navToPhys(
-        vec2to3(vec3to2(vecFromUblas<vec3>(pos.position)), 0)));
-    double cameraAboveOrigin = length(cameraPosPhys);
+    double terrainAboveOrigin = 0;
+    double cameraAboveOrigin = 0;
+    switch (mapConfig->navigationType())
+    {
+    case vtslibs::registry::Srs::Type::projected:
+    {
+        const vtslibs::registry::Srs &srs = mapConfig->srs.get(
+                    mapConfig->referenceFrame.model.navigationSrs);
+        if (srs.periodicity)
+            terrainAboveOrigin = srs.periodicity->period / (2 * 3.14159);
+        cameraAboveOrigin = terrainAboveOrigin + dist * 2;
+    } break;
+    case vtslibs::registry::Srs::Type::geographic:
+    {
+        terrainAboveOrigin = length(convertor->navToPhys(vec2to3(vec3to2(
+                                    vecFromUblas<vec3>(pos.position)), 0)));
+        cameraAboveOrigin = length(cameraPosPhys);
+    } break;
+    case vtslibs::registry::Srs::Type::cartesian:
+        LOGTHROW(fatal, std::invalid_argument) << "Invalid navigation srs type";
+    }
     double cameraToHorizon = cameraAboveOrigin > terrainAboveOrigin
             ? std::sqrt(cameraAboveOrigin * cameraAboveOrigin
                 - terrainAboveOrigin * terrainAboveOrigin)
             : 0;
-    double mountains = 5000;
-    double mountainsBehindHorizon = std::sqrt((terrainAboveOrigin + mountains)
-                                    * (terrainAboveOrigin + mountains)
+    double mountains = 5000 + terrainAboveOrigin;
+    double mountainsBehindHorizon = std::sqrt(mountains * mountains
                                     - terrainAboveOrigin * terrainAboveOrigin);
     double far = cameraToHorizon + mountainsBehindHorizon;
     double fov = pos.verticalFov;
     double aspect = (double)renderer.windowWidth/(double)renderer.windowHeight;
     if (callbacks.cameraOverrideFovAspectNearFar)
         callbacks.cameraOverrideFovAspectNearFar(fov, aspect, near, far);
-    fov = clamp(fov, 1, 179);
+    assert(fov > 1e-3 && fov < 180 - 1e-3);
+    assert(aspect > 0);
+    assert(near > 0);
+    assert(far > near);
     mat4 proj = perspectiveMatrix(fov, aspect, near, far);
     if (callbacks.cameraOverrideProj)
         callbacks.cameraOverrideProj((double*)&proj);
@@ -806,7 +856,7 @@ void MapImpl::updateCamera()
     }
 
     // render object position
-    if (options.renderObjectPosition)
+    if (options.debugRenderObjectPosition)
     {
         vec3 phys = convertor->navToPhys(vecFromUblas<vec3>(pos.position));
         RenderTask r;
@@ -816,6 +866,21 @@ void MapImpl::updateCamera()
         r.textureColor->priority = std::numeric_limits<float>::infinity();
         r.model = translationMatrix(phys)
                 * scaleMatrix(pos.verticalExtent * 0.015);
+        if (r.ready())
+            draws.draws.emplace_back(&r, this);
+    }
+    
+    // render target position
+    if (options.debugRenderTargetPosition)
+    {
+        vec3 phys = convertor->navToPhys(navigation.targetPoint);
+        RenderTask r;
+        r.mesh = getMeshRenderable("data/meshes/cube.obj");
+        r.mesh->priority = std::numeric_limits<float>::infinity();
+        r.textureColor = getTexture("data/textures/helper.jpg");
+        r.textureColor->priority = std::numeric_limits<float>::infinity();
+        r.model = translationMatrix(phys)
+                * scaleMatrix(navigation.targetViewExtent * 0.015);
         if (r.ready())
             draws.draws.emplace_back(&r, this);
     }

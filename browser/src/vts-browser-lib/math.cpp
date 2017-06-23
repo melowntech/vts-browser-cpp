@@ -351,5 +351,32 @@ double clamp(double a, double min, double max)
     return std::max(std::min(a, max), min);
 }
 
+void normalizeAngle(double &a)
+{
+    a = modulo(a, 360);
+}
+
+double angularDiff(double a, double b)
+{
+    normalizeAngle(a);
+    normalizeAngle(b);
+    double c = b - a;
+    if (c > 180)
+        c = c - 360;
+    else if (c < -180)
+        c = c + 360;
+    assert(c >= -180 && c <= 180);
+    return c;
+}
+
+vec3 angularDiff(const vec3 &a, const vec3 &b)
+{
+    return vec3(
+                angularDiff(a(0), b(0)),
+                angularDiff(a(1), b(1)),
+                angularDiff(a(2), b(2))
+                );
+}
+
 } // namespace vts
 

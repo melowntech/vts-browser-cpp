@@ -215,7 +215,7 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
             t.importance = vtod(it["importance"]);
             task->results.push_back(t);
         }
-        if (map->options.searchResultsFilter)
+        if (map->options.enableSearchResultsFilter)
             filterSearchResults(map, task);
     }
     catch (const Json::Exception &e)

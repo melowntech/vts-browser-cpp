@@ -68,6 +68,7 @@ public:
     };
 
     GuiImpl(MainWindow *window) :
+        posAutoMotion(0,0,0),
         statTraversedDetails(false), statRenderedDetails(false),
         optSensitivityDetails(false), posAutoDetails(false),
         positionSrs(2), searchDetails(-1), window(window), prepareFirst(true)
@@ -345,11 +346,11 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Options", nk_rect(10, 10, 250, 400), flags))
+        if (nk_begin(&ctx, "Options", nk_rect(10, 10, 250, 500), flags))
         {
             vts::MapOptions &o = window->map->options();
             float width = nk_window_get_content_region_size(&ctx).x - 15;
-            float ratio[] = { width * 0.4f, width * 0.5f, width * 0.1f };
+            float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
             nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
             char buffer[256];
             
@@ -406,6 +407,31 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
             }
             
+            // navigation type
+            {
+                static const char *names[] = {
+                    "Instant",
+                    "Quick",
+                    "FlyOver",
+                };
+                nk_label(&ctx, "Navigation:", NK_TEXT_LEFT);
+                if (nk_combo_begin_label(&ctx,
+                                 names[(int)o.navigationType],
+                                 nk_vec2(nk_widget_width(&ctx), 200)))
+                {
+                    nk_layout_row_dynamic(&ctx, 16, 1);
+                    for (unsigned i = 0; i < sizeof(names)
+                         / sizeof(names[0]); i++)
+                    {
+                        if (nk_combo_item_label(&ctx, names[i], NK_TEXT_LEFT))
+                            o.navigationType
+                                    = (vts::NavigationType)i;
+                    }
+                    nk_combo_end(&ctx);
+                }
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+            }
+            
             // navigation mode
             {
                 static const char *names[] = {
@@ -413,23 +439,40 @@ public:
                     "Free",
                     "Dynamic",
                 };
-                nk_label(&ctx, "Navigation:", NK_TEXT_LEFT);
+                nk_label(&ctx, "Geographic:", NK_TEXT_LEFT);
                 if (nk_combo_begin_label(&ctx,
-                                 names[(int)o.navigationMode],
+                                 names[(int)o.geographicNavMode],
                                  nk_vec2(nk_widget_width(&ctx), 200)))
                 {
                     nk_layout_row_dynamic(&ctx, 16, 1);
-                    for (int i = 0; i < 3; i++)
+                    for (unsigned i = 0; i < sizeof(names)
+                         / sizeof(names[0]); i++)
+                    {
                         if (nk_combo_item_label(&ctx, names[i], NK_TEXT_LEFT))
-                            o.navigationMode
-                                    = (vts::MapOptions::NavigationMode)i;
+                            o.geographicNavMode
+                                    = (vts::NavigationGeographicMode)i;
+                    }
                     nk_combo_end(&ctx);
                 }
                 nk_label(&ctx, "", NK_TEXT_LEFT);
             }
             
+            // navigation max view extent multiplier
+            nk_label(&ctx, "View ext. mult.:", NK_TEXT_LEFT);
+            o.navigationMaxViewExtentMult = nk_slide_float(&ctx,
+                    1.002, o.navigationMaxViewExtentMult, 1.2, 0.002);
+            sprintf(buffer, "%5.3f", o.navigationMaxViewExtentMult);
+            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            
+            // navigation max position change
+            nk_label(&ctx, "Position change:", NK_TEXT_LEFT);
+            o.navigationMaxPositionChange = nk_slide_float(&ctx,
+                    0.002, o.navigationMaxPositionChange, 0.2, 0.002);
+            sprintf(buffer, "%5.3f", o.navigationMaxPositionChange);
+            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            
             // maxTexelToPixelScale
-            nk_label(&ctx, "Detail control:", NK_TEXT_LEFT);
+            nk_label(&ctx, "Texel to pixel:", NK_TEXT_LEFT);
             o.maxTexelToPixelScale = nk_slide_float(&ctx,
                     1, o.maxTexelToPixelScale, 5, 0.01);
             sprintf(buffer, "%3.1f", o.maxTexelToPixelScale);
@@ -457,7 +500,7 @@ public:
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             
             // maxNodeUpdatesPerFrame
-            nk_label(&ctx, "Max updates:", NK_TEXT_LEFT);
+            nk_label(&ctx, "Max node updates:", NK_TEXT_LEFT);
             o.maxNodeUpdatesPerTick = nk_slide_int(&ctx,
                     1, o.maxNodeUpdatesPerTick, 50, 1);
             sprintf(buffer, "%3d", o.maxNodeUpdatesPerTick);
@@ -472,26 +515,32 @@ public:
             
             // render mesh wire boxes
             nk_label(&ctx, "Display:", NK_TEXT_LEFT);
-            o.renderMeshBoxes = nk_check_label(&ctx, "mesh boxes",
-                                               o.renderMeshBoxes);
+            o.debugRenderMeshBoxes = nk_check_label(&ctx, "mesh boxes",
+                                               o.debugRenderMeshBoxes);
             nk_label(&ctx, "", NK_TEXT_LEFT);
             
             // render tile corners
             nk_label(&ctx, "", NK_TEXT_LEFT);
-            o.renderTileBoxes = nk_check_label(&ctx, "tile boxes",
-                                                o.renderTileBoxes);
+            o.debugRenderTileBoxes = nk_check_label(&ctx, "tile boxes",
+                                                o.debugRenderTileBoxes);
             nk_label(&ctx, "", NK_TEXT_LEFT);
             
             // render surrogates
             nk_label(&ctx, "", NK_TEXT_LEFT);
-            o.renderSurrogates = nk_check_label(&ctx, "surrogates",
-                                                o.renderSurrogates);
+            o.debugRenderSurrogates = nk_check_label(&ctx, "surrogates",
+                                                o.debugRenderSurrogates);
             nk_label(&ctx, "", NK_TEXT_LEFT);
             
             // render objective position
             nk_label(&ctx, "", NK_TEXT_LEFT);
-            o.renderObjectPosition = nk_check_label(&ctx, "object. pos.",
-                                                o.renderObjectPosition);
+            o.debugRenderObjectPosition = nk_check_label(&ctx, "object. pos.",
+                                                o.debugRenderObjectPosition);
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            
+            // render target position
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            o.debugRenderTargetPosition = nk_check_label(&ctx, "target. pos.",
+                                                o.debugRenderTargetPosition);
             nk_label(&ctx, "", NK_TEXT_LEFT);
             
             // detached camera
@@ -646,8 +695,16 @@ public:
             {
                 double n[3];
                 window->map->getPositionPoint(n);
-                window->map->convert(n, n, vts::Srs::Navigation,
+                try
+                {
+                    window->map->convert(n, n, vts::Srs::Navigation,
                                          (vts::Srs)positionSrs);
+                }
+                catch (const std::exception &)
+                {
+                    for (int i = 0; i < 3; i++)
+                        n[i] = std::numeric_limits<double>::quiet_NaN();
+                }
                 nk_label(&ctx, "X:", NK_TEXT_LEFT);
                 sprintf(buffer, "%.8f", n[0]);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
@@ -677,8 +734,9 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset rotation"))
                 {
-                    window->map->setPositionRotation({0,270,0}, false);
-                    window->map->resetNavigationMode();;
+                    window->map->setPositionRotation({0,270,0},
+                                            vts::NavigationType::Quick);
+                    window->map->resetNavigationGeographicMode();;
                 }
             }
             // view extent
@@ -702,21 +760,16 @@ public:
                 nk_checkbox_label(&ctx, "", &posAutoDetails);
                 if (posAutoDetails)
                 {
-                    double d[3];
-                    window->map->getAutoMotion(d);
                     for (int i = 0; i < 3; i++)
                     {
                         nk_label(&ctx, i == 0 ? "Move:" : "", NK_TEXT_LEFT);
-                        d[i] = nk_slide_float(&ctx, -5, d[i], 5, 0.2);
+                        posAutoMotion[i] = nk_slide_float(&ctx, -3,
+                                                    posAutoMotion[i], 3, 0.1);
                     }
-                    window->map->setAutoMotion(d);
-                    window->map->getAutoRotation(d);
-                    for (int i = 0; i < 3; i++)
-                    {
-                        nk_label(&ctx, i == 0 ? "Rotate:" : "", NK_TEXT_LEFT);
-                        d[i] = nk_slide_float(&ctx, -1, d[i], 1, 0.05);
-                    }
-                    window->map->setAutoRotation(d);
+                    window->map->pan(posAutoMotion.data());
+                    nk_label(&ctx, "Rotate:", NK_TEXT_LEFT);
+                    window->map->setAutoRotation(nk_slide_float(&ctx, -1,
+                                    window->map->getAutoRotation(), 1, 0.05));
                 }
             }
         }
@@ -924,7 +977,8 @@ public:
                         double n[3] = { m.coord(0), m.coord(1), m.coord(2) };
                         window->map->convert(n, n, vts::Srs::Physical,
                                                  vts::Srs::Navigation);
-                        window->map->setPositionPoint(n, false);
+                        window->map->setPositionPoint(n,
+                                                vts::NavigationType::Quick);
                     }
                     sprintf(buffer, "%.8f", n[1]);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
@@ -995,11 +1049,15 @@ public:
                         if (nk_button_label(&ctx, "Go"))
                         {
                             window->map->setPositionSubjective(false, false);
-                            window->map->setPositionPoint(r.position, false);
+                            window->map->setPositionPoint(r.position,
+                                        vts::NavigationType::FlyOver);
                             window->map->setPositionViewExtent(
-                                        std::max(6667.0, r.radius * 2), false);
-                            window->map->setPositionRotation({0,270,0}, false);
+                                        std::max(6667.0, r.radius * 2),
+                                        vts::NavigationType::FlyOver);
+                            window->map->setPositionRotation({0,270,0},
+                                        vts::NavigationType::FlyOver);
                             window->map->resetPositionAltitude();
+                            window->map->resetNavigationGeographicMode();
                         }
                     }
                     else
@@ -1086,6 +1144,8 @@ public:
     nk_buffer cmds;
     nk_convert_config config;
     nk_draw_null_texture null;
+    
+    vts::vec3 posAutoMotion;
 
     int statTraversedDetails;
     int statRenderedDetails;

@@ -114,6 +114,10 @@ U vecToUblas(const T &t)
     return res;
 }
 
+VTS_API void normalizeAngle(double &a);
+VTS_API double angularDiff(double a, double b);
+VTS_API vec3 angularDiff(const vec3 &a, const vec3 &b);
+
 } // namespace vts
 
 #endif // MATH_H_wegfzebvgfhjusd

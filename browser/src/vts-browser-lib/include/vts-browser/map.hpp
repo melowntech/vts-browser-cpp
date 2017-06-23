@@ -43,6 +43,13 @@ enum class Srs
     Public,
 };
 
+enum class NavigationType
+{
+    Instant,
+    Quick,
+    FlyOver,
+};
+
 class VTS_API Map
 {
 public:
@@ -83,28 +90,26 @@ public:
     void rotate(const double value[3]);
     void rotate(const double (&value)[3]);
     void zoom(double value);
+    void resetPositionAltitude();
+    void resetNavigationGeographicMode();
+    
     void setPositionSubjective(bool subjective, bool convert);
-    bool getPositionSubjective() const;
-    void setPositionPoint(const double point[3], bool immediate);
-    void setPositionPoint(const double (&point)[3], bool immediate);
-    void getPositionPoint(double point[3]) const;
-    void setPositionRotation(const double point[3], bool immediate);
-    void setPositionRotation(const double (&point)[3], bool immediate);
-    void getPositionRotation(double point[3]) const;
-    void setPositionViewExtent(double viewExtent, bool immediate);
-    double getPositionViewExtent() const;
+    void setPositionPoint(const double point[3], NavigationType type);
+    void setPositionPoint(const double (&point)[3], NavigationType type);
+    void setPositionRotation(const double point[3], NavigationType type);
+    void setPositionRotation(const double (&point)[3], NavigationType type);
+    void setPositionViewExtent(double viewExtent, NavigationType type);
     void setPositionFov(double fov);
+    void setPositionJson(const std::string &position, NavigationType type);
+    void setAutoRotation(double value);
+    
+    bool getPositionSubjective() const;
+    void getPositionPoint(double point[3]) const;
+    void getPositionRotation(double point[3]) const;
+    double getPositionViewExtent() const;
     double getPositionFov() const;
     std::string getPositionJson() const;
-    void setPositionJson(const std::string &position);
-    void resetPositionAltitude();
-    void resetNavigationMode();
-    void setAutoMotion(const double value[3]);
-    void setAutoMotion(const double (&value)[3]);
-    void getAutoMotion(double value[3]) const;
-    void setAutoRotation(const double value[3]);
-    void setAutoRotation(const double (&value)[3]);
-    void getAutoRotation(double value[3]) const;
+    double getAutoRotation() const;
 
     void convert(const double pointFrom[3], double pointTo[3],
                 Srs srsFrom, Srs srsTo) const;
@@ -115,12 +120,12 @@ public:
 
     std::vector<std::string> getViewNames() const;
     std::string getViewCurrent() const;
-    void setViewCurrent(const std::string &name);
+    std::string getViewJson(const std::string &name) const;
     void getViewData(const std::string &name, class MapView &view) const;
+    void setViewCurrent(const std::string &name);
+    void setViewJson(const std::string &name, const std::string &view);
     void setViewData(const std::string &name, const class MapView &view);
     void removeView(const std::string &name);
-    std::string getViewJson(const std::string &name) const;
-    void setViewJson(const std::string &name, const std::string &view);
 
     std::shared_ptr<class SearchTask> search(const std::string &query);
     std::shared_ptr<class SearchTask> search(const std::string &query,

@@ -270,7 +270,7 @@ void MainWindow::mouseDblClickCallback(int)
     double posNav[3];
     map->convert(posPhys.data(), posNav,
                  vts::Srs::Physical, vts::Srs::Navigation);
-    map->setPositionPoint(posNav, false);
+    map->setPositionPoint(posNav, vts::NavigationType::Quick);
 }
 
 void MainWindow::mouseScrollCallback(double, double yoffset)

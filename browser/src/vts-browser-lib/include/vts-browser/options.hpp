@@ -39,6 +39,15 @@ VTS_API void setLogMask(const std::string &mask);
 VTS_API void setLogConsole(bool enable);
 VTS_API void setLogFile(const std::string &filename);
 
+enum class NavigationType;
+
+enum class NavigationGeographicMode
+{
+    Azimuthal,
+    Free,
+    Dynamic,
+};
+
 class VTS_API MapCreateOptions
 {
 public:
@@ -55,13 +64,6 @@ class VTS_API MapOptions
 public:
     MapOptions();
     
-    enum class NavigationMode
-    {
-        Azimuthal,
-        Free,
-        Dynamic,
-    };
-    
     std::string searchUrl;
     
     double maxTexelToPixelScale;
@@ -74,6 +76,8 @@ public:
     double cameraInertiaZoom;
     double cameraInertiaRotate;
     double navigationLatitudeThreshold;
+    double navigationMaxViewExtentMult;
+    double navigationMaxPositionChange;
     uint64 maxResourcesMemory;
     uint32 maxConcurrentDownloads;
     uint32 maxNodeUpdatesPerTick;
@@ -82,18 +86,21 @@ public:
     uint32 maxFetchRedirections;
     uint32 maxFetchRetries;
     
-    NavigationMode navigationMode;
+    NavigationType navigationType;
+    NavigationGeographicMode geographicNavMode;
     
-    bool renderSurrogates;
-    bool renderMeshBoxes;
-    bool renderTileBoxes;
-    bool renderObjectPosition;
-    bool searchResultsFilter;
+    bool enableSearchResultsFilter;
     bool enableRuntimeResourceExpiration; // experimental
     
     bool debugDetachedCamera;
     bool debugDisableMeta5;
     bool debugSaveCorruptedFiles;
+    
+    bool debugRenderSurrogates;
+    bool debugRenderMeshBoxes;
+    bool debugRenderTileBoxes;
+    bool debugRenderObjectPosition;
+    bool debugRenderTargetPosition;
 };
 
 class VTS_API MapCallbacks

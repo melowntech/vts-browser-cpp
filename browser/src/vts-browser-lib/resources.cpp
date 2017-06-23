@@ -442,16 +442,17 @@ void MapImpl::resourceRenderTick()
                 if (r->retryTime == -1)
                 {
                     r->retryTime = (1 << r->retryNumber) * 15 + current;
-                    LOG(debug) << "Resource <" << r->name
-                               << "> will retry at " << r->retryTime
-                               << " (current: " << current << ")";
+                    LOG(warn2) << "Resource <" << r->name
+                               << "> will retry in "
+                               << (r->retryTime - current) << " seconds";
                     break;
                 }
                 if (r->retryTime > current)
                     break;
                 r->retryNumber++;
-                LOG(info2) << "Retry " << r->retryNumber
-                           << " for resource <" << r->name << ">";
+                LOG(info2) << "Trying again to download resource <"
+                           << r->name << "> (attempt "
+                           << r->retryNumber << ")";
                 r->retryTime = -1;
                 // no break here
             case Resource::State::finalizing:

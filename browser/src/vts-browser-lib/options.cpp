@@ -26,6 +26,7 @@
 
 #include <dbglog/dbglog.hpp>
 #include "include/vts-browser/options.hpp"
+#include "include/vts-browser/map.hpp"
 
 namespace vts
 {
@@ -62,6 +63,8 @@ MapOptions::MapOptions() :
     cameraInertiaZoom(0.9),
     cameraInertiaRotate(0.9),
     navigationLatitudeThreshold(75),
+    navigationMaxViewExtentMult(1.02),
+    navigationMaxPositionChange(0.02),
     maxResourcesMemory(512 * 1024 * 1024),
     maxConcurrentDownloads(10),
     maxNodeUpdatesPerTick(10),
@@ -69,16 +72,18 @@ MapOptions::MapOptions() :
     navigationSamplesPerViewExtent(8),
     maxFetchRedirections(5),
     maxFetchRetries(10),
-    navigationMode(NavigationMode::Dynamic),
-    renderSurrogates(false),
-    renderMeshBoxes(false),
-    renderTileBoxes(false),
-    renderObjectPosition(false),
-    searchResultsFilter(true),
+    navigationType(NavigationType::Quick),
+    geographicNavMode(NavigationGeographicMode::Dynamic),
+    enableSearchResultsFilter(true),
     enableRuntimeResourceExpiration(false),
     debugDetachedCamera(false),
     debugDisableMeta5(false),
-    debugSaveCorruptedFiles(true)
+    debugSaveCorruptedFiles(true),
+    debugRenderSurrogates(false),
+    debugRenderMeshBoxes(false),
+    debugRenderTileBoxes(false),
+    debugRenderObjectPosition(false),
+    debugRenderTargetPosition(false)
 {}
 
 } // namespace vts

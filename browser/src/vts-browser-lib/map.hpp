@@ -159,14 +159,14 @@ public:
     class Navigation
     {
     public:
-        vec3 autoMotion;
-        vec3 autoRotation;
-        vec3 targetPoint;
         vec3 changeRotation;
+        vec3 targetPoint;
+        double autoRotation;
         double targetViewExtent;
         std::queue<std::shared_ptr<class HeightRequest>> panZQueue;
         boost::optional<double> lastPanZShift;
-        MapOptions::NavigationMode mode;
+        NavigationGeographicMode geographicMode;
+        NavigationType type;
         
         Navigation();
     } navigation;
@@ -213,20 +213,18 @@ public:
 
     // navigation
     void pan(const vec3 &value);
-    void panImpl(const vec3 &value, double speed);
     void rotate(const vec3 &value);
     void zoom(double value);
-    void setPoint(const vec3 &point, bool immediate);
-    void setRotation(const vec3 &euler, bool immediate);
-    void setViewExtent(double viewExtent, bool immediate);
+    void setPoint(const vec3 &point, NavigationType type);
+    void setRotation(const vec3 &euler, NavigationType type);
+    void setViewExtent(double viewExtent, NavigationType type);
     void checkPanZQueue();
     const std::pair<vtslibs::vts::NodeInfo, vec2> findInfoNavRoot(
             const vec2 &navPos);
     const NodeInfo findInfoSdsSampled(const NodeInfo &info,
                                       const vec2 &sdsPos);
     void resetPositionAltitude(double resetOffset);
-    void resetNavigationMode();
-    void resetAuto();
+    void resetNavigationGeographicMode();
     void convertPositionSubjObj();
     void positionToCamera(vec3 &center, vec3 &dir, vec3 &up);
     double positionObjectiveDistance();

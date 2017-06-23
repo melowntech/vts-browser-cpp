@@ -27,6 +27,7 @@ set(HDR_LIST
 	credits.hpp
 	obj.hpp
 	cache.hpp
+	navigationSolver.hpp
 )
 
 set(SRC_LIST
@@ -53,6 +54,7 @@ set(SRC_LIST
 	statistics.cpp
 	search.cpp
 	cache.cpp
+	navigationSolver.cpp
 )
 
 include(data.cmake)
@@ -67,6 +69,10 @@ buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})
 # all libraries are PRIVATE -> do not forward static libraries out
 target_link_libraries(vts-browser PRIVATE ${MODULE_LIBRARIES})
 buildsys_target_compile_definitions(vts-browser ${MODULE_DEFINITIONS})
+
+# enforce the library to have all symbols defined
+# does not work at this moment
+# target_compile_options(vts-browser PRIVATE -Wl,-z,defs -Bsymbolic)
 
 #######################################################################
 # Install

@@ -294,7 +294,7 @@ bool Map::getPositionSubjective() const
             == vtslibs::registry::Position::Type::subjective;
 }
 
-void Map::setPositionPoint(const double point[3], bool immediate)
+void Map::setPositionPoint(const double point[3], NavigationType type)
 {
     if (!isMapConfigReady())
         return;
@@ -307,12 +307,12 @@ void Map::setPositionPoint(const double point[3], bool immediate)
         assert(point[0] >= -180 && point[0] <= 180);
         assert(point[1] >= -90 && point[1] <= 90);
     }
-    impl->setPoint(vec3(point[0], point[1], point[2]), immediate);
+    impl->setPoint(vec3(point[0], point[1], point[2]), type);
 }
 
-void Map::setPositionPoint(const double (&point)[3], bool immediate)
+void Map::setPositionPoint(const double (&point)[3], NavigationType type)
 {
-    setPositionPoint(&point[0], immediate);
+    setPositionPoint(&point[0], type);
 }
 
 void Map::getPositionPoint(double point[3]) const
@@ -328,19 +328,19 @@ void Map::getPositionPoint(double point[3]) const
         point[i] = p[i];
 }
 
-void Map::setPositionRotation(const double point[3], bool immediate)
+void Map::setPositionRotation(const double point[3], NavigationType type)
 {
     if (!impl->mapConfig || !*impl->mapConfig)
         return;
     assert(point[0] == point[0]);
     assert(point[1] == point[1]);
     assert(point[2] == point[2]);
-    impl->setRotation(vec3(point[0], point[1], point[2]), immediate);
+    impl->setRotation(vec3(point[0], point[1], point[2]), type);
 }
 
-void Map::setPositionRotation(const double (&point)[3], bool immediate)
+void Map::setPositionRotation(const double (&point)[3], NavigationType type)
 {
-    setPositionRotation(&point[0], immediate);
+    setPositionRotation(&point[0], type);
 }
 
 void Map::getPositionRotation(double point[3]) const
@@ -356,12 +356,12 @@ void Map::getPositionRotation(double point[3]) const
         point[i] = p[i];
 }
 
-void Map::setPositionViewExtent(double viewExtent, bool immediate)
+void Map::setPositionViewExtent(double viewExtent, NavigationType type)
 {
     if (!isMapConfigReady())
         return;
     assert(viewExtent == viewExtent);
-    impl->setViewExtent(viewExtent, immediate);
+    impl->setViewExtent(viewExtent, type);
 }
 
 double Map::getPositionViewExtent() const
@@ -394,7 +394,7 @@ std::string Map::getPositionJson() const
                 vtslibs::registry::asJson(impl->mapConfig->position));
 }
 
-void Map::setPositionJson(const std::string &position)
+void Map::setPositionJson(const std::string &position, NavigationType type)
 {
     if (!isMapConfigReady())
         return;
@@ -402,6 +402,7 @@ void Map::setPositionJson(const std::string &position)
     if (!Json::Reader().parse(position, val))
         LOGTHROW(err2, std::runtime_error) << "invalid position json";
     impl->mapConfig->position = vtslibs::registry::positionFromJson(val);
+    impl->navigation.type = type;
 }
 
 void Map::resetPositionAltitude()
@@ -411,61 +412,26 @@ void Map::resetPositionAltitude()
     impl->resetPositionAltitude(0);
 }
 
-void Map::resetNavigationMode()
+void Map::resetNavigationGeographicMode()
 {
     if (!isMapConfigReady())
         return;
-    impl->resetNavigationMode();
+    impl->resetNavigationGeographicMode();
 }
 
-void Map::setAutoMotion(const double value[3])
+void Map::setAutoRotation(double value)
 {
     if (!isMapConfigReady())
         return;
-    for (int i = 0; i < 3; i++)
-        impl->navigation.autoMotion[i] = value[i];
+    impl->navigation.autoRotation = value;
+    impl->navigation.type = NavigationType::Quick;
 }
 
-void Map::setAutoMotion(const double (&value)[3])
-{
-    setAutoMotion(&value[0]);
-}
-
-void Map::getAutoMotion(double value[3]) const
+double Map::getAutoRotation() const
 {
     if (!isMapConfigReady())
-    {
-        for (int i = 0; i < 3; i++)
-            value[i] = 0;
-        return;
-    }
-    for (int i = 0; i < 3; i++)
-        value[i] = impl->navigation.autoMotion(i);
-}
-
-void Map::setAutoRotation(const double value[3])
-{
-    if (!isMapConfigReady())
-        return;
-    for (int i = 0; i < 3; i++)
-        impl->navigation.autoRotation[i] = value[i];
-}
-
-void Map::setAutoRotation(const double (&value)[3])
-{
-    setAutoRotation(&value[0]);
-}
-
-void Map::getAutoRotation(double value[3]) const
-{
-    if (!isMapConfigReady())
-    {
-        for (int i = 0; i < 3; i++)
-            value[i] = 0;
-        return;
-    }
-    for (int i = 0; i < 3; i++)
-        value[i] = impl->navigation.autoRotation(i);
+        return 0;
+    return impl->navigation.autoRotation;
 }
 
 void Map::convert(const double pointFrom[3], double pointTo[3],

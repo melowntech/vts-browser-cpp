@@ -148,6 +148,7 @@ public:
     std::string mapConfigPath;
     std::string mapConfigView;
     std::string authPath;
+    std::string sriPath;
     std::string clientId;
     MapCallbacks callbacks;
     MapStatistics statistics;
@@ -206,7 +207,8 @@ public:
 
     // map api methods
     void setMapConfigPath(const std::string &mapConfigPath,
-                          const std::string &authPath);
+                          const std::string &authPath,
+                          const std::string &sriPath);
     void purgeMapConfig();
     void purgeTraverseCache();
     void printDebugInfo();
@@ -260,7 +262,8 @@ public:
     // renderer methods
     void renderInitialize();
     void renderFinalize();
-    void renderTick(uint32 windowWidth, uint32 windowHeight);
+    void renderTickPrepare();
+    void renderTickRender(uint32 windowWidth, uint32 windowHeight);
     const TileId roundId(TileId nodeId);
     Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
                            BoundParamInfo::List &boundList, double priority);

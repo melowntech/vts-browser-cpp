@@ -95,10 +95,11 @@ void navigationSolve(
             * inOptions.navigationMaxPositionChange;
 
     // ratio of horizontal movement to view extent change
+    static const double piHalf = 3.14159265358979323846264338327950288419 * 0.5;
     double a = atan2(-distanceWhileExtentChanges * 1.5, inHorizontalDistance);
-    a = a * 2.0 + 3.14159 * 0.5;
+    a = a * 2.0 + piHalf;
     if (inViewExtentChange > 0)
-        a = std::abs(a);
+        a = piHalf;
     double dr = distanceWhileExtentChanges + inHorizontalDistance;
     double dc = inStartViewExtent * inOptions.navigationMaxPositionChange;
     double d = std::min(dr / (dc * 70 + 1), 1.0); // smooth landing

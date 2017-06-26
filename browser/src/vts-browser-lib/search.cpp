@@ -260,6 +260,14 @@ SearchTask::SearchTask(const std::string &query, const double point[3]) :
 SearchTask::~SearchTask()
 {}
 
+void SearchTask::updateDistances(const double point[3])
+{
+    for (auto &&it : results)
+    {
+        it.distance = distance(impl->map, it.position, point);
+    }
+}
+
 std::shared_ptr<SearchTask> MapImpl::search(const std::string &query,
                                             const double point[3])
 {

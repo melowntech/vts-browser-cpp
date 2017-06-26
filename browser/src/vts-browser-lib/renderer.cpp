@@ -83,13 +83,15 @@ void MapImpl::renderFinalize()
 }
 
 void MapImpl::setMapConfigPath(const std::string &mapConfigPath,
-                               const std::string &authPath)
+                               const std::string &authPath,
+                               const std::string &sriPath)
 {
     LOG(info3) << "Changing map config path to '" << mapConfigPath << "', "
                << (!authPath.empty() ? "using" : "without")
                << " authentication";
     this->mapConfigPath = mapConfigPath;
     this->authPath = authPath;
+    this->sriPath = sriPath;
     purgeMapConfig();
 }
 
@@ -283,8 +285,8 @@ void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
     // meshes
     for (std::shared_ptr<RenderTask> &r : trav->draws)
     {
-        assert(r->ready());
-        draws.draws.emplace_back(r.get(), this);
+        if (r->ready())
+            draws.draws.emplace_back(r.get(), this);
     }
     
     // surrogate
@@ -616,18 +618,8 @@ bool MapImpl::traverseDetermineBoundLayers(
                 task->model = part.normToPhys;
                 task->uvm = b.uvMatrix();
                 task->textureColor = getTexture(b.bound->urlExtTex(b.vars));
-                task->textureColor->priority = priority;
+                task->textureColor->updatePriority(priority);
                 task->textureColor->availTest = b.bound->availability;
-                switch (getResourceValidity(task->textureColor))
-                {
-                case Validity::Indeterminate:
-                    determined = false;
-                    // no break here
-                case Validity::Invalid:
-                    continue;
-                case Validity::Valid:
-                    break;
-                }
                 task->externalUv = true;
                 task->transparent = b.transparent;
                 allTransparent = allTransparent && b.transparent;
@@ -635,17 +627,7 @@ bool MapImpl::traverseDetermineBoundLayers(
                 if (!b.watertight)
                 {
                     task->textureMask = getTexture(b.bound->urlMask(b.vars));
-                    task->textureMask->priority = priority;
-                    switch (getResourceValidity(task->textureMask))
-                    {
-                    case Validity::Indeterminate:
-                        determined = false;
-                        // no break here
-                    case Validity::Invalid:
-                        continue;
-                    case Validity::Valid:
-                        break;
-                    }
+                    task->textureMask->updatePriority(priority);
                 }
                 newDraws.push_back(task);
             }
@@ -665,17 +647,7 @@ bool MapImpl::traverseDetermineBoundLayers(
             task->uvm = upperLeftSubMatrix(identityMatrix()).cast<float>();
             task->textureColor = getTexture(
                         trav->surface->surface->urlIntTex(vars));
-            task->textureColor->priority = priority;
-            switch (getResourceValidity(task->textureColor))
-            {
-            case Validity::Indeterminate:
-                determined = false;
-                // no break here
-            case Validity::Invalid:
-                continue;
-            case Validity::Valid:
-                break;
-            }
+            task->textureColor->updatePriority(priority);
             task->externalUv = false;
             newDraws.insert(newDraws.begin(), task);
         }
@@ -759,8 +731,6 @@ void MapImpl::traverseClearing(const std::shared_ptr<TraverseNode> &trav)
 
 void MapImpl::updateCamera()
 {
-    updateNavigation();
-
     vec3 center, dir, up;
     positionToCamera(center, dir, up);
 
@@ -962,7 +932,7 @@ bool MapImpl::prerequisitesCheck()
     return true;
 }
 
-void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
+void MapImpl::renderTickPrepare()
 {
     if (!prerequisitesCheck())
         return;
@@ -972,10 +942,21 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
     assert(convertor);
     assert(renderer.traverseRoot);
     
+    updateNavigation();
+    updateSearch();
+    traverseClearing(renderer.traverseRoot);
+    
+    statistics.debug = TraverseNode::instanceCounter;
+}
+
+void MapImpl::renderTickRender(uint32 windowWidth, uint32 windowHeight)
+{
+    if (!initialized)
+        return;
+
     renderer.windowWidth = windowWidth;
     renderer.windowHeight = windowHeight;
-    
-    statistics.currentNodeUpdates = 0;
+
     draws.draws.clear();
     updateCamera();
     emptyTraverseQueue();
@@ -986,11 +967,7 @@ void MapImpl::renderTick(uint32 windowWidth, uint32 windowHeight)
         renderer.traverseQueue.pop();
         traverse(t.trav, false);
     }
-    traverseClearing(renderer.traverseRoot);
     renderer.credits.tick(credits);
-    updateSearch();
-    
-    statistics.debug = TraverseNode::instanceCounter;
 }
 
 } // namespace vts

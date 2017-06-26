@@ -285,7 +285,6 @@ const NodeInfo MapImpl::findInfoSdsSampled(const NodeInfo &info,
 
 void MapImpl::resetPositionAltitude(double resetOffset)
 {
-    navigation.targetPoint(2) = 0;
     navigation.lastPanZShift.reset();
     std::queue<std::shared_ptr<class HeightRequest>>().swap(
                 navigation.panZQueue);

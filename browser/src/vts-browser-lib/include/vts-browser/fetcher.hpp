@@ -56,6 +56,7 @@ public:
         Texture,
         NavTile,
         Search,
+        SriIndex,
     };
     const ResourceType resourceType;
     

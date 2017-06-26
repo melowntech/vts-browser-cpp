@@ -1006,6 +1006,13 @@ public:
 
     void prepareSearch()
     {
+        if (search && window->map->statistics().frameIndex % 120 == 60)
+        {
+            double point[3];
+            window->map->getPositionPoint(point);
+            search->updateDistances(point);
+        }
+        
         int flags = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE
                 | NK_WINDOW_SCALABLE | NK_WINDOW_TITLE
                 | NK_WINDOW_MINIMIZABLE;

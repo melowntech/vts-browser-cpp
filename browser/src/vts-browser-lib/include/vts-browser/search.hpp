@@ -56,6 +56,8 @@ class VTS_API SearchTask
 public:
     SearchTask(const std::string &query, const double point[3]);
     virtual ~SearchTask();
+    
+    void updateDistances(const double point[3]);
 
     std::vector<SearchItem> results;
 

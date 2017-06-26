@@ -426,7 +426,7 @@ void MapImpl::resourceRenderTick()
         for (auto it : resources.resources)
         {
             std::shared_ptr<Resource> &r = it.second;
-            if (r->lastAccessTick != statistics.frameIndex)
+            if (r->lastAccessTick + 1 != statistics.frameIndex)
                 continue;
             switch (r->state)
             {

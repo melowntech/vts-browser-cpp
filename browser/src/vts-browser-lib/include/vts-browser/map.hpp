@@ -57,7 +57,8 @@ public:
     virtual ~Map();
 
     void setMapConfigPath(const std::string &mapConfigPath,
-                          const std::string &authPath = "");
+                          const std::string &authPath = "",
+                          const std::string &sriPath = "");
     std::string &getMapConfigPath() const;
     void purgeTraverseCache();
 
@@ -76,7 +77,8 @@ public:
     void dataFinalize();
 
     void renderInitialize();
-    void renderTick(uint32 width, uint32 height);
+    void renderTickPrepare();
+    void renderTickRender(uint32 width, uint32 height);
     void renderFinalize();
 
     class MapCallbacks &callbacks();
@@ -92,7 +94,7 @@ public:
     void zoom(double value);
     void resetPositionAltitude();
     void resetNavigationGeographicMode();
-    
+
     void setPositionSubjective(bool subjective, bool convert);
     void setPositionPoint(const double point[3], NavigationType type);
     void setPositionPoint(const double (&point)[3], NavigationType type);
@@ -102,7 +104,7 @@ public:
     void setPositionFov(double fov);
     void setPositionJson(const std::string &position, NavigationType type);
     void setAutoRotation(double value);
-    
+
     bool getPositionSubjective() const;
     void getPositionPoint(double point[3]) const;
     void getPositionRotation(double point[3]) const;

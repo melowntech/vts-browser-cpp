@@ -218,7 +218,8 @@ void MainWindow::tick()
 #endif
         
         map->dataTick();
-        map->renderTick(size.width(), size.height());
+        map->renderTickPrepare();
+        map->renderTickRender(size.width(), size.height());
         for (vts::DrawTask &t : map->draws().draws)
             draw(t);
         std::string creditLine = std::string() + "vts-browser-qt: "

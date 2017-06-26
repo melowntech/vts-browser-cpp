@@ -395,7 +395,8 @@ void MainWindow::run()
         
         try
         {
-            map->renderTick(width, height); // calls camera overrides
+            map->renderTickPrepare();
+            map->renderTickRender(width, height); // calls camera overrides
         }
         catch (const vts::MapConfigException &e)
         {
@@ -444,13 +445,14 @@ void MainWindow::run()
         gui.render(width, height);
         double timeGui = glfwGetTime();
         
-        glfwSwapBuffers(window);
         if (map->statistics().frameIndex % 120 == 0)
         {
             std::string creditLine = std::string() + "vts-browser-glfw: "
                     + map->credits().textFull();
             glfwSetWindowTitle(window, creditLine.c_str());
         }
+        
+        glfwSwapBuffers(window);
         double timeFrameFinish = glfwGetTime();
         
         timingMapProcess = timeMapRender - timeFrameStart;

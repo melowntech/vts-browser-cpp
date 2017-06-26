@@ -165,11 +165,16 @@ void Map::renderInitialize()
     impl->renderInitialize();
 }
 
-void Map::renderTick(uint32 width, uint32 height)
+void Map::renderTickPrepare()
 {
     impl->statistics.resetFrame();
-    impl->renderTick(width, height);
     impl->resourceRenderTick();
+    impl->renderTickPrepare();
+}
+
+void Map::renderTickRender(uint32 width, uint32 height)
+{
+    impl->renderTickRender(width, height);
 }
 
 void Map::renderFinalize()
@@ -179,9 +184,10 @@ void Map::renderFinalize()
 }
 
 void Map::setMapConfigPath(const std::string &mapConfigPath,
-                           const std::string &authPath)
+                           const std::string &authPath,
+                           const std::string &sriPath)
 {
-    impl->setMapConfigPath(mapConfigPath, authPath);
+    impl->setMapConfigPath(mapConfigPath, authPath, sriPath);
 }
 
 std::string &Map::getMapConfigPath() const
@@ -198,7 +204,13 @@ void Map::purgeTraverseCache()
 
 bool Map::isMapConfigReady() const
 {
-    return impl->mapConfig && *impl->mapConfig && impl->convertor;
+    if (impl->initialized)
+    {
+        assert(impl->mapConfig);
+        assert(*impl->mapConfig);
+        assert(impl->convertor);
+    }
+    return impl->initialized;
 }
 
 bool Map::isMapRenderComplete() const

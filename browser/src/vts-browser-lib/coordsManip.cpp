@@ -27,6 +27,8 @@
 #include <unordered_map>
 #include <memory>
 
+#include <boost/utility/in_place_factory.hpp>
+
 #include <vts-libs/vts/csconvertor.hpp>
 #include <GeographicLib/Geodesic.hpp>
 #include <ogr_spatialref.h>
@@ -81,7 +83,8 @@ public:
         if (n.type == vtslibs::registry::Srs::Type::geographic)
         {
             auto r = n.srsDef.reference();
-            geodesic_.emplace(r.GetSemiMajor(), 1 / r.GetInvFlattening());
+            geodesic_ = boost::in_place
+                (r.GetSemiMajor(), 1 / r.GetInvFlattening());
         }
         convertors[nav][phys] = std::shared_ptr<vtslibs::vts::CsConvertor>(
                     &navToPhys_, DummyDeleter());

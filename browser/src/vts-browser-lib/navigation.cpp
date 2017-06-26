@@ -24,6 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <boost/utility/in_place_factory.hpp>
 #include <boost/algorithm/string.hpp>
 #include "map.hpp"
 #include "navigationSolver.hpp"
@@ -79,7 +80,7 @@ public:
             if (trav->nodeInfo.nodeId() == nodeInfo.nodeId()
                     || trav->childs.empty())
             {
-                result.emplace(trav->surrogateValue);
+                result = trav->surrogateValue;
                 return process(nullptr);
             }
             
@@ -134,7 +135,8 @@ public:
                 corners.reserve(4);
                 auto nisds = map->findInfoNavRoot(navPos);
                 sds = nisds.second;
-                nodeInfo.emplace(map->findInfoSdsSampled(nisds.first, sds));
+                nodeInfo = boost::in_place
+                    (map->findInfoSdsSampled(nisds.first, sds));
             }
             catch (const std::runtime_error &)
             {
@@ -202,7 +204,7 @@ public:
         height = map->convertor->convert(vec2to3(sds, height),
             nodeInfo->srs(),
             map->mapConfig->referenceFrame.model.navigationSrs)(2);
-        result.emplace(height);
+        result = height;
         return Validity::Valid;
     }
 };
@@ -232,7 +234,7 @@ void MapImpl::checkPanZQueue()
         navigation.targetPoint(2) = nh + task.resetOffset;
     else if (navigation.lastPanZShift)
         navigation.targetPoint(2) += nh - *navigation.lastPanZShift;
-    navigation.lastPanZShift.emplace(nh);
+    navigation.lastPanZShift = nh;
     navigation.panZQueue.pop();
 }
 

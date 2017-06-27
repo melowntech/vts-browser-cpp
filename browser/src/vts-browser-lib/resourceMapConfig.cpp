@@ -158,7 +158,7 @@ void MapConfig::generateSurfaceStack()
         else
             it++;
     }
-    
+
     // remove invalid bound layers from surfaces in current view
     std::set<std::string> resBound;
     for (auto &&it : boundLayers)
@@ -173,13 +173,13 @@ void MapConfig::generateSurfaceStack()
                 it++;
         }
     }
-    
+
     // remove invalid free layers from current view
     // todo
-    
+
     // remove invalid bound layers from free layers in current view
     // todo
-    
+
     // prepare initial surface stack
     vtslibs::vts::TileSetGlues::list lst;
     for (auto &&s : view.surfaces)
@@ -196,7 +196,7 @@ void MapConfig::generateSurfaceStack()
         }
         lst.push_back(ts);
     }
-    
+
     // sort surfaces by their order in mapConfig
     std::unordered_map<std::string, uint32> order;
     uint32 i = 0;
@@ -209,11 +209,11 @@ void MapConfig::generateSurfaceStack()
         assert(order.find(b.tilesetId) != order.end());
         return order[a.tilesetId] < order[b.tilesetId];
     });
-    
+
     // sort glues on surfaces
     lst = vtslibs::vts::glueOrder(lst);
     std::reverse(lst.begin(), lst.end());
-    
+
     // generate proper surface stack
     surfaceStack.clear();
     for (auto &&ts : lst)
@@ -232,13 +232,13 @@ void MapConfig::generateSurfaceStack()
         i.surface->name = { ts.tilesetId };
         surfaceStack.push_back(i);
     }
-    
+
     // colorize proper surface stack
     for (auto it = surfaceStack.begin(),
          et = surfaceStack.end(); it != et; it++)
         it->color = convertHsvToRgb(vec3f((it - surfaceStack.begin())
                                           / (float)surfaceStack.size(), 1, 1));
-    
+
     // generate alien surface stack positions
     auto copy(surfaceStack);
     for (auto &&it : copy)
@@ -259,7 +259,7 @@ void MapConfig::generateSurfaceStack()
             }
         }
     }
-    
+
     // colorize alien positions
     for (auto it = surfaceStack.begin(),
          et = surfaceStack.end(); it != et; it++)
@@ -271,7 +271,7 @@ void MapConfig::generateSurfaceStack()
             it->color = convertHsvToRgb(c);
         }
     }
-    
+
     // memory use
     info.ramMemoryCost += sizeof(*this);
 }
@@ -287,6 +287,19 @@ void ExternalBoundLayer::load()
     detail::Wrapper w(contentData);
     *(vtslibs::registry::BoundLayer*)this
             = vtslibs::registry::loadBoundLayer(w, name);
+}
+
+TilesetMapping::TilesetMapping(MapImpl *map, const std::string &name) :
+    Resource(map, name, FetchTask::ResourceType::TilesetMapping)
+{
+    priority = std::numeric_limits<float>::infinity();
+}
+
+void TilesetMapping::load()
+{
+    LOG(info2) << "Loading tileset mapping <" << name << ">";
+    data = vtslibs::vts::deserializeTsMap(std::string(contentData.data(),
+                                                      contentData.size()));
 }
 
 } // namespace vts

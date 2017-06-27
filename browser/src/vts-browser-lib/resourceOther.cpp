@@ -39,7 +39,7 @@ MetaTile::MetaTile(vts::MapImpl *map, const std::string &name) :
 
 void MetaTile::load()
 {
-    LOG(info2) << "Loading meta tile '" << name << "'";
+    LOG(info2) << "Loading meta tile <" << name << ">";
     detail::Wrapper w(contentData);
     *(vtslibs::vts::MetaTile*)this
             = vtslibs::vts::loadMetaTile(w, 5, name);
@@ -53,7 +53,7 @@ NavTile::NavTile(MapImpl *map, const std::string &name) :
 
 void NavTile::load()
 {
-    LOG(info2) << "Loading navigation tile '" << name << "'";
+    LOG(info2) << "Loading navigation tile <" << name << ">";
     GpuTextureSpec spec;
     decodeImage(contentData, spec.buffer,
                 spec.width, spec.height, spec.components);
@@ -77,8 +77,7 @@ BoundMetaTile::BoundMetaTile(MapImpl *map, const std::string &name) :
 
 void BoundMetaTile::load()
 {
-    LOG(info2) << "Loading bound meta tile '" << name << "'";
-    
+    LOG(info2) << "Loading bound meta tile <" << name << ">";
     Buffer buffer = std::move(contentData);
     GpuTextureSpec spec;
     decodeImage(buffer, spec.buffer,
@@ -97,7 +96,7 @@ BoundMaskTile::BoundMaskTile(MapImpl *map, const std::string &name) :
 
 void BoundMaskTile::load()
 {
-    LOG(info2) << "Loading bound mask tile '" << name << "'";
+    LOG(info2) << "Loading bound mask tile <" << name << ">";
     
     if (!texture)
     {

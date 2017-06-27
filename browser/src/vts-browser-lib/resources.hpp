@@ -35,6 +35,7 @@
 #include <vts-libs/vts/mapconfig.hpp>
 #include <vts-libs/vts/urltemplate.hpp>
 #include <vts-libs/vts/metatile.hpp>
+#include <vts-libs/vts/tsmap.hpp>
 #include <boost/optional.hpp>
 
 #include "include/vts-browser/resources.hpp"
@@ -250,6 +251,15 @@ public:
     void load() override;
     
     Buffer data;
+};
+
+class TilesetMapping : public Resource
+{
+public:
+    TilesetMapping(MapImpl *map, const std::string &name);
+    void load() override;
+
+    vtslibs::vts::TilesetReferencesList data;
 };
 
 } // namespace vts

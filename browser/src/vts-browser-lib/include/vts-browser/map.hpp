@@ -56,6 +56,11 @@ public:
     Map(const class MapCreateOptions &options);
     virtual ~Map();
 
+    /// mapConfigPath: url to map config
+    /// authPath: url to authentication server,
+    ///    alternatively, it may contain special value 'token:???'
+    ///    which is taken directly as authentication token instead of url
+    /// sriPath: url for fast summary resource information retrieval
     void setMapConfigPath(const std::string &mapConfigPath,
                           const std::string &authPath = "",
                           const std::string &sriPath = "");

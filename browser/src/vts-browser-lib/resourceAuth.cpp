@@ -64,6 +64,15 @@ AuthConfig::AuthConfig(MapImpl *map, const std::string &name) :
     timeValid(0), timeParsed(0)
 {
     priority = std::numeric_limits<float>::infinity();
+    
+    static const std::string tokenPrefix = "token:";
+    if (name.substr(0, tokenPrefix.size()) == tokenPrefix)
+    {
+        token = name.substr(tokenPrefix.size());
+        timeParsed = currentTime();
+        timeValid = (uint64)60 * 60 * 24 * 365 * 100;
+        state = Resource::State::ready;
+    }
 }
 
 void AuthConfig::load()
@@ -81,8 +90,7 @@ void AuthConfig::load()
         {
             std::string message = root["statusMessage"].asString();
             LOGTHROW(err3, AuthException) << "Authentication failure ("
-                                               << status << ": "
-                                               << message << ")";
+                                        << status << ": " << message << ")";
         }
         uint64 expires = root["expires"].asUInt64();
         uint64 now = root["now"].asUInt64();
@@ -120,9 +128,12 @@ void AuthConfig::checkTime()
 
 void AuthConfig::authorize(Resource *task)
 {
-    std::string h = extractUrlHost(task->name);
-    if (hostnames.find(h) == hostnames.end())
-        return;
+    if (!hostnames.empty())
+    {
+        std::string h = extractUrlHost(task->name);
+        if (hostnames.find(h) == hostnames.end())
+            return;
+    }
     task->queryHeaders["Accept"] = std::string()
             + "token/" + token + ", */*";
 }

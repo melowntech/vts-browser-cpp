@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
     catch(const char *e)
     {
         std::stringstream s;
-        s << "Exception <" << E << ">";
+        s << "Exception <" << e << ">";
         vts::log(vts::LogLevel::err4, s.str());
         return 1;
     }

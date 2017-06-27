@@ -88,7 +88,9 @@ void MapImpl::setMapConfigPath(const std::string &mapConfigPath,
 {
     LOG(info3) << "Changing map config path to '" << mapConfigPath << "', "
                << (!authPath.empty() ? "using" : "without")
-               << " authentication";
+               << " authentication and "
+               << (!sriPath.empty() ? "with" : "without")
+               << " SRI";
     this->mapConfigPath = mapConfigPath;
     this->authPath = authPath;
     this->sriPath = sriPath;

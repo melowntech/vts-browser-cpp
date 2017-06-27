@@ -36,6 +36,7 @@
 #include <vts-browser/options.hpp>
 #include <vts-browser/exceptions.hpp>
 #include <vts-browser/credits.hpp>
+#include <vts-browser/log.hpp>
 #include "mainWindow.hpp"
 #include <GLFW/glfw3.h>
 
@@ -400,7 +401,9 @@ void MainWindow::run()
         }
         catch (const vts::MapConfigException &e)
         {
-            fprintf(stderr, "Exception: %s\n", e.what());
+            std::stringstream s;
+            s << "Exception <" << e.what() << ">";
+            vts::log(vts::LogLevel::err4, s.str());
             if (mapConfigPaths.size() > 1)
                 map->setMapConfigPath("");
             else

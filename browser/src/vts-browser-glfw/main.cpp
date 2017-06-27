@@ -28,14 +28,16 @@
 #include <cstdlib>
 #include <vts-browser/map.hpp>
 #include <vts-browser/options.hpp>
+#include <vts-browser/log.hpp>
 #include "mainWindow.hpp"
 #include "dataThread.hpp"
-#include "threadName.hpp"
 #include <GLFW/glfw3.h>
 
 void errorCallback(int, const char* description)
 {
-    fprintf(stderr, "GLFW error: %s\n", description);
+    std::stringstream s;
+    s << "GLFW error <" << description << ">";
+    vts::log(vts::LogLevel::err4, s.str());
 }
 
 void usage(char *argv[])
@@ -54,6 +56,7 @@ int main(int argc, char *argv[])
     {
 #endif
         //vts::setLogMask("I2E2W2");
+        vts::setLogThreadName("main");
         
         const char *auth = "";
         int firstUrl = argc;
@@ -78,7 +81,7 @@ int main(int argc, char *argv[])
                 const char *a = argv[i] + 7;
                 if (a[0] == 0)
                 {
-                    fprintf(stderr, "Missing auth url.\n");
+                    vts::log(vts::LogLevel::err4, "Missing auth url.");
                     usage(argv);
                     return 4;
                 }
@@ -86,7 +89,11 @@ int main(int argc, char *argv[])
                 continue;
             }
             
-            fprintf(stderr, "Unknown option '%s'\n", argv[i]);
+            {
+                std::stringstream s;
+                s << "Unknown option <" << argv[i] << ">";
+                vts::log(vts::LogLevel::err4, s.str());
+            }
             usage(argv);
             return 4;
         }
@@ -111,7 +118,6 @@ int main(int argc, char *argv[])
             DataThread data(main.window, &main.timingDataFrame);
             main.map = &map;
             data.map = &map;
-            setThreadName("main");
             main.run();
         }
 
@@ -121,17 +127,21 @@ int main(int argc, char *argv[])
     }
     catch(const std::exception &e)
     {
-        fprintf(stderr, "Exception: %s\n", e.what());
+        std::stringstream s;
+        s << "Exception <" << e.what() << ">";
+        vts::log(vts::LogLevel::err4, s.str());
         return 1;
     }
     catch(const char *e)
     {
-        fprintf(stderr, "Exception: %s\n", e);
+        std::stringstream s;
+        s << "Exception <" << E << ">";
+        vts::log(vts::LogLevel::err4, s.str());
         return 1;
     }
     catch(...)
     {
-        fprintf(stderr, "Unknown exception.\n");
+        vts::log(vts::LogLevel::err4, "Unknown exception.");
         return 1;
     }
 #endif

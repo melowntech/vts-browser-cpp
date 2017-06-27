@@ -29,6 +29,8 @@
 #include <QImage>
 #include <QBuffer>
 #include <QImageReader>
+#include <sstream>
+#include <vts-browser/log.hpp>
 #include "gpuContext.hpp"
 
 QOpenGLFunctions_3_3_Core *gpuFunctions()
@@ -75,7 +77,10 @@ void Gl::onDebugMessage(const QOpenGLDebugMessage &message)
     if (message.id() == 131185
             && message.type() == QOpenGLDebugMessage::OtherType)
         return;
-    qDebug() << message.id() << message.type() << message.message();
+    std::stringstream s;
+    s << "OpenGL: " << message.id() << ", " << message.type() << ", "
+      << message.message().toUtf8().constData();
+    vts::log(vts::LogLevel::warn4, s.str());
 }
 
 GpuShaderImpl::GpuShaderImpl()

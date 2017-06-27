@@ -4,7 +4,6 @@ set(HDR_LIST
 	dataThread.hpp
 	mainWindow.hpp
 	gpuContext.hpp
-	threadName.hpp
 	guiSkin.hpp
 )
 

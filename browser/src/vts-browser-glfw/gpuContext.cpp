@@ -27,6 +27,8 @@
 #include <cstdio>
 #include <cassert>
 #include <cstring>
+#include <sstream>
+#include <vts-browser/log.hpp>
 #include "gpuContext.hpp"
 
 bool anisotropicFilteringAvailable = false;
@@ -117,10 +119,17 @@ namespace
             sevr = "unknown severity";
         }
 
-        fprintf(stderr, "%d %s %s %s\t%s\n", id, src, tp, sevr, message);
+        {
+            std::stringstream s;
+            s << "OpenGL: " << id << ", " << src << ", " << tp
+              << ", " << sevr << ", " << message;
+            vts::log(throwing ? vts::LogLevel::err4 : vts::LogLevel::warn4,
+                     s.str());
+        }
+        
         if (throwing)
             throw std::runtime_error(
-                    std::string("opengl error: ") + message);
+                    std::string("OpenGL: ") + message);
     }
 }
 
@@ -135,7 +144,7 @@ void checkGl(const char *name)
 {
     GLint err = glGetError();
     if (err != GL_NO_ERROR)
-        fprintf(stderr, "opengl error in %s\n", name);
+        vts::log(vts::LogLevel::warn4, std::string("OpenGL error in ") + name);
     switch (err)
     {
     case GL_NO_ERROR:

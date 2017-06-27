@@ -57,6 +57,7 @@ public:
         NavTile,
         Search,
         SriIndex,
+        TilesetMapping,
     };
     const ResourceType resourceType;
     

@@ -26,8 +26,8 @@
 
 #include <unistd.h> // usleep
 #include <vts-browser/map.hpp>
+#include <vts-browser/log.hpp>
 #include "dataThread.hpp"
-#include "threadName.hpp"
 #include "gpuContext.hpp"
 #include <GLFW/glfw3.h>
 
@@ -62,13 +62,13 @@ DataThread::~DataThread()
 
 void DataThread::run()
 {
-    setThreadName("data");
+    vts::setLogThreadName("data");
     glfwMakeContextCurrent(window);
     while (!stop && !map)
         usleep(1000);
-    setThreadName("downloader"); // the downloader threads inherits the name
+    vts::setLogThreadName("downloader"); // the downloader threads inherits the name
     map->dataInitialize(fetcher);
-    setThreadName("data");
+    vts::setLogThreadName("data");
     while (!stop)
     {
         double timeFrameStart = glfwGetTime();

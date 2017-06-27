@@ -24,10 +24,49 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/prctl.h>
+#ifndef LOG_eubgfruebhjgfnm
+#define LOG_eubgfruebhjgfnm
 
-inline void setThreadName(const char *name)
+#include <string>
+#include <functional>
+
+#include "foundation.hpp"
+
+namespace vts
 {
-    prctl(PR_SET_NAME,name,0,0,0);
-}
 
+enum class LogLevel
+{
+    all =      0xfffffu,
+    none =     0x00000u,
+    debug =    0x0000fu,
+    info1 =    0x000f0u,
+    info2 =    0x00070u,
+    info3 =    0x00030u,
+    info4 =    0x00010u,
+    warn1 =    0x00f00u,
+    warn2 =    0x00700u,
+    warn3 =    0x00300u,
+    warn4 =    0x00100u,
+    err1 =     0x0f000u,
+    err2 =     0x07000u,
+    err3 =     0x03000u,
+    err4 =     0x01000u,
+    fatal =    0xf0000u,
+    default_ = info3 | warn2 | err2,
+    verbose =  info2 | warn2 | err2,
+    noDebug =  info1 | warn1 | err1,
+};
+
+VTS_API void setLogMask(const std::string &mask);
+VTS_API void setLogMask(LogLevel mask);
+VTS_API void setLogConsole(bool enable);
+VTS_API void setLogFile(const std::string &filename);
+VTS_API void setLogThreadName(const std::string &name);
+VTS_API void addLogSink(LogLevel mask,
+                        std::function<void(const std::string&)> callback);
+VTS_API void log(LogLevel level, const std::string &message);
+
+} // namespace vts
+
+#endif

@@ -24,27 +24,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dbglog/dbglog.hpp>
 #include "include/vts-browser/options.hpp"
 #include "include/vts-browser/map.hpp"
 
 namespace vts
 {
-
-void setLogMask(const std::string &mask)
-{
-    dbglog::set_mask(mask);
-}
-
-void setLogConsole(bool enable)
-{
-    dbglog::log_console(enable);
-}
-
-void setLogFile(const std::string &filename)
-{
-    dbglog::log_file(filename);
-}
 
 MapCreateOptions::MapCreateOptions(const std::string &clientId) :
     clientId(clientId), disableCache(false), hashCachePaths(true)
@@ -78,6 +62,7 @@ MapOptions::MapOptions() :
     enableRuntimeResourceExpiration(false),
     debugDetachedCamera(false),
     debugDisableMeta5(false),
+    debugDisableVirtualSurfaces(false),
     debugSaveCorruptedFiles(true),
     debugRenderSurrogates(false),
     debugRenderMeshBoxes(false),

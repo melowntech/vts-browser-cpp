@@ -35,11 +35,6 @@
 namespace vts
 {
 
-VTS_API void setLogMask(const std::string &mask);
-VTS_API void setLogConsole(bool enable);
-VTS_API void setLogFile(const std::string &filename);
-// todo log function
-
 enum class NavigationType;
 
 enum class NavigationGeographicMode
@@ -95,6 +90,7 @@ public:
     
     bool debugDetachedCamera;
     bool debugDisableMeta5;
+    bool debugDisableVirtualSurfaces;
     bool debugSaveCorruptedFiles;
     
     bool debugRenderSurrogates;

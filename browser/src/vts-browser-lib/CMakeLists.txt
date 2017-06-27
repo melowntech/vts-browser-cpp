@@ -17,6 +17,7 @@ set(PUB_HDR_LIST
 	include/vts-browser/exceptions.hpp
 	include/vts-browser/credits.hpp
 	include/vts-browser/search.hpp
+	include/vts-browser/log.hpp
 )
 
 set(HDR_LIST
@@ -55,6 +56,7 @@ set(SRC_LIST
 	search.cpp
 	cache.cpp
 	navigationSolver.cpp
+	log.cpp
 )
 
 include(data.cmake)

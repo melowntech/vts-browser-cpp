@@ -69,7 +69,7 @@ MapConfig::MapConfig(MapImpl *map, const std::string &name)
 void MapConfig::load()
 {
     clear();
-    LOG(info3) << "Parsing map config '" << name << "'";
+    LOG(info3) << "Parsing map config <" << name << ">";
     detail::Wrapper w(contentData);
     vtslibs::vts::loadMapConfig(*this, w, name);
 
@@ -82,6 +82,9 @@ void MapConfig::load()
     }
 
     namedViews[""] = view;
+    
+    // memory use
+    info.ramMemoryCost += sizeof(*this);
 }
 
 void MapConfig::clear()
@@ -145,40 +148,18 @@ void MapConfig::printSurfaceStack()
     LOG(info3) << ss.str();
 }
 
-void MapConfig::generateSurfaceStack()
+void MapConfig::generateSurfaceStack(const vtslibs::vts::VirtualSurfaceConfig
+                                     *virtualSurface)
 {
-    // remove invalid surfaces from current view
-    std::set<std::string> resSurf;
-    for (auto &&it : surfaces)
-        resSurf.insert(it.id);
-    for (auto it = view.surfaces.begin(); it != view.surfaces.end();)
+    if (virtualSurface)
     {
-        if (resSurf.find(it->first) == resSurf.end())
-            it = view.surfaces.erase(it);
-        else
-            it++;
+        LOG(info2) << "Generating (virtual) surface stack for <"
+                   << boost::algorithm::join(virtualSurface->id, ",") << ">";
     }
-
-    // remove invalid bound layers from surfaces in current view
-    std::set<std::string> resBound;
-    for (auto &&it : boundLayers)
-        resBound.insert(it.id);
-    for (auto &&s : view.surfaces)
+    else
     {
-        for (auto it = s.second.begin(); it != s.second.end();)
-        {
-            if (resBound.find(it->id) == resBound.end())
-                it = s.second.erase(it);
-            else
-                it++;
-        }
+        LOG(info2) << "Generating (real) surface stack";
     }
-
-    // remove invalid free layers from current view
-    // todo
-
-    // remove invalid bound layers from free layers in current view
-    // todo
 
     // prepare initial surface stack
     vtslibs::vts::TileSetGlues::list lst;
@@ -215,7 +196,7 @@ void MapConfig::generateSurfaceStack()
     std::reverse(lst.begin(), lst.end());
 
     // generate proper surface stack
-    surfaceStack.clear();
+    assert(surfaceStack.empty());
     for (auto &&ts : lst)
     {
         for (auto &&g : ts.glues)
@@ -271,9 +252,42 @@ void MapConfig::generateSurfaceStack()
             it->color = convertHsvToRgb(c);
         }
     }
+}
 
-    // memory use
-    info.ramMemoryCost += sizeof(*this);
+void MapConfig::consolidateView()
+{
+    // remove invalid surfaces from current view
+    std::set<std::string> resSurf;
+    for (auto &&it : surfaces)
+        resSurf.insert(it.id);
+    for (auto it = view.surfaces.begin(); it != view.surfaces.end();)
+    {
+        if (resSurf.find(it->first) == resSurf.end())
+            it = view.surfaces.erase(it);
+        else
+            it++;
+    }
+
+    // remove invalid bound layers from surfaces in current view
+    std::set<std::string> resBound;
+    for (auto &&it : boundLayers)
+        resBound.insert(it.id);
+    for (auto &&s : view.surfaces)
+    {
+        for (auto it = s.second.begin(); it != s.second.end();)
+        {
+            if (resBound.find(it->id) == resBound.end())
+                it = s.second.erase(it);
+            else
+                it++;
+        }
+    }
+
+    // remove invalid free layers from current view
+    // todo
+
+    // remove invalid bound layers from free layers in current view
+    // todo    
 }
 
 ExternalBoundLayer::ExternalBoundLayer(MapImpl *map, const std::string &name)

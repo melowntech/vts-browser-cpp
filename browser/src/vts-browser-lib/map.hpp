@@ -144,6 +144,7 @@ public:
     std::shared_ptr<MapConfig> mapConfig;
     std::shared_ptr<CoordManip> convertor;
     std::shared_ptr<AuthConfig> auth;
+    std::shared_ptr<TilesetMapping> tilesetMapping;
     std::shared_ptr<Cache> cache;
     std::string mapConfigPath;
     std::string mapConfigView;
@@ -210,7 +211,7 @@ public:
                           const std::string &authPath,
                           const std::string &sriPath);
     void purgeMapConfig();
-    void purgeTraverseCache();
+    void purgeViewCache();
     void printDebugInfo();
 
     // navigation
@@ -255,6 +256,7 @@ public:
     std::shared_ptr<BoundMetaTile> getBoundMetaTile(const std::string &name);
     std::shared_ptr<BoundMaskTile> getBoundMaskTile(const std::string &name);
     std::shared_ptr<SearchTaskImpl> getSearchTask(const std::string &name);
+    std::shared_ptr<TilesetMapping> getTilesetMapping(const std::string &name);
     Validity getResourceValidity(const std::string &name);
     Validity getResourceValidity(const std::shared_ptr<Resource> &resource);
     float computeResourcePriority(const std::shared_ptr<TraverseNode> &trav);

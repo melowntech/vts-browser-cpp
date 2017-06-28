@@ -170,7 +170,9 @@ public:
     vtslibs::vts::SurfaceCommonConfig *findSurface(const std::string &id);
     BoundInfo *getBoundInfo(const std::string &id);
     void printSurfaceStack();
-    void generateSurfaceStack();
+    void generateSurfaceStack(const vtslibs::vts::VirtualSurfaceConfig
+                              *virtualSurface = nullptr);
+    void consolidateView();
     
     std::unordered_map<std::string, std::shared_ptr<SurfaceInfo>> surfaceInfos;
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;

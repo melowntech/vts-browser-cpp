@@ -760,13 +760,17 @@ public:
                 nk_checkbox_label(&ctx, "", &posAutoDetails);
                 if (posAutoDetails)
                 {
+                    bool nomove = true;
                     for (int i = 0; i < 3; i++)
                     {
                         nk_label(&ctx, i == 0 ? "Move:" : "", NK_TEXT_LEFT);
                         posAutoMotion[i] = nk_slide_float(&ctx, -3,
                                                     posAutoMotion[i], 3, 0.1);
+                        if (std::abs(posAutoMotion[i]) > 1e-5)
+                            nomove = false;
                     }
-                    window->map->pan(posAutoMotion.data());
+                    if (!nomove)
+                        window->map->pan(posAutoMotion.data());
                     nk_label(&ctx, "Rotate:", NK_TEXT_LEFT);
                     window->map->setAutoRotation(nk_slide_float(&ctx, -1,
                                     window->map->getAutoRotation(), 1, 0.05));
@@ -968,8 +972,16 @@ public:
                 if (m.open)
                 {
                     double n[3] = { m.coord(0), m.coord(1), m.coord(2) };
-                    window->map->convert(n, n, vts::Srs::Physical,
+                    try
+                    {
+                        window->map->convert(n, n, vts::Srs::Physical,
                                              (vts::Srs)positionSrs);
+                    }
+                    catch(...)
+                    {
+                        for (int i = 0; i < 3; i++)
+                            n[i] = std::numeric_limits<double>::quiet_NaN();
+                    }
                     sprintf(buffer, "%.8f", n[0]);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                     if (nk_button_label(&ctx, "Go"))

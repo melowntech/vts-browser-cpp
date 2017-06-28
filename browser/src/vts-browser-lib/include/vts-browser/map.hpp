@@ -108,6 +108,7 @@ public:
     void setPositionViewExtent(double viewExtent, NavigationType type);
     void setPositionFov(double fov);
     void setPositionJson(const std::string &position, NavigationType type);
+    void setPositionUrl(const std::string &position, NavigationType type);
     void setAutoRotation(double value);
 
     bool getPositionSubjective() const;
@@ -116,6 +117,7 @@ public:
     double getPositionViewExtent() const;
     double getPositionFov() const;
     std::string getPositionJson() const;
+    std::string getPositionUrl() const;
     double getAutoRotation() const;
 
     void convert(const double pointFrom[3], double pointTo[3],

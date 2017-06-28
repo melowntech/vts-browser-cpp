@@ -553,6 +553,12 @@ std::shared_ptr<SearchTaskImpl> MapImpl::getSearchTask(const std::string &name)
     return getMapResource<SearchTaskImpl>(this, name);
 }
 
+std::shared_ptr<TilesetMapping> MapImpl::getTilesetMapping(
+        const std::string &name)
+{
+    return getMapResource<TilesetMapping>(this, name);
+}
+
 Validity MapImpl::getResourceValidity(const std::string &name)
 {
     auto it = resources.resources.find(name);

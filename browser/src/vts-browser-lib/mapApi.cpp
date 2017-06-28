@@ -25,7 +25,9 @@
  */
 
 #include <vts-libs/registry/json.hpp>
+#include <vts-libs/registry/io.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "include/vts-browser/map.hpp"
 #include "include/vts-browser/view.hpp"
@@ -199,7 +201,7 @@ void Map::purgeTraverseCache()
 {
     if (!isMapConfigReady())
         return;
-    impl->purgeTraverseCache();
+    impl->purgeViewCache();
 }
 
 bool Map::isMapConfigReady() const
@@ -406,6 +408,13 @@ std::string Map::getPositionJson() const
                 vtslibs::registry::asJson(impl->mapConfig->position));
 }
 
+std::string Map::getPositionUrl() const
+{
+    if (!isMapConfigReady())
+        return "";
+    return boost::lexical_cast<std::string>(impl->mapConfig->position);
+}
+
 void Map::setPositionJson(const std::string &position, NavigationType type)
 {
     if (!isMapConfigReady())
@@ -414,6 +423,15 @@ void Map::setPositionJson(const std::string &position, NavigationType type)
     if (!Json::Reader().parse(position, val))
         LOGTHROW(err2, std::runtime_error) << "invalid position json";
     impl->mapConfig->position = vtslibs::registry::positionFromJson(val);
+    impl->navigation.type = type;
+}
+
+void Map::setPositionUrl(const std::string &position, NavigationType type)
+{
+    if (!isMapConfigReady())
+        return;
+    impl->mapConfig->position
+            = boost::lexical_cast<vtslibs::registry::Position>(position);
     impl->navigation.type = type;
 }
 
@@ -517,7 +535,7 @@ void Map::setViewCurrent(const std::string &name)
         LOGTHROW(err2, std::runtime_error)
                 << "specified mapconfig view could not be found";
     impl->mapConfig->view = it->second;
-    impl->purgeTraverseCache();
+    impl->purgeViewCache();
     impl->mapConfigView = name;
 }
 
@@ -540,7 +558,7 @@ void Map::setViewData(const std::string &name, const MapView &view)
     if (name == getViewCurrent())
     {
         impl->mapConfig->view = impl->mapConfig->namedViews[name];
-        impl->purgeTraverseCache();
+        impl->purgeViewCache();
     }
 }
 

@@ -100,13 +100,12 @@ void MapImpl::setMapConfigPath(const std::string &mapConfigPath,
 void MapImpl::purgeMapConfig()
 {
     LOG(info2) << "Purge map config";
-    
+
     if (auth)
         auth->state = Resource::State::finalizing;
     if (mapConfig)
         mapConfig->state = Resource::State::finalizing;
-    
-    initialized = false;
+
     auth.reset();
     mapConfig.reset();
     renderer.credits.purge();
@@ -115,24 +114,25 @@ void MapImpl::purgeMapConfig()
     navigation.lastPanZShift.reset();
     std::queue<std::shared_ptr<class HeightRequest>>()
             .swap(navigation.panZQueue);
-    purgeTraverseCache();
+    purgeViewCache();
 }
 
-void MapImpl::purgeTraverseCache()
+void MapImpl::purgeViewCache()
 {
-    LOG(info2) << "Purge traverse cache";
-    
+    LOG(info2) << "Purge view cache";
+
+    if (mapConfig)
+    {
+        mapConfig->consolidateView();
+        mapConfig->surfaceStack.clear();
+    }
+
     renderer.traverseRoot.reset();
+    tilesetMapping.reset();
     statistics.resetFrame();
-    draws = MapDraws();
+    //draws = MapDraws();
     mapConfigView = "";
-    
-    if (!mapConfig || !*mapConfig)
-        return;
-    
-    mapConfig->generateSurfaceStack();
-    NodeInfo nodeInfo(mapConfig->referenceFrame, TileId(), false, *mapConfig);
-    renderer.traverseRoot = std::make_shared<TraverseNode>(nodeInfo);    
+    initialized = false;
 }
 
 const TileId MapImpl::roundId(TileId nodeId)
@@ -868,6 +868,9 @@ bool MapImpl::prerequisitesCheck()
 
     if (mapConfig)
         touchResource(mapConfig);
+    
+    if (tilesetMapping)
+        touchResource(tilesetMapping);
 
     if (initialized)
         return true;
@@ -914,7 +917,36 @@ bool MapImpl::prerequisitesCheck()
             return false;
     }
 
-    purgeTraverseCache();
+    purgeViewCache();
+
+    // check for virtual surface
+    {
+        std::vector<std::string> viewSurfaces;
+        viewSurfaces.reserve(mapConfig->view.surfaces.size());
+        for (auto &&it : mapConfig->view.surfaces)
+            viewSurfaces.push_back(it.first);
+        std::sort(viewSurfaces.begin(), viewSurfaces.end());
+        for (vtslibs::vts::VirtualSurfaceConfig &it :mapConfig->virtualSurfaces)
+        {
+            std::vector<std::string> virtSurfaces(it.id.begin(), it.id.end());
+            if (virtSurfaces.size() != viewSurfaces.size())
+                continue;
+            std::sort(virtSurfaces.begin(), virtSurfaces.end());
+            if (!boost::algorithm::equals(viewSurfaces, virtSurfaces))
+                continue;
+            tilesetMapping = getTilesetMapping(MapConfig::convertPath(
+                                                it.mapping, mapConfig->name));
+            if (!testAndThrow(tilesetMapping->state,"Tileset mapping failure."))
+                return false;
+            mapConfig->generateSurfaceStack(&it);
+            break;
+        }
+    }
+
+    if (mapConfig->surfaceStack.empty())
+        mapConfig->generateSurfaceStack();
+    renderer.traverseRoot = std::make_shared<TraverseNode>(NodeInfo(
+                    mapConfig->referenceFrame, TileId(), false, *mapConfig));
 
     renderer.credits.merge(mapConfig.get());
     mapConfig->boundInfos.clear();

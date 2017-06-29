@@ -135,18 +135,17 @@ MapView::BoundLayerInfo::BoundLayerInfo(const std::string &id) :
 
 Map::Map(const MapCreateOptions &options)
 {
-    LOG(info4) << "Creating map";
+    LOG(info3) << "Creating map";
     impl = std::shared_ptr<MapImpl>(new MapImpl(this, options));
 }
 
 Map::~Map()
 {
-    LOG(info4) << "Destroying map";
+    LOG(info3) << "Destroying map";
 }
 
 void Map::dataInitialize(const std::shared_ptr<Fetcher> &fetcher)
 {
-    dbglog::thread_id("data");
     impl->resourceDataInitialize(fetcher);
 }
 
@@ -162,7 +161,6 @@ void Map::dataFinalize()
 
 void Map::renderInitialize()
 {
-    dbglog::thread_id("render");
     impl->resourceRenderInitialize();
     impl->renderInitialize();
 }

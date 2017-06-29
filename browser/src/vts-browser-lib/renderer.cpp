@@ -130,7 +130,7 @@ void MapImpl::purgeViewCache()
     renderer.traverseRoot.reset();
     tilesetMapping.reset();
     statistics.resetFrame();
-    //draws = MapDraws();
+    draws = MapDraws();
     mapConfigView = "";
     initialized = false;
 }
@@ -923,8 +923,6 @@ bool MapImpl::prerequisitesCheck()
         if (!ok)
             return false;
     }
-
-    purgeViewCache();
 
     // check for virtual surface
     if (!options.debugDisableVirtualSurfaces)

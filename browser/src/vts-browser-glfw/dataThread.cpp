@@ -66,9 +66,7 @@ void DataThread::run()
     glfwMakeContextCurrent(window);
     while (!stop && !map)
         usleep(1000);
-    vts::setLogThreadName("downloader"); // the downloader threads inherits the name
     map->dataInitialize(fetcher);
-    vts::setLogThreadName("data");
     while (!stop)
     {
         double timeFrameStart = glfwGetTime();

@@ -65,7 +65,7 @@ public:
                           const std::string &authPath = "",
                           const std::string &sriPath = "");
     std::string &getMapConfigPath() const;
-    void purgeTraverseCache();
+    void purgeViewCache();
 
     /// returns whether the map config has been downloaded
     /// and parsed successfully
@@ -78,6 +78,7 @@ public:
     double getMapRenderProgress() const;
 
     void dataInitialize(const std::shared_ptr<class Fetcher> &fetcher);
+    /// returns true, if there are no more tasks in a queue at the moment
     bool dataTick();
     void dataFinalize();
 

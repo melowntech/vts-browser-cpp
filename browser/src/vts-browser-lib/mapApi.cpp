@@ -195,10 +195,8 @@ std::string &Map::getMapConfigPath() const
     return impl->mapConfigPath;
 }
 
-void Map::purgeTraverseCache()
+void Map::purgeViewCache()
 {
-    if (!isMapConfigReady())
-        return;
     impl->purgeViewCache();
 }
 

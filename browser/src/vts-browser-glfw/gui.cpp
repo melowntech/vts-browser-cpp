@@ -557,7 +557,7 @@ public:
                                                     o.debugDisableMeta5);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (old != o.debugDisableMeta5)
-                    window->map->purgeTraverseCache();
+                    window->map->purgeViewCache();
             }
             
             // debug disable virtual surfaces
@@ -568,7 +568,7 @@ public:
                             "disable virt.s.", o.debugDisableVirtualSurfaces);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (old != o.debugDisableVirtualSurfaces)
-                    window->map->purgeTraverseCache();
+                    window->map->purgeViewCache();
             }
             
             // print debug info

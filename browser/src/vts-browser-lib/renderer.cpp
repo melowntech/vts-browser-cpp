@@ -971,6 +971,8 @@ bool MapImpl::prerequisitesCheck()
 
     LOG(info3) << "Map config ready";
     initialized = true;
+    if (callbacks.mapconfigReady)
+        callbacks.mapconfigReady(map);
     return true;
 }
 

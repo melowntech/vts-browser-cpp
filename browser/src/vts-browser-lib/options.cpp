@@ -56,6 +56,7 @@ MapOptions::MapOptions() :
     navigationSamplesPerViewExtent(8),
     maxFetchRedirections(5),
     maxFetchRetries(10),
+    fetchFirstRetryTimeOffset(15),
     navigationType(NavigationType::Quick),
     geographicNavMode(NavigationGeographicMode::Dynamic),
     enableSearchResultsFilter(true),

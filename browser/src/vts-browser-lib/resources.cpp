@@ -447,7 +447,8 @@ void MapImpl::resourceRenderTick()
                 }
                 if (r->retryTime == -1)
                 {
-                    r->retryTime = (1 << r->retryNumber) * 15 + current;
+                    r->retryTime = (1 << r->retryNumber)
+                            * options.fetchFirstRetryTimeOffset + current;
                     LOG(warn2) << "Resource <" << r->name
                                << "> will retry in "
                                << (r->retryTime - current) << " seconds";

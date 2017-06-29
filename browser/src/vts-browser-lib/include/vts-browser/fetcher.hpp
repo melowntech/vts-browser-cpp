@@ -60,9 +60,9 @@ public:
         SriIndex,
     };
     static bool isResourceTypeMandatory(ResourceType resourceType);
-    
+
     const ResourceType resourceType;
-    
+
     // query
     std::string queryUrl;
     std::map<std::string, std::string> queryHeaders;
@@ -71,8 +71,12 @@ public:
     Buffer contentData;
     std::string contentType;
     std::string replyRedirectUrl;
+
+    // absolute time in seconds, compared to std::time
+    //   -1 = invalid value
+    //   -2 = always revalidate
     std::time_t replyExpires;
-    uint32 replyCode;
+    uint32 replyCode; // http status code
 
     FetchTask(const std::string &url, ResourceType resourceType);
     virtual ~FetchTask();
@@ -85,14 +89,19 @@ public:
     FetcherOptions();
 
     uint32 threads;
-    sint32 timeout;
+    sint32 timeout; // ms
     bool extraFileLog;
 
     // curl options
     uint32 maxHostConnections;
     uint32 maxTotalConections;
     uint32 maxCacheConections;
-    sint32 pipelining; // 0, 1, 2 or 3
+
+    // 0 = use http/1
+    // 1 = use http/1.1
+    // 2 = use http/2, fallback http/1
+    // 3 = use http/2, fallback http/1.1
+    sint32 pipelining;
 };
 
 class VTS_API Fetcher

@@ -71,16 +71,17 @@ public:
     double cameraInertiaPan;
     double cameraInertiaZoom;
     double cameraInertiaRotate;
-    double navigationLatitudeThreshold;
+    double navigationLatitudeThreshold; // degrees
     double navigationMaxViewExtentMult;
     double navigationMaxPositionChange;
-    uint64 maxResourcesMemory;
+    uint64 maxResourcesMemory; // bytes
     uint32 maxConcurrentDownloads;
     uint32 maxNodeUpdatesPerTick;
     uint32 maxResourceProcessesPerTick;
     uint32 navigationSamplesPerViewExtent;
     uint32 maxFetchRedirections;
     uint32 maxFetchRetries;
+    uint32 fetchFirstRetryTimeOffset; // seconds
     
     NavigationType navigationType;
     NavigationGeographicMode geographicNavMode;
@@ -109,7 +110,10 @@ public:
     /// function callback to upload a mesh to gpu
     std::function<void(class ResourceInfo &, const class GpuMeshSpec &)>
             loadMesh;
-    
+
+    /// function callback when the mapconfig is ready
+    std::function<void(class Map *map)> mapconfigReady;
+
     /// function callbacks for camera overrides (all in physical srs)
     std::function<void(double*)> cameraOverrideEye;
     std::function<void(double*)> cameraOverrideTarget;

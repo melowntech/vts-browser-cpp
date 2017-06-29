@@ -61,6 +61,7 @@ bool allowDiskCache(Resource::ResourceType type)
     case Resource::ResourceType::AuthConfig:
     case Resource::ResourceType::MapConfig:
     case Resource::ResourceType::BoundLayerConfig:
+    case Resource::ResourceType::TilesetMappingConfig:
         return false;
     default:
         return true;
@@ -72,6 +73,11 @@ bool allowDiskCache(Resource::ResourceType type)
 MapImpl::Resources::Resources()
     : downloads(0), fetcher(nullptr)
 {}
+
+bool FetchTask::isResourceTypeMandatory(FetchTask::ResourceType resourceType)
+{
+    return !allowDiskCache(resourceType);
+}
 
 FetchTask::FetchTask(const std::string &url, ResourceType resourceType) :
     resourceType(resourceType), queryUrl(url), replyExpires(-1), replyCode(0)

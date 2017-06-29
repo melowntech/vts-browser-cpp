@@ -560,6 +560,17 @@ public:
                     window->map->purgeTraverseCache();
             }
             
+            // debug disable virtual surfaces
+            {
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+                bool old = o.debugDisableVirtualSurfaces;
+                o.debugDisableVirtualSurfaces = nk_check_label(&ctx,
+                            "disable virt.s.", o.debugDisableVirtualSurfaces);
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+                if (old != o.debugDisableVirtualSurfaces)
+                    window->map->purgeTraverseCache();
+            }
+            
             // print debug info
             nk_label(&ctx, "", NK_TEXT_LEFT);
             if (nk_button_label(&ctx, "Print debug info"))

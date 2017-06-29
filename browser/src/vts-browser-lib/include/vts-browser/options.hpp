@@ -47,7 +47,7 @@ enum class NavigationGeographicMode
 class VTS_API MapCreateOptions
 {
 public:
-    MapCreateOptions(const std::string &clientId);
+    MapCreateOptions(const std::string &clientId = "");
     
     std::string clientId;
     std::string cachePath;

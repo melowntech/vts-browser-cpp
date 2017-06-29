@@ -250,5 +250,67 @@ void MapImpl::emptyTraverseQueue()
         renderer.traverseQueue.pop();
 }
 
+ExternalBoundLayer::ExternalBoundLayer(MapImpl *map, const std::string &name)
+    : Resource(map, name, FetchTask::ResourceType::BoundLayerConfig)
+{
+    priority = std::numeric_limits<float>::infinity();
+}
+
+void ExternalBoundLayer::load()
+{
+    detail::Wrapper w(contentData);
+    *(vtslibs::registry::BoundLayer*)this
+            = vtslibs::registry::loadBoundLayer(w, name);
+}
+
+TilesetMapping::TilesetMapping(MapImpl *map, const std::string &name) :
+    Resource(map, name, FetchTask::ResourceType::TilesetMappingConfig)
+{
+    priority = std::numeric_limits<float>::infinity();
+}
+
+void TilesetMapping::load()
+{
+    LOG(info2) << "Loading tileset mapping <" << name << ">";
+    dataRaw = vtslibs::vts::deserializeTsMap(std::string(contentData.data(),
+                                                         contentData.size()));
+}
+
+void TilesetMapping::update()
+{
+    surfaceStack.clear();
+    surfaceStack.reserve(dataRaw.size() + 1);
+    // the sourceReference in metanodes is one-based
+    surfaceStack.push_back(MapConfig::SurfaceStackItem());
+    for (auto &&it : dataRaw)
+    {
+        if (it.size() == 1)
+        { // surface
+            std::vector<std::string> id;
+            id.push_back(map->mapConfig->surfaces[it[0]].id);
+            MapConfig::SurfaceStackItem i;
+            i.surface = std::make_shared<MapConfig::SurfaceInfo>(
+                    map->mapConfig->surfaces[it[0]],
+                    map->mapConfig->name);
+            i.surface->name = id;
+            surfaceStack.push_back(i);
+        }
+        else
+        { // glue
+            std::vector<std::string> id;
+            id.reserve(it.size());
+            for (auto &&it2 : it)
+                id.push_back(map->mapConfig->surfaces[it2].id);
+            MapConfig::SurfaceStackItem i;
+            i.surface = std::make_shared<MapConfig::SurfaceInfo>(
+                    *map->mapConfig->findGlue(id),
+                    map->mapConfig->name);
+            i.surface->name = id;
+            surfaceStack.push_back(i);
+        }
+    }
+    MapConfig::colorizeSurfaceStack(surfaceStack);
+}
+
 } // namespace vts
 

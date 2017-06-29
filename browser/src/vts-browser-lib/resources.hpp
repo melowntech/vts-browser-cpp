@@ -172,6 +172,8 @@ public:
     void printSurfaceStack();
     void generateSurfaceStack(const vtslibs::vts::VirtualSurfaceConfig
                               *virtualSurface = nullptr);
+    static void colorizeSurfaceStack(std::vector<MapConfig::SurfaceStackItem>
+                                     &surfaceStack);
     void consolidateView();
     
     std::unordered_map<std::string, std::shared_ptr<SurfaceInfo>> surfaceInfos;
@@ -260,8 +262,10 @@ class TilesetMapping : public Resource
 public:
     TilesetMapping(MapImpl *map, const std::string &name);
     void load() override;
+    void update();
 
-    vtslibs::vts::TilesetReferencesList data;
+    vtslibs::vts::TilesetReferencesList dataRaw;
+    std::vector<MapConfig::SurfaceStackItem> surfaceStack;
 };
 
 } // namespace vts

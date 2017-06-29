@@ -440,7 +440,14 @@ bool MapImpl::traverseDetermineSurface(
         if (n->geometry())
         {
             node = n;
-            topmost = &it;
+            if (tilesetMapping)
+            {
+                assert(n->sourceReference > 0
+                   && n->sourceReference <= tilesetMapping->surfaceStack.size());
+                topmost = &tilesetMapping->surfaceStack[n->sourceReference];
+            }
+            else
+                topmost = &it;
         }
         if (!node)
             node = n;
@@ -868,7 +875,7 @@ bool MapImpl::prerequisitesCheck()
 
     if (mapConfig)
         touchResource(mapConfig);
-    
+
     if (tilesetMapping)
         touchResource(tilesetMapping);
 
@@ -920,6 +927,7 @@ bool MapImpl::prerequisitesCheck()
     purgeViewCache();
 
     // check for virtual surface
+    if (!options.debugDisableVirtualSurfaces)
     {
         std::vector<std::string> viewSurfaces;
         viewSurfaces.reserve(mapConfig->view.surfaces.size());
@@ -939,12 +947,14 @@ bool MapImpl::prerequisitesCheck()
             if (!testAndThrow(tilesetMapping->state,"Tileset mapping failure."))
                 return false;
             mapConfig->generateSurfaceStack(&it);
+            tilesetMapping->update();
             break;
         }
     }
 
     if (mapConfig->surfaceStack.empty())
         mapConfig->generateSurfaceStack();
+
     renderer.traverseRoot = std::make_shared<TraverseNode>(NodeInfo(
                     mapConfig->referenceFrame, TileId(), false, *mapConfig));
 

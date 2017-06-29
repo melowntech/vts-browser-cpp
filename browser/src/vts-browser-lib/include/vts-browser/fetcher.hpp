@@ -48,6 +48,7 @@ public:
         MapConfig,
         AuthConfig,
         BoundLayerConfig,
+        TilesetMappingConfig,
         BoundMetaTile,
         BoundMaskTile,
         MetaTile,
@@ -57,8 +58,9 @@ public:
         NavTile,
         Search,
         SriIndex,
-        TilesetMapping,
     };
+    static bool isResourceTypeMandatory(ResourceType resourceType);
+    
     const ResourceType resourceType;
     
     // query

@@ -112,7 +112,7 @@ public:
             loadMesh;
 
     /// function callback when the mapconfig is ready
-    std::function<void(class Map &map)> mapconfigReady;
+    std::function<void()> mapconfigReady;
 
     /// function callbacks for camera overrides (all in physical srs)
     std::function<void(double*)> cameraOverrideEye;

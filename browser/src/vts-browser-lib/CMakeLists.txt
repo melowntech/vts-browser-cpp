@@ -43,6 +43,7 @@ set(SRC_LIST
 	mapUtilities.cpp
 	math.cpp
 	navigation.cpp
+	navigationAltitude.cpp
 	obj.cpp
 	options.cpp
 	renderer.cpp

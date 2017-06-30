@@ -165,8 +165,8 @@ public:
         vec3 targetPoint;
         double autoRotation;
         double targetViewExtent;
-        std::queue<std::shared_ptr<class HeightRequest>> panZQueue;
-        boost::optional<double> lastPanZShift;
+        boost::optional<double> lastPositionAltitudeShift;
+        boost::optional<double> positionAltitudeResetHeight;
         NavigationGeographicMode geographicMode;
         NavigationType type;
         
@@ -221,12 +221,8 @@ public:
     void setPoint(const vec3 &point, NavigationType type);
     void setRotation(const vec3 &euler, NavigationType type);
     void setViewExtent(double viewExtent, NavigationType type);
-    void checkPanZQueue();
-    const std::pair<vtslibs::vts::NodeInfo, vec2> findInfoNavRoot(
-            const vec2 &navPos);
-    const NodeInfo findInfoSdsSampled(const NodeInfo &info,
-                                      const vec2 &sdsPos);
-    void resetPositionAltitude(double resetOffset);
+    void updatePositionAltitudeShift();
+    void resetPositionAltitude(double altitude);
     void resetNavigationGeographicMode();
     void convertPositionSubjObj();
     void positionToCamera(vec3 &center, vec3 &dir, vec3 &up);

@@ -111,9 +111,8 @@ void MapImpl::purgeMapConfig()
     renderer.credits.purge();
     resetNavigationGeographicMode();
     navigation.autoRotation = 0;
-    navigation.lastPanZShift.reset();
-    std::queue<std::shared_ptr<class HeightRequest>>()
-            .swap(navigation.panZQueue);
+    navigation.lastPositionAltitudeShift.reset();
+    navigation.positionAltitudeResetHeight.reset();
     purgeViewCache();
 }
 
@@ -389,7 +388,6 @@ void MapImpl::traverseValidNode(const std::shared_ptr<TraverseNode> &trav)
         }
         if (allOk)
         {
-            std::vector<std::shared_ptr<TraverseNode>> ts;
             for (std::shared_ptr<TraverseNode> &t : trav->childs)
                 renderer.traverseQueue.push(TraverseQueueItem(
                         t, computeResourcePriority(t)));

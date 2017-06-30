@@ -51,7 +51,8 @@ void MapStatistics::resetAll()
     currentGpuMemUse = 0;
     currentRamMemUse = 0;
     currentResources = 0;
-    lastHeightRequestLod = 0;
+    desiredNavigationLod = 0;
+    usedNavigationlod = 0;
     currentResourcePreparing = 0;
     debug = 0;
 }

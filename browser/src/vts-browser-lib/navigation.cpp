@@ -164,7 +164,7 @@ void MapImpl::updateNavigation()
     assert(options.navigationLatitudeThreshold > 0
            && options.navigationLatitudeThreshold < 90);
 
-    updatePositionAltitudeShift();
+    //updatePositionAltitudeShift();
 
     vtslibs::registry::Position &pos = mapConfig->position;
     vec3 p = vecFromUblas<vec3>(pos.position);

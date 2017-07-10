@@ -97,21 +97,25 @@ public:
 class TraverseNode
 {
 public:
-    NodeInfo nodeInfo;
-    vec3 cornersPhys[8];
-    vec3 aabbPhys[2];
-    vec3 surrogatePhys;
-    std::vector<std::shared_ptr<RenderTask>> draws;
+    struct MetaInfo
+    {
+        std::vector<vtslibs::registry::CreditId> credits;
+        vec3 cornersPhys[8];
+        vec3 aabbPhys[2];
+        vec3 surrogatePhys;
+        const MapConfig::SurfaceStackItem *surface;
+        uint32 flags;
+        float surrogateValue;
+        float texelSize;
+        uint16 displaySize;
+        MetaInfo();
+    };
+
+    boost::optional<MetaInfo> meta;
     std::vector<std::shared_ptr<TraverseNode>> childs;
-    std::vector<vtslibs::registry::CreditId> credits;
-    const MapConfig::SurfaceStackItem *surface;
+    std::vector<std::shared_ptr<RenderTask>> draws;
+    NodeInfo nodeInfo;
     uint32 lastAccessTime;
-    uint32 flags;
-    float texelSize;
-    float surrogateValue;
-    uint16 displaySize;
-    Validity validity;
-    bool empty;
 
     static std::atomic<sint32> instanceCounter;
 
@@ -126,10 +130,11 @@ class TraverseQueueItem
 {
 public:
     TraverseQueueItem(const std::shared_ptr<TraverseNode> &trav,
-                      float priority);
+                      float priority, bool loadOnly);
     
     std::shared_ptr<TraverseNode> trav;
     float priority;
+    bool loadOnly;
     
     bool operator < (const TraverseQueueItem &other) const;
 };
@@ -274,9 +279,8 @@ public:
     Validity checkMetaNode(MapConfig::SurfaceInfo *surface,
                 const TileId &nodeId, const MetaNode *&node, double priority);
     void renderNode(const std::shared_ptr<TraverseNode> &trav);
-    void traverseValidNode(const std::shared_ptr<TraverseNode> &trav);
-    bool traverseDetermineSurface(const std::shared_ptr<TraverseNode> &trav);
-    bool traverseDetermineBoundLayers(
+    bool travDetermineMeta(const std::shared_ptr<TraverseNode> &trav);
+    bool travDetermineDraws(
             const std::shared_ptr<TraverseNode> &trav);
     void traverse(const std::shared_ptr<TraverseNode> &trav, bool loadOnly);
     void traverseClearing(const std::shared_ptr<TraverseNode> &trav);

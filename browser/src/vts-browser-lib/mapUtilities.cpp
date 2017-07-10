@@ -168,14 +168,14 @@ bool RenderTask::ready() const
     return true;
 }
 
-TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
-    : nodeInfo(nodeInfo), surface(nullptr), lastAccessTime(0),
-      flags(0), texelSize(0),
-      surrogateValue(vtslibs::vts::GeomExtents::invalidSurrogate),
-      displaySize(0), validity(Validity::Indeterminate), empty(false)
+TraverseNode::MetaInfo::MetaInfo() :
+    surrogatePhys(std::numeric_limits<double>::quiet_NaN(),
+                  std::numeric_limits<double>::quiet_NaN(),
+                  std::numeric_limits<double>::quiet_NaN()),
+    surface(nullptr), flags(0),
+    surrogateValue(vtslibs::vts::GeomExtents::invalidSurrogate),
+    texelSize(0), displaySize(0)
 {
-    instanceCounter++;
-    
     // initialize corners to NAN
     {
         vec3 n;
@@ -194,6 +194,12 @@ TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
     }
 }
 
+TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
+    : nodeInfo(nodeInfo), lastAccessTime(0)
+{
+    instanceCounter++;
+}
+
 TraverseNode::~TraverseNode()
 {
     instanceCounter--;
@@ -201,8 +207,9 @@ TraverseNode::~TraverseNode()
 
 double TraverseNode::distancePhys(const vec3 &point) const
 {
+    assert(meta);
     double dist = std::numeric_limits<double>::infinity();
-    for (auto &it : cornersPhys)
+    for (auto &it : meta->cornersPhys)
         dist = std::min(dist, length(vec3(it - point)));
     return dist;
 }
@@ -211,13 +218,9 @@ std::atomic<sint32> TraverseNode::instanceCounter;
 
 void TraverseNode::clear()
 {
-    draws.clear();
+    meta.reset();
     childs.clear();
-    credits.clear();
-    surface = nullptr;
-    empty = false;
-    if (validity == Validity::Valid)
-        validity = Validity::Indeterminate;
+    draws.clear();
 }
 
 bool TraverseNode::ready() const
@@ -235,8 +238,8 @@ float MapImpl::computeResourcePriority(
 }
 
 TraverseQueueItem::TraverseQueueItem(const std::shared_ptr<TraverseNode> &trav,
-                                     float priority) :
-    trav(trav), priority(priority)
+                                     float priority, bool loadOnly) :
+    trav(trav), priority(priority), loadOnly(loadOnly)
 {}
 
 bool TraverseQueueItem::operator < (const TraverseQueueItem &other) const

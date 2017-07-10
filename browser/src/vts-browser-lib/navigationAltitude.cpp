@@ -281,8 +281,9 @@ void MapImpl::updatePositionAltitudeShift()
     assert(renderer.traverseRoot);
     assert(convertor);
 
+    statistics.desiredNavigationLod = 0;
     statistics.usedNavigationlod = 0;
-    if (renderer.traverseRoot->validity != Validity::Valid)
+    if (!renderer.traverseRoot || !renderer.traverseRoot->meta)
         return;
 
     // find surface division coordinates (and appropriate node info)
@@ -325,7 +326,7 @@ void MapImpl::updatePositionAltitudeShift()
         auto p = t;
         for (auto &&it : t->childs)
         {
-            if (it->validity == Validity::Valid)
+            if (it->meta)
             {
                 if (!it->nodeInfo.inside(vecToUblas<math::Point2>(sds)))
                     continue;
@@ -336,9 +337,10 @@ void MapImpl::updatePositionAltitudeShift()
         if (t == p)
             break;
     }
-    if (!vtslibs::vts::GeomExtents::validSurrogate(t->surrogateValue))
+    if (!vtslibs::vts::GeomExtents::validSurrogate(t->meta->surrogateValue))
         return;
     assert(info->inside(vecToUblas<math::Point2>(sds)));
+    assert(t->meta);
     statistics.usedNavigationlod = t->nodeInfo.nodeId().lod;
     
     // todo interpolation
@@ -353,14 +355,14 @@ void MapImpl::updatePositionAltitudeShift()
     //else
     if (navigation.lastPositionAltitudeShift)
     {
-        navigation.targetPoint[2] += t->surrogateValue
+        navigation.targetPoint[2] += t->meta->surrogateValue
                 - *navigation.lastPositionAltitudeShift;
     }
     else
     {
-        navigation.targetPoint[2] = t->surrogateValue;
+        navigation.targetPoint[2] = t->meta->surrogateValue;
     }
-    navigation.lastPositionAltitudeShift = t->surrogateValue;
+    navigation.lastPositionAltitudeShift = t->meta->surrogateValue;
 }
 
 void MapImpl::resetPositionAltitude(double altitude)

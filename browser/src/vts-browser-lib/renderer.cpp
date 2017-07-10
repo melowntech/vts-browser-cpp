@@ -131,6 +131,7 @@ void MapImpl::purgeViewCache()
     tilesetMapping.reset();
     statistics.resetFrame();
     draws = MapDraws();
+    credits = MapCredits();
     mapConfigView = "";
     initialized = false;
 }

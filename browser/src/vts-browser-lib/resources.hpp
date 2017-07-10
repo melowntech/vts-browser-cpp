@@ -255,6 +255,7 @@ public:
     void load() override;
     
     Buffer data;
+    const std::string mapConfigPath;
 };
 
 class TilesetMapping : public Resource

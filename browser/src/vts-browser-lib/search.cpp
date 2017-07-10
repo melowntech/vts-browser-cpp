@@ -236,7 +236,8 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
 } // namespace
 
 SearchTaskImpl::SearchTaskImpl(MapImpl *map, const std::string &name) :
-    Resource(map, name, FetchTask::ResourceType::Search)
+    Resource(map, name, FetchTask::ResourceType::Search),
+    mapConfigPath(map->mapConfigPath)
 {}
 
 void SearchTaskImpl::load()
@@ -262,6 +263,8 @@ SearchTask::~SearchTask()
 
 void SearchTask::updateDistances(const double point[3])
 {
+    if (impl->map->mapConfigPath != impl->mapConfigPath)
+        return;
     for (auto &&it : results)
     {
         it.distance = distance(impl->map, it.position, point);

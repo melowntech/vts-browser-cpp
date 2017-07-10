@@ -27,6 +27,7 @@
 #include <limits>
 #include <cmath>
 #include <cstdio>
+#include <unistd.h>
 
 #include <vts-browser/map.hpp>
 #include <vts-browser/statistics.hpp>

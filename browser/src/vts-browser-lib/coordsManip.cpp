@@ -83,8 +83,9 @@ public:
         if (n.type == vtslibs::registry::Srs::Type::geographic)
         {
             auto r = n.srsDef.reference();
-            geodesic_ = boost::in_place
-                (r.GetSemiMajor(), 1 / r.GetInvFlattening());
+            auto a = r.GetSemiMajor();
+            auto b = r.GetSemiMinor();
+            geodesic_ = boost::in_place(a, (a - b) / a);
         }
         convertors[nav][phys] = std::shared_ptr<vtslibs::vts::CsConvertor>(
                     &navToPhys_, DummyDeleter());

@@ -92,8 +92,8 @@ void MapImpl::setMapConfigPath(const std::string &mapConfigPath,
                << (!sriPath.empty() ? "with" : "without")
                << " SRI";
     this->mapConfigPath = mapConfigPath;
-    this->authPath = authPath;
-    this->sriPath = sriPath;
+    resources.authPath = authPath;
+    resources.sriPath = sriPath;
     purgeMapConfig();
 }
 
@@ -101,14 +101,15 @@ void MapImpl::purgeMapConfig()
 {
     LOG(info2) << "Purge map config";
 
-    if (auth)
-        auth->state = Resource::State::finalizing;
+    if (resources.auth)
+        resources.auth->state = Resource::State::finalizing;
     if (mapConfig)
         mapConfig->state = Resource::State::finalizing;
 
-    auth.reset();
+    resources.auth.reset();
     mapConfig.reset();
     renderer.credits.purge();
+    resources.searchTasks.clear();
     resetNavigationGeographicMode();
     navigation.autoRotation = 0;
     navigation.lastPanZShift.reset();
@@ -128,7 +129,7 @@ void MapImpl::purgeViewCache()
     }
 
     renderer.traverseRoot.reset();
-    tilesetMapping.reset();
+    renderer.tilesetMapping.reset();
     statistics.resetFrame();
     draws = MapDraws();
     credits = MapCredits();
@@ -441,11 +442,12 @@ bool MapImpl::traverseDetermineSurface(
         if (n->geometry())
         {
             node = n;
-            if (tilesetMapping)
+            if (renderer.tilesetMapping)
             {
-                assert(n->sourceReference > 0
-                   && n->sourceReference <= tilesetMapping->surfaceStack.size());
-                topmost = &tilesetMapping->surfaceStack[n->sourceReference];
+                assert(n->sourceReference > 0 && n->sourceReference
+                       <= renderer.tilesetMapping->surfaceStack.size());
+                topmost = &renderer.tilesetMapping
+                        ->surfaceStack[n->sourceReference];
             }
             else
                 topmost = &it;
@@ -868,17 +870,17 @@ void MapImpl::updateCamera()
 
 bool MapImpl::prerequisitesCheck()
 {
-    if (auth)
+    if (resources.auth)
     {
-        auth->checkTime();
-        touchResource(auth);
+        resources.auth->checkTime();
+        touchResource(resources.auth);
     }
 
     if (mapConfig)
         touchResource(mapConfig);
 
-    if (tilesetMapping)
-        touchResource(tilesetMapping);
+    if (renderer.tilesetMapping)
+        touchResource(renderer.tilesetMapping);
 
     if (initialized)
         return true;
@@ -886,10 +888,10 @@ bool MapImpl::prerequisitesCheck()
     if (mapConfigPath.empty())
         return false;
 
-    if (!authPath.empty())
+    if (!resources.authPath.empty())
     {
-        auth = getAuthConfig(authPath);
-        if (!testAndThrow(auth->state, "Authentication failure."))
+        resources.auth = getAuthConfig(resources.authPath);
+        if (!testAndThrow(resources.auth->state, "Authentication failure."))
             return false;
     }
 
@@ -941,12 +943,13 @@ bool MapImpl::prerequisitesCheck()
             std::sort(virtSurfaces.begin(), virtSurfaces.end());
             if (!boost::algorithm::equals(viewSurfaces, virtSurfaces))
                 continue;
-            tilesetMapping = getTilesetMapping(MapConfig::convertPath(
+            renderer.tilesetMapping = getTilesetMapping(MapConfig::convertPath(
                                                 it.mapping, mapConfig->name));
-            if (!testAndThrow(tilesetMapping->state,"Tileset mapping failure."))
+            if (!testAndThrow(renderer.tilesetMapping->state,
+                              "Tileset mapping failure."))
                 return false;
             mapConfig->generateSurfaceStack(&it);
-            tilesetMapping->update();
+            renderer.tilesetMapping->update();
             break;
         }
     }
@@ -982,7 +985,7 @@ void MapImpl::renderTickPrepare()
     if (!prerequisitesCheck())
         return;
     
-    assert(!auth || *auth);
+    assert(!resources.auth || *resources.auth);
     assert(mapConfig && *mapConfig);
     assert(convertor);
     assert(renderer.traverseRoot);

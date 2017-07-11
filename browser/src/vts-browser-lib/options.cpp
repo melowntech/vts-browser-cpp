@@ -31,12 +31,17 @@ namespace vts
 {
 
 MapCreateOptions::MapCreateOptions(const std::string &clientId) :
-    clientId(clientId), disableCache(false), hashCachePaths(true)
+    clientId(clientId),
+    searchUrlFallback("https://n1.windyty.com/search.php?format=json"
+                       "&addressdetails=1&limit=20&q={value}"),
+    searchSrsFallback("+proj=longlat +datum=WGS84 +nodefs"),
+    disableCache(false),
+    hashCachePaths(true),
+    disableSearchUrlFallbackOutsideEarth(true),
+    disableBrowserOptionsSearchUrls(false)
 {}
 
 MapOptions::MapOptions() :
-    searchUrl("https://n1.windyty.com/search.php?format=json"
-              "&addressdetails=1&limit=20&q={query}"),
     maxTexelToPixelScale(1.2),
     positionViewExtentMin(75),
     positionViewExtentMax(1e7),

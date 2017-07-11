@@ -27,8 +27,9 @@
 #include <utility/uri.hpp>
 #include <boost/algorithm/string.hpp>
 #include <vts-libs/vts/mapconfig-json.hpp>
+#include <ogr_spatialref.h>
 
-#include "resources.hpp"
+#include "map.hpp"
 
 namespace vts
 {
@@ -79,10 +80,28 @@ void MapConfig::load()
         Json::Value r = bo["rotate"];
         if (r.isDouble())
             browserOptions.autorotate = r.asDouble() * 0.1;
+        if (!map->createOptions.disableBrowserOptionsSearchUrls)
+        {
+            r = bo["controlSearchUrl"];
+            if (r.isString())
+                browserOptions.searchUrl = r.asString();
+            r = bo["controlSearchSrs"];
+            if (r.isString())
+                browserOptions.searchSrs = r.asString();
+        }
     }
 
+    bool allowSearchFallback = isEarth() ||
+            !map->createOptions.disableSearchUrlFallbackOutsideEarth;
+    if (browserOptions.searchUrl.empty() && allowSearchFallback)
+        browserOptions.searchUrl = map->createOptions.searchUrlFallback;
+    if (browserOptions.searchSrs.empty() && allowSearchFallback)
+        browserOptions.searchSrs = map->createOptions.searchSrsFallback;
+    if (browserOptions.searchSrs.empty())
+        browserOptions.searchUrl = "";
+
     namedViews[""] = view;
-    
+
     // memory use
     info.ramMemoryCost += sizeof(*this);
 }
@@ -94,6 +113,7 @@ void MapConfig::clear()
     boundInfos.clear();
     surfaceStack.clear();
     browserOptions.autorotate = 0;
+    browserOptions.searchUrl = browserOptions.searchSrs = "";
 }
 
 const std::string MapConfig::convertPath(const std::string &path,
@@ -284,6 +304,14 @@ void MapConfig::consolidateView()
 
     // remove invalid bound layers from free layers in current view
     // todo
+}
+
+bool MapConfig::isEarth() const
+{
+    auto n = srs(referenceFrame.model.physicalSrs);
+    auto r = n.srsDef.reference();
+    auto a = r.GetSemiMajor();
+    return std::abs(a - 6378137) < 50000;
 }
 
 } // namespace vts

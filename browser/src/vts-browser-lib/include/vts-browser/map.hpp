@@ -137,6 +137,7 @@ public:
     void setViewData(const std::string &name, const class MapView &view);
     void removeView(const std::string &name);
 
+    bool searchable() const;
     std::shared_ptr<class SearchTask> search(const std::string &query);
     std::shared_ptr<class SearchTask> search(const std::string &query,
                                 const double point[3]);

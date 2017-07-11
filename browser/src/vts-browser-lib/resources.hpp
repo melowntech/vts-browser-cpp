@@ -155,6 +155,8 @@ public:
     public:
         BrowserOptions();
         
+        std::string searchUrl;
+        std::string searchSrs;
         double autorotate;
     };
     
@@ -175,6 +177,7 @@ public:
     static void colorizeSurfaceStack(std::vector<MapConfig::SurfaceStackItem>
                                      &surfaceStack);
     void consolidateView();
+    bool isEarth() const;
     
     std::unordered_map<std::string, std::shared_ptr<SurfaceInfo>> surfaceInfos;
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
@@ -255,7 +258,8 @@ public:
     void load() override;
     
     Buffer data;
-    const std::string mapConfigPath;
+    const std::string validityUrl;
+    const std::string validitySrs;
 };
 
 class TilesetMapping : public Resource

@@ -396,10 +396,11 @@ double MapImpl::positionObjectiveDistance()
 void MapImpl::initializeNavigation()
 {
     convertor = CoordManip::create(
-                  mapConfig->referenceFrame.model.physicalSrs,
-                  mapConfig->referenceFrame.model.navigationSrs,
-                  mapConfig->referenceFrame.model.publicSrs,
-                  *mapConfig);
+                mapConfig->referenceFrame.model.physicalSrs,
+                mapConfig->referenceFrame.model.navigationSrs,
+                mapConfig->referenceFrame.model.publicSrs,
+                mapConfig->browserOptions.searchSrs,
+                *mapConfig);
 
     navigation.targetPoint = vecFromUblas<vec3>(mapConfig->position.position);
     navigation.changeRotation = vec3(0,0,0);

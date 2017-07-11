@@ -79,13 +79,6 @@ void keyboardUnicodeCallback(GLFWwindow *window, unsigned int codepoint)
 
 } // namespace
 
-namespace vts
-{
-
-    class MapImpl;
-    
-} // namespace vts
-
 MainWindow::MainWindow() :
     camNear(0), camFar(0),
     mousePrevX(0), mousePrevY(0),

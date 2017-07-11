@@ -48,20 +48,23 @@ class VTS_API MapCreateOptions
 {
 public:
     MapCreateOptions(const std::string &clientId = "");
-    
+
     std::string clientId;
     std::string cachePath;
+    std::string searchUrlFallback;
+    std::string searchSrsFallback;
+
     bool disableCache;
     bool hashCachePaths;
+    bool disableSearchUrlFallbackOutsideEarth;
+    bool disableBrowserOptionsSearchUrls;
 };
 
 class VTS_API MapOptions
 {
 public:
     MapOptions();
-    
-    std::string searchUrl;
-    
+
     double maxTexelToPixelScale;
     double positionViewExtentMin;
     double positionViewExtentMax;
@@ -74,6 +77,7 @@ public:
     double navigationLatitudeThreshold; // degrees
     double navigationMaxViewExtentMult;
     double navigationMaxPositionChange;
+
     uint64 maxResourcesMemory; // bytes
     uint32 maxConcurrentDownloads;
     uint32 maxNodeUpdatesPerTick;
@@ -82,18 +86,18 @@ public:
     uint32 maxFetchRedirections;
     uint32 maxFetchRetries;
     uint32 fetchFirstRetryTimeOffset; // seconds
-    
+
     NavigationType navigationType;
     NavigationGeographicMode geographicNavMode;
-    
+
     bool enableSearchResultsFilter;
     bool enableRuntimeResourceExpiration; // experimental
-    
+
     bool debugDetachedCamera;
     bool debugDisableMeta5;
     bool debugDisableVirtualSurfaces;
     bool debugSaveCorruptedFiles;
-    
+
     bool debugRenderSurrogates;
     bool debugRenderMeshBoxes;
     bool debugRenderTileBoxes;

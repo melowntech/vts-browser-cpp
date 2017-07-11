@@ -58,26 +58,17 @@ struct gdalInitClass
     }
 } gdalInitInstance;
 
-struct DummyDeleter
-{
-    void operator()(vtslibs::vts::CsConvertor *)
-    {}
-};
-
 class CoordManipImpl : public CoordManip
 {
+    static const char *searchKey;
+    
 public:
     CoordManipImpl(const std::string &phys,
-                    const std::string &nav,
-                    const std::string &pub,
-                    const vtslibs::registry::Registry &registry) :
-        registry(registry),
-        navToPhys_(nav, phys, registry),
-        physToNav_(phys, nav, registry),
-        navToPub_ (nav, pub , registry),
-        pubToNav_ (pub, nav , registry),
-        pubToPhys_(pub, phys, registry),
-        physToPub_(phys, pub, registry)
+                   const std::string &nav,
+                   const std::string &pub,
+                   const std::string &search,
+                   vtslibs::registry::Registry &registry) :
+        registry(registry), phys(phys), nav(nav), pub(pub)
     {
         auto n = registry.srs(nav);
         if (n.type == vtslibs::registry::Srs::Type::geographic)
@@ -87,48 +78,47 @@ public:
             auto b = r.GetSemiMinor();
             geodesic_ = boost::in_place(a, (a - b) / a);
         }
-        convertors[nav][phys] = std::shared_ptr<vtslibs::vts::CsConvertor>(
-                    &navToPhys_, DummyDeleter());
-        convertors[phys][nav] = std::shared_ptr<vtslibs::vts::CsConvertor>(
-                    &physToNav_, DummyDeleter());
-        convertors[nav][pub] = std::shared_ptr<vtslibs::vts::CsConvertor>(
-                    &navToPub_, DummyDeleter());
-        convertors[pub][nav] = std::shared_ptr<vtslibs::vts::CsConvertor>(
-                    &pubToNav_, DummyDeleter());
-        convertors[pub][phys] = std::shared_ptr<vtslibs::vts::CsConvertor>(
-                    &pubToPhys_, DummyDeleter());
-        convertors[phys][pub] = std::shared_ptr<vtslibs::vts::CsConvertor>(
-                    &physToPub_, DummyDeleter());
+        {
+            vtslibs::registry::Srs s;
+            s.comment = "search";
+            s.srsDef = search;
+            registry.srs.replace(searchKey, s);
+        }
     }
     
     vec3 navToPhys(const vec3 &value) override
     {
-        return vecFromUblas<vec3>(navToPhys_(vecToUblas<math::Point3d>(value)));
+        return convert(value, nav, phys);
     }
 
     vec3 physToNav(const vec3 &value) override
     {
-        return vecFromUblas<vec3>(physToNav_(vecToUblas<math::Point3d>(value)));
+        return convert(value, phys, nav);
     }
 
     vec3 navToPub(const vec3 &value) override
     {
-        return vecFromUblas<vec3>(navToPub_(vecToUblas<math::Point3d>(value)));
+        return convert(value, nav, pub);
     }
 
     vec3 pubToNav(const vec3 &value) override
     {
-        return vecFromUblas<vec3>(pubToNav_(vecToUblas<math::Point3d>(value)));
+        return convert(value, pub, nav);
     }
 
     vec3 pubToPhys(const vec3 &value) override
     {
-        return vecFromUblas<vec3>(pubToPhys_(vecToUblas<math::Point3d>(value)));
+        return convert(value, pub, phys);
     }
 
     vec3 physToPub(const vec3 &value) override
     {
-        return vecFromUblas<vec3>(physToPub_(vecToUblas<math::Point3d>(value)));
+        return convert(value, phys, pub);
+    }
+
+    vec3 searchToNav(const vec3 &value) override
+    {
+        return convert(value, searchKey, nav);
     }
     
     vec3 convert(const vec3 &value, const std::string &from,
@@ -136,8 +126,7 @@ public:
     {
         std::shared_ptr<vtslibs::vts::CsConvertor> &p = convertors[from][to];
         if (!p)
-            p = std::shared_ptr<vtslibs::vts::CsConvertor>(
-                        new vtslibs::vts::CsConvertor(from, to, registry));
+            p = std::make_shared<vtslibs::vts::CsConvertor>(from, to, registry);
         return vecFromUblas<vec3>((*p)(vecFromUblas<math::Point3>(value)));
     }
 
@@ -186,25 +175,25 @@ public:
     }
 
     const vtslibs::registry::Registry &registry;
-    vtslibs::vts::CsConvertor navToPhys_;
-    vtslibs::vts::CsConvertor physToNav_;
-    vtslibs::vts::CsConvertor navToPub_;
-    vtslibs::vts::CsConvertor pubToNav_;
-    vtslibs::vts::CsConvertor pubToPhys_;
-    vtslibs::vts::CsConvertor physToPub_;
+    const std::string &phys;
+    const std::string &nav;
+    const std::string &pub;
     std::unordered_map<std::string, std::unordered_map<std::string,
             std::shared_ptr<vtslibs::vts::CsConvertor>>> convertors;
     boost::optional<GeographicLib::Geodesic> geodesic_;
 };
+
+const char *CoordManipImpl::searchKey = "$search$";
 
 } // namespace
 
 std::shared_ptr<CoordManip> CoordManip::create(const std::string &phys,
                                  const std::string &nav,
                                  const std::string &pub,
-                                 const vtslibs::registry::Registry &registry)
+                                 const std::string &search,
+                                 vtslibs::registry::Registry &registry)
 {
-    return std::make_shared<CoordManipImpl>(phys, nav, pub, registry);
+    return std::make_shared<CoordManipImpl>(phys, nav, pub, search, registry);
 }
 
 CoordManip::~CoordManip()

@@ -47,7 +47,8 @@ public:
     static std::shared_ptr<CoordManip> create(const std::string &phys,
                                const std::string &nav,
                                const std::string &pub,
-                               const vtslibs::registry::Registry &registry);
+                               const std::string &search,
+                               vtslibs::registry::Registry &registry);
 
     virtual ~CoordManip();
 
@@ -57,6 +58,7 @@ public:
     virtual vec3 pubToNav (const vec3 &value) = 0;
     virtual vec3 pubToPhys(const vec3 &value) = 0;
     virtual vec3 physToPub(const vec3 &value) = 0;
+    virtual vec3 searchToNav(const vec3 &value) = 0;
 
     virtual vec3 convert(const vec3 &value,
                          const std::string &from,

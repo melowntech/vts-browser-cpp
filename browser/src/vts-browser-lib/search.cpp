@@ -36,8 +36,8 @@ namespace
 
 std::string generateSearchUrl(MapImpl *impl, const std::string &query)
 {
-    std::string url = impl->options.searchUrl;
-    static const std::string rep = "{query}";
+    std::string url = impl->mapConfig->browserOptions.searchUrl;
+    static const std::string rep = "{value}";
     auto s = url.find(rep);
     if (s != std::string::npos)
         url.replace(s, rep.length(), query);
@@ -46,9 +46,11 @@ std::string generateSearchUrl(MapImpl *impl, const std::string &query)
 
 void latlonToNav(MapImpl *map, double point[3])
 {
-    (void)map;
-    (void)point;
-    // todo
+    vec3 p(point[0], point[1], point[2]);
+    p = map->convertor->searchToNav(p);
+    point[0] = p[0];
+    point[1] = p[1];
+    point[2] = p[2];
 }
 
 // both points are in navigation srs
@@ -165,9 +167,9 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
             detail::Wrapper w(task->impl->data);
             if (!r.parse(w, root, false))
                 LOGTHROW(err2, std::runtime_error)
-                        << "failed to parse search result json, url: '"
-                        << task->impl->name << "', error: '"
-                        << r.getFormattedErrorMessages() << "'";
+                        << "Failed to parse search result json, url: <"
+                        << task->impl->name << ">, error: <"
+                        << r.getFormattedErrorMessages() << ">";
         }
         for (Json::Value &it : root)
         {
@@ -218,18 +220,12 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
         if (map->options.enableSearchResultsFilter)
             filterSearchResults(map, task);
     }
-    catch (const Json::Exception &e)
+    catch (const std::exception &e)
     {
-        LOG(err3) << "failed to process search results, url: '"
-                  << task->impl->name << "', query: '"
-                  << task->query << "', error: '"
-                  << e.what() << "'";
-    }
-    catch (...)
-    {
-        LOG(err3) << "failed to process search results, url: '"
-                  << task->impl->name << "', query: '"
-                  << task->query << "'";
+        LOG(err3) << "Failed to process search results, url: <"
+                  << task->impl->name << ">, query: <"
+                  << task->query << ">, error: <"
+                  << e.what() << ">";
     }
 }
 
@@ -237,7 +233,8 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
 
 SearchTaskImpl::SearchTaskImpl(MapImpl *map, const std::string &name) :
     Resource(map, name, FetchTask::ResourceType::Search),
-    mapConfigPath(map->mapConfigPath)
+    validityUrl(map->mapConfig->browserOptions.searchUrl),
+    validitySrs(map->mapConfig->browserOptions.searchSrs)
 {}
 
 void SearchTaskImpl::load()
@@ -263,8 +260,11 @@ SearchTask::~SearchTask()
 
 void SearchTask::updateDistances(const double point[3])
 {
-    if (impl->map->mapConfigPath != impl->mapConfigPath)
-        return;
+    if (impl->map->mapConfig->browserOptions.searchUrl != impl->validityUrl
+        || impl->map->mapConfig->browserOptions.searchSrs != impl->validitySrs)
+    {
+        LOGTHROW(err1, std::runtime_error) << "Search is no longer valid";
+    }
     for (auto &&it : results)
     {
         it.distance = distance(impl->map, it.position, point);

@@ -44,7 +44,11 @@ MapCreateOptions::MapCreateOptions(const std::string &clientId) :
 MapOptions::MapOptions() :
     maxTexelToPixelScale(1.2),
     positionViewExtentMin(75),
-    positionViewExtentMax(1e7),
+    positionViewExtentMax(1.5e7),
+    positionTiltViewExtentThresholdLow(200000),
+    positionTiltViewExtentThresholdHigh(1300000),
+    positionTiltLimitLow(270),
+    positionTiltLimitHigh(350),
     cameraSensitivityPan(1),
     cameraSensitivityZoom(1),
     cameraSensitivityRotate(1),

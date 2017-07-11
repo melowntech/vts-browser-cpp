@@ -244,6 +244,23 @@ bool TraverseQueueItem::operator < (const TraverseQueueItem &other) const
     return priority < other.priority;
 }
 
+double MapImpl::getPositionTiltLimit()
+{
+    double extCur = mapConfig->position.verticalExtent;
+    double extLow = options.positionTiltViewExtentThresholdLow;
+    double extHig = options.positionTiltViewExtentThresholdHigh;
+    double f = (extCur - extLow) / (extHig - extLow);
+    f = clamp(f, 0, 1);
+    f = 3 * f * f - 2 * f * f * f;
+    return interpolate(options.positionTiltLimitHigh,
+                       options.positionTiltLimitLow, f);
+}
+
+void MapImpl::applyPositionTiltLimit(double &tilt)
+{
+    tilt = std::min(tilt, getPositionTiltLimit());
+}
+
 void MapImpl::emptyTraverseQueue()
 {
     while (!renderer.traverseQueue.empty())

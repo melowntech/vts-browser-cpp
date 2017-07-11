@@ -766,7 +766,6 @@ void MapImpl::updateCamera()
         mat4 vi = view.inverse();
         cameraPosPhys = vec4to3(vi * vec4(0, 0, 0, 1), true);
         center = cameraPosPhys + vec4to3(vi * vec4(0, 0, -1, 0), false) * dist;
-        //center = vec4to3(vi * vec4(0, 0, -1, 1), true);
         dir = vec4to3(vi * vec4(0, 0, -1, 0), false);
         up = vec4to3(vi * vec4(0, 1, 0, 0), false);
     }

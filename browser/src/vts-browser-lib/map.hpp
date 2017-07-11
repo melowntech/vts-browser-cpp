@@ -286,6 +286,8 @@ public:
     void updateCamera();
     bool prerequisitesCheck();
     void emptyTraverseQueue();
+    double getPositionTiltLimit();
+    void applyPositionTiltLimit(double &tilt);
 
     // search
     std::shared_ptr<SearchTask> search(const std::string &query,

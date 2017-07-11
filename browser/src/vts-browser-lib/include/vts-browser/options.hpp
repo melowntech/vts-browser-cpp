@@ -68,6 +68,10 @@ public:
     double maxTexelToPixelScale;
     double positionViewExtentMin;
     double positionViewExtentMax;
+    double positionTiltViewExtentThresholdLow;
+    double positionTiltViewExtentThresholdHigh;
+    double positionTiltLimitLow;
+    double positionTiltLimitHigh;
     double cameraSensitivityPan;
     double cameraSensitivityZoom;
     double cameraSensitivityRotate;

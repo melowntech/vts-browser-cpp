@@ -46,7 +46,7 @@ double sumExtents(double v1, double v2, double mult)
     assert(mult > 1);
     double steps = std::log(v2 / v1) / std::log(mult);
     steps = std::abs(steps);
-    return std::min(v1, v2) * (std::pow(mult, steps + 1) - 1) / (mult - 1);
+    return std::min(v1, v2) * (std::pow(mult, steps) - 1) / (mult - 1);
 }
 
 } // namespace
@@ -94,15 +94,20 @@ void navigationSolve(
             inOptions.navigationMaxViewExtentMult)
             * inOptions.navigationMaxPositionChange;
 
+    static const double piHalf = 3.14159265358979323846264338327 * 0.5;
+
     // ratio of horizontal movement to view extent change
-    static const double piHalf = 3.14159265358979323846264338327950288419 * 0.5;
-    double a = atan2(-distanceWhileExtentChanges * 1.5, inHorizontalDistance);
-    a = a * 2.0 + piHalf;
+    double a = std::numeric_limits<double>::quiet_NaN();
     if (inViewExtentChange > 0)
         a = piHalf;
+    else
+    {
+        a = atan2(inHorizontalDistance, distanceWhileExtentChanges * 1.5);
+        a = piHalf - (piHalf - a) * 2.0;
+    }
     double dr = distanceWhileExtentChanges + inHorizontalDistance;
     double dc = inStartViewExtent * inOptions.navigationMaxPositionChange;
-    double d = std::min(dr / (dc * 70 + 1), 1.0); // smooth landing
+    double d = std::min(dr / (dc * 60 + 1), 1.0); // smooth landing
     double vf = std::sin(a) * d; // view extent factor
     double hf = std::cos(a) * d; // horizontal factor
 

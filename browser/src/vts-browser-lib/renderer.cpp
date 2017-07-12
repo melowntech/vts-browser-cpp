@@ -983,17 +983,15 @@ void MapImpl::renderTickPrepare()
 {
     if (!prerequisitesCheck())
         return;
-    
+
     assert(!resources.auth || *resources.auth);
     assert(mapConfig && *mapConfig);
     assert(convertor);
     assert(renderer.traverseRoot);
-    
+
     updateNavigation();
     updateSearch();
     traverseClearing(renderer.traverseRoot);
-    
-    statistics.debug = TraverseNode::instanceCounter;
 }
 
 void MapImpl::renderTickRender(uint32 windowWidth, uint32 windowHeight)

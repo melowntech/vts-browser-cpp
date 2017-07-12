@@ -113,8 +113,6 @@ public:
     Validity validity;
     bool empty;
 
-    static std::atomic<sint32> instanceCounter;
-
     TraverseNode(const NodeInfo &nodeInfo);
     ~TraverseNode();
     void clear();

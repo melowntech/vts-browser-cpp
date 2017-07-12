@@ -582,7 +582,10 @@ void MapImpl::updateNavigation()
     // normalize rotation
     for (int i = 0; i < 3; i++)
         normalizeAngle(r[i]);
-    r[1] = clamp(r[1], options.positionTiltLimitLow, options.positionTiltLimitHigh);
+    if (navigation.type == NavigationType::FlyOver)
+        applyPositionTiltLimit(r[1]);
+    r[1] = clamp(r[1], options.positionTiltLimitLow,
+            options.positionTiltLimitHigh);
 
     // asserts
     assert(r(0) >= 0 && r(0) < 360);

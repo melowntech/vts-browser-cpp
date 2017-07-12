@@ -628,7 +628,9 @@ public:
             S("Res. released:", s.resourcesReleased, "");
             S("Res. ignored:", s.resourcesIgnored, "");
             S("Res. failed:", s.resourcesFailed, "");
-            S("Debug: ", s.debug, "");
+            nk_label(&ctx, "Debug:", NK_TEXT_LEFT);
+            sprintf(buffer, "%f", s.debug);
+            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             // traversed
             S("Traversed:", s.metaNodesTraversedTotal, "");
             nk_label(&ctx, "", NK_TEXT_LEFT);

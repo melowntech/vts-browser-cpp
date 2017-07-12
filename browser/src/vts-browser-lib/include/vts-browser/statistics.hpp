@@ -58,9 +58,9 @@ public:
     uint32 resourcesReleased;
     uint32 resourcesFailed;
     uint32 frameIndex;
-    
+
     // current statistics
-    
+
     uint64 currentGpuMemUse;
     uint64 currentRamMemUse;
     uint32 currentResources;
@@ -68,10 +68,10 @@ public:
     uint32 currentResourcePreparing;
     uint32 lastHeightRequestLod;
     uint32 currentNodeUpdates;
-    
+
     // debug
-    
-    uint32 debug;
+
+    double debug;
 };
 
 } // namespace vts

@@ -173,9 +173,7 @@ TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
       flags(0), texelSize(0),
       surrogateValue(vtslibs::vts::GeomExtents::invalidSurrogate),
       displaySize(0), validity(Validity::Indeterminate), empty(false)
-{
-    instanceCounter++;
-    
+{    
     // initialize corners to NAN
     {
         vec3 n;
@@ -195,9 +193,7 @@ TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
 }
 
 TraverseNode::~TraverseNode()
-{
-    instanceCounter--;
-}
+{}
 
 double TraverseNode::distancePhys(const vec3 &point) const
 {
@@ -206,8 +202,6 @@ double TraverseNode::distancePhys(const vec3 &point) const
         dist = std::min(dist, length(vec3(it - point)));
     return dist;
 }
-
-std::atomic<sint32> TraverseNode::instanceCounter;
 
 void TraverseNode::clear()
 {

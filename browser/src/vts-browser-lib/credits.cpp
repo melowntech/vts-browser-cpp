@@ -143,7 +143,7 @@ Credits::Hit::Hit(vtslibs::registry::CreditId id)
 std::string MapCredits::textShort() const
 {
     std::string result;
-    result.reserve(200);
+    result.reserve(500);
     const Scope *scopes[(int)Credits::Scope::Total_] = { &imagery, &data };
     for (int i = 0; i < (int)Credits::Scope::Total_; i++)
     {

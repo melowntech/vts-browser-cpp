@@ -597,6 +597,13 @@ void Map::setViewJson(const std::string &name,
     setViewData(name, getMapView(vtslibs::registry::viewFromJson(val)));
 }
 
+bool Map::searchable() const
+{
+    if (!isMapConfigReady())
+        return false;
+    return !impl->mapConfig->browserOptions.searchUrl.empty();
+}
+
 std::shared_ptr<SearchTask> Map::search(const std::string &query)
 {
     if (!isMapConfigReady())
@@ -624,9 +631,10 @@ void Map::printDebugInfo()
 }
 
 MapImpl::MapImpl(Map *map, const MapCreateOptions &options) :
-    map(map), cache(Cache::create(options.cachePath)),
-    clientId(options.clientId), initialized(false)
-{}
+    map(map), initialized(false)
+{
+    resources.cache = Cache::create(options);
+}
 
 void MapImpl::printDebugInfo()
 {

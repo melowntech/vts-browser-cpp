@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <unistd.h>
+#include <chrono>
 #include <QGuiApplication>
 #include <QMouseEvent>
 #include <QWheelEvent>
@@ -33,6 +35,7 @@
 #include <vts-browser/buffer.hpp>
 #include <vts-browser/options.hpp>
 #include <vts-browser/credits.hpp>
+#include <vts-browser/statistics.hpp>
 #include "mainWindow.hpp"
 #include "gpuContext.hpp"
 #include "fetcher.hpp"
@@ -186,13 +189,15 @@ void MainWindow::draw(const vts::DrawTask &t)
 
 void MainWindow::tick()
 {
+    auto timeFrameStart = std::chrono::high_resolution_clock::now();
+
     requestUpdate();
     if (!isExposed())
         return;
 
     if (!gl->isValid())
         throw std::runtime_error("invalid gl context");
-    
+
     map->callbacks().loadTexture = std::bind(&MainWindow::loadTexture, this,
                 std::placeholders::_1, std::placeholders::_2);
     map->callbacks().loadMesh = std::bind(&MainWindow::loadMesh, this,
@@ -209,23 +214,27 @@ void MainWindow::tick()
     gl->glEnable(GL_DEPTH_TEST);
     gl->glDepthFunc(GL_LEQUAL);
     gl->glEnable(GL_CULL_FACE);
-    
+
     // release build -> catch exceptions and close the window
     // debug build -> let the debugger handle the exceptions
 #ifdef NDEBUG
     try
     {
 #endif
-        
+
         map->dataTick();
         map->renderTickPrepare();
         map->renderTickRender(size.width(), size.height());
         for (vts::DrawTask &t : map->draws().draws)
             draw(t);
-        std::string creditLine = std::string() + "vts-browser-qt: "
-                + map->credits().textShort();
-        setTitle(QString::fromUtf8(creditLine.c_str(), creditLine.size()));
-        
+
+        if ((map->statistics().frameIndex % 120) == 0)
+        {
+            std::string creditLine = std::string() + "vts-browser-qt: "
+                    + map->credits().textShort();
+            setTitle(QString::fromUtf8(creditLine.c_str(), creditLine.size()));
+        }
+
 #ifdef NDEBUG
     }
     catch(...)
@@ -236,6 +245,13 @@ void MainWindow::tick()
 #endif
 
     gl->swapBuffers(this);
+
+    auto timeFrameEnd = std::chrono::high_resolution_clock::now();
+    auto frameDuration = std::chrono::duration_cast<std::chrono::milliseconds>(
+            timeFrameEnd - timeFrameStart).count();
+    // temporary workaround for when v-sync is missing
+    if (frameDuration < 16)
+        usleep((16 - frameDuration) * 1000);
 }
 
 void MainWindow::loadTexture(vts::ResourceInfo &info,

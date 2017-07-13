@@ -64,6 +64,7 @@ void MapImpl::positionToCamera(vec3 &center, vec3 &dir, vec3 &up)
     
     // camera-space vectors
     vec3 rot = vecFromUblas<vec3>(pos.orientation);
+    applyPositionTiltLimit(rot(1));
     center = vecFromUblas<vec3>(pos.position);
     dir = vec3(1, 0, 0);
     up = vec3(0, 0, -1);
@@ -140,10 +141,11 @@ double MapImpl::positionObjectiveDistance()
 void MapImpl::initializeNavigation()
 {
     convertor = CoordManip::create(
-                  mapConfig->referenceFrame.model.physicalSrs,
-                  mapConfig->referenceFrame.model.navigationSrs,
-                  mapConfig->referenceFrame.model.publicSrs,
-                  *mapConfig);
+                mapConfig->referenceFrame.model.physicalSrs,
+                mapConfig->referenceFrame.model.navigationSrs,
+                mapConfig->referenceFrame.model.publicSrs,
+                mapConfig->browserOptions.searchSrs,
+                *mapConfig);
 
     navigation.targetPoint = vecFromUblas<vec3>(mapConfig->position.position);
     navigation.changeRotation = vec3(0,0,0);
@@ -321,7 +323,7 @@ void MapImpl::updateNavigation()
     // normalize rotation
     for (int i = 0; i < 3; i++)
         normalizeAngle(r[i]);
-    r[1] = clamp(r[1], 270, 350);
+    r[1] = clamp(r[1], options.positionTiltLimitLow, options.positionTiltLimitHigh);
 
     // asserts
     assert(r(0) >= 0 && r(0) < 360);
@@ -410,6 +412,7 @@ void MapImpl::pan(const vec3 &value)
 
 void MapImpl::rotate(const vec3 &value)
 {
+    applyPositionTiltLimit(mapConfig->position.orientation[1]);
     navigation.changeRotation += value.cwiseProduct(vec3(0.2, -0.1, 0.2)
                                         * options.cameraSensitivityRotate);
     if (options.geographicNavMode == NavigationGeographicMode::Dynamic)

@@ -137,24 +137,19 @@ class MapImpl
 {
 public:
     MapImpl(class Map *map,
-            const class MapCreateOptions &options);
+            const MapCreateOptions &options);
 
     class Map *const map;
-    std::shared_ptr<MapConfig> mapConfig;
-    std::shared_ptr<CoordManip> convertor;
-    std::shared_ptr<AuthConfig> auth;
-    std::shared_ptr<TilesetMapping> tilesetMapping;
-    std::shared_ptr<Cache> cache;
-    std::string mapConfigPath;
-    std::string mapConfigView;
-    std::string authPath;
-    std::string sriPath;
-    std::string clientId;
+    const MapCreateOptions createOptions;
     MapCallbacks callbacks;
     MapStatistics statistics;
     MapOptions options;
     MapDraws draws;
     MapCredits credits;
+    std::shared_ptr<MapConfig> mapConfig;
+    std::shared_ptr<CoordManip> convertor;
+    std::string mapConfigPath;
+    std::string mapConfigView;
     bool initialized;
 
     class Navigation
@@ -175,13 +170,16 @@ public:
     class Resources
     {
     public:
+        std::shared_ptr<Cache> cache;
+        std::shared_ptr<AuthConfig> auth;
+        std::shared_ptr<Fetcher> fetcher;
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
         std::vector<std::shared_ptr<Resource>> resourcesCopy;
-        boost::mutex mutResourcesCopy;
-
-        std::atomic_uint downloads;
-        std::shared_ptr<Fetcher> fetcher;
         std::deque<std::weak_ptr<SearchTask>> searchTasks;
+        boost::mutex mutResourcesCopy;
+        std::string authPath;
+        std::string sriPath;
+        std::atomic_uint downloads;
         
         Resources();
     } resources;
@@ -192,6 +190,7 @@ public:
         Credits credits;
         std::shared_ptr<TraverseNode> traverseRoot;
         std::priority_queue<TraverseQueueItem> traverseQueue;
+        std::shared_ptr<TilesetMapping> tilesetMapping;
         mat4 viewProj;
         mat4 viewProjRender;
         vec4 frustumPlanes[6];
@@ -283,6 +282,8 @@ public:
     void updateCamera();
     bool prerequisitesCheck();
     void emptyTraverseQueue();
+    double getPositionTiltLimit();
+    void applyPositionTiltLimit(double &tilt);
 
     // search
     std::shared_ptr<SearchTask> search(const std::string &query,

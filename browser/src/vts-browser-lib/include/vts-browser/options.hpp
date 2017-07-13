@@ -48,23 +48,30 @@ class VTS_API MapCreateOptions
 {
 public:
     MapCreateOptions(const std::string &clientId = "");
-    
+
     std::string clientId;
     std::string cachePath;
+    std::string searchUrlFallback;
+    std::string searchSrsFallback;
+
     bool disableCache;
     bool hashCachePaths;
+    bool disableSearchUrlFallbackOutsideEarth;
+    bool disableBrowserOptionsSearchUrls;
 };
 
 class VTS_API MapOptions
 {
 public:
     MapOptions();
-    
-    std::string searchUrl;
-    
+
     double maxTexelToPixelScale;
     double positionViewExtentMin;
     double positionViewExtentMax;
+    double positionTiltViewExtentThresholdLow;
+    double positionTiltViewExtentThresholdHigh;
+    double positionTiltLimitLow;
+    double positionTiltLimitHigh;
     double cameraSensitivityPan;
     double cameraSensitivityZoom;
     double cameraSensitivityRotate;
@@ -74,6 +81,7 @@ public:
     double navigationLatitudeThreshold; // degrees
     double navigationMaxViewExtentMult;
     double navigationMaxPositionChange;
+
     uint64 maxResourcesMemory; // bytes
     uint32 maxConcurrentDownloads;
     uint32 maxNodeUpdatesPerTick;
@@ -82,18 +90,18 @@ public:
     uint32 maxFetchRedirections;
     uint32 maxFetchRetries;
     uint32 fetchFirstRetryTimeOffset; // seconds
-    
+
     NavigationType navigationType;
     NavigationGeographicMode geographicNavMode;
-    
+
     bool enableSearchResultsFilter;
     bool enableRuntimeResourceExpiration; // experimental
-    
+
     bool debugDetachedCamera;
     bool debugDisableMeta5;
     bool debugDisableVirtualSurfaces;
     bool debugSaveCorruptedFiles;
-    
+
     bool debugRenderSurrogates;
     bool debugRenderMeshBoxes;
     bool debugRenderTileBoxes;
@@ -112,7 +120,7 @@ public:
             loadMesh;
 
     /// function callback when the mapconfig is ready
-    std::function<void(class Map *map)> mapconfigReady;
+    std::function<void()> mapconfigReady;
 
     /// function callbacks for camera overrides (all in physical srs)
     std::function<void(double*)> cameraOverrideEye;

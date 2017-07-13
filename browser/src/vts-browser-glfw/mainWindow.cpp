@@ -27,6 +27,7 @@
 #include <limits>
 #include <cmath>
 #include <cstdio>
+#include <unistd.h>
 
 #include <vts-browser/map.hpp>
 #include <vts-browser/statistics.hpp>
@@ -77,13 +78,6 @@ void keyboardUnicodeCallback(GLFWwindow *window, unsigned int codepoint)
 }
 
 } // namespace
-
-namespace vts
-{
-
-    class MapImpl;
-    
-} // namespace vts
 
 MainWindow::MainWindow() :
     camNear(0), camFar(0),
@@ -393,7 +387,7 @@ void MainWindow::run()
     {
         checkGl("frame begin");
         double timeFrameStart = glfwGetTime();
-        
+
         try
         {
             map->renderTickPrepare();
@@ -441,23 +435,31 @@ void MainWindow::run()
             glBindVertexArray(0);
         }
         checkGl("frame draws");
-        
+
         double timeAppRender = glfwGetTime();
-        
+
         gui.input(); // calls glfwPollEvents()
         gui.render(width, height);
         double timeGui = glfwGetTime();
-        
+
         if (map->statistics().frameIndex % 120 == 0)
         {
             std::string creditLine = std::string() + "vts-browser-glfw: "
                     + map->credits().textFull();
             glfwSetWindowTitle(window, creditLine.c_str());
         }
-        
+
         glfwSwapBuffers(window);
         double timeFrameFinish = glfwGetTime();
-        
+
+        // temporary workaround for when v-sync is missing
+        long duration = (timeFrameFinish - timeFrameStart) * 1000000;
+        if (duration < 16000)
+        {
+            usleep(16000 - duration);
+            timeFrameFinish = glfwGetTime();
+        }
+
         timingMapProcess = timeMapRender - timeFrameStart;
         timingAppProcess = timeAppRender - timeMapRender;
         timingGuiProcess = timeGui - timeAppRender;

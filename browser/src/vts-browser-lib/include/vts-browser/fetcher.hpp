@@ -61,7 +61,7 @@ public:
     };
     static bool isResourceTypeMandatory(ResourceType resourceType);
 
-    const ResourceType resourceType;
+    ResourceType resourceType;
 
     // query
     std::string queryUrl;

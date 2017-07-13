@@ -49,9 +49,9 @@ std::shared_ptr<T> getMapResource(MapImpl *map, const std::string &name)
 
 void initializeFetchTask(MapImpl *map, Resource *task)
 {
-    task->queryHeaders["X-Vts-Client-Id"] = map->clientId;
-    if (map->auth)
-        map->auth->authorize(task);
+    task->queryHeaders["X-Vts-Client-Id"] = map->createOptions.clientId;
+    if (map->resources.auth)
+        map->resources.auth->authorize(task);
 }
 
 bool allowDiskCache(Resource::ResourceType type)
@@ -70,8 +70,7 @@ bool allowDiskCache(Resource::ResourceType type)
 
 } // namespace
 
-MapImpl::Resources::Resources()
-    : downloads(0), fetcher(nullptr)
+MapImpl::Resources::Resources() : downloads(0)
 {}
 
 bool FetchTask::isResourceTypeMandatory(FetchTask::ResourceType resourceType)
@@ -122,7 +121,7 @@ void MapImpl::resourceLoad(const std::shared_ptr<Resource> &r)
     try
     {
         if (allowDiskCache(r->resourceType)
-                && cache->read(r->name, r->contentData, r->replyExpires))
+            && resources.cache->read(r->name, r->contentData, r->replyExpires))
         {
             if (r->contentData.size() > 0)
             {
@@ -321,7 +320,7 @@ void Resource::fetchDone()
                    << name << ">";
         state = Resource::State::availFail;
         contentData.free();
-        map->cache->write(name, contentData, replyExpires);
+        map->resources.cache->write(name, contentData, replyExpires);
     }
 
     // handle redirections
@@ -354,7 +353,7 @@ void Resource::fetchDone()
         return;
     }
 
-    map->cache->write(name, contentData, replyExpires);
+    map->resources.cache->write(name, contentData, replyExpires);
     retryNumber = 0; // reset counter
     state = Resource::State::downloaded;
 }

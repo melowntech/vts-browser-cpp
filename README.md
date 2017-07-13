@@ -5,9 +5,9 @@ that brings vts map capabilities to your native c++ applications.
 
 ## Design & Features
 
-- simple - minimalistic Qt based application using this library has about 800 LOC.
+- simple -> minimalistic Qt based application using this library has about 800 LOC.
 - clean c++11 classfull api
-- rendering api independent - the library, on its own, does not render anything, it just tells the application what to render
+- rendering api independent -> the library, on its own, does not render anything, it just tells the application what to render
 
 ## WIP
 
@@ -19,7 +19,7 @@ We make no attempt on maintaining ABI nor API compatibility at this moment.
 vts-browser-cpp api documentation is available at the
 [wiki](https://github.com/Melown/vts-browser-cpp/wiki).
 
-Documentation for the whole VTS maps technology is at
+Documentation for the whole vts maps technology is at
 [read the docs](https://melown.readthedocs.io).
 
 ## Install from Melown Repository
@@ -27,6 +27,26 @@ Documentation for the whole VTS maps technology is at
 We are currently working on it.
 
 ## Build from Source
+
+Install required packages to build the library.
+
+```bash
+sudo apt-get install \
+	libboost-all-dev \
+	libeigen3-dev \
+	libgdal-dev \
+	libproj-dev \
+	libgeographic-dev \
+	libjsoncpp-dev
+```
+
+Install optional packages required to build the example applications.
+
+```bash
+sudo apt-get install \
+	libglfw3-dev \
+	qt5-default
+```
 
 Clone the git repository with all submodules.
 The library build system is cmake based.
@@ -42,28 +62,6 @@ And run the example application.
 
 ```bash
 bin/vts-browser-glfw <mapconfig-url>
-```
-
-### Build Dependencies
-
-Required packages to build the library.
-
-```bash
-sudo apt-get install \
-	libboost-all-dev \
-	libeigen3-dev \
-	libgdal-dev \
-	libproj-dev \
-	libgeographic-dev \
-	libjsoncpp-dev
-```
-
-Additional packages required to build the example applications.
-
-```bash
-sudo apt-get install \
-	libglfw3-dev \
-	qt5-default
 ```
 
 ## Bug Reports

@@ -239,7 +239,7 @@ bool MapImpl::resourceDataTick()
 #endif
 
         it->priorityCopy = it->priority;
-        it->priority *= 0.1;
+        it->priority = 0;
     }
     std::sort(res.begin(), res.end(), [](
               const std::shared_ptr<Resource> &a,
@@ -486,12 +486,12 @@ void MapImpl::resourceRenderTick()
                 break;
             }
         }
+        statistics.currentResourcePreparing = res.size() + resources.downloads;
         // sync resources copy
         {
             boost::lock_guard<boost::mutex> l(resources.mutResourcesCopy);
             res.swap(resources.resourcesCopy);
         }
-        statistics.currentResourcePreparing = res.size() + resources.downloads;
     }
 }
 

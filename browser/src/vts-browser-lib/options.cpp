@@ -52,7 +52,7 @@ MapOptions::MapOptions() :
     maxResourcesMemory(512 * 1024 * 1024),
     maxConcurrentDownloads(10),
     maxNodeUpdatesPerTick(10),
-    maxResourceProcessesPerTick(5),
+    maxResourceProcessesPerTick(10),
     navigationSamplesPerViewExtent(8),
     maxFetchRedirections(5),
     maxFetchRetries(10),

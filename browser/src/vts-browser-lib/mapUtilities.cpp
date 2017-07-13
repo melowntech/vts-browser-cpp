@@ -195,7 +195,8 @@ TraverseNode::MetaInfo::MetaInfo() :
 }
 
 TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
-    : nodeInfo(nodeInfo), lastAccessTime(0)
+    : nodeInfo(nodeInfo), lastAccessTime(0),
+      priority(std::numeric_limits<double>::quiet_NaN())
 {
     instanceCounter++;
 }
@@ -238,13 +239,13 @@ float MapImpl::computeResourcePriority(
 }
 
 TraverseQueueItem::TraverseQueueItem(const std::shared_ptr<TraverseNode> &trav,
-                                     float priority, bool loadOnly) :
-    trav(trav), priority(priority), loadOnly(loadOnly)
+                                     bool loadOnly) :
+    trav(trav), loadOnly(loadOnly)
 {}
 
 bool TraverseQueueItem::operator < (const TraverseQueueItem &other) const
 {
-    return priority < other.priority;
+    return trav->priority < other.trav->priority;
 }
 
 void MapImpl::emptyTraverseQueue()

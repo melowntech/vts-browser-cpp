@@ -116,6 +116,7 @@ public:
     std::vector<std::shared_ptr<RenderTask>> draws;
     NodeInfo nodeInfo;
     uint32 lastAccessTime;
+    float priority;
 
     static std::atomic<sint32> instanceCounter;
 
@@ -129,13 +130,11 @@ public:
 class TraverseQueueItem
 {
 public:
-    TraverseQueueItem(const std::shared_ptr<TraverseNode> &trav,
-                      float priority, bool loadOnly);
+    TraverseQueueItem(const std::shared_ptr<TraverseNode> &trav, bool loadOnly);
     
     std::shared_ptr<TraverseNode> trav;
-    float priority;
     bool loadOnly;
-    
+
     bool operator < (const TraverseQueueItem &other) const;
 };
 

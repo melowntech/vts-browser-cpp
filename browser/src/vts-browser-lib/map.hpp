@@ -97,18 +97,14 @@ public:
 class TraverseNode
 {
 public:
-    struct MetaInfo
+    struct MetaInfo : public MetaNode
     {
         std::vector<vtslibs::registry::CreditId> credits;
         vec3 cornersPhys[8];
         vec3 aabbPhys[2];
         vec3 surrogatePhys;
         const MapConfig::SurfaceStackItem *surface;
-        uint32 flags;
-        float surrogateValue;
-        float texelSize;
-        uint16 displaySize;
-        MetaInfo();
+        MetaInfo(const MetaNode &node);
     };
 
     boost::optional<MetaInfo> meta;
@@ -124,7 +120,6 @@ public:
     ~TraverseNode();
     void clear();
     bool ready() const;
-    double distancePhys(const vec3 &point) const;
 };
 
 class TraverseQueueItem
@@ -281,6 +276,8 @@ public:
     bool travDetermineMeta(const std::shared_ptr<TraverseNode> &trav);
     bool travDetermineDraws(
             const std::shared_ptr<TraverseNode> &trav);
+    double travDistance(const std::shared_ptr<TraverseNode> &trav,
+                           const vec3 pointPhys);
     void traverse(const std::shared_ptr<TraverseNode> &trav, bool loadOnly);
     void traverseClearing(const std::shared_ptr<TraverseNode> &trav);
     void updateCamera();

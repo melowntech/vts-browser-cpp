@@ -168,13 +168,12 @@ bool RenderTask::ready() const
     return true;
 }
 
-TraverseNode::MetaInfo::MetaInfo() :
+TraverseNode::MetaInfo::MetaInfo(const MetaNode &node) :
+    MetaNode(node),
     surrogatePhys(std::numeric_limits<double>::quiet_NaN(),
                   std::numeric_limits<double>::quiet_NaN(),
                   std::numeric_limits<double>::quiet_NaN()),
-    surface(nullptr), flags(0),
-    surrogateValue(vtslibs::vts::GeomExtents::invalidSurrogate),
-    texelSize(0), displaySize(0)
+    surface(nullptr)
 {
     // initialize corners to NAN
     {
@@ -206,15 +205,6 @@ TraverseNode::~TraverseNode()
     instanceCounter--;
 }
 
-double TraverseNode::distancePhys(const vec3 &point) const
-{
-    assert(meta);
-    double dist = std::numeric_limits<double>::infinity();
-    for (auto &it : meta->cornersPhys)
-        dist = std::min(dist, length(vec3(it - point)));
-    return dist;
-}
-
 std::atomic<sint32> TraverseNode::instanceCounter;
 
 void TraverseNode::clear()
@@ -232,12 +222,6 @@ bool TraverseNode::ready() const
     return true;
 }
 
-float MapImpl::computeResourcePriority(
-        const std::shared_ptr<TraverseNode> &trav)
-{
-    return (float)(1e6 / (trav->distancePhys(renderer.focusPosPhys) + 1));
-}
-
 TraverseQueueItem::TraverseQueueItem(const std::shared_ptr<TraverseNode> &trav,
                                      bool loadOnly) :
     trav(trav), loadOnly(loadOnly)
@@ -246,12 +230,6 @@ TraverseQueueItem::TraverseQueueItem(const std::shared_ptr<TraverseNode> &trav,
 bool TraverseQueueItem::operator < (const TraverseQueueItem &other) const
 {
     return trav->priority < other.trav->priority;
-}
-
-void MapImpl::emptyTraverseQueue()
-{
-    while (!renderer.traverseQueue.empty())
-        renderer.traverseQueue.pop();
 }
 
 ExternalBoundLayer::ExternalBoundLayer(MapImpl *map, const std::string &name)
@@ -314,6 +292,52 @@ void TilesetMapping::update()
         }
     }
     MapConfig::colorizeSurfaceStack(surfaceStack);
+}
+
+void MapImpl::emptyTraverseQueue()
+{
+    while (!renderer.traverseQueue.empty())
+        renderer.traverseQueue.pop();
+}
+
+namespace
+{
+
+double aabbPointDist(const vec3 &point, const vec3 &min, const vec3 &max)
+{
+    double r = 0;
+    for (int i = 0; i < 3; i++)
+        r += std::max(std::max(min[i] - point[i], point[i] - max[i]), 0.0);
+    return sqrt(r);
+}
+
+} // namespace
+
+double MapImpl::travDistance(const std::shared_ptr<TraverseNode> &trav,
+                             const vec3 pointPhys)
+{
+    if (!vtslibs::vts::empty(trav->meta->geomExtents)
+            && !trav->nodeInfo.srs().empty()
+            && !options.debugDisableMeta5)
+    {
+        // todo periodicity
+        vec2 fl = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
+        vec2 fu = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
+        vec3 el = vec2to3(fl, trav->meta->geomExtents.z.min);
+        vec3 eu = vec2to3(fu, trav->meta->geomExtents.z.max);
+        vec3 p = convertor->convert(pointPhys,
+            mapConfig->referenceFrame.model.physicalSrs, trav->nodeInfo.srs());
+        return aabbPointDist(p, el, eu);
+    }
+    return aabbPointDist(pointPhys, trav->meta->aabbPhys[0],
+            trav->meta->aabbPhys[1]);
+}
+
+float MapImpl::computeResourcePriority(
+        const std::shared_ptr<TraverseNode> &trav)
+{
+    return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1)
+                   / (1 << (trav->nodeInfo.nodeId().lod / 2)));
 }
 
 } // namespace vts

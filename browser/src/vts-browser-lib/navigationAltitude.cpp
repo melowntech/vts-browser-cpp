@@ -337,7 +337,8 @@ void MapImpl::updatePositionAltitudeShift()
         if (t == p)
             break;
     }
-    if (!vtslibs::vts::GeomExtents::validSurrogate(t->meta->surrogateValue))
+    if (!vtslibs::vts::GeomExtents::validSurrogate(
+				t->meta->geomExtents.surrogate))
         return;
     assert(info->inside(vecToUblas<math::Point2>(sds)));
     assert(t->meta);
@@ -355,14 +356,14 @@ void MapImpl::updatePositionAltitudeShift()
     //else
     if (navigation.lastPositionAltitudeShift)
     {
-        navigation.targetPoint[2] += t->meta->surrogateValue
+        navigation.targetPoint[2] += t->meta->geomExtents.surrogate
                 - *navigation.lastPositionAltitudeShift;
     }
     else
     {
-        navigation.targetPoint[2] = t->meta->surrogateValue;
+        navigation.targetPoint[2] = t->meta->geomExtents.surrogate;
     }
-    navigation.lastPositionAltitudeShift = t->meta->surrogateValue;
+    navigation.lastPositionAltitudeShift = t->meta->geomExtents.surrogate;
 }
 
 void MapImpl::resetPositionAltitude(double altitude)

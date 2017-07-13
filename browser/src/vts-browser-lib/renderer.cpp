@@ -216,8 +216,10 @@ bool MapImpl::visibilityTest(const std::shared_ptr<TraverseNode> &trav)
 bool MapImpl::coarsenessTest(const std::shared_ptr<TraverseNode> &trav)
 {
     assert(trav->meta);
-    bool applyTexelSize = trav->meta->flags & MetaNode::Flag::applyTexelSize;
-    bool applyDisplaySize = trav->meta->flags & MetaNode::Flag::applyDisplaySize;
+    bool applyTexelSize = trav->meta->flags()
+            & MetaNode::Flag::applyTexelSize;
+    bool applyDisplaySize = trav->meta->flags()
+            & MetaNode::Flag::applyDisplaySize;
     
     if (!applyTexelSize && !applyDisplaySize)
         return false;
@@ -417,13 +419,7 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
         return false;
 
     assert(node);
-    trav->meta.emplace();
-
-    // metanode flags etc.
-    trav->meta->texelSize = node->texelSize;
-    trav->meta->displaySize = node->displaySize;
-    trav->meta->flags = node->flags();
-    trav->meta->surrogateValue = node->geomExtents.surrogate;
+    trav->meta.emplace(*node);
 
     // corners
     if (!vtslibs::vts::empty(node->geomExtents)

@@ -114,8 +114,6 @@ public:
     uint32 lastAccessTime;
     float priority;
 
-    static std::atomic<sint32> instanceCounter;
-
     TraverseNode(const NodeInfo &nodeInfo);
     ~TraverseNode();
     void clear();

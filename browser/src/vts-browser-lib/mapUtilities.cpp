@@ -196,16 +196,10 @@ TraverseNode::MetaInfo::MetaInfo(const MetaNode &node) :
 TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
     : nodeInfo(nodeInfo), lastAccessTime(0),
       priority(std::numeric_limits<double>::quiet_NaN())
-{
-    instanceCounter++;
-}
+{}
 
 TraverseNode::~TraverseNode()
-{
-    instanceCounter--;
-}
-
-std::atomic<sint32> TraverseNode::instanceCounter;
+{}
 
 void TraverseNode::clear()
 {

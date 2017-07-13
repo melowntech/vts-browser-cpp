@@ -30,7 +30,8 @@
 namespace vts
 {
 
-void navigationSolve(const class MapOptions &inOptions,
+void navigationSolve(
+    const class MapOptions &inOptions,
     NavigationType inType,
     double inTimeDiff, // seconds
     double inFov, // degrees

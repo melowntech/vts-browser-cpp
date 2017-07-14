@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     try
     {
 #endif
-        //vts::setLogMask("I2E2W2");
+        vts::setLogMask("I2E2W2");
         vts::setLogThreadName("main");
         
         const char *auth = "";

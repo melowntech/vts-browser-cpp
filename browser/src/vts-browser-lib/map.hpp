@@ -68,7 +68,7 @@ public:
     const mat3f uvMatrix() const;
     Validity prepare(const NodeInfo &nodeInfo, class MapImpl *impl,
                  uint32 subMeshIndex, double priority);
-    
+
     UrlTemplate::Vars orig;
     UrlTemplate::Vars vars;
     MapConfig::BoundInfo *bound;
@@ -89,7 +89,7 @@ public:
     vec4f color;
     bool externalUv;
     bool transparent;
-    
+
     RenderTask();
     bool ready() const;
 };
@@ -153,6 +153,7 @@ public:
     class Navigation
     {
     public:
+        std::vector<std::shared_ptr<RenderTask>> draws;
         vec3 changeRotation;
         vec3 targetPoint;
         double autoRotation;
@@ -161,7 +162,7 @@ public:
         boost::optional<double> positionAltitudeResetHeight;
         NavigationGeographicMode geographicMode;
         NavigationType type;
-        
+
         Navigation();
     } navigation;
 
@@ -217,6 +218,8 @@ public:
     void setPoint(const vec3 &point, NavigationType type);
     void setRotation(const vec3 &euler, NavigationType type);
     void setViewExtent(double viewExtent, NavigationType type);
+    std::shared_ptr<TraverseNode> findTravSds(const vec2 &pointSds,
+                                              uint32 maxLod);
     void updatePositionAltitudeShift();
     void resetPositionAltitude(double altitude);
     void resetNavigationGeographicMode();

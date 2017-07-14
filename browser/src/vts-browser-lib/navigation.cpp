@@ -24,8 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-//#include <boost/utility/in_place_factory.hpp>
-//#include <boost/algorithm/string.hpp>
 #include "map.hpp"
 #include "navigationSolver.hpp"
 
@@ -166,7 +164,9 @@ void MapImpl::updateNavigation()
     assert(options.navigationLatitudeThreshold > 0
            && options.navigationLatitudeThreshold < 90);
 
-    //updatePositionAltitudeShift();
+    navigation.draws.clear();
+
+    updatePositionAltitudeShift();
 
     vtslibs::registry::Position &pos = mapConfig->position;
     vec3 p = vecFromUblas<vec3>(pos.position);

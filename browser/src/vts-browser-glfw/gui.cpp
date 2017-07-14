@@ -543,6 +543,12 @@ public:
                                                 o.debugRenderTargetPosition);
             nk_label(&ctx, "", NK_TEXT_LEFT);
             
+            // render altitude shift corners
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            o.debugRenderAltitudeShiftCorners = nk_check_label(&ctx,
+                "alt. shift corns.", o.debugRenderAltitudeShiftCorners);
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            
             // detached camera
             nk_label(&ctx, "Debug:", NK_TEXT_LEFT);
             o.debugDetachedCamera = nk_check_label(&ctx, "detached camera",

@@ -107,6 +107,7 @@ public:
     bool debugRenderTileBoxes;
     bool debugRenderObjectPosition;
     bool debugRenderTargetPosition;
+    bool debugRenderAltitudeShiftCorners;
 };
 
 class VTS_API MapCallbacks

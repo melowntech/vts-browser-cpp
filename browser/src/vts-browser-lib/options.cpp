@@ -78,7 +78,8 @@ MapOptions::MapOptions() :
     debugRenderMeshBoxes(false),
     debugRenderTileBoxes(false),
     debugRenderObjectPosition(false),
-    debugRenderTargetPosition(false)
+    debugRenderTargetPosition(false),
+    debugRenderAltitudeShiftCorners(false)
 {}
 
 } // namespace vts

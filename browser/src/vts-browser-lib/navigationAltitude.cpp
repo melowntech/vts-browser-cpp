@@ -276,9 +276,48 @@ const NodeInfo MapImpl::findInfoSdsSampled(const NodeInfo &info,
 }
 */
 
+namespace
+{
+
+double generalBilinearInterpolation(
+        const vec2 &query,
+        const vec2 points[4],
+        double values[4])
+{
+    (void)query;
+    (void)points;
+    (void)values;
+    // todo https://stackoverflow.com/questions/23920976/bilinear-interpolation-with-non-aligned-input-points
+    return 0;
+}
+
+} // namespace
+
+std::shared_ptr<TraverseNode> MapImpl::findTravSds(const vec2 &pointSds,
+                                                   uint32 maxLod)
+{
+    assert(renderer.traverseRoot && renderer.traverseRoot->meta);
+    std::shared_ptr<TraverseNode> t = renderer.traverseRoot;
+    while (t->nodeInfo.nodeId().lod < maxLod)
+    {
+        auto p = t;
+        for (auto &&it : t->childs)
+        {
+            if (!it->meta)
+                continue;
+            if (!it->nodeInfo.inside(vecToUblas<math::Point2>(pointSds)))
+                continue;
+            t = it;
+            break;
+        }
+        if (t == p)
+            break;
+    }
+    return t;
+}
+
 void MapImpl::updatePositionAltitudeShift()
 {
-    assert(renderer.traverseRoot);
     assert(convertor);
 
     statistics.desiredNavigationLod = 0;
@@ -313,57 +352,86 @@ void MapImpl::updatePositionAltitudeShift()
         return;
 
     // desired navigation lod
-    uint32 desiredLod = -std::log2(mapConfig->position.verticalExtent
-                                  / info->extents().size()
-                                  / options.navigationSamplesPerViewExtent);
-    desiredLod = std::max(desiredLod, 0u);
+    uint32 desiredLod = std::max(0.0,
+        -std::log2(mapConfig->position.verticalExtent / info->extents().size()
+        / options.navigationSamplesPerViewExtent));
     statistics.desiredNavigationLod = desiredLod;
 
-    // traverse up to the desired navigation lod
-    std::shared_ptr<TraverseNode> t = renderer.traverseRoot;
-    while (t->nodeInfo.nodeId().lod < desiredLod)
+    // find corner positions
+    vec2 points[4];
     {
-        auto p = t;
-        for (auto &&it : t->childs)
+        NodeInfo i = *info;
+        while (i.nodeId().lod < desiredLod)
         {
-            if (it->meta)
+            for (auto j : vtslibs::vts::children(i.nodeId()))
             {
-                if (!it->nodeInfo.inside(vecToUblas<math::Point2>(sds)))
+                NodeInfo k = i.child(j);
+                if (!k.inside(vecToUblas<math::Point2>(sds)))
                     continue;
-                t = it;
+                i = k;
                 break;
             }
         }
-        if (t == p)
-            break;
+        math::Extents2 ext = i.extents();
+        vec2 center = vecFromUblas<vec2>(ext.ll + ext.ur) * 0.5;
+        vec2 size = vecFromUblas<vec2>(ext.ur - ext.ll);
+        vec2 p = sds;
+        if (sds(0) < center(0))
+            p(0) -= size(0);
+        if (sds(1) < center(1))
+            p(1) -= size(1);
+        points[0] = p;
+        points[1] = p + vec2(size(0), 0);
+        points[2] = p + vec2(0, size(1));
+        points[3] = p + size;
     }
-    if (!vtslibs::vts::GeomExtents::validSurrogate(
-				t->meta->geomExtents.surrogate))
-        return;
-    assert(info->inside(vecToUblas<math::Point2>(sds)));
-    assert(t->meta);
-    statistics.usedNavigationlod = t->nodeInfo.nodeId().lod;
-    
-    // todo interpolation
+
+    // find the actual corners
+    double altitudes[4];
+    uint32 minUsedLod = -1;
+    for (int i = 0; i < 4; i++)
+    {
+        auto t = findTravSds(points[i], desiredLod);
+        if (!vtslibs::vts::GeomExtents::validSurrogate(
+                    t->meta->geomExtents.surrogate))
+            return;
+        math::Extents2 ext = t->nodeInfo.extents();
+        points[i] = vecFromUblas<vec2>(ext.ll + ext.ur) * 0.5;
+        altitudes[i] = t->meta->geomExtents.surrogate;
+        minUsedLod = std::min(minUsedLod, (uint32)t->nodeInfo.nodeId().lod);
+        if (options.debugRenderAltitudeShiftCorners)
+        {
+            RenderTask task;
+            task.mesh = getMeshRenderable("data/meshes/sphere.obj");
+            task.mesh->priority = std::numeric_limits<float>::infinity();
+            task.model = translationMatrix(t->meta->surrogatePhys)
+                    * scaleMatrix(t->nodeInfo.extents().size() * 0.031);
+            task.color = vec4f(1.f, 1.f, 1.f, 1.f);
+            navigation.draws.push_back(std::make_shared<RenderTask>(task));
+        }
+    }
+    statistics.usedNavigationlod = minUsedLod;
+
+    // interpolate
+    double altitude = generalBilinearInterpolation(sds, points, altitudes);
 
     // set the altitude
-    //if (navigation.positionAltitudeResetHeight)
-    //{
-    //    navigation.targetPoint[2] = t->surrogateValue
-    //            + *navigation.positionAltitudeResetHeight;
-    //    navigation.positionAltitudeResetHeight.reset();
-    //}
-    //else
-    if (navigation.lastPositionAltitudeShift)
+    if (navigation.positionAltitudeResetHeight)
     {
-        navigation.targetPoint[2] += t->meta->geomExtents.surrogate
+        navigation.targetPoint[2] = altitude
+                + *navigation.positionAltitudeResetHeight;
+        navigation.positionAltitudeResetHeight.reset();
+    }
+    else if (navigation.lastPositionAltitudeShift)
+    {
+        navigation.targetPoint[2] += altitude
                 - *navigation.lastPositionAltitudeShift;
     }
     else
     {
-        navigation.targetPoint[2] = t->meta->geomExtents.surrogate;
+        navigation.targetPoint[2] = altitude;
     }
-    navigation.lastPositionAltitudeShift = t->meta->geomExtents.surrogate;
+    navigation.lastPositionAltitudeShift = altitude;
 }
 
 void MapImpl::resetPositionAltitude(double altitude)

@@ -1021,6 +1021,11 @@ void MapImpl::renderTickRender(uint32 windowWidth, uint32 windowHeight)
         traverse(t.trav, t.loadOnly);
     }
     renderer.credits.tick(credits);
+    for (std::shared_ptr<RenderTask> &r : navigation.draws)
+    {
+        if (r->ready())
+            draws.draws.emplace_back(r.get(), this);
+    }
 }
 
 } // namespace vts

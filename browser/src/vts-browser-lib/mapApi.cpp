@@ -411,24 +411,52 @@ std::string Map::getPositionUrl() const
     return boost::lexical_cast<std::string>(impl->mapConfig->position);
 }
 
+namespace
+{
+
+void setPosition(Map *map, const vtslibs::registry::Position &pos,
+                 NavigationType type)
+{
+    if (pos.heightMode != vtslibs::registry::Position::HeightMode::fixed)
+        LOGTHROW(err2, std::runtime_error) << "position must have fixed height";
+    // todo height mode
+    map->setPositionSubjective(
+            pos.type == vtslibs::registry::Position::Type::subjective, false);
+    map->setPositionFov(pos.verticalFov);
+    map->setPositionViewExtent(pos.verticalExtent, type);
+    vec3 v = vecFromUblas<vec3>(pos.orientation);
+    map->setPositionRotation(v.data(), type);
+    v = vecFromUblas<vec3>(pos.position);
+    map->setPositionPoint(v.data(), type);
+}
+
+} // namespace
+
 void Map::setPositionJson(const std::string &position, NavigationType type)
 {
     if (!isMapConfigReady())
         return;
     Json::Value val;
     if (!Json::Reader().parse(position, val))
-        LOGTHROW(err2, std::runtime_error) << "invalid position json";
-    impl->mapConfig->position = vtslibs::registry::positionFromJson(val);
-    impl->navigation.type = type;
+        LOGTHROW(err2, std::runtime_error) << "invalid position from json";
+    vtslibs::registry::Position pos = vtslibs::registry::positionFromJson(val);
+    setPosition(this, pos, type);
 }
 
 void Map::setPositionUrl(const std::string &position, NavigationType type)
 {
     if (!isMapConfigReady())
         return;
-    impl->mapConfig->position
-            = boost::lexical_cast<vtslibs::registry::Position>(position);
-    impl->navigation.type = type;
+    vtslibs::registry::Position pos;
+    try
+    {
+        pos = boost::lexical_cast<vtslibs::registry::Position>(position);
+    }
+    catch(...)
+    {
+        LOGTHROW(err2, std::runtime_error) << "invalid position from url";
+    }
+    setPosition(this, pos, type);
 }
 
 void Map::resetPositionAltitude()

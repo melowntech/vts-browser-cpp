@@ -1,3 +1,18 @@
+vts-browser (0ubuntu8) melown-xenial; urgency=medium
+
+  * dependency on proj-data-vts
+
+ -- Tomas Maly <tomas.maly@melown.com>  Mon, 17 Jul 2017 10:53:30 +0200
+
+vts-browser (0ubuntu7) melown-xenial; urgency=medium
+
+  * direct position input
+  * tilt limit
+  * search urls in mapconfig browser options
+  * virtual surfaces
+
+ -- Tomas Maly <tomas.maly@melown.com>  Fri, 14 Jul 2017 12:27:35 +0200
+
 vts-browser (0ubuntu6) melown-xenial; urgency=medium
 
   * perceptually invariant navigation

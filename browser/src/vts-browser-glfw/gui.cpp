@@ -32,6 +32,7 @@
 #include <vts-browser/options.hpp>
 #include <vts-browser/view.hpp>
 #include <vts-browser/search.hpp>
+#include <vts-browser/log.hpp>
 
 #include "mainWindow.hpp"
 #include <nuklear/nuklear.h>
@@ -51,6 +52,23 @@ const nk_rune FontUnicodeRanges[] = {
     0x0001, 0x5000, // all multilingual characters
     0
 };
+
+
+void clipBoardPaste(nk_handle usr, struct nk_text_edit *edit)
+{
+    const char *text = glfwGetClipboardString((GLFWwindow*)usr.ptr);
+    if (text)
+        nk_textedit_paste(edit, text, strlen(text));
+}
+
+void clipBoardCopy(nk_handle usr, const char *text, int len)
+{
+    assert(len < 300);
+    char buffer[301];
+    memcpy(buffer, text, len);
+    buffer[len] = 0;
+    glfwSetClipboardString((GLFWwindow*)usr.ptr, buffer);
+}
 
 } // namespace
 
@@ -75,6 +93,7 @@ public:
     {
         searchText[0] = 0;
         searchTextPrev[0] = 0;
+        positionInputText[0] = 0;
 
         // load font
         {
@@ -107,6 +126,10 @@ public:
 
         nk_init_default(&ctx, &font->handle);
         nk_buffer_init_default(&cmds);
+        
+        ctx.clip.paste = &clipBoardPaste;
+        ctx.clip.copy = &clipBoardCopy;
+        ctx.clip.userdata.ptr = window->window;
 
         static const nk_draw_vertex_layout_element vertex_layout[] =
         {
@@ -678,12 +701,45 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Position", nk_rect(530, 10, 200, 400), flags))
+        if (nk_begin(&ctx, "Position", nk_rect(530, 10, 300, 450), flags))
         {
             float width = nk_window_get_content_region_size(&ctx).x - 15;
-            float ratio[] = { width * 0.4f, width * 0.6f };
-            nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+            float ratio[] = { width * 0.3f, width * 0.7f };
             char buffer[256];
+            { // input
+                nk_layout_row(&ctx, NK_STATIC, 22, 2, ratio);
+                nk_label(&ctx, "Input:", NK_TEXT_LEFT);
+                int len = strlen(positionInputText);
+                nk_edit_string(&ctx, NK_EDIT_FIELD | NK_EDIT_AUTO_SELECT,
+                               positionInputText, &len,
+                        MaxSearchTextLength - 1, nullptr);
+                positionInputText[len] = 0;
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+                if (nk_button_label(&ctx, "Go"))
+                {
+                    try
+                    {
+                        window->map->setPositionUrl(
+                                    std::string(positionInputText, len),
+                                    vts::NavigationType::Instant);
+                    }
+                    catch(...)
+                    {
+                        // do nothing
+                    }
+                    try
+                    {
+                        window->map->setPositionJson(
+                                    std::string(positionInputText, len),
+                                    vts::NavigationType::Instant);
+                    }
+                    catch(...)
+                    {
+                        // do nothing
+                    }
+                }
+            }
             { // subjective position
                 int subj = window->map->getPositionSubjective();
                 int prev = subj;
@@ -861,7 +917,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Views", nk_rect(740, 10, 300, 400), flags))
+        if (nk_begin(&ctx, "Views", nk_rect(840, 10, 300, 400), flags))
         {
             float width = nk_window_get_content_region_size(&ctx).x - 15;
 
@@ -964,7 +1020,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Marks", nk_rect(1050, 10, 250, 400), flags))
+        if (nk_begin(&ctx, "Marks", nk_rect(1150, 10, 250, 400), flags))
         {
             std::vector<Mark> &marks = window->marks;
             float width = nk_window_get_content_region_size(&ctx).x - 15;
@@ -1057,7 +1113,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Search", nk_rect(1310, 10, 350, 500), flags))
+        if (nk_begin(&ctx, "Search", nk_rect(1410, 10, 350, 500), flags))
         {
             float width = nk_window_get_content_region_size(&ctx).x - 15;
             if (!window->map->searchable())
@@ -1070,10 +1126,11 @@ public:
             // search query
             {
                 float ratio[] = { width * 0.2f, width * 0.8f };
-                nk_layout_row(&ctx, NK_STATIC, 20, 2, ratio);
+                nk_layout_row(&ctx, NK_STATIC, 22, 2, ratio);
                 nk_label(&ctx, "Query:", NK_TEXT_LEFT);
                 int len = strlen(searchText);
-                nk_edit_string(&ctx, NK_EDIT_FIELD, searchText, &len,
+                nk_edit_string(&ctx, NK_EDIT_FIELD | NK_EDIT_AUTO_SELECT,
+                               searchText, &len,
                         MaxSearchTextLength - 1, nullptr);
                 searchText[len] = 0;
                 if (strcmp(searchText, searchTextPrev) != 0)
@@ -1112,7 +1169,7 @@ public:
             for (auto &r : res)
             {
                 float ratio[] = { width * 0.8f, width * 0.2f };
-                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+                nk_layout_row(&ctx, NK_STATIC, 18, 2, ratio);
                 nk_label(&ctx, r.title.c_str(), NK_TEXT_LEFT);
                 if (r.position[0] == r.position[0])
                 {
@@ -1132,6 +1189,7 @@ public:
                 }
                 else
                     nk_label(&ctx, "", NK_TEXT_LEFT);
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 bool details = nk_check_label(&ctx, r.region.c_str(),
                                               searchDetails == index);
                 if (r.distance >= 1e3)
@@ -1199,6 +1257,7 @@ public:
     static const int MaxSearchTextLength = 200;
     char searchText[MaxSearchTextLength];
     char searchTextPrev[MaxSearchTextLength];
+    char positionInputText[MaxSearchTextLength];
 
     std::shared_ptr<GpuTextureImpl> fontTexture;
     std::shared_ptr<GpuTextureImpl> skinTexture;

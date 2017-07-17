@@ -18,6 +18,7 @@ Package: libvts-browser0
 Architecture: any
 Depends: ${shlibs:Depends}
 			, ${misc:Depends}
+			, proj-data-vts
 Description: vts browser library
  vts browser c++ library
 

@@ -55,12 +55,12 @@ int main(int argc, char *argv[])
     try
     {
 #endif
-        vts::setLogMask("I2E2W2");
+        //vts::setLogMask("I2E2W2");
         vts::setLogThreadName("main");
-        
+
         const char *auth = "";
         int firstUrl = argc;
-        
+
         for (int i = 1; i < argc; i++)
         {
             // --
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
                 firstUrl = i + 1;
                 break;
             }
-            
+
             // --auth=
             if (strncmp(argv[i], "--auth=", 7) == 0)
             {
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
                 auth = a;
                 continue;
             }
-            
+
             {
                 std::stringstream s;
                 s << "Unknown option <" << argv[i] << ">";
@@ -102,11 +102,11 @@ int main(int argc, char *argv[])
             usage(argv);
             return 3;
         }
-    
+
         glfwSetErrorCallback(&errorCallback);
         if (!glfwInit())
             return 2;
-    
+
         {
             vts::MapCreateOptions options("vts-browser-glfw");
             vts::Map map(options);

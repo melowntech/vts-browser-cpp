@@ -435,7 +435,7 @@ void Map::resetPositionAltitude()
 {
     if (!isMapConfigReady())
         return;
-    impl->resetPositionAltitude(0);
+    impl->navigation.positionAltitudeResetHeight = 0;
 }
 
 void Map::resetNavigationGeographicMode()

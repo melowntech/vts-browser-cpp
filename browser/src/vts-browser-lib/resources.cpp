@@ -228,15 +228,7 @@ bool MapImpl::resourceDataTick()
     // sort resources by priority
     for (auto &&it : res)
     {
-#ifndef NDEBUG
-        if (!(it->priority == it->priority))
-        {
-            LOG(warn3) << "resource <"
-                       << it->name
-                       << "> does not have assigned priority";
-        }
-#endif
-
+        assert(it->priority == it->priority);
         it->priorityCopy = it->priority;
         it->priority = 0;
     }

@@ -221,7 +221,6 @@ public:
     std::shared_ptr<TraverseNode> findTravSds(const vec2 &pointSds,
                                               uint32 maxLod);
     void updatePositionAltitudeShift();
-    void resetPositionAltitude(double altitude);
     void resetNavigationGeographicMode();
     void convertPositionSubjObj();
     void positionToCamera(vec3 &center, vec3 &dir, vec3 &up);

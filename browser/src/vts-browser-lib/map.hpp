@@ -218,8 +218,6 @@ public:
     void setPoint(const vec3 &point, NavigationType type);
     void setRotation(const vec3 &euler, NavigationType type);
     void setViewExtent(double viewExtent, NavigationType type);
-    std::shared_ptr<TraverseNode> findTravSds(const vec2 &pointSds,
-                                              uint32 maxLod);
     void updatePositionAltitudeShift();
     void resetNavigationGeographicMode();
     void convertPositionSubjObj();

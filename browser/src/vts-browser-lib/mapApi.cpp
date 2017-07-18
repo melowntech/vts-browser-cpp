@@ -233,7 +233,12 @@ void Map::pan(const double value[3])
 {
     if (!isMapConfigReady())
         return;
-    impl->pan(vec3(value[0], value[1], value[2]));
+    vec3 v(value[0], value[1], value[2]);
+    if (impl->mapConfig->position.type
+            == vtslibs::registry::Position::Type::objective)
+        impl->pan(v);
+    else
+        impl->rotate(-v);
 }
 
 void Map::pan(const double (&value)[3])
@@ -257,7 +262,9 @@ void Map::zoom(double value)
 {
     if (!isMapConfigReady())
         return;
-    impl->zoom(value);
+    if (impl->mapConfig->position.type
+            == vtslibs::registry::Position::Type::objective)
+        impl->zoom(value);
 }
 
 MapCallbacks &Map::callbacks()

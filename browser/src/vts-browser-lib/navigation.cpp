@@ -54,6 +54,7 @@ void MapImpl::convertPositionSubjObj()
         dist *= -1;
     center += dir * dist;
     pos.position = vecToUblas<math::Point3>(convertor->physToNav(center));
+    navigation.targetPoint = vecFromUblas<vec3>(pos.position);
 }
 
 void MapImpl::positionToCamera(vec3 &center, vec3 &dir, vec3 &up)

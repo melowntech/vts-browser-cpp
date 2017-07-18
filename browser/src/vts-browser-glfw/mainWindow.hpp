@@ -49,14 +49,14 @@ struct Mark
     vts::vec3 coord;
     vts::vec3f color;
     int open;
-    
+
     Mark();
 };
 
 class MainWindow
 {
 public:
-    MainWindow();
+    MainWindow(vts::Map *map);
     ~MainWindow();
 
     void mousePositionCallback(double xpos, double ypos);
@@ -73,32 +73,40 @@ public:
         void finalize();
         void render(int width, int height);
         void input();
-        
+
         void mousePositionCallback(double xpos, double ypos);
         void mouseButtonCallback(int button, int action, int mods);
         void mouseScrollCallback(double xoffset, double yoffset);
         void keyboardCallback(int key, int scancode, int action, int mods);
         void keyboardUnicodeCallback(unsigned int codepoint);
-        
+
         std::shared_ptr<class GuiImpl> impl;
     } gui;
-    
+
     void run();
     void colorizeMarks();
     vts::vec3 getWorldPositionFromCursor();
-    
+
     void drawVtsTask(vts::DrawTask &t);
     void drawMark(const Mark &m, const Mark *prev);
-    
+
     void loadTexture(vts::ResourceInfo &info, const vts::GpuTextureSpec &spec);
     void loadMesh(vts::ResourceInfo &info, const vts::GpuMeshSpec &spec);
     void cameraOverrideParam(double &fov, double &aspect,
                              double &near, double &far);
     void cameraOverrideView(double *mat);
     void cameraOverrideProj(double *mat);
+
+    struct Paths
+    {
+        std::string mapConfig;
+        std::string auth;
+        std::string sri;
+    };
     
-    std::string authPath;
-    std::vector<std::string> mapConfigPaths;
+    void setMapConfigPath(const Paths &paths);
+
+    std::vector<Paths> paths;
     std::shared_ptr<GpuShaderImpl> shaderTexture;
     std::shared_ptr<GpuShaderImpl> shaderColor;
     std::shared_ptr<GpuMeshImpl> meshMark;
@@ -117,7 +125,7 @@ public:
     double dblClickInitTime;
     int width, height;
     int dblClickState;
-    vts::Map *map;
+    vts::Map *const map;
     GLFWwindow *window;
 };
 

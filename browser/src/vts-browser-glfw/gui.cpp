@@ -503,7 +503,7 @@ public:
             
             // maxResourcesMemory
             nk_label(&ctx, "Max memory:", NK_TEXT_LEFT);
-            o.maxResourcesMemory = 1024 * 1024 * nk_slide_int(&ctx,
+            o.maxResourcesMemory = 1024 * 1024 * (vts::uint64)nk_slide_int(&ctx,
                     128, o.maxResourcesMemory / 1024 / 1024, 2048, 32);
             sprintf(buffer, "%3d", (int)(o.maxResourcesMemory / 1024 / 1024));
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
@@ -922,7 +922,7 @@ public:
             float width = nk_window_get_content_region_size(&ctx).x - 15;
 
             // mapconfig selector
-            if (window->mapConfigPaths.size() > 1)
+            if (window->paths.size() > 1)
             {
                 float ratio[] = { width * 0.2f, width * 0.8f };
                 nk_layout_row(&ctx, NK_STATIC, 20, 2, ratio);
@@ -931,17 +931,15 @@ public:
                                  window->map->getMapConfigPath().c_str(),
                                  nk_vec2(nk_widget_width(&ctx), 200)))
                 {
-                    const std::vector<std::string> &names
-                            = window->mapConfigPaths;
                     nk_layout_row_dynamic(&ctx, 16, 1);
-                    for (int i = 0, e = names.size(); i < e; i++)
+                    for (int i = 0, e = window->paths.size(); i < e; i++)
                     {
-                        if (nk_combo_item_label(&ctx, names[i].c_str(),
+                        if (nk_combo_item_label(&ctx,
+                                    window->paths[i].mapConfig.c_str(),
                                                 NK_TEXT_LEFT))
                         {
                             window->marks.clear();
-                            window->map->setMapConfigPath(names[i],
-                                                          window->authPath);
+                            window->setMapConfigPath(window->paths[i]);
                             nk_combo_end(&ctx);
                             nk_end(&ctx);
                             return;

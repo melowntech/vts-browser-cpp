@@ -31,6 +31,7 @@
 #include <vts-browser/log.hpp>
 #include "mainWindow.hpp"
 #include "dataThread.hpp"
+#include "programOptions.hpp"
 #include <GLFW/glfw3.h>
 
 void errorCallback(int, const char* description)
@@ -38,13 +39,6 @@ void errorCallback(int, const char* description)
     std::stringstream s;
     s << "GLFW error <" << description << ">";
     vts::log(vts::LogLevel::err4, s.str());
-}
-
-void usage(char *argv[])
-{
-    printf("Usage: %s [options] [--] <config-url> [config-url]...\n", argv[0]);
-    printf("Options:\n");
-    printf("\t--auth=<url>\n\t\tAuthentication url.\n");
 }
 
 int main(int argc, char *argv[])
@@ -55,69 +49,28 @@ int main(int argc, char *argv[])
     try
     {
 #endif
-        //vts::setLogMask("I2E2W2");
         vts::setLogThreadName("main");
 
-        const char *auth = "";
-        int firstUrl = argc;
-
-        for (int i = 1; i < argc; i++)
-        {
-            // --
-            if (argv[i][0] != '-')
-            {
-                firstUrl = i;
-                break;
-            }
-            if (strcmp(argv[i], "--") == 0)
-            {
-                firstUrl = i + 1;
-                break;
-            }
-
-            // --auth=
-            if (strncmp(argv[i], "--auth=", 7) == 0)
-            {
-                const char *a = argv[i] + 7;
-                if (a[0] == 0)
-                {
-                    vts::log(vts::LogLevel::err4, "Missing auth url.");
-                    usage(argv);
-                    return 4;
-                }
-                auth = a;
-                continue;
-            }
-
-            {
-                std::stringstream s;
-                s << "Unknown option <" << argv[i] << ">";
-                vts::log(vts::LogLevel::err4, s.str());
-            }
-            usage(argv);
-            return 4;
-        }
-        if (firstUrl >= argc)
-        {
-            usage(argv);
+        vts::MapCreateOptions createOptions;
+        createOptions.clientId = "vts-browser-glfw";
+        vts::MapOptions mapOptions;
+        vts::FetcherOptions fetcherOptions;
+        std::vector<MainWindow::Paths> paths;
+        if (!programOptions(createOptions, mapOptions, fetcherOptions, paths,
+                            argc, argv))
             return 3;
-        }
 
         glfwSetErrorCallback(&errorCallback);
         if (!glfwInit())
             return 2;
 
         {
-            vts::MapCreateOptions options("vts-browser-glfw");
-            vts::Map map(options);
-            MainWindow main;
-            for (int i = firstUrl; i < argc; i++)
-                main.mapConfigPaths.push_back(argv[i]);
-            main.authPath = auth;
-            map.setMapConfigPath(argv[firstUrl], auth);
-            DataThread data(main.window, &main.timingDataFrame);
-            main.map = &map;
-            data.map = &map;
+            vts::Map map(createOptions);
+            map.options() = mapOptions;
+            MainWindow main(&map);
+            std::swap(main.paths, paths);
+            DataThread data(&map, main.window, &main.timingDataFrame,
+                            fetcherOptions);
             main.run();
         }
 

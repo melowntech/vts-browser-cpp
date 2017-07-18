@@ -30,8 +30,8 @@
 namespace vts
 {
 
-MapCreateOptions::MapCreateOptions(const std::string &clientId) :
-    clientId(clientId),
+MapCreateOptions::MapCreateOptions() :
+    clientId("undefined-vts-browser-cpp"),
     searchUrlFallback("https://n1.windyty.com/search.php?format=json"
                        "&addressdetails=1&limit=20&q={value}"),
     searchSrsFallback("+proj=longlat +datum=WGS84 +nodefs"),
@@ -55,7 +55,7 @@ MapOptions::MapOptions() :
     cameraInertiaPan(0.9),
     cameraInertiaZoom(0.9),
     cameraInertiaRotate(0.9),
-    navigationLatitudeThreshold(75),
+    navigationLatitudeThreshold(80),
     navigationMaxViewExtentMult(1.02),
     navigationMaxPositionChange(0.02),
     maxResourcesMemory(512 * 1024 * 1024),

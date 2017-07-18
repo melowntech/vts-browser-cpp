@@ -40,16 +40,17 @@ class Map;
 class DataThread
 {
 public:
-    DataThread(GLFWwindow *shared, double *timing);
+    DataThread(vts::Map *map, GLFWwindow *shared, double *timing,
+               const vts::FetcherOptions &fetcherOptions);
     ~DataThread();
 
     void run();
 
     std::shared_ptr<vts::Fetcher> fetcher;
     std::thread thr;
-    vts::Map *map;
     GLFWwindow *window;
-    double *timing;
+    vts::Map *const map;
+    double *const timing;
     volatile bool stop;
 };
 

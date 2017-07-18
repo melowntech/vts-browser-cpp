@@ -52,7 +52,8 @@ int main(int argc, char *argv[])
 
     MainWindow mainWindow;
 
-    vts::MapCreateOptions options("vts-browser-qt");
+    vts::MapCreateOptions options;
+    options.clientId = "vts-browser-qt";
     vts::Map map(options);
     map.setMapConfigPath(argv[1], argc >= 3 ? argv[2] : "");
 

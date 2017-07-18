@@ -1,10 +1,11 @@
-define_module(BINARY vts-browser-glfw DEPENDS vts-browser nuklear glad THREADS)
+define_module(BINARY vts-browser-glfw DEPENDS vts-browser nuklear glad THREADS Boost_PROGRAM_OPTIONS)
 
 set(HDR_LIST
 	dataThread.hpp
 	mainWindow.hpp
 	gpuContext.hpp
 	guiSkin.hpp
+	programOptions.hpp
 )
 
 set(SRC_LIST
@@ -14,6 +15,7 @@ set(SRC_LIST
 	guiSkin.cpp
 	main.cpp
 	mainWindow.cpp
+	programOptions.cpp
 )
 
 add_executable(vts-browser-glfw ${SRC_LIST} ${HDR_LIST})

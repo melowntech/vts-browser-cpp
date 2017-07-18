@@ -79,11 +79,11 @@ void keyboardUnicodeCallback(GLFWwindow *window, unsigned int codepoint)
 
 } // namespace
 
-MainWindow::MainWindow() :
+MainWindow::MainWindow(vts::Map *map) :
     camNear(0), camFar(0),
     mousePrevX(0), mousePrevY(0),
     dblClickInitTime(0), dblClickState(0),
-    map(nullptr), window(nullptr)
+    map(map), window(nullptr)
 {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -367,6 +367,7 @@ void MainWindow::loadMesh(vts::ResourceInfo &info,
 
 void MainWindow::run()
 {
+    setMapConfigPath(paths[0]);
     map->callbacks().loadTexture = std::bind(&MainWindow::loadTexture, this,
                 std::placeholders::_1, std::placeholders::_2);
     map->callbacks().loadMesh = std::bind(&MainWindow::loadMesh, this,
@@ -398,8 +399,8 @@ void MainWindow::run()
             std::stringstream s;
             s << "Exception <" << e.what() << ">";
             vts::log(vts::LogLevel::err4, s.str());
-            if (mapConfigPaths.size() > 1)
-                map->setMapConfigPath("");
+            if (paths.size() > 1)
+                setMapConfigPath(Paths());
             else
                 throw;
         }
@@ -512,5 +513,10 @@ void MainWindow::cameraOverrideProj(double *mat)
 {
     for (int i = 0; i < 16; i++)
         camProj(i) = mat[i];
+}
+
+void MainWindow::setMapConfigPath(const MainWindow::Paths &paths)
+{
+    map->setMapConfigPath(paths.mapConfig, paths.auth, paths.sri);
 }
 

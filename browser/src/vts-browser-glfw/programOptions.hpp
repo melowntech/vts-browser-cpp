@@ -24,59 +24,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <unistd.h> // usleep
-#include <vts-browser/map.hpp>
-#include <vts-browser/log.hpp>
-#include "dataThread.hpp"
-#include "gpuContext.hpp"
-#include <GLFW/glfw3.h>
+#ifndef PROGRAMOPTIONS_H_iogfzgzv
+#define PROGRAMOPTIONS_H_iogfzgzv
 
-namespace
-{
-    void run(DataThread *data)
-    {
-        data->run();
-    }
-}
+#include <vector>
+#include "mainWindow.hpp"
+#include <vts-browser/options.hpp>
+#include <vts-browser/fetcher.hpp>
 
-DataThread::DataThread(vts::Map *map, GLFWwindow *shared, double *timing,
-                       const vts::FetcherOptions &fetcherOptions) :
-    window(nullptr), map(map), timing(timing), stop(false)
-{
-    fetcher = vts::Fetcher::create(fetcherOptions);
-    glfwWindowHint(GLFW_VISIBLE, false);
-    window = glfwCreateWindow(1, 1, "data context", NULL, shared);
-    glfwSetWindowUserPointer(window, this);
-    glfwHideWindow(window);
-    initializeGpuContext();
-    thr = std::thread(&::run, this);
-}
+bool programOptions(vts::MapCreateOptions &createOptions,
+                    vts::MapOptions &mapOptions,
+                    vts::FetcherOptions &fetcherOptions,
+                    std::vector<MainWindow::Paths> &paths,
+                    int argc, char *argv[]);
 
-DataThread::~DataThread()
-{
-    stop = true;
-    thr.join();
-    glfwDestroyWindow(window);
-    window = nullptr;
-}
-
-void DataThread::run()
-{
-    vts::setLogThreadName("data");
-    glfwMakeContextCurrent(window);
-    while (!stop && !map)
-        usleep(1000);
-    map->dataInitialize(fetcher);
-    while (!stop)
-    {
-        double timeFrameStart = glfwGetTime();
-        bool a = map->dataTick();
-        double timeFrameEnd = glfwGetTime();
-        *timing = timeFrameEnd - timeFrameStart;
-        if (a)
-            usleep(20000);
-        else
-            usleep(5000);
-    }
-    map->dataFinalize();
-}
+#endif

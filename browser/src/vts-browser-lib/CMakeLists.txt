@@ -18,6 +18,7 @@ set(PUB_HDR_LIST
 	include/vts-browser/credits.hpp
 	include/vts-browser/search.hpp
 	include/vts-browser/log.hpp
+	include/vts-browser/boostProgramOptions.hpp
 )
 
 set(HDR_LIST
@@ -58,6 +59,7 @@ set(SRC_LIST
 	cache.cpp
 	navigationSolver.cpp
 	log.cpp
+	boostProgramOptions.cpp
 )
 
 include(data.cmake)

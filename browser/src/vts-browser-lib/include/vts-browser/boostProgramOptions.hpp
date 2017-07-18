@@ -24,59 +24,27 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <unistd.h> // usleep
-#include <vts-browser/map.hpp>
-#include <vts-browser/log.hpp>
-#include "dataThread.hpp"
-#include "gpuContext.hpp"
-#include <GLFW/glfw3.h>
+#ifndef BOOSTPROGRAMOPTIONS_H_qwsdfgzuweuiw4
+#define BOOSTPROGRAMOPTIONS_H_qwsdfgzuweuiw4
 
-namespace
-{
-    void run(DataThread *data)
-    {
-        data->run();
-    }
-}
+#include <boost/program_options.hpp>
+#include "foundation.hpp"
 
-DataThread::DataThread(vts::Map *map, GLFWwindow *shared, double *timing,
-                       const vts::FetcherOptions &fetcherOptions) :
-    window(nullptr), map(map), timing(timing), stop(false)
+namespace vts
 {
-    fetcher = vts::Fetcher::create(fetcherOptions);
-    glfwWindowHint(GLFW_VISIBLE, false);
-    window = glfwCreateWindow(1, 1, "data context", NULL, shared);
-    glfwSetWindowUserPointer(window, this);
-    glfwHideWindow(window);
-    initializeGpuContext();
-    thr = std::thread(&::run, this);
-}
 
-DataThread::~DataThread()
-{
-    stop = true;
-    thr.join();
-    glfwDestroyWindow(window);
-    window = nullptr;
-}
+VTS_API void optionsConfigLog(
+        boost::program_options::options_description &desc);
+VTS_API void optionsConfigCreateOptions(
+        boost::program_options::options_description &desc,
+        class MapCreateOptions *opts);
+VTS_API void optionsConfigMapOptions(
+        boost::program_options::options_description &desc,
+        class MapOptions *opts);
+VTS_API void optionsConfigFetcherOptions(
+        boost::program_options::options_description &desc,
+        class FetcherOptions *opts);
 
-void DataThread::run()
-{
-    vts::setLogThreadName("data");
-    glfwMakeContextCurrent(window);
-    while (!stop && !map)
-        usleep(1000);
-    map->dataInitialize(fetcher);
-    while (!stop)
-    {
-        double timeFrameStart = glfwGetTime();
-        bool a = map->dataTick();
-        double timeFrameEnd = glfwGetTime();
-        *timing = timeFrameEnd - timeFrameStart;
-        if (a)
-            usleep(20000);
-        else
-            usleep(5000);
-    }
-    map->dataFinalize();
-}
+} // namespace vts
+
+#endif

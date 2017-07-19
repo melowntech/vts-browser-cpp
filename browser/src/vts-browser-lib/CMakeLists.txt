@@ -4,62 +4,62 @@ set(vts-browser_SO_VERSION 0.0.0)
 define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus http>=1.2 lodepng)
 
 set(PUB_HDR_LIST
-	include/vts-browser/buffer.hpp
-	include/vts-browser/foundation.hpp
-	include/vts-browser/options.hpp
-	include/vts-browser/resources.hpp
-	include/vts-browser/fetcher.hpp
-	include/vts-browser/map.hpp
-	include/vts-browser/draws.hpp
-	include/vts-browser/statistics.hpp
-	include/vts-browser/view.hpp
-	include/vts-browser/math.hpp
-	include/vts-browser/exceptions.hpp
-	include/vts-browser/credits.hpp
-	include/vts-browser/search.hpp
-	include/vts-browser/log.hpp
-	include/vts-browser/boostProgramOptions.hpp
+  include/vts-browser/buffer.hpp
+  include/vts-browser/foundation.hpp
+  include/vts-browser/options.hpp
+  include/vts-browser/resources.hpp
+  include/vts-browser/fetcher.hpp
+  include/vts-browser/map.hpp
+  include/vts-browser/draws.hpp
+  include/vts-browser/statistics.hpp
+  include/vts-browser/view.hpp
+  include/vts-browser/math.hpp
+  include/vts-browser/exceptions.hpp
+  include/vts-browser/credits.hpp
+  include/vts-browser/search.hpp
+  include/vts-browser/log.hpp
+  include/vts-browser/boostProgramOptions.hpp
 )
 
 set(HDR_LIST
-	coordsManip.hpp
-	image.hpp
-	map.hpp
-	resources.hpp
-	credits.hpp
-	obj.hpp
-	cache.hpp
-	navigationSolver.hpp
+  coordsManip.hpp
+  image.hpp
+  map.hpp
+  resources.hpp
+  credits.hpp
+  obj.hpp
+  cache.hpp
+  navigationSolver.hpp
 )
 
 set(SRC_LIST
-	buffer.cpp
-	color.cpp
-	credits.cpp
-	coordsManip.cpp
-	exceptions.cpp
-	fetcher.cpp
-	image.cpp
-	mapApi.cpp
-	mapUtilities.cpp
-	math.cpp
-	navigation.cpp
-	navigationAltitude.cpp
-	obj.cpp
-	options.cpp
-	renderer.cpp
-	resourceAuth.cpp
-	resourceMapConfig.cpp
-	resourceMesh.cpp
-	resourceOther.cpp
-	resources.cpp
-	resourceTexture.cpp
-	statistics.cpp
-	search.cpp
-	cache.cpp
-	navigationSolver.cpp
-	log.cpp
-	boostProgramOptions.cpp
+  buffer.cpp
+  color.cpp
+  credits.cpp
+  coordsManip.cpp
+  exceptions.cpp
+  fetcher.cpp
+  image.cpp
+  mapApi.cpp
+  mapUtilities.cpp
+  math.cpp
+  navigation.cpp
+  navigationAltitude.cpp
+  obj.cpp
+  options.cpp
+  renderer.cpp
+  resourceAuth.cpp
+  resourceMapConfig.cpp
+  resourceMesh.cpp
+  resourceOther.cpp
+  resources.cpp
+  resourceTexture.cpp
+  statistics.cpp
+  search.cpp
+  cache.cpp
+  navigationSolver.cpp
+  log.cpp
+  boostProgramOptions.cpp
 )
 
 include(data.cmake)

@@ -8,6 +8,6 @@ uniform mat4 uniMvp;
 
 void main()
 {
-	gl_Position = uniMvp * vec4(inPosition, 1.0);
+  gl_Position = uniMvp * vec4(inPosition, 1.0);
 }
 

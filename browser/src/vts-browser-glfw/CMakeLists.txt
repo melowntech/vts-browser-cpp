@@ -1,21 +1,21 @@
 define_module(BINARY vts-browser-glfw DEPENDS vts-browser nuklear glad THREADS Boost_PROGRAM_OPTIONS)
 
 set(HDR_LIST
-	dataThread.hpp
-	mainWindow.hpp
-	gpuContext.hpp
-	guiSkin.hpp
-	programOptions.hpp
+  dataThread.hpp
+  mainWindow.hpp
+  gpuContext.hpp
+  guiSkin.hpp
+  programOptions.hpp
 )
 
 set(SRC_LIST
-	dataThread.cpp
-	gpuContext.cpp
-	gui.cpp
-	guiSkin.cpp
-	main.cpp
-	mainWindow.cpp
-	programOptions.cpp
+  dataThread.cpp
+  gpuContext.cpp
+  gui.cpp
+  guiSkin.cpp
+  main.cpp
+  mainWindow.cpp
+  programOptions.cpp
 )
 
 add_executable(vts-browser-glfw ${SRC_LIST} ${HDR_LIST})
@@ -26,7 +26,7 @@ target_compile_definitions(vts-browser-glfw PUBLIC ${NUKLEAR_COMPONENTS})
 
 # install
 install(TARGETS vts-browser-glfw
-		RUNTIME DESTINATION bin
-		COMPONENT browser-glfw
+  RUNTIME DESTINATION bin
+  COMPONENT browser-glfw
 )
 

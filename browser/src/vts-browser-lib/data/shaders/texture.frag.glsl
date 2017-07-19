@@ -13,12 +13,12 @@ in vec2 varUvs;
 
 void main()
 {
-	vec4 t = texture(texColor, varUvs);
-	if (uniTexMode == 1)
-		t = t.rrra;
-	if (uniMaskMode != 0)
-		t[3] *= texture(texMask, varUvs).r;
-	t[3] *= uniAlpha;
-	outColor = t;
+  vec4 t = texture(texColor, varUvs);
+  if (uniTexMode == 1)
+    t = t.rrra;
+  if (uniMaskMode != 0)
+    t[3] *= texture(texMask, varUvs).r;
+  t[3] *= uniAlpha;
+  outColor = t;
 }
 

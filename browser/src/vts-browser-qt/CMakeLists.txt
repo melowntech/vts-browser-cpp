@@ -4,16 +4,16 @@ cmake_policy(SET CMP0043 OLD)
 define_module(BINARY vts-browser-qt DEPENDS vts-browser)
 
 set(HDR_LIST
-	fetcher.hpp
-	gpuContext.hpp
-	mainWindow.hpp
+  fetcher.hpp
+  gpuContext.hpp
+  mainWindow.hpp
 )
 
 set(SRC_LIST
-	fetcher.cpp
-	gpuContext.cpp
-	main.cpp
-	mainWindow.cpp
+  fetcher.cpp
+  gpuContext.cpp
+  main.cpp
+  mainWindow.cpp
 )
 
 set(CMAKE_AUTOMOC ON)
@@ -27,7 +27,7 @@ qt5_use_modules(vts-browser-qt Gui Network)
 
 # install
 install(TARGETS vts-browser-qt
-			RUNTIME DESTINATION bin
-			COMPONENT browser-qt
+  RUNTIME DESTINATION bin
+  COMPONENT browser-qt
 )
 

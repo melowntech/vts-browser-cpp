@@ -12,15 +12,15 @@ out vec2 varUvs;
 
 void main()
 {
-	gl_Position = uniMvp * vec4(inPosition, 1.0);
-	switch (uniUvMode)
-	{
-	case 0:
-		varUvs = vec2(uniUvMat * vec3(inUvInternal, 1.0));
-		break;
-	case 1:
-		varUvs = vec2(uniUvMat * vec3(inUvExternal, 1.0));
-		break;
-	}
+  gl_Position = uniMvp * vec4(inPosition, 1.0);
+  switch (uniUvMode)
+  {
+  case 0:
+    varUvs = vec2(uniUvMat * vec3(inUvInternal, 1.0));
+    break;
+  case 1:
+    varUvs = vec2(uniUvMat * vec3(inUvExternal, 1.0));
+    break;
+  }
 }
 

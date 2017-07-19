@@ -59,6 +59,19 @@ public:
         Search,
         SriIndex,
     };
+
+    struct ExtraCodes { enum {
+        /** Timed out while waiting for data.
+         */
+        Timeout = 10504,
+        /** Internal fetcher error
+         */
+        InternalError = 10500,
+        /** Content is not to be shown to the end user.
+         */
+        ProhibitedContent = 10403
+    }; };
+
     static bool isResourceTypeMandatory(ResourceType resourceType);
 
     ResourceType resourceType;

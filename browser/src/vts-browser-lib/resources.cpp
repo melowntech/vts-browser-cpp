@@ -295,9 +295,13 @@ void Resource::fetchDone()
     // handle error or invalid codes
     if (replyCode >= 400 || replyCode < 200)
     {
-        LOG(err2) << "Error downloading <" << name
-                  << ">, http code " << replyCode;
-        state = Resource::State::errorRetry;
+        if (replyCode == FetchTask::ExtraCodes::ProhibitedContent) {
+            state = Resource::State::errorFatal;
+        } else {
+            LOG(err2) << "Error downloading <" << name
+                      << ">, http code " << replyCode;
+            state = Resource::State::errorRetry;
+        }
     }
 
     // these resources must always revalidate

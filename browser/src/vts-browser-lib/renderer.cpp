@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <boost/utility/in_place_factory.hpp>
+
 #include "include/vts-browser/map.hpp"
 #include "include/vts-browser/exceptions.hpp"
 #include "map.hpp"
@@ -422,7 +424,7 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
         return false;
 
     assert(node);
-    trav->meta.emplace(*node);
+    trav->meta = boost::in_place(*node);
 
     // corners
     if (!vtslibs::vts::empty(node->geomExtents)

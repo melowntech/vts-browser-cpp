@@ -184,11 +184,18 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
         {
             LOG(err1) << "Exception <" <<  e.what()
                       << "> in download of <" << task->queryUrl << ">";
+            task->replyCode = FetchTask::ExtraCodes::InternalError;
         }
         catch (...)
         {
-            // do nothing
+            LOG(err1) << "Unknown exception in download of <"
+                      << task->queryUrl << ">";
+            task->replyCode = FetchTask::ExtraCodes::InternalError;
         }
+    } else {
+        LOG(err1) << "Invalid result from HTTP fetcher (no value, no status "
+            "code, no exception) for <" << task->queryUrl << ">";
+        task->replyCode = FetchTask::ExtraCodes::InternalError;
     }
     finish();
 }

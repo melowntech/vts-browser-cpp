@@ -230,7 +230,8 @@ bool MapImpl::resourceDataTick()
     {
         assert(it->priority == it->priority);
         it->priorityCopy = it->priority;
-        it->priority = 0;
+        if (it->priority < std::numeric_limits<float>::infinity())
+            it->priority = 0;
     }
     std::sort(res.begin(), res.end(), [](
               const std::shared_ptr<Resource> &a,
@@ -559,6 +560,11 @@ std::shared_ptr<TilesetMapping> MapImpl::getTilesetMapping(
         const std::string &name)
 {
     return getMapResource<TilesetMapping>(this, name);
+}
+
+std::shared_ptr<SriIndex> MapImpl::getSriIndex(const std::string &name)
+{
+    return getMapResource<SriIndex>(this, name);
 }
 
 Validity MapImpl::getResourceValidity(const std::string &name)

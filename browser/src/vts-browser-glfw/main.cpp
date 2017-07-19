@@ -53,6 +53,7 @@ int main(int argc, char *argv[])
 
         vts::MapCreateOptions createOptions;
         createOptions.clientId = "vts-browser-glfw";
+        //createOptions.disableCache = true;
         vts::MapOptions mapOptions;
         vts::FetcherOptions fetcherOptions;
         std::vector<MainWindow::Paths> paths;

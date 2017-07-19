@@ -84,7 +84,8 @@ public:
 
     uint64 maxResourcesMemory; // bytes
     uint32 maxConcurrentDownloads;
-    uint32 maxNodeUpdatesPerTick;
+    uint32 maxNodeMetaUpdatesPerTick;
+    uint32 maxNodeDrawsUpdatesPerTick;
     uint32 maxResourceProcessesPerTick;
     uint32 navigationSamplesPerViewExtent;
     uint32 maxFetchRedirections;
@@ -100,6 +101,7 @@ public:
     bool debugDetachedCamera;
     bool debugDisableMeta5;
     bool debugDisableVirtualSurfaces;
+    bool debugDisableSri;
     bool debugSaveCorruptedFiles;
 
     bool debugRenderSurrogates;

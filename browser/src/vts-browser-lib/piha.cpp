@@ -26,7 +26,7 @@
 
 #include <dbglog/dbglog.hpp>
 #include "include/vts-browser/options.hpp"
-#include "navigationSolver.hpp"
+#include "piha.hpp"
 
 namespace vts
 {
@@ -51,7 +51,7 @@ double sumExtents(double v1, double v2, double mult)
 
 } // namespace
 
-void navigationSolve(
+void navigationPiha(
         const MapOptions &inOptions,
         NavigationType inType,
         double inTimeDiff,

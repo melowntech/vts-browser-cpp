@@ -367,6 +367,11 @@ void MainWindow::loadMesh(vts::ResourceInfo &info,
 
 void MainWindow::run()
 {
+    width = 0;
+    height = 0;
+    glfwGetFramebufferSize(window, &width, &height);
+    map->setWindowSize(width, height);
+
     setMapConfigPath(paths[0]);
     map->callbacks().loadTexture = std::bind(&MainWindow::loadTexture, this,
                 std::placeholders::_1, std::placeholders::_2);
@@ -391,8 +396,10 @@ void MainWindow::run()
 
         try
         {
+            glfwGetFramebufferSize(window, &width, &height);
+            map->setWindowSize(width, height);
             map->renderTickPrepare();
-            map->renderTickRender(width, height); // calls camera overrides
+            map->renderTickRender(); // calls camera overrides
         }
         catch (const vts::MapConfigException &e)
         {
@@ -406,9 +413,6 @@ void MainWindow::run()
         }
         double timeMapRender = glfwGetTime();
 
-        width = 0;
-        height = 0;
-        glfwGetFramebufferSize(window, &width, &height);
         glViewport(0, 0, width, height);
         glClearColor(0.2, 0.2, 0.2, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

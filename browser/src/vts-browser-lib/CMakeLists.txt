@@ -29,7 +29,7 @@ set(HDR_LIST
   credits.hpp
   obj.hpp
   cache.hpp
-  navigationSolver.hpp
+  piha.hpp
 )
 
 set(SRC_LIST
@@ -48,18 +48,19 @@ set(SRC_LIST
   obj.cpp
   options.cpp
   renderer.cpp
-  resourceAuth.cpp
-  resourceMapConfig.cpp
-  resourceMesh.cpp
+  auth.cpp
+  mapConfig.cpp
+  mesh.cpp
+  texture.cpp
   resourceOther.cpp
-  resources.cpp
-  resourceTexture.cpp
+  resourceManager.cpp
   statistics.cpp
   search.cpp
   cache.cpp
-  navigationSolver.cpp
+  piha.cpp
   log.cpp
   boostProgramOptions.cpp
+  sri.cpp
 )
 
 include(data.cmake)

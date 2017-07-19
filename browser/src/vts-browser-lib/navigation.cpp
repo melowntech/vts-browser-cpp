@@ -25,7 +25,7 @@
  */
 
 #include "map.hpp"
-#include "navigationSolver.hpp"
+#include "piha.hpp"
 
 namespace vts
 {
@@ -229,7 +229,7 @@ void MapImpl::updateNavigation()
     double vertical1 = navigation.targetPoint(2) - p(2);
     double vertical2 = std::numeric_limits<double>::quiet_NaN();
     vec3 r2;
-    navigationSolve(
+    navigationPiha(
                 options,
                 navigation.type,
                 1.0 / 60.0, // todo

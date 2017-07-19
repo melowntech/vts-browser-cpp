@@ -159,10 +159,11 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
             task->contentType = body.contentType;
             task->replyExpires = body.expires;
             task->replyCode = 200;
-            
+
             // testing start
-            //if (rand() % 50 == 42)
-            //    task->replyCode = 900;
+            //if (rand() % 50 < 42
+            //    && task->resourceType == FetchTask::ResourceType::MetaTile)
+            //    task->replyCode = FetchTask::ExtraCodes::SimulatedError;
             // testing end
         }
     }
@@ -182,7 +183,7 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
         }
         catch (std::exception &e)
         {
-            LOG(err1) << "Exception <" <<  e.what()
+            LOG(err1) << "Exception <" << e.what()
                       << "> in download of <" << task->queryUrl << ">";
             task->replyCode = FetchTask::ExtraCodes::InternalError;
         }

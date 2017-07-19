@@ -224,7 +224,8 @@ void MainWindow::tick()
 
         map->dataTick();
         map->renderTickPrepare();
-        map->renderTickRender(size.width(), size.height());
+        map->setWindowSize(size.width(), size.height());
+        map->renderTickRender();
         for (vts::DrawTask &t : map->draws().draws)
             draw(t);
 

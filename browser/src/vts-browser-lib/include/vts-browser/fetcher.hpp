@@ -69,7 +69,10 @@ public:
         InternalError = 10500,
         /** Content is not to be shown to the end user.
          */
-        ProhibitedContent = 10403
+        ProhibitedContent = 10403,
+        /** Content is rejected to simulate network errors for testing purposes.
+         */
+        SimulatedError = 10000,
     }; };
 
     static bool isResourceTypeMandatory(ResourceType resourceType);
@@ -89,7 +92,7 @@ public:
     //   -1 = invalid value
     //   -2 = always revalidate
     std::time_t replyExpires;
-    uint32 replyCode; // http status code
+    uint32 replyCode; // http status code, or one of the ExtraCodes
 
     FetchTask(const std::string &url, ResourceType resourceType);
     virtual ~FetchTask();

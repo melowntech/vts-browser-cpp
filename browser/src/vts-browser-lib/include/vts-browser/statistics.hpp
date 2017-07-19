@@ -68,7 +68,8 @@ public:
     uint32 currentResourcePreparing;
     uint32 desiredNavigationLod;
     uint32 usedNavigationlod;
-    uint32 currentNodeUpdates;
+	uint32 currentNodeMetaUpdates;
+	uint32 currentNodeDrawsUpdates;
 
     // debug
 

@@ -375,7 +375,8 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
     assert(trav->draws.empty());
     assert(trav->childs.empty());
 
-    if (statistics.currentNodeUpdates++ >= options.maxNodeUpdatesPerTick)
+    if (statistics.currentNodeMetaUpdates++
+            >= options.maxNodeMetaUpdatesPerTick)
         return false;
 
     const TileId nodeId = trav->nodeInfo.nodeId();
@@ -511,7 +512,8 @@ bool MapImpl::travDetermineDraws(const std::shared_ptr<TraverseNode> &trav)
     assert(trav->meta->surface);
     assert(trav->draws.empty());
 
-    if (statistics.currentNodeUpdates++ >= options.maxNodeUpdatesPerTick)
+    if (statistics.currentNodeDrawsUpdates++
+            >= options.maxNodeDrawsUpdatesPerTick)
         return false;
 
     const TileId nodeId = trav->nodeInfo.nodeId();
@@ -985,7 +987,7 @@ bool MapImpl::prerequisitesCheck()
     LOG(info3) << "Map config ready";
     initialized = true;
     if (callbacks.mapconfigReady)
-        callbacks.mapconfigReady();
+        callbacks.mapconfigReady();    
     return initialized;
 }
 
@@ -1001,16 +1003,14 @@ void MapImpl::renderTickPrepare()
 
     updateNavigation();
     updateSearch();
+    updateSris();
     traverseClearing(renderer.traverseRoot);
 }
 
-void MapImpl::renderTickRender(uint32 windowWidth, uint32 windowHeight)
+void MapImpl::renderTickRender()
 {
-    if (!initialized)
+    if (!initialized || renderer.windowWidth == 0 || renderer.windowHeight == 0)
         return;
-
-    renderer.windowWidth = windowWidth;
-    renderer.windowHeight = windowHeight;
 
     draws.draws.clear();
     updateCamera();

@@ -172,9 +172,14 @@ public:
         std::shared_ptr<Cache> cache;
         std::shared_ptr<AuthConfig> auth;
         std::shared_ptr<Fetcher> fetcher;
+#ifdef NDEBUG
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
+#else
+        std::map<std::string, std::shared_ptr<Resource>> resources;
+#endif
         std::vector<std::shared_ptr<Resource>> resourcesCopy;
         std::deque<std::weak_ptr<SearchTask>> searchTasks;
+        std::deque<std::shared_ptr<SriIndex>> sriTasks;
         boost::mutex mutResourcesCopy;
         std::string authPath;
         std::string sriPath;
@@ -249,15 +254,21 @@ public:
     std::shared_ptr<BoundMaskTile> getBoundMaskTile(const std::string &name);
     std::shared_ptr<SearchTaskImpl> getSearchTask(const std::string &name);
     std::shared_ptr<TilesetMapping> getTilesetMapping(const std::string &name);
+    std::shared_ptr<SriIndex> getSriIndex(const std::string &name);
     Validity getResourceValidity(const std::string &name);
     Validity getResourceValidity(const std::shared_ptr<Resource> &resource);
     float computeResourcePriority(const std::shared_ptr<TraverseNode> &trav);
+    std::shared_ptr<SearchTask> search(const std::string &query,
+                                       const double point[3]);
+    void updateSearch();
+    void initiateSri(const vtslibs::registry::Position *position);
+    void updateSris();
 
     // renderer methods
     void renderInitialize();
     void renderFinalize();
     void renderTickPrepare();
-    void renderTickRender(uint32 windowWidth, uint32 windowHeight);
+    void renderTickRender();
     const TileId roundId(TileId nodeId);
     Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
                            BoundParamInfo::List &boundList, double priority);
@@ -282,11 +293,6 @@ public:
     void emptyTraverseQueue();
     double getPositionTiltLimit();
     void applyPositionTiltLimit(double &tilt);
-
-    // search
-    std::shared_ptr<SearchTask> search(const std::string &query,
-                                       const double point[3]);
-    void updateSearch();
 };
 
 } // namespace vts

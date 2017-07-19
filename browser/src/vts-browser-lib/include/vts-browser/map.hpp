@@ -84,8 +84,9 @@ public:
 
     void renderInitialize();
     void renderTickPrepare();
-    void renderTickRender(uint32 width, uint32 height);
+    void renderTickRender();
     void renderFinalize();
+    void setWindowSize(uint32 width, uint32 height);
 
     class MapCallbacks &callbacks();
     class MapStatistics &statistics();

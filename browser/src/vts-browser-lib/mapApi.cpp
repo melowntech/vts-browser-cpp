@@ -172,9 +172,9 @@ void Map::renderTickPrepare()
     impl->renderTickPrepare();
 }
 
-void Map::renderTickRender(uint32 width, uint32 height)
+void Map::renderTickRender()
 {
-    impl->renderTickRender(width, height);
+    impl->renderTickRender();
 }
 
 void Map::renderFinalize()
@@ -183,11 +183,18 @@ void Map::renderFinalize()
     impl->renderFinalize();
 }
 
+void Map::setWindowSize(uint32 width, uint32 height)
+{
+    impl->renderer.windowWidth = width;
+    impl->renderer.windowHeight = height;
+}
+
 void Map::setMapConfigPath(const std::string &mapConfigPath,
                            const std::string &authPath,
                            const std::string &sriPath)
 {
     impl->setMapConfigPath(mapConfigPath, authPath, sriPath);
+    impl->initiateSri(nullptr);
 }
 
 std::string &Map::getMapConfigPath() const
@@ -216,7 +223,8 @@ bool Map::isMapRenderComplete() const
     if (!isMapConfigReady())
         return false;
     return !impl->draws.draws.empty()
-            && impl->statistics.currentNodeUpdates == 0
+            && impl->statistics.currentNodeMetaUpdates == 0
+            && impl->statistics.currentNodeDrawsUpdates == 0
             && impl->statistics.currentResourcePreparing == 0;
 }
 

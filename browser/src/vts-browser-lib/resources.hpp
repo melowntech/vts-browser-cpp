@@ -273,6 +273,16 @@ public:
     std::vector<MapConfig::SurfaceStackItem> surfaceStack;
 };
 
+class SriIndex : public Resource
+{
+public:
+    SriIndex(MapImpl *map, const std::string &name);
+    void load() override;
+    void update();
+    
+    std::vector<std::shared_ptr<MetaTile>> metatiles;
+};
+
 } // namespace vts
 
 #endif

@@ -300,6 +300,7 @@ void MapImpl::updateSearch()
                 break;
             case Validity::Valid:
                 parseSearchResults(this, t);
+                break;
             }
             t->done = true;
         }

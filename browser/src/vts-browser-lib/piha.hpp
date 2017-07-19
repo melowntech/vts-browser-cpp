@@ -30,7 +30,7 @@
 namespace vts
 {
 
-void navigationSolve(
+void navigationPiha(
     const class MapOptions &inOptions,
     NavigationType inType,
     double inTimeDiff, // seconds

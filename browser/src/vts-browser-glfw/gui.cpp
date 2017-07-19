@@ -522,11 +522,18 @@ public:
             sprintf(buffer, "%3d", o.maxResourceProcessesPerTick);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             
-            // maxNodeUpdatesPerFrame
-            nk_label(&ctx, "Max node updates:", NK_TEXT_LEFT);
-            o.maxNodeUpdatesPerTick = nk_slide_int(&ctx,
-                    1, o.maxNodeUpdatesPerTick, 50, 1);
-            sprintf(buffer, "%3d", o.maxNodeUpdatesPerTick);
+            // maxNodeMetaUpdatesPerTick
+            nk_label(&ctx, "Max meta node updates:", NK_TEXT_LEFT);
+            o.maxNodeMetaUpdatesPerTick = nk_slide_int(&ctx,
+                    1, o.maxNodeMetaUpdatesPerTick, 50, 1);
+            sprintf(buffer, "%3d", o.maxNodeMetaUpdatesPerTick);
+            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            
+            // maxNodeDrawsUpdatesPerTick
+            nk_label(&ctx, "Max meta node updates:", NK_TEXT_LEFT);
+            o.maxNodeDrawsUpdatesPerTick = nk_slide_int(&ctx,
+                    1, o.maxNodeDrawsUpdatesPerTick, 50, 1);
+            sprintf(buffer, "%3d", o.maxNodeDrawsUpdatesPerTick);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             
             // navigation samples per view extent
@@ -639,7 +646,8 @@ public:
             S("Time data:", (int)(1000 * window->timingDataFrame), " ms");
             S("Frame index:", s.frameIndex, "");
             S("Downloading:", s.currentResourceDownloads, "");
-            S("Node updates:", s.currentNodeUpdates, "");
+            S("Node meta updates:", s.currentNodeMetaUpdates, "");
+            S("Node draw updates:", s.currentNodeDrawsUpdates, "");
             S("Resources gpu mem.:", \
                             (int)(s.currentGpuMemUse / 1024 / 1024), " MB");
             S("Resources ram mem.:", \

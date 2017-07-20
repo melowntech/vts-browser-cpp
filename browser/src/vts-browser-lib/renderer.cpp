@@ -239,7 +239,7 @@ bool MapImpl::coarsenessTest(const std::shared_ptr<TraverseNode> &trav)
             vec3 c2 = c1 + up;
             c1 = vec4to3(renderer.viewProj * vec3to4(c1, 1), true);
             c2 = vec4to3(renderer.viewProj * vec3to4(c2, 1), true);
-            double len = length(vec3(c2 - c1)) * renderer.windowHeight;
+            double len = std::abs(c2[1] - c1[1]) * renderer.windowHeight;
             result = result && len < options.maxTexelToPixelScale;
         }
     }
@@ -797,7 +797,8 @@ void MapImpl::updateCamera()
     if (!options.debugDetachedCamera)
     {
         renderer.viewProj = renderer.viewProjRender;
-        renderer.perpendicularUnitVector = normalize(cross(up, dir));
+        renderer.perpendicularUnitVector
+                = normalize(cross(cross(up, dir), dir));
         renderer.forwardUnitVector = dir;
         { // frustum planes
             vec4 c0 = column(renderer.viewProj, 0);

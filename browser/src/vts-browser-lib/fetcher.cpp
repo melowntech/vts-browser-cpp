@@ -161,8 +161,7 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
             task->replyCode = 200;
 
             // testing start
-            //if (rand() % 50 < 42
-            //    && task->resourceType == FetchTask::ResourceType::MetaTile)
+            //if (task->resourceType == FetchTask::ResourceType::MetaTile)
             //    task->replyCode = FetchTask::ExtraCodes::SimulatedError;
             // testing end
         }

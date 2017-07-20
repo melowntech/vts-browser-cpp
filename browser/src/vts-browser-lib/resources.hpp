@@ -267,7 +267,7 @@ class TilesetMapping : public Resource
 public:
     TilesetMapping(MapImpl *map, const std::string &name);
     void load() override;
-    void update();
+    void update(const std::vector<std::string> &vsId);
 
     vtslibs::vts::TilesetReferencesList dataRaw;
     std::vector<MapConfig::SurfaceStackItem> surfaceStack;

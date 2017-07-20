@@ -41,6 +41,7 @@ SriIndex::SriIndex(MapImpl *map, const std::string &name)
  : Resource(map, name, FetchTask::ResourceType::SriIndex)
 {
     priority = std::numeric_limits<float>::infinity();
+    retryNumber = -1; // never try to download sri index again
 }
 
 void SriIndex::load()
@@ -79,13 +80,22 @@ void SriIndex::load()
             bin::read(is, urlBuf.data(), urlBuf.size());
             std::shared_ptr<MetaTile> m = std::make_shared<MetaTile>(map,
                 std::string(urlBuf.data(), urlBuf.size()));
+            map->touchResource(m);
             bin::read(is, m->replyExpires);
+            auto contentStart = is.position();
             *std::dynamic_pointer_cast<vtslibs::vts::MetaTile>(m)
                     = vtslibs::vts::loadMetaTile(is,
                         map->mapConfig->referenceFrame.metaBinaryOrder,
                         name + "#" + m->name);
+            auto contentEnd = is.position();
+            // cache the metatile
+            {
+                Buffer buffer(contentEnd - contentStart);
+                memcpy(buffer.data(), contentData.data() + contentStart,
+                       buffer.size());
+                map->resources.cache->write(m->name, buffer, m->replyExpires);
+            }
             m->state = Resource::State::ready;
-            // todo cache the metatile
             metatiles.push_back(m);
         }
     }
@@ -93,7 +103,7 @@ void SriIndex::load()
 
 void SriIndex::update()
 {
-    LOG(info3) << "Injecting SRI <" << name << ">";
+    LOG(info2) << "Injecting SRI <" << name << ">";
     for (auto &it : metatiles)
     {
         // inject the metatile into the resources
@@ -125,7 +135,8 @@ void MapImpl::updateSris()
 
 void MapImpl::initiateSri(const vtslibs::registry::Position *position)
 {
-    if (resources.sriPath.empty() || options.debugDisableSri)
+    if (mapConfigPath.empty() || resources.sriPath.empty()
+            || options.debugDisableSri)
         return;
     std::stringstream ss;
     ss << resources.sriPath;
@@ -143,7 +154,7 @@ void MapImpl::initiateSri(const vtslibs::registry::Position *position)
     ss << "&vs=" << (options.debugDisableVirtualSurfaces ? "false" : "true");
     ss << "&size=" << renderer.windowWidth << 'x' << renderer.windowHeight;
     std::string name = ss.str();
-    LOG(info3) << "Initiating SRI <" << name << ">";
+    LOG(info2) << "Initiating SRI <" << name << ">";
     resources.sriTasks.push_back(getSriIndex(name));
 }
 

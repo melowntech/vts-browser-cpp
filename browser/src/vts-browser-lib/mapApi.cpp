@@ -332,7 +332,16 @@ void Map::setPositionPoint(const double point[3], NavigationType type)
         assert(point[0] >= -180 && point[0] <= 180);
         assert(point[1] >= -90 && point[1] <= 90);
     }
-    impl->setPoint(vec3(point[0], point[1], point[2]), type);
+    vec3 v(point[0], point[1], point[2]);
+    impl->setPoint(v, type);
+    if (impl->convertor->geoDistance(
+                vecFromUblas<vec3>(impl->mapConfig->position.position), v)
+            > impl->mapConfig->position.verticalExtent * 3)
+    {
+        vtslibs::registry::Position p = impl->mapConfig->position;
+        p.position = vecToUblas<math::Point3>(v);
+        impl->initiateSri(&p);
+    }
 }
 
 void Map::setPositionPoint(const double (&point)[3], NavigationType type)
@@ -576,6 +585,7 @@ void Map::setViewCurrent(const std::string &name)
     impl->mapConfig->view = it->second;
     impl->purgeViewCache();
     impl->mapConfigView = name;
+    impl->initiateSri(nullptr);
 }
 
 void Map::getViewData(const std::string &name, MapView &view) const

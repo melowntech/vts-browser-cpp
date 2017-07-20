@@ -165,6 +165,11 @@ Wrapper::Wrapper(const Buffer &b) : std::istream(this)
     exceptions(std::istream::badbit | std::istream::failbit);
 }
 
+uint32 Wrapper::position() const
+{
+    return gptr() - eback();
+}
+
 } // namespace
 
 } // namespace vts

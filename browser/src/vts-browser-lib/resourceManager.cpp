@@ -185,7 +185,7 @@ void Resource::processLoad()
 		contentData.free();
         state = Resource::State::errorFatal;
         LOG(err3) << "Failed processing resource <" << name
-                  << ">, exception: " << e.what();
+                  << ">, exception <" << e.what() << ">";
         return;
     }
     contentData.free();

@@ -530,7 +530,7 @@ public:
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             
             // maxNodeDrawsUpdatesPerTick
-            nk_label(&ctx, "Max meta node updates:", NK_TEXT_LEFT);
+            nk_label(&ctx, "Max draw node updates:", NK_TEXT_LEFT);
             o.maxNodeDrawsUpdatesPerTick = nk_slide_int(&ctx,
                     1, o.maxNodeDrawsUpdatesPerTick, 50, 1);
             sprintf(buffer, "%3d", o.maxNodeDrawsUpdatesPerTick);
@@ -623,7 +623,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 600), flags))
+        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 650), flags))
         {
             vts::MapStatistics &s = window->map->statistics();
             float width = nk_window_get_content_region_size(&ctx).x - 15;
@@ -1182,8 +1182,6 @@ public:
                     if (nk_button_label(&ctx, "Go"))
                     {
                         window->map->setPositionSubjective(false, false);
-                        window->map->setPositionPoint(r.position,
-                                    vts::NavigationType::FlyOver);
                         window->map->setPositionViewExtent(
                                     std::max(6667.0, r.radius * 2),
                                     vts::NavigationType::FlyOver);
@@ -1191,6 +1189,8 @@ public:
                                     vts::NavigationType::FlyOver);
                         window->map->resetPositionAltitude();
                         window->map->resetNavigationGeographicMode();
+                        window->map->setPositionPoint(r.position,
+                                    vts::NavigationType::FlyOver);
                     }
                 }
                 else

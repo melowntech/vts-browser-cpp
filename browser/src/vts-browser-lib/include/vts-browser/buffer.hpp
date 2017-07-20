@@ -69,6 +69,7 @@ class VTS_API Wrapper : protected std::streambuf, public std::istream
 {
 public:
     Wrapper(const Buffer &b);
+    uint32 position() const;
 };
 
 } // detail

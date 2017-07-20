@@ -224,12 +224,12 @@ bool MapImpl::coarsenessTest(const std::shared_ptr<TraverseNode> &trav)
             & MetaNode::Flag::applyTexelSize;
     bool applyDisplaySize = trav->meta->flags()
             & MetaNode::Flag::applyDisplaySize;
-    
+
     if (!applyTexelSize && !applyDisplaySize)
         return false;
-    
+
     bool result = true;
-    
+
     if (applyTexelSize)
     {
         vec3 up = renderer.perpendicularUnitVector * trav->meta->texelSize;
@@ -239,16 +239,16 @@ bool MapImpl::coarsenessTest(const std::shared_ptr<TraverseNode> &trav)
             vec3 c2 = c1 + up;
             c1 = vec4to3(renderer.viewProj * vec3to4(c1, 1), true);
             c2 = vec4to3(renderer.viewProj * vec3to4(c2, 1), true);
-            double len = std::abs(c2[1] - c1[1]) * renderer.windowHeight;
+            double len = std::abs(c2[1] - c1[1]) * renderer.windowHeight * 0.5;
             result = result && len < options.maxTexelToPixelScale;
         }
     }
-    
+
     if (applyDisplaySize)
     {
         result = false; // todo
     }
-    
+
     return result;
 }
 
@@ -951,8 +951,9 @@ bool MapImpl::prerequisitesCheck()
             std::vector<std::string> virtSurfaces(it.id.begin(), it.id.end());
             if (virtSurfaces.size() != viewSurfaces.size())
                 continue;
-            std::sort(virtSurfaces.begin(), virtSurfaces.end());
-            if (!boost::algorithm::equals(viewSurfaces, virtSurfaces))
+            std::vector<std::string> virtSurfaces2(virtSurfaces);
+            std::sort(virtSurfaces2.begin(), virtSurfaces2.end());
+            if (!boost::algorithm::equals(viewSurfaces, virtSurfaces2))
                 continue;
             renderer.tilesetMapping = getTilesetMapping(MapConfig::convertPath(
                                                 it.mapping, mapConfig->name));
@@ -960,7 +961,7 @@ bool MapImpl::prerequisitesCheck()
                               "Tileset mapping failure."))
                 return false;
             mapConfig->generateSurfaceStack(&it);
-            renderer.tilesetMapping->update();
+            renderer.tilesetMapping->update(virtSurfaces);
             break;
         }
     }

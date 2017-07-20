@@ -71,7 +71,7 @@ public:
         registry(registry), phys(phys), nav(nav), pub(pub)
     {
         auto n = registry.srs(nav);
-        if (n.type == vtslibs::registry::Srs::Type::geographic)
+        //if (n.type == vtslibs::registry::Srs::Type::geographic)
         {
             auto r = n.srsDef.reference();
             auto a = r.GetSemiMajor();

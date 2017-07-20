@@ -252,7 +252,7 @@ void TilesetMapping::load()
                                                          contentData.size()));
 }
 
-void TilesetMapping::update()
+void TilesetMapping::update(const std::vector<std::string> &vsId)
 {
     surfaceStack.clear();
     surfaceStack.reserve(dataRaw.size() + 1);
@@ -262,13 +262,11 @@ void TilesetMapping::update()
     {
         if (it.size() == 1)
         { // surface
-            std::vector<std::string> id;
-            id.push_back(map->mapConfig->surfaces[it[0]].id);
             MapConfig::SurfaceStackItem i;
             i.surface = std::make_shared<MapConfig::SurfaceInfo>(
-                    map->mapConfig->surfaces[it[0]],
+                    *map->mapConfig->findSurface(vsId[it[0]]),
                     map->mapConfig->name);
-            i.surface->name = id;
+            i.surface->name.push_back(vsId[it[0]]);
             surfaceStack.push_back(i);
         }
         else
@@ -276,7 +274,7 @@ void TilesetMapping::update()
             std::vector<std::string> id;
             id.reserve(it.size());
             for (auto &&it2 : it)
-                id.push_back(map->mapConfig->surfaces[it2].id);
+                id.push_back(vsId[it2]);
             MapConfig::SurfaceStackItem i;
             i.surface = std::make_shared<MapConfig::SurfaceInfo>(
                     *map->mapConfig->findGlue(id),

@@ -24,7 +24,8 @@ Documentation for the whole vts maps technology is at
 
 ## Install from Melown Repository
 
-We are currently working on it.
+We provide precompiled packages for some popular linux distributions.
+See [Melown OSS package repository](https://cdn.melown.com/packages/) for more information.
 
 ## Build from Source
 

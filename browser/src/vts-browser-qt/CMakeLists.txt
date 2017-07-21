@@ -1,7 +1,7 @@
 # QT has some problems with COMPILE_DEFINITIONS_*
 cmake_policy(SET CMP0043 OLD)
 
-define_module(BINARY vts-browser-qt DEPENDS vts-browser)
+define_module(BINARY vts-browser-qt DEPENDS vts-browser Boost_PROGRAM_OPTIONS)
 
 set(HDR_LIST
   fetcher.hpp

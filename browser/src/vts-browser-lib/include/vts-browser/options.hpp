@@ -39,64 +39,147 @@ enum class NavigationType;
 
 enum class NavigationGeographicMode
 {
+    // constricts the viewer only to limited range of latitudes
+    // generally, this mode is easier to use
     Azimuthal,
+
+    // the viewer is free to navigato to anywhere including the poles
     Free,
+
+    // starts in the azimuthal mode and switches to the free mode
+    //   when the viewer gets too close to a pole,
+    //   or when he/she changes camera orientation
+    // it will switch back to azimuthal mode when the north-up button is pressed
     Dynamic,
 };
 
+// these options are passed to the map when it is beeing created
+// and they are immutable during the lifetime of the map
 class VTS_API MapCreateOptions
 {
 public:
     MapCreateOptions();
 
+    // application id that is sent with all resources
+    // to be used by authentication servers
     std::string clientId;
+
+    // path to a directory in which to store all downloaded files
+    // leave it empty to use default ($HOME/.cache/vts-browser)
     std::string cachePath;
+
+    // search url (and srs) are usually provided in browser options in mapconfig
+    // however, if they are not provided, these fallbacks are used
     std::string searchUrlFallback;
     std::string searchSrsFallback;
 
+    // true to disable the hard drive cache entirely
     bool disableCache;
+
+    // true -> use new scheme for naming (hashing) files
+    //         in a hierarchy of directories in the cache
+    // false -> use old scheme where the name of the downloaded resource
+    //          is clearly reflected in the cached file name
     bool hashCachePaths;
+
+    // true to try detect Earth and only use the fallbacks on it
     bool disableSearchUrlFallbackOutsideEarth;
+
+    // true to disable search url (and srs) from mapconfig and use the fallbacks
     bool disableBrowserOptionsSearchUrls;
 };
 
+// options of the map which may change be changed anytime
+// (although, some of the options may take effect slowly
+//    as some internal caches are beeing rebuild)
 class VTS_API MapOptions
 {
 public:
     MapOptions();
 
+    // maximum ratio of texture details to the viewport resolution
+    // increasing this ratio yealds less detailed map but reduces memory usage
     double maxTexelToPixelScale;
+
+    // lower and upper limit for view-extent
     double positionViewExtentMin;
     double positionViewExtentMax;
+
+    // view-extent thresholds at which the tilt limit starts taking effect
     double positionTiltViewExtentThresholdLow;
     double positionTiltViewExtentThresholdHigh;
+
+    // the actual angle (270 - 360) limit for the tilt
     double positionTiltLimitLow;
     double positionTiltLimitHigh;
+
+    // multiplier that is applied to mouse input for the respective actions
     double cameraSensitivityPan;
     double cameraSensitivityZoom;
     double cameraSensitivityRotate;
+
+    // innertia coefficients [0 - 1) for smoothing the navigation changes
+    // inertia of zero makes all changes to apply immediately
+    // while inertia of almost one makes the moves very smooth and slow
     double cameraInertiaPan;
     double cameraInertiaZoom;
     double cameraInertiaRotate;
-    double navigationLatitudeThreshold; // degrees
+
+    // latitude threshold (0 - 90) used for azimuthal navigation
+    double navigationLatitudeThreshold;
+
+    // maximum view-extent multiplier allowed for PIHA, must be larger than 1
     double navigationMaxViewExtentMult;
+    // maximum position change allowed for PIHA, must be positive
     double navigationMaxPositionChange;
 
     uint64 maxResourcesMemory; // bytes
+
+    // maximum size of the queue for the resources to be downloaded
     uint32 maxConcurrentDownloads;
+
+    // maximum number of node meta-data updates per frame
     uint32 maxNodeMetaUpdatesPerTick;
+    // maximum number of node render-data updates per frame
     uint32 maxNodeDrawsUpdatesPerTick;
+    // maximum number of resources processed per dataTick
     uint32 maxResourceProcessesPerTick;
+
+    // number of virtual samples to fit the view-extent
+    // it is used to determine lod index at which to retrieve
+    //   the altitude used to correct the camera possition
     uint32 navigationSamplesPerViewExtent;
+
+    // maximum number of redirections before the request is failed
+    // this is to prevent infinite loops
     uint32 maxFetchRedirections;
+
+    // maximum number of attempts to redownload a resource
     uint32 maxFetchRetries;
-    uint32 fetchFirstRetryTimeOffset; // seconds
+
+    // delay in seconds for first resource download retry
+    // each subsequent retry is delayed twice as long as before
+    uint32 fetchFirstRetryTimeOffset;
 
     NavigationType navigationType;
     NavigationGeographicMode geographicNavMode;
 
+    // to improve search results relevance, the results are further
+    //   filtered and reordered
+    // set this to false to prevent such filtering
     bool enableSearchResultsFilter;
-    bool enableRuntimeResourceExpiration; // experimental
+
+    // some resources may intentionally change over time
+    //   thus they need to be reloaded when they expire
+    // enable this experimental feature to allow ther expiration
+    //   even after they were successfully loaded into gpu memory
+    bool enableRuntimeResourceExpiration;
+
+    // some applications may be changing viewer locations too rapidly
+    //   and it may make the SRI optimizations inefficient
+    // setting this option to false will allow the use of SRI
+    //   only when the mapconfig changes
+    bool enableArbitrarySriRequests;
 
     bool debugDetachedCamera;
     bool debugDisableMeta5;
@@ -118,14 +201,15 @@ public:
     // function callback to upload a texture to gpu
     std::function<void(class ResourceInfo &, const class GpuTextureSpec &)>
             loadTexture;
-    /// function callback to upload a mesh to gpu
+    // function callback to upload a mesh to gpu
     std::function<void(class ResourceInfo &, const class GpuMeshSpec &)>
             loadMesh;
 
-    /// function callback when the mapconfig is ready
+    // function callback when the mapconfig is ready
     std::function<void()> mapconfigReady;
 
-    /// function callbacks for camera overrides (all in physical srs)
+    // function callbacks for camera overrides (all in physical srs)
+    // these callbacks are called from the Map::renderTickRender
     std::function<void(double*)> cameraOverrideEye;
     std::function<void(double*)> cameraOverrideTarget;
     std::function<void(double*)> cameraOverrideUp;

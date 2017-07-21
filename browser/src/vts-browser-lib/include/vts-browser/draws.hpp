@@ -55,7 +55,7 @@ class VTS_API MapDraws
 {
 public:
     MapDraws();
-    
+
     std::vector<DrawTask> draws;
 };
 

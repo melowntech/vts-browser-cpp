@@ -372,6 +372,11 @@ void MainWindow::run()
     glfwGetFramebufferSize(window, &width, &height);
     map->setWindowSize(width, height);
 
+    // this application uses separate thread for resource processing,
+    //   therefore it is safe to process as many resources as possible
+    //   in single tick without causing any lag spikes
+    map->options().maxResourceProcessesPerTick = -1;
+
     setMapConfigPath(paths[0]);
     map->callbacks().loadTexture = std::bind(&MainWindow::loadTexture, this,
                 std::placeholders::_1, std::placeholders::_2);

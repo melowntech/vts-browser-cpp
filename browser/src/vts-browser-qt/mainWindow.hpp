@@ -28,14 +28,19 @@
 #define MAINWINDOW_H
 
 #include <QWindow>
-#include "gpuContext.hpp"
 
 namespace vts
 {
     class Map;
     class Fetcher;
     class DrawTask;
+    class ResourceInfo;
+    class GpuTextureSpec;
+    class GpuMeshSpec;
 }
+
+class Gl;
+class GpuShaderImpl;
 
 class MainWindow : public QWindow
 {
@@ -47,8 +52,8 @@ public:
     void initialize();
     void tick();
 
-    Gl *gl;
     vts::Map *map;
+    std::shared_ptr<Gl> gl;
     std::shared_ptr<vts::Fetcher> fetcher;
 
 private:
@@ -57,13 +62,13 @@ private:
     void mouseRelease(class QMouseEvent *event);
     void mouseWheel(class QWheelEvent *event);
     void draw(const vts::DrawTask &task);
-    
+
     void loadTexture(vts::ResourceInfo &info, const vts::GpuTextureSpec &spec);
     void loadMesh(vts::ResourceInfo &info, const vts::GpuMeshSpec &spec);
-    
+
     std::shared_ptr<GpuShaderImpl> shaderTexture;
     std::shared_ptr<GpuShaderImpl> shaderColor;
-    
+
     QPoint mouseLastPosition;
     QPoint mouseOriginalPosition;
     bool isMouseDetached;

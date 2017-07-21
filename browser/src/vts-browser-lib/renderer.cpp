@@ -88,11 +88,12 @@ void MapImpl::setMapConfigPath(const std::string &mapConfigPath,
                                const std::string &authPath,
                                const std::string &sriPath)
 {
-    LOG(info3) << "Changing map config path to '" << mapConfigPath << "', "
+    LOG(info3) << "Changing map config path to <" << mapConfigPath << ">, "
                << (!authPath.empty() ? "using" : "without")
                << " authentication and "
-               << (!sriPath.empty() ? "with" : "without")
-               << " SRI";
+               << (!sriPath.empty() ?
+                       std::string() + "using SRI <" + sriPath + ">"
+                     : "without SRI");
     this->mapConfigPath = mapConfigPath;
     resources.authPath = authPath;
     resources.sriPath = sriPath;
@@ -305,7 +306,7 @@ void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
     if (options.debugRenderSurrogates)
     {
         RenderTask task;
-        task.mesh = getMeshRenderable("data/meshes/sphere.obj");
+        task.mesh = getMeshRenderable("internal://data/meshes/sphere.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
         task.model = translationMatrix(trav->meta->surrogatePhys)
                 * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
@@ -323,7 +324,7 @@ void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
             if (r->transparent)
                 continue;
             RenderTask task = *r;
-            task.mesh = getMeshRenderable("data/meshes/aabb.obj");
+            task.mesh = getMeshRenderable("internal://data/meshes/aabb.obj");
             task.mesh->priority = std::numeric_limits<float>::infinity();
             task.textureColor = nullptr;
             task.textureMask = nullptr;
@@ -337,7 +338,7 @@ void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
     if (options.debugRenderTileBoxes)
     {
         RenderTask task;
-        task.mesh = getMeshRenderable("data/meshes/line.obj");
+        task.mesh = getMeshRenderable("internal://data/meshes/line.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
         task.color = vec4f(1, 0, 0, 1);
         if (task.ready())
@@ -819,7 +820,7 @@ void MapImpl::updateCamera()
     {
         // render original camera
         RenderTask task;
-        task.mesh = getMeshRenderable("data/meshes/line.obj");
+        task.mesh = getMeshRenderable("internal://data/meshes/line.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
         task.color = vec4f(0, 1, 0, 1);
         if (task.ready())
@@ -853,9 +854,9 @@ void MapImpl::updateCamera()
     {
         vec3 phys = convertor->navToPhys(vecFromUblas<vec3>(pos.position));
         RenderTask r;
-        r.mesh = getMeshRenderable("data/meshes/cube.obj");
+        r.mesh = getMeshRenderable("internal://data/meshes/cube.obj");
         r.mesh->priority = std::numeric_limits<float>::infinity();
-        r.textureColor = getTexture("data/textures/helper.jpg");
+        r.textureColor = getTexture("internal://data/textures/helper.jpg");
         r.textureColor->priority = std::numeric_limits<float>::infinity();
         r.model = translationMatrix(phys)
                 * scaleMatrix(pos.verticalExtent * 0.015);
@@ -868,9 +869,9 @@ void MapImpl::updateCamera()
     {
         vec3 phys = convertor->navToPhys(navigation.targetPoint);
         RenderTask r;
-        r.mesh = getMeshRenderable("data/meshes/cube.obj");
+        r.mesh = getMeshRenderable("internal://data/meshes/cube.obj");
         r.mesh->priority = std::numeric_limits<float>::infinity();
-        r.textureColor = getTexture("data/textures/helper.jpg");
+        r.textureColor = getTexture("internal://data/textures/helper.jpg");
         r.textureColor->priority = std::numeric_limits<float>::infinity();
         r.model = translationMatrix(phys)
                 * scaleMatrix(navigation.targetViewExtent * 0.015);

@@ -183,7 +183,7 @@ void MapImpl::updatePositionAltitudeShift()
         if (options.debugRenderAltitudeShiftCorners)
         {
             RenderTask task;
-            task.mesh = getMeshRenderable("data/meshes/sphere.obj");
+            task.mesh = getMeshRenderable("internal://data/meshes/sphere.obj");
             task.mesh->priority = std::numeric_limits<float>::infinity();
             task.model = translationMatrix(t->meta->surrogatePhys)
                     * scaleMatrix(t->nodeInfo.extents().size() * 0.031);

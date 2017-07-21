@@ -239,7 +239,7 @@ SearchTaskImpl::SearchTaskImpl(MapImpl *map, const std::string &name) :
 
 void SearchTaskImpl::load()
 {
-    data = std::move(contentData);
+    data = std::move(reply.content);
 }
 
 SearchItem::SearchItem() :
@@ -277,7 +277,7 @@ std::shared_ptr<SearchTask> MapImpl::search(const std::string &query,
     auto t = std::make_shared<SearchTask>(query, point);
     t->impl = getSearchTask(generateSearchUrl(this, query));
     t->impl->priority = std::numeric_limits<double>::infinity();
-    t->impl->queryHeaders["Accept-Language"] = "en-US,en";
+    t->impl->query.headers["Accept-Language"] = "en-US,en";
     resources.searchTasks.push_back(t);
     return t;
 }

@@ -56,10 +56,10 @@ VTS_API double length(const vec2 &a);
 VTS_API vec3 normalize(const vec3 &a);
 
 VTS_API mat4 frustumMatrix(double left, double right,
-                                 double bottom, double top,
-                                 double near, double far);
+                           double bottom, double top,
+                           double near, double far);
 VTS_API mat4 perspectiveMatrix(double fovyDegs, double aspect,
-                             double near, double far);
+                               double near, double far);
 VTS_API mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up);
 VTS_API mat4 lookAt(const vec3 &eye, const vec3 &target);
 VTS_API mat3 upperLeftSubMatrix(const mat4 &mat);

@@ -40,7 +40,7 @@ MetaTile::MetaTile(vts::MapImpl *map, const std::string &name) :
 void MetaTile::load()
 {
     LOG(info2) << "Loading meta tile <" << name << ">";
-    detail::Wrapper w(contentData);
+    detail::Wrapper w(reply.content);
     *(vtslibs::vts::MetaTile*)this
             = vtslibs::vts::loadMetaTile(w, 5, name);
     info.ramMemoryCost += sizeof(*this);
@@ -55,7 +55,7 @@ void NavTile::load()
 {
     LOG(info2) << "Loading navigation tile <" << name << ">";
     GpuTextureSpec spec;
-    decodeImage(contentData, spec.buffer,
+    decodeImage(reply.content, spec.buffer,
                 spec.width, spec.height, spec.components);
     if (spec.width != 256 || spec.height != 256 || spec.components != 1)
         LOGTHROW(err1, std::runtime_error) << "invalid navtile image";
@@ -78,7 +78,7 @@ BoundMetaTile::BoundMetaTile(MapImpl *map, const std::string &name) :
 void BoundMetaTile::load()
 {
     LOG(info2) << "Loading bound meta tile <" << name << ">";
-    Buffer buffer = std::move(contentData);
+    Buffer buffer = std::move(reply.content);
     GpuTextureSpec spec;
     decodeImage(buffer, spec.buffer,
                 spec.width, spec.height, spec.components);
@@ -103,7 +103,7 @@ void BoundMaskTile::load()
         texture = std::make_shared<GpuTexture>(map, name + "#texture");
     }
     
-    Buffer buffer = std::move(contentData);
+    Buffer buffer = std::move(reply.content);
     GpuTextureSpec spec;
     decodeImage(buffer, spec.buffer,
                 spec.width, spec.height, spec.components);

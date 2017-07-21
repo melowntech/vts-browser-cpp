@@ -29,7 +29,6 @@
 #include <QGuiApplication>
 #include <QMouseEvent>
 #include <QWheelEvent>
-#include <QDebug>
 #include <vts-browser/map.hpp>
 #include <vts-browser/draws.hpp>
 #include <vts-browser/buffer.hpp>
@@ -42,7 +41,8 @@
 
 using vts::readInternalMemoryBuffer;
 
-MainWindow::MainWindow() : gl(nullptr), fetcher(nullptr), isMouseDetached(false)
+MainWindow::MainWindow() :
+    map(nullptr), isMouseDetached(false)
 {
     QSurfaceFormat format;
     format.setVersion(4, 4);
@@ -51,9 +51,14 @@ MainWindow::MainWindow() : gl(nullptr), fetcher(nullptr), isMouseDetached(false)
     setFormat(format);
 
     setSurfaceType(QWindow::OpenGLSurface);
-    gl = new Gl(this);
+    gl = std::make_shared<Gl>(this);
 
+    // custom (Qt based) fetcher is used here as an example
     fetcher = std::make_shared<FetcherImpl>();
+
+    // however, for simplicity, a default (curl based) fetcher is provided
+    // by the vts-browser library. you may create it like:
+    // fetcher = vts::Fetcher::create(vts::FetcherOptions());
 }
 
 MainWindow::~MainWindow()
@@ -64,12 +69,12 @@ void MainWindow::mouseMove(QMouseEvent *event)
     QPoint diff = event->globalPos() - mouseLastPosition;
     double n[3] = { (double)diff.x(), (double)diff.y(), 0 };
     if (event->buttons() & Qt::LeftButton)
-    { // pan
+    {
         map->pan(n);
     }
     if ((event->buttons() & Qt::RightButton)
         || (event->buttons() & Qt::MiddleButton))
-    { // rotate
+    {
         map->rotate(n);
     }
     mouseLastPosition = event->globalPos();
@@ -116,7 +121,12 @@ void MainWindow::initialize()
     map->renderInitialize();
     map->dataInitialize(fetcher);
     
-    { // load shaderTexture
+    // we need to load shaders for the rendering
+    // luckily, the vts-browser library provides
+    // ready-to-use standard shaders
+
+    // load shaderTexture
+    {
         shaderTexture = std::make_shared<GpuShaderImpl>();
         vts::Buffer vert = readInternalMemoryBuffer(
                     "data/shaders/texture.vert.glsl");
@@ -138,8 +148,9 @@ void MainWindow::initialize()
         gl->glUniform1i(gl->glGetUniformLocation(id, "texColor"), 0);
         gl->glUniform1i(gl->glGetUniformLocation(id, "texMask"), 1);
     }
-    
-    { // load shaderColor
+
+    // load shaderColor
+    {
         shaderColor = std::make_shared<GpuShaderImpl>();
         vts::Buffer vert = readInternalMemoryBuffer(
                     "data/shaders/color.vert.glsl");
@@ -153,16 +164,24 @@ void MainWindow::initialize()
         uls.push_back(s->uniformLocation("uniMvp"));
         uls.push_back(s->uniformLocation("uniColor"));
     }
+
+    map->callbacks().loadTexture = std::bind(&MainWindow::loadTexture, this,
+                std::placeholders::_1, std::placeholders::_2);
+    map->callbacks().loadMesh = std::bind(&MainWindow::loadMesh, this,
+                std::placeholders::_1, std::placeholders::_2);
 }
 
 void MainWindow::draw(const vts::DrawTask &t)
 {
+    // each render command uses either a color texture or flat color
     if (t.texColor)
     {
         shaderTexture->bind();
-        shaderTexture->uniformMat4(0, t.mvp);
-        shaderTexture->uniformMat3(1, t.uvm);
-        shaderTexture->uniform(2, (int)t.externalUv);
+        shaderTexture->uniformMat4(0, t.mvp); // model-view-projection matrix
+        shaderTexture->uniformMat3(1, t.uvm); // uv-transformation matrix
+        shaderTexture->uniform(2, (int)t.externalUv); // uv coordinates source
+
+        // some draw commands also have pixel mask
         if (t.texMask)
         {
             shaderTexture->uniform(3, 1);
@@ -172,17 +191,25 @@ void MainWindow::draw(const vts::DrawTask &t)
         }
         else
             shaderTexture->uniform(3, 0);
+
+        // color texture
         GpuTextureImpl *tex = (GpuTextureImpl*)t.texColor.get();
         tex->bind();
+
+        // grayscale textures require special handling
         shaderTexture->uniform(4, (int)tex->grayscale);
+
+        // opacity
         shaderTexture->uniform(5, t.color[3]);
     }
     else
     {
         shaderColor->bind();
-        shaderColor->uniformMat4(0, t.mvp);
-        shaderColor->uniformVec4(1, t.color);
+        shaderColor->uniformMat4(0, t.mvp); // model-view-projection matrix
+        shaderColor->uniformVec4(1, t.color); // the flat color
     }
+
+    // draw the actual mesh
     GpuMeshImpl *m = (GpuMeshImpl*)t.mesh.get();
     m->draw();
 }
@@ -198,13 +225,8 @@ void MainWindow::tick()
     if (!gl->isValid())
         throw std::runtime_error("invalid gl context");
 
-    map->callbacks().loadTexture = std::bind(&MainWindow::loadTexture, this,
-                std::placeholders::_1, std::placeholders::_2);
-    map->callbacks().loadMesh = std::bind(&MainWindow::loadMesh, this,
-                std::placeholders::_1, std::placeholders::_2);
-
+    // reset opengl state
     gl->makeCurrent(this);
-
     QSize size = QWindow::size();
     gl->glViewport(0, 0, size.width(), size.height());    
     gl->glClearColor(0.2, 0.2, 0.2, 1);
@@ -222,13 +244,23 @@ void MainWindow::tick()
     {
 #endif
 
+        // processes all pending operations on map resources
         map->dataTick();
+
+        // process map navigation and other maintenance (once per frame)
         map->renderTickPrepare();
+
+        // render the frame
+        //   or one view in multi-view applications
+        //   or one eye in stereoscopic rendering, etc
         map->setWindowSize(size.width(), size.height());
         map->renderTickRender();
+
+        // issue the actual opengl commands to render the frame
         for (vts::DrawTask &t : map->draws().draws)
             draw(t);
 
+        // update credits in the window title bar
         if ((map->statistics().frameIndex % 120) == 0)
         {
             std::string creditLine = std::string() + "vts-browser-qt: "
@@ -245,12 +277,13 @@ void MainWindow::tick()
     }
 #endif
 
+    // finish the frame
     gl->swapBuffers(this);
 
+    // temporary workaround for when v-sync is missing
     auto timeFrameEnd = std::chrono::high_resolution_clock::now();
     auto frameDuration = std::chrono::duration_cast<std::chrono::milliseconds>(
             timeFrameEnd - timeFrameStart).count();
-    // temporary workaround for when v-sync is missing
     if (frameDuration < 16)
         usleep((16 - frameDuration) * 1000);
 }

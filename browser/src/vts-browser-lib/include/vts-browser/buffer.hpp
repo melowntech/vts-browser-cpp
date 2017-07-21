@@ -39,14 +39,18 @@ class VTS_API Buffer
 {
 public:
     Buffer();
-    Buffer(uint32 size);
+    Buffer(uint32 size); // create preallocated buffer (it is not zeroed)
     Buffer(const Buffer &other);
     Buffer(Buffer &&other);
     Buffer &operator = (const Buffer &other);
     Buffer &operator = (Buffer &&other);
     ~Buffer();
 
+    // allocates a new buffer of the specified size
+    //   any previous content is lost
+    //   the buffer is not zeroed
     void allocate(uint32 size);
+
     void free();
 
     char *data() const { return data_; }
@@ -65,6 +69,8 @@ VTS_API Buffer readInternalMemoryBuffer(const std::string &path);
 namespace detail
 {
 
+// a convenient buffer wrapper that allows to treat the buffer as a stream
+// the buffer must outlive the wrapper and must not be modified
 class VTS_API Wrapper : protected std::streambuf, public std::istream
 {
 public:

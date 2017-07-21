@@ -204,53 +204,57 @@ GpuMeshImpl::GpuMeshImpl() :
 void GpuMeshImpl::draw()
 {
     QOpenGLFunctions_3_3_Core *gl = gpuFunctions();
-    if (arrayObject.isCreated())
-        arrayObject.bind();
-    else
-    {
-        arrayObject.create();
-        arrayObject.bind();
-        vertexBuffer.bind();
-        if (indexBuffer.isCreated())
-            indexBuffer.bind();
-        for (unsigned i = 0; i < spec.attributes.size(); i++)
-        {
-            vts::GpuMeshSpec::VertexAttribute &a = spec.attributes[i];
-            if (a.enable)
-            {
-                gl->glEnableVertexAttribArray(i);
-                gl->glVertexAttribPointer(i, a.components, (GLenum)a.type,
-                                          a.normalized ? GL_TRUE : GL_FALSE,
-                                          a.stride, (void*)(intptr_t)a.offset);
-            }
-            else
-                gl->glDisableVertexAttribArray(i);
-        }
-    }
+    arrayObject.bind();
     if (spec.indicesCount > 0)
+    {
         gl->glDrawElements((GLenum)spec.faceMode, spec.indicesCount,
                            GL_UNSIGNED_SHORT, nullptr);
+    }
     else
         gl->glDrawArrays((GLenum)spec.faceMode, 0, spec.verticesCount);
     gl->glBindVertexArray(0);
 }
 
 void GpuMeshImpl::loadMesh(vts::ResourceInfo &info,
-                           const vts::GpuMeshSpec &spec)
+                           const vts::GpuMeshSpec &specp)
 {
-    this->spec = std::move(spec);
+    QOpenGLFunctions_3_3_Core *gl = gpuFunctions();
+
+    spec = std::move(specp);
+
     arrayObject.create();
     arrayObject.bind();
+
     vertexBuffer.create();
     vertexBuffer.bind();
     vertexBuffer.allocate(spec.vertices.data(), spec.vertices.size());
+
     if (spec.indicesCount)
     {
         indexBuffer.create();
         indexBuffer.bind();
         indexBuffer.allocate(spec.indices.data(), spec.indices.size());
     }
+
+    for (unsigned i = 0; i < spec.attributes.size(); i++)
+    {
+        const vts::GpuMeshSpec::VertexAttribute &a = spec.attributes[i];
+        if (a.enable)
+        {
+            gl->glEnableVertexAttribArray(i);
+            gl->glVertexAttribPointer(i, a.components, (GLenum)a.type,
+                                      a.normalized ? GL_TRUE : GL_FALSE,
+                                      a.stride, (void*)(intptr_t)a.offset);
+        }
+        else
+            gl->glDisableVertexAttribArray(i);
+    }
+
+    gl->glBindVertexArray(0);
+
     info.ramMemoryCost += sizeof(*this);
     info.gpuMemoryCost += spec.vertices.size() + spec.indices.size();
-    arrayObject.destroy();
+
+    spec.vertices.free();
+    spec.indices.free();
 }

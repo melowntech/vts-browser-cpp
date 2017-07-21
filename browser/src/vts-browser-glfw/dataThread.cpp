@@ -70,13 +70,10 @@ void DataThread::run()
     while (!stop)
     {
         double timeFrameStart = glfwGetTime();
-        bool a = map->dataTick();
+        map->dataTick();
         double timeFrameEnd = glfwGetTime();
         *timing = timeFrameEnd - timeFrameStart;
-        if (a)
-            usleep(20000);
-        else
-            usleep(5000);
+        usleep(30000);
     }
     map->dataFinalize();
 }

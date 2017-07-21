@@ -514,14 +514,7 @@ public:
                     1, o.maxConcurrentDownloads, 50, 1);
             sprintf(buffer, "%3d", o.maxConcurrentDownloads);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-            
-            // maxResourceProcessesPerTick
-            nk_label(&ctx, "Max res. procs.:", NK_TEXT_LEFT);
-            o.maxResourceProcessesPerTick = nk_slide_int(&ctx,
-                    1, o.maxResourceProcessesPerTick, 50, 1);
-            sprintf(buffer, "%3d", o.maxResourceProcessesPerTick);
-            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-            
+
             // maxNodeMetaUpdatesPerTick
             nk_label(&ctx, "Max meta node updates:", NK_TEXT_LEFT);
             o.maxNodeMetaUpdatesPerTick = nk_slide_int(&ctx,

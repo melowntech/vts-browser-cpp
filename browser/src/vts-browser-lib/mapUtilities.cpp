@@ -234,7 +234,7 @@ ExternalBoundLayer::ExternalBoundLayer(MapImpl *map, const std::string &name)
 
 void ExternalBoundLayer::load()
 {
-    detail::Wrapper w(contentData);
+    detail::Wrapper w(reply.content);
     *(vtslibs::registry::BoundLayer*)this
             = vtslibs::registry::loadBoundLayer(w, name);
 }
@@ -248,8 +248,8 @@ TilesetMapping::TilesetMapping(MapImpl *map, const std::string &name) :
 void TilesetMapping::load()
 {
     LOG(info2) << "Loading tileset mapping <" << name << ">";
-    dataRaw = vtslibs::vts::deserializeTsMap(std::string(contentData.data(),
-                                                         contentData.size()));
+    dataRaw = vtslibs::vts::deserializeTsMap(std::string(reply.content.data(),
+                                                         reply.content.size()));
 }
 
 void TilesetMapping::update(const std::vector<std::string> &vsId)

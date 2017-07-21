@@ -50,36 +50,36 @@ enum class NavigationType
     FlyOver,
 };
 
+// fundamental class which orchestrates all the vts tasks
 class VTS_API Map
 {
 public:
     Map(const class MapCreateOptions &options);
     virtual ~Map();
 
-    /// mapConfigPath: url to map config
-    /// authPath: url to authentication server,
-    ///    alternatively, it may contain special value 'token:???'
-    ///    which is taken directly as authentication token instead of url
-    /// sriPath: url for fast summary resource information retrieval
+    // mapConfigPath: url to map config
+    // authPath: url to authentication server,
+    //    alternatively, it may contain special value 'token:???'
+    //    which is taken directly as authentication token instead of url
+    // sriPath: url for fast summary resource information retrieval
     void setMapConfigPath(const std::string &mapConfigPath,
                           const std::string &authPath = "",
                           const std::string &sriPath = "");
     std::string &getMapConfigPath() const;
     void purgeViewCache();
 
-    /// returns whether the map config has been downloaded
-    /// and parsed successfully
-    /// most other functions will not work until this is ready
+    // returns whether the map config has been downloaded
+    // and parsed successfully
+    // most other functions will not work until this is ready
     bool isMapConfigReady() const;
-    /// returns whether the map has all resources needed for complete
-    /// render
+    // returns whether the map has all resources needed for complete
+    // render
     bool isMapRenderComplete() const;
-    /// returns estimation of progress till complete render
+    // returns estimation of progress till complete render
     double getMapRenderProgress() const;
 
     void dataInitialize(const std::shared_ptr<class Fetcher> &fetcher);
-    /// returns true, if there are no more tasks in a queue at the moment
-    bool dataTick();
+    void dataTick();
     void dataFinalize();
 
     void renderInitialize();
@@ -99,7 +99,11 @@ public:
     void rotate(const double value[3]);
     void rotate(const double (&value)[3]);
     void zoom(double value);
+
+    // corrects current position altitude to match the surface
     void resetPositionAltitude();
+
+    // for dynamic navigation mode, this will reset it back to azimuthal
     void resetNavigationGeographicMode();
 
     void setPositionSubjective(bool subjective, bool convert);

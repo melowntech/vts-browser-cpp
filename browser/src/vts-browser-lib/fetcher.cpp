@@ -42,7 +42,7 @@ class FetcherImpl;
 class Task
 {
 public:
-    Task(FetcherImpl *impl, std::shared_ptr<FetchTask> task);
+    Task(FetcherImpl *impl, const std::shared_ptr<FetchTask> &task);
     ~Task();
     void done(http::ResourceFetcher::MultiQuery &&queries);
     void finish();
@@ -59,11 +59,12 @@ public:
     FetcherImpl(const FetcherOptions &options) : options(options),
         fetcher(htt.fetcher()), initCount(0), extraLog(nullptr)
     {
+        begin = std::chrono::high_resolution_clock::now();
         if (options.extraFileLog)
         {
             extraLog = fopen("downloads.log", "at");
             if (extraLog)
-                fprintf(extraLog, "starting download log\n");
+                fprintf(extraLog, "%ld starting download log\n", time());
         }
     }
     
@@ -72,7 +73,7 @@ public:
         assert(initCount == 0);
         if (extraLog)
         {
-            fprintf(extraLog, "download log ended\n");
+            fprintf(extraLog, "%ld finished download log\n", time());
             fclose(extraLog);
         }
     }
@@ -101,12 +102,19 @@ public:
     void fetch(const std::shared_ptr<FetchTask> &task) override
     {
         assert(initCount > 0);
-        assert(task->replyCode == 0);
+        assert(task->reply.code == 0);
         auto t = std::make_shared<Task>(this, task);
         fetcher.perform(t->query, std::bind(&Task::done, t,
                                             std::placeholders::_1));
         if (extraLog)
-            fprintf(extraLog, "init %s\n", task->queryUrl.c_str());
+            fprintf(extraLog, "%ld init %s\n", time(), task->query.url.c_str());
+    }
+
+    uint64 time()
+    {
+        auto now = std::chrono::high_resolution_clock::now();
+        return std::chrono::duration_cast<std::chrono::milliseconds>(
+                    now - begin).count();
     }
 
     const FetcherOptions options;
@@ -114,13 +122,14 @@ public:
     http::ResourceFetcher fetcher;
     std::atomic<int> initCount;
     FILE *extraLog;
+    std::chrono::high_resolution_clock::time_point begin;
 };
 
-Task::Task(FetcherImpl *impl, std::shared_ptr<FetchTask> task)
-    : impl(impl), query(task->queryUrl), task(task), called(false)
+Task::Task(FetcherImpl *impl, const std::shared_ptr<FetchTask> &task)
+    : impl(impl), query(task->query.url), task(task), called(false)
 {
     query.timeout(impl->options.timeout);
-    for (auto it : task->queryHeaders)
+    for (auto it : task->query.headers)
         query.addOption(it.first, it.second);
 }
 
@@ -140,7 +149,7 @@ Task::~Task()
 void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
 {
     assert(queries.size() == 1);
-    assert(task->replyCode == 0);
+    assert(task->reply.code == 0);
     assert(!called);
     called = true;
     http::ResourceFetcher::Query &q = *queries.begin();
@@ -149,16 +158,16 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
         const http::ResourceFetcher::Query::Body &body = q.get();
         if (body.redirect)
         {
-            task->replyCode = body.redirect.value();
+            task->reply.code = body.redirect.value();
         }
         else
         {
-            task->contentData.allocate(body.data.size());
-            memcpy(task->contentData.data(), body.data.data(),
+            task->reply.content.allocate(body.data.size());
+            memcpy(task->reply.content.data(), body.data.data(),
                    body.data.size());
-            task->contentType = body.contentType;
-            task->replyExpires = body.expires;
-            task->replyCode = 200;
+            task->reply.contentType = body.contentType;
+            task->reply.expires = body.expires;
+            task->reply.code = 200;
 
             // testing start
             //if (task->resourceType == FetchTask::ResourceType::MetaTile)
@@ -168,7 +177,7 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
     }
     else if (q.ec())
     {
-        task->replyCode = q.ec().value();
+        task->reply.code = q.ec().value();
     }
     else if (q.exc())
     {
@@ -178,24 +187,26 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
         }
         catch (std::error_code &e)
         {
-            task->replyCode = e.value();
+            task->reply.code = e.value();
         }
         catch (std::exception &e)
         {
             LOG(err1) << "Exception <" << e.what()
-                      << "> in download of <" << task->queryUrl << ">";
-            task->replyCode = FetchTask::ExtraCodes::InternalError;
+                      << "> in download of <" << task->query.url << ">";
+            task->reply.code = FetchTask::ExtraCodes::InternalError;
         }
         catch (...)
         {
             LOG(err1) << "Unknown exception in download of <"
-                      << task->queryUrl << ">";
-            task->replyCode = FetchTask::ExtraCodes::InternalError;
+                      << task->query.url << ">";
+            task->reply.code = FetchTask::ExtraCodes::InternalError;
         }
-    } else {
+    }
+    else
+    {
         LOG(err1) << "Invalid result from HTTP fetcher (no value, no status "
-            "code, no exception) for <" << task->queryUrl << ">";
-        task->replyCode = FetchTask::ExtraCodes::InternalError;
+            "code, no exception) for <" << task->query.url << ">";
+        task->reply.code = FetchTask::ExtraCodes::InternalError;
     }
     finish();
 }
@@ -204,9 +215,9 @@ void Task::finish()
 {
     if (impl->extraLog)
     {
-        fprintf(impl->extraLog, "done %s %d %s %d\n",
-                task->queryUrl.c_str(), task->replyCode,
-                task->contentType.c_str(), task->contentData.size());
+        fprintf(impl->extraLog, "%ld done %d %d %s %s\n",
+                impl->time(), task->reply.code, task->reply.content.size(),
+                task->query.url.c_str(), task->reply.contentType.c_str());
     }
     task->fetchDone();
 }
@@ -231,5 +242,20 @@ std::shared_ptr<Fetcher> Fetcher::create(const FetcherOptions &options)
     return std::dynamic_pointer_cast<Fetcher>(
                 std::make_shared<FetcherImpl>(options));
 }
+
+FetchTask::Query::Query(const std::string &url,
+                        FetchTask::ResourceType resourceType) :
+    url(url), resourceType(resourceType)
+{}
+
+FetchTask::Reply::Reply() : expires(-1), code(0)
+{}
+
+FetchTask::FetchTask(const std::string &url, ResourceType resourceType) :
+    query(url, resourceType)
+{}
+
+FetchTask::~FetchTask()
+{}
 
 } // namespace vts

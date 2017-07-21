@@ -71,7 +71,7 @@ void MapConfig::load()
 {
     clear();
     LOG(info3) << "Parsing map config <" << name << ">";
-    detail::Wrapper w(contentData);
+    detail::Wrapper w(reply.content);
     vtslibs::vts::loadMapConfig(*this, w, name);
 
     auto bo(vtslibs::vts::browserOptions(*this));

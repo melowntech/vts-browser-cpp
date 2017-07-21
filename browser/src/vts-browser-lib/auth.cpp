@@ -82,7 +82,7 @@ void AuthConfig::load()
     {
         Json::Value root;
         {
-            detail::Wrapper w(contentData);
+            detail::Wrapper w(reply.content);
             w >> root;
         }
         int status = root["status"].asInt();
@@ -134,7 +134,7 @@ void AuthConfig::authorize(Resource *task)
         if (hostnames.find(h) == hostnames.end())
             return;
     }
-    task->queryHeaders["Accept"] = std::string()
+    task->query.headers["Accept"] = std::string()
             + "token/" + token + ", */*";
 }
 

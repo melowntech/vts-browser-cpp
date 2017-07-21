@@ -40,7 +40,7 @@ class VTS_API SearchItem
 {
 public:
     SearchItem();
-    
+
     std::string displayName, title, type, region;
     std::string road, city, county, state, houseNumber,
                 stateDistrict, country, countryCode;
@@ -56,16 +56,14 @@ class VTS_API SearchTask
 public:
     SearchTask(const std::string &query, const double point[3]);
     virtual ~SearchTask();
-    
-    void updateDistances(const double point[3]);
 
-    std::vector<SearchItem> results;
+    void updateDistances(const double point[3]); // navigation srs
 
     const std::string query;
     const double position[3];
+    std::vector<SearchItem> results;
+    volatile bool done;
 
-    bool done;
-    
     std::shared_ptr<class SearchTaskImpl> impl;
 };
 

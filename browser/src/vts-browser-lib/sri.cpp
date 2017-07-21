@@ -46,7 +46,7 @@ SriIndex::SriIndex(MapImpl *map, const std::string &name)
 
 void SriIndex::load()
 {
-    detail::Wrapper is(contentData);
+    detail::Wrapper is(reply.content);
 
     // load header
     {
@@ -81,7 +81,7 @@ void SriIndex::load()
             std::shared_ptr<MetaTile> m = std::make_shared<MetaTile>(map,
                 std::string(urlBuf.data(), urlBuf.size()));
             map->touchResource(m);
-            bin::read(is, m->replyExpires);
+            bin::read(is, m->reply.expires);
             auto contentStart = is.position();
             *std::dynamic_pointer_cast<vtslibs::vts::MetaTile>(m)
                     = vtslibs::vts::loadMetaTile(is,
@@ -91,9 +91,9 @@ void SriIndex::load()
             // cache the metatile
             {
                 Buffer buffer(contentEnd - contentStart);
-                memcpy(buffer.data(), contentData.data() + contentStart,
+                memcpy(buffer.data(), reply.content.data() + contentStart,
                        buffer.size());
-                map->resources.cache->write(m->name, buffer, m->replyExpires);
+                map->resources.cache->write(m->name, buffer, m->reply.expires);
             }
             m->state = Resource::State::ready;
             metatiles.push_back(m);

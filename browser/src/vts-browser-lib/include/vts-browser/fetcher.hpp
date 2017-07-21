@@ -29,9 +29,7 @@
 
 #include <string>
 #include <memory>
-#include <functional>
 #include <map>
-#include <ctime>
 
 #include "foundation.hpp"
 #include "buffer.hpp"
@@ -60,39 +58,51 @@ public:
         SriIndex,
     };
 
-    struct ExtraCodes { enum {
-        /** Timed out while waiting for data.
-         */
-        Timeout = 10504,
-        /** Internal fetcher error
-         */
-        InternalError = 10500,
-        /** Content is not to be shown to the end user.
-         */
-        ProhibitedContent = 10403,
-        /** Content is rejected to simulate network errors for testing purposes.
-         */
-        SimulatedError = 10000,
-    }; };
-
     static bool isResourceTypeMandatory(ResourceType resourceType);
 
-    ResourceType resourceType;
+    struct ExtraCodes
+    {
+        enum
+        {
+            // Timed out while waiting for data.
+            Timeout = 10504,
+            // Internal fetcher error.
+            InternalError = 10500,
+            // Content is not to be shown to the end user.
+            ProhibitedContent = 10403,
+            // Content is rejected to simulate errors for testing purposes.
+            SimulatedError = 10000,
+        };
+    };
 
-    // query
-    std::string queryUrl;
-    std::map<std::string, std::string> queryHeaders;
+    struct Query
+    {
+        std::string url;
+        std::map<std::string, std::string> headers;
+        const ResourceType resourceType;
 
-    // reply
-    Buffer contentData;
-    std::string contentType;
-    std::string replyRedirectUrl;
+        Query(const std::string &url, ResourceType resourceType);
+    };
 
-    // absolute time in seconds, compared to std::time
-    //   -1 = invalid value
-    //   -2 = always revalidate
-    std::time_t replyExpires;
-    uint32 replyCode; // http status code, or one of the ExtraCodes
+    struct Reply
+    {
+        Buffer content;
+        std::string contentType;
+        std::string redirectUrl;
+
+        // absolute time in seconds, comparable to std::time
+        //   -1 = invalid value
+        //   -2 = always revalidate
+        sint64 expires;
+
+        // http status code, or one of the ExtraCodes
+        uint32 code;
+
+        Reply();
+    };
+
+    Query query;
+    Reply reply;
 
     FetchTask(const std::string &url, ResourceType resourceType);
     virtual ~FetchTask();
@@ -104,8 +114,14 @@ class VTS_API FetcherOptions
 public:
     FetcherOptions();
 
+    // the curl options are applied to each thread individually
     uint32 threads;
-    sint32 timeout; // ms
+
+    // timeout for each download, in miliseconds
+    sint32 timeout;
+
+    // create extra file with log entry for each download
+    // the output is meant to be computer readable
     bool extraFileLog;
 
     // curl options

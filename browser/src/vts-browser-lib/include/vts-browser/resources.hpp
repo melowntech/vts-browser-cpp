@@ -35,33 +35,51 @@
 namespace vts
 {
 
+// this is passed to the load* callbacks for the application to fill it in
 class VTS_API ResourceInfo
 {
 public:
     ResourceInfo();
-    
+
+    // the userData is later on used to reference the corresponding resource
+    //   from inside the DrawTask
     std::shared_ptr<void> userData;
+
+    // memory usage in bytes
     uint32 ramMemoryCost;
     uint32 gpuMemoryCost;
 };
 
+// information about texture passed to loadTexture callback
+// alternatively, it may be used to decode image file
 class VTS_API GpuTextureSpec
 {
 public:
     GpuTextureSpec();
     GpuTextureSpec(const Buffer &buffer); // decode jpg or png file
     void verticalFlip();
-    
+
+    // image resolution
     uint32 width, height;
+
+    // number of color channels per pixel
     uint32 components; // 1, 2, 3 or 4
+
+    // raw texture data
+    // it has (width * height * components) bytes
+    // the rows are in no way aligned to multi-byte boundaries
+    //   (GL_UNPACK_ALIGNMENT = 1)
     Buffer buffer;
 };
 
+// information about mesh passed to loadMesh callback
+// alternatively, it may be used to decode obj file
 class VTS_API GpuMeshSpec
 {
 public:
     enum class FaceMode
-    { // OpenGL constants
+    {
+        // compatible with OpenGL
         Points = 0x0000,
         Lines = 0x0001,
         LineStrip = 0x0003,
@@ -73,7 +91,8 @@ public:
     struct VertexAttribute
     {
         enum class Type
-        { // OpenGL constants
+        {
+            // compatible with OpenGL
             Float = 0x1406,
             UnsignedByte = 0x1401,
         };
@@ -90,9 +109,16 @@ public:
     GpuMeshSpec();
     GpuMeshSpec(const Buffer &buffer); // decode obj file
 
+    // an array of vertex data
+    // the interpretation of the data is defined by the 'attributes' member
     Buffer vertices;
+
+    // an array of uint16, or empty if the mesh is not indexed
     Buffer indices;
+
+    // description of memory layout in the vertices buffer
     std::vector<VertexAttribute> attributes;
+
     uint32 verticesCount;
     uint32 indicesCount;
     FaceMode faceMode;

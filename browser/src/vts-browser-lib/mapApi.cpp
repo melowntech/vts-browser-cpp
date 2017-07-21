@@ -149,9 +149,9 @@ void Map::dataInitialize(const std::shared_ptr<Fetcher> &fetcher)
     impl->resourceDataInitialize(fetcher);
 }
 
-bool Map::dataTick()
+void Map::dataTick()
 {
-    return impl->resourceDataTick();
+    impl->resourceDataTick();
 }
 
 void Map::dataFinalize()
@@ -334,7 +334,8 @@ void Map::setPositionPoint(const double point[3], NavigationType type)
     }
     vec3 v(point[0], point[1], point[2]);
     impl->setPoint(v, type);
-    if (impl->convertor->geoDistance(
+    if (impl->options.enableArbitrarySriRequests
+            && impl->convertor->geoDistance(
                 vecFromUblas<vec3>(impl->mapConfig->position.position), v)
             > impl->mapConfig->position.verticalExtent * 3)
     {
@@ -585,7 +586,8 @@ void Map::setViewCurrent(const std::string &name)
     impl->mapConfig->view = it->second;
     impl->purgeViewCache();
     impl->mapConfigView = name;
-    impl->initiateSri(nullptr);
+    if (impl->options.enableArbitrarySriRequests)
+        impl->initiateSri(nullptr);
 }
 
 void Map::getViewData(const std::string &name, MapView &view) const

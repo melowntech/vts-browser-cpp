@@ -428,10 +428,10 @@ void GpuMeshImpl::dispatch()
 }
 
 void GpuMeshImpl::loadMesh(vts::ResourceInfo &info,
-                           const vts::GpuMeshSpec &spec)
+                           const vts::GpuMeshSpec &specp)
 {
     clear();
-    this->spec = std::move(spec);
+    spec = std::move(specp);
     GLuint vao = 0;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
@@ -452,6 +452,6 @@ void GpuMeshImpl::loadMesh(vts::ResourceInfo &info,
     checkGl("load mesh");
     info.ramMemoryCost += sizeof(*this);
     info.gpuMemoryCost += spec.vertices.size() + spec.indices.size();
-    this->spec.vertices.free();
-    this->spec.indices.free();
+    spec.vertices.free();
+    spec.indices.free();
 }

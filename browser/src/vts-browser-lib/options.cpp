@@ -71,6 +71,7 @@ MapOptions::MapOptions() :
     geographicNavMode(NavigationGeographicMode::Dynamic),
     enableSearchResultsFilter(true),
     enableRuntimeResourceExpiration(false),
+    enableArbitrarySriRequests(true),
     debugDetachedCamera(false),
     debugDisableMeta5(false),
     debugDisableVirtualSurfaces(false),

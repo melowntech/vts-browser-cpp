@@ -161,7 +161,6 @@ namespace detail
 Wrapper::Wrapper(const Buffer &b) : std::istream(this)
 {
     setg(b.data(), b.data(), b.data() + b.size());
-    //clear();
     exceptions(std::istream::badbit | std::istream::failbit);
 }
 

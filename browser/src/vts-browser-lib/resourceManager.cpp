@@ -49,7 +49,7 @@ std::shared_ptr<T> getMapResource(MapImpl *map, const std::string &name)
 
 void initializeFetchTask(MapImpl *map, Resource *task)
 {
-    task->queryHeaders["X-Vts-Client-Id"] = map->createOptions.clientId;
+    task->query.headers["X-Vts-Client-Id"] = map->createOptions.clientId;
     if (map->resources.auth)
         map->resources.auth->authorize(task);
 }
@@ -68,6 +68,11 @@ bool allowDiskCache(Resource::ResourceType type)
     }
 }
 
+bool startsWith(const std::string &text, const std::string &start)
+{
+    return text.substr(0, start.length()) == start;
+}
+
 } // namespace
 
 MapImpl::Resources::Resources() : downloads(0)
@@ -77,13 +82,6 @@ bool FetchTask::isResourceTypeMandatory(FetchTask::ResourceType resourceType)
 {
     return !allowDiskCache(resourceType);
 }
-
-FetchTask::FetchTask(const std::string &url, ResourceType resourceType) :
-    resourceType(resourceType), queryUrl(url), replyExpires(-1), replyCode(0)
-{}
-
-FetchTask::~FetchTask()
-{}
 
 ResourceInfo::ResourceInfo() :
     ramMemoryCost(0), gpuMemoryCost(0)
@@ -115,15 +113,15 @@ Resource::operator bool() const
 void MapImpl::resourceLoad(const std::shared_ptr<Resource> &r)
 {
     assert(r->state == Resource::State::initializing);
-    r->contentData.free();
-    r->replyCode = 0;
-    r->replyExpires = -1;
+    r->reply.content.free();
+    r->reply.code = 0;
+    r->reply.expires = -1;
     try
     {
-        if (allowDiskCache(r->resourceType)
-            && resources.cache->read(r->name, r->contentData, r->replyExpires))
+        if (allowDiskCache(r->query.resourceType) && resources.cache->read(
+                    r->name, r->reply.content, r->reply.expires))
         {
-            if (r->contentData.size() > 0)
+            if (r->reply.content.size() > 0)
             {
                 statistics.resourcesDiskLoaded++;
                 r->state = Resource::State::downloaded;
@@ -133,13 +131,19 @@ void MapImpl::resourceLoad(const std::shared_ptr<Resource> &r)
                 statistics.resourcesIgnored++;
                 r->state = Resource::State::availFail;
             }
-            r->replyCode = 200;
+            r->reply.code = 200;
         }
-        else if (r->name.find("://") == std::string::npos)
+        else if (startsWith(r->name, "file://"))
         {
-            r->contentData = readInternalMemoryBuffer(r->name);
+            r->reply.content = readLocalFileBuffer(r->name.substr(7));
             r->state = Resource::State::downloaded;
-            r->replyCode = 200;
+            r->reply.code = 200;
+        }
+        else if (startsWith(r->name, "internal://"))
+        {
+            r->reply.content = readInternalMemoryBuffer(r->name.substr(11));
+            r->state = Resource::State::downloaded;
+            r->reply.code = 200;
         }
         else if (resources.downloads < options.maxConcurrentDownloads)
         {
@@ -153,9 +157,9 @@ void MapImpl::resourceLoad(const std::shared_ptr<Resource> &r)
     {
         statistics.resourcesFailed++;
         r->state = Resource::State::errorFatal;
-        LOG(err3) << "Failed processing resource <"
+        LOG(err3) << "Failed loading resource <"
                   << r->name
-                  << ">, exception: " << e.what();
+                  << ">, exception <" << e.what() << ">";
     }
 }
 
@@ -174,7 +178,7 @@ void Resource::processLoad()
             try
             {
                 writeLocalFileBuffer(std::string() + "corrupted/"
-                    + convertNameToPath(name, false), contentData);
+                    + convertNameToPath(name, false), reply.content);
             }
             catch(...)
             {
@@ -182,13 +186,13 @@ void Resource::processLoad()
             }
         }
         map->statistics.resourcesFailed++;
-		contentData.free();
+		reply.content.free();
         state = Resource::State::errorFatal;
         LOG(err3) << "Failed processing resource <" << name
                   << ">, exception <" << e.what() << ">";
         return;
     }
-    contentData.free();
+    reply.content.free();
     state = Resource::State::ready;
 }
 
@@ -271,15 +275,15 @@ bool Resource::performAvailTest() const
     switch (availTest->type)
     {
     case vtslibs::registry::BoundLayer::Availability::Type::negativeCode:
-        if (availTest->codes.find(replyCode) == availTest->codes.end())
+        if (availTest->codes.find(reply.code) == availTest->codes.end())
             return false;
         break;
     case vtslibs::registry::BoundLayer::Availability::Type::negativeType:
-        if (availTest->mime == contentType)
+        if (availTest->mime == reply.contentType)
             return false;
         break;
     case vtslibs::registry::BoundLayer::Availability::Type::negativeSize:
-        if (contentData.size() <= (unsigned)availTest->size)
+        if (reply.content.size() <= (unsigned)availTest->size)
             return false;
         break;
     }
@@ -294,20 +298,20 @@ void Resource::fetchDone()
     state = Resource::State::downloading;
 
     // handle error or invalid codes
-    if (replyCode >= 400 || replyCode < 200)
+    if (reply.code >= 400 || reply.code < 200)
     {
-        if (replyCode == FetchTask::ExtraCodes::ProhibitedContent) {
+        if (reply.code == FetchTask::ExtraCodes::ProhibitedContent) {
             state = Resource::State::errorFatal;
         } else {
             LOG(err2) << "Error downloading <" << name
-                      << ">, http code " << replyCode;
+                      << ">, http code " << reply.code;
             state = Resource::State::errorRetry;
         }
     }
 
     // these resources must always revalidate
-    if (!allowDiskCache(resourceType))
-        replyExpires = -2;
+    if (!allowDiskCache(query.resourceType))
+        reply.expires = -2;
 
     // availability tests
     if (state == Resource::State::downloading
@@ -316,29 +320,29 @@ void Resource::fetchDone()
         LOG(info1) << "Availability test failed for resource <"
                    << name << ">";
         state = Resource::State::availFail;
-        contentData.free();
-        map->resources.cache->write(name, contentData, replyExpires);
+        reply.content.free();
+        map->resources.cache->write(name, reply.content, reply.expires);
     }
 
     // handle redirections
     if (state == Resource::State::downloading
-            && replyCode >= 300 && replyCode < 400)
+            && reply.code >= 300 && reply.code < 400)
     {
         if (redirectionsCount++ > map->options.maxFetchRedirections)
         {
             LOG(err2) << "Too many redirections in <"
                       << name << ">, last url <"
-                      << queryUrl << ">, http code " << replyCode;
+                      << query.url << ">, http code " << reply.code;
             state = Resource::State::errorRetry;
         }
         else
         {
-            queryUrl.swap(replyRedirectUrl);
-            replyRedirectUrl = "";
+            query.url.swap(reply.redirectUrl);
+            reply.redirectUrl = "";
             LOG(info1) << "Download of <"
                        << name << "> redirected to <"
-                       << queryUrl << ">, http code " << replyCode;
-            replyCode = 0;
+                       << query.url << ">, http code " << reply.code;
+            reply.code = 0;
             state = Resource::State::initializing;
             return;
         }
@@ -346,11 +350,11 @@ void Resource::fetchDone()
 
     if (state != Resource::State::downloading)
     {
-        contentData.free();
+        reply.content.free();
         return;
     }
 
-    map->resources.cache->write(name, contentData, replyExpires);
+    map->resources.cache->write(name, reply.content, reply.expires);
     retryNumber = 0; // reset counter
     state = Resource::State::downloaded;
 }
@@ -466,11 +470,11 @@ void MapImpl::resourceRenderTick()
                 break;
             case Resource::State::ready:
                 if (options.enableRuntimeResourceExpiration
-                        && r->replyExpires > 0 && r->replyExpires < current)
+                        && r->reply.expires > 0 && r->reply.expires < current)
                 {
                     LOG(info1) << "Resource <" << r->name
                                << "> has expired (expiration: "
-                               << r->replyExpires << ", current: "
+                               << r->reply.expires << ", current: "
                                << current << ")";
                     r->state = Resource::State::initializing;
                     res.push_back(r);

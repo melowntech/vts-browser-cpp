@@ -48,23 +48,24 @@ public:
         reply->deleteLater();
 
         if (reply->error() != QNetworkReply::NoError)
-            task->replyCode = 404;
+            task->reply.code = 404;
         else
         {
             QVariant redirVar = reply->attribute
                     (QNetworkRequest::RedirectionTargetAttribute);
             QUrl redir = redirVar.toUrl();
             if (!redir.isEmpty() && redir != reply->request().url())
-            { // do redirect
-                task->replyCode = 302;
-                task->replyRedirectUrl = (char*)redir.toString().unicode();
+            {
+                // do redirect
+                task->reply.code = 302;
+                task->reply.redirectUrl = (char*)redir.toString().unicode();
             }
             else
             {
-                task->replyCode = 200;
+                task->reply.code = 200;
                 QByteArray arr = reply->readAll();
-                task->contentData.allocate(arr.size());
-                memcpy(task->contentData.data(), arr.data(), arr.size());
+                task->reply.content.allocate(arr.size());
+                memcpy(task->reply.content.data(), arr.data(), arr.size());
             }
         }
 
@@ -80,10 +81,10 @@ public:
 void FetcherDetail::fetch(const std::shared_ptr<vts::FetchTask> &task)
 {
     FetchTask *t = new FetchTask(this, task);
-    QUrl url(QString::fromUtf8(t->task->queryUrl.data(),
-                               t->task->queryUrl.length()));
+    QUrl url(QString::fromUtf8(t->task->query.url.data(),
+                               t->task->query.url.length()));
     QNetworkRequest request(url);
-    for (auto it : task->queryHeaders)
+    for (auto it : task->query.headers)
     {
         request.setRawHeader(QByteArray(it.first.c_str(), it.first.length()),
                              QByteArray(it.second.c_str(), it.second.length()));

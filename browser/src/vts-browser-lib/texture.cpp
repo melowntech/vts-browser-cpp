@@ -59,8 +59,8 @@ GpuTexture::GpuTexture(MapImpl *map, const std::string &name) :
 
 void GpuTexture::load()
 {
-    LOG(info2) << "Loading gpu texture '" << name << "'";
-    GpuTextureSpec spec(contentData);
+    LOG(info1) << "Loading gpu texture <" << name << ">";
+    GpuTextureSpec spec(reply.content);
     spec.verticalFlip();
     map->callbacks.loadTexture(info, spec);
     info.ramMemoryCost += sizeof(*this);

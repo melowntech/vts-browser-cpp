@@ -30,7 +30,9 @@
 
 namespace po = boost::program_options;
 
-MainWindow::Paths parseConfigPaths(std::string config)
+MainWindow::Paths parseConfigPaths(const std::string &config,
+                                   const std::string &auth,
+                                   const std::string &sri)
 {
     assert(!config.empty());
     std::vector<std::string> a;
@@ -41,8 +43,12 @@ MainWindow::Paths parseConfigPaths(std::string config)
     r.mapConfig = a[0];
     if (a.size() > 1)
         r.auth = a[1];
+    else
+        r.auth = auth;
     if (a.size() > 2)
         r.sri = a[2];
+    else
+        r.sri = sri;
     return r;
 }
 
@@ -53,6 +59,7 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                     int argc, char *argv[])
 {
     std::vector<std::string> configs;
+    std::string auth, sri;
 
     po::options_description desc("Options");
     desc.add_options()
@@ -65,6 +72,14 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 "<config>|<auth>\n"
                 "<config>||<sri>\n"
                 "<config>"
+            )
+            ("auth,a",
+                po::value<std::string>(&auth),
+                "Authentication url fallback."
+            )
+            ("sri,s",
+                po::value<std::string>(&sri),
+                "SRI url fallback."
             );
 
     po::positional_options_description popts;
@@ -92,7 +107,7 @@ bool programOptions(vts::MapCreateOptions &createOptions,
         throw std::runtime_error("At least one mapconfig is required.");
 
     for (auto &&it : configs)
-        paths.push_back(parseConfigPaths(it));
+        paths.push_back(parseConfigPaths(it, auth, sri));
 
     return true;
 }

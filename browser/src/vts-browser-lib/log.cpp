@@ -54,7 +54,6 @@ void setLogFile(const std::string &filename)
 void setLogThreadName(const std::string &name)
 {
     dbglog::thread_id(name);
-    prctl(PR_SET_NAME,name.c_str(),0,0,0);
 }
 
 namespace

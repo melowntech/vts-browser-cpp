@@ -279,7 +279,11 @@ void MapConfig::consolidateView()
     for (auto it = view.surfaces.begin(); it != view.surfaces.end();)
     {
         if (resSurf.find(it->first) == resSurf.end())
+        {
+            LOG(warn1) << "Removing invalid surface <"
+                       << it->first << "> from current view";
             it = view.surfaces.erase(it);
+        }
         else
             it++;
     }
@@ -293,7 +297,11 @@ void MapConfig::consolidateView()
         for (auto it = s.second.begin(); it != s.second.end();)
         {
             if (resBound.find(it->id) == resBound.end())
+            {
+                LOG(warn1) << "Removing invalid bound layer <"
+                           << it->id << "> from current view";
                 it = s.second.erase(it);
+            }
             else
                 it++;
         }

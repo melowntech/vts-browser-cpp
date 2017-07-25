@@ -24,6 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <boost/algorithm/string.hpp>
 #include "include/vts-browser/boostProgramOptions.hpp"
 #include "include/vts-browser/options.hpp"
 #include "include/vts-browser/fetcher.hpp"
@@ -53,6 +54,24 @@ void notifyLogConsole(bool console)
 }
 
 } // namespace
+
+std::istream &operator >> (std::istream &in, TraverseMode &mode)
+{
+    std::string token;
+    in >> token;
+    boost::to_lower(token);
+
+    if (token == "hierarchical")
+        mode = TraverseMode::Hierarchical;
+    else if (token == "flat")
+        mode = TraverseMode::Flat;
+    else
+        throw boost::program_options::validation_error(
+                boost::program_options::validation_error::invalid_option_value,
+                "map.traverseMode", token);
+
+    return in;
+}
 
 void optionsConfigLog(
         boost::program_options::options_description &desc)
@@ -99,6 +118,11 @@ void optionsConfigMapOptions(
         po::value<uint64>(&opts->maxResourcesMemory),
         "Maximum memory (in bytes) used by resources "
         "before they begin to unload.")
+    ("map.traverseMode",
+        po::value<TraverseMode>(&opts->traverseMode),
+        "Render traversal mode:\n"
+        "hierarchical\n"
+        "flat")
     ;
 }
 
@@ -115,7 +139,7 @@ void optionsConfigFetcherOptions(
         "Maximum concurrent connections to same host.")
     ("fetcher.maxTotalConections",
         po::value<uint32>(&opts->maxTotalConections),
-        "Total limit of connections.")
+        "Total limit of concurrent connections.")
     ("fetcher.maxCacheConections",
         po::value<uint32>(&opts->maxCacheConections),
         "Size of curl connection cache.")

@@ -184,21 +184,17 @@ Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
     return Validity::Valid;
 }
 
-void MapImpl::touchResources(const std::shared_ptr<TraverseNode> &trav)
+void MapImpl::touchTravDraws(const std::shared_ptr<TraverseNode> &trav)
 {
-    trav->lastAccessTime = statistics.frameIndex;
     for (auto &&it : trav->draws)
-        touchResources(it);
-}
-
-void MapImpl::touchResources(const std::shared_ptr<RenderTask> &task)
-{
-    if (task->meshAgg)
-        touchResource(task->meshAgg);
-    if (task->textureColor)
-        touchResource(task->textureColor);
-    if (task->textureMask)
-        touchResource(task->textureMask);
+    {
+        if (it->meshAgg)
+            touchResource(it->meshAgg);
+        if (it->textureColor)
+            touchResource(it->textureColor);
+        if (it->textureMask)
+            touchResource(it->textureMask);
+    }
 }
 
 bool MapImpl::visibilityTest(const std::shared_ptr<TraverseNode> &trav)
@@ -296,10 +292,13 @@ void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
     assert(visibilityTest(trav));
 
     // meshes
-    for (std::shared_ptr<RenderTask> &r : trav->draws)
+    if (!options.debugRenderNoMeshes)
     {
-        if (r->ready())
-            draws.draws.emplace_back(r.get(), this);
+        for (std::shared_ptr<RenderTask> &r : trav->draws)
+        {
+            if (r->ready())
+                draws.draws.emplace_back(r.get(), this);
+        }
     }
 
     // surrogate
@@ -315,7 +314,7 @@ void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
         if (task.ready())
             draws.draws.emplace_back(&task, this);
     }
-    
+
     // mesh box
     if (options.debugRenderMeshBoxes)
     {
@@ -333,7 +332,7 @@ void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
                 draws.draws.emplace_back(&task, this);
         }
     }
-    
+
     // tile box
     if (options.debugRenderTileBoxes)
     {
@@ -358,7 +357,7 @@ void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
             }
         }
     }
-    
+
     // credits
     for (auto &it : trav->meta->credits)
         renderer.credits.hit(Credits::Scope::Imagery, it,
@@ -649,57 +648,92 @@ void MapImpl::traverse(const std::shared_ptr<TraverseNode> &trav, bool loadOnly)
             std::min<uint32>(trav->nodeInfo.nodeId().lod,
                              MapStatistics::MaxLods-1)]++;
 
-    touchResources(trav);
-
+    // prepare meta data
+    trav->lastAccessTime = statistics.frameIndex;
     if (!trav->meta && !travDetermineMeta(trav))
         return;
     assert(trav->meta);
 
-    if (trav->meta->surface && trav->draws.empty())
-        travDetermineDraws(trav);
-
-    if (!visibilityTest(trav))
-        return;
-
-    if (coarsenessTest(trav))
+    if (options.traverseMode == TraverseMode::Hierarchical)
     {
+        // hierarchical traversal
+
+        touchTravDraws(trav);
+
+        if (trav->meta->surface && trav->draws.empty())
+            travDetermineDraws(trav);
+
+        if (!visibilityTest(trav))
+            return;
+
+        if (coarsenessTest(trav))
+        {
+            if (!loadOnly)
+                renderNode(trav);
+            return;
+        }
+
+        if (!loadOnly)
+        {
+            bool ok = true;
+            for (std::shared_ptr<TraverseNode> &t : trav->childs)
+            {
+                if (!t->meta)
+                {
+                    ok = false;
+                    continue;
+                }
+                if (t->meta->surface && (t->draws.empty() || !t->ready()))
+                    ok = false;
+            }
+            if (!ok)
+            {
+                renderNode(trav);
+                loadOnly = true;
+            }
+        }
+
+        if (!trav->childs.empty())
+        {
+            for (std::shared_ptr<TraverseNode> &t : trav->childs)
+            {
+                t->priority = t->meta ? computeResourcePriority(t)
+                                      : trav->priority;
+                renderer.traverseQueue.emplace(t, loadOnly);
+            }
+            return;
+        }
+
         if (!loadOnly)
             renderNode(trav);
-        return;
     }
-
-    if (!loadOnly)
+    else
     {
-        bool ok = true;
-        for (std::shared_ptr<TraverseNode> &t : trav->childs)
+        // flat traversal
+
+        if (!visibilityTest(trav))
+            return;
+
+        touchTravDraws(trav);
+
+        if (coarsenessTest(trav) || trav->childs.empty())
         {
-            if (!t->meta)
+            if (!loadOnly)
             {
-                ok = false;
-                continue;
+                if (trav->meta->surface && trav->draws.empty())
+                    travDetermineDraws(trav);
+                renderNode(trav);
             }
-            if (t->meta->surface && (t->draws.empty() || !t->ready()))
-                ok = false;
+            return;
         }
-        if (!ok)
-        {
-            renderNode(trav);
-            loadOnly = true;
-        }
-    }
 
-    if (!trav->childs.empty())
-    {
         for (std::shared_ptr<TraverseNode> &t : trav->childs)
         {
-            t->priority = t->meta ? computeResourcePriority(t) : trav->priority;
+            t->priority = t->meta ? computeResourcePriority(t)
+                                  : trav->priority;
             renderer.traverseQueue.emplace(t, loadOnly);
         }
-        return;
     }
-    
-    if (!loadOnly)
-        renderNode(trav);
 }
 
 void MapImpl::traverseClearing(const std::shared_ptr<TraverseNode> &trav)

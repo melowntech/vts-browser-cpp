@@ -60,8 +60,8 @@ MapOptions::MapOptions() :
     navigationMaxPositionChange(0.02),
     maxResourcesMemory(512 * 1024 * 1024),
     maxConcurrentDownloads(10),
-    maxNodeMetaUpdatesPerTick(5),
-    maxNodeDrawsUpdatesPerTick(5),
+    maxNodeMetaUpdatesPerTick(10),
+    maxNodeDrawsUpdatesPerTick(10),
     maxResourceProcessesPerTick(10),
     navigationSamplesPerViewExtent(8),
     maxFetchRedirections(5),
@@ -69,6 +69,7 @@ MapOptions::MapOptions() :
     fetchFirstRetryTimeOffset(15),
     navigationType(NavigationType::Quick),
     geographicNavMode(NavigationGeographicMode::Dynamic),
+    traverseMode(TraverseMode::Hierarchical),
     enableSearchResultsFilter(true),
     enableRuntimeResourceExpiration(false),
     enableArbitrarySriRequests(true),
@@ -82,7 +83,8 @@ MapOptions::MapOptions() :
     debugRenderTileBoxes(false),
     debugRenderObjectPosition(false),
     debugRenderTargetPosition(false),
-    debugRenderAltitudeShiftCorners(false)
+    debugRenderAltitudeShiftCorners(false),
+    debugRenderNoMeshes(false)
 {}
 
 } // namespace vts

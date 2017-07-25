@@ -345,8 +345,11 @@ double MapImpl::travDistance(const std::shared_ptr<TraverseNode> &trav,
 float MapImpl::computeResourcePriority(
         const std::shared_ptr<TraverseNode> &trav)
 {
+    if (options.traverseMode == TraverseMode::Hierarchical)
+        return -trav->nodeInfo.nodeId().lod;
+
     return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1)
-                   / (1 << (trav->nodeInfo.nodeId().lod / 2)));
+               ); // / (1 << (trav->nodeInfo.nodeId().lod / 2)));
 }
 
 } // namespace vts

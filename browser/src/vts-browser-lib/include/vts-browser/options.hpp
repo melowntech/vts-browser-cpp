@@ -53,6 +53,12 @@ enum class NavigationGeographicMode
     Dynamic,
 };
 
+enum class TraverseMode
+{
+    Hierarchical,
+    Flat,
+};
+
 // these options are passed to the map when it is beeing created
 // and they are immutable during the lifetime of the map
 class VTS_API MapCreateOptions
@@ -163,6 +169,7 @@ public:
 
     NavigationType navigationType;
     NavigationGeographicMode geographicNavMode;
+    TraverseMode traverseMode;
 
     // to improve search results relevance, the results are further
     //   filtered and reordered
@@ -193,6 +200,7 @@ public:
     bool debugRenderObjectPosition;
     bool debugRenderTargetPosition;
     bool debugRenderAltitudeShiftCorners;
+    bool debugRenderNoMeshes;
 };
 
 class VTS_API MapCallbacks

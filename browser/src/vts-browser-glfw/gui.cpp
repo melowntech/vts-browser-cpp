@@ -369,7 +369,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Options", nk_rect(10, 10, 250, 500), flags))
+        if (nk_begin(&ctx, "Options", nk_rect(10, 10, 250, 550), flags))
         {
             vts::MapOptions &o = window->map->options();
             float width = nk_window_get_content_region_size(&ctx).x - 15;
@@ -480,6 +480,29 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
             }
             
+            // traverse mode
+            {
+                static const char *names[] = {
+                    "Hierarchical",
+                    "Flat",
+                };
+                nk_label(&ctx, "Traverse:", NK_TEXT_LEFT);
+                if (nk_combo_begin_label(&ctx,
+                                 names[(int)o.traverseMode],
+                                 nk_vec2(nk_widget_width(&ctx), 200)))
+                {
+                    nk_layout_row_dynamic(&ctx, 16, 1);
+                    for (unsigned i = 0; i < sizeof(names)
+                         / sizeof(names[0]); i++)
+                    {
+                        if (nk_combo_item_label(&ctx, names[i], NK_TEXT_LEFT))
+                            o.traverseMode = (vts::TraverseMode)i;
+                    }
+                    nk_combo_end(&ctx);
+                }
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+            }
+            
             // navigation max view extent multiplier
             nk_label(&ctx, "View ext. mult.:", NK_TEXT_LEFT);
             o.navigationMaxViewExtentMult = nk_slide_float(&ctx,
@@ -570,6 +593,12 @@ public:
             nk_label(&ctx, "", NK_TEXT_LEFT);
             o.debugRenderAltitudeShiftCorners = nk_check_label(&ctx,
                 "alt. shift corns.", o.debugRenderAltitudeShiftCorners);
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            
+            // render no meshes
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            o.debugRenderNoMeshes = nk_check_label(&ctx,
+                "no meshes", o.debugRenderNoMeshes);
             nk_label(&ctx, "", NK_TEXT_LEFT);
             
             // detached camera
@@ -702,7 +731,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Position", nk_rect(530, 10, 300, 450), flags))
+        if (nk_begin(&ctx, "Position", nk_rect(530, 10, 300, 500), flags))
         {
             float width = nk_window_get_content_region_size(&ctx).x - 15;
             float ratio[] = { width * 0.3f, width * 0.7f };

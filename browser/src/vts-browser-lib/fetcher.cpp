@@ -47,7 +47,9 @@ public:
     void done(http::ResourceFetcher::MultiQuery &&queries);
     void finish();
     
+    const uint64 begin;
     FetcherImpl *const impl;
+    const uint32 id;
     http::ResourceFetcher::Query query;
     std::shared_ptr<FetchTask> task;
     bool called;
@@ -57,7 +59,7 @@ class FetcherImpl : public Fetcher
 {
 public:
     FetcherImpl(const FetcherOptions &options) : options(options),
-        fetcher(htt.fetcher()), initCount(0), extraLog(nullptr)
+        fetcher(htt.fetcher()), initCount(0), taskId(0), extraLog(nullptr)
     {
         begin = std::chrono::high_resolution_clock::now();
         if (options.extraFileLog)
@@ -107,7 +109,8 @@ public:
         fetcher.perform(t->query, std::bind(&Task::done, t,
                                             std::placeholders::_1));
         if (extraLog)
-            fprintf(extraLog, "%ld init %s\n", time(), task->query.url.c_str());
+            fprintf(extraLog, "%ld init %d %s\n", t->begin, t->id,
+                    task->query.url.c_str());
     }
 
     uint64 time()
@@ -121,12 +124,14 @@ public:
     http::Http htt;
     http::ResourceFetcher fetcher;
     std::atomic<int> initCount;
+    std::atomic<uint32> taskId;
     FILE *extraLog;
     std::chrono::high_resolution_clock::time_point begin;
 };
 
 Task::Task(FetcherImpl *impl, const std::shared_ptr<FetchTask> &task)
-    : impl(impl), query(task->query.url), task(task), called(false)
+    : begin(impl->time()), impl(impl), id(impl->taskId++),
+      query(task->query.url), task(task), called(false)
 {
     query.timeout(impl->options.timeout);
     for (auto it : task->query.headers)
@@ -215,9 +220,9 @@ void Task::finish()
 {
     if (impl->extraLog)
     {
-        fprintf(impl->extraLog, "%ld done %d %d %s %s\n",
-                impl->time(), task->reply.code, task->reply.content.size(),
-                task->query.url.c_str(), task->reply.contentType.c_str());
+        fprintf(impl->extraLog, "%ld done %d %ld %d %d %s\n",
+                impl->time(), id, (impl->time() - begin), task->reply.code,
+                task->reply.content.size(), task->reply.contentType.c_str());
     }
     task->fetchDone();
 }
@@ -229,7 +234,7 @@ FetcherOptions::FetcherOptions()
       timeout(30000),
       extraFileLog(false),
       maxHostConnections(0),
-      maxTotalConections(3),
+      maxTotalConections(10),
       maxCacheConections(0),
       pipelining(2)
 {}

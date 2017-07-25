@@ -272,8 +272,7 @@ public:
     const TileId roundId(TileId nodeId);
     Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
                            BoundParamInfo::List &boundList, double priority);
-    void touchResources(const std::shared_ptr<TraverseNode> &trav);
-    void touchResources(const std::shared_ptr<RenderTask> &task);
+    void touchTravDraws(const std::shared_ptr<TraverseNode> &trav);
     bool visibilityTest(const std::shared_ptr<TraverseNode> &trav);
     bool coarsenessTest(const std::shared_ptr<TraverseNode> &trav);
     Validity returnValidMetaNode(MapConfig::SurfaceInfo *surface,

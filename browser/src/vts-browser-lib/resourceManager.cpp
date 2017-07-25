@@ -73,6 +73,13 @@ bool startsWith(const std::string &text, const std::string &start)
     return text.substr(0, start.length()) == start;
 }
 
+void releaseIfLast(std::shared_ptr<Resource> &p)
+{
+    std::weak_ptr<Resource> w = p;
+    p.reset();
+    p = w.lock();
+}
+
 } // namespace
 
 MapImpl::Resources::Resources() : downloads(0)
@@ -384,8 +391,18 @@ void MapImpl::resourceRenderTick()
     // clear old resources
     if (statistics.frameIndex % 30 == 0)
     {
-        std::vector<std::shared_ptr<Resource>> res;
-        res.reserve(resources.resources.size());
+        struct Res
+        {
+            std::string s;
+            sint32 p;
+            bool operator < (const Res &other) const
+            {
+                return p > other.p;
+            }
+            Res(const std::string &s, sint32 p) : s(s), p(p)
+            {}
+        };
+        std::priority_queue<Res> resToRemove;
         uint64 memRamUse = 0;
         uint64 memGpuUse = 0;
         for (auto &&it : resources.resources)
@@ -394,28 +411,33 @@ void MapImpl::resourceRenderTick()
             memGpuUse += it.second->info.gpuMemoryCost;
             // consider long time not used resources only
             if (it.second->lastAccessTick + 100 < statistics.frameIndex)
-                res.push_back(it.second);
+                resToRemove.emplace(it.first, it.second->lastAccessTick);
         }
         uint64 memUse = memRamUse + memGpuUse;
         if (memUse > options.maxResourcesMemory)
         {
-            std::sort(res.begin(), res.end(), [](std::shared_ptr<Resource> &a,
-                      std::shared_ptr<Resource> &b){
-                return a->lastAccessTick < b->lastAccessTick;
-            });
-            for (auto &&it : res)
+            while (!resToRemove.empty())
             {
-                if (memUse <= options.maxResourcesMemory)
-                    break;
-                memUse -= it->info.gpuMemoryCost + it->info.ramMemoryCost;
+                Res res = resToRemove.top();
+                resToRemove.pop();
+                auto &it = resources.resources[res.s];
                 if (it->state != Resource::State::finalizing)
                     it->state = Resource::State::finalizing;
                 else
                 {
-                    statistics.resourcesReleased++;
-                    LOG(info1) << "Releasing resource <"
-                               << it->name << ">";
-                    resources.resources.erase(it->name);
+                    std::string name = it->name;
+                    uint64 mem = it->info.gpuMemoryCost
+                            + it->info.ramMemoryCost;
+                    releaseIfLast(it);
+                    if (!it)
+                    {
+                        LOG(info1) << "Releasing resource <" << name << ">";
+                        resources.resources.erase(name);
+                        memUse -= mem;
+                        statistics.resourcesReleased++;
+                        if (memUse <= options.maxResourcesMemory)
+                            break;
+                    }
                 }
             }
         }

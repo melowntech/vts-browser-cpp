@@ -44,14 +44,22 @@ MapConfig::SurfaceInfo::SurfaceInfo(const SurfaceCommonConfig &surface,
     urlNav.parse(MapConfig::convertPath(urls3d->nav, parentPath));
 }
 
-MapConfig::BoundInfo::BoundInfo(const BoundLayer &layer) : BoundLayer(layer)
+MapConfig::BoundInfo::BoundInfo(const ExternalBoundLayer &ebl,
+                                const std::string &url)
+    : BoundLayer(ebl)
 {
-    urlExtTex.parse(url);
+    // prepare url templates
+    urlExtTex.parse(MapConfig::convertPath(this->url, url));
     if (metaUrl)
     {
-        urlMeta.parse(*metaUrl);
-        urlMask.parse(*maskUrl);
+        urlMeta.parse(MapConfig::convertPath(*metaUrl, url));
+        urlMask.parse(MapConfig::convertPath(*maskUrl, url));
     }
+
+    // merge credits
+    for (auto &c : credits)
+        if (c.second)
+            ebl.map->renderer.credits.merge(*c.second);
 }
 
 MapConfig::SurfaceStackItem::SurfaceStackItem() : alien(false)
@@ -151,9 +159,27 @@ vtslibs::vts::SurfaceCommonConfig *MapConfig::findSurface(const std::string &id)
 MapConfig::BoundInfo *MapConfig::getBoundInfo(const std::string &id)
 {
     auto it = boundInfos.find(id);
-    if (it == boundInfos.end())
-        return nullptr;
-    return it->second.get();
+    if (it != boundInfos.end())
+        return it->second.get();
+
+    const vtslibs::registry::BoundLayer *bl
+            = boundLayers.get(id, std::nothrow);
+    if (bl && bl->external())
+    {
+        std::string url = convertPath(bl->url, name);
+        std::shared_ptr<ExternalBoundLayer> r
+                = map->getExternalBoundLayer(url);
+        switch (map->getResourceValidity(r))
+        {
+        case Validity::Valid:
+            break;
+        case Validity::Indeterminate:
+        case Validity::Invalid:
+            return nullptr; // todo should behave differently when invalid
+        }
+        boundInfos[bl->id] = std::make_shared<BoundInfo>(*r, url);
+    }
+    return nullptr;
 }
 
 void MapConfig::printSurfaceStack()

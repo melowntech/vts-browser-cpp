@@ -114,13 +114,21 @@ private:
     uint64 timeParsed;
 };
 
+class ExternalBoundLayer : public Resource,
+        public vtslibs::registry::BoundLayer
+{
+public:
+    ExternalBoundLayer(MapImpl *map, const std::string &name);
+    void load() override;
+};
+
 class MapConfig : public Resource, public vtslibs::vts::MapConfig
 {
 public:
     class BoundInfo : public vtslibs::registry::BoundLayer
     {
     public:
-        BoundInfo(const BoundLayer &layer);
+        BoundInfo(const ExternalBoundLayer &ebl, const std::string &url);
     
         vtslibs::vts::UrlTemplate urlExtTex;
         vtslibs::vts::UrlTemplate urlMeta;
@@ -183,14 +191,6 @@ public:
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
     std::vector<SurfaceStackItem> surfaceStack;
     BrowserOptions browserOptions;
-};
-
-class ExternalBoundLayer : public Resource,
-        public vtslibs::registry::BoundLayer
-{
-public:
-    ExternalBoundLayer(MapImpl *map, const std::string &name);
-    void load() override;
 };
 
 class BoundMetaTile : public Resource

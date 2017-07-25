@@ -945,34 +945,6 @@ bool MapImpl::prerequisitesCheck()
     if (!testAndThrow(mapConfig->state, "Map config failure."))
         return false;
 
-    // load external bound layers
-    {
-        bool ok = true;
-        for (auto &&bl : mapConfig->boundLayers)
-        {
-            if (!bl.external())
-                continue;
-            std::string url = MapConfig::convertPath(bl.url, mapConfig->name);
-            std::shared_ptr<ExternalBoundLayer> r = getExternalBoundLayer(url);
-            if (!testAndThrow(r->state, "External bound layer failure."))
-                ok = false;
-            else
-            {
-                r->id = bl.id;
-                r->url = MapConfig::convertPath(r->url, url);
-                if (r->metaUrl)
-                    r->metaUrl = MapConfig::convertPath(*r->metaUrl, url);
-                if (r->maskUrl)
-                    r->maskUrl = MapConfig::convertPath(*r->maskUrl, url);
-                if (r->creditsUrl)
-                    r->creditsUrl = MapConfig::convertPath(*r->creditsUrl, url);
-                mapConfig->boundLayers.replace(*r);
-            }
-        }
-        if (!ok)
-            return false;
-    }
-
     // check for virtual surface
     if (!options.debugDisableVirtualSurfaces)
     {
@@ -1007,18 +979,7 @@ bool MapImpl::prerequisitesCheck()
     renderer.traverseRoot = std::make_shared<TraverseNode>(NodeInfo(
                     mapConfig->referenceFrame, TileId(), false, *mapConfig));
     renderer.traverseRoot->priority = std::numeric_limits<double>::infinity();
-
     renderer.credits.merge(mapConfig.get());
-    mapConfig->boundInfos.clear();
-    for (auto &bl : mapConfig->boundLayers)
-    {
-        for (auto &c : bl.credits)
-            if (c.second)
-                renderer.credits.merge(*c.second);
-        mapConfig->boundInfos[bl.id]
-                = std::make_shared<MapConfig::BoundInfo>(bl);
-    }
-
     initializeNavigation();
 
     LOG(info3) << "Map config ready";

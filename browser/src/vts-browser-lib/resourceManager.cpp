@@ -43,8 +43,11 @@ std::shared_ptr<T> getMapResource(MapImpl *map, const std::string &name)
         map->resources.resources[name] = r;
         it = map->resources.resources.find(name);
     }
+    assert(it->second);
     map->touchResource(it->second);
-    return std::dynamic_pointer_cast<T>(it->second);
+    auto res = std::dynamic_pointer_cast<T>(it->second);
+    assert(res);
+    return res;
 }
 
 void initializeFetchTask(MapImpl *map, Resource *task)

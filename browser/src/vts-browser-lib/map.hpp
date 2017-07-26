@@ -49,7 +49,6 @@ namespace vts
 
 using vtslibs::vts::NodeInfo;
 using vtslibs::vts::TileId;
-using vtslibs::vts::MetaNode;
 using vtslibs::vts::UrlTemplate;
 
 enum class Validity
@@ -97,24 +96,26 @@ public:
 class TraverseNode
 {
 public:
-    struct MetaInfo : public MetaNode
+    struct MetaInfo : public vtslibs::vts::MetaNode
     {
+        std::vector<std::shared_ptr<MetaTile>> metaTiles;
         std::vector<vtslibs::registry::CreditId> credits;
         vec3 cornersPhys[8];
         vec3 aabbPhys[2];
         vec3 surrogatePhys;
         const MapConfig::SurfaceStackItem *surface;
-        MetaInfo(const MetaNode &node);
+        MetaInfo(const vtslibs::vts::MetaNode &node);
     };
 
     boost::optional<MetaInfo> meta;
     std::vector<std::shared_ptr<TraverseNode>> childs;
     std::vector<std::shared_ptr<RenderTask>> draws;
     NodeInfo nodeInfo;
+    TraverseNode *const parent;
     uint32 lastAccessTime;
     float priority;
 
-    TraverseNode(const NodeInfo &nodeInfo);
+    TraverseNode(TraverseNode *parent, const NodeInfo &nodeInfo);
     ~TraverseNode();
     void clear();
     bool ready() const;
@@ -275,10 +276,6 @@ public:
     void touchTravDraws(const std::shared_ptr<TraverseNode> &trav);
     bool visibilityTest(const std::shared_ptr<TraverseNode> &trav);
     bool coarsenessTest(const std::shared_ptr<TraverseNode> &trav);
-    Validity returnValidMetaNode(MapConfig::SurfaceInfo *surface,
-                const TileId &nodeId, const MetaNode *&node, double priority);
-    Validity checkMetaNode(MapConfig::SurfaceInfo *surface,
-                const TileId &nodeId, const MetaNode *&node, double priority);
     void renderNode(const std::shared_ptr<TraverseNode> &trav);
     bool travDetermineMeta(const std::shared_ptr<TraverseNode> &trav);
     bool travDetermineDraws(

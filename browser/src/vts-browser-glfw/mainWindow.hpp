@@ -103,7 +103,7 @@ public:
         std::string auth;
         std::string sri;
     };
-    
+
     void setMapConfigPath(const Paths &paths);
 
     std::vector<Paths> paths;

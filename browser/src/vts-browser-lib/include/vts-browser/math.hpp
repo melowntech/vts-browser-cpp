@@ -118,6 +118,9 @@ VTS_API void normalizeAngle(double &a);
 VTS_API double angularDiff(double a, double b);
 VTS_API vec3 angularDiff(const vec3 &a, const vec3 &b);
 
+VTS_API double aabbPointDist(const vec3 &point,
+                             const vec3 &min, const vec3 &max);
+
 } // namespace vts
 
 #endif // MATH_H_wegfzebvgfhjusd

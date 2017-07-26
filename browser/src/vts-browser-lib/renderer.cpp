@@ -218,9 +218,9 @@ bool MapImpl::coarsenessTest(const std::shared_ptr<TraverseNode> &trav)
 {
     assert(trav->meta);
     bool applyTexelSize = trav->meta->flags()
-            & MetaNode::Flag::applyTexelSize;
+            & vtslibs::vts::MetaNode::Flag::applyTexelSize;
     bool applyDisplaySize = trav->meta->flags()
-            & MetaNode::Flag::applyDisplaySize;
+            & vtslibs::vts::MetaNode::Flag::applyDisplaySize;
 
     if (!applyTexelSize && !applyDisplaySize)
         return false;
@@ -247,43 +247,6 @@ bool MapImpl::coarsenessTest(const std::shared_ptr<TraverseNode> &trav)
     }
 
     return result;
-}
-
-Validity MapImpl::returnValidMetaNode(MapConfig::SurfaceInfo *surface,
-                const TileId &nodeId, const MetaNode *&node, double priority)
-{
-    std::string name = surface->urlMeta(UrlTemplate::Vars(roundId(nodeId)));
-    std::shared_ptr<MetaTile> t = getMetaTile(name);
-    t->updatePriority(priority);
-    Validity val = getResourceValidity(t);
-    if (val == Validity::Valid)
-        node = t->get(nodeId, std::nothrow);
-    return val;
-}
-
-Validity MapImpl::checkMetaNode(MapConfig::SurfaceInfo *surface,
-                const TileId &nodeId, const MetaNode *&node, double priority)
-{
-    if (nodeId.lod == 0)
-        return returnValidMetaNode(surface, nodeId, node, priority);
-    
-    const MetaNode *pn = nullptr;
-    switch (checkMetaNode(surface, vtslibs::vts::parent(nodeId), pn, priority))
-    {
-    case Validity::Invalid:
-        return Validity::Invalid;
-    case Validity::Indeterminate:
-        return Validity::Indeterminate;
-    case Validity::Valid:
-        break;
-    }
-
-    assert(pn);
-    uint32 idx = (nodeId.x % 2) + (nodeId.y % 2) * 2;
-    if (pn->flags() & (MetaNode::Flag::ulChild << idx))
-        return returnValidMetaNode(surface, nodeId, node, priority);
-    
-    return Validity::Invalid;
 }
 
 void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
@@ -380,16 +343,31 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
         return false;
 
     const TileId nodeId = trav->nodeInfo.nodeId();
-    MapConfig::SurfaceStackItem *topmost = nullptr;
-    const MetaNode *node = nullptr;
-    bool childsAvailable[4] = {false, false, false, false};
-    bool determined = true;
 
-    // find topmost nonempty surface
-    for (auto &&it : mapConfig->surfaceStack)
+    // find all metatiles
+    std::vector<std::shared_ptr<MetaTile>> metaTiles;
+    metaTiles.resize(mapConfig->surfaceStack.size());
+    const UrlTemplate::Vars tileIdVars(roundId(nodeId));
+    bool determined = true;
+    for (uint32 i = 0, e = metaTiles.size(); i != e; i++)
     {
-        const MetaNode *n = nullptr;
-        switch (checkMetaNode(it.surface.get(), nodeId, n, trav->priority))
+        if (trav->parent)
+        {
+            const std::shared_ptr<MetaTile> &p
+                    = trav->parent->meta->metaTiles[i];
+            if (!p)
+                continue;
+            TileId pid = vtslibs::vts::parent(nodeId);
+            uint32 idx = (nodeId.x % 2) + (nodeId.y % 2) * 2;
+            const vtslibs::vts::MetaNode &node = p->get(pid);
+            if ((node.flags()
+                 & (vtslibs::vts::MetaNode::Flag::ulChild << idx)) == 0)
+                continue;
+        }
+        auto m = getMetaTile(mapConfig->surfaceStack[i].surface
+                             ->urlMeta(tileIdVars));
+        m->updatePriority(trav->priority);
+        switch (getResourceValidity(m))
         {
         case Validity::Indeterminate:
             determined = false;
@@ -399,33 +377,46 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
         case Validity::Valid:
             break;
         }
-        assert(n);
-        for (uint32 i = 0; i < 4; i++)
-            childsAvailable[i] = childsAvailable[i]
-                    || (n->childFlags() & (MetaNode::Flag::ulChild << i));
-        if (topmost || n->alien() != it.alien)
-            continue;
-        if (n->geometry())
-        {
-            node = n;
-            if (renderer.tilesetMapping)
-            {
-                assert(n->sourceReference > 0 && n->sourceReference
-                       <= renderer.tilesetMapping->surfaceStack.size());
-                topmost = &renderer.tilesetMapping
-                        ->surfaceStack[n->sourceReference];
-            }
-            else
-                topmost = &it;
-        }
-        if (!node)
-            node = n;
+        metaTiles[i] = m;
     }
     if (!determined)
         return false;
 
+    // find topmost nonempty surface
+    MapConfig::SurfaceStackItem *topmost = nullptr;
+    const vtslibs::vts::MetaNode *node = nullptr;
+    bool childsAvailable[4] = {false, false, false, false};
+    for (uint32 i = 0, e = metaTiles.size(); i != e; i++)
+    {
+        if (!metaTiles[i])
+            continue;
+        const vtslibs::vts::MetaNode &n = metaTiles[i]->get(nodeId);
+        for (uint32 i = 0; i < 4; i++)
+            childsAvailable[i] = childsAvailable[i]
+                    || (n.childFlags()
+                        & (vtslibs::vts::MetaNode::Flag::ulChild << i));
+        if (topmost || n.alien() != mapConfig->surfaceStack[i].alien)
+            continue;
+        if (n.geometry())
+        {
+            node = &n;
+            if (renderer.tilesetMapping)
+            {
+                assert(n.sourceReference > 0 && n.sourceReference
+                       <= renderer.tilesetMapping->surfaceStack.size());
+                topmost = &renderer.tilesetMapping
+                        ->surfaceStack[n.sourceReference];
+            }
+            else
+                topmost = &mapConfig->surfaceStack[i];
+        }
+        if (!node)
+            node = &n;
+    }
+
     assert(node);
     trav->meta = boost::in_place(*node);
+    trav->meta->metaTiles.swap(metaTiles);
 
     // corners
     if (!vtslibs::vts::empty(node->geomExtents)
@@ -500,7 +491,7 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
     {
         if (childsAvailable[i])
             trav->childs.push_back(std::make_shared<TraverseNode>(
-                                       trav->nodeInfo.child(childs[i])));
+                        trav.get(), trav->nodeInfo.child(childs[i])));
     }
 
     return true;
@@ -976,7 +967,7 @@ bool MapImpl::prerequisitesCheck()
     if (mapConfig->surfaceStack.empty())
         mapConfig->generateSurfaceStack();
 
-    renderer.traverseRoot = std::make_shared<TraverseNode>(NodeInfo(
+    renderer.traverseRoot = std::make_shared<TraverseNode>(nullptr, NodeInfo(
                     mapConfig->referenceFrame, TileId(), false, *mapConfig));
     renderer.traverseRoot->priority = std::numeric_limits<double>::infinity();
     renderer.credits.merge(mapConfig.get());

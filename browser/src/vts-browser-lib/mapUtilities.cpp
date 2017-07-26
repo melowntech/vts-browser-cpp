@@ -193,8 +193,8 @@ TraverseNode::MetaInfo::MetaInfo(const MetaNode &node) :
     }
 }
 
-TraverseNode::TraverseNode(const NodeInfo &nodeInfo)
-    : nodeInfo(nodeInfo), lastAccessTime(0),
+TraverseNode::TraverseNode(TraverseNode *parent, const NodeInfo &nodeInfo)
+    : nodeInfo(nodeInfo), parent(parent), lastAccessTime(0),
       priority(std::numeric_limits<double>::quiet_NaN())
 {}
 
@@ -309,19 +309,6 @@ void MapImpl::emptyTraverseQueue()
         renderer.traverseQueue.pop();
 }
 
-namespace
-{
-
-double aabbPointDist(const vec3 &point, const vec3 &min, const vec3 &max)
-{
-    double r = 0;
-    for (int i = 0; i < 3; i++)
-        r += std::max(std::max(min[i] - point[i], point[i] - max[i]), 0.0);
-    return sqrt(r);
-}
-
-} // namespace
-
 double MapImpl::travDistance(const std::shared_ptr<TraverseNode> &trav,
                              const vec3 pointPhys)
 {
@@ -346,10 +333,12 @@ float MapImpl::computeResourcePriority(
         const std::shared_ptr<TraverseNode> &trav)
 {
     if (options.traverseMode == TraverseMode::Hierarchical)
-        return -trav->nodeInfo.nodeId().lod;
+    {
+        return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1)
+                   / (1 << (trav->nodeInfo.nodeId().lod / 2)));
+    }
 
-    return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1)
-               ); // / (1 << (trav->nodeInfo.nodeId().lod / 2)));
+    return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1));
 }
 
 } // namespace vts

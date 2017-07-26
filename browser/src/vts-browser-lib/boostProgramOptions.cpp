@@ -25,6 +25,7 @@
  */
 
 #include <boost/algorithm/string.hpp>
+#include <utility/enum-io.hpp>
 #include "include/vts-browser/boostProgramOptions.hpp"
 #include "include/vts-browser/options.hpp"
 #include "include/vts-browser/fetcher.hpp"
@@ -53,40 +54,39 @@ void notifyLogConsole(bool console)
     setLogConsole(console);
 }
 
-} // namespace
-
-std::istream &operator >> (std::istream &in, TraverseMode &mode)
+void sanitizeSection(std::string &s)
 {
-    std::string token;
-    in >> token;
-    boost::to_lower(token);
-
-    if (token == "hierarchical")
-        mode = TraverseMode::Hierarchical;
-    else if (token == "flat")
-        mode = TraverseMode::Flat;
-    else
-        throw boost::program_options::validation_error(
-                boost::program_options::validation_error::invalid_option_value,
-                "map.traverseMode", token);
-
-    return in;
+    if (s.empty())
+        return;
+    if (s[s.size() - 1] != '.')
+        s += '.';
 }
 
+} // namespace
+
+UTILITY_GENERATE_ENUM_IO(TraverseMode,
+                         ((Hierarchical)("hierarchical"))
+                         ((Flat)("flat"))
+                         )
+
 void optionsConfigLog(
-        boost::program_options::options_description &desc)
+        boost::program_options::options_description &desc,
+        std::string section)
 {
+    sanitizeSection(section);
     desc.add_options()
-    ("log.mask",
+
+    ((section + "mask").c_str(),
         po::value<std::string>()->notifier(&notifyLogMask),
         "Set log mask.\n"
         "Format: I?E?W?\n"
-        "Eg.: I3W1E4"
-    )
-    ("log.file",
+        "Eg.: I3W1E4")
+
+    ((section + "file").c_str(),
         po::value<std::string>()->notifier(&notifyLogFile),
         "Set log output file path.")
-    ("log.console",
+
+    ((section + "console").c_str(),
         po::value<bool>()->notifier(&notifyLogConsole),
         "Enable log output to console.")
     ;
@@ -94,16 +94,21 @@ void optionsConfigLog(
 
 void optionsConfigCreateOptions(
         boost::program_options::options_description &desc,
-        class MapCreateOptions *opts)
+        class MapCreateOptions *opts,
+        std::string section)
 {
+    sanitizeSection(section);
     desc.add_options()
-    ("map.clientId",
+
+    ((section + "clientId").c_str(),
         po::value<std::string>(&opts->clientId),
         "Identification of the application for the authentication server.")
-    ("map.cachePath",
+
+    ((section + "cachePath").c_str(),
         po::value<std::string>(&opts->cachePath),
         "Path to a directory where all downloaded resources are cached.")
-    ("map.disableCache",
+
+    ((section + "disableCache").c_str(),
         po::value<bool>(&opts->disableCache),
         "Set to yes to completly disable the cache.")
     ;
@@ -111,14 +116,38 @@ void optionsConfigCreateOptions(
 
 void optionsConfigMapOptions(
         boost::program_options::options_description &desc,
-        class MapOptions *opts)
+        class MapOptions *opts,
+        std::string section)
 {
+    sanitizeSection(section);
     desc.add_options()
-    ("map.maxResourcesMemory",
+
+    ((section + "maxTexelToPixelScale").c_str(),
+        po::value<double>(&opts->maxTexelToPixelScale),
+        "Maximum ratio of texture details to the viewport resolution.")
+
+    ((section + "maxResourcesMemory").c_str(),
         po::value<uint64>(&opts->maxResourcesMemory),
         "Maximum memory (in bytes) used by resources "
         "before they begin to unload.")
-    ("map.traverseMode",
+
+    ((section + "maxConcurrentDownloads").c_str(),
+        po::value<uint32>(&opts->maxConcurrentDownloads),
+        "Maximum size of the queue for the resources to be downloaded.")
+
+    ((section + "maxNodeMetaUpdatesPerTick").c_str(),
+        po::value<uint32>(&opts->maxNodeMetaUpdatesPerTick),
+        "Maximum number of node meta-data updates per frame.")
+
+    ((section + "maxNodeDrawsUpdatesPerTick").c_str(),
+        po::value<uint32>(&opts->maxNodeDrawsUpdatesPerTick),
+        "Maximum number of node render-data updates per frame.")
+
+    ((section + "maxResourceProcessesPerTick").c_str(),
+        po::value<uint32>(&opts->maxResourceProcessesPerTick),
+        "Maximum number of resources processed per dataTick.")
+
+    ((section + "traverseMode").c_str(),
         po::value<TraverseMode>(&opts->traverseMode),
         "Render traversal mode:\n"
         "hierarchical\n"
@@ -126,24 +155,85 @@ void optionsConfigMapOptions(
     ;
 }
 
+void optionsConfigDebugOptions(
+        boost::program_options::options_description &desc,
+        class MapOptions *opts,
+        std::string section)
+{
+    sanitizeSection(section);
+    desc.add_options()
+
+    ((section + "debugDetachedCamera").c_str(),
+        po::value<bool>(&opts->debugDetachedCamera),
+        "debugDetachedCamera")
+
+    ((section + "debugDisableVirtualSurfaces").c_str(),
+        po::value<bool>(&opts->debugDisableVirtualSurfaces),
+        "debugDisableVirtualSurfaces")
+
+    ((section + "debugDisableSri").c_str(),
+        po::value<bool>(&opts->debugDisableSri),
+        "debugDisableSri")
+
+    ((section + "debugSaveCorruptedFiles").c_str(),
+        po::value<bool>(&opts->debugSaveCorruptedFiles),
+        "debugSaveCorruptedFiles")
+
+    ((section + "debugRenderSurrogates").c_str(),
+        po::value<bool>(&opts->debugRenderSurrogates),
+        "debugRenderSurrogates")
+
+    ((section + "debugRenderMeshBoxes").c_str(),
+        po::value<bool>(&opts->debugRenderMeshBoxes),
+        "debugRenderMeshBoxes")
+
+    ((section + "debugRenderTileBoxes").c_str(),
+        po::value<bool>(&opts->debugRenderTileBoxes),
+        "debugRenderTileBoxes")
+
+    ((section + "debugRenderObjectPosition").c_str(),
+        po::value<bool>(&opts->debugRenderObjectPosition),
+        "debugRenderObjectPosition")
+
+    ((section + "debugRenderTargetPosition").c_str(),
+        po::value<bool>(&opts->debugRenderTargetPosition),
+        "debugRenderTargetPosition")
+
+    ((section + "debugRenderAltitudeShiftCorners").c_str(),
+        po::value<bool>(&opts->debugRenderAltitudeShiftCorners),
+        "debugRenderAltitudeShiftCorners")
+
+    ((section + "debugRenderNoMeshes").c_str(),
+        po::value<bool>(&opts->debugRenderNoMeshes),
+        "debugRenderNoMeshes")
+    ;
+}
+
 void optionsConfigFetcherOptions(
         boost::program_options::options_description &desc,
-        class FetcherOptions *opts)
+        class FetcherOptions *opts,
+        std::string section)
 {
+    sanitizeSection(section);
     desc.add_options()
-    ("fetcher.threads",
+
+    ((section + "threads").c_str(),
         po::value<uint32>(&opts->threads),
         "Number of threads created for the fetcher.")
-    ("fetcher.maxHostConnections",
+
+    ((section + "maxHostConnections").c_str(),
         po::value<uint32>(&opts->maxHostConnections),
         "Maximum concurrent connections to same host.")
-    ("fetcher.maxTotalConections",
+
+    ((section + "maxTotalConections").c_str(),
         po::value<uint32>(&opts->maxTotalConections),
         "Total limit of concurrent connections.")
-    ("fetcher.maxCacheConections",
+
+    ((section + "maxCacheConections").c_str(),
         po::value<uint32>(&opts->maxCacheConections),
         "Size of curl connection cache.")
-    ("fetcher.pipelining",
+
+    ((section + "pipelining").c_str(),
         po::value<sint32>(&opts->pipelining),
         "HTTP pipelining mode.")
     ;

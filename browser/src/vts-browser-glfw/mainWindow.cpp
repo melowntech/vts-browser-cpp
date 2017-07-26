@@ -79,7 +79,13 @@ void keyboardUnicodeCallback(GLFWwindow *window, unsigned int codepoint)
 
 } // namespace
 
-MainWindow::MainWindow(vts::Map *map) :
+AppOptions::AppOptions() :
+    screenshotOnFullRender(false),
+    closeOnFullRender(false)
+{}
+
+MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
+    appOptions(appOptions),
     camNear(0), camFar(0),
     mousePrevX(0), mousePrevY(0),
     dblClickInitTime(0), dblClickState(0),
@@ -377,7 +383,7 @@ void MainWindow::run()
     //   in single tick without causing any lag spikes
     map->options().maxResourceProcessesPerTick = -1;
 
-    setMapConfigPath(paths[0]);
+    setMapConfigPath(appOptions.paths[0]);
     map->callbacks().loadTexture = std::bind(&MainWindow::loadTexture, this,
                 std::placeholders::_1, std::placeholders::_2);
     map->callbacks().loadMesh = std::bind(&MainWindow::loadMesh, this,
@@ -394,8 +400,29 @@ void MainWindow::run()
                 std::placeholders::_3, std::placeholders::_4);
     map->renderInitialize();
     gui.initialize(this);
+
+    bool initialPositionSet = false;
+
     while (!glfwWindowShouldClose(window))
     {
+        if (!initialPositionSet && map->isMapConfigReady())
+        {
+            initialPositionSet = true;
+            if (!appOptions.initialPosition.empty())
+            {
+                try
+                {
+                    map->setPositionUrl(appOptions.initialPosition,
+                                        vts::NavigationType::Instant);
+                }
+                catch (...)
+                {
+                    vts::log(vts::LogLevel::warn3,
+                             "failed to set initial position");
+                }
+            }
+        }
+
         checkGl("frame begin");
         double timeFrameStart = glfwGetTime();
 
@@ -411,8 +438,8 @@ void MainWindow::run()
             std::stringstream s;
             s << "Exception <" << e.what() << ">";
             vts::log(vts::LogLevel::err4, s.str());
-            if (paths.size() > 1)
-                setMapConfigPath(Paths());
+            if (appOptions.paths.size() > 1)
+                setMapConfigPath(MapPaths());
             else
                 throw;
         }
@@ -474,6 +501,9 @@ void MainWindow::run()
         timingAppProcess = timeAppRender - timeMapRender;
         timingGuiProcess = timeGui - timeAppRender;
         timingTotalFrame = timeFrameFinish - timeFrameStart;
+
+        if (appOptions.closeOnFullRender && map->isMapRenderComplete())
+            glfwSetWindowShouldClose(window, true);
     }
     gui.finalize();
 }
@@ -524,7 +554,7 @@ void MainWindow::cameraOverrideProj(double *mat)
         camProj(i) = mat[i];
 }
 
-void MainWindow::setMapConfigPath(const MainWindow::Paths &paths)
+void MainWindow::setMapConfigPath(const MapPaths &paths)
 {
     map->setMapConfigPath(paths.mapConfig, paths.auth, paths.sri);
 }

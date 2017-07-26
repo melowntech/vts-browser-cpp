@@ -30,7 +30,7 @@
 
 namespace po = boost::program_options;
 
-MainWindow::Paths parseConfigPaths(const std::string &config,
+MapPaths parseConfigPaths(const std::string &config,
                                    const std::string &auth,
                                    const std::string &sri)
 {
@@ -39,7 +39,7 @@ MainWindow::Paths parseConfigPaths(const std::string &config,
     boost::split(a, config, boost::is_any_of("|"));
     if (a.size() > 3)
         throw std::runtime_error("Config path contains too many parts.");
-    MainWindow::Paths r;
+    MapPaths r;
     r.mapConfig = a[0];
     if (a.size() > 1)
         r.auth = a[1];
@@ -55,7 +55,7 @@ MainWindow::Paths parseConfigPaths(const std::string &config,
 bool programOptions(vts::MapCreateOptions &createOptions,
                     vts::MapOptions &mapOptions,
                     vts::FetcherOptions &fetcherOptions,
-                    std::vector<MainWindow::Paths> &paths,
+                    AppOptions &appOptions,
                     int argc, char *argv[])
 {
     std::vector<std::string> configs;
@@ -80,7 +80,24 @@ bool programOptions(vts::MapCreateOptions &createOptions,
             ("sri,s",
                 po::value<std::string>(&sri),
                 "SRI url fallback."
-            );
+            )
+            ("position,p",
+                po::value<std::string>(&appOptions.initialPosition),
+                "Override initial position for the first map.\n"
+                "Uses url format, eg.:\n"
+                "obj,long,lat,fix,height,pitch,yaw,roll,extent,fov"
+            )
+            ("closeWhenComplete",
+                po::value<bool>(&appOptions.closeOnFullRender),
+                "Quit the application when it finishes "
+                "rendering the whole image."
+            )
+            /*("screenshotWhenComplete",
+                po::value<bool>(&appOptions.screenshotOnFullRender),
+                "Save screenshot when it finishes "
+                "rendering the whole image."
+            )*/
+            ;
 
     po::positional_options_description popts;
     popts.add("url", -1);
@@ -88,6 +105,7 @@ bool programOptions(vts::MapCreateOptions &createOptions,
     vts::optionsConfigLog(desc);
     vts::optionsConfigCreateOptions(desc, &createOptions);
     vts::optionsConfigMapOptions(desc, &mapOptions);
+    vts::optionsConfigDebugOptions(desc, &mapOptions);
     vts::optionsConfigFetcherOptions(desc, &fetcherOptions);
 
     po::variables_map vm;
@@ -107,7 +125,7 @@ bool programOptions(vts::MapCreateOptions &createOptions,
         throw std::runtime_error("At least one mapconfig is required.");
 
     for (auto &&it : configs)
-        paths.push_back(parseConfigPaths(it, auth, sri));
+        appOptions.paths.push_back(parseConfigPaths(it, auth, sri));
 
     return true;
 }

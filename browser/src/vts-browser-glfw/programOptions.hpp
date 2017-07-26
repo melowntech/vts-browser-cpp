@@ -35,7 +35,7 @@
 bool programOptions(vts::MapCreateOptions &createOptions,
                     vts::MapOptions &mapOptions,
                     vts::FetcherOptions &fetcherOptions,
-                    std::vector<MainWindow::Paths> &paths,
+                    AppOptions &appOptions,
                     int argc, char *argv[]);
 
 #endif

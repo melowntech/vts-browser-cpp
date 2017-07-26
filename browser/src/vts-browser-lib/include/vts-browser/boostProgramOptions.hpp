@@ -34,16 +34,28 @@ namespace vts
 {
 
 VTS_API void optionsConfigLog(
-        boost::program_options::options_description &desc);
+        boost::program_options::options_description &desc,
+        std::string section = "log");
+
 VTS_API void optionsConfigCreateOptions(
         boost::program_options::options_description &desc,
-        class MapCreateOptions *opts);
+        class MapCreateOptions *opts,
+        std::string section = "map");
+
 VTS_API void optionsConfigMapOptions(
         boost::program_options::options_description &desc,
-        class MapOptions *opts);
+        class MapOptions *opts,
+        std::string section = "map");
+
+VTS_API void optionsConfigDebugOptions(
+        boost::program_options::options_description &desc,
+        class MapOptions *opts,
+        std::string section = "map");
+
 VTS_API void optionsConfigFetcherOptions(
         boost::program_options::options_description &desc,
-        class FetcherOptions *opts);
+        class FetcherOptions *opts,
+        std::string section = "fetcher");
 
 } // namespace vts
 

@@ -952,7 +952,7 @@ public:
             float width = nk_window_get_content_region_size(&ctx).x - 15;
 
             // mapconfig selector
-            if (window->paths.size() > 1)
+            if (window->appOptions.paths.size() > 1)
             {
                 float ratio[] = { width * 0.2f, width * 0.8f };
                 nk_layout_row(&ctx, NK_STATIC, 20, 2, ratio);
@@ -962,14 +962,16 @@ public:
                                  nk_vec2(nk_widget_width(&ctx), 200)))
                 {
                     nk_layout_row_dynamic(&ctx, 16, 1);
-                    for (int i = 0, e = window->paths.size(); i < e; i++)
+                    for (int i = 0, e = window->appOptions.paths.size();
+                         i < e; i++)
                     {
                         if (nk_combo_item_label(&ctx,
-                                    window->paths[i].mapConfig.c_str(),
+                                window->appOptions.paths[i].mapConfig.c_str(),
                                                 NK_TEXT_LEFT))
                         {
                             window->marks.clear();
-                            window->setMapConfigPath(window->paths[i]);
+                            window->setMapConfigPath(
+                                        window->appOptions.paths[i]);
                             nk_combo_end(&ctx);
                             nk_end(&ctx);
                             return;

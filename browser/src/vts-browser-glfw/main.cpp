@@ -57,9 +57,9 @@ int main(int argc, char *argv[])
         //createOptions.disableCache = true;
         vts::MapOptions mapOptions;
         vts::FetcherOptions fetcherOptions;
-        std::vector<MainWindow::Paths> paths;
-        if (!programOptions(createOptions, mapOptions, fetcherOptions, paths,
-                            argc, argv))
+        AppOptions appOptions;
+        if (!programOptions(createOptions, mapOptions, fetcherOptions,
+                            appOptions, argc, argv))
             return 3;
 
         glfwSetErrorCallback(&errorCallback);
@@ -69,8 +69,7 @@ int main(int argc, char *argv[])
         {
             vts::Map map(createOptions);
             map.options() = mapOptions;
-            MainWindow main(&map);
-            std::swap(main.paths, paths);
+            MainWindow main(&map, appOptions);
             DataThread data(&map, main.window, &main.timingDataFrame,
                             fetcherOptions);
             main.run();

@@ -53,10 +53,27 @@ struct Mark
     Mark();
 };
 
+struct MapPaths
+{
+    std::string mapConfig;
+    std::string auth;
+    std::string sri;
+};
+
+struct AppOptions
+{
+    std::vector<MapPaths> paths;
+    std::string initialPosition;
+    bool screenshotOnFullRender;
+    bool closeOnFullRender;
+
+    AppOptions();
+};
+
 class MainWindow
 {
 public:
-    MainWindow(vts::Map *map);
+    MainWindow(vts::Map *map, const AppOptions &appOptions);
     ~MainWindow();
 
     void mousePositionCallback(double xpos, double ypos);
@@ -97,16 +114,9 @@ public:
     void cameraOverrideView(double *mat);
     void cameraOverrideProj(double *mat);
 
-    struct Paths
-    {
-        std::string mapConfig;
-        std::string auth;
-        std::string sri;
-    };
+    void setMapConfigPath(const MapPaths &paths);
 
-    void setMapConfigPath(const Paths &paths);
-
-    std::vector<Paths> paths;
+    const AppOptions appOptions;
     std::shared_ptr<GpuShaderImpl> shaderTexture;
     std::shared_ptr<GpuShaderImpl> shaderColor;
     std::shared_ptr<GpuMeshImpl> meshMark;

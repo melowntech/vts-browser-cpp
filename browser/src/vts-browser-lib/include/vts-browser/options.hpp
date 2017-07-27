@@ -176,9 +176,9 @@ public:
     // set this to false to prevent such filtering
     bool enableSearchResultsFilter;
 
-    // some resources may intentionally change over time
+    // some resources may intentionally change over time,
     //   thus they need to be reloaded when they expire
-    // enable this experimental feature to allow ther expiration
+    // enable this *experimental* feature to allow ther expiration
     //   even after they were successfully loaded into gpu memory
     bool enableRuntimeResourceExpiration;
 
@@ -187,6 +187,9 @@ public:
     // setting this option to false will allow the use of SRI
     //   only when the mapconfig changes
     bool enableArbitrarySriRequests;
+    
+    // setting this to false will disable the tilt limit for the camera
+    bool enablePositionTiltLimit;
 
     bool debugDetachedCamera;
     bool debugDisableMeta5;

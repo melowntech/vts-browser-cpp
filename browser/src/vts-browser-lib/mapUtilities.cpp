@@ -300,7 +300,8 @@ double MapImpl::getPositionTiltLimit()
 
 void MapImpl::applyPositionTiltLimit(double &tilt)
 {
-    tilt = std::min(tilt, getPositionTiltLimit());
+    if (options.enablePositionTiltLimit)
+        tilt = std::min(tilt, getPositionTiltLimit());
 }
 
 void MapImpl::emptyTraverseQueue()

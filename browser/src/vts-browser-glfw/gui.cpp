@@ -559,6 +559,12 @@ public:
             sprintf(buffer, "%3d", o.navigationSamplesPerViewExtent);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             
+            // enable camera tilt limit
+            nk_label(&ctx, "Enable:", NK_TEXT_LEFT);
+            o.enablePositionTiltLimit = nk_check_label(&ctx, "tilt limit",
+                                               o.enablePositionTiltLimit);
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            
             // render mesh wire boxes
             nk_label(&ctx, "Display:", NK_TEXT_LEFT);
             o.debugRenderMeshBoxes = nk_check_label(&ctx, "mesh boxes",
@@ -735,33 +741,18 @@ public:
         {
             float width = nk_window_get_content_region_size(&ctx).x - 15;
             float ratio[] = { width * 0.3f, width * 0.7f };
+            nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
             char buffer[256];
-            { // input
-                nk_layout_row(&ctx, NK_STATIC, 22, 2, ratio);
+            // input
+            {
                 nk_label(&ctx, "Input:", NK_TEXT_LEFT);
-                int len = strlen(positionInputText);
-                nk_edit_string(&ctx, NK_EDIT_FIELD | NK_EDIT_AUTO_SELECT,
-                               positionInputText, &len,
-                        MaxSearchTextLength - 1, nullptr);
-                positionInputText[len] = 0;
-                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
-                nk_label(&ctx, "", NK_TEXT_LEFT);
-                if (nk_button_label(&ctx, "Go"))
+                if (nk_button_label(&ctx, "Use from clipboard"))
                 {
                     try
                     {
-                        window->map->setPositionUrl(
-                                    std::string(positionInputText, len),
-                                    vts::NavigationType::Instant);
-                    }
-                    catch(...)
-                    {
-                        // do nothing
-                    }
-                    try
-                    {
-                        window->map->setPositionJson(
-                                    std::string(positionInputText, len),
+                        const char *text = glfwGetClipboardString(
+                                    window->window);
+                        window->map->setPositionUrl(text,
                                     vts::NavigationType::Instant);
                     }
                     catch(...)
@@ -770,7 +761,8 @@ public:
                     }
                 }
             }
-            { // subjective position
+            // subjective position
+            {
                 int subj = window->map->getPositionSubjective();
                 int prev = subj;
                 nk_label(&ctx, "Type:", NK_TEXT_LEFT);
@@ -778,7 +770,8 @@ public:
                 if (subj != prev)
                     window->map->setPositionSubjective(!!subj, true);
             }
-            { // srs
+            // srs
+            {
                 static const char *names[] = {
                     "Physical",
                     "Navigation",
@@ -859,6 +852,15 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 sprintf(buffer, "%5.1f", window->map->getPositionFov());
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            }
+            // output
+            {
+                nk_label(&ctx, "Output:", NK_TEXT_LEFT);
+                if (nk_button_label(&ctx, "Copy to clipboard"))
+                {
+                    glfwSetClipboardString(window->window,
+                            window->map->getPositionUrl().c_str());
+                }
             }
             // auto movement
             {

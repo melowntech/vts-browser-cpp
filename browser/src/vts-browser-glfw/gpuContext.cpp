@@ -103,11 +103,9 @@ namespace
         {
         case GL_DEBUG_SEVERITY_HIGH:
             sevr = "high";
-            throwing = true;
             break;
         case GL_DEBUG_SEVERITY_MEDIUM:
             sevr = "medium";
-            throwing = true;
             break;
         case GL_DEBUG_SEVERITY_LOW:
             sevr = "low";
@@ -128,8 +126,10 @@ namespace
         }
         
         if (throwing)
+        {
             throw std::runtime_error(
                     std::string("OpenGL: ") + message);
+        }
     }
 }
 

@@ -19,6 +19,7 @@ set(PUB_HDR_LIST
   include/vts-browser/search.hpp
   include/vts-browser/log.hpp
   include/vts-browser/boostProgramOptions.hpp
+  include/vts-browser/celestial.hpp
 )
 
 set(HDR_LIST

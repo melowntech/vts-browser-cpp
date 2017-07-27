@@ -93,6 +93,7 @@ public:
     class MapOptions &options();
     class MapDraws &draws();
     class MapCredits &credits();
+    class MapCelestialBody &celestialBody();
 
     void pan(const double value[3]);
     void pan(const double (&value)[3]);

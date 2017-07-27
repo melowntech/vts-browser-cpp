@@ -38,6 +38,7 @@
 #include <vts-browser/exceptions.hpp>
 #include <vts-browser/credits.hpp>
 #include <vts-browser/log.hpp>
+#include <vts-browser/celestial.hpp>
 #include "mainWindow.hpp"
 #include <GLFW/glfw3.h>
 
@@ -77,6 +78,11 @@ void keyboardUnicodeCallback(GLFWwindow *window, unsigned int codepoint)
     m->gui.keyboardUnicodeCallback(codepoint);
 }
 
+double sqr(double a)
+{
+	return a * a;
+}
+
 } // namespace
 
 AppOptions::AppOptions() :
@@ -89,6 +95,7 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
     camNear(0), camFar(0),
     mousePrevX(0), mousePrevY(0),
     dblClickInitTime(0), dblClickState(0),
+    width(0), height(0),
     map(map), window(nullptr)
 {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -99,7 +106,7 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
 #ifndef NDEBUG
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 #endif
-    
+
     glfwWindowHint(GLFW_VISIBLE, true);
     window = glfwCreateWindow(800, 600, "renderer-glfw", NULL, NULL);
     if (!window)
@@ -114,16 +121,17 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
     glfwSetScrollCallback(window, &::mouseScrollCallback);
     glfwSetKeyCallback(window, &::keyboardCallback);
     glfwSetCharCallback(window, &::keyboardUnicodeCallback);
-    
+
     // check for extensions
     anisotropicFilteringAvailable
             = glfwExtensionSupported("GL_EXT_texture_filter_anisotropic");
     openglDebugAvailable
             = glfwExtensionSupported("GL_KHR_debug");
-    
+
     initializeGpuContext();
-    
-    { // load shader texture
+
+    // load shader texture
+    {
         shaderTexture = std::make_shared<GpuShaderImpl>();
         vts::Buffer vert = readInternalMemoryBuffer(
                     "data/shaders/texture.vert.glsl");
@@ -144,8 +152,9 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         glUniform1i(glGetUniformLocation(id, "texColor"), 0);
         glUniform1i(glGetUniformLocation(id, "texMask"), 1);
     }
-    
-    { // load shader color
+
+    // load shader color
+    {
         shaderColor = std::make_shared<GpuShaderImpl>();
         vts::Buffer vert = readInternalMemoryBuffer(
                     "data/shaders/color.vert.glsl");
@@ -159,8 +168,45 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         uls.push_back(glGetUniformLocation(id, "uniMvp"));
         uls.push_back(glGetUniformLocation(id, "uniColor"));
     }
-    
-    { // load mesh mark
+
+    // load shader atmosphere back
+    {
+        shaderAtmosphereBack = std::make_shared<GpuShaderImpl>();
+        vts::Buffer vert = readInternalMemoryBuffer(
+                    "data/shaders/atmosphere-back.vert.glsl");
+        vts::Buffer frag = readInternalMemoryBuffer(
+                    "data/shaders/atmosphere-back.frag.glsl");
+        shaderAtmosphereBack->loadShaders(
+            std::string(vert.data(), vert.size()),
+            std::string(frag.data(), frag.size()));
+        std::vector<vts::uint32> &uls = shaderAtmosphereBack->uniformLocations;
+        GLuint id = shaderAtmosphereBack->id;
+        uls.push_back(glGetUniformLocation(id, "uniColorLow"));
+        uls.push_back(glGetUniformLocation(id, "uniColorHigh"));
+        uls.push_back(glGetUniformLocation(id, "uniBodyRadiuses"));
+        uls.push_back(glGetUniformLocation(id, "uniCorners[0]"));
+        uls.push_back(glGetUniformLocation(id, "uniCorners[1]"));
+        uls.push_back(glGetUniformLocation(id, "uniCorners[2]"));
+        uls.push_back(glGetUniformLocation(id, "uniCorners[3]"));
+    }
+
+    // load shader atmosphere front
+    {
+        shaderAtmosphereFront = std::make_shared<GpuShaderImpl>();
+        vts::Buffer vert = readInternalMemoryBuffer(
+                    "data/shaders/atmosphere-front.vert.glsl");
+        vts::Buffer frag = readInternalMemoryBuffer(
+                    "data/shaders/atmosphere-front.frag.glsl");
+        shaderAtmosphereFront->loadShaders(
+            std::string(vert.data(), vert.size()),
+            std::string(frag.data(), frag.size()));
+        std::vector<vts::uint32> &uls = shaderAtmosphereFront->uniformLocations;
+        GLuint id = shaderAtmosphereFront->id;
+        uls.push_back(glGetUniformLocation(id, "uniColor"));
+    }
+
+    // load mesh mark
+    {
         meshMark = std::make_shared<GpuMeshImpl>();
         vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
                                   "data/meshes/sphere.obj"));
@@ -172,8 +218,9 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         vts::ResourceInfo info;
         meshMark->loadMesh(info, spec);
     }
-    
-    { // load mesh line
+
+    // load mesh line
+    {
         meshLine = std::make_shared<GpuMeshImpl>();
         vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
                                   "data/meshes/line.obj"));
@@ -184,6 +231,24 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         spec.attributes[0].components = 3;
         vts::ResourceInfo info;
         meshLine->loadMesh(info, spec);
+    }
+
+    // load mesh quad
+    {
+        meshQuad = std::make_shared<GpuMeshImpl>();
+        vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
+                                  "data/meshes/quad.obj"));
+        assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Triangles);
+        spec.attributes.resize(2);
+        spec.attributes[0].enable = true;
+        spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
+        spec.attributes[0].components = 3;
+        spec.attributes[1].enable = true;
+        spec.attributes[1].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
+        spec.attributes[1].components = 2;
+        spec.attributes[1].offset = sizeof(vts::vec3f);
+        vts::ResourceInfo info;
+        meshQuad->loadMesh(info, spec);
     }
 }
 
@@ -355,6 +420,86 @@ void MainWindow::drawMark(const Mark &m, const Mark *prev)
     }
 }
 
+void MainWindow::renderFrameInit()
+{
+    checkGl("pre-frame check");
+    
+    glViewport(0, 0, width, height);
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_CULL_FACE);
+    //glCullFace(GL_FRONT);
+
+    // render background atmosphere
+    {
+        const vts::MapCelestialBody &body = map->celestialBody();
+
+        double cameraDistToPlane = std::sqrt(sqr(vts::length(camEye))
+                                             - sqr(body.majorRadius));
+        double dd = (cameraDistToPlane - camNear) / (camFar - camNear);
+        dd = vts::clamp(dd, 0, 1);
+        vts::mat4 vpi = camViewProj.inverse();
+        vts::vec3f corners[4];
+        corners[0] = vts::vec4to3(vpi * vts::vec4(-1, -1, dd, 1), true).cast<float>();
+        corners[1] = vts::vec4to3(vpi * vts::vec4(+1, -1, dd, 1), true).cast<float>();
+        corners[2] = vts::vec4to3(vpi * vts::vec4(-1, +1, dd, 1), true).cast<float>();
+        corners[3] = vts::vec4to3(vpi * vts::vec4(+1, +1, dd, 1), true).cast<float>();
+
+        float radiuses[3]
+            = { (float)body.majorRadius, (float)body.minorRadius,
+                (float)body.atmosphereThickness };
+
+        glDisable(GL_DEPTH_TEST);
+        shaderAtmosphereBack->bind();
+        shaderAtmosphereBack->uniformVec4(0, body.atmosphereColorLow);
+        shaderAtmosphereBack->uniformVec4(1, body.atmosphereColorHigh);
+        shaderAtmosphereBack->uniformVec3(2, radiuses);
+        for (int i = 0; i < 4; i++)
+            shaderAtmosphereBack->uniformVec3(3 + i, (float*)corners[i].data());
+
+        meshQuad->bind();
+        meshQuad->dispatch();
+    }
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+
+    checkGl("frame initialized");
+}
+
+void MainWindow::renderFrameContent()
+{
+    // vts draws
+    {
+        vts::MapDraws &draws = map->draws();
+        for (vts::DrawTask &t : draws.draws)
+            drawVtsTask(t);
+        glBindVertexArray(0);
+    }
+
+    // marks draws
+    {
+        shaderColor->bind();
+        meshMark->bind();
+        Mark *prevMark = nullptr;
+        for (Mark &mark : marks)
+        {
+            drawMark(mark, prevMark);
+            prevMark = &mark;
+        }
+        glBindVertexArray(0);
+    }
+
+    checkGl("frame content rendered");
+}
+
+void MainWindow::renderFrameFinish()
+{
+    checkGl("frame finalized");
+}
+
 void MainWindow::loadTexture(vts::ResourceInfo &info,
                              const vts::GpuTextureSpec &spec)
 {
@@ -373,14 +518,12 @@ void MainWindow::loadMesh(vts::ResourceInfo &info,
 
 void MainWindow::run()
 {
-    width = 0;
-    height = 0;
     glfwGetFramebufferSize(window, &width, &height);
     map->setWindowSize(width, height);
 
     // this application uses separate thread for resource processing,
     //   therefore it is safe to process as many resources as possible
-    //   in single tick without causing any lag spikes
+    //   in single dataTick without causing any lag spikes
     map->options().maxResourceProcessesPerTick = -1;
 
     setMapConfigPath(appOptions.paths[0]);
@@ -398,6 +541,12 @@ void MainWindow::run()
                 &MainWindow::cameraOverrideParam, this,
                 std::placeholders::_1, std::placeholders::_2,
                 std::placeholders::_3, std::placeholders::_4);
+    map->callbacks().cameraOverrideEye
+            = std::bind(&MainWindow::cameraOverrideEye,
+                                this, std::placeholders::_1);
+    map->callbacks().cameraOverrideTarget
+            = std::bind(&MainWindow::cameraOverrideTarget,
+                                this, std::placeholders::_1);
     map->renderInitialize();
     gui.initialize(this);
 
@@ -432,6 +581,7 @@ void MainWindow::run()
             map->setWindowSize(width, height);
             map->renderTickPrepare();
             map->renderTickRender(); // calls camera overrides
+            camViewProj = camProj * camView;
         }
         catch (const vts::MapConfigException &e)
         {
@@ -445,33 +595,9 @@ void MainWindow::run()
         }
         double timeMapRender = glfwGetTime();
 
-        glViewport(0, 0, width, height);
-        glClearColor(0.2, 0.2, 0.2, 1);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LEQUAL);
-        glEnable(GL_CULL_FACE);
-        //glCullFace(GL_FRONT);
-        checkGl("frame preparation");
-        
-        { // draws
-            camViewProj = camProj * camView;
-            vts::MapDraws &draws = map->draws();
-            for (vts::DrawTask &t : draws.draws)
-                drawVtsTask(t);
-            shaderColor->bind();
-            meshMark->bind();
-            Mark *prevMark = nullptr;
-            for (Mark &mark : marks)
-            {
-                drawMark(mark, prevMark);
-                prevMark = &mark;
-            }
-            glBindVertexArray(0);
-        }
-        checkGl("frame draws");
+        renderFrameInit();
+        renderFrameContent();
+        renderFrameFinish();
 
         double timeAppRender = glfwGetTime();
 
@@ -540,6 +666,18 @@ void MainWindow::cameraOverrideParam(double &, double &,
 {
     camNear = near;
     camFar = far;
+}
+
+void MainWindow::cameraOverrideEye(double *eye)
+{
+    for (int i = 0; i < 3; i++)
+        camEye(i) = eye[i];
+}
+
+void MainWindow::cameraOverrideTarget(double *target)
+{
+    for (int i = 0; i < 3; i++)
+        camTarget(i) = target[i];
 }
 
 void MainWindow::cameraOverrideView(double *mat)

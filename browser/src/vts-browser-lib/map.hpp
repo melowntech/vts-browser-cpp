@@ -33,6 +33,7 @@
 #include <vts-libs/vts/nodeinfo.hpp>
 #include <dbglog/dbglog.hpp>
 
+#include "include/vts-browser/celestial.hpp"
 #include "include/vts-browser/statistics.hpp"
 #include "include/vts-browser/options.hpp"
 #include "include/vts-browser/search.hpp"
@@ -145,6 +146,7 @@ public:
     MapOptions options;
     MapDraws draws;
     MapCredits credits;
+    MapCelestialBody celestialBody;
     std::shared_ptr<MapConfig> mapConfig;
     std::shared_ptr<CoordManip> convertor;
     std::string mapConfigPath;

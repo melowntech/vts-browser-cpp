@@ -117,6 +117,7 @@ void MapImpl::purgeMapConfig()
     navigation.autoRotation = 0;
     navigation.lastPositionAltitudeShift.reset();
     navigation.positionAltitudeResetHeight.reset();
+    celestialBody = MapCelestialBody();
     purgeViewCache();
 }
 
@@ -972,6 +973,7 @@ bool MapImpl::prerequisitesCheck()
     renderer.traverseRoot->priority = std::numeric_limits<double>::infinity();
     renderer.credits.merge(mapConfig.get());
     initializeNavigation();
+    mapConfig->initializeCelestialBody();
 
     LOG(info3) << "Map config ready";
     initialized = true;

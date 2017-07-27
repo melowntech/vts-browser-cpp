@@ -34,6 +34,11 @@
 namespace vts
 {
 
+MapCelestialBody::MapCelestialBody() : name("undefined"),
+    majorRadius(0), minorRadius(0), atmosphereThickness(0),
+    atmosphereColorLow{0,0,0,0}, atmosphereColorHigh{0,0,0,0}
+{}
+
 MapConfig::SurfaceInfo::SurfaceInfo(const SurfaceCommonConfig &surface,
                          const std::string &parentPath)
     : SurfaceCommonConfig(surface)
@@ -346,6 +351,30 @@ bool MapConfig::isEarth() const
     auto r = n.srsDef.reference();
     auto a = r.GetSemiMajor();
     return std::abs(a - 6378137) < 50000;
+}
+
+void MapConfig::initializeCelestialBody() const
+{
+    map->celestialBody = MapCelestialBody();
+    auto n = srs(referenceFrame.model.physicalSrs);
+    auto r = n.srsDef.reference();
+    map->celestialBody.majorRadius = r.GetSemiMajor();
+    map->celestialBody.minorRadius = r.GetSemiMinor();
+    if (isEarth())
+    {
+        map->celestialBody.name = "Earth";
+        map->celestialBody.atmosphereThickness = 50000;
+        static auto lowColor = { 216.0/255.0, 232.0/255.0, 243.0/255.0, 1.0 };
+        static auto highColor = { 72.0/255.0, 154.0/255.0, 255.0/255.0, 1.0 };
+        std::copy(lowColor.begin(), lowColor.end(),
+                  map->celestialBody.atmosphereColorLow);
+        std::copy(highColor.begin(), highColor.end(),
+                  map->celestialBody.atmosphereColorHigh);
+    }
+    else
+    {
+        map->celestialBody.name = "unknown";
+    }
 }
 
 } // namespace vts

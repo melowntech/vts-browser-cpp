@@ -36,6 +36,7 @@ extern bool anisotropicFilteringAvailable;
 extern bool openglDebugAvailable;
 
 void checkGl(const char *name = nullptr);
+void checkGlFramebuffer();
 
 void initializeGpuContext();
 

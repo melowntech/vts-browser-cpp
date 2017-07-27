@@ -16,6 +16,8 @@ set(DATA_LIST
 	data/shaders/gui.vert.glsl
 	data/shaders/texture.frag.glsl
 	data/shaders/texture.vert.glsl
+	data/shaders/blit.frag.glsl
+	data/shaders/blit.vert.glsl
 	data/textures/gwen.png
 	data/textures/helper.jpg
 )

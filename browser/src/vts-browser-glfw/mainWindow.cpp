@@ -95,13 +95,14 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
     camNear(0), camFar(0),
     mousePrevX(0), mousePrevY(0),
     dblClickInitTime(0), dblClickState(0),
-    width(0), height(0),
+    width(0), height(0), widthPrev(0), heightPrev(0),
+    frameBufferId(0), depthTexId(0), colorTexId(0),
     map(map), window(nullptr)
 {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_STENCIL_BITS, 0);
-    glfwWindowHint(GLFW_DEPTH_BITS, 32);
+    glfwWindowHint(GLFW_DEPTH_BITS, 0);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifndef NDEBUG
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
@@ -202,7 +203,28 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
             std::string(frag.data(), frag.size()));
         std::vector<vts::uint32> &uls = shaderAtmosphereFront->uniformLocations;
         GLuint id = shaderAtmosphereFront->id;
-        uls.push_back(glGetUniformLocation(id, "uniColor"));
+        uls.push_back(glGetUniformLocation(id, "uniColorLow"));
+        uls.push_back(glGetUniformLocation(id, "uniColorHigh"));
+        uls.push_back(glGetUniformLocation(id, "uniBodyRadiuses"));
+        glUseProgram(id);
+        glUniform1i(glGetUniformLocation(id, "texDepth"), 6);
+        glUniform1i(glGetUniformLocation(id, "texColor"), 7);
+    }
+
+    // load shader blit
+    {
+        shaderBlit = std::make_shared<GpuShaderImpl>();
+        vts::Buffer vert = readInternalMemoryBuffer(
+                    "data/shaders/blit.vert.glsl");
+        vts::Buffer frag = readInternalMemoryBuffer(
+                    "data/shaders/blit.frag.glsl");
+        shaderBlit->loadShaders(
+            std::string(vert.data(), vert.size()),
+            std::string(frag.data(), frag.size()));
+        //std::vector<vts::uint32> &uls = shaderBlit->uniformLocations;
+        GLuint id = shaderBlit->id;
+        glUseProgram(id);
+        glUniform1i(glGetUniformLocation(id, "texColor"), 7);
     }
 
     // load mesh mark
@@ -375,7 +397,6 @@ void MainWindow::drawVtsTask(vts::DrawTask &t)
         {
             shaderTexture->uniform(3, 1);
             glActiveTexture(GL_TEXTURE0 + 1);
-            
             ((GpuTextureImpl*)t.texMask.get())->bind();
             glActiveTexture(GL_TEXTURE0 + 0);
         }
@@ -423,14 +444,58 @@ void MainWindow::drawMark(const Mark &m, const Mark *prev)
 void MainWindow::renderFrameInit()
 {
     checkGl("pre-frame check");
-    
+
+    // update framebuffer texture
+    {
+        if (width != widthPrev || height != heightPrev)
+        {
+            widthPrev = width;
+            heightPrev = height;
+
+            // depth texture
+            glActiveTexture(GL_TEXTURE0 + 6);
+            glDeleteTextures(1, &depthTexId);
+            glGenTextures(1, &depthTexId);
+            glBindTexture(GL_TEXTURE_2D, depthTexId);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height,
+                         0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+            // color texture
+            glActiveTexture(GL_TEXTURE0 + 7);
+            glDeleteTextures(1, &colorTexId);
+            glGenTextures(1, &colorTexId);
+            glBindTexture(GL_TEXTURE_2D, colorTexId);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height,
+                         0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+            glActiveTexture(GL_TEXTURE0);
+
+            // frame buffer
+            glDeleteFramebuffers(1, &frameBufferId);
+            glGenFramebuffers(1, &frameBufferId);
+            glBindFramebuffer(GL_FRAMEBUFFER, frameBufferId);
+            glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                                 depthTexId, 0);
+            glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                 colorTexId, 0);
+
+            checkGl("update frame buffer");
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, frameBufferId);
+        checkGlFramebuffer();
+    }
+
+    // initialize opengl
     glViewport(0, 0, width, height);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    glEnable(GL_CULL_FACE);
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_CULL_FACE);
-    //glCullFace(GL_FRONT);
 
     // render background atmosphere
     {
@@ -451,7 +516,6 @@ void MainWindow::renderFrameInit()
             = { (float)body.majorRadius, (float)body.minorRadius,
                 (float)body.atmosphereThickness };
 
-        glDisable(GL_DEPTH_TEST);
         shaderAtmosphereBack->bind();
         shaderAtmosphereBack->uniformVec4(0, body.atmosphereColorLow);
         shaderAtmosphereBack->uniformVec4(1, body.atmosphereColorHigh);
@@ -462,9 +526,11 @@ void MainWindow::renderFrameInit()
         meshQuad->bind();
         meshQuad->dispatch();
     }
-
+    
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     checkGl("frame initialized");
 }
@@ -497,6 +563,32 @@ void MainWindow::renderFrameContent()
 
 void MainWindow::renderFrameFinish()
 {
+    // render the framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    shaderBlit->bind();
+    meshQuad->bind();
+    meshQuad->dispatch();
+
+    // render front atmosphere
+    glEnable(GL_BLEND);
+    {
+        const vts::MapCelestialBody &body = map->celestialBody();
+
+        float radiuses[3]
+            = { (float)body.majorRadius, (float)body.minorRadius,
+                (float)body.atmosphereThickness };
+
+        shaderAtmosphereFront->bind();
+        shaderAtmosphereFront->uniformVec4(0, body.atmosphereColorLow);
+        shaderAtmosphereFront->uniformVec4(1, body.atmosphereColorHigh);
+        shaderAtmosphereFront->uniformVec3(2, radiuses);
+
+        meshQuad->bind();
+        meshQuad->dispatch();
+    }
+
     checkGl("frame finalized");
 }
 

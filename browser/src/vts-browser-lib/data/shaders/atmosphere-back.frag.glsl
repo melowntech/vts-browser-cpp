@@ -16,7 +16,10 @@ void main()
 			mix(uniCorners[2], uniCorners[3], varUv.x),
 			varUv.y);
 	float altitude = (length(corner) - uniBodyRadiuses[0]) / uniBodyRadiuses[2];
-	altitude = clamp(altitude, 0, 1);
-	outColor = mix(uniColorLow, uniColorHigh, altitude);
+	altitude = pow(clamp(altitude, 0, 1), 1.5) * 2;
+	if (altitude < 1)
+		outColor = mix(uniColorLow, uniColorHigh, altitude);
+	else
+		outColor = mix(uniColorHigh, vec4(0, 0, 0, 0), altitude - 1);
 }
 

@@ -127,6 +127,7 @@ public:
     std::shared_ptr<GpuShaderImpl> shaderColor;
     std::shared_ptr<GpuShaderImpl> shaderAtmosphereBack;
     std::shared_ptr<GpuShaderImpl> shaderAtmosphereFront;
+    std::shared_ptr<GpuShaderImpl> shaderBlit;
     std::shared_ptr<GpuMeshImpl> meshMark;
     std::shared_ptr<GpuMeshImpl> meshLine;
     std::shared_ptr<GpuMeshImpl> meshQuad;
@@ -146,6 +147,10 @@ public:
     double dblClickInitTime;
     int dblClickState;
     int width, height;
+    int widthPrev, heightPrev;
+    GLuint frameBufferId;
+    GLuint depthTexId;
+    GLuint colorTexId;
     vts::Map *const map;
     GLFWwindow *window;
 };

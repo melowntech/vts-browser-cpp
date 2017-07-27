@@ -73,6 +73,7 @@ MapOptions::MapOptions() :
     enableSearchResultsFilter(true),
     enableRuntimeResourceExpiration(false),
     enableArbitrarySriRequests(true),
+    enablePositionTiltLimit(true),
     debugDetachedCamera(false),
     debugDisableMeta5(false),
     debugDisableVirtualSurfaces(false),

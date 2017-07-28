@@ -173,11 +173,7 @@ public:
         std::shared_ptr<Cache> cache;
         std::shared_ptr<AuthConfig> auth;
         std::shared_ptr<Fetcher> fetcher;
-#ifdef NDEBUG
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
-#else
-        std::map<std::string, std::shared_ptr<Resource>> resources;
-#endif
         std::vector<std::shared_ptr<Resource>> resourcesCopy;
         std::deque<std::weak_ptr<SearchTask>> searchTasks;
         std::deque<std::shared_ptr<SriIndex>> sriTasks;

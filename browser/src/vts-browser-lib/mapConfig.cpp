@@ -44,22 +44,16 @@ MapConfig::SurfaceInfo::SurfaceInfo(const SurfaceCommonConfig &surface,
     urlNav.parse(MapConfig::convertPath(urls3d->nav, parentPath));
 }
 
-MapConfig::BoundInfo::BoundInfo(const ExternalBoundLayer &ebl,
+MapConfig::BoundInfo::BoundInfo(const vtslibs::registry::BoundLayer &bl,
                                 const std::string &url)
-    : BoundLayer(ebl)
+    : BoundLayer(bl)
 {
-    // prepare url templates
     urlExtTex.parse(MapConfig::convertPath(this->url, url));
     if (metaUrl)
     {
         urlMeta.parse(MapConfig::convertPath(*metaUrl, url));
         urlMask.parse(MapConfig::convertPath(*maskUrl, url));
     }
-
-    // merge credits
-    for (auto &c : credits)
-        if (c.second)
-            ebl.map->renderer.credits.merge(*c.second);
 }
 
 MapConfig::SurfaceStackItem::SurfaceStackItem() : alien(false)
@@ -164,20 +158,32 @@ MapConfig::BoundInfo *MapConfig::getBoundInfo(const std::string &id)
 
     const vtslibs::registry::BoundLayer *bl
             = boundLayers.get(id, std::nothrow);
-    if (bl && bl->external())
+    if (bl)
     {
-        std::string url = convertPath(bl->url, name);
-        std::shared_ptr<ExternalBoundLayer> r
-                = map->getExternalBoundLayer(url);
-        switch (map->getResourceValidity(r))
+        if (bl->external())
         {
-        case Validity::Valid:
-            break;
-        case Validity::Indeterminate:
-        case Validity::Invalid:
-            return nullptr; // todo should behave differently when invalid
+            std::string url = convertPath(bl->url, name);
+            std::shared_ptr<ExternalBoundLayer> r
+                    = map->getExternalBoundLayer(url);
+            switch (map->getResourceValidity(r))
+            {
+            case Validity::Valid:
+                break;
+            case Validity::Indeterminate:
+            case Validity::Invalid:
+                return nullptr; // todo should behave differently when invalid
+            }
+            boundInfos[bl->id] = std::make_shared<BoundInfo>(*r, url);
+
+            // merge credits
+            for (auto &c : r->credits)
+                if (c.second)
+                    map->renderer.credits.merge(*c.second);
         }
-        boundInfos[bl->id] = std::make_shared<BoundInfo>(*r, url);
+        else
+        {
+            boundInfos[bl->id] = std::make_shared<BoundInfo>(*bl, name);
+        }
     }
     return nullptr;
 }

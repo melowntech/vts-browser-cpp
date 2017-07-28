@@ -998,10 +998,12 @@ void MapImpl::renderTickPrepare()
 
 void MapImpl::renderTickRender()
 {
-    if (!initialized || renderer.windowWidth == 0 || renderer.windowHeight == 0)
+    draws.draws.clear();
+
+    if (!initialized || mapConfig->surfaceStack.empty()
+            || renderer.windowWidth == 0 || renderer.windowHeight == 0)
         return;
 
-    draws.draws.clear();
     updateCamera();
     emptyTraverseQueue();
     renderer.traverseQueue.emplace(renderer.traverseRoot, false);

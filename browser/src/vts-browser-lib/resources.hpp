@@ -42,6 +42,10 @@
 #include "include/vts-browser/math.hpp"
 #include "include/vts-browser/fetcher.hpp"
 
+#ifndef NDEBUG
+    #define unordered_map map
+#endif
+
 namespace vts
 {
 
@@ -128,7 +132,8 @@ public:
     class BoundInfo : public vtslibs::registry::BoundLayer
     {
     public:
-        BoundInfo(const ExternalBoundLayer &ebl, const std::string &url);
+        BoundInfo(const vtslibs::registry::BoundLayer &bl,
+                  const std::string &url);
     
         vtslibs::vts::UrlTemplate urlExtTex;
         vtslibs::vts::UrlTemplate urlMeta;

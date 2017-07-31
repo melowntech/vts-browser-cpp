@@ -186,7 +186,9 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         uls.push_back(glGetUniformLocation(id, "uniColorHigh"));
         uls.push_back(glGetUniformLocation(id, "uniBodyRadiuses"));
         uls.push_back(glGetUniformLocation(id, "uniDepths"));
+        uls.push_back(glGetUniformLocation(id, "uniVpInv"));
         uls.push_back(glGetUniformLocation(id, "uniCameraPosition"));
+        uls.push_back(glGetUniformLocation(id, "uniCameraPosNorm"));
         uls.push_back(glGetUniformLocation(id, "uniCameraDirections[0]"));
         uls.push_back(glGetUniformLocation(id, "uniCameraDirections[1]"));
         uls.push_back(glGetUniformLocation(id, "uniCameraDirections[2]"));
@@ -533,20 +535,15 @@ void MainWindow::renderFrameFinish()
         glEnable(GL_BLEND);
 
         vts::mat4 inv = camViewProj.inverse();
+        //vts::mat4f invf = inv.cast<float>();
         vts::vec3 camPos = vts::vec4to3(inv * vts::vec4(0, 0, -1, 1), true);
-        double camDist = vts::length(camPos);
-        double radius = body.majorRadius + body.atmosphereThickness;
-        float rayStart = std::max(0.0, camDist - radius);
-        float rayEnd = camDist + radius;
-        float rayStep = 5000;
-        assert(rayEnd > rayStart);
-        assert(rayStep > 0);
+        vts::vec3f cameraPosition = camPos.cast<float>();
+        vts::vec3f cameraPosNorm = vts::normalize(camPos).cast<float>();
 
         float radiuses[4]
             = { (float)body.majorRadius, (float)body.minorRadius,
-                (float)body.atmosphereThickness, rayStep };
-        float depths[4] = { (float)camNear, (float)camFar, rayStart, rayEnd};
-        vts::vec3f cameraPosition = camPos.cast<float>();
+                (float)body.atmosphereThickness };
+        float depths[4] = { (float)camNear, (float)camFar , 0.f, 150000.f };
 
         vts::vec3 near = vts::vec4to3(inv * vts::vec4(0, 0, -1, 1), true);
         vts::vec3 fars[4] = {
@@ -561,11 +558,13 @@ void MainWindow::renderFrameFinish()
         shaderAtmosphere->uniformVec4(1, body.atmosphereColorHigh);
         shaderAtmosphere->uniformVec4(2, radiuses);
         shaderAtmosphere->uniformVec4(3, depths);
-        shaderAtmosphere->uniformVec3(4, (float*)cameraPosition.data());
+        //shaderAtmosphere->uniformMat4(4, (float*)invf.data());
+        shaderAtmosphere->uniformVec3(5, (float*)cameraPosition.data());
+        shaderAtmosphere->uniformVec3(6, (float*)cameraPosNorm.data());
         for (int i = 0; i < 4; i++)
         {
             vts::vec3f dir = vts::normalize(fars[i] - near).cast<float>();
-            shaderAtmosphere->uniformVec3(5 + i, (float*)dir.data());
+            shaderAtmosphere->uniformVec3(7 + i, (float*)dir.data());
         }
 
         //float viewport[4] = { 0.f, 0.f, (float)width, (float)height };

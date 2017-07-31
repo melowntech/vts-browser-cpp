@@ -125,8 +125,7 @@ public:
     const AppOptions appOptions;
     std::shared_ptr<GpuShaderImpl> shaderTexture;
     std::shared_ptr<GpuShaderImpl> shaderColor;
-    std::shared_ptr<GpuShaderImpl> shaderAtmosphereBack;
-    std::shared_ptr<GpuShaderImpl> shaderAtmosphereFront;
+    std::shared_ptr<GpuShaderImpl> shaderAtmosphere;
     std::shared_ptr<GpuShaderImpl> shaderBlit;
     std::shared_ptr<GpuMeshImpl> meshMark;
     std::shared_ptr<GpuMeshImpl> meshLine;
@@ -135,8 +134,6 @@ public:
     vts::mat4 camView;
     vts::mat4 camProj;
     vts::mat4 camViewProj;
-    vts::vec3 camEye;
-    vts::vec3 camTarget;
     double camNear, camFar;
     double mousePrevX, mousePrevY;
     double timingMapProcess;

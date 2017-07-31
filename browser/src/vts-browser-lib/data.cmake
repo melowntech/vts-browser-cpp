@@ -6,10 +6,8 @@ set(DATA_LIST
 	data/meshes/line.obj
 	data/meshes/quad.obj
 	data/meshes/sphere.obj
-	data/shaders/atmosphere-back.frag.glsl
-	data/shaders/atmosphere-back.vert.glsl
-	data/shaders/atmosphere-front.frag.glsl
-	data/shaders/atmosphere-front.vert.glsl
+	data/shaders/atmosphere.frag.glsl
+	data/shaders/atmosphere.vert.glsl
 	data/shaders/color.frag.glsl
 	data/shaders/color.vert.glsl
 	data/shaders/gui.frag.glsl

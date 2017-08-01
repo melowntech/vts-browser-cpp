@@ -73,7 +73,7 @@ void DataThread::run()
         map->dataTick();
         double timeFrameEnd = glfwGetTime();
         *timing = timeFrameEnd - timeFrameStart;
-        usleep(30000);
+        usleep(50000);
     }
     map->dataFinalize();
 }

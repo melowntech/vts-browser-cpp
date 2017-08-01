@@ -32,6 +32,8 @@
 namespace vts
 {
 
+enum class NavigationMode;
+
 class VTS_API MapStatistics
 {
 public:
@@ -57,7 +59,8 @@ public:
     uint32 resourcesProcessLoaded;
     uint32 resourcesReleased;
     uint32 resourcesFailed;
-    uint32 frameIndex;
+    uint32 renderTicks;
+    uint32 dataTicks;
 
     // current statistics
 
@@ -68,8 +71,10 @@ public:
     uint32 currentResourcePreparing;
     uint32 desiredNavigationLod;
     uint32 usedNavigationlod;
-	uint32 currentNodeMetaUpdates;
-	uint32 currentNodeDrawsUpdates;
+    uint32 currentNodeMetaUpdates;
+    uint32 currentNodeDrawsUpdates;
+
+    NavigationMode currentNavigationMode;
 
     // debug
 

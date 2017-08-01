@@ -37,7 +37,7 @@ namespace vts
 
 enum class NavigationType;
 
-enum class NavigationGeographicMode
+enum class NavigationMode
 {
     // constricts the viewer only to limited range of latitudes
     // generally, this mode is easier to use
@@ -49,8 +49,12 @@ enum class NavigationGeographicMode
     // starts in the azimuthal mode and switches to the free mode
     //   when the viewer gets too close to a pole,
     //   or when he/she changes camera orientation
-    // it will switch back to azimuthal mode when the north-up button is pressed
+    // it can be switched back to azimuthal mode
+    //   eg. when the north-up button is pressed
     Dynamic,
+
+    // actual navigation mode depends on zoom level
+    Seamless,
 };
 
 enum class TraverseMode
@@ -108,16 +112,18 @@ public:
     double maxTexelToPixelScale;
 
     // lower and upper limit for view-extent
-    double positionViewExtentMin;
-    double positionViewExtentMax;
+    // expressed as multiplicative factor of planet major radius
+    double viewExtentLimitScaleMin;
+    double viewExtentLimitScaleMax;
 
     // view-extent thresholds at which the tilt limit starts taking effect
-    double positionTiltViewExtentThresholdLow;
-    double positionTiltViewExtentThresholdHigh;
+    // expressed as multiplicative factor of planet major radius
+    double viewExtentThresholdScaleLow;
+    double viewExtentThresholdScaleHigh;
 
     // the actual angle (270 - 360) limit for the tilt
-    double positionTiltLimitLow;
-    double positionTiltLimitHigh;
+    double tiltLimitAngleLow;
+    double tiltLimitAngleHigh;
 
     // multiplier that is applied to mouse input for the respective actions
     double cameraSensitivityPan;
@@ -168,7 +174,7 @@ public:
     uint32 fetchFirstRetryTimeOffset;
 
     NavigationType navigationType;
-    NavigationGeographicMode geographicNavMode;
+    NavigationMode navigationMode;
     TraverseMode traverseMode;
 
     // to improve search results relevance, the results are further
@@ -187,9 +193,13 @@ public:
     // setting this option to false will allow the use of SRI
     //   only when the mapconfig changes
     bool enableArbitrarySriRequests;
-    
+
     // setting this to false will disable the tilt limit for the camera
-    bool enablePositionTiltLimit;
+    bool enableCameraTiltLimit;
+
+    // setting this to false will disable the camera reorientation towards norh
+    //   when it is zooming out
+    bool enableCameraYawToNorthOnZoomOut;
 
     bool debugDetachedCamera;
     bool debugDisableMeta5;

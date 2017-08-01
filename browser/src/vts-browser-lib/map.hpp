@@ -146,7 +146,7 @@ public:
     MapOptions options;
     MapDraws draws;
     MapCredits credits;
-    MapCelestialBody celestialBody;
+    MapCelestialBody body;
     std::shared_ptr<MapConfig> mapConfig;
     std::shared_ptr<CoordManip> convertor;
     std::string mapConfigPath;
@@ -163,7 +163,7 @@ public:
         double targetViewExtent;
         boost::optional<double> lastPositionAltitudeShift;
         boost::optional<double> positionAltitudeResetHeight;
-        NavigationGeographicMode geographicMode;
+        NavigationMode mode;
         NavigationType type;
 
         Navigation();
@@ -183,6 +183,7 @@ public:
         std::string authPath;
         std::string sriPath;
         std::atomic_uint downloads;
+        uint32 tickIndex;
         
         Resources();
     } resources;
@@ -203,6 +204,7 @@ public:
         vec3 focusPosPhys;
         uint32 windowWidth;
         uint32 windowHeight;
+        uint32 tickIndex;
         
         Renderer();
     } renderer;

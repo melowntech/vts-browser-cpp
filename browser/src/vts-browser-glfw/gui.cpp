@@ -377,7 +377,7 @@ public:
             float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
             nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
             char buffer[256];
-            
+
             // camera control sensitivity
             nk_label(&ctx, "Mouse sensitivity:", NK_TEXT_LEFT);
             nk_checkbox_label(&ctx, "", &optSensitivityDetails);
@@ -430,7 +430,7 @@ public:
                 }
                 nk_label(&ctx, "", NK_TEXT_LEFT);
             }
-            
+
             // navigation type
             {
                 static const char *names[] = {
@@ -455,7 +455,7 @@ public:
                 }
                 nk_label(&ctx, "", NK_TEXT_LEFT);
             }
-            
+
             // navigation mode
             {
                 static const char *names[] = {
@@ -465,7 +465,7 @@ public:
                 };
                 nk_label(&ctx, "Geographic:", NK_TEXT_LEFT);
                 if (nk_combo_begin_label(&ctx,
-                                 names[(int)o.geographicNavMode],
+                                 names[(int)o.navigationMode],
                                  nk_vec2(nk_widget_width(&ctx), 200)))
                 {
                     nk_layout_row_dynamic(&ctx, 16, 1);
@@ -473,14 +473,14 @@ public:
                          / sizeof(names[0]); i++)
                     {
                         if (nk_combo_item_label(&ctx, names[i], NK_TEXT_LEFT))
-                            o.geographicNavMode
-                                    = (vts::NavigationGeographicMode)i;
+                            o.navigationMode
+                                    = (vts::NavigationMode)i;
                     }
                     nk_combo_end(&ctx);
                 }
                 nk_label(&ctx, "", NK_TEXT_LEFT);
             }
-            
+
             // traverse mode
             {
                 static const char *names[] = {
@@ -503,67 +503,46 @@ public:
                 }
                 nk_label(&ctx, "", NK_TEXT_LEFT);
             }
-            
+
             // navigation max view extent multiplier
-            nk_label(&ctx, "View ext. mult.:", NK_TEXT_LEFT);
+            nk_label(&ctx, "Piha zoom:", NK_TEXT_LEFT);
             o.navigationMaxViewExtentMult = nk_slide_float(&ctx,
                     1.002, o.navigationMaxViewExtentMult, 1.2, 0.002);
             sprintf(buffer, "%5.3f", o.navigationMaxViewExtentMult);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-            
+
             // navigation max position change
-            nk_label(&ctx, "Position change:", NK_TEXT_LEFT);
+            nk_label(&ctx, "Piha move:", NK_TEXT_LEFT);
             o.navigationMaxPositionChange = nk_slide_float(&ctx,
                     0.002, o.navigationMaxPositionChange, 0.2, 0.002);
             sprintf(buffer, "%5.3f", o.navigationMaxPositionChange);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-            
+
             // maxTexelToPixelScale
             nk_label(&ctx, "Texel to pixel:", NK_TEXT_LEFT);
             o.maxTexelToPixelScale = nk_slide_float(&ctx,
                     1, o.maxTexelToPixelScale, 5, 0.01);
             sprintf(buffer, "%3.1f", o.maxTexelToPixelScale);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-            
-            // maxResourcesMemory
-            nk_label(&ctx, "Max memory:", NK_TEXT_LEFT);
-            o.maxResourcesMemory = 1024 * 1024 * (vts::uint64)nk_slide_int(&ctx,
-                    128, o.maxResourcesMemory / 1024 / 1024, 2048, 32);
-            sprintf(buffer, "%3d", (int)(o.maxResourcesMemory / 1024 / 1024));
-            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-            
-            // maxConcurrentDownloads
-            nk_label(&ctx, "Max downloads:", NK_TEXT_LEFT);
-            o.maxConcurrentDownloads = nk_slide_int(&ctx,
-                    1, o.maxConcurrentDownloads, 50, 1);
-            sprintf(buffer, "%3d", o.maxConcurrentDownloads);
-            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
-            // maxNodeMetaUpdatesPerTick
-            nk_label(&ctx, "Max meta node updates:", NK_TEXT_LEFT);
-            o.maxNodeMetaUpdatesPerTick = nk_slide_int(&ctx,
-                    1, o.maxNodeMetaUpdatesPerTick, 50, 1);
-            sprintf(buffer, "%3d", o.maxNodeMetaUpdatesPerTick);
-            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-            
-            // maxNodeDrawsUpdatesPerTick
-            nk_label(&ctx, "Max draw node updates:", NK_TEXT_LEFT);
-            o.maxNodeDrawsUpdatesPerTick = nk_slide_int(&ctx,
-                    1, o.maxNodeDrawsUpdatesPerTick, 50, 1);
-            sprintf(buffer, "%3d", o.maxNodeDrawsUpdatesPerTick);
-            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-            
             // navigation samples per view extent
             nk_label(&ctx, "Nav. samples:", NK_TEXT_LEFT);
             o.navigationSamplesPerViewExtent = nk_slide_int(&ctx,
                     1, o.navigationSamplesPerViewExtent, 16, 1);
             sprintf(buffer, "%3d", o.navigationSamplesPerViewExtent);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-            
+
+            // maxResourcesMemory
+            nk_label(&ctx, "Max memory:", NK_TEXT_LEFT);
+            o.maxResourcesMemory = 1024 * 1024 * (vts::uint64)nk_slide_int(&ctx,
+                    128, o.maxResourcesMemory / 1024 / 1024, 2048, 32);
+            sprintf(buffer, "%3d", (int)(o.maxResourcesMemory / 1024 / 1024));
+            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
             // enable camera tilt limit
             nk_label(&ctx, "Enable:", NK_TEXT_LEFT);
-            o.enablePositionTiltLimit = nk_check_label(&ctx, "tilt limit",
-                                               o.enablePositionTiltLimit);
+            o.enableCameraTiltLimit = nk_check_label(&ctx, "tilt limit",
+                                               o.enableCameraTiltLimit);
             nk_label(&ctx, "", NK_TEXT_LEFT);
 
             // render atmosphere
@@ -571,55 +550,55 @@ public:
             a.renderAtmosphere = nk_check_label(&ctx, "atmosphere",
                                                a.renderAtmosphere);
             nk_label(&ctx, "", NK_TEXT_LEFT);
-            
+
             // render mesh wire boxes
             nk_label(&ctx, "", NK_TEXT_LEFT);
             o.debugRenderMeshBoxes = nk_check_label(&ctx, "mesh boxes",
                                                o.debugRenderMeshBoxes);
             nk_label(&ctx, "", NK_TEXT_LEFT);
-            
+
             // render tile corners
             nk_label(&ctx, "", NK_TEXT_LEFT);
             o.debugRenderTileBoxes = nk_check_label(&ctx, "tile boxes",
                                                 o.debugRenderTileBoxes);
             nk_label(&ctx, "", NK_TEXT_LEFT);
-            
+
             // render surrogates
             nk_label(&ctx, "", NK_TEXT_LEFT);
             o.debugRenderSurrogates = nk_check_label(&ctx, "surrogates",
                                                 o.debugRenderSurrogates);
             nk_label(&ctx, "", NK_TEXT_LEFT);
-            
+
             // render objective position
             nk_label(&ctx, "", NK_TEXT_LEFT);
             o.debugRenderObjectPosition = nk_check_label(&ctx, "object. pos.",
                                                 o.debugRenderObjectPosition);
             nk_label(&ctx, "", NK_TEXT_LEFT);
-            
+
             // render target position
             nk_label(&ctx, "", NK_TEXT_LEFT);
             o.debugRenderTargetPosition = nk_check_label(&ctx, "target. pos.",
                                                 o.debugRenderTargetPosition);
             nk_label(&ctx, "", NK_TEXT_LEFT);
-            
+
             // render altitude shift corners
             nk_label(&ctx, "", NK_TEXT_LEFT);
             o.debugRenderAltitudeShiftCorners = nk_check_label(&ctx,
                 "alt. shift corns.", o.debugRenderAltitudeShiftCorners);
             nk_label(&ctx, "", NK_TEXT_LEFT);
-            
+
             // render no meshes
             nk_label(&ctx, "", NK_TEXT_LEFT);
             o.debugRenderNoMeshes = nk_check_label(&ctx,
                 "no meshes", o.debugRenderNoMeshes);
             nk_label(&ctx, "", NK_TEXT_LEFT);
-            
+
             // detached camera
             nk_label(&ctx, "Debug:", NK_TEXT_LEFT);
             o.debugDetachedCamera = nk_check_label(&ctx, "detached camera",
                                                 o.debugDetachedCamera);
             nk_label(&ctx, "", NK_TEXT_LEFT);
-            
+
             // debug disable meta 5
             {
                 nk_label(&ctx, "", NK_TEXT_LEFT);
@@ -630,7 +609,7 @@ public:
                 if (old != o.debugDisableMeta5)
                     window->map->purgeViewCache();
             }
-            
+
             // debug disable virtual surfaces
             {
                 nk_label(&ctx, "", NK_TEXT_LEFT);
@@ -641,7 +620,7 @@ public:
                 if (old != o.debugDisableVirtualSurfaces)
                     window->map->purgeViewCache();
             }
-            
+
             // print debug info
             nk_label(&ctx, "", NK_TEXT_LEFT);
             if (nk_button_label(&ctx, "Print debug info"))
@@ -658,7 +637,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 650), flags))
+        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 700), flags))
         {
             vts::MapStatistics &s = window->map->statistics();
             float width = nk_window_get_content_region_size(&ctx).x - 15;
@@ -679,7 +658,8 @@ public:
             S("Time gui:", (int)(1000 * window->timingGuiProcess), " ms");
             S("Time frame:", (int)(1000 * window->timingTotalFrame), " ms");
             S("Time data:", (int)(1000 * window->timingDataFrame), " ms");
-            S("Frame index:", s.frameIndex, "");
+            S("Render ticks:", s.renderTicks, "");
+            S("Data ticks:", s.dataTicks, "");
             S("Downloading:", s.currentResourceDownloads, "");
             S("Node meta updates:", s.currentNodeMetaUpdates, "");
             S("Node draw updates:", s.currentNodeDrawsUpdates, "");
@@ -691,6 +671,9 @@ public:
             S("Used Nav. lod:", s.usedNavigationlod, "");
             nk_label(&ctx, "Z range:", NK_TEXT_LEFT);
             sprintf(buffer, "%0.0f - %0.0f", window->camNear, window->camFar);
+            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            nk_label(&ctx, "Nav. mode:", NK_TEXT_LEFT);
+            sprintf(buffer, "%d", (int)s.currentNavigationMode);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             // resources
             S("Res. active:", s.currentResources, "");
@@ -1133,7 +1116,7 @@ public:
 
     void prepareSearch()
     {
-        if (search && window->map->statistics().frameIndex % 120 == 60)
+        if (search && window->map->statistics().renderTicks % 120 == 60)
         {
             try
             {

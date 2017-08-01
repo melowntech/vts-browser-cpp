@@ -71,7 +71,7 @@ inline const vec4 column(const mat4 &m, uint32 index)
 } // namespace
 
 MapImpl::Renderer::Renderer() :
-    windowWidth(0), windowHeight(0)
+    windowWidth(0), windowHeight(0), tickIndex(0)
 {}
 
 void MapImpl::renderInitialize()
@@ -117,7 +117,7 @@ void MapImpl::purgeMapConfig()
     navigation.autoRotation = 0;
     navigation.lastPositionAltitudeShift.reset();
     navigation.positionAltitudeResetHeight.reset();
-    celestialBody = MapCelestialBody();
+    body = MapCelestialBody();
     purgeViewCache();
 }
 
@@ -641,7 +641,7 @@ void MapImpl::traverse(const std::shared_ptr<TraverseNode> &trav, bool loadOnly)
                              MapStatistics::MaxLods-1)]++;
 
     // prepare meta data
-    trav->lastAccessTime = statistics.frameIndex;
+    trav->lastAccessTime = renderer.tickIndex;
     if (!trav->meta && !travDetermineMeta(trav))
         return;
     assert(trav->meta);
@@ -733,11 +733,11 @@ void MapImpl::traverseClearing(const std::shared_ptr<TraverseNode> &trav)
     TileId id = trav->nodeInfo.nodeId();
     if (id.lod == 3)
     {
-        if ((id.y * 8 + id.x) % 64 != statistics.frameIndex % 64)
+        if ((id.y * 8 + id.x) % 64 != renderer.tickIndex % 64)
             return;
     }
     
-    if (trav->lastAccessTime + 5 < statistics.frameIndex)
+    if (trav->lastAccessTime + 5 < renderer.tickIndex)
     {
         trav->clear();
         return;

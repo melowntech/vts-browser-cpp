@@ -25,6 +25,7 @@
  */
 
 #include "include/vts-browser/statistics.hpp"
+#include "include/vts-browser/options.hpp"
 
 namespace vts
 {
@@ -46,7 +47,8 @@ void MapStatistics::resetAll()
     resourcesProcessLoaded = 0;
     resourcesReleased = 0;
     resourcesFailed = 0;
-    frameIndex = 0;
+    renderTicks = 0;
+    dataTicks = 0;
     currentResourceDownloads = 0;
     currentGpuMemUse = 0;
     currentRamMemUse = 0;
@@ -54,6 +56,7 @@ void MapStatistics::resetAll()
     desiredNavigationLod = 0;
     usedNavigationlod = 0;
     currentResourcePreparing = 0;
+    currentNavigationMode = NavigationMode::Azimuthal;
     debug = 0;
 }
 
@@ -68,7 +71,6 @@ void MapStatistics::resetFrame()
         meshesRenderedPerLod[i] = 0;
         metaNodesTraversedPerLod[i] = 0;
     }
-    frameIndex++;
 }
 
 } // namespace vts

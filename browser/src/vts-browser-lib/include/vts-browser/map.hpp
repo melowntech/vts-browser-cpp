@@ -91,9 +91,9 @@ public:
     class MapCallbacks &callbacks();
     class MapStatistics &statistics();
     class MapOptions &options();
-    class MapDraws &draws();
-    class MapCredits &credits();
-    class MapCelestialBody &celestialBody();
+    const class MapDraws &draws();
+    const class MapCredits &credits();
+    const class MapCelestialBody &celestialBody();
 
     void pan(const double value[3]);
     void pan(const double (&value)[3]);

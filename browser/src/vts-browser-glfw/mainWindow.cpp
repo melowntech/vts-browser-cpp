@@ -377,7 +377,7 @@ void MainWindow::keyboardUnicodeCallback(unsigned int)
     // do nothing
 }
 
-void MainWindow::drawVtsTask(vts::DrawTask &t)
+void MainWindow::drawVtsTask(const vts::DrawTask &t)
 {
     if (t.texColor)
     {
@@ -498,8 +498,8 @@ void MainWindow::renderFrame()
 
     // vts draws
     {
-        vts::MapDraws &draws = map->draws();
-        for (vts::DrawTask &t : draws.draws)
+        const vts::MapDraws &draws = map->draws();
+        for (const vts::DrawTask &t : draws.draws)
             drawVtsTask(t);
         glBindVertexArray(0);
     }
@@ -682,7 +682,7 @@ void MainWindow::run()
         gui.render(width, height);
         double timeGui = glfwGetTime();
 
-        if (map->statistics().frameIndex % 120 == 0)
+        if (map->statistics().renderTicks % 120 == 0)
         {
             std::string creditLine = std::string() + "vts-browser-glfw: "
                     + map->credits().textFull();

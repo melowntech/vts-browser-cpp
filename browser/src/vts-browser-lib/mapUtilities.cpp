@@ -289,18 +289,18 @@ void TilesetMapping::update(const std::vector<std::string> &vsId)
 double MapImpl::getPositionTiltLimit()
 {
     double extCur = mapConfig->position.verticalExtent;
-    double extLow = options.positionTiltViewExtentThresholdLow;
-    double extHig = options.positionTiltViewExtentThresholdHigh;
+    double extLow = options.viewExtentThresholdScaleLow * body.majorRadius;
+    double extHig = options.viewExtentThresholdScaleHigh * body.majorRadius;
     double f = (extCur - extLow) / (extHig - extLow);
     f = clamp(f, 0, 1);
     f = 3 * f * f - 2 * f * f * f;
-    return interpolate(options.positionTiltLimitHigh,
-                       options.positionTiltLimitLow, f);
+    return interpolate(options.tiltLimitAngleHigh,
+                       options.tiltLimitAngleLow, f);
 }
 
 void MapImpl::applyPositionTiltLimit(double &tilt)
 {
-    if (options.enablePositionTiltLimit)
+    if (options.enableCameraTiltLimit)
         tilt = std::min(tilt, getPositionTiltLimit());
 }
 
@@ -335,8 +335,9 @@ float MapImpl::computeResourcePriority(
 {
     if (options.traverseMode == TraverseMode::Hierarchical)
     {
-        return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1)
-                   / (1 << (trav->nodeInfo.nodeId().lod / 2)));
+        return 100.f / trav->nodeInfo.nodeId().lod;
+        //return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1)
+        //           / (1 << (trav->nodeInfo.nodeId().lod / 2)));
     }
 
     return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1));

@@ -151,6 +151,7 @@ void Map::dataInitialize(const std::shared_ptr<Fetcher> &fetcher)
 
 void Map::dataTick()
 {
+    impl->statistics.dataTicks = ++impl->resources.tickIndex;
     impl->resourceDataTick();
 }
 
@@ -168,6 +169,7 @@ void Map::renderInitialize()
 void Map::renderTickPrepare()
 {
     impl->statistics.resetFrame();
+    impl->statistics.renderTicks = ++impl->renderer.tickIndex;
     impl->resourceRenderTick();
     impl->renderTickPrepare();
 }
@@ -290,19 +292,19 @@ MapOptions &Map::options()
     return impl->options;
 }
 
-MapDraws &Map::draws()
+const MapDraws &Map::draws()
 {
     return impl->draws;
 }
 
-MapCredits &Map::credits()
+const MapCredits &Map::credits()
 {
     return impl->credits;
 }
 
-MapCelestialBody &Map::celestialBody()
+const MapCelestialBody &Map::celestialBody()
 {
-    return impl->celestialBody;
+    return impl->body;
 }
 
 void Map::setPositionSubjective(bool subjective, bool convert)

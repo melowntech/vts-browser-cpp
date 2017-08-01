@@ -257,11 +257,11 @@ void MainWindow::tick()
         map->renderTickRender();
 
         // issue the actual opengl commands to render the frame
-        for (vts::DrawTask &t : map->draws().draws)
+        for (const vts::DrawTask &t : map->draws().draws)
             draw(t);
 
         // update credits in the window title bar
-        if ((map->statistics().frameIndex % 120) == 0)
+        if ((map->statistics().renderTicks % 120) == 0)
         {
             std::string creditLine = std::string() + "vts-browser-qt: "
                     + map->credits().textShort();

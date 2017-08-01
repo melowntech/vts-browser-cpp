@@ -361,25 +361,25 @@ bool MapConfig::isEarth() const
 
 void MapConfig::initializeCelestialBody() const
 {
-    map->celestialBody = MapCelestialBody();
+    map->body = MapCelestialBody();
     auto n = srs(referenceFrame.model.physicalSrs);
     auto r = n.srsDef.reference();
-    map->celestialBody.majorRadius = r.GetSemiMajor();
-    map->celestialBody.minorRadius = r.GetSemiMinor();
+    map->body.majorRadius = r.GetSemiMajor();
+    map->body.minorRadius = r.GetSemiMinor();
     if (isEarth())
     {
-        map->celestialBody.name = "Earth";
-        map->celestialBody.atmosphereThickness = 50000;
+        map->body.name = "Earth";
+        map->body.atmosphereThickness = 50000;
         static auto lowColor = { 216.0/255.0, 232.0/255.0, 243.0/255.0, 1.0 };
         static auto highColor = { 72.0/255.0, 154.0/255.0, 255.0/255.0, 1.0 };
         std::copy(lowColor.begin(), lowColor.end(),
-                  map->celestialBody.atmosphereColorLow);
+                  map->body.atmosphereColorLow);
         std::copy(highColor.begin(), highColor.end(),
-                  map->celestialBody.atmosphereColorHigh);
+                  map->body.atmosphereColorHigh);
     }
     else
     {
-        map->celestialBody.name = "unknown";
+        map->body.name = "unknown";
     }
 }
 

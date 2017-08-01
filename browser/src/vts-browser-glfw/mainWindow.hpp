@@ -105,7 +105,7 @@ public:
     void colorizeMarks();
     vts::vec3 getWorldPositionFromCursor();
 
-    void drawVtsTask(vts::DrawTask &t);
+    void drawVtsTask(const vts::DrawTask &t);
     void drawMark(const Mark &m, const Mark *prev);
 
     void renderFrame();

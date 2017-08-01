@@ -43,12 +43,12 @@ MapCreateOptions::MapCreateOptions() :
 
 MapOptions::MapOptions() :
     maxTexelToPixelScale(1.2),
-    positionViewExtentMin(75),
-    positionViewExtentMax(1.5e7),
-    positionTiltViewExtentThresholdLow(200000),
-    positionTiltViewExtentThresholdHigh(1300000),
-    positionTiltLimitLow(270),
-    positionTiltLimitHigh(350),
+    viewExtentLimitScaleMin(0.00001175917), // 75 metres on earth
+    viewExtentLimitScaleMax(2.35183443086), // 1.5e7 metres on earth
+    viewExtentThresholdScaleLow(0.03135779241), // 200000 metres on earth
+    viewExtentThresholdScaleHigh(0.20382565067), // 1300000 metres on earth
+    tiltLimitAngleLow(270),
+    tiltLimitAngleHigh(350),
     cameraSensitivityPan(1),
     cameraSensitivityZoom(1),
     cameraSensitivityRotate(1),
@@ -68,12 +68,13 @@ MapOptions::MapOptions() :
     maxFetchRetries(10),
     fetchFirstRetryTimeOffset(15),
     navigationType(NavigationType::Quick),
-    geographicNavMode(NavigationGeographicMode::Dynamic),
+    navigationMode(NavigationMode::Dynamic),
     traverseMode(TraverseMode::Hierarchical),
     enableSearchResultsFilter(true),
     enableRuntimeResourceExpiration(false),
     enableArbitrarySriRequests(true),
-    enablePositionTiltLimit(true),
+    enableCameraTiltLimit(true),
+    enableCameraYawToNorthOnZoomOut(true),
     debugDetachedCamera(false),
     debugDisableMeta5(false),
     debugDisableVirtualSurfaces(false),

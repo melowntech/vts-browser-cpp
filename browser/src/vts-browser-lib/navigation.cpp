@@ -32,16 +32,16 @@ namespace vts
 
 MapImpl::Navigation::Navigation() :
     changeRotation(0,0,0), targetPoint(0,0,0), autoRotation(0),
-    targetViewExtent(0), geographicMode(NavigationGeographicMode::Azimuthal),
+    targetViewExtent(0), mode(NavigationMode::Azimuthal),
     type(NavigationType::Quick)
 {}
 
 void MapImpl::resetNavigationGeographicMode()
 {
-    if (options.geographicNavMode == NavigationGeographicMode::Dynamic)
-        navigation.geographicMode = NavigationGeographicMode::Azimuthal;
+    if (options.navigationMode == NavigationMode::Dynamic)
+        navigation.mode = NavigationMode::Azimuthal;
     else
-        navigation.geographicMode = options.geographicNavMode;
+        navigation.mode = options.navigationMode;
 }
 
 void MapImpl::convertPositionSubjObj()
@@ -180,24 +180,24 @@ void MapImpl::updateNavigation()
 
     // limit zoom
     navigation.targetViewExtent = clamp(navigation.targetViewExtent,
-                                       options.positionViewExtentMin,
-                                       options.positionViewExtentMax);
+           options.viewExtentLimitScaleMin * body.majorRadius,
+           options.viewExtentLimitScaleMax * body.majorRadius);
 
     if (mapConfig->navigationType() == vtslibs::registry::Srs::Type::geographic)
     {
         // check navigation mode
-        if (options.geographicNavMode == NavigationGeographicMode::Dynamic)
+        if (options.navigationMode == NavigationMode::Dynamic)
         {
             // too close to pole -> switch to free mode
             if (abs(navigation.targetPoint(1))
                     > options.navigationLatitudeThreshold - 1e-5)
-                navigation.geographicMode = NavigationGeographicMode::Free;
+                navigation.mode = NavigationMode::Free;
         }
         else
-            navigation.geographicMode = options.geographicNavMode;
+            navigation.mode = options.navigationMode;
     
         // limit latitude in azimuthal navigation
-        if (navigation.geographicMode == NavigationGeographicMode::Azimuthal)
+        if (navigation.mode == NavigationMode::Azimuthal)
         {
             navigation.targetPoint(1) = clamp(navigation.targetPoint(1),
                     -options.navigationLatitudeThreshold,
@@ -263,20 +263,20 @@ void MapImpl::updateNavigation()
     } break;
     case vtslibs::registry::Srs::Type::geographic:
     {
-        switch (navigation.geographicMode)
+        switch (navigation.mode)
         {
-        case NavigationGeographicMode::Free:
+        case NavigationMode::Free:
         {
             p = convertor->geoDirect(p, horizontal2, azi1, azi2);
             r(0) += azi2 - azi1;
         } break;
-        case NavigationGeographicMode::Azimuthal:
+        case NavigationMode::Azimuthal:
         {
             for (int i = 0; i < 2; i++)
                 p(i) += angularDiff(p(i), navigation.targetPoint(i))
                      * (horizontal2 / horizontal1);
         } break;
-        case NavigationGeographicMode::Dynamic:
+        default:
             LOGTHROW(fatal, std::invalid_argument) << "Invalid navigation mode";
         }
     } break;
@@ -326,8 +326,9 @@ void MapImpl::updateNavigation()
         normalizeAngle(r[i]);
     if (navigation.type == NavigationType::FlyOver)
         applyPositionTiltLimit(r[1]);
-    r[1] = clamp(r[1], options.positionTiltLimitLow,
-            options.positionTiltLimitHigh);
+    r[1] = clamp(r[1],
+            options.tiltLimitAngleLow,
+            options.tiltLimitAngleHigh);
 
     // asserts
     assert(r(0) >= 0 && r(0) < 360);
@@ -350,7 +351,7 @@ void MapImpl::pan(const vec3 &value)
 
     double h = 1;
     if (mapConfig->navigationType() == vtslibs::registry::Srs::Type::geographic
-            && navigation.geographicMode == NavigationGeographicMode::Azimuthal)
+            && navigation.mode == NavigationMode::Azimuthal)
     {
         // slower pan near poles
         h = std::cos(pos.position[1] * 3.14159 / 180);
@@ -363,7 +364,7 @@ void MapImpl::pan(const vec3 &value)
 
     double azi = pos.orientation(0);
     if (mapConfig->navigationType() == vtslibs::registry::Srs::Type::geographic
-            && navigation.geographicMode == NavigationGeographicMode::Free)
+            && navigation.mode == NavigationMode::Free)
     {
         // camera rotation taken from current (aka previous) target position
         // this prevents strange turning near poles
@@ -392,17 +393,17 @@ void MapImpl::pan(const vec3 &value)
         p = convertor->geoDirect(p, dist, ang1);
         p(2) += move(2);
         // ignore the pan, if it would cause too rapid direction change
-        switch (navigation.geographicMode)
+        switch (navigation.mode)
         {
-        case NavigationGeographicMode::Azimuthal:
+        case NavigationMode::Azimuthal:
             if (abs(angularDiff(pos.position[0], p(0))) < 150)
                 navigation.targetPoint = p;
             break;
-        case NavigationGeographicMode::Free:
+        case NavigationMode::Free:
             if (convertor->geoArcDist(vecFromUblas<vec3>(pos.position), p) <150)
                 navigation.targetPoint = p;
             break;
-        case NavigationGeographicMode::Dynamic:
+        default:
             LOGTHROW(fatal, std::invalid_argument) << "Invalid navigation mode";
         }
     } break;
@@ -419,8 +420,8 @@ void MapImpl::rotate(const vec3 &value)
     applyPositionTiltLimit(mapConfig->position.orientation[1]);
     navigation.changeRotation += value.cwiseProduct(vec3(0.2, -0.1, 0.2)
                                         * options.cameraSensitivityRotate);
-    if (options.geographicNavMode == NavigationGeographicMode::Dynamic)
-        navigation.geographicMode = NavigationGeographicMode::Free;
+    if (options.navigationMode == NavigationMode::Dynamic)
+        navigation.mode = NavigationMode::Free;
     navigation.autoRotation = 0;
     navigation.type = options.navigationType;
 }

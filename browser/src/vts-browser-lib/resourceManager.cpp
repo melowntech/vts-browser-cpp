@@ -85,7 +85,7 @@ void releaseIfLast(std::shared_ptr<Resource> &p)
 
 } // namespace
 
-MapImpl::Resources::Resources() : downloads(0)
+MapImpl::Resources::Resources() : downloads(0), tickIndex(0)
 {}
 
 bool FetchTask::isResourceTypeMandatory(FetchTask::ResourceType resourceType)
@@ -392,7 +392,7 @@ void MapImpl::resourceRenderFinalize()
 void MapImpl::resourceRenderTick()
 {
     // clear old resources
-    if (statistics.frameIndex % 30 == 0)
+    if (renderer.tickIndex % 30 == 0)
     {
         struct Res
         {
@@ -413,7 +413,7 @@ void MapImpl::resourceRenderTick()
             memRamUse += it.second->info.ramMemoryCost;
             memGpuUse += it.second->info.gpuMemoryCost;
             // consider long time not used resources only
-            if (it.second->lastAccessTick + 100 < statistics.frameIndex)
+            if (it.second->lastAccessTick + 100 < renderer.tickIndex)
                 resToRemove.emplace(it.first, it.second->lastAccessTick);
         }
         uint64 memUse = memRamUse + memGpuUse;
@@ -457,7 +457,7 @@ void MapImpl::resourceRenderTick()
         for (auto it : resources.resources)
         {
             std::shared_ptr<Resource> &r = it.second;
-            if (r->lastAccessTick + 1 != statistics.frameIndex)
+            if (r->lastAccessTick + 1 != renderer.tickIndex)
                 continue;
             switch (r->state)
             {
@@ -522,7 +522,7 @@ void MapImpl::resourceRenderTick()
 
 void MapImpl::touchResource(const std::shared_ptr<Resource> &resource)
 {
-    resource->lastAccessTick = statistics.frameIndex;
+    resource->lastAccessTick = renderer.tickIndex;
 }
 
 std::shared_ptr<GpuTexture> MapImpl::getTexture(const std::string &name)

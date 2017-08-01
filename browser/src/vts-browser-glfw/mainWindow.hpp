@@ -66,6 +66,7 @@ struct AppOptions
     std::string initialPosition;
     bool screenshotOnFullRender;
     bool closeOnFullRender;
+    bool renderAtmosphere;
 
     AppOptions();
 };
@@ -107,9 +108,7 @@ public:
     void drawVtsTask(vts::DrawTask &t);
     void drawMark(const Mark &m, const Mark *prev);
 
-    void renderFrameInit();
-    void renderFrameContent();
-    void renderFrameFinish();
+    void renderFrame();
 
     void loadTexture(vts::ResourceInfo &info, const vts::GpuTextureSpec &spec);
     void loadMesh(vts::ResourceInfo &info, const vts::GpuMeshSpec &spec);
@@ -122,7 +121,7 @@ public:
 
     void setMapConfigPath(const MapPaths &paths);
 
-    const AppOptions appOptions;
+    AppOptions appOptions;
     std::shared_ptr<GpuShaderImpl> shaderTexture;
     std::shared_ptr<GpuShaderImpl> shaderColor;
     std::shared_ptr<GpuShaderImpl> shaderAtmosphere;

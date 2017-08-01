@@ -87,7 +87,8 @@ double sqr(double a)
 
 AppOptions::AppOptions() :
     screenshotOnFullRender(false),
-    closeOnFullRender(false)
+    closeOnFullRender(false),
+    renderAtmosphere(true)
 {}
 
 MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
@@ -152,6 +153,7 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         glUseProgram(id);
         glUniform1i(glGetUniformLocation(id, "texColor"), 0);
         glUniform1i(glGetUniformLocation(id, "texMask"), 1);
+        glUseProgram(0);
     }
 
     // load shader color
@@ -184,9 +186,10 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         GLuint id = shaderAtmosphere->id;
         uls.push_back(glGetUniformLocation(id, "uniColorLow"));
         uls.push_back(glGetUniformLocation(id, "uniColorHigh"));
-        uls.push_back(glGetUniformLocation(id, "uniBodyRadiuses"));
+        uls.push_back(glGetUniformLocation(id, "uniRadiuses"));
         uls.push_back(glGetUniformLocation(id, "uniDepths"));
-        uls.push_back(glGetUniformLocation(id, "uniVpInv"));
+        uls.push_back(glGetUniformLocation(id, "uniFog"));
+        uls.push_back(glGetUniformLocation(id, "uniAura"));
         uls.push_back(glGetUniformLocation(id, "uniCameraPosition"));
         uls.push_back(glGetUniformLocation(id, "uniCameraPosNorm"));
         uls.push_back(glGetUniformLocation(id, "uniCameraDirections[0]"));
@@ -196,6 +199,7 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         glUseProgram(id);
         glUniform1i(glGetUniformLocation(id, "texDepth"), 6);
         glUniform1i(glGetUniformLocation(id, "texColor"), 7);
+        glUseProgram(0);
     }
 
     // load shader blit
@@ -212,6 +216,7 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         GLuint id = shaderBlit->id;
         glUseProgram(id);
         glUniform1i(glGetUniformLocation(id, "texColor"), 7);
+        glUseProgram(0);
     }
 
     // load mesh mark
@@ -428,7 +433,7 @@ void MainWindow::drawMark(const Mark &m, const Mark *prev)
     }
 }
 
-void MainWindow::renderFrameInit()
+void MainWindow::renderFrame()
 {
     checkGl("pre-frame check");
 
@@ -490,10 +495,7 @@ void MainWindow::renderFrameInit()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     checkGl("frame initialized");
-}
 
-void MainWindow::renderFrameContent()
-{
     // vts draws
     {
         vts::MapDraws &draws = map->draws();
@@ -516,10 +518,7 @@ void MainWindow::renderFrameContent()
     }
 
     checkGl("frame content rendered");
-}
 
-void MainWindow::renderFrameFinish()
-{
     // render the framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDisable(GL_DEPTH_TEST);
@@ -530,47 +529,54 @@ void MainWindow::renderFrameFinish()
 
     // render atmosphere
     const vts::MapCelestialBody &body = map->celestialBody();
-    if (body.majorRadius > 0 && body.atmosphereThickness > 0)
+    if (appOptions.renderAtmosphere
+            && body.majorRadius > 0 && body.atmosphereThickness > 0)
     {
         glEnable(GL_BLEND);
 
         vts::mat4 inv = camViewProj.inverse();
-        //vts::mat4f invf = inv.cast<float>();
         vts::vec3 camPos = vts::vec4to3(inv * vts::vec4(0, 0, -1, 1), true);
-        vts::vec3f cameraPosition = camPos.cast<float>();
-        vts::vec3f cameraPosNorm = vts::normalize(camPos).cast<float>();
+        double camRad = vts::length(camPos);
+        double atmRad = body.majorRadius + body.atmosphereThickness;
+        double aurDotLow = std::min(body.majorRadius / camRad, 1.0);
+        double aurDotHigh = std::min(atmRad / camRad, 1.0);
+        aurDotHigh = std::max(aurDotHigh, aurDotLow + 1e-3);
 
-        float radiuses[4]
+        vts::vec3f uniCameraPosition = camPos.cast<float>();
+        vts::vec3f uniCameraPosNorm = vts::normalize(camPos).cast<float>();
+        float uniRadiuses[4]
             = { (float)body.majorRadius, (float)body.minorRadius,
                 (float)body.atmosphereThickness };
-        float depths[4] = { (float)camNear, (float)camFar , 0.f, 150000.f };
+        float uniDepths[4] = { (float)camNear, (float)camFar };
+        float uniFog[4] = { 0.f, 50000.f }; // todo fog distance relative to body.majorRadius
+        float uniAura[4] = { (float)aurDotLow, (float)aurDotHigh };
 
         vts::vec3 near = vts::vec4to3(inv * vts::vec4(0, 0, -1, 1), true);
-        vts::vec3 fars[4] = {
-            vts::vec4to3(inv * vts::vec4(-1, -1, 1, 1), true),
-            vts::vec4to3(inv * vts::vec4(+1, -1, 1, 1), true),
-            vts::vec4to3(inv * vts::vec4(-1, +1, 1, 1), true),
-            vts::vec4to3(inv * vts::vec4(+1, +1, 1, 1), true),
+        vts::vec3f uniCameraDirections[4] = {
+            vts::normalize(vts::vec4to3(inv * vts::vec4(-1, -1, 1, 1)
+                , true)- near).cast<float>(),
+            vts::normalize(vts::vec4to3(inv * vts::vec4(+1, -1, 1, 1)
+                , true)- near).cast<float>(),
+            vts::normalize(vts::vec4to3(inv * vts::vec4(-1, +1, 1, 1)
+                , true)- near).cast<float>(),
+            vts::normalize(vts::vec4to3(inv * vts::vec4(+1, +1, 1, 1)
+                , true)- near).cast<float>(),
         };
 
         shaderAtmosphere->bind();
         shaderAtmosphere->uniformVec4(0, body.atmosphereColorLow);
         shaderAtmosphere->uniformVec4(1, body.atmosphereColorHigh);
-        shaderAtmosphere->uniformVec4(2, radiuses);
-        shaderAtmosphere->uniformVec4(3, depths);
-        //shaderAtmosphere->uniformMat4(4, (float*)invf.data());
-        shaderAtmosphere->uniformVec3(5, (float*)cameraPosition.data());
-        shaderAtmosphere->uniformVec3(6, (float*)cameraPosNorm.data());
+        shaderAtmosphere->uniformVec4(2, uniRadiuses);
+        shaderAtmosphere->uniformVec4(3, uniDepths);
+        shaderAtmosphere->uniformVec4(4, uniFog);
+        shaderAtmosphere->uniformVec4(5, uniAura);
+        shaderAtmosphere->uniformVec3(6, (float*)uniCameraPosition.data());
+        shaderAtmosphere->uniformVec3(7, (float*)uniCameraPosNorm.data());
         for (int i = 0; i < 4; i++)
         {
-            vts::vec3f dir = vts::normalize(fars[i] - near).cast<float>();
-            shaderAtmosphere->uniformVec3(7 + i, (float*)dir.data());
+            shaderAtmosphere->uniformVec3(8 + i,
+                            (float*)uniCameraDirections[i].data());
         }
-
-        //float viewport[4] = { 0.f, 0.f, (float)width, (float)height };
-        //shaderAtmosphere->uniformVec4(4, viewport);
-        //vts::mat4f vpInv = camViewProj.inverse().cast<float>();
-        //shaderAtmosphere->uniformMat4(5, (float*)vpInv.data());
 
         meshQuad->bind();
         meshQuad->dispatch();
@@ -620,12 +626,6 @@ void MainWindow::run()
                 &MainWindow::cameraOverrideParam, this,
                 std::placeholders::_1, std::placeholders::_2,
                 std::placeholders::_3, std::placeholders::_4);
-    //map->callbacks().cameraOverrideEye
-    //        = std::bind(&MainWindow::cameraOverrideEye,
-    //                            this, std::placeholders::_1);
-    //map->callbacks().cameraOverrideTarget
-    //        = std::bind(&MainWindow::cameraOverrideTarget,
-    //                            this, std::placeholders::_1);
     map->renderInitialize();
     gui.initialize(this);
 
@@ -674,9 +674,7 @@ void MainWindow::run()
         }
         double timeMapRender = glfwGetTime();
 
-        renderFrameInit();
-        renderFrameContent();
-        renderFrameFinish();
+        renderFrame();
 
         double timeAppRender = glfwGetTime();
 
@@ -746,8 +744,6 @@ void MainWindow::cameraOverrideParam(double &, double &,
 {
     camNear = near;
     camFar = far;
-    //camDistToHorizon = near * 300;
-    //map->statistics().debug = camDistToHorizon;
 }
 
 void MainWindow::cameraOverrideView(double *mat)

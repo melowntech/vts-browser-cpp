@@ -372,6 +372,7 @@ public:
         if (nk_begin(&ctx, "Options", nk_rect(10, 10, 250, 550), flags))
         {
             vts::MapOptions &o = window->map->options();
+            AppOptions &a = window->appOptions;
             float width = nk_window_get_content_region_size(&ctx).x - 15;
             float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
             nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
@@ -564,9 +565,15 @@ public:
             o.enablePositionTiltLimit = nk_check_label(&ctx, "tilt limit",
                                                o.enablePositionTiltLimit);
             nk_label(&ctx, "", NK_TEXT_LEFT);
+
+            // render atmosphere
+            nk_label(&ctx, "Display:", NK_TEXT_LEFT);
+            a.renderAtmosphere = nk_check_label(&ctx, "atmosphere",
+                                               a.renderAtmosphere);
+            nk_label(&ctx, "", NK_TEXT_LEFT);
             
             // render mesh wire boxes
-            nk_label(&ctx, "Display:", NK_TEXT_LEFT);
+            nk_label(&ctx, "", NK_TEXT_LEFT);
             o.debugRenderMeshBoxes = nk_check_label(&ctx, "mesh boxes",
                                                o.debugRenderMeshBoxes);
             nk_label(&ctx, "", NK_TEXT_LEFT);

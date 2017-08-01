@@ -103,11 +103,9 @@ namespace
         {
         case GL_DEBUG_SEVERITY_HIGH:
             sevr = "high";
-            throwing = true;
             break;
         case GL_DEBUG_SEVERITY_MEDIUM:
             sevr = "medium";
-            throwing = true;
             break;
         case GL_DEBUG_SEVERITY_LOW:
             sevr = "low";
@@ -128,8 +126,10 @@ namespace
         }
         
         if (throwing)
+        {
             throw std::runtime_error(
                     std::string("OpenGL: ") + message);
+        }
     }
 }
 
@@ -138,6 +138,26 @@ void initializeGpuContext()
     if (openglDebugAvailable)
         glDebugMessageCallback(&openglErrorCallback, nullptr);
     checkGl("glDebugMessageCallback");
+}
+
+void checkGlFramebuffer()
+{
+    GLint err = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    switch (err)
+    {
+    case GL_FRAMEBUFFER_COMPLETE:
+        return;
+    case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+        throw std::runtime_error("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+    //case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+    //    throw std::runtime_error("GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
+    case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+        throw std::runtime_error("GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+    case GL_FRAMEBUFFER_UNSUPPORTED:
+        throw std::runtime_error("GL_FRAMEBUFFER_UNSUPPORTED");
+    default:
+        throw std::runtime_error("unknown error with opengl framebuffer");
+    }
 }
 
 void checkGl(const char *name)

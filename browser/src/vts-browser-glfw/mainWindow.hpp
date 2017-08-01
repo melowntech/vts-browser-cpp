@@ -66,6 +66,7 @@ struct AppOptions
     std::string initialPosition;
     bool screenshotOnFullRender;
     bool closeOnFullRender;
+    bool renderAtmosphere;
 
     AppOptions();
 };
@@ -107,20 +108,27 @@ public:
     void drawVtsTask(vts::DrawTask &t);
     void drawMark(const Mark &m, const Mark *prev);
 
+    void renderFrame();
+
     void loadTexture(vts::ResourceInfo &info, const vts::GpuTextureSpec &spec);
     void loadMesh(vts::ResourceInfo &info, const vts::GpuMeshSpec &spec);
     void cameraOverrideParam(double &fov, double &aspect,
                              double &near, double &far);
+    void cameraOverrideEye(double *eye);
+    void cameraOverrideTarget(double *target);
     void cameraOverrideView(double *mat);
     void cameraOverrideProj(double *mat);
 
     void setMapConfigPath(const MapPaths &paths);
 
-    const AppOptions appOptions;
+    AppOptions appOptions;
     std::shared_ptr<GpuShaderImpl> shaderTexture;
     std::shared_ptr<GpuShaderImpl> shaderColor;
+    std::shared_ptr<GpuShaderImpl> shaderAtmosphere;
+    std::shared_ptr<GpuShaderImpl> shaderBlit;
     std::shared_ptr<GpuMeshImpl> meshMark;
     std::shared_ptr<GpuMeshImpl> meshLine;
+    std::shared_ptr<GpuMeshImpl> meshQuad;
     std::vector<Mark> marks;
     vts::mat4 camView;
     vts::mat4 camProj;
@@ -133,8 +141,12 @@ public:
     double timingTotalFrame;
     double timingDataFrame;
     double dblClickInitTime;
-    int width, height;
     int dblClickState;
+    int width, height;
+    int widthPrev, heightPrev;
+    GLuint frameBufferId;
+    GLuint depthTexId;
+    GLuint colorTexId;
     vts::Map *const map;
     GLFWwindow *window;
 };

@@ -4,13 +4,18 @@ set(DATA_LIST
 	data/meshes/aabb.obj
 	data/meshes/cube.obj
 	data/meshes/line.obj
+	data/meshes/quad.obj
 	data/meshes/sphere.obj
+	data/shaders/atmosphere.frag.glsl
+	data/shaders/atmosphere.vert.glsl
 	data/shaders/color.frag.glsl
 	data/shaders/color.vert.glsl
 	data/shaders/gui.frag.glsl
 	data/shaders/gui.vert.glsl
 	data/shaders/texture.frag.glsl
 	data/shaders/texture.vert.glsl
+	data/shaders/blit.frag.glsl
+	data/shaders/blit.vert.glsl
 	data/textures/gwen.png
 	data/textures/helper.jpg
 )
@@ -32,3 +37,4 @@ set(GEN_CODE "${GEN_CODE}}\n} data_mapInitializer\;\n}\n")
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/data_map.cpp ${GEN_CODE})
 list(APPEND SRC_LIST ${CMAKE_CURRENT_BINARY_DIR}/data_map.cpp)
 
+add_custom_target(data SOURCES ${DATA_LIST})

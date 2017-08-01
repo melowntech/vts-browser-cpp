@@ -300,6 +300,11 @@ MapCredits &Map::credits()
     return impl->credits;
 }
 
+MapCelestialBody &Map::celestialBody()
+{
+    return impl->celestialBody;
+}
+
 void Map::setPositionSubjective(bool subjective, bool convert)
 {
     if (!isMapConfigReady() || subjective == getPositionSubjective())

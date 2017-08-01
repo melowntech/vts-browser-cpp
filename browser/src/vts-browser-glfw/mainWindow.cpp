@@ -38,6 +38,7 @@
 #include <vts-browser/exceptions.hpp>
 #include <vts-browser/credits.hpp>
 #include <vts-browser/log.hpp>
+#include <vts-browser/celestial.hpp>
 #include "mainWindow.hpp"
 #include <GLFW/glfw3.h>
 
@@ -77,11 +78,17 @@ void keyboardUnicodeCallback(GLFWwindow *window, unsigned int codepoint)
     m->gui.keyboardUnicodeCallback(codepoint);
 }
 
+double sqr(double a)
+{
+	return a * a;
+}
+
 } // namespace
 
 AppOptions::AppOptions() :
     screenshotOnFullRender(false),
-    closeOnFullRender(false)
+    closeOnFullRender(false),
+    renderAtmosphere(true)
 {}
 
 MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
@@ -89,17 +96,19 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
     camNear(0), camFar(0),
     mousePrevX(0), mousePrevY(0),
     dblClickInitTime(0), dblClickState(0),
+    width(0), height(0), widthPrev(0), heightPrev(0),
+    frameBufferId(0), depthTexId(0), colorTexId(0),
     map(map), window(nullptr)
 {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_STENCIL_BITS, 0);
-    glfwWindowHint(GLFW_DEPTH_BITS, 32);
+    glfwWindowHint(GLFW_DEPTH_BITS, 0);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifndef NDEBUG
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 #endif
-    
+
     glfwWindowHint(GLFW_VISIBLE, true);
     window = glfwCreateWindow(800, 600, "renderer-glfw", NULL, NULL);
     if (!window)
@@ -114,16 +123,17 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
     glfwSetScrollCallback(window, &::mouseScrollCallback);
     glfwSetKeyCallback(window, &::keyboardCallback);
     glfwSetCharCallback(window, &::keyboardUnicodeCallback);
-    
+
     // check for extensions
     anisotropicFilteringAvailable
             = glfwExtensionSupported("GL_EXT_texture_filter_anisotropic");
     openglDebugAvailable
             = glfwExtensionSupported("GL_KHR_debug");
-    
+
     initializeGpuContext();
-    
-    { // load shader texture
+
+    // load shader texture
+    {
         shaderTexture = std::make_shared<GpuShaderImpl>();
         vts::Buffer vert = readInternalMemoryBuffer(
                     "data/shaders/texture.vert.glsl");
@@ -143,9 +153,11 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         glUseProgram(id);
         glUniform1i(glGetUniformLocation(id, "texColor"), 0);
         glUniform1i(glGetUniformLocation(id, "texMask"), 1);
+        glUseProgram(0);
     }
-    
-    { // load shader color
+
+    // load shader color
+    {
         shaderColor = std::make_shared<GpuShaderImpl>();
         vts::Buffer vert = readInternalMemoryBuffer(
                     "data/shaders/color.vert.glsl");
@@ -159,8 +171,56 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         uls.push_back(glGetUniformLocation(id, "uniMvp"));
         uls.push_back(glGetUniformLocation(id, "uniColor"));
     }
-    
-    { // load mesh mark
+
+    // load shader atmosphere
+    {
+        shaderAtmosphere = std::make_shared<GpuShaderImpl>();
+        vts::Buffer vert = readInternalMemoryBuffer(
+                    "data/shaders/atmosphere.vert.glsl");
+        vts::Buffer frag = readInternalMemoryBuffer(
+                    "data/shaders/atmosphere.frag.glsl");
+        shaderAtmosphere->loadShaders(
+            std::string(vert.data(), vert.size()),
+            std::string(frag.data(), frag.size()));
+        std::vector<vts::uint32> &uls = shaderAtmosphere->uniformLocations;
+        GLuint id = shaderAtmosphere->id;
+        uls.push_back(glGetUniformLocation(id, "uniColorLow"));
+        uls.push_back(glGetUniformLocation(id, "uniColorHigh"));
+        uls.push_back(glGetUniformLocation(id, "uniRadiuses"));
+        uls.push_back(glGetUniformLocation(id, "uniDepths"));
+        uls.push_back(glGetUniformLocation(id, "uniFog"));
+        uls.push_back(glGetUniformLocation(id, "uniAura"));
+        uls.push_back(glGetUniformLocation(id, "uniCameraPosition"));
+        uls.push_back(glGetUniformLocation(id, "uniCameraPosNorm"));
+        uls.push_back(glGetUniformLocation(id, "uniCameraDirections[0]"));
+        uls.push_back(glGetUniformLocation(id, "uniCameraDirections[1]"));
+        uls.push_back(glGetUniformLocation(id, "uniCameraDirections[2]"));
+        uls.push_back(glGetUniformLocation(id, "uniCameraDirections[3]"));
+        glUseProgram(id);
+        glUniform1i(glGetUniformLocation(id, "texDepth"), 6);
+        glUniform1i(glGetUniformLocation(id, "texColor"), 7);
+        glUseProgram(0);
+    }
+
+    // load shader blit
+    {
+        shaderBlit = std::make_shared<GpuShaderImpl>();
+        vts::Buffer vert = readInternalMemoryBuffer(
+                    "data/shaders/blit.vert.glsl");
+        vts::Buffer frag = readInternalMemoryBuffer(
+                    "data/shaders/blit.frag.glsl");
+        shaderBlit->loadShaders(
+            std::string(vert.data(), vert.size()),
+            std::string(frag.data(), frag.size()));
+        //std::vector<vts::uint32> &uls = shaderBlit->uniformLocations;
+        GLuint id = shaderBlit->id;
+        glUseProgram(id);
+        glUniform1i(glGetUniformLocation(id, "texColor"), 7);
+        glUseProgram(0);
+    }
+
+    // load mesh mark
+    {
         meshMark = std::make_shared<GpuMeshImpl>();
         vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
                                   "data/meshes/sphere.obj"));
@@ -172,8 +232,9 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         vts::ResourceInfo info;
         meshMark->loadMesh(info, spec);
     }
-    
-    { // load mesh line
+
+    // load mesh line
+    {
         meshLine = std::make_shared<GpuMeshImpl>();
         vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
                                   "data/meshes/line.obj"));
@@ -184,6 +245,24 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         spec.attributes[0].components = 3;
         vts::ResourceInfo info;
         meshLine->loadMesh(info, spec);
+    }
+
+    // load mesh quad
+    {
+        meshQuad = std::make_shared<GpuMeshImpl>();
+        vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
+                                  "data/meshes/quad.obj"));
+        assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Triangles);
+        spec.attributes.resize(2);
+        spec.attributes[0].enable = true;
+        spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
+        spec.attributes[0].components = 3;
+        spec.attributes[1].enable = true;
+        spec.attributes[1].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
+        spec.attributes[1].components = 2;
+        spec.attributes[1].offset = sizeof(vts::vec3f);
+        vts::ResourceInfo info;
+        meshQuad->loadMesh(info, spec);
     }
 }
 
@@ -310,7 +389,6 @@ void MainWindow::drawVtsTask(vts::DrawTask &t)
         {
             shaderTexture->uniform(3, 1);
             glActiveTexture(GL_TEXTURE0 + 1);
-            
             ((GpuTextureImpl*)t.texMask.get())->bind();
             glActiveTexture(GL_TEXTURE0 + 0);
         }
@@ -355,6 +433,158 @@ void MainWindow::drawMark(const Mark &m, const Mark *prev)
     }
 }
 
+void MainWindow::renderFrame()
+{
+    checkGl("pre-frame check");
+
+    // update framebuffer texture
+    {
+        if (width != widthPrev || height != heightPrev)
+        {
+            widthPrev = width;
+            heightPrev = height;
+
+            // depth texture
+            glActiveTexture(GL_TEXTURE0 + 6);
+            glDeleteTextures(1, &depthTexId);
+            glGenTextures(1, &depthTexId);
+            glBindTexture(GL_TEXTURE_2D, depthTexId);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height,
+                         0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+            // color texture
+            glActiveTexture(GL_TEXTURE0 + 7);
+            glDeleteTextures(1, &colorTexId);
+            glGenTextures(1, &colorTexId);
+            glBindTexture(GL_TEXTURE_2D, colorTexId);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height,
+                         0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+            glActiveTexture(GL_TEXTURE0);
+
+            // frame buffer
+            glDeleteFramebuffers(1, &frameBufferId);
+            glGenFramebuffers(1, &frameBufferId);
+            glBindFramebuffer(GL_FRAMEBUFFER, frameBufferId);
+            glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                                 depthTexId, 0);
+            glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                 colorTexId, 0);
+
+            checkGl("update frame buffer");
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, frameBufferId);
+        checkGlFramebuffer();
+    }
+
+    // initialize opengl
+    glViewport(0, 0, width, height);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    glEnable(GL_CULL_FACE);
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    checkGl("frame initialized");
+
+    // vts draws
+    {
+        vts::MapDraws &draws = map->draws();
+        for (vts::DrawTask &t : draws.draws)
+            drawVtsTask(t);
+        glBindVertexArray(0);
+    }
+
+    // marks draws
+    {
+        shaderColor->bind();
+        meshMark->bind();
+        Mark *prevMark = nullptr;
+        for (Mark &mark : marks)
+        {
+            drawMark(mark, prevMark);
+            prevMark = &mark;
+        }
+        glBindVertexArray(0);
+    }
+
+    checkGl("frame content rendered");
+
+    // render the framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    shaderBlit->bind();
+    meshQuad->bind();
+    meshQuad->dispatch();
+
+    // render atmosphere
+    const vts::MapCelestialBody &body = map->celestialBody();
+    if (appOptions.renderAtmosphere
+            && body.majorRadius > 0 && body.atmosphereThickness > 0)
+    {
+        glEnable(GL_BLEND);
+
+        vts::mat4 inv = camViewProj.inverse();
+        vts::vec3 camPos = vts::vec4to3(inv * vts::vec4(0, 0, -1, 1), true);
+        double camRad = vts::length(camPos);
+        double atmRad = body.majorRadius + body.atmosphereThickness;
+        double aurDotLow = std::min(body.majorRadius / camRad, 1.0);
+        double aurDotHigh = std::min(atmRad / camRad, 1.0);
+        aurDotHigh = std::max(aurDotHigh, aurDotLow + 1e-3);
+
+        vts::vec3f uniCameraPosition = camPos.cast<float>();
+        vts::vec3f uniCameraPosNorm = vts::normalize(camPos).cast<float>();
+        float uniRadiuses[4]
+            = { (float)body.majorRadius, (float)body.minorRadius,
+                (float)body.atmosphereThickness };
+        float uniDepths[4] = { (float)camNear, (float)camFar };
+        float uniFog[4] = { 0.f, 50000.f }; // todo fog distance relative to body.majorRadius
+        float uniAura[4] = { (float)aurDotLow, (float)aurDotHigh };
+
+        vts::vec3 near = vts::vec4to3(inv * vts::vec4(0, 0, -1, 1), true);
+        vts::vec3f uniCameraDirections[4] = {
+            vts::normalize(vts::vec4to3(inv * vts::vec4(-1, -1, 1, 1)
+                , true)- near).cast<float>(),
+            vts::normalize(vts::vec4to3(inv * vts::vec4(+1, -1, 1, 1)
+                , true)- near).cast<float>(),
+            vts::normalize(vts::vec4to3(inv * vts::vec4(-1, +1, 1, 1)
+                , true)- near).cast<float>(),
+            vts::normalize(vts::vec4to3(inv * vts::vec4(+1, +1, 1, 1)
+                , true)- near).cast<float>(),
+        };
+
+        shaderAtmosphere->bind();
+        shaderAtmosphere->uniformVec4(0, body.atmosphereColorLow);
+        shaderAtmosphere->uniformVec4(1, body.atmosphereColorHigh);
+        shaderAtmosphere->uniformVec4(2, uniRadiuses);
+        shaderAtmosphere->uniformVec4(3, uniDepths);
+        shaderAtmosphere->uniformVec4(4, uniFog);
+        shaderAtmosphere->uniformVec4(5, uniAura);
+        shaderAtmosphere->uniformVec3(6, (float*)uniCameraPosition.data());
+        shaderAtmosphere->uniformVec3(7, (float*)uniCameraPosNorm.data());
+        for (int i = 0; i < 4; i++)
+        {
+            shaderAtmosphere->uniformVec3(8 + i,
+                            (float*)uniCameraDirections[i].data());
+        }
+
+        meshQuad->bind();
+        meshQuad->dispatch();
+    }
+
+    checkGl("frame finalized");
+}
+
 void MainWindow::loadTexture(vts::ResourceInfo &info,
                              const vts::GpuTextureSpec &spec)
 {
@@ -373,14 +603,12 @@ void MainWindow::loadMesh(vts::ResourceInfo &info,
 
 void MainWindow::run()
 {
-    width = 0;
-    height = 0;
     glfwGetFramebufferSize(window, &width, &height);
     map->setWindowSize(width, height);
 
     // this application uses separate thread for resource processing,
     //   therefore it is safe to process as many resources as possible
-    //   in single tick without causing any lag spikes
+    //   in single dataTick without causing any lag spikes
     map->options().maxResourceProcessesPerTick = -1;
 
     setMapConfigPath(appOptions.paths[0]);
@@ -432,6 +660,7 @@ void MainWindow::run()
             map->setWindowSize(width, height);
             map->renderTickPrepare();
             map->renderTickRender(); // calls camera overrides
+            camViewProj = camProj * camView;
         }
         catch (const vts::MapConfigException &e)
         {
@@ -445,33 +674,7 @@ void MainWindow::run()
         }
         double timeMapRender = glfwGetTime();
 
-        glViewport(0, 0, width, height);
-        glClearColor(0.2, 0.2, 0.2, 1);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LEQUAL);
-        glEnable(GL_CULL_FACE);
-        //glCullFace(GL_FRONT);
-        checkGl("frame preparation");
-        
-        { // draws
-            camViewProj = camProj * camView;
-            vts::MapDraws &draws = map->draws();
-            for (vts::DrawTask &t : draws.draws)
-                drawVtsTask(t);
-            shaderColor->bind();
-            meshMark->bind();
-            Mark *prevMark = nullptr;
-            for (Mark &mark : marks)
-            {
-                drawMark(mark, prevMark);
-                prevMark = &mark;
-            }
-            glBindVertexArray(0);
-        }
-        checkGl("frame draws");
+        renderFrame();
 
         double timeAppRender = glfwGetTime();
 
@@ -524,6 +727,7 @@ vts::vec3 MainWindow::getWorldPositionFromCursor()
     glfwGetCursorPos(window, &x, &y);
     y = height - y - 1;
     float depth = std::numeric_limits<float>::quiet_NaN();
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBufferId);
     glReadPixels((int)x, (int)y, 1, 1,
                  GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
     if (depth > 1 - 1e-7)

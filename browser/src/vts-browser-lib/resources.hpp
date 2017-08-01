@@ -190,6 +190,7 @@ public:
     static void colorizeSurfaceStack(std::vector<MapConfig::SurfaceStackItem>
                                      &surfaceStack);
     void consolidateView();
+    void initializeCelestialBody() const;
     bool isEarth() const;
     
     std::unordered_map<std::string, std::shared_ptr<SurfaceInfo>> surfaceInfos;

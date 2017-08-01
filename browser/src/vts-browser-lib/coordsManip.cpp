@@ -70,14 +70,15 @@ public:
                    vtslibs::registry::Registry &registry) :
         registry(registry), phys(phys), nav(nav), pub(pub)
     {
-        auto n = registry.srs(nav);
-        //if (n.type == vtslibs::registry::Srs::Type::geographic)
+        // create geodesic
         {
+            auto n = registry.srs(nav);
             auto r = n.srsDef.reference();
             auto a = r.GetSemiMajor();
             auto b = r.GetSemiMinor();
             geodesic_ = boost::in_place(a, (a - b) / a);
         }
+        // prepare search srs
         {
             vtslibs::registry::Srs s;
             s.comment = "search";

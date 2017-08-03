@@ -186,10 +186,9 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         GLuint id = shaderAtmosphere->id;
         uls.push_back(glGetUniformLocation(id, "uniColorLow"));
         uls.push_back(glGetUniformLocation(id, "uniColorHigh"));
-        uls.push_back(glGetUniformLocation(id, "uniRadiuses"));
-        uls.push_back(glGetUniformLocation(id, "uniDepths"));
-        uls.push_back(glGetUniformLocation(id, "uniFog"));
-        uls.push_back(glGetUniformLocation(id, "uniAura"));
+        uls.push_back(glGetUniformLocation(id, "uniBody"));
+        uls.push_back(glGetUniformLocation(id, "uniPlanes"));
+        uls.push_back(glGetUniformLocation(id, "uniAtmosphere"));
         uls.push_back(glGetUniformLocation(id, "uniCameraPosition"));
         uls.push_back(glGetUniformLocation(id, "uniCameraPosNorm"));
         uls.push_back(glGetUniformLocation(id, "uniCameraDirections[0]"));
@@ -543,17 +542,20 @@ void MainWindow::renderFrame()
         double aurDotHigh = camRad > atmRad
                 ? -sqrt(sqr(camRad) - sqr(atmRad)) / camRad : 0;
         aurDotHigh = std::max(aurDotHigh, aurDotLow + 1e-4);
+        double horizonAngle = camRad > body.majorRadius
+                ? body.majorRadius / camRad : 1;
+        double fogDistance = 0.0078394481 * body.majorRadius; // 50000 metres on earth
 
-        map->statistics().debug = aurDotLow;
+        map->statistics().debug = horizonAngle;
 
         vts::vec3f uniCameraPosition = camPos.cast<float>();
         vts::vec3f uniCameraPosNorm = vts::normalize(camPos).cast<float>();
-        float uniRadiuses[4]
+        float uniBody[4]
             = { (float)body.majorRadius, (float)body.minorRadius,
                 (float)body.atmosphereThickness };
-        float uniDepths[4] = { (float)camNear, (float)camFar };
-        float uniFog[4] = { 0.f, 50000.f }; // todo fog distance relative to body.majorRadius
-        float uniAura[4] = { (float)aurDotLow, (float)aurDotHigh };
+        float uniPlanes[4] = { (float)camNear, (float)camFar };
+        float uniAtmosphere[4] = { (float)aurDotLow, (float)aurDotHigh,
+                                   (float)horizonAngle, (float)fogDistance };
 
         vts::vec3 near = vts::vec4to3(inv * vts::vec4(0, 0, -1, 1), true);
         vts::vec3f uniCameraDirections[4] = {
@@ -570,15 +572,14 @@ void MainWindow::renderFrame()
         shaderAtmosphere->bind();
         shaderAtmosphere->uniformVec4(0, body.atmosphereColorLow);
         shaderAtmosphere->uniformVec4(1, body.atmosphereColorHigh);
-        shaderAtmosphere->uniformVec4(2, uniRadiuses);
-        shaderAtmosphere->uniformVec4(3, uniDepths);
-        shaderAtmosphere->uniformVec4(4, uniFog);
-        shaderAtmosphere->uniformVec4(5, uniAura);
-        shaderAtmosphere->uniformVec3(6, (float*)uniCameraPosition.data());
-        shaderAtmosphere->uniformVec3(7, (float*)uniCameraPosNorm.data());
+        shaderAtmosphere->uniformVec4(2, uniBody);
+        shaderAtmosphere->uniformVec4(3, uniPlanes);
+        shaderAtmosphere->uniformVec4(4, uniAtmosphere);
+        shaderAtmosphere->uniformVec3(5, (float*)uniCameraPosition.data());
+        shaderAtmosphere->uniformVec3(6, (float*)uniCameraPosNorm.data());
         for (int i = 0; i < 4; i++)
         {
-            shaderAtmosphere->uniformVec3(8 + i,
+            shaderAtmosphere->uniformVec3(7 + i,
                             (float*)uniCameraDirections[i].data());
         }
 

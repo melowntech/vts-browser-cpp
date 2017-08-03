@@ -40,34 +40,35 @@ void main()
         float fog = (depthReal - uniFog.x) / (uniFog.y - uniFog.x);
         fog = clamp(fog, 0, 1);
         fog = pow(fog, 3);
-        fog *= pow(1 - max(dot(camDir, -uniCameraPosNorm), 0), 5);
+        fog *= pow(1 - max(dot(camDir, -uniCameraPosNorm), 0), 10);
         outColor += mix(vec4(0), uniColorLow, fog);
 
         // border
         float border = 1 - max(dot(normalize(pos), uniCameraPosNorm), 0);
-        outColor += vec4(uniColorLow.rgb, border);
+        outColor += mix(vec4(0), uniColorLow, border);
     }
     else
     { // background
-        // camera altitude
-        float camAlt = length(uniCameraPosition) - uniRadiuses.x;
-        camAlt = camAlt / uniRadiuses.z;
-        camAlt = clamp(camAlt, 0, 1);
-
         // camera dot
-        float camDot = dot(camDir, -uniCameraPosNorm);
+        float camDot = dot(camDir, uniCameraPosNorm);
 
         // aura
         float aurDot = (camDot - uniAura.x) / (uniAura.y - uniAura.x);
         aurDot = clamp(aurDot, 0, 1);
-        vec4 aurColor = mix(uniColorLow, uniColorHigh, aurDot);
-        //outColor += aurColor;
+        vec4 aurColor = vec4(mix(uniColorLow.rgb, uniColorHigh.rgb, aurDot),
+                             mix(uniColorLow.a, 0, aurDot));
 
         // atmosphere
-        float atmGrad = camDot * -2.5;
+        float atmGrad = camDot * 2.5;
         atmGrad = clamp(atmGrad, 0, 1);
         vec4 atmColor = mix(uniColorLow, uniColorHigh, atmGrad);
-        outColor += mix(atmColor, vec4(0), camAlt);
+
+        // camera altitude
+        float camAlt = length(uniCameraPosition) - uniRadiuses.x;
+        camAlt = camAlt / uniRadiuses.z;
+        camAlt = clamp(camAlt, 0, 1);
+        camAlt = smoothstep(0, 1, camAlt);
+        outColor = mix(atmColor, aurColor, camAlt);
     }
 }
 

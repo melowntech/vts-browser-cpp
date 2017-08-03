@@ -293,7 +293,7 @@ double MapImpl::getPositionTiltLimit()
     double extHig = options.viewExtentThresholdScaleHigh * body.majorRadius;
     double f = (extCur - extLow) / (extHig - extLow);
     f = clamp(f, 0, 1);
-    f = 3 * f * f - 2 * f * f * f;
+    f = smootherstep(f);
     return interpolate(options.tiltLimitAngleHigh,
                        options.tiltLimitAngleLow, f);
 }

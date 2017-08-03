@@ -538,9 +538,13 @@ void MainWindow::renderFrame()
         vts::vec3 camPos = vts::vec4to3(inv * vts::vec4(0, 0, -1, 1), true);
         double camRad = vts::length(camPos);
         double atmRad = body.majorRadius + body.atmosphereThickness;
-        double aurDotLow = std::min(body.majorRadius / camRad, 1.0);
-        double aurDotHigh = std::min(atmRad / camRad, 1.0);
-        aurDotHigh = std::max(aurDotHigh, aurDotLow + 1e-3);
+        double aurDotLow = camRad > body.majorRadius
+                ? -sqrt(sqr(camRad) - sqr(body.majorRadius)) / camRad : 0;
+        double aurDotHigh = camRad > atmRad
+                ? -sqrt(sqr(camRad) - sqr(atmRad)) / camRad : 0;
+        aurDotHigh = std::max(aurDotHigh, aurDotLow + 1e-4);
+
+        map->statistics().debug = aurDotLow;
 
         vts::vec3f uniCameraPosition = camPos.cast<float>();
         vts::vec3f uniCameraPosNorm = vts::normalize(camPos).cast<float>();

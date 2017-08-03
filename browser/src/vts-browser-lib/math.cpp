@@ -351,6 +351,16 @@ double clamp(double a, double min, double max)
     return std::max(std::min(a, max), min);
 }
 
+double smoothstep(double f)
+{
+    return f * f * (3 - f * 2);
+}
+
+double smootherstep(double f)
+{
+    return f * f * f * (f * (f * 6 - 15) + 10);
+}
+
 void normalizeAngle(double &a)
 {
     a = modulo(a, 360);

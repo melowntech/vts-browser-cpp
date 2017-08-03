@@ -377,6 +377,17 @@ void MapConfig::initializeCelestialBody() const
         std::copy(highColor.begin(), highColor.end(),
                   map->body.atmosphereColorHigh);
     }
+    if (std::abs(map->body.majorRadius - 3396200) < 30000)
+    {
+        map->body.name = "Mars";
+        map->body.atmosphereThickness = 30000;
+        static auto lowColor = { 0.77, 0.48, 0.27, 0.6 };
+        static auto highColor = { 0.58, 0.65, 0.77, 0.6 };
+        std::copy(lowColor.begin(), lowColor.end(),
+                  map->body.atmosphereColorLow);
+        std::copy(highColor.begin(), highColor.end(),
+                  map->body.atmosphereColorHigh);
+    }
     else
     {
         map->body.name = "unknown";

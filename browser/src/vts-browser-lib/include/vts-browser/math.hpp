@@ -92,6 +92,8 @@ VTS_API double radToDeg(double angle);
 VTS_API double modulo(double a, double m);
 VTS_API double interpolate(double a, double b, double f);
 VTS_API double clamp(double a, double min, double max);
+VTS_API double smoothstep(double f);
+VTS_API double smootherstep(double f);
 
 VTS_API vec3f convertRgbToHsv(const vec3f &inColor);
 VTS_API vec3f convertHsvToRgb(const vec3f &inColor);

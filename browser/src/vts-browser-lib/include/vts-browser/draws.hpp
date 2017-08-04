@@ -45,7 +45,7 @@ public:
     float uvm[9];
     float color[4];
     bool externalUv;
-    bool transparent;
+    bool flatShading;
 
     DrawTask();
     DrawTask(class RenderTask *r, class MapImpl *m);
@@ -54,9 +54,12 @@ public:
 class VTS_API MapDraws
 {
 public:
-    MapDraws();
+    std::vector<DrawTask> opaque;
+    std::vector<DrawTask> transparent;
+    std::vector<DrawTask> Infographic;
 
-    std::vector<DrawTask> draws;
+    MapDraws();
+    void clear();
 };
 
 } // namespace vts

@@ -88,9 +88,21 @@ public:
     mat3f uvm;
     vec4f color;
     bool externalUv;
-    bool transparent;
+    bool flatShading;
 
     RenderTask();
+    bool ready() const;
+};
+
+class Renders
+{
+public:
+    std::vector<std::shared_ptr<RenderTask>> opaque;
+    std::vector<std::shared_ptr<RenderTask>> transparent;
+    std::vector<std::shared_ptr<RenderTask>> infographic;
+
+    void clear();
+    bool empty() const;
     bool ready() const;
 };
 
@@ -110,7 +122,7 @@ public:
 
     boost::optional<MetaInfo> meta;
     std::vector<std::shared_ptr<TraverseNode>> childs;
-    std::vector<std::shared_ptr<RenderTask>> draws;
+    Renders renders;
     NodeInfo nodeInfo;
     TraverseNode *const parent;
     uint32 lastAccessTime;
@@ -156,7 +168,7 @@ public:
     class Navigation
     {
     public:
-        std::vector<std::shared_ptr<RenderTask>> draws;
+        Renders renders;
         vec3 changeRotation;
         vec3 targetPoint;
         double autoRotation;
@@ -273,7 +285,9 @@ public:
     const TileId roundId(TileId nodeId);
     Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
                            BoundParamInfo::List &boundList, double priority);
-    void touchTravDraws(const std::shared_ptr<TraverseNode> &trav);
+    void drawRenders(Renders &renders);
+    void touchDraws(const std::shared_ptr<RenderTask> &task);
+    void touchDraws(Renders &renders);
     bool visibilityTest(const std::shared_ptr<TraverseNode> &trav);
     bool coarsenessTest(const std::shared_ptr<TraverseNode> &trav);
     void renderNode(const std::shared_ptr<TraverseNode> &trav);

@@ -125,28 +125,29 @@ void MainWindow::initialize()
     // luckily, the vts-browser library provides
     // ready-to-use standard shaders
 
-    // load shaderTexture
+    // load shaderSurface
     {
-        shaderTexture = std::make_shared<GpuShaderImpl>();
+        shaderSurface = std::make_shared<GpuShaderImpl>();
         vts::Buffer vert = readInternalMemoryBuffer(
-                    "data/shaders/texture.vert.glsl");
+                    "data/shaders/surface.vert.glsl");
         vts::Buffer frag = readInternalMemoryBuffer(
-                    "data/shaders/texture.frag.glsl");
-        shaderTexture->loadShaders(
+                    "data/shaders/surface.frag.glsl");
+        shaderSurface->loadShaders(
             std::string(vert.data(), vert.size()),
             std::string(frag.data(), frag.size()));
-        std::vector<vts::uint32> &uls = shaderTexture->uniformLocations;
-        GpuShaderImpl *s = shaderTexture.get();
+        std::vector<vts::uint32> &uls = shaderSurface->uniformLocations;
+        GpuShaderImpl *s = shaderSurface.get();
         uls.push_back(s->uniformLocation("uniMvp"));
         uls.push_back(s->uniformLocation("uniUvMat"));
-        uls.push_back(s->uniformLocation("uniUvMode"));
-        uls.push_back(s->uniformLocation("uniMaskMode"));
-        uls.push_back(s->uniformLocation("uniTexMode"));
-        uls.push_back(s->uniformLocation("uniAlpha"));
+        uls.push_back(s->uniformLocation("uniUvSource"));
+        uls.push_back(s->uniformLocation("uniColor"));
+        uls.push_back(s->uniformLocation("uniUseMask"));
+        uls.push_back(s->uniformLocation("uniMonochromatic"));
         GLuint id = s->programId();
         gl->glUseProgram(id);
         gl->glUniform1i(gl->glGetUniformLocation(id, "texColor"), 0);
         gl->glUniform1i(gl->glGetUniformLocation(id, "texMask"), 1);
+        gl->glUniform1i(s->uniformLocation("uniFlatShading"), 0);
     }
 
     // load shaderColor
@@ -176,31 +177,29 @@ void MainWindow::draw(const vts::DrawTask &t)
     // each render command uses either a color texture or flat color
     if (t.texColor)
     {
-        shaderTexture->bind();
-        shaderTexture->uniformMat4(0, t.mvp); // model-view-projection matrix
-        shaderTexture->uniformMat3(1, t.uvm); // uv-transformation matrix
-        shaderTexture->uniform(2, (int)t.externalUv); // uv coordinates source
+        shaderSurface->bind();
+        shaderSurface->uniformMat4(0, t.mvp); // model-view-projection matrix
+        shaderSurface->uniformMat3(1, t.uvm); // uv-transformation matrix
+        shaderSurface->uniform(2, (int)t.externalUv); // uv coordinates source
+        shaderSurface->uniformVec4(3, t.color); // color
 
         // some draw commands also have pixel mask
         if (t.texMask)
         {
-            shaderTexture->uniform(3, 1);
+            shaderSurface->uniform(4, 1);
             gl->glActiveTexture(GL_TEXTURE0 + 1);
             ((GpuTextureImpl*)t.texMask.get())->bind();
             gl->glActiveTexture(GL_TEXTURE0 + 0);
         }
         else
-            shaderTexture->uniform(3, 0);
+            shaderSurface->uniform(4, 0);
 
         // color texture
         GpuTextureImpl *tex = (GpuTextureImpl*)t.texColor.get();
         tex->bind();
 
         // grayscale textures require special handling
-        shaderTexture->uniform(4, (int)tex->grayscale);
-
-        // opacity
-        shaderTexture->uniform(5, t.color[3]);
+        shaderSurface->uniform(5, (int)tex->grayscale);
     }
     else
     {
@@ -257,7 +256,11 @@ void MainWindow::tick()
         map->renderTickRender();
 
         // issue the actual opengl commands to render the frame
-        for (const vts::DrawTask &t : map->draws().draws)
+        for (const vts::DrawTask &t : map->draws().opaque)
+            draw(t);
+        for (const vts::DrawTask &t : map->draws().transparent)
+            draw(t);
+        for (const vts::DrawTask &t : map->draws().Infographic)
             draw(t);
 
         // update credits in the window title bar

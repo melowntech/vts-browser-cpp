@@ -6,8 +6,11 @@ layout(location = 2) in vec2 inUvExternal;
 
 uniform mat4 uniMvp;
 
+out vec2 varUvs;
+
 void main()
 {
     gl_Position = uniMvp * vec4(inPosition, 1.0);
+    varUvs = inUvInternal;
 }
 

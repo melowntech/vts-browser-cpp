@@ -224,10 +224,9 @@ bool Map::isMapRenderComplete() const
 {
     if (!isMapConfigReady())
         return false;
-    return !impl->draws.draws.empty()
-            && impl->statistics.currentNodeMetaUpdates == 0
-            && impl->statistics.currentNodeDrawsUpdates == 0
-            && impl->statistics.currentResourcePreparing == 0;
+    return impl->statistics.currentNodeMetaUpdates == 0
+        && impl->statistics.currentNodeDrawsUpdates == 0
+        && impl->statistics.currentResourcePreparing == 0;
 }
 
 double Map::getMapRenderProgress() const

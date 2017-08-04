@@ -80,6 +80,7 @@ MapOptions::MapOptions() :
     debugDisableVirtualSurfaces(false),
     debugDisableSri(false),
     debugSaveCorruptedFiles(true),
+    debugFlatShading(false),
     debugRenderSurrogates(false),
     debugRenderMeshBoxes(false),
     debugRenderTileBoxes(false),

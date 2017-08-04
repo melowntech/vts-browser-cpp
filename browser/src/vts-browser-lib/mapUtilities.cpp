@@ -126,11 +126,13 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
 
 DrawTask::DrawTask() :
     mesh(nullptr), texColor(nullptr), texMask(nullptr),
-    externalUv(false), transparent(false)
+    externalUv(false), flatShading(false)
 {}
 
 DrawTask::DrawTask(RenderTask *r, MapImpl *m) :
-    mesh(nullptr), texColor(nullptr), texMask(nullptr)
+    mesh(nullptr), texColor(nullptr), texMask(nullptr),
+    externalUv(r->externalUv),
+    flatShading(r->flatShading || m->options.debugFlatShading)
 {
     mesh = r->mesh->info.userData;
     if (r->textureColor)
@@ -141,18 +143,21 @@ DrawTask::DrawTask(RenderTask *r, MapImpl *m) :
     memcpy(this->mvp, mvp.data(), sizeof(mvp));
     memcpy(uvm, r->uvm.data(), sizeof(uvm));
     memcpy(color, r->color.data(), sizeof(color));
-    externalUv = r->externalUv;
-    transparent = r->transparent;
 }
 
 MapDraws::MapDraws()
+{}
+
+void MapDraws::clear()
 {
-    draws.reserve(2000);
+    opaque.clear();
+    transparent.clear();
+    Infographic.clear();
 }
 
 RenderTask::RenderTask() : model(identityMatrix()),
     uvm(upperLeftSubMatrix(identityMatrix()).cast<float>()),
-    color(1,1,1,1), externalUv(false), transparent(false)
+    color(1,1,1,1), externalUv(false), flatShading(false)
 {}
 
 bool RenderTask::ready() const
@@ -166,6 +171,30 @@ bool RenderTask::ready() const
     if (textureMask && !*textureMask)
         return false;
     return true;
+}
+
+void Renders::clear()
+{
+    opaque.clear();
+    transparent.clear();
+    infographic.clear();
+}
+
+bool Renders::empty() const
+{
+    return opaque.empty() && transparent.empty() && infographic.empty();
+}
+
+bool Renders::ready() const
+{
+    bool r = true;
+    for (auto &&it : opaque)
+        r = r && it->ready();
+    for (auto &&it : transparent)
+        r = r && it->ready();
+    for (auto &&it : infographic)
+        r = r && it->ready();
+    return r;
 }
 
 TraverseNode::MetaInfo::MetaInfo(const MetaNode &node) :
@@ -205,15 +234,12 @@ void TraverseNode::clear()
 {
     meta.reset();
     childs.clear();
-    draws.clear();
+    renders.clear();
 }
 
 bool TraverseNode::ready() const
 {
-    for (auto &&it : draws)
-        if (!it->ready())
-            return false;
-    return true;
+    return renders.ready();
 }
 
 TraverseQueueItem::TraverseQueueItem(const std::shared_ptr<TraverseNode> &trav,

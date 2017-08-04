@@ -105,7 +105,7 @@ public:
     void colorizeMarks();
     vts::vec3 getWorldPositionFromCursor();
 
-    void drawVtsTask(const vts::DrawTask &t);
+    void drawVtsTask(const vts::DrawTask &t, bool info);
     void drawMark(const Mark &m, const Mark *prev);
 
     void renderFrame();
@@ -122,8 +122,9 @@ public:
     void setMapConfigPath(const MapPaths &paths);
 
     AppOptions appOptions;
-    std::shared_ptr<GpuShaderImpl> shaderTexture;
+    std::shared_ptr<GpuShaderImpl> shaderSurface;
     std::shared_ptr<GpuShaderImpl> shaderColor;
+    std::shared_ptr<GpuShaderImpl> shaderInfographic;
     std::shared_ptr<GpuShaderImpl> shaderAtmosphere;
     std::shared_ptr<GpuShaderImpl> shaderBlit;
     std::shared_ptr<GpuMeshImpl> meshMark;

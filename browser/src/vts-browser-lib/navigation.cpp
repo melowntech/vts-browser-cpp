@@ -165,7 +165,7 @@ void MapImpl::updateNavigation()
     assert(options.navigationLatitudeThreshold > 0
            && options.navigationLatitudeThreshold < 90);
 
-    navigation.draws.clear();
+    navigation.renders.clear();
 
     updatePositionAltitudeShift();
 

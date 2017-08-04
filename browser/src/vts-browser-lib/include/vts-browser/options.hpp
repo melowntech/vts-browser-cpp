@@ -206,6 +206,7 @@ public:
     bool debugDisableVirtualSurfaces;
     bool debugDisableSri;
     bool debugSaveCorruptedFiles;
+    bool debugFlatShading;
 
     bool debugRenderSurrogates;
     bool debugRenderMeshBoxes;

@@ -8,6 +8,6 @@ in vec2 varUvs;
 
 void main()
 {
-	outColor = texture(texColor, varUvs);
+    outColor = texture(texColor, varUvs);
 }
 

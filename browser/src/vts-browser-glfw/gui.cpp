@@ -599,6 +599,11 @@ public:
                                                 o.debugDetachedCamera);
             nk_label(&ctx, "", NK_TEXT_LEFT);
 
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+            o.debugFlatShading = nk_check_label(&ctx, "flat shading",
+                                                o.debugFlatShading);
+            nk_label(&ctx, "", NK_TEXT_LEFT);
+
             // debug disable meta 5
             {
                 nk_label(&ctx, "", NK_TEXT_LEFT);

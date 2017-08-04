@@ -8,6 +8,7 @@ uniform vec4 uniAtmosphere; // minAngle, maxAngle, horizonAngle, fogDistance
 uniform vec3 uniCameraPosition;
 uniform vec3 uniCameraPosNorm;
           // uniCameraDirections
+uniform int uniProjected;
 
 uniform sampler2D texDepth;
 uniform sampler2D texColor;
@@ -29,6 +30,9 @@ void main()
     float depthNorm = texelFetch(texDepth, ivec2(gl_FragCoord.xy), 0).x;
     if (depthNorm < 1)
     { // foreground
+        if (uniProjected == 1)
+            discard;
+
         // linearized depth
         float n = uniPlanes.x;
         float f = uniPlanes.y;
@@ -53,7 +57,8 @@ void main()
     else
     { // background
         // camera dot
-        float camDot = dot(camDir, uniCameraPosNorm);
+        vec3 up = uniProjected == 1 ? vec3(0, 0, 1) : uniCameraPosNorm;
+        float camDot = dot(camDir, up);
 
         // aura
         float aurDot = (camDot - uniAtmosphere.x)

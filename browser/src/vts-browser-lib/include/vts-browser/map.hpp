@@ -67,14 +67,15 @@ public:
                           const std::string &sriPath = "");
     std::string &getMapConfigPath() const;
     void purgeViewCache();
+    bool getMapProjected() const;
 
     // returns whether the map config has been downloaded
     // and parsed successfully
     // most other functions will not work until this is ready
-    bool isMapConfigReady() const;
+    bool getMapConfigReady() const;
     // returns whether the map has all resources needed for complete
     // render
-    bool isMapRenderComplete() const;
+    bool getMapRenderComplete() const;
     // returns estimation of progress till complete render
     double getMapRenderProgress() const;
 

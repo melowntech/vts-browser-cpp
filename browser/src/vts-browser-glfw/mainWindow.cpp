@@ -214,6 +214,7 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         uls.push_back(glGetUniformLocation(id, "uniAtmosphere"));
         uls.push_back(glGetUniformLocation(id, "uniCameraPosition"));
         uls.push_back(glGetUniformLocation(id, "uniCameraPosNorm"));
+        uls.push_back(glGetUniformLocation(id, "uniProjected"));
         uls.push_back(glGetUniformLocation(id, "uniCameraDirections[0]"));
         uls.push_back(glGetUniformLocation(id, "uniCameraDirections[1]"));
         uls.push_back(glGetUniformLocation(id, "uniCameraDirections[2]"));
@@ -597,9 +598,10 @@ void MainWindow::renderFrame()
         shaderAtmosphere->uniformVec4(4, uniAtmosphere);
         shaderAtmosphere->uniformVec3(5, (float*)uniCameraPosition.data());
         shaderAtmosphere->uniformVec3(6, (float*)uniCameraPosNorm.data());
+        shaderAtmosphere->uniform(7, (int)map->getMapProjected());
         for (int i = 0; i < 4; i++)
         {
-            shaderAtmosphere->uniformVec3(7 + i,
+            shaderAtmosphere->uniformVec3(8 + i,
                             (float*)uniCameraDirections[i].data());
         }
 
@@ -675,7 +677,7 @@ void MainWindow::run()
 
     while (!glfwWindowShouldClose(window))
     {
-        if (!initialPositionSet && map->isMapConfigReady())
+        if (!initialPositionSet && map->getMapConfigReady())
         {
             initialPositionSet = true;
             if (!appOptions.initialPosition.empty())
@@ -747,7 +749,7 @@ void MainWindow::run()
         timingGuiProcess = timeGui - timeAppRender;
         timingTotalFrame = timeFrameFinish - timeFrameStart;
 
-        if (appOptions.closeOnFullRender && map->isMapRenderComplete())
+        if (appOptions.closeOnFullRender && map->getMapRenderComplete())
             glfwSetWindowShouldClose(window, true);
     }
     gui.finalize();

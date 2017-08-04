@@ -209,7 +209,15 @@ void Map::purgeViewCache()
     impl->purgeViewCache();
 }
 
-bool Map::isMapConfigReady() const
+bool Map::getMapProjected() const
+{
+    if (!getMapConfigReady())
+        return false;
+    return impl->mapConfig->navigationType()
+            == vtslibs::registry::Srs::Type::projected;
+}
+
+bool Map::getMapConfigReady() const
 {
     if (impl->initialized)
     {
@@ -220,9 +228,9 @@ bool Map::isMapConfigReady() const
     return impl->initialized;
 }
 
-bool Map::isMapRenderComplete() const
+bool Map::getMapRenderComplete() const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return false;
     return impl->statistics.currentNodeMetaUpdates == 0
         && impl->statistics.currentNodeDrawsUpdates == 0
@@ -231,16 +239,16 @@ bool Map::isMapRenderComplete() const
 
 double Map::getMapRenderProgress() const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return 0;
-    if (isMapRenderComplete())
+    if (getMapRenderComplete())
         return 1;
     return 0.5; // todo some better heuristic
 }
 
 void Map::pan(const double value[3])
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     vec3 v(value[0], value[1], value[2]);
     if (impl->mapConfig->position.type
@@ -257,7 +265,7 @@ void Map::pan(const double (&value)[3])
 
 void Map::rotate(const double value[3])
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     impl->rotate(vec3(value[0], value[1], value[2])); 
 }
@@ -269,7 +277,7 @@ void Map::rotate(const double (&value)[3])
 
 void Map::zoom(double value)
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     if (impl->mapConfig->position.type
             == vtslibs::registry::Position::Type::objective)
@@ -308,7 +316,7 @@ const MapCelestialBody &Map::celestialBody()
 
 void Map::setPositionSubjective(bool subjective, bool convert)
 {
-    if (!isMapConfigReady() || subjective == getPositionSubjective())
+    if (!getMapConfigReady() || subjective == getPositionSubjective())
         return;
     if (convert)
         impl->convertPositionSubjObj();
@@ -319,7 +327,7 @@ void Map::setPositionSubjective(bool subjective, bool convert)
 
 bool Map::getPositionSubjective() const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return false;
     return impl->mapConfig->position.type
             == vtslibs::registry::Position::Type::subjective;
@@ -327,7 +335,7 @@ bool Map::getPositionSubjective() const
 
 void Map::setPositionPoint(const double point[3], NavigationType type)
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     assert(point[0] == point[0]);
     assert(point[1] == point[1]);
@@ -358,7 +366,7 @@ void Map::setPositionPoint(const double (&point)[3], NavigationType type)
 
 void Map::getPositionPoint(double point[3]) const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
     {
         for (int i = 0; i < 3; i++)
             point[i] = 0;
@@ -386,7 +394,7 @@ void Map::setPositionRotation(const double (&point)[3], NavigationType type)
 
 void Map::getPositionRotation(double point[3]) const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
     {
         for (int i = 0; i < 3; i++)
             point[i] = 0;
@@ -399,7 +407,7 @@ void Map::getPositionRotation(double point[3]) const
 
 void Map::setPositionViewExtent(double viewExtent, NavigationType type)
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     assert(viewExtent == viewExtent);
     impl->setViewExtent(viewExtent, type);
@@ -407,14 +415,14 @@ void Map::setPositionViewExtent(double viewExtent, NavigationType type)
 
 double Map::getPositionViewExtent() const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return 0;
     return impl->mapConfig->position.verticalExtent;
 }
 
 void Map::setPositionFov(double fov)
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     assert(fov > 0 && fov < 180);
     impl->mapConfig->position.verticalFov = fov;
@@ -422,14 +430,14 @@ void Map::setPositionFov(double fov)
 
 double Map::getPositionFov() const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return 0;
     return impl->mapConfig->position.verticalFov;
 }
 
 std::string Map::getPositionJson() const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return "";
     return Json::FastWriter().write(
                 vtslibs::registry::asJson(impl->mapConfig->position));
@@ -437,7 +445,7 @@ std::string Map::getPositionJson() const
 
 std::string Map::getPositionUrl() const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return "";
     return boost::lexical_cast<std::string>(impl->mapConfig->position);
 }
@@ -465,7 +473,7 @@ void setPosition(Map *map, const vtslibs::registry::Position &pos,
 
 void Map::setPositionJson(const std::string &position, NavigationType type)
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     Json::Value val;
     if (!Json::Reader().parse(position, val))
@@ -476,7 +484,7 @@ void Map::setPositionJson(const std::string &position, NavigationType type)
 
 void Map::setPositionUrl(const std::string &position, NavigationType type)
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     vtslibs::registry::Position pos;
     try
@@ -492,21 +500,21 @@ void Map::setPositionUrl(const std::string &position, NavigationType type)
 
 void Map::resetPositionAltitude()
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     impl->navigation.positionAltitudeResetHeight = 0;
 }
 
 void Map::resetNavigationGeographicMode()
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     impl->resetNavigationGeographicMode();
 }
 
 void Map::setAutoRotation(double value)
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     impl->navigation.autoRotation = value;
     impl->navigation.type = NavigationType::Quick;
@@ -514,7 +522,7 @@ void Map::setAutoRotation(double value)
 
 double Map::getAutoRotation() const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return 0;
     return impl->navigation.autoRotation;
 }
@@ -522,7 +530,7 @@ double Map::getAutoRotation() const
 void Map::convert(const double pointFrom[3], double pointTo[3],
                   Srs srsFrom, Srs srsTo) const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     vec3 a(pointFrom[0], pointFrom[1], pointFrom[2]);
     a = impl->convertor->convert(a,
@@ -534,7 +542,7 @@ void Map::convert(const double pointFrom[3], double pointTo[3],
 
 std::vector<std::string> Map::getResourceSurfaces() const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return {};
     std::vector<std::string> names;
     names.reserve(impl->mapConfig->surfaces.size());
@@ -545,7 +553,7 @@ std::vector<std::string> Map::getResourceSurfaces() const
 
 std::vector<std::string> Map::getResourceBoundLayers() const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return {};
     std::vector<std::string> names;
     for (auto &&it : impl->mapConfig->boundLayers)
@@ -555,7 +563,7 @@ std::vector<std::string> Map::getResourceBoundLayers() const
 
 std::vector<std::string> Map::getResourceFreeLayers() const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return {};
     std::vector<std::string> names;
     for (auto &&it : impl->mapConfig->freeLayers)
@@ -565,7 +573,7 @@ std::vector<std::string> Map::getResourceFreeLayers() const
 
 std::vector<std::string> Map::getViewNames() const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return {};
     std::vector<std::string> names;
     names.reserve(impl->mapConfig->namedViews.size());
@@ -576,14 +584,14 @@ std::vector<std::string> Map::getViewNames() const
 
 std::string Map::getViewCurrent() const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return "";
     return impl->mapConfigView;
 }
 
 void Map::setViewCurrent(const std::string &name)
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     auto it = impl->mapConfig->namedViews.find(name);
     if (it == impl->mapConfig->namedViews.end())
@@ -598,7 +606,7 @@ void Map::setViewCurrent(const std::string &name)
 
 void Map::getViewData(const std::string &name, MapView &view) const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     auto it = impl->mapConfig->namedViews.find(name);
     if (it == impl->mapConfig->namedViews.end())
@@ -609,7 +617,7 @@ void Map::getViewData(const std::string &name, MapView &view) const
 
 void Map::setViewData(const std::string &name, const MapView &view)
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     impl->mapConfig->namedViews[name] = setMapView(view);
     if (name == getViewCurrent())
@@ -621,7 +629,7 @@ void Map::setViewData(const std::string &name, const MapView &view)
 
 void Map::removeView(const std::string &name)
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     if (name == getViewCurrent())
         LOGTHROW(err2, std::runtime_error)
@@ -632,7 +640,7 @@ void Map::removeView(const std::string &name)
 
 std::string Map::getViewJson(const std::string &name) const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return "";
     if (name == "")
         return Json::FastWriter().write(vtslibs::registry::asJson(
@@ -648,7 +656,7 @@ std::string Map::getViewJson(const std::string &name) const
 void Map::setViewJson(const std::string &name,
                                 const std::string &view)
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return;
     Json::Value val;
     Json::Reader r;
@@ -660,14 +668,14 @@ void Map::setViewJson(const std::string &name,
 
 bool Map::searchable() const
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return false;
     return !impl->mapConfig->browserOptions.searchUrl.empty();
 }
 
 std::shared_ptr<SearchTask> Map::search(const std::string &query)
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return {};
     return search(query, impl->mapConfig->position.position.data().begin());
 }
@@ -675,7 +683,7 @@ std::shared_ptr<SearchTask> Map::search(const std::string &query)
 std::shared_ptr<SearchTask> Map::search(const std::string &query,
                                         const double point[3])
 {
-    if (!isMapConfigReady())
+    if (!getMapConfigReady())
         return {};
     return impl->search(query, point);
 }

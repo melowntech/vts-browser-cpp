@@ -1,3 +1,9 @@
+vts-browser (0.9) melown-xenial; urgency=medium
+
+  * atmosphere
+
+ -- Tomas Maly <tomas.maly@melown.com>  Fri, 04 Aug 2017 15:44:32 +0200
+
 vts-browser (0ubuntu8) melown-xenial; urgency=medium
 
   * dependency on proj-data-vts

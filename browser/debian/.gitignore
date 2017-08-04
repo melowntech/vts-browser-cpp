@@ -1,9 +1,9 @@
 /debhelper-build-stamp
 /files
-/*/*
-/!sources/*
+/vts-*
 /*.log
 /*.substvars
+/*.new
 
 
 

@@ -6,8 +6,7 @@
 /obj-*
 /.vscode
 /corrupted
-
-bin
-lib
-build.*
+/bin
+/lib
+/build.*
 

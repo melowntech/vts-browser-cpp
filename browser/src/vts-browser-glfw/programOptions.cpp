@@ -92,6 +92,10 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 "Quit the application when it finishes "
                 "rendering the whole image."
             )
+            ("renderAtmosphere",
+                po::value<bool>(&appOptions.renderAtmosphere),
+                "Render atmosphere."
+            )
             /*("screenshotWhenComplete",
                 po::value<bool>(&appOptions.screenshotOnFullRender),
                 "Save screenshot when it finishes "

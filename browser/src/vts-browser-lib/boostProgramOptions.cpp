@@ -94,7 +94,7 @@ void optionsConfigLog(
 
 void optionsConfigCreateOptions(
         boost::program_options::options_description &desc,
-        class MapCreateOptions *opts,
+        MapCreateOptions *opts,
         std::string section)
 {
     sanitizeSection(section);
@@ -116,7 +116,7 @@ void optionsConfigCreateOptions(
 
 void optionsConfigMapOptions(
         boost::program_options::options_description &desc,
-        class MapOptions *opts,
+        MapOptions *opts,
         std::string section)
 {
     sanitizeSection(section);
@@ -147,6 +147,18 @@ void optionsConfigMapOptions(
         po::value<uint32>(&opts->maxResourceProcessesPerTick),
         "Maximum number of resources processed per dataTick.")
 
+    ((section + "maxFetchRedirections").c_str(),
+        po::value<uint32>(&opts->maxFetchRedirections),
+        "Maximum number of redirections before the download fails.")
+
+    ((section + "maxFetchRetries").c_str(),
+        po::value<uint32>(&opts->maxFetchRetries),
+        "Maximum number of attempts to redownload a resource.")
+
+    ((section + "fetchFirstRetryTimeOffset").c_str(),
+        po::value<uint32>(&opts->fetchFirstRetryTimeOffset),
+        "Delay in seconds for first resource download retry.")
+
     ((section + "traverseMode").c_str(),
         po::value<TraverseMode>(&opts->traverseMode),
         "Render traversal mode:\n"
@@ -157,7 +169,7 @@ void optionsConfigMapOptions(
 
 void optionsConfigDebugOptions(
         boost::program_options::options_description &desc,
-        class MapOptions *opts,
+        MapOptions *opts,
         std::string section)
 {
     sanitizeSection(section);
@@ -178,6 +190,10 @@ void optionsConfigDebugOptions(
     ((section + "debugSaveCorruptedFiles").c_str(),
         po::value<bool>(&opts->debugSaveCorruptedFiles),
         "debugSaveCorruptedFiles")
+
+    ((section + "debugFlatShading").c_str(),
+        po::value<bool>(&opts->debugFlatShading),
+        "debugFlatShading")
 
     ((section + "debugRenderSurrogates").c_str(),
         po::value<bool>(&opts->debugRenderSurrogates),
@@ -211,7 +227,7 @@ void optionsConfigDebugOptions(
 
 void optionsConfigFetcherOptions(
         boost::program_options::options_description &desc,
-        class FetcherOptions *opts,
+        FetcherOptions *opts,
         std::string section)
 {
     sanitizeSection(section);

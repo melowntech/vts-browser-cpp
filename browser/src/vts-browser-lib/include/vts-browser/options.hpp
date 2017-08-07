@@ -162,7 +162,7 @@ public:
     //   the altitude used to correct the camera possition
     uint32 navigationSamplesPerViewExtent;
 
-    // maximum number of redirections before the request is failed
+    // maximum number of redirections before the download fails
     // this is to prevent infinite loops
     uint32 maxFetchRedirections;
 
@@ -198,7 +198,7 @@ public:
     bool enableCameraTiltLimit;
 
     // setting this to false will disable the camera reorientation towards norh
-    //   when it is zooming out
+    //   when it is zoomed out
     bool enableCameraYawToNorthOnZoomOut;
 
     bool debugDetachedCamera;

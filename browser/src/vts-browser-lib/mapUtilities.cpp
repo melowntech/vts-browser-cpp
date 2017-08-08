@@ -312,22 +312,35 @@ void TilesetMapping::update(const std::vector<std::string> &vsId)
     MapConfig::colorizeSurfaceStack(surfaceStack);
 }
 
-double MapImpl::getPositionTiltLimit()
+void MapImpl::applyCameraRotationNormalization(vec3 &rot)
 {
+    if (!options.enableCameraNormalization
+            || navigation.type == NavigationType::FlyOver)
+        return;
+
+    // find the interpolation factor
     double extCur = mapConfig->position.verticalExtent;
     double extLow = options.viewExtentThresholdScaleLow * body.majorRadius;
     double extHig = options.viewExtentThresholdScaleHigh * body.majorRadius;
     double f = (extCur - extLow) / (extHig - extLow);
     f = clamp(f, 0, 1);
-    f = smootherstep(f);
-    return interpolate(options.tiltLimitAngleHigh,
-                       options.tiltLimitAngleLow, f);
-}
+    //f = smootherstep(f);
 
-void MapImpl::applyPositionTiltLimit(double &tilt)
-{
-    if (options.enableCameraTiltLimit)
-        tilt = std::min(tilt, getPositionTiltLimit());
+    // tilt limit
+    rot(1) = std::min(rot(1), interpolate(options.tiltLimitAngleHigh,
+                                          options.tiltLimitAngleLow, f));
+
+    // yaw limit
+    if (options.navigationMode == NavigationMode::Azimuthal
+            || options.navigationMode == NavigationMode::Seamless)
+    {
+        double yawLim = interpolate(180, 0, f);
+        double &yaw = rot(0);
+        if (yaw > 180)
+            yaw = 360 - std::min(360 - yaw, yawLim);
+        else
+            yaw = std::min(yaw, yawLim);
+    }
 }
 
 void MapImpl::emptyTraverseQueue()

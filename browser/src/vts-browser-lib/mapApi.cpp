@@ -213,7 +213,7 @@ bool Map::getMapProjected() const
 {
     if (!getMapConfigReady())
         return false;
-    return impl->mapConfig->navigationType()
+    return impl->mapConfig->navigationSrsType()
             == vtslibs::registry::Srs::Type::projected;
 }
 
@@ -340,7 +340,7 @@ void Map::setPositionPoint(const double point[3], NavigationType type)
     assert(point[0] == point[0]);
     assert(point[1] == point[1]);
     assert(point[2] == point[2]);
-    if (impl->mapConfig->navigationType()
+    if (impl->mapConfig->navigationSrsType()
                    == vtslibs::registry::Srs::Type::geographic)
     {
         assert(point[0] >= -180 && point[0] <= 180);
@@ -505,11 +505,11 @@ void Map::resetPositionAltitude()
     impl->navigation.positionAltitudeResetHeight = 0;
 }
 
-void Map::resetNavigationGeographicMode()
+void Map::resetNavigationMode()
 {
     if (!getMapConfigReady())
         return;
-    impl->resetNavigationGeographicMode();
+    impl->resetNavigationMode();
 }
 
 void Map::setAutoRotation(double value)

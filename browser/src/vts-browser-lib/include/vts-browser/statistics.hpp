@@ -32,8 +32,6 @@
 namespace vts
 {
 
-enum class NavigationMode;
-
 class VTS_API MapStatistics
 {
 public:
@@ -74,6 +72,7 @@ public:
     uint32 currentNodeMetaUpdates;
     uint32 currentNodeDrawsUpdates;
 
+    NavigationType currentNavigationType;
     NavigationMode currentNavigationMode;
 
     // debug

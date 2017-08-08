@@ -113,7 +113,7 @@ void MapImpl::purgeMapConfig()
     mapConfig.reset();
     renderer.credits.purge();
     resources.searchTasks.clear();
-    resetNavigationGeographicMode();
+    resetNavigationMode();
     navigation.autoRotation = 0;
     navigation.lastPositionAltitudeShift.reset();
     navigation.positionAltitudeResetHeight.reset();
@@ -802,7 +802,7 @@ void MapImpl::updateCamera()
     double near = std::max(2.0, dist * 0.1);
     double terrainAboveOrigin = 0;
     double cameraAboveOrigin = 0;
-    switch (mapConfig->navigationType())
+    switch (mapConfig->navigationSrsType())
     {
     case vtslibs::registry::Srs::Type::projected:
     {

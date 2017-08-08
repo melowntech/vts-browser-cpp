@@ -129,7 +129,7 @@ const std::string MapConfig::convertPath(const std::string &path,
     return utility::Uri(parent).resolve(path).str();
 }
 
-vtslibs::registry::Srs::Type MapConfig::navigationType() const
+vtslibs::registry::Srs::Type MapConfig::navigationSrsType() const
 {
     return srs.get(referenceFrame.model.navigationSrs).type;
 }

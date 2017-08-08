@@ -35,34 +35,6 @@
 namespace vts
 {
 
-enum class NavigationType;
-
-enum class NavigationMode
-{
-    // constricts the viewer only to limited range of latitudes
-    // generally, this mode is easier to use
-    Azimuthal,
-
-    // the viewer is free to navigato to anywhere including the poles
-    Free,
-
-    // starts in the azimuthal mode and switches to the free mode
-    //   when the viewer gets too close to a pole,
-    //   or when he/she changes camera orientation
-    // it can be switched back to azimuthal mode
-    //   eg. when the north-up button is pressed
-    Dynamic,
-
-    // actual navigation mode depends on zoom level
-    Seamless,
-};
-
-enum class TraverseMode
-{
-    Hierarchical,
-    Flat,
-};
-
 // these options are passed to the map when it is beeing created
 // and they are immutable during the lifetime of the map
 class VTS_API MapCreateOptions
@@ -116,7 +88,7 @@ public:
     double viewExtentLimitScaleMin;
     double viewExtentLimitScaleMax;
 
-    // view-extent thresholds at which the tilt limit starts taking effect
+    // view-extent thresholds at which the camera normalization takes effect
     // expressed as multiplicative factor of planet major radius
     double viewExtentThresholdScaleLow;
     double viewExtentThresholdScaleHigh;
@@ -194,12 +166,9 @@ public:
     //   only when the mapconfig changes
     bool enableArbitrarySriRequests;
 
-    // setting this to false will disable the tilt limit for the camera
-    bool enableCameraTiltLimit;
-
-    // setting this to false will disable the camera reorientation towards norh
-    //   when it is zoomed out
-    bool enableCameraYawToNorthOnZoomOut;
+    // setting this to false will disable that camera tilt and yaw
+    //   are limited when zoomed out
+    bool enableCameraNormalization;
 
     bool debugDetachedCamera;
     bool debugDisableMeta5;

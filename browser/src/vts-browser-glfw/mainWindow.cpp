@@ -393,6 +393,12 @@ void MainWindow::keyboardCallback(int key, int, int action, int)
         marks.push_back(mark);
         colorizeMarks();
     }
+    // north-up button
+    if (action == GLFW_RELEASE && key == GLFW_KEY_SPACE)
+    {
+        map->setPositionRotation({0,270,0}, vts::NavigationType::Quick);
+        map->resetNavigationMode();
+    }
 }
 
 void MainWindow::keyboardUnicodeCallback(unsigned int)

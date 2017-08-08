@@ -56,7 +56,8 @@ void MapStatistics::resetAll()
     desiredNavigationLod = 0;
     usedNavigationlod = 0;
     currentResourcePreparing = 0;
-    currentNavigationMode = NavigationMode::Azimuthal;
+    currentNavigationType = (NavigationType)0;
+    currentNavigationMode = (NavigationMode)0;
     debug = 0;
 }
 

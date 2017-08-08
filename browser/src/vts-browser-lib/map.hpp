@@ -177,6 +177,7 @@ public:
         boost::optional<double> positionAltitudeResetHeight;
         NavigationMode mode;
         NavigationType type;
+        NavigationType previousType;
 
         Navigation();
     } navigation;
@@ -237,12 +238,13 @@ public:
     void setRotation(const vec3 &euler, NavigationType type);
     void setViewExtent(double viewExtent, NavigationType type);
     void updatePositionAltitudeShift();
-    void resetNavigationGeographicMode();
+    void resetNavigationMode();
     void convertPositionSubjObj();
     void positionToCamera(vec3 &center, vec3 &dir, vec3 &up);
     double positionObjectiveDistance();
     void initializeNavigation();
     void updateNavigation();
+    bool isNavigationModeValid() const;
 
     // resources methods
     void resourceDataInitialize(const std::shared_ptr<Fetcher> &fetcher);
@@ -301,8 +303,7 @@ public:
     void updateCamera();
     bool prerequisitesCheck();
     void emptyTraverseQueue();
-    double getPositionTiltLimit();
-    void applyPositionTiltLimit(double &tilt);
+    void applyCameraRotationNormalization(vec3 &rot);
 };
 
 } // namespace vts

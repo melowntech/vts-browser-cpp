@@ -36,20 +36,6 @@
 namespace vts
 {
 
-enum class Srs
-{
-    Physical,
-    Navigation,
-    Public,
-};
-
-enum class NavigationType
-{
-    Instant,
-    Quick,
-    FlyOver,
-};
-
 // fundamental class which orchestrates all the vts tasks
 class VTS_API Map
 {
@@ -105,8 +91,8 @@ public:
     // corrects current position altitude to match the surface
     void resetPositionAltitude();
 
-    // for dynamic navigation mode, this will reset it back to azimuthal
-    void resetNavigationGeographicMode();
+    // this will reset navigation to azimuthal mode (or whichever is set)
+    void resetNavigationMode();
 
     void setPositionSubjective(bool subjective, bool convert);
     void setPositionPoint(const double point[3], NavigationType type);

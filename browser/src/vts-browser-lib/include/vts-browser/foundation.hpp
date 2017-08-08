@@ -41,6 +41,44 @@ typedef std::int32_t sint32;
 typedef std::uint64_t uint64;
 typedef std::int64_t sint64;
 
+enum class Srs
+{
+    Physical,
+    Navigation,
+    Public,
+};
+
+enum class NavigationType
+{
+    Instant,
+    Quick,
+    FlyOver,
+};
+
+enum class NavigationMode
+{
+    // constricts the viewer only to limited range of latitudes
+    // generally, this mode is easier to use
+    Azimuthal,
+
+    // the viewer is free to navigato to anywhere including the poles
+    Free,
+
+    // starts in the azimuthal mode and switches to the free mode
+    //   when the viewer gets too close to a pole,
+    //   or when he/she changes camera orientation
+    Dynamic,
+
+    // actual navigation mode depends on zoom level
+    Seamless,
+};
+
+enum class TraverseMode
+{
+    Hierarchical,
+    Flat,
+};
+
 #ifdef _MSVC
 #define VTS_API_EXPORT _declspec(dllexport)
 #define VTS_API_IMPORT _declspec(dllimport)

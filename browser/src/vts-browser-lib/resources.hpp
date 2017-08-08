@@ -178,7 +178,7 @@ public:
     void clear();
     static const std::string convertPath(const std::string &path,
                                          const std::string &parent);
-    vtslibs::registry::Srs::Type navigationType() const;
+    vtslibs::registry::Srs::Type navigationSrsType() const;
     
     vtslibs::vts::SurfaceCommonConfig *findGlue(
             const vtslibs::vts::Glue::Id &id);

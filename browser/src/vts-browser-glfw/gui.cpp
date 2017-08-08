@@ -53,7 +53,6 @@ const nk_rune FontUnicodeRanges[] = {
     0
 };
 
-
 void clipBoardPaste(nk_handle usr, struct nk_text_edit *edit)
 {
     const char *text = glfwGetClipboardString((GLFWwindow*)usr.ptr);
@@ -69,6 +68,24 @@ void clipBoardCopy(nk_handle usr, const char *text, int len)
     buffer[len] = 0;
     glfwSetClipboardString((GLFWwindow*)usr.ptr, buffer);
 }
+
+static const char *traverseModeNames[] = {
+    "Hierarchical",
+    "Flat",
+};
+
+static const char *navigationTypeNames[] = {
+    "Instant",
+    "Quick",
+    "FlyOver",
+};
+
+static const char *navigationModeNames[] = {
+    "Azimuthal",
+    "Free",
+    "Dynamic",
+    "Seamless",
+};
 
 } // namespace
 
@@ -433,23 +450,18 @@ public:
 
             // navigation type
             {
-                static const char *names[] = {
-                    "Instant",
-                    "Quick",
-                    "FlyOver",
-                };
-                nk_label(&ctx, "Navigation:", NK_TEXT_LEFT);
+                nk_label(&ctx, "Nav. type:", NK_TEXT_LEFT);
                 if (nk_combo_begin_label(&ctx,
-                                 names[(int)o.navigationType],
+                                 navigationTypeNames[(int)o.navigationType],
                                  nk_vec2(nk_widget_width(&ctx), 200)))
                 {
                     nk_layout_row_dynamic(&ctx, 16, 1);
-                    for (unsigned i = 0; i < sizeof(names)
-                         / sizeof(names[0]); i++)
+                    for (unsigned i = 0; i < sizeof(navigationTypeNames)
+                         / sizeof(navigationTypeNames[0]); i++)
                     {
-                        if (nk_combo_item_label(&ctx, names[i], NK_TEXT_LEFT))
-                            o.navigationType
-                                    = (vts::NavigationType)i;
+                        if (nk_combo_item_label(&ctx, navigationTypeNames[i],
+                                                NK_TEXT_LEFT))
+                            o.navigationType = (vts::NavigationType)i;
                     }
                     nk_combo_end(&ctx);
                 }
@@ -458,23 +470,18 @@ public:
 
             // navigation mode
             {
-                static const char *names[] = {
-                    "Azimuthal",
-                    "Free",
-                    "Dynamic",
-                };
-                nk_label(&ctx, "Geographic:", NK_TEXT_LEFT);
+                nk_label(&ctx, "Nav. mode:", NK_TEXT_LEFT);
                 if (nk_combo_begin_label(&ctx,
-                                 names[(int)o.navigationMode],
+                                 navigationModeNames[(int)o.navigationMode],
                                  nk_vec2(nk_widget_width(&ctx), 200)))
                 {
                     nk_layout_row_dynamic(&ctx, 16, 1);
-                    for (unsigned i = 0; i < sizeof(names)
-                         / sizeof(names[0]); i++)
+                    for (unsigned i = 0; i < sizeof(navigationModeNames)
+                         / sizeof(navigationModeNames[0]); i++)
                     {
-                        if (nk_combo_item_label(&ctx, names[i], NK_TEXT_LEFT))
-                            o.navigationMode
-                                    = (vts::NavigationMode)i;
+                        if (nk_combo_item_label(&ctx, navigationModeNames[i],
+                                                NK_TEXT_LEFT))
+                            o.navigationMode = (vts::NavigationMode)i;
                     }
                     nk_combo_end(&ctx);
                 }
@@ -483,20 +490,17 @@ public:
 
             // traverse mode
             {
-                static const char *names[] = {
-                    "Hierarchical",
-                    "Flat",
-                };
                 nk_label(&ctx, "Traverse:", NK_TEXT_LEFT);
                 if (nk_combo_begin_label(&ctx,
-                                 names[(int)o.traverseMode],
+                                 traverseModeNames[(int)o.traverseMode],
                                  nk_vec2(nk_widget_width(&ctx), 200)))
                 {
                     nk_layout_row_dynamic(&ctx, 16, 1);
-                    for (unsigned i = 0; i < sizeof(names)
-                         / sizeof(names[0]); i++)
+                    for (unsigned i = 0; i < sizeof(traverseModeNames)
+                         / sizeof(traverseModeNames[0]); i++)
                     {
-                        if (nk_combo_item_label(&ctx, names[i], NK_TEXT_LEFT))
+                        if (nk_combo_item_label(&ctx, traverseModeNames[i],
+                                                NK_TEXT_LEFT))
                             o.traverseMode = (vts::TraverseMode)i;
                     }
                     nk_combo_end(&ctx);
@@ -539,10 +543,10 @@ public:
             sprintf(buffer, "%3d", (int)(o.maxResourcesMemory / 1024 / 1024));
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
-            // enable camera tilt limit
+            // enable camera normalization
             nk_label(&ctx, "Enable:", NK_TEXT_LEFT);
-            o.enableCameraTiltLimit = nk_check_label(&ctx, "tilt limit",
-                                               o.enableCameraTiltLimit);
+            o.enableCameraNormalization = nk_check_label(&ctx, "cam. norm.",
+                                               o.enableCameraNormalization);
             nk_label(&ctx, "", NK_TEXT_LEFT);
 
             // render atmosphere
@@ -677,9 +681,12 @@ public:
             nk_label(&ctx, "Z range:", NK_TEXT_LEFT);
             sprintf(buffer, "%0.0f - %0.0f", window->camNear, window->camFar);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            nk_label(&ctx, "Nav. type:", NK_TEXT_LEFT);
+            nk_label(&ctx, navigationTypeNames[(int)s.currentNavigationType],
+                    NK_TEXT_RIGHT);
             nk_label(&ctx, "Nav. mode:", NK_TEXT_LEFT);
-            sprintf(buffer, "%d", (int)s.currentNavigationMode);
-            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            nk_label(&ctx, navigationModeNames[(int)s.currentNavigationMode],
+                    NK_TEXT_RIGHT);
             // resources
             S("Res. active:", s.currentResources, "");
             S("Res. preparing:", s.currentResourcePreparing, "");
@@ -830,7 +837,7 @@ public:
                 {
                     window->map->setPositionRotation({0,270,0},
                                             vts::NavigationType::Quick);
-                    window->map->resetNavigationGeographicMode();;
+                    window->map->resetNavigationMode();
                 }
             }
             // view extent
@@ -1209,7 +1216,7 @@ public:
                         window->map->setPositionRotation({0,270,0},
                                     vts::NavigationType::FlyOver);
                         window->map->resetPositionAltitude();
-                        window->map->resetNavigationGeographicMode();
+                        window->map->resetNavigationMode();
                         window->map->setPositionPoint(r.position,
                                     vts::NavigationType::FlyOver);
                     }

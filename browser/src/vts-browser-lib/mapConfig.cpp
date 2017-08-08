@@ -65,7 +65,7 @@ MapConfig::SurfaceStackItem::SurfaceStackItem() : alien(false)
 {}
 
 MapConfig::BrowserOptions::BrowserOptions() :
-    autorotate(0)
+    autorotate(0), searchFilter(true)
 {}
 
 MapConfig::MapConfig(MapImpl *map, const std::string &name)
@@ -81,6 +81,13 @@ void MapConfig::load()
     detail::Wrapper w(reply.content);
     vtslibs::vts::loadMapConfig(*this, w, name);
 
+    if (isEarth() || !map->createOptions.disableSearchUrlFallbackOutsideEarth)
+    {
+        browserOptions.searchUrl = map->createOptions.searchUrlFallback;
+        browserOptions.searchSrs = map->createOptions.searchSrsFallback;
+        browserOptions.searchFilter = map->options.enableSearchResultsFilter;
+    }
+
     auto bo(vtslibs::vts::browserOptions(*this));
     if (bo.isObject())
     {
@@ -95,15 +102,12 @@ void MapConfig::load()
             r = bo["controlSearchSrs"];
             if (r.isString())
                 browserOptions.searchSrs = r.asString();
+            r = bo["controlSearchFilter"];
+            if (r.isBool())
+                browserOptions.searchFilter = r.asBool();
         }
     }
 
-    bool allowSearchFallback = isEarth() ||
-            !map->createOptions.disableSearchUrlFallbackOutsideEarth;
-    if (browserOptions.searchUrl.empty() && allowSearchFallback)
-        browserOptions.searchUrl = map->createOptions.searchUrlFallback;
-    if (browserOptions.searchSrs.empty() && allowSearchFallback)
-        browserOptions.searchSrs = map->createOptions.searchSrsFallback;
     if (browserOptions.searchSrs.empty())
         browserOptions.searchUrl = "";
 
@@ -119,8 +123,7 @@ void MapConfig::clear()
     surfaceInfos.clear();
     boundInfos.clear();
     surfaceStack.clear();
-    browserOptions.autorotate = 0;
-    browserOptions.searchUrl = browserOptions.searchSrs = "";
+    browserOptions = BrowserOptions();
 }
 
 const std::string MapConfig::convertPath(const std::string &path,

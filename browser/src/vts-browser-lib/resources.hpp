@@ -171,6 +171,7 @@ public:
         std::string searchUrl;
         std::string searchSrs;
         double autorotate;
+        bool searchFilter;
     };
     
     MapConfig(MapImpl *map, const std::string &name);

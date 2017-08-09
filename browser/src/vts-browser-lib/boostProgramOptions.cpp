@@ -64,11 +64,6 @@ void sanitizeSection(std::string &s)
 
 } // namespace
 
-UTILITY_GENERATE_ENUM_IO(TraverseMode,
-                         ((Hierarchical)("hierarchical"))
-                         ((Flat)("flat"))
-                         )
-
 void optionsConfigLog(
         boost::program_options::options_description &desc,
         std::string section)
@@ -125,6 +120,11 @@ void optionsConfigMapOptions(
     ((section + "maxTexelToPixelScale").c_str(),
         po::value<double>(&opts->maxTexelToPixelScale),
         "Maximum ratio of texture details to the viewport resolution.")
+
+    ((section + "renderTilesScale").c_str(),
+        po::value<double>(&opts->renderTilesScale),
+        "Scale of every tile. "
+        "Small up-scale may reduce occasional holes on tile borders.")
 
     ((section + "maxResourcesMemory").c_str(),
         po::value<uint64>(&opts->maxResourcesMemory),
@@ -254,5 +254,10 @@ void optionsConfigFetcherOptions(
         "HTTP pipelining mode.")
     ;
 }
+
+UTILITY_GENERATE_ENUM_IO(TraverseMode,
+                         ((Hierarchical)("hierarchical"))
+                         ((Flat)("flat"))
+                         )
 
 } // namespace vts

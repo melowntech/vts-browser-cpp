@@ -43,15 +43,31 @@ typedef std::int64_t sint64;
 
 enum class Srs
 {
+    // mesh vertex coordinates are in physical srs
+    // eg. geocentric srs
     Physical,
+
+    // map navigation (eg. panning or rotation) are performed in navigation srs
+    // eg. geographic where altitude of zero is at ellipsoid
     Navigation,
+
+    // coordinate system for presentation to people
+    // eg. geographic with altitude above sea level
     Public,
 };
 
 enum class NavigationType
 {
+    // navigation changes are applied fully in first Map::renderTickPrepare()
     Instant,
+
+    // navigation changes progressively over time
+    // the change applied is large at first and smoothly drops
     Quick,
+
+    // special navigation mode where the camera speed is limited
+    // to speed up transitions over large distances,
+    //   it will zoom out first and zomm back in at the end
     FlyOver,
 };
 
@@ -61,12 +77,13 @@ enum class NavigationMode
     // generally, this mode is easier to use
     Azimuthal,
 
-    // the viewer is free to navigato to anywhere including the poles
+    // the viewer is free to navigato to anywhere, including the poles
     Free,
 
     // starts in the azimuthal mode and switches to the free mode
     //   when the viewer gets too close to a pole,
     //   or when he/she changes camera orientation
+    // it can be reset back to azimuthal with Map::resetNavigationMode()
     Dynamic,
 
     // actual navigation mode depends on zoom level
@@ -75,7 +92,11 @@ enum class NavigationMode
 
 enum class TraverseMode
 {
+    // this mode downloads each and every lod from top to the required level,
+    //   which ensures, that it has at least something to show at all times
     Hierarchical,
+
+    // this mode downloads only the smallest set of data
     Flat,
 };
 

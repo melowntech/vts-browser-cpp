@@ -88,7 +88,8 @@ double sqr(double a)
 AppOptions::AppOptions() :
     screenshotOnFullRender(false),
     closeOnFullRender(false),
-    renderAtmosphere(true)
+    renderAtmosphere(true),
+    renderPolygonEdges(false)
 {}
 
 MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
@@ -406,52 +407,47 @@ void MainWindow::keyboardUnicodeCallback(unsigned int)
     // do nothing
 }
 
-void MainWindow::drawVtsTask(const vts::DrawTask &t, bool info)
+void MainWindow::drawVtsTaskSurface(const vts::DrawTask &t)
 {
-    if (info)
+    shaderSurface->bind();
+    shaderSurface->uniformMat4(0, t.mvp);
+    shaderSurface->uniformMat3(2, t.uvm);
+    shaderSurface->uniform(3, (int)(t.externalUv));
+    shaderSurface->uniformVec4(4, t.color);
+    shaderSurface->uniform(7, (int)t.flatShading);
+    if (t.flatShading)
     {
-        shaderInfographic->bind();
-        shaderInfographic->uniformMat4(0, t.mvp);
-        shaderInfographic->uniformVec4(1, t.color);
-        shaderInfographic->uniform(2, (int)(!!t.texColor));
-        if (t.texColor)
-        {
-            GpuTextureImpl *tex = (GpuTextureImpl*)t.texColor.get();
-            tex->bind();
-        }
+        vts::mat4f mv = vts::mat4f(t.mvp);
+        mv = camProj.cast<float>().inverse() * mv;
+        shaderSurface->uniformMat4(1, (float*)mv.data());
     }
-    else if (t.texColor)
+    if (t.texMask)
     {
-        shaderSurface->bind();
-        shaderSurface->uniformMat4(0, t.mvp);
-        if (t.flatShading)
-        {
-            vts::mat4f mv = vts::mat4f(t.mvp);
-            mv = camProj.cast<float>().inverse() * mv;
-            shaderSurface->uniformMat4(1, (float*)mv.data());
-        }
-        shaderSurface->uniformMat3(2, t.uvm);
-        shaderSurface->uniform(3, (int)(t.externalUv));
-        shaderSurface->uniformVec4(4, t.color);
-        if (t.texMask)
-        {
-            shaderSurface->uniform(5, 1);
-            glActiveTexture(GL_TEXTURE0 + 1);
-            ((GpuTextureImpl*)t.texMask.get())->bind();
-            glActiveTexture(GL_TEXTURE0 + 0);
-        }
-        else
-            shaderSurface->uniform(5, 0);
-        GpuTextureImpl *tex = (GpuTextureImpl*)t.texColor.get();
-        tex->bind();
-        shaderSurface->uniform(6, (int)tex->grayscale);
-        shaderSurface->uniform(7, (int)t.flatShading);
+        shaderSurface->uniform(5, 1);
+        glActiveTexture(GL_TEXTURE0 + 1);
+        ((GpuTextureImpl*)t.texMask.get())->bind();
+        glActiveTexture(GL_TEXTURE0 + 0);
     }
     else
+        shaderSurface->uniform(5, 0);
+    GpuTextureImpl *tex = (GpuTextureImpl*)t.texColor.get();
+    shaderSurface->uniform(6, (int)tex->grayscale);
+    tex->bind();
+    GpuMeshImpl *m = (GpuMeshImpl*)t.mesh.get();
+    m->bind();
+    m->dispatch();
+}
+
+void MainWindow::drawVtsTaskInfographic(const vts::DrawTask &t)
+{
+    shaderInfographic->bind();
+    shaderInfographic->uniformMat4(0, t.mvp);
+    shaderInfographic->uniformVec4(1, t.color);
+    shaderInfographic->uniform(2, (int)(!!t.texColor));
+    if (t.texColor)
     {
-        shaderColor->bind();
-        shaderColor->uniformMat4(0, t.mvp);
-        shaderColor->uniformVec4(1, t.color);
+        GpuTextureImpl *tex = (GpuTextureImpl*)t.texColor.get();
+        tex->bind();
     }
     GpuMeshImpl *m = (GpuMeshImpl*)t.mesh.get();
     m->bind();
@@ -470,14 +466,14 @@ void MainWindow::drawMark(const Mark &m, const Mark *prev)
         t.color[i] = c(i);
     t.mesh = meshMark;
     memcpy(t.mvp, mvpf.data(), sizeof(t.mvp));
-    drawVtsTask(t, true);
+    drawVtsTaskInfographic(t);
     if (prev)
     {
         t.mesh = meshLine;
         mvp = camViewProj * vts::lookAt(m.coord, prev->coord);
         mvpf = mvp.cast<float>();
         memcpy(t.mvp, mvpf.data(), sizeof(t.mvp));
-        drawVtsTask(t, true);
+        drawVtsTaskInfographic(t);
     }
 }
 
@@ -532,6 +528,8 @@ void MainWindow::renderFrame()
     glViewport(0, 0, width, height);
     glBindFramebuffer(GL_FRAMEBUFFER, frameBufferId);
     glEnable(GL_CULL_FACE);
+    glEnable(GL_POLYGON_OFFSET_LINE);
+    glPolygonOffset(0, -10000);
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -540,13 +538,28 @@ void MainWindow::renderFrame()
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
     for (const vts::DrawTask &t : draws.opaque)
-        drawVtsTask(t, false);
+        drawVtsTaskSurface(t);
 
     // render transparent
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     for (const vts::DrawTask &t : draws.transparent)
-        drawVtsTask(t, false);
+        drawVtsTaskSurface(t);
+
+    // render polygon edges
+    if (appOptions.renderPolygonEdges)
+    {
+        glDisable(GL_BLEND);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        for (const vts::DrawTask &it : draws.opaque)
+        {
+            vts::DrawTask t(it);
+            t.flatShading = false;
+            t.color[0] = t.color[1] = t.color[2] = t.color[3] = 0;
+            drawVtsTaskSurface(t);
+        }
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
 
     // render the offscreen framebuffer to screen
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -555,9 +568,9 @@ void MainWindow::renderFrame()
     shaderBlit->bind();
     meshQuad->bind();
     meshQuad->dispatch();
-    glEnable(GL_BLEND);
 
     // render atmosphere
+    glEnable(GL_BLEND);
     const vts::MapCelestialBody &body = map->celestialBody();
     if (appOptions.renderAtmosphere
             && body.majorRadius > 0 && body.atmosphereThickness > 0)
@@ -615,11 +628,11 @@ void MainWindow::renderFrame()
         meshQuad->dispatch();
     }
 
-    glDisable(GL_DEPTH_TEST);
+    // render infographics
     for (const vts::DrawTask &t : draws.Infographic)
-        drawVtsTask(t, true);
+        drawVtsTaskInfographic(t);
 
-    // marks draws
+    // render marks
     {
         shaderColor->bind();
         meshMark->bind();

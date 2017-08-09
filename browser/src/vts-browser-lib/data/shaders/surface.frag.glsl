@@ -15,6 +15,11 @@ in vec2 varUvs;
 
 void main()
 {
+    if (uniUseMask == 1)
+    {
+        if (texture(texMask, varUvs).r < 0.5)
+            discard;
+    }
     if (uniFlatShading == 1)
     {
         vec3 n = normalize(cross(dFdx(derivativePosition),
@@ -23,11 +28,6 @@ void main()
     }
     else
     {
-        if (uniUseMask == 1)
-        {
-            if (texture(texMask, varUvs).r < 0.5)
-                discard;
-        }
         vec4 t = texture(texColor, varUvs);
         if (uniMonochromatic == 1)
             t = t.rrra;

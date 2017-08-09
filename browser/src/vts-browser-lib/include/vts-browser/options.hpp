@@ -36,7 +36,7 @@ namespace vts
 {
 
 // these options are passed to the map when it is beeing created
-// and they are immutable during the lifetime of the map
+//   and are immutable during the lifetime of the map
 class VTS_API MapCreateOptions
 {
 public:
@@ -117,6 +117,10 @@ public:
     // maximum position change allowed for PIHA, must be positive
     double navigationMaxPositionChange;
 
+    // scale of every tile.
+    // small up-scale may reduce occasional holes on tile borders.
+    double renderTilesScale;
+
     uint64 maxResourcesMemory; // bytes
 
     // maximum size of the queue for the resources to be downloaded
@@ -190,17 +194,21 @@ class VTS_API MapCallbacks
 {
 public:
     // function callback to upload a texture to gpu
+    // called from Map::dataTick()
     std::function<void(class ResourceInfo &, const class GpuTextureSpec &)>
             loadTexture;
+
     // function callback to upload a mesh to gpu
+    // called from Map::dataTick()
     std::function<void(class ResourceInfo &, const class GpuMeshSpec &)>
             loadMesh;
 
     // function callback when the mapconfig is ready
+    // called from Map::renderTickPrepare()
     std::function<void()> mapconfigReady;
 
     // function callbacks for camera overrides (all in physical srs)
-    // these callbacks are called from the Map::renderTickRender
+    // these callbacks are called from the Map::renderTickRender()
     std::function<void(double*)> cameraOverrideEye;
     std::function<void(double*)> cameraOverrideTarget;
     std::function<void(double*)> cameraOverrideUp;

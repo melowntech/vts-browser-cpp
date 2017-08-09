@@ -67,6 +67,7 @@ struct AppOptions
     bool screenshotOnFullRender;
     bool closeOnFullRender;
     bool renderAtmosphere;
+    bool renderPolygonEdges;
 
     AppOptions();
 };
@@ -105,7 +106,8 @@ public:
     void colorizeMarks();
     vts::vec3 getWorldPositionFromCursor();
 
-    void drawVtsTask(const vts::DrawTask &t, bool info);
+    void drawVtsTaskSurface(const vts::DrawTask &t);
+    void drawVtsTaskInfographic(const vts::DrawTask &t);
     void drawMark(const Mark &m, const Mark *prev);
 
     void renderFrame();

@@ -58,7 +58,6 @@ void MapStatistics::resetAll()
     currentResourcePreparing = 0;
     currentNavigationType = (NavigationType)0;
     currentNavigationMode = (NavigationMode)0;
-    debug = 0;
 }
 
 void MapStatistics::resetFrame()

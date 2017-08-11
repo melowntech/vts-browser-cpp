@@ -33,6 +33,8 @@
 #include <vts-browser/resources.hpp>
 #include "gpuContext.hpp"
 
+extern std::string debug;
+
 class GLFWwindow;
 
 namespace vts
@@ -68,6 +70,7 @@ struct AppOptions
     bool closeOnFullRender;
     bool renderAtmosphere;
     bool renderPolygonEdges;
+    bool renderSphere;
 
     AppOptions();
 };
@@ -129,7 +132,7 @@ public:
     std::shared_ptr<GpuShaderImpl> shaderInfographic;
     std::shared_ptr<GpuShaderImpl> shaderAtmosphere;
     std::shared_ptr<GpuShaderImpl> shaderBlit;
-    std::shared_ptr<GpuMeshImpl> meshMark;
+    std::shared_ptr<GpuMeshImpl> meshSphere;
     std::shared_ptr<GpuMeshImpl> meshLine;
     std::shared_ptr<GpuMeshImpl> meshQuad;
     std::vector<Mark> marks;

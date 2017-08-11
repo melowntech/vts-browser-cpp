@@ -196,7 +196,6 @@ void MapImpl::updatePositionAltitudeShift()
 
     // interpolate
     double altitude = generalInterpolation(sds, points, altitudes);
-    statistics.debug = altitude;
 
     // set the altitude
     if (navigation.positionAltitudeResetHeight)

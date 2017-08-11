@@ -127,7 +127,13 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
 DrawTask::DrawTask() :
     mesh(nullptr), texColor(nullptr), texMask(nullptr),
     externalUv(false), flatShading(false)
-{}
+{
+    for (int i = 0; i < 3; i++)
+        color[i] = 0;
+    color[3] = 1;
+    for (int i = 0; i < 16; i++)
+        mvp[i] = i % 4 == i / 4 ? 1 : 0;
+}
 
 DrawTask::DrawTask(RenderTask *r, MapImpl *m) :
     mesh(nullptr), texColor(nullptr), texMask(nullptr),

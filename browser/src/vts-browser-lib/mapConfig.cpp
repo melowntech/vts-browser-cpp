@@ -384,8 +384,8 @@ void MapConfig::initializeCelestialBody() const
     {
         map->body.name = "Mars";
         map->body.atmosphereThickness = 30000;
-        static auto lowColor = { 0.77, 0.48, 0.27, 0.6 };
-        static auto highColor = { 0.58, 0.65, 0.77, 0.6 };
+        static auto lowColor = { 0.77, 0.48, 0.27, 0.5 };
+        static auto highColor = { 0.58, 0.65, 0.77, 0.5 };
         std::copy(lowColor.begin(), lowColor.end(),
                   map->body.atmosphereColorLow);
         std::copy(highColor.begin(), highColor.end(),

@@ -74,10 +74,6 @@ public:
 
     NavigationType currentNavigationType;
     NavigationMode currentNavigationMode;
-
-    // debug
-
-    double debug;
 };
 
 } // namespace vts

@@ -89,7 +89,8 @@ AppOptions::AppOptions() :
     screenshotOnFullRender(false),
     closeOnFullRender(false),
     renderAtmosphere(true),
-    renderPolygonEdges(false)
+    renderPolygonEdges(false),
+    renderSphere(false)
 {}
 
 MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
@@ -220,6 +221,7 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         uls.push_back(glGetUniformLocation(id, "uniCameraDirections[1]"));
         uls.push_back(glGetUniformLocation(id, "uniCameraDirections[2]"));
         uls.push_back(glGetUniformLocation(id, "uniCameraDirections[3]"));
+        uls.push_back(glGetUniformLocation(id, "uniInvView"));
         glUseProgram(id);
         glUniform1i(glGetUniformLocation(id, "texDepth"), 6);
         glUniform1i(glGetUniformLocation(id, "texColor"), 7);
@@ -245,7 +247,7 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
 
     // load mesh mark
     {
-        meshMark = std::make_shared<GpuMeshImpl>();
+        meshSphere = std::make_shared<GpuMeshImpl>();
         vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
                                   "data/meshes/sphere.obj"));
         assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Triangles);
@@ -254,7 +256,7 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
         spec.attributes[0].components = 3;
         vts::ResourceInfo info;
-        meshMark->loadMesh(info, spec);
+        meshSphere->loadMesh(info, spec);
     }
 
     // load mesh line
@@ -464,7 +466,7 @@ void MainWindow::drawMark(const Mark &m, const Mark *prev)
     vts::vec4f c = vts::vec3to4f(m.color, 1);
     for (int i = 0; i < 4; i++)
         t.color[i] = c(i);
-    t.mesh = meshMark;
+    t.mesh = meshSphere;
     memcpy(t.mvp, mvpf.data(), sizeof(t.mvp));
     drawVtsTaskInfographic(t);
     if (prev)
@@ -575,28 +577,53 @@ void MainWindow::renderFrame()
     if (appOptions.renderAtmosphere
             && body.majorRadius > 0 && body.atmosphereThickness > 0)
     {
+        // atmosphere properties
         vts::mat4 inv = camViewProj.inverse();
         vts::vec3 camPos = vts::vec4to3(inv * vts::vec4(0, 0, -1, 1), true);
+        vts::mat4f uniInvView = inv.cast<float>();
         double camRad = vts::length(camPos);
+        double lowRad = body.majorRadius;
         double atmRad = body.majorRadius + body.atmosphereThickness;
-        double aurDotLow = camRad > body.majorRadius
-                ? -sqrt(sqr(camRad) - sqr(body.majorRadius)) / camRad : 0;
+        double aurDotLow = camRad > lowRad
+                ? -sqrt(sqr(camRad) - sqr(lowRad)) / camRad : 0;
         double aurDotHigh = camRad > atmRad
                 ? -sqrt(sqr(camRad) - sqr(atmRad)) / camRad : 0;
         aurDotHigh = std::max(aurDotHigh, aurDotLow + 1e-4);
+        double horizonDistance = camRad > body.majorRadius
+                ? sqrt(sqr(camRad) - sqr(body.majorRadius)) : 0;
         double horizonAngle = camRad > body.majorRadius
                 ? body.majorRadius / camRad : 1;
-        double fogDistance = 0.0078394481 * body.majorRadius; // 50000 metres on earth
 
+        // fog properties
+        //vts::vec3 objPos;
+        //map->getPositionPoint((double*)objPos.data());
+        //map->convert((double*)objPos.data(), (double*)objPos.data(),
+        //             vts::Srs::Navigation, vts::Srs::Physical);
+        //double objDist = vts::length(vts::vec3(camPos - objPos));
+        double fogInsideStart = 0;
+        //double fogInsideFull = 0.001 * body.majorRadius + 4 * objDist;
+        double fogInsideFull = sqrt(sqr(atmRad) - sqr(body.majorRadius)) * 0.5;
+        double fogOutsideStart = std::max(camRad - body.majorRadius, 0.0);
+        double fogOutsideFull = std::max(horizonDistance, fogOutsideStart + 1);
+        double fogFactor = vts::clamp((camRad - body.majorRadius)
+                / body.atmosphereThickness, 0, 1);
+        double fogStart = vts::interpolate(fogInsideStart,
+                                           fogOutsideStart, fogFactor);
+        double fogFull = vts::interpolate(fogInsideFull,
+                                          fogOutsideFull, fogFactor);
+
+        // body properties
         vts::vec3f uniCameraPosition = camPos.cast<float>();
         vts::vec3f uniCameraPosNorm = vts::normalize(camPos).cast<float>();
         float uniBody[4]
             = { (float)body.majorRadius, (float)body.minorRadius,
                 (float)body.atmosphereThickness };
-        float uniPlanes[4] = { (float)camNear, (float)camFar };
+        float uniPlanes[4] = { (float)camNear, (float)camFar,
+                               (float)fogStart, (float)fogFull };
         float uniAtmosphere[4] = { (float)aurDotLow, (float)aurDotHigh,
-                                   (float)horizonAngle, (float)fogDistance };
+                                   (float)horizonAngle };
 
+        // camera directions
         vts::vec3 near = vts::vec4to3(inv * vts::vec4(0, 0, -1, 1), true);
         vts::vec3f uniCameraDirections[4] = {
             vts::normalize(vts::vec4to3(inv * vts::vec4(-1, -1, 1, 1)
@@ -609,6 +636,7 @@ void MainWindow::renderFrame()
                 , true)- near).cast<float>(),
         };
 
+        // shader uniforms
         shaderAtmosphere->bind();
         shaderAtmosphere->uniformVec4(0, body.atmosphereColorLow);
         shaderAtmosphere->uniformVec4(1, body.atmosphereColorHigh);
@@ -623,7 +651,9 @@ void MainWindow::renderFrame()
             shaderAtmosphere->uniformVec3(8 + i,
                             (float*)uniCameraDirections[i].data());
         }
+        shaderAtmosphere->uniformMat4(12, (float*)uniInvView.data());
 
+        // dispatch
         meshQuad->bind();
         meshQuad->dispatch();
     }
@@ -635,13 +665,25 @@ void MainWindow::renderFrame()
     // render marks
     {
         shaderColor->bind();
-        meshMark->bind();
+        meshSphere->bind();
         Mark *prevMark = nullptr;
         for (Mark &mark : marks)
         {
             drawMark(mark, prevMark);
             prevMark = &mark;
         }
+    }
+
+    // render sphere
+    if(appOptions.renderSphere)
+    {
+        vts::DrawTask t;
+        t.mesh = meshSphere;
+        t.color[0] = 1; t.color[3] = 0.5;
+        vts::mat4 m = camViewProj * vts::scaleMatrix(body.majorRadius);
+        for (int i = 0; i < 16; i++)
+            t.mvp[i] = (float)m(i);
+        drawVtsTaskInfographic(t);
     }
 
     glBindVertexArray(0);

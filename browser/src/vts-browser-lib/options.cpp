@@ -78,7 +78,7 @@ MapOptions::MapOptions() :
     debugDetachedCamera(false),
     debugDisableMeta5(false),
     debugDisableVirtualSurfaces(false),
-    debugDisableSri(false),
+    debugDisableSri(true),
     debugSaveCorruptedFiles(true),
     debugFlatShading(false),
     debugRenderSurrogates(false),

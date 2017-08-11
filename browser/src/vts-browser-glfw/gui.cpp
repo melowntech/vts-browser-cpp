@@ -39,6 +39,8 @@
 #include <GLFW/glfw3.h>
 #include "guiSkin.hpp"
 
+std::string debug;
+
 namespace
 {
 
@@ -388,7 +390,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Options", nk_rect(10, 10, 250, 550), flags))
+        if (nk_begin(&ctx, "Options", nk_rect(10, 10, 250, 600), flags))
         {
             vts::MapOptions &o = window->map->options();
             AppOptions &a = window->appOptions;
@@ -609,6 +611,12 @@ public:
                 o.debugRenderNoMeshes = nk_check_label(&ctx,
                     "no meshes", o.debugRenderNoMeshes);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
+
+                // render sphere
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+                a.renderSphere = nk_check_label(&ctx,
+                    "sphere", a.renderSphere);
+                nk_label(&ctx, "", NK_TEXT_LEFT);
             }
 
             // debug
@@ -696,6 +704,7 @@ public:
                 sprintf(buffer, "%d" UNIT, VAL); \
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT); \
             }
+
             // general
             S("Time map:", (int)(1000 * window->timingMapProcess), " ms");
             S("Time app:", (int)(1000 * window->timingAppProcess), " ms");
@@ -722,6 +731,7 @@ public:
             nk_label(&ctx, "Nav. mode:", NK_TEXT_LEFT);
             nk_label(&ctx, navigationModeNames[(int)s.currentNavigationMode],
                     NK_TEXT_RIGHT);
+
             // resources
             S("Res. active:", s.currentResources, "");
             S("Res. preparing:", s.currentResourcePreparing, "");
@@ -731,9 +741,7 @@ public:
             S("Res. released:", s.resourcesReleased, "");
             S("Res. ignored:", s.resourcesIgnored, "");
             S("Res. failed:", s.resourcesFailed, "");
-            nk_label(&ctx, "Debug:", NK_TEXT_LEFT);
-            sprintf(buffer, "%f", s.debug);
-            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
             // traversed
             S("Traversed:", s.metaNodesTraversedTotal, "");
             nk_label(&ctx, "", NK_TEXT_LEFT);
@@ -748,6 +756,7 @@ public:
                     S(buffer, s.metaNodesTraversedPerLod[i], "");
                 }
             }
+
             // rendered
             S("Rendered:", s.meshesRenderedTotal, "");
             nk_label(&ctx, "", NK_TEXT_LEFT);
@@ -760,6 +769,29 @@ public:
                         continue;
                     sprintf(buffer, "[%d]:", i);
                     S(buffer, s.meshesRenderedPerLod[i], "");
+                }
+            }
+
+            if (!debug.empty())
+            {
+                nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
+                nk_label(&ctx, "Debug:", NK_TEXT_LEFT);
+                std::string d = debug;
+                while (!d.empty())
+                {
+                    auto p = d.find('\n');
+                    std::string a;
+                    if (p == std::string::npos)
+                    {
+                        a = d;
+                        d = "";
+                    }
+                    else
+                    {
+                        a = d.substr(0, p);
+                        d = d.substr(p + 1);
+                    }
+                    nk_label(&ctx, a.c_str(), NK_TEXT_LEFT);
                 }
             }
 #undef S

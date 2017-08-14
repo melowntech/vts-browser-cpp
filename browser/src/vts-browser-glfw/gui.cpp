@@ -225,7 +225,6 @@ public:
     void dispatch(int width, int height)
     {
         glEnable(GL_BLEND);
-        glBlendEquation(GL_FUNC_ADD);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glDisable(GL_CULL_FACE);
         glDisable(GL_DEPTH_TEST);
@@ -291,7 +290,6 @@ public:
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
-        glDisable(GL_BLEND);
         glDisable(GL_SCISSOR_TEST);
     }
 
@@ -543,6 +541,20 @@ public:
             sprintf(buffer, "%3.1f", o.maxTexelToPixelScale);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
+            // antialiasing samples
+            {
+                nk_label(&ctx, "Antialiasing:", NK_TEXT_LEFT);
+                a.antialiasing = nk_slide_int(&ctx,
+                        1, a.antialiasing, 16, 1);
+                if (a.antialiasing > 1)
+                {
+                    sprintf(buffer, "%d", a.antialiasing);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                }
+                else
+                    nk_label(&ctx, "no", NK_TEXT_RIGHT);
+            }
+
             // maxResourcesMemory
             nk_label(&ctx, "Max memory:", NK_TEXT_LEFT);
             o.maxResourcesMemory = 1024 * 1024 * (vts::uint64)nk_slide_int(&ctx,
@@ -610,12 +622,6 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 o.debugRenderNoMeshes = nk_check_label(&ctx,
                     "no meshes", o.debugRenderNoMeshes);
-                nk_label(&ctx, "", NK_TEXT_LEFT);
-
-                // render sphere
-                nk_label(&ctx, "", NK_TEXT_LEFT);
-                a.renderSphere = nk_check_label(&ctx,
-                    "sphere", a.renderSphere);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
             }
 
@@ -708,7 +714,6 @@ public:
             // general
             S("Time map:", (int)(1000 * window->timingMapProcess), " ms");
             S("Time app:", (int)(1000 * window->timingAppProcess), " ms");
-            S("Time gui:", (int)(1000 * window->timingGuiProcess), " ms");
             S("Time frame:", (int)(1000 * window->timingTotalFrame), " ms");
             S("Time data:", (int)(1000 * window->timingDataFrame), " ms");
             S("Render ticks:", s.renderTicks, "");

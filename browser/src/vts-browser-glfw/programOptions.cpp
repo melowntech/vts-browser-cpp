@@ -96,6 +96,10 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 po::value<bool>(&appOptions.renderAtmosphere),
                 "Render atmosphere."
             )
+            ("antialiasing",
+                po::value<vts::uint32>(&appOptions.antialiasing),
+                "Antialiasing samples."
+            )
             /*("screenshotWhenComplete",
                 po::value<bool>(&appOptions.screenshotOnFullRender),
                 "Save screenshot when it finishes "

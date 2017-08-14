@@ -66,11 +66,11 @@ struct AppOptions
 {
     std::vector<MapPaths> paths;
     std::string initialPosition;
+    vts::uint32 antialiasing;
     bool screenshotOnFullRender;
     bool closeOnFullRender;
     bool renderAtmosphere;
     bool renderPolygonEdges;
-    bool renderSphere;
 
     AppOptions();
 };
@@ -128,10 +128,8 @@ public:
 
     AppOptions appOptions;
     std::shared_ptr<GpuShaderImpl> shaderSurface;
-    std::shared_ptr<GpuShaderImpl> shaderColor;
     std::shared_ptr<GpuShaderImpl> shaderInfographic;
     std::shared_ptr<GpuShaderImpl> shaderAtmosphere;
-    std::shared_ptr<GpuShaderImpl> shaderBlit;
     std::shared_ptr<GpuMeshImpl> meshSphere;
     std::shared_ptr<GpuMeshImpl> meshLine;
     std::shared_ptr<GpuMeshImpl> meshQuad;
@@ -143,15 +141,17 @@ public:
     double mousePrevX, mousePrevY;
     double timingMapProcess;
     double timingAppProcess;
-    double timingGuiProcess;
     double timingTotalFrame;
     double timingDataFrame;
     double dblClickInitTime;
     int dblClickState;
     int width, height;
     int widthPrev, heightPrev;
-    GLuint frameBufferId;
-    GLuint depthTexId;
+    vts::uint32 antialiasingPrev;
+    GLuint frameRenderBufferId;
+    GLuint frameSampleBufferId;
+    GLuint depthRenderTexId;
+    GLuint depthSampleTexId;
     GLuint colorTexId;
     vts::Map *const map;
     GLFWwindow *window;

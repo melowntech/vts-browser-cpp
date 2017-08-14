@@ -10,9 +10,10 @@ uniform vec3 uniCameraPosNorm;
 uniform int uniProjected;
           // uniCameraDirections
 uniform mat4 uniInvView;
+uniform int uniMultiSamples;
 
-uniform sampler2D texDepth;
-uniform sampler2D texColor;
+uniform sampler2D texDepthSingle;
+uniform sampler2DMS texDepthMulti;
 
 in vec2 varUv;
 in vec3 varCamDir;
@@ -32,9 +33,6 @@ void main()
 
     // forward direction from camera to this fragment
     vec3 camDir = normalize(varCamDir);
-    //vec4 c4f = uniInvView * vec4(varUv * 2 - 1, 1, 1);
-    //vec4 c4n = uniInvView * vec4(0, 0, -1, 1);
-    //vec3 camDir = normalize(c4f.xyz / c4f.w - c4n.xyz / c4n.w);
 
     // camera dot
     vec3 up = uniProjected == 1 ? vec3(0, 0, 1) : uniCameraPosNorm;
@@ -60,9 +58,30 @@ void main()
     camAlt = smootherstep(camAlt);
     outColor = mix(atmColor, aurColor, camAlt);
 
-    float depthNorm = texelFetch(texDepth, ivec2(gl_FragCoord.xy), 0).x;
+    // find the depth and antialiasing ratio
+    float depthNorm = 0;
+    float antialiasing = 0;
+    if (uniMultiSamples > 1)
+    {
+        for (int i = 0; i < uniMultiSamples; i++)
+        {
+            float d = texelFetch(texDepthMulti, ivec2(gl_FragCoord.xy), i).x;
+            depthNorm += d;
+            antialiasing += d < 1 ? 1 : 0;
+        }
+        depthNorm /= uniMultiSamples;
+        antialiasing /= uniMultiSamples;
+    }
+    else
+    {
+        depthNorm = texelFetch(texDepthSingle, ivec2(gl_FragCoord.xy), 0).x;
+        antialiasing = depthNorm < 1 ? 1 : 0;
+    }
+
+    // mix fog, atmosphere and surface
     if (depthNorm < 1)
-    { // foreground
+    {
+        // foreground
         if (uniProjected == 1)
             discard;
 
@@ -74,9 +93,10 @@ void main()
         // fog
         float fog = (depthTrue - uniPlanes.z) / (uniPlanes.w - uniPlanes.z);
         fog = clamp(fog, 0, 1);
-        //fog = pow(fog, 1.2);
-        outColor = mix(vec4(0), outColor, fog);
-        //outColor = vec4(fog <= 0 ? 1 : 0, fog >= 1 ? 1 : 0, 0, 0.5);
+        vec4 fogColor = mix(vec4(0), outColor, fog);
+
+        // antialiasing
+        outColor = mix(outColor, fogColor, antialiasing);
     }
 }
 

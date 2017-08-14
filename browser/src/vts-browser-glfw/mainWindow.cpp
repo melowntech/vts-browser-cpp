@@ -80,17 +80,17 @@ void keyboardUnicodeCallback(GLFWwindow *window, unsigned int codepoint)
 
 double sqr(double a)
 {
-	return a * a;
+    return a * a;
 }
 
 } // namespace
 
 AppOptions::AppOptions() :
+    antialiasing(1),
     screenshotOnFullRender(false),
     closeOnFullRender(false),
     renderAtmosphere(true),
-    renderPolygonEdges(false),
-    renderSphere(false)
+    renderPolygonEdges(false)
 {}
 
 MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
@@ -98,8 +98,9 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
     camNear(0), camFar(0),
     mousePrevX(0), mousePrevY(0),
     dblClickInitTime(0), dblClickState(0),
-    width(0), height(0), widthPrev(0), heightPrev(0),
-    frameBufferId(0), depthTexId(0), colorTexId(0),
+    width(0), height(0), widthPrev(0), heightPrev(0), antialiasingPrev(0),
+    frameRenderBufferId(0), frameSampleBufferId(0),
+    depthRenderTexId(0), depthSampleTexId(0), colorTexId(0),
     map(map), window(nullptr)
 {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -160,22 +161,6 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         glUseProgram(0);
     }
 
-    // load shader color
-    {
-        shaderColor = std::make_shared<GpuShaderImpl>();
-        vts::Buffer vert = readInternalMemoryBuffer(
-                    "data/shaders/color.vert.glsl");
-        vts::Buffer frag = readInternalMemoryBuffer(
-                    "data/shaders/color.frag.glsl");
-        shaderColor->loadShaders(
-            std::string(vert.data(), vert.size()),
-            std::string(frag.data(), frag.size()));
-        std::vector<vts::uint32> &uls = shaderColor->uniformLocations;
-        GLuint id = shaderColor->id;
-        uls.push_back(glGetUniformLocation(id, "uniMvp"));
-        uls.push_back(glGetUniformLocation(id, "uniColor"));
-    }
-
     // load shader infographic
     {
         shaderInfographic = std::make_shared<GpuShaderImpl>();
@@ -222,26 +207,10 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         uls.push_back(glGetUniformLocation(id, "uniCameraDirections[2]"));
         uls.push_back(glGetUniformLocation(id, "uniCameraDirections[3]"));
         uls.push_back(glGetUniformLocation(id, "uniInvView"));
+        uls.push_back(glGetUniformLocation(id, "uniMultiSamples"));
         glUseProgram(id);
-        glUniform1i(glGetUniformLocation(id, "texDepth"), 6);
-        glUniform1i(glGetUniformLocation(id, "texColor"), 7);
-        glUseProgram(0);
-    }
-
-    // load shader blit
-    {
-        shaderBlit = std::make_shared<GpuShaderImpl>();
-        vts::Buffer vert = readInternalMemoryBuffer(
-                    "data/shaders/blit.vert.glsl");
-        vts::Buffer frag = readInternalMemoryBuffer(
-                    "data/shaders/blit.frag.glsl");
-        shaderBlit->loadShaders(
-            std::string(vert.data(), vert.size()),
-            std::string(frag.data(), frag.size()));
-        //std::vector<vts::uint32> &uls = shaderBlit->uniformLocations;
-        GLuint id = shaderBlit->id;
-        glUseProgram(id);
-        glUniform1i(glGetUniformLocation(id, "texColor"), 7);
+        glUniform1i(glGetUniformLocation(id, "texDepthSingle"), 6);
+        glUniform1i(glGetUniformLocation(id, "texDepthMulti"), 5);
         glUseProgram(0);
     }
 
@@ -486,41 +455,88 @@ void MainWindow::renderFrame()
     checkGl("pre-frame check");
 
     // update framebuffer texture
-    if (width != widthPrev || height != heightPrev)
+    if (width != widthPrev || height != heightPrev
+            || appOptions.antialiasing != antialiasingPrev)
     {
         widthPrev = width;
         heightPrev = height;
+        antialiasingPrev = appOptions.antialiasing;
 
-        // depth texture
+        GLenum target = antialiasingPrev > 1 ? GL_TEXTURE_2D_MULTISAMPLE
+                                             : GL_TEXTURE_2D;
+
+        // delete old textures
+        glDeleteTextures(1, &depthSampleTexId);
+        if (depthRenderTexId != depthSampleTexId)
+            glDeleteTextures(1, &depthRenderTexId);
+        glDeleteTextures(1, &colorTexId);
+        depthSampleTexId = depthRenderTexId = colorTexId = 0;
+
+        // depth texture for rendering
+        glActiveTexture(GL_TEXTURE0 + 5);
+        glGenTextures(1, &depthRenderTexId);
+        glBindTexture(target, depthRenderTexId);
+        if (antialiasingPrev > 1)
+            glTexImage2DMultisample(target, antialiasingPrev,
+                                GL_DEPTH_COMPONENT32, width, height, GL_TRUE);
+        else
+        {
+            glTexImage2D(target, 0, GL_DEPTH_COMPONENT32, width, height,
+                         0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+            glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        }
+        checkGl("update depth texture");
+
+        // depth texture for sampling
         glActiveTexture(GL_TEXTURE0 + 6);
-        glDeleteTextures(1, &depthTexId);
-        glGenTextures(1, &depthTexId);
-        glBindTexture(GL_TEXTURE_2D, depthTexId);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height,
-                     0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        if (antialiasingPrev > 1)
+        {
+            glGenTextures(1, &depthSampleTexId);
+            glBindTexture(GL_TEXTURE_2D, depthSampleTexId);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height,
+                         0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        }
+        else
+        {
+            depthSampleTexId = depthRenderTexId;
+            glBindTexture(GL_TEXTURE_2D, depthSampleTexId);
+        }
 
         // color texture
         glActiveTexture(GL_TEXTURE0 + 7);
-        glDeleteTextures(1, &colorTexId);
         glGenTextures(1, &colorTexId);
-        glBindTexture(GL_TEXTURE_2D, colorTexId);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height,
-                     0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glBindTexture(target, colorTexId);
+        if (antialiasingPrev > 1)
+            glTexImage2DMultisample(target, antialiasingPrev,
+                                GL_RGB8, width, height, GL_TRUE);
+        else
+        {
+            glTexImage2D(target, 0, GL_RGB8, width, height,
+                         0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+            glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        }
+        checkGl("update color texture");
 
-        glActiveTexture(GL_TEXTURE0);
+        // render frame buffer
+        glDeleteFramebuffers(1, &frameRenderBufferId);
+        glGenFramebuffers(1, &frameRenderBufferId);
+        glBindFramebuffer(GL_FRAMEBUFFER, frameRenderBufferId);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                               target, depthRenderTexId, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                               target, colorTexId, 0);
+        checkGlFramebuffer();
 
-        // frame buffer
-        glDeleteFramebuffers(1, &frameBufferId);
-        glGenFramebuffers(1, &frameBufferId);
-        glBindFramebuffer(GL_FRAMEBUFFER, frameBufferId);
+        // sample frame buffer
+        glDeleteFramebuffers(1, &frameSampleBufferId);
+        glGenFramebuffers(1, &frameSampleBufferId);
+        glBindFramebuffer(GL_FRAMEBUFFER, frameSampleBufferId);
         glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                             depthTexId, 0);
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                             colorTexId, 0);
+                             depthSampleTexId, 0);
         checkGlFramebuffer();
 
         checkGl("update frame buffer");
@@ -528,7 +544,8 @@ void MainWindow::renderFrame()
 
     // initialize opengl
     glViewport(0, 0, width, height);
-    glBindFramebuffer(GL_FRAMEBUFFER, frameBufferId);
+    glActiveTexture(GL_TEXTURE0);
+    glBindFramebuffer(GL_FRAMEBUFFER, frameRenderBufferId);
     glEnable(GL_CULL_FACE);
     glEnable(GL_POLYGON_OFFSET_LINE);
     glPolygonOffset(0, -10000);
@@ -561,18 +578,22 @@ void MainWindow::renderFrame()
             drawVtsTaskSurface(t);
         }
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glEnable(GL_BLEND);
     }
 
-    // render the offscreen framebuffer to screen
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // copy the depth (resolve multisampling)
+    if (depthSampleTexId != depthRenderTexId)
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, frameRenderBufferId);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameSampleBufferId);
+        glBlitFramebuffer(0, 0, width, height,
+                          0, 0, width, height,
+                          GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+        glBindFramebuffer(GL_FRAMEBUFFER, frameRenderBufferId);
+    }
     glDisable(GL_DEPTH_TEST);
-    glDisable(GL_BLEND);
-    shaderBlit->bind();
-    meshQuad->bind();
-    meshQuad->dispatch();
 
     // render atmosphere
-    glEnable(GL_BLEND);
     const vts::MapCelestialBody &body = map->celestialBody();
     if (appOptions.renderAtmosphere
             && body.majorRadius > 0 && body.atmosphereThickness > 0)
@@ -595,13 +616,7 @@ void MainWindow::renderFrame()
                 ? body.majorRadius / camRad : 1;
 
         // fog properties
-        //vts::vec3 objPos;
-        //map->getPositionPoint((double*)objPos.data());
-        //map->convert((double*)objPos.data(), (double*)objPos.data(),
-        //             vts::Srs::Navigation, vts::Srs::Physical);
-        //double objDist = vts::length(vts::vec3(camPos - objPos));
         double fogInsideStart = 0;
-        //double fogInsideFull = 0.001 * body.majorRadius + 4 * objDist;
         double fogInsideFull = sqrt(sqr(atmRad) - sqr(body.majorRadius)) * 0.5;
         double fogOutsideStart = std::max(camRad - body.majorRadius, 0.0);
         double fogOutsideFull = std::max(horizonDistance, fogOutsideStart + 1);
@@ -652,6 +667,7 @@ void MainWindow::renderFrame()
                             (float*)uniCameraDirections[i].data());
         }
         shaderAtmosphere->uniformMat4(12, (float*)uniInvView.data());
+        shaderAtmosphere->uniform(13, (int)appOptions.antialiasing);
 
         // dispatch
         meshQuad->bind();
@@ -664,8 +680,6 @@ void MainWindow::renderFrame()
 
     // render marks
     {
-        shaderColor->bind();
-        meshSphere->bind();
         Mark *prevMark = nullptr;
         for (Mark &mark : marks)
         {
@@ -674,17 +688,15 @@ void MainWindow::renderFrame()
         }
     }
 
-    // render sphere
-    if(appOptions.renderSphere)
-    {
-        vts::DrawTask t;
-        t.mesh = meshSphere;
-        t.color[0] = 1; t.color[3] = 0.5;
-        vts::mat4 m = camViewProj * vts::scaleMatrix(body.majorRadius);
-        for (int i = 0; i < 16; i++)
-            t.mvp[i] = (float)m(i);
-        drawVtsTaskInfographic(t);
-    }
+    // render gui
+    gui.render(width, height);
+
+    // copy the color to screen
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, frameRenderBufferId);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBlitFramebuffer(0, 0, width, height,
+                      0, 0, width, height,
+                      GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     glBindVertexArray(0);
     checkGl("frame finished");
@@ -756,6 +768,8 @@ void MainWindow::run()
             }
         }
 
+        gui.input(); // calls glfwPollEvents()
+
         checkGl("frame begin");
         double timeFrameStart = glfwGetTime();
 
@@ -783,10 +797,6 @@ void MainWindow::run()
 
         double timeAppRender = glfwGetTime();
 
-        gui.input(); // calls glfwPollEvents()
-        gui.render(width, height);
-        double timeGui = glfwGetTime();
-
         if (map->statistics().renderTicks % 120 == 0)
         {
             std::string creditLine = std::string() + "vts-browser-glfw: "
@@ -807,7 +817,6 @@ void MainWindow::run()
 
         timingMapProcess = timeMapRender - timeFrameStart;
         timingAppProcess = timeAppRender - timeMapRender;
-        timingGuiProcess = timeGui - timeAppRender;
         timingTotalFrame = timeFrameFinish - timeFrameStart;
 
         if (appOptions.closeOnFullRender && map->getMapRenderComplete())
@@ -832,7 +841,7 @@ vts::vec3 MainWindow::getWorldPositionFromCursor()
     glfwGetCursorPos(window, &x, &y);
     y = height - y - 1;
     float depth = std::numeric_limits<float>::quiet_NaN();
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBufferId);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, frameSampleBufferId);
     glReadPixels((int)x, (int)y, 1, 1,
                  GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
     if (depth > 1 - 1e-7)

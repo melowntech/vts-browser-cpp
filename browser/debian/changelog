@@ -1,3 +1,10 @@
+vts-browser (0.10) melown-xenial; urgency=medium
+
+  * improved atmosphere
+  * spacebar is north-up button
+
+ -- Tomas Maly <tomas.maly@melown.com>  Mon, 14 Aug 2017 10:38:08 +0200
+
 vts-browser (0.9) melown-xenial; urgency=medium
 
   * atmosphere

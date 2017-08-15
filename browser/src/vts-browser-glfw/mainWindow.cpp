@@ -546,9 +546,10 @@ void MainWindow::renderFrame()
     glViewport(0, 0, width, height);
     glActiveTexture(GL_TEXTURE0);
     glBindFramebuffer(GL_FRAMEBUFFER, frameRenderBufferId);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_CULL_FACE);
     glEnable(GL_POLYGON_OFFSET_LINE);
-    glPolygonOffset(0, -10000);
+    glPolygonOffset(0, -1000);
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -561,7 +562,6 @@ void MainWindow::renderFrame()
 
     // render transparent
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     for (const vts::DrawTask &t : draws.transparent)
         drawVtsTaskSurface(t);
 

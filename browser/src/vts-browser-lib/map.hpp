@@ -109,10 +109,17 @@ public:
 class TraverseNode
 {
 public:
+    struct Obb
+    {
+        vec3 points[2];
+        mat4 rotInv;
+    };
+
     struct MetaInfo : public vtslibs::vts::MetaNode
     {
         std::vector<std::shared_ptr<MetaTile>> metaTiles;
         std::vector<vtslibs::registry::CreditId> credits;
+        boost::optional<Obb> obb;
         vec3 cornersPhys[8];
         vec3 aabbPhys[2];
         vec3 surrogatePhys;

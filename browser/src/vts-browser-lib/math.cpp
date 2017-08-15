@@ -32,6 +32,31 @@
 namespace vts
 {
 
+namespace
+{
+
+double &at(mat3 &a, uint32 i)
+{
+    return a(i % 3, i / 3);
+}
+
+double &at(mat4 &a, uint32 i)
+{
+    return a(i % 4, i / 4);
+}
+
+double atc(const mat3 &a, uint32 i)
+{
+    return a(i % 3, i / 3);
+}
+
+double atc(const mat4 &a, uint32 i)
+{
+    return a(i % 4, i / 4);
+}
+
+} // namespace
+
 vec3 cross(const vec3 &a, const vec3 &b)
 {
     return vec3(
@@ -66,6 +91,27 @@ vec3 normalize(const vec3 &a)
     return a / length(a);
 }
 
+vec3 anyPerpendicular(const vec3 &v)
+{
+    vec3 a = abs(dot(normalize(v), vec3(0, 0, 1))) > 0.9
+                            ? vec3(0,1,0) : vec3(0,0,1);
+    return cross(v, a);
+}
+
+vec3 min(const vec3 &a, const vec3 &b)
+{
+    return vec3(std::min(a(0), b(0)),
+                std::min(a(1), b(1)),
+                std::min(a(2), b(2)));
+}
+
+vec3 max(const vec3 &a, const vec3 &b)
+{
+    return vec3(std::max(a(0), b(0)),
+                std::max(a(1), b(1)),
+                std::max(a(2), b(2)));
+}
+
 mat4 frustumMatrix(double left, double right,
                    double bottom, double top,
                    double near, double far)
@@ -88,21 +134,6 @@ mat4 perspectiveMatrix(double fovyDegs, double aspect,
     double xmax = ymax * aspect;
     return frustumMatrix(-xmax, xmax, -ymax, ymax, near, far);
 }
-
-namespace
-{
-
-double &at(mat3 &a, uint32 i)
-{
-    return a(i % 3, i / 3);
-}
-
-double &at(mat4 &a, uint32 i)
-{
-    return a(i % 4, i / 4);
-}
-
-} // namespace
 
 mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up)
 {
@@ -137,9 +168,21 @@ mat4 lookAt(const vec3 &a, const vec3 &b)
     return lookAt(a, b, u).inverse() * scaleMatrix(length(d));
 }
 
-mat4 identityMatrix()
+mat4 identityMatrix4()
 {
-    return scaleMatrix(1);
+    return (mat4() <<
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1).finished();
+}
+
+mat3 identityMatrix3()
+{
+    return (mat3() <<
+            1, 0, 0,
+            0, 1, 0,
+            0, 0, 1).finished();
 }
 
 mat4 rotationMatrix(int axis, double degrees)
@@ -200,62 +243,6 @@ mat4 translationMatrix(double tx, double ty, double tz)
 mat4 translationMatrix(const vec3 &vec)
 {
     return translationMatrix(vec(0), vec(1), vec(2));
-}
-
-vec3 min(const vec3 &a, const vec3 &b)
-{
-    return vec3(std::min(a(0), b(0)),
-                std::min(a(1), b(1)),
-                std::min(a(2), b(2)));
-}
-
-vec3 max(const vec3 &a, const vec3 &b)
-{
-    return vec3(std::max(a(0), b(0)),
-                std::max(a(1), b(1)),
-                std::max(a(2), b(2)));
-}
-
-double degToRad(double angle)
-{
-    return angle * M_PI / 180;
-}
-
-double radToDeg(double angle)
-{
-    return angle * 180 / M_PI;
-}
-
-mat3 upperLeftSubMatrix(const mat4 &m)
-{
-    mat4 mat(m);
-    mat3 res;
-    at(res, 0) = at(mat, 0);
-    at(res, 1) = at(mat, 1);
-    at(res, 2) = at(mat, 2);
-    at(res, 3) = at(mat, 4);
-    at(res, 4) = at(mat, 5);
-    at(res, 5) = at(mat, 6);
-    at(res, 6) = at(mat, 8);
-    at(res, 7) = at(mat, 9);
-    at(res, 8) = at(mat, 10);
-    return res;
-}
-
-double modulo(double a, double m)
-{
-    a = std::fmod(a, m);
-    if (a < 0)
-        a += m;
-    if (!(a < m))
-        a = 0;
-    assert(a >= 0 && a < m);
-    return a;
-}
-
-double interpolate(double a, double b, double f)
-{
-    return (b - a) * f + a;
 }
 
 vec4 vec3to4(vec3 v, double w)
@@ -338,17 +325,63 @@ vec2f vec3to2f(vec3f v, bool division)
     return res;
 }
 
-vec3 anyPerpendicular(const vec3 &v)
+mat3 mat4to3(const mat4 &mat)
 {
-    vec3 a = abs(dot(normalize(v), vec3(0, 0, 1))) > 0.9
-                            ? vec3(0,1,0) : vec3(0,0,1);
-    return cross(v, a);
+    mat3 res;
+    at(res, 0) = atc(mat, 0);
+    at(res, 1) = atc(mat, 1);
+    at(res, 2) = atc(mat, 2);
+    at(res, 3) = atc(mat, 4);
+    at(res, 4) = atc(mat, 5);
+    at(res, 5) = atc(mat, 6);
+    at(res, 6) = atc(mat, 8);
+    at(res, 7) = atc(mat, 9);
+    at(res, 8) = atc(mat, 10);
+    return res;
+}
+
+mat4 mat3to4(const mat3 &mat)
+{
+    mat4 res;
+    at(res, 0) = atc(mat, 0);
+    at(res, 1) = atc(mat, 1);
+    at(res, 2) = atc(mat, 2);
+    at(res, 3) = 0;
+    at(res, 4) = atc(mat, 3);
+    at(res, 5) = atc(mat, 4);
+    at(res, 6) = atc(mat, 5);
+    at(res, 7) = 0;
+    at(res, 8) = atc(mat, 6);
+    at(res, 9) = atc(mat, 7);
+    at(res, 10) = atc(mat, 8);
+    at(res, 11) = 0;
+    at(res, 12) = 0;
+    at(res, 13) = 0;
+    at(res, 14) = 0;
+    at(res, 15) = 1;
+    return res;
+}
+
+double modulo(double a, double m)
+{
+    a = std::fmod(a, m);
+    if (a < 0)
+        a += m;
+    if (!(a < m))
+        a = 0;
+    assert(a >= 0 && a < m);
+    return a;
 }
 
 double clamp(double a, double min, double max)
 {
     assert(min <= max);
     return std::max(std::min(a, max), min);
+}
+
+double interpolate(double a, double b, double f)
+{
+    return (b - a) * f + a;
 }
 
 double smoothstep(double f)
@@ -364,6 +397,16 @@ double smootherstep(double f)
 void normalizeAngle(double &a)
 {
     a = modulo(a, 360);
+}
+
+double degToRad(double angle)
+{
+    return angle * M_PI / 180;
+}
+
+double radToDeg(double angle)
+{
+    return angle * 180 / M_PI;
 }
 
 double angularDiff(double a, double b)

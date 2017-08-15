@@ -54,6 +54,9 @@ VTS_API double dot(const vec2 &a, const vec2 &b);
 VTS_API double length(const vec3 &a);
 VTS_API double length(const vec2 &a);
 VTS_API vec3 normalize(const vec3 &a);
+VTS_API vec3 anyPerpendicular(const vec3 &v);
+VTS_API vec3 min(const vec3 &a, const vec3 &b);
+VTS_API vec3 max(const vec3 &a, const vec3 &b);
 
 VTS_API mat4 frustumMatrix(double left, double right,
                            double bottom, double top,
@@ -62,17 +65,14 @@ VTS_API mat4 perspectiveMatrix(double fovyDegs, double aspect,
                                double near, double far);
 VTS_API mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up);
 VTS_API mat4 lookAt(const vec3 &eye, const vec3 &target);
-VTS_API mat3 upperLeftSubMatrix(const mat4 &mat);
 
-VTS_API mat4 identityMatrix();
+VTS_API mat3 identityMatrix3();
+VTS_API mat4 identityMatrix4();
 VTS_API mat4 rotationMatrix(int axis, double degrees);
 VTS_API mat4 scaleMatrix(double sx, double sy, double sz);
 VTS_API mat4 scaleMatrix(double s);
 VTS_API mat4 translationMatrix(double tx, double ty, double tz);
 VTS_API mat4 translationMatrix(const vec3 &vec);
-
-VTS_API vec3 min(const vec3 &a, const vec3 &b);
-VTS_API vec3 max(const vec3 &a, const vec3 &b);
 
 VTS_API vec4 vec3to4(vec3 v, double w);
 VTS_API vec3 vec4to3(vec4 v, bool division = false);
@@ -84,16 +84,24 @@ VTS_API vec3f vec4to3f(vec4f v, bool division = false);
 VTS_API vec3f vec2to3f(vec2f v, float w);
 VTS_API vec2f vec3to2f(vec3f v, bool division = false);
 
-VTS_API vec3 anyPerpendicular(const vec3 &v);
+VTS_API mat3 mat4to3(const mat4 &mat);
+VTS_API mat4 mat3to4(const mat3 &mat);
+
+VTS_API double modulo(double a, double m);
+VTS_API double clamp(double a, double min, double max);
+VTS_API double interpolate(double a, double b, double f);
+VTS_API double smoothstep(double f);
+VTS_API double smootherstep(double f);
 
 VTS_API double degToRad(double angle);
 VTS_API double radToDeg(double angle);
 
-VTS_API double modulo(double a, double m);
-VTS_API double interpolate(double a, double b, double f);
-VTS_API double clamp(double a, double min, double max);
-VTS_API double smoothstep(double f);
-VTS_API double smootherstep(double f);
+VTS_API void normalizeAngle(double &a);
+VTS_API double angularDiff(double a, double b);
+VTS_API vec3 angularDiff(const vec3 &a, const vec3 &b);
+
+VTS_API double aabbPointDist(const vec3 &point,
+                             const vec3 &min, const vec3 &max);
 
 VTS_API vec3f convertRgbToHsv(const vec3f &inColor);
 VTS_API vec3f convertHsvToRgb(const vec3f &inColor);
@@ -115,13 +123,6 @@ U vecToUblas(const T &t)
         res[i] = t(i);
     return res;
 }
-
-VTS_API void normalizeAngle(double &a);
-VTS_API double angularDiff(double a, double b);
-VTS_API vec3 angularDiff(const vec3 &a, const vec3 &b);
-
-VTS_API double aabbPointDist(const vec3 &point,
-                             const vec3 &min, const vec3 &max);
 
 } // namespace vts
 

@@ -41,7 +41,7 @@ const mat3f BoundParamInfo::uvMatrix() const
 {
     int dep = depth;
     if (dep == 0)
-        return upperLeftSubMatrix(identityMatrix()).cast<float>();
+        return identityMatrix3().cast<float>();
     double scale = 1.0 / (1 << dep);
     double tx = scale * (orig.localId.x
                          - ((orig.localId.x >> dep) << dep));
@@ -161,8 +161,8 @@ void MapDraws::clear()
     Infographic.clear();
 }
 
-RenderTask::RenderTask() : model(identityMatrix()),
-    uvm(upperLeftSubMatrix(identityMatrix()).cast<float>()),
+RenderTask::RenderTask() : model(identityMatrix4()),
+    uvm(identityMatrix3().cast<float>()),
     color(1,1,1,1), externalUv(false), flatShading(false)
 {}
 

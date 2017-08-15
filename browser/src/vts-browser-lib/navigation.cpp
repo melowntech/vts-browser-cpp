@@ -75,9 +75,9 @@ void MapImpl::positionToCamera(vec3 &center, vec3 &dir, vec3 &up)
                     mapConfig->referenceFrame.model.navigationSrs).type
                 == vtslibs::registry::Srs::Type::projected
                 ? rot(0) : -rot(0);
-        mat3 tmp = upperLeftSubMatrix(rotationMatrix(2, yaw))
-                * upperLeftSubMatrix(rotationMatrix(1, -rot(1)))
-                * upperLeftSubMatrix(rotationMatrix(0, -rot(2)));
+        mat3 tmp = mat4to3(rotationMatrix(2, yaw))
+                 * mat4to3(rotationMatrix(1, -rot(1)))
+                 * mat4to3(rotationMatrix(0, -rot(2)));
         dir = tmp * dir;
         up = tmp * up;
     }
@@ -442,7 +442,7 @@ void MapImpl::pan(const vec3 &value)
     }
 
     // the move is rotated by the camera
-    move = upperLeftSubMatrix(rotationMatrix(2, -azi)) * move;
+    move = mat4to3(rotationMatrix(2, -azi)) * move;
 
     switch (mapConfig->navigationSrsType())
     {

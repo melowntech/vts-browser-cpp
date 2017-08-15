@@ -36,7 +36,7 @@ namespace vts
 namespace
 {
 
-inline bool testAndThrow(Resource::State state, const std::string &message)
+bool testAndThrow(Resource::State state, const std::string &message)
 {
     switch (state)
     {
@@ -54,7 +54,7 @@ inline bool testAndThrow(Resource::State state, const std::string &message)
     }
 }
 
-inline const vec3 lowerUpperCombine(uint32 i)
+vec3 lowerUpperCombine(uint32 i)
 {
     vec3 res;
     res(0) = (i >> 0) % 2;
@@ -63,9 +63,39 @@ inline const vec3 lowerUpperCombine(uint32 i)
     return res;
 }
 
-inline const vec4 column(const mat4 &m, uint32 index)
+vec4 column(const mat4 &m, uint32 index)
 {
     return vec4(m(index, 0), m(index, 1), m(index, 2), m(index, 3));
+}
+
+bool aabbTest(const vec3 aabb[2], const vec4 planes[6])
+{
+    for (uint32 i = 0; i < 6; i++)
+    {
+        const vec4 &p = planes[i]; // current plane
+        vec3 pv = vec3( // current p-vertex
+                aabb[!!(p[0] > 0)](0),
+                aabb[!!(p[1] > 0)](1),
+                aabb[!!(p[2] > 0)](2));
+        double d = dot(vec4to3(p), pv);
+        if (d < -p[3])
+            return false;
+    }
+    return true;
+}
+
+void frustumPlanes(const mat4 &vp, vec4 planes[6])
+{
+    vec4 c0 = column(vp, 0);
+    vec4 c1 = column(vp, 1);
+    vec4 c2 = column(vp, 2);
+    vec4 c3 = column(vp, 3);
+    planes[0] = c3 + c0;
+    planes[1] = c3 - c0;
+    planes[2] = c3 + c1;
+    planes[3] = c3 - c1;
+    planes[4] = c3 + c2;
+    planes[5] = c3 - c2;
 }
 
 } // namespace
@@ -227,17 +257,19 @@ void MapImpl::touchDraws(Renders &renders)
 bool MapImpl::visibilityTest(const std::shared_ptr<TraverseNode> &trav)
 {
     assert(trav->meta);
-    for (uint32 i = 0; i < 6; i++)
+    // aabb test
+    if (!aabbTest(trav->meta->aabbPhys, renderer.frustumPlanes))
+        return false;
+    // additional obb test
+    if (trav->meta->obb)
     {
-        vec4 &p = renderer.frustumPlanes[i]; // current plane
-        vec3 pv = vec3( // current p-vertex
-                trav->meta->aabbPhys[!!(p[0] > 0)](0),
-                trav->meta->aabbPhys[!!(p[1] > 0)](1),
-                trav->meta->aabbPhys[!!(p[2] > 0)](2));
-        double d = dot(vec4to3(p), pv);
-        if (d < -p[3])
+        TraverseNode::Obb &obb = *trav->meta->obb;
+        vec4 planes[6];
+        frustumPlanes(renderer.viewProj * obb.rotInv, planes);
+        if (!aabbTest(obb.points, planes))
             return false;
     }
+    // all tests passed
     return true;
 }
 
@@ -445,12 +477,42 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
         vec2 fu = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
         vec3 el = vec2to3(fl, node->geomExtents.z.min);
         vec3 eu = vec2to3(fu, node->geomExtents.z.max);
+        vec3 *corners = trav->meta->cornersPhys;
         for (uint32 i = 0; i < 8; i++)
         {
             vec3 f = lowerUpperCombine(i).cwiseProduct(eu - el) + el;
             f = convertor->convert(f, trav->nodeInfo.srs(),
                         mapConfig->referenceFrame.model.physicalSrs);
-            trav->meta->cornersPhys[i] = f;
+            corners[i] = f;
+        }
+
+        // obb
+        if (trav->nodeInfo.distanceFromRoot() > 4)
+        {
+            vec3 center = vec3(0,0,0);
+            for (uint32 i = 0; i < 8; i++)
+                center += corners[i];
+            center /= 8;
+
+            vec3 f = corners[4] - corners[0];
+            vec3 u = corners[2] - corners[0];
+            mat4 t = lookAt(center, center + f, u);
+
+            TraverseNode::Obb obb;
+            obb.rotInv = t.inverse();
+            double di = std::numeric_limits<double>::infinity();
+            vec3 vi(di, di, di);
+            obb.points[0] = vi;
+            obb.points[1] = -vi;
+
+            for (uint32 i = 0; i < 8; i++)
+            {
+                vec3 p = vec4to3(t * vec3to4(corners[i], 1), false);
+                obb.points[0] = min(obb.points[0], p);
+                obb.points[1] = max(obb.points[1], p);
+            }
+
+            trav->meta->obb = obb;
         }
     }
     else if (node->extents.ll != node->extents.ur)
@@ -634,7 +696,7 @@ bool MapImpl::travDetermineDraws(const std::shared_ptr<TraverseNode> &trav)
             task->meshAgg = meshAgg;
             task->mesh = mesh;
             task->model = part.normToPhys;
-            task->uvm = upperLeftSubMatrix(identityMatrix()).cast<float>();
+            task->uvm = identityMatrix3().cast<float>();
             task->textureColor = getTexture(
                         trav->meta->surface->surface->urlIntTex(vars));
             task->textureColor->updatePriority(trav->priority);
@@ -849,18 +911,7 @@ void MapImpl::updateCamera()
         renderer.perpendicularUnitVector
                 = normalize(cross(cross(up, dir), dir));
         renderer.forwardUnitVector = dir;
-        { // frustum planes
-            vec4 c0 = column(renderer.viewProj, 0);
-            vec4 c1 = column(renderer.viewProj, 1);
-            vec4 c2 = column(renderer.viewProj, 2);
-            vec4 c3 = column(renderer.viewProj, 3);
-            renderer.frustumPlanes[0] = c3 + c0;
-            renderer.frustumPlanes[1] = c3 - c0;
-            renderer.frustumPlanes[2] = c3 + c1;
-            renderer.frustumPlanes[3] = c3 - c1;
-            renderer.frustumPlanes[4] = c3 + c2;
-            renderer.frustumPlanes[5] = c3 - c2;
-        }
+        frustumPlanes(renderer.viewProj, renderer.frustumPlanes);
         renderer.cameraPosPhys = cameraPosPhys;
         renderer.focusPosPhys = center;
     }

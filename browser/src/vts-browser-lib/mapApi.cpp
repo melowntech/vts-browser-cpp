@@ -39,7 +39,7 @@ namespace vts
 namespace
 {
 
-inline const std::string srsConvert(MapConfig *config, Srs srs)
+const std::string srsConvert(MapConfig *config, Srs srs)
 {
     switch(srs)
     {
@@ -202,6 +202,12 @@ void Map::setMapConfigPath(const std::string &mapConfigPath,
 std::string &Map::getMapConfigPath() const
 {
     return impl->mapConfigPath;
+}
+
+void Map::purgeDiskCache()
+{
+    if (impl->resources.cache)
+        impl->resources.cache->purge();
 }
 
 void Map::purgeViewCache()

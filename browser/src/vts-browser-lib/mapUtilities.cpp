@@ -140,6 +140,7 @@ DrawTask::DrawTask(RenderTask *r, MapImpl *m) :
     externalUv(r->externalUv),
     flatShading(r->flatShading || m->options.debugFlatShading)
 {
+    assert(r->ready());
     mesh = r->mesh->info.userData;
     if (r->textureColor)
         texColor = r->textureColor->info.userData;

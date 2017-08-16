@@ -683,6 +683,12 @@ public:
                 if (nk_button_label(&ctx, "Print debug info"))
                     window->map->printDebugInfo();
                 nk_label(&ctx, "", NK_TEXT_LEFT);
+
+                // purge disk cache
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+                if (nk_button_label(&ctx, "Purge disk cache"))
+                    window->map->purgeDiskCache();
+                nk_label(&ctx, "", NK_TEXT_LEFT);
             }
         }
         nk_end(&ctx);

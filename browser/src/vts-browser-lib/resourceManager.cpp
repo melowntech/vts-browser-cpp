@@ -609,6 +609,7 @@ Validity MapImpl::getResourceValidity(const std::shared_ptr<Resource> &resource)
     switch (resource->state)
     {
     case Resource::State::errorFatal:
+    case Resource::State::availFail:
         return Validity::Invalid;
     case Resource::State::ready:
         return Validity::Valid;

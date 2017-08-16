@@ -45,6 +45,7 @@ public:
                       std::time_t &expires) = 0;
     virtual void write(std::string name, const Buffer &buffer,
                        std::time_t expires) = 0;
+    virtual void purge() = 0;
     
     static std::shared_ptr<Cache> create(const class MapCreateOptions &options);
 };

@@ -126,10 +126,6 @@ public:
     // maximum size of the queue for the resources to be downloaded
     uint32 maxConcurrentDownloads;
 
-    // maximum number of node meta-data updates per frame
-    uint32 maxNodeMetaUpdatesPerTick;
-    // maximum number of node render-data updates per frame
-    uint32 maxNodeDrawsUpdatesPerTick;
     // maximum number of resources processed per dataTick
     uint32 maxResourceProcessesPerTick;
 

@@ -88,20 +88,34 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 "obj,long,lat,fix,height,pitch,yaw,roll,extent,fov"
             )
             ("closeWhenComplete",
-                po::value<bool>(&appOptions.closeOnFullRender),
+                po::value<bool>(&appOptions.closeOnFullRender)
+                ->default_value(appOptions.closeOnFullRender)
+                ->implicit_value(!appOptions.closeOnFullRender),
                 "Quit the application when it finishes "
                 "rendering the whole image."
             )
+            ("purgeCache",
+                po::value<bool>(&appOptions.purgeDiskCache)
+                ->default_value(appOptions.purgeDiskCache)
+                ->implicit_value(!appOptions.purgeDiskCache),
+                "Purge the disk cache during the initialization."
+            )
             ("renderAtmosphere",
-                po::value<bool>(&appOptions.renderAtmosphere),
+                po::value<bool>(&appOptions.renderAtmosphere)
+                ->default_value(appOptions.renderAtmosphere)
+                ->implicit_value(!appOptions.renderAtmosphere),
                 "Render atmosphere."
             )
             ("antialiasing",
-                po::value<vts::uint32>(&appOptions.antialiasing),
+                po::value<vts::uint32>(&appOptions.antialiasing)
+                ->default_value(appOptions.antialiasing)
+                ->implicit_value(16),
                 "Antialiasing samples."
             )
             /*("screenshotWhenComplete",
-                po::value<bool>(&appOptions.screenshotOnFullRender),
+                po::value<bool>(&appOptions.screenshotOnFullRender)
+             ->default_value(appOptions.screenshotOnFullRender)
+             ->implicit_value(!appOptions.screenshotOnFullRender),
                 "Save screenshot when it finishes "
                 "rendering the whole image."
             )*/
@@ -130,7 +144,7 @@ bool programOptions(vts::MapCreateOptions &createOptions,
     }
 
     if (configs.empty())
-        throw std::runtime_error("At least one mapconfig is required.");
+        throw std::runtime_error("At least one mapconfig url is required.");
 
     for (auto &&it : configs)
         appOptions.paths.push_back(parseConfigPaths(it, auth, sri));

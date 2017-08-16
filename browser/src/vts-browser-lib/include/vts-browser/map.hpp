@@ -52,8 +52,10 @@ public:
                           const std::string &authPath = "",
                           const std::string &sriPath = "");
     std::string &getMapConfigPath() const;
-    void purgeViewCache();
     bool getMapProjected() const;
+
+    void purgeViewCache();
+    void purgeDiskCache();
 
     // returns whether the map config has been downloaded
     // and parsed successfully

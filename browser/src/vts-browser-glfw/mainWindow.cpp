@@ -89,6 +89,7 @@ AppOptions::AppOptions() :
     antialiasing(1),
     screenshotOnFullRender(false),
     closeOnFullRender(false),
+    purgeDiskCache(false),
     renderAtmosphere(true),
     renderPolygonEdges(false)
 {}
@@ -720,6 +721,9 @@ void MainWindow::loadMesh(vts::ResourceInfo &info,
 
 void MainWindow::run()
 {
+    if (appOptions.purgeDiskCache)
+        map->purgeDiskCache();
+
     glfwGetFramebufferSize(window, &width, &height);
     map->setWindowSize(width, height);
 

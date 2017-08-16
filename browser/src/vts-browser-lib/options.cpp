@@ -61,8 +61,6 @@ MapOptions::MapOptions() :
     renderTilesScale(1.001),
     maxResourcesMemory(512 * 1024 * 1024),
     maxConcurrentDownloads(10),
-    maxNodeMetaUpdatesPerTick(10),
-    maxNodeDrawsUpdatesPerTick(10),
     maxResourceProcessesPerTick(10),
     navigationSamplesPerViewExtent(8),
     maxFetchRedirections(5),

@@ -69,6 +69,7 @@ struct AppOptions
     vts::uint32 antialiasing;
     bool screenshotOnFullRender;
     bool closeOnFullRender;
+    bool purgeDiskCache;
     bool renderAtmosphere;
     bool renderPolygonEdges;
 

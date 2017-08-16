@@ -154,6 +154,26 @@ public:
         }
     }
 
+    void purge()
+    {
+        if (disabled)
+            return;
+        assert(root.length() > 0 && root[root.length() - 1] == '/');
+        std::string op = root.substr(0, root.length() - 1);
+        if (!boost::filesystem::exists(op))
+            return;
+        try
+        {
+            std::string np = op + "-deleted";
+            boost::filesystem::rename(op, np);
+            boost::filesystem::remove_all(np);
+        }
+        catch (const std::exception &e)
+        {
+            LOG(warn3) << "Purging cache failed: <" << e.what() << ">";
+        }
+    }
+
     std::string convertNameToCache(const std::string &path)
     {
         assert(path == stripScheme(path));
@@ -166,7 +186,7 @@ public:
             {
                 r += digit(digest[i] / 16);
                 r += digit(digest[i] % 16);
-                if (i == 0 || i == 1 || i == 3)
+                if (i == 0 || i == 1)
                     r += '/';
             }
             return r;

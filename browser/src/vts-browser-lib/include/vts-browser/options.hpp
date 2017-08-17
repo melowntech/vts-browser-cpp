@@ -83,6 +83,10 @@ public:
     // increasing this ratio yealds less detailed map but reduces memory usage
     double maxTexelToPixelScale;
 
+    // maximum ratio of kept textures in the balanced traverse mode
+    // increasing this ratio will store more lods above the optimal one
+    double maxBalancedCoarsenessScale;
+
     // lower and upper limit for view-extent
     // expressed as multiplicative factor of planet major radius
     double viewExtentLimitScaleMin;

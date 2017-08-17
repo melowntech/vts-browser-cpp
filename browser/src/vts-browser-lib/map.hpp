@@ -133,15 +133,12 @@ public:
     NodeInfo nodeInfo;
     TraverseNode *const parent;
     uint32 lastAccessTime;
-    uint32 shallowestCurrent;
-    uint32 shallowestPrev;
     float priority;
 
     TraverseNode(TraverseNode *parent, const NodeInfo &nodeInfo);
     ~TraverseNode();
     void clear();
     bool ready() const;
-    bool balance() const;
 };
 
 class TraverseQueueItem
@@ -301,14 +298,13 @@ public:
     void touchDraws(Renders &renders);
     bool visibilityTest(const std::shared_ptr<TraverseNode> &trav);
     bool coarsenessTest(const std::shared_ptr<TraverseNode> &trav);
+    double coarsenessValue(const std::shared_ptr<TraverseNode> &trav);
     void renderNode(const std::shared_ptr<TraverseNode> &trav);
     bool travDetermineMeta(const std::shared_ptr<TraverseNode> &trav);
     bool travDetermineDraws(
             const std::shared_ptr<TraverseNode> &trav);
     double travDistance(const std::shared_ptr<TraverseNode> &trav,
                            const vec3 pointPhys);
-    void travDescend(const std::shared_ptr<TraverseNode> &trav,
-                         bool loadOnly);
     void travModeHierarchical(const std::shared_ptr<TraverseNode> &trav,
                               bool loadOnly);
     void travModeFlat(const std::shared_ptr<TraverseNode> &trav,

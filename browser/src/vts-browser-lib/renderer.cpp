@@ -267,15 +267,20 @@ bool MapImpl::visibilityTest(const std::shared_ptr<TraverseNode> &trav)
 bool MapImpl::coarsenessTest(const std::shared_ptr<TraverseNode> &trav)
 {
     assert(trav->meta);
+    return coarsenessValue(trav) < options.maxTexelToPixelScale;
+}
+
+double MapImpl::coarsenessValue(const std::shared_ptr<TraverseNode> &trav)
+{
     bool applyTexelSize = trav->meta->flags()
             & vtslibs::vts::MetaNode::Flag::applyTexelSize;
     bool applyDisplaySize = trav->meta->flags()
             & vtslibs::vts::MetaNode::Flag::applyDisplaySize;
 
     if (!applyTexelSize && !applyDisplaySize)
-        return false;
+        return std::numeric_limits<double>::infinity();
 
-    bool result = true;
+    double result = 0;
 
     if (applyTexelSize)
     {
@@ -287,17 +292,14 @@ bool MapImpl::coarsenessTest(const std::shared_ptr<TraverseNode> &trav)
             c1 = vec4to3(renderer.viewProj * vec3to4(c1, 1), true);
             c2 = vec4to3(renderer.viewProj * vec3to4(c2, 1), true);
             double len = std::abs(c2[1] - c1[1]) * renderer.windowHeight * 0.5;
-            result = result && len < options.maxTexelToPixelScale;
+            result = std::max(result, len);
         }
     }
 
     if (applyDisplaySize)
     {
-        result = false; // todo
+        // todo
     }
-
-    if (result)
-        trav->shallowestCurrent = trav->nodeInfo.distanceFromRoot();
 
     return result;
 }
@@ -745,17 +747,6 @@ bool MapImpl::travDetermineDraws(const std::shared_ptr<TraverseNode> &trav)
     return determined;
 }
 
-void MapImpl::travDescend(const std::shared_ptr<TraverseNode> &trav,
-                                   bool loadOnly)
-{
-    for (std::shared_ptr<TraverseNode> &t : trav->childs)
-    {
-        traverseRender(t, loadOnly);
-        trav->shallowestCurrent = std::min(trav->shallowestCurrent,
-                                           t->shallowestCurrent);
-    }
-}
-
 void MapImpl::travModeHierarchical(const std::shared_ptr<TraverseNode> &trav,
                                    bool loadOnly)
 {
@@ -788,7 +779,7 @@ void MapImpl::travModeHierarchical(const std::shared_ptr<TraverseNode> &trav,
             }
             if ((!t->meta->surface || t->renders.empty())
                     && (options.traverseMode == TraverseMode::Hierarchical
-                        || t->balance()))
+                    || coarsenessValue(t) < options.maxBalancedCoarsenessScale))
                 ok = false;
         }
         if (!ok)
@@ -800,7 +791,8 @@ void MapImpl::travModeHierarchical(const std::shared_ptr<TraverseNode> &trav,
 
     if (!trav->childs.empty())
     {
-        travDescend(trav, loadOnly);
+        for (std::shared_ptr<TraverseNode> &t : trav->childs)
+            traverseRender(t, loadOnly);
         return;
     }
 
@@ -832,13 +824,14 @@ void MapImpl::travModeFlat(const std::shared_ptr<TraverseNode> &trav,
     else
         trav->renders.clear();
 
-    travDescend(trav, loadOnly);
+    for (std::shared_ptr<TraverseNode> &t : trav->childs)
+        traverseRender(t, loadOnly);
 }
 
 void MapImpl::travModeBalanced(const std::shared_ptr<TraverseNode> &trav,
                                bool loadOnly)
 {
-    if (trav->balance())
+    if (coarsenessValue(trav) < options.maxBalancedCoarsenessScale)
         travModeHierarchical(trav, loadOnly);
     else
         travModeFlat(trav, loadOnly);
@@ -855,8 +848,6 @@ void MapImpl::traverseRender(const std::shared_ptr<TraverseNode> &trav,
 
     // update trav
     trav->lastAccessTime = renderer.tickIndex;
-    trav->shallowestPrev = trav->shallowestCurrent;
-    trav->shallowestCurrent = (uint32)-1;
 
     // priority
     trav->priority = trav->meta

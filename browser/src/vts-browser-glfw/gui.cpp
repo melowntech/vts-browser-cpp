@@ -389,7 +389,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Options", nk_rect(10, 10, 250, 600), flags))
+        if (nk_begin(&ctx, "Options", nk_rect(10, 10, 250, 650), flags))
         {
             vts::MapOptions &o = window->map->options();
             AppOptions &a = window->appOptions;
@@ -535,12 +535,25 @@ public:
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             }
 
-            // maxTexelToPixelScale
-            nk_label(&ctx, "Texel to pixel:", NK_TEXT_LEFT);
-            o.maxTexelToPixelScale = nk_slide_float(&ctx,
-                    1, o.maxTexelToPixelScale, 5, 0.01);
-            sprintf(buffer, "%3.1f", o.maxTexelToPixelScale);
-            nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            // details
+            {
+                // maxTexelToPixelScale
+                nk_label(&ctx, "Texel to pixel:", NK_TEXT_LEFT);
+                double prev = o.maxTexelToPixelScale;
+                o.maxTexelToPixelScale = nk_slide_float(&ctx,
+                        1, o.maxTexelToPixelScale, 5, 0.01);
+                sprintf(buffer, "%3.1f", o.maxTexelToPixelScale);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                o.maxBalancedCoarsenessScale += o.maxTexelToPixelScale - prev;
+
+                // maxBalancedCoarsenessScale
+                nk_label(&ctx, "Balanced ratio:", NK_TEXT_LEFT);
+                o.maxBalancedCoarsenessScale = nk_slide_float(&ctx,
+                        o.maxTexelToPixelScale, o.maxBalancedCoarsenessScale,
+                        o.maxTexelToPixelScale + 5, 0.01);
+                sprintf(buffer, "%3.1f", o.maxBalancedCoarsenessScale);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+            }
 
             // antialiasing samples
             {

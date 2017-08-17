@@ -98,6 +98,9 @@ enum class TraverseMode
 
     // this mode downloads only the smallest set of data
     Flat,
+
+    // this mode is a compromise
+    Balanced,
 };
 
 #ifdef _MSVC

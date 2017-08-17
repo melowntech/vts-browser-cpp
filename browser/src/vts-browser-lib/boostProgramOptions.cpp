@@ -172,7 +172,8 @@ void optionsConfigMapOptions(
         ->default_value(opts->traverseMode),
         "Render traversal mode:\n"
         "hierarchical\n"
-        "flat")
+        "flat\n"
+        "balanced")
     ;
 }
 
@@ -296,6 +297,7 @@ void optionsConfigFetcherOptions(
 UTILITY_GENERATE_ENUM_IO(TraverseMode,
                          ((Hierarchical)("hierarchical"))
                          ((Flat)("flat"))
+                         ((Balanced)("balanced"))
                          )
 
 } // namespace vts

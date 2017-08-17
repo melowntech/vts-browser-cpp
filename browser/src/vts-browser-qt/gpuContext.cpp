@@ -185,7 +185,7 @@ void GpuTextureImpl::loadTexture(vts::ResourceInfo &info,
     default:
         throw std::invalid_argument("invalid texture components count");
     }
-    setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
+    setMinificationFilter(QOpenGLTexture::Linear);
     setMagnificationFilter(QOpenGLTexture::Linear);
     setWrapMode(QOpenGLTexture::ClampToEdge);
     setMaximumAnisotropy(16);

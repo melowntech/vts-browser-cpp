@@ -231,6 +231,7 @@ TraverseNode::MetaInfo::MetaInfo(const MetaNode &node) :
 
 TraverseNode::TraverseNode(TraverseNode *parent, const NodeInfo &nodeInfo)
     : nodeInfo(nodeInfo), parent(parent), lastAccessTime(0),
+      shallowestCurrent(-1), shallowestPrev(-1),
       priority(std::numeric_limits<double>::quiet_NaN())
 {}
 
@@ -247,6 +248,11 @@ void TraverseNode::clear()
 bool TraverseNode::ready() const
 {
     return renders.ready();
+}
+
+bool TraverseNode::balance() const
+{
+    return shallowestPrev <= nodeInfo.distanceFromRoot() + 2u;
 }
 
 TraverseQueueItem::TraverseQueueItem(const std::shared_ptr<TraverseNode> &trav,
@@ -350,12 +356,6 @@ void MapImpl::applyCameraRotationNormalization(vec3 &rot)
     }
 }
 
-void MapImpl::emptyTraverseQueue()
-{
-    while (!renderer.traverseQueue.empty())
-        renderer.traverseQueue.pop();
-}
-
 double MapImpl::travDistance(const std::shared_ptr<TraverseNode> &trav,
                              const vec3 pointPhys)
 {
@@ -380,13 +380,9 @@ float MapImpl::computeResourcePriority(
         const std::shared_ptr<TraverseNode> &trav)
 {
     if (options.traverseMode == TraverseMode::Hierarchical)
-    {
         return 100.f / trav->nodeInfo.nodeId().lod;
-        //return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1)
-        //           / (1 << (trav->nodeInfo.nodeId().lod / 2)));
-    }
-
-    return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1));
+    else
+        return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1));
 }
 
 } // namespace vts

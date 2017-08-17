@@ -133,12 +133,15 @@ public:
     NodeInfo nodeInfo;
     TraverseNode *const parent;
     uint32 lastAccessTime;
+    uint32 shallowestCurrent;
+    uint32 shallowestPrev;
     float priority;
 
     TraverseNode(TraverseNode *parent, const NodeInfo &nodeInfo);
     ~TraverseNode();
     void clear();
     bool ready() const;
+    bool balance() const;
 };
 
 class TraverseQueueItem
@@ -213,7 +216,6 @@ public:
     public:
         Credits credits;
         std::shared_ptr<TraverseNode> traverseRoot;
-        std::priority_queue<TraverseQueueItem> traverseQueue;
         std::shared_ptr<TilesetMapping> tilesetMapping;
         mat4 viewProj;
         mat4 viewProjRender;
@@ -305,11 +307,18 @@ public:
             const std::shared_ptr<TraverseNode> &trav);
     double travDistance(const std::shared_ptr<TraverseNode> &trav,
                            const vec3 pointPhys);
-    void traverse(const std::shared_ptr<TraverseNode> &trav, bool loadOnly);
+    void travDescend(const std::shared_ptr<TraverseNode> &trav,
+                         bool loadOnly);
+    void travModeHierarchical(const std::shared_ptr<TraverseNode> &trav,
+                              bool loadOnly);
+    void travModeFlat(const std::shared_ptr<TraverseNode> &trav,
+                      bool loadOnly);
+    void travModeBalanced(const std::shared_ptr<TraverseNode> &trav,
+                          bool loadOnly);
+    void traverseRender(const std::shared_ptr<TraverseNode> &trav, bool loadOnly);
     void traverseClearing(const std::shared_ptr<TraverseNode> &trav);
     void updateCamera();
     bool prerequisitesCheck();
-    void emptyTraverseQueue();
     void applyCameraRotationNormalization(vec3 &rot);
 };
 

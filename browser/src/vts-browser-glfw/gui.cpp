@@ -74,6 +74,7 @@ void clipBoardCopy(nk_handle usr, const char *text, int len)
 static const char *traverseModeNames[] = {
     "Hierarchical",
     "Flat",
+    "Balanced",
 };
 
 static const char *navigationTypeNames[] = {
@@ -558,7 +559,7 @@ public:
             // maxResourcesMemory
             nk_label(&ctx, "Max memory:", NK_TEXT_LEFT);
             o.maxResourcesMemory = 1024 * 1024 * (vts::uint64)nk_slide_int(&ctx,
-                    128, o.maxResourcesMemory / 1024 / 1024, 2048, 32);
+                    0, o.maxResourcesMemory / 1024 / 1024, 2048, 32);
             sprintf(buffer, "%3d", (int)(o.maxResourcesMemory / 1024 / 1024));
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 

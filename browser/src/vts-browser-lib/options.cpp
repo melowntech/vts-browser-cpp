@@ -68,7 +68,7 @@ MapOptions::MapOptions() :
     fetchFirstRetryTimeOffset(15),
     navigationType(NavigationType::Quick),
     navigationMode(NavigationMode::Dynamic),
-    traverseMode(TraverseMode::Hierarchical),
+    traverseMode(TraverseMode::Balanced),
     enableSearchResultsFilter(true),
     enableRuntimeResourceExpiration(false),
     enableArbitrarySriRequests(true),

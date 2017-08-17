@@ -2,6 +2,7 @@
 /cache
 /*.user*
 /callgrind.out.*
+/massif.out.*
 /*.map
 /obj-*
 /.vscode

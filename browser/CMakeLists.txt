@@ -51,7 +51,7 @@ add_subdirectory(src/vts-browser-lib)
 include_directories(src/vts-browser-lib/include)
 
 # glfw-based example browser
-find_package(glfw3)
+find_package(glfw3 QUIET)
 
 # build glfw browser only when glfw3 library is found
 if(glfw3_FOUND

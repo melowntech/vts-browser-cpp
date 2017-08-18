@@ -44,7 +44,8 @@ void MetaTile::load()
     *(vtslibs::vts::MetaTile*)this
             = vtslibs::vts::loadMetaTile(w, 5, name);
     info.ramMemoryCost += sizeof(*this);
-    info.ramMemoryCost += size() * sizeof(vtslibs::vts::MetaNode);
+    uint32 side = 1 << 5;
+    info.ramMemoryCost += side * side * sizeof(vtslibs::vts::MetaNode);
 }
 
 NavTile::NavTile(MapImpl *map, const std::string &name) :

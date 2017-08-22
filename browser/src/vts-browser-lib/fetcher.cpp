@@ -175,8 +175,9 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
             task->reply.code = 200;
 
             // testing start
-            //if (task->resourceType == FetchTask::ResourceType::MetaTile)
-            //    task->replyCode = FetchTask::ExtraCodes::SimulatedError;
+            //if (task->query.resourceType == FetchTask::ResourceType::Mesh
+            //    && (std::hash<std::string>()(task->query.url) % 123) == 42)
+            //    task->reply.code = FetchTask::ExtraCodes::SimulatedError;
             // testing end
         }
     }

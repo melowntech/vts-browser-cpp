@@ -1,5 +1,8 @@
 #version 330
 
+uniform sampler2D texDepthSingle;
+uniform sampler2DMS texDepthMulti;
+
 uniform vec4 uniColorLow;
 uniform vec4 uniColorHigh;
 uniform vec4 uniBody; // major, minor, atmosphere thickness
@@ -11,9 +14,6 @@ uniform int uniProjected;
           // uniCameraDirections
 uniform mat4 uniInvView;
 uniform int uniMultiSamples;
-
-uniform sampler2D texDepthSingle;
-uniform sampler2DMS texDepthMulti;
 
 in vec2 varUv;
 in vec3 varCamDir;

@@ -151,11 +151,9 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         uls.push_back(glGetUniformLocation(id, "uniMvp"));
         uls.push_back(glGetUniformLocation(id, "uniMv"));
         uls.push_back(glGetUniformLocation(id, "uniUvMat"));
-        uls.push_back(glGetUniformLocation(id, "uniUvSource"));
         uls.push_back(glGetUniformLocation(id, "uniColor"));
-        uls.push_back(glGetUniformLocation(id, "uniUseMask"));
-        uls.push_back(glGetUniformLocation(id, "uniMonochromatic"));
-        uls.push_back(glGetUniformLocation(id, "uniFlatShading"));
+        uls.push_back(glGetUniformLocation(id, "uniUvClip"));
+        uls.push_back(glGetUniformLocation(id, "uniFlags"));
         glUseProgram(id);
         glUniform1i(glGetUniformLocation(id, "texColor"), 0);
         glUniform1i(glGetUniformLocation(id, "texMask"), 1);
@@ -381,12 +379,20 @@ void MainWindow::keyboardUnicodeCallback(unsigned int)
 
 void MainWindow::drawVtsTaskSurface(const vts::DrawTask &t)
 {
+    GpuTextureImpl *tex = (GpuTextureImpl*)t.texColor.get();
+    GpuMeshImpl *m = (GpuMeshImpl*)t.mesh.get();
     shaderSurface->bind();
     shaderSurface->uniformMat4(0, t.mvp);
     shaderSurface->uniformMat3(2, t.uvm);
-    shaderSurface->uniform(3, (int)(t.externalUv));
-    shaderSurface->uniformVec4(4, t.color);
-    shaderSurface->uniform(7, (int)t.flatShading);
+    shaderSurface->uniformVec4(3, t.color);
+    shaderSurface->uniformVec4(4, t.uvClip);
+    float flags[4] = {
+        t.texMask ? 1.f : -1.f,
+        tex->grayscale ? 1.f : -1.f,
+        t.flatShading ? 1.f : -1.f,
+        t.externalUv ? 1.f : -1.f
+    };
+    shaderSurface->uniformVec4(5, flags);
     if (t.flatShading)
     {
         vts::mat4f mv = vts::mat4f(t.mvp);
@@ -395,17 +401,11 @@ void MainWindow::drawVtsTaskSurface(const vts::DrawTask &t)
     }
     if (t.texMask)
     {
-        shaderSurface->uniform(5, 1);
         glActiveTexture(GL_TEXTURE0 + 1);
         ((GpuTextureImpl*)t.texMask.get())->bind();
         glActiveTexture(GL_TEXTURE0 + 0);
     }
-    else
-        shaderSurface->uniform(5, 0);
-    GpuTextureImpl *tex = (GpuTextureImpl*)t.texColor.get();
-    shaderSurface->uniform(6, (int)tex->grayscale);
     tex->bind();
-    GpuMeshImpl *m = (GpuMeshImpl*)t.mesh.get();
     m->bind();
     m->dispatch();
 }

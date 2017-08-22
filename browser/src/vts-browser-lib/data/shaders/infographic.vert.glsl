@@ -1,10 +1,10 @@
 #version 330
 
+uniform mat4 uniMvp;
+
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 inUvInternal;
 layout(location = 2) in vec2 inUvExternal;
-
-uniform mat4 uniMvp;
 
 out vec2 varUvs;
 

@@ -125,31 +125,40 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
 }
 
 DrawTask::DrawTask() :
-    mesh(nullptr), texColor(nullptr), texMask(nullptr),
+    color{0,0,0,1}, uvClip{-1,-1,2,2},
     externalUv(false), flatShading(false)
 {
-    for (int i = 0; i < 3; i++)
-        color[i] = 0;
-    color[3] = 1;
     for (int i = 0; i < 16; i++)
         mvp[i] = i % 4 == i / 4 ? 1 : 0;
+    for (int i = 0; i < 9; i++)
+        uvm[i] = i % 3 == i / 3 ? 1 : 0;
 }
 
-DrawTask::DrawTask(RenderTask *r, MapImpl *m) :
-    mesh(nullptr), texColor(nullptr), texMask(nullptr),
-    externalUv(r->externalUv),
-    flatShading(r->flatShading || m->options.debugFlatShading)
+DrawTask::DrawTask(const RenderTask &r, const MapImpl *m) :
+    mesh(r.mesh->info.userData),
+    uvClip{0,0,1,1},
+    externalUv(r.externalUv),
+    flatShading(r.flatShading || m->options.debugFlatShading)
 {
-    assert(r->ready());
-    mesh = r->mesh->info.userData;
-    if (r->textureColor)
-        texColor = r->textureColor->info.userData;
-    if (r->textureMask)
-        texMask = r->textureMask->info.userData;
-    mat4f mvp = (m->renderer.viewProjRender * r->model).cast<float>();
-    memcpy(this->mvp, mvp.data(), sizeof(mvp));
-    memcpy(uvm, r->uvm.data(), sizeof(uvm));
-    memcpy(color, r->color.data(), sizeof(color));
+    assert(r.ready());
+    if (r.textureColor)
+        texColor = r.textureColor->info.userData;
+    if (r.textureMask)
+        texMask = r.textureMask->info.userData;
+    for (int i = 0; i < 4; i++)
+        this->color[i] = r.color[i];
+    mat4f mvp = (m->renderer.viewProjRender * r.model).cast<float>();
+    for (int i = 0; i < 16; i++)
+        this->mvp[i] = mvp(i);
+    for (int i = 0; i < 9; i++)
+        this->uvm[i] = r.uvm(i);
+}
+
+DrawTask::DrawTask(const RenderTask &r, const float *uvClip, const MapImpl *m)
+ : DrawTask(r, m)
+{
+    for (int i = 0; i < 4; i++)
+        this->uvClip[i] = uvClip[i];
 }
 
 MapDraws::MapDraws()
@@ -178,30 +187,6 @@ bool RenderTask::ready() const
     if (textureMask && !*textureMask)
         return false;
     return true;
-}
-
-void Renders::clear()
-{
-    opaque.clear();
-    transparent.clear();
-    infographic.clear();
-}
-
-bool Renders::empty() const
-{
-    return opaque.empty() && transparent.empty() && infographic.empty();
-}
-
-bool Renders::ready() const
-{
-    bool r = true;
-    for (auto &&it : opaque)
-        r = r && it->ready();
-    for (auto &&it : transparent)
-        r = r && it->ready();
-    for (auto &&it : infographic)
-        r = r && it->ready();
-    return r;
 }
 
 TraverseNode::MetaInfo::MetaInfo(const MetaNode &node) :
@@ -237,26 +222,33 @@ TraverseNode::TraverseNode(TraverseNode *parent, const NodeInfo &nodeInfo)
 TraverseNode::~TraverseNode()
 {}
 
-void TraverseNode::clear()
+void TraverseNode::clearAll()
 {
     meta.reset();
     childs.clear();
-    renders.clear();
+    clearRenders();
 }
 
-bool TraverseNode::ready() const
+void TraverseNode::clearRenders()
 {
-    return renders.ready();
+    opaque.clear();
+    transparent.clear();
 }
 
-TraverseQueueItem::TraverseQueueItem(const std::shared_ptr<TraverseNode> &trav,
-                                     bool loadOnly) :
-    trav(trav), loadOnly(loadOnly)
-{}
-
-bool TraverseQueueItem::operator < (const TraverseQueueItem &other) const
+bool TraverseNode::rendersReady() const
 {
-    return trav->priority < other.trav->priority;
+    for (auto &&it : opaque)
+        if (!it.ready())
+            return false;
+    for (auto &&it : transparent)
+        if (!it.ready())
+            return false;
+    return true;
+}
+
+bool TraverseNode::rendersEmpty() const
+{
+    return opaque.empty() && transparent.empty();
 }
 
 ExternalBoundLayer::ExternalBoundLayer(MapImpl *map, const std::string &name)
@@ -373,10 +365,7 @@ double MapImpl::travDistance(const std::shared_ptr<TraverseNode> &trav,
 float MapImpl::computeResourcePriority(
         const std::shared_ptr<TraverseNode> &trav)
 {
-    if (options.traverseMode == TraverseMode::Hierarchical)
-        return 100.f / trav->nodeInfo.nodeId().lod;
-    else
-        return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1));
+    return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1));
 }
 
 } // namespace vts

@@ -35,6 +35,9 @@
 namespace vts
 {
 
+class RenderTask;
+class MapImpl;
+
 class VTS_API DrawTask
 {
 public:
@@ -44,11 +47,13 @@ public:
     float mvp[16];
     float uvm[9];
     float color[4];
+    float uvClip[4];
     bool externalUv;
     bool flatShading;
 
     DrawTask();
-    DrawTask(class RenderTask *r, class MapImpl *m);
+    DrawTask(const RenderTask &r, const MapImpl *m);
+    DrawTask(const RenderTask &r, const float *uvClip, const MapImpl *m);
 };
 
 class VTS_API MapDraws

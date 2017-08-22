@@ -215,33 +215,27 @@ Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
     return Validity::Valid;
 }
 
-void MapImpl::drawRenders(Renders &renders)
+void MapImpl::touchDraws(const RenderTask &task)
 {
-    for (std::shared_ptr<RenderTask> &r : renders.opaque)
-        draws.opaque.emplace_back(r.get(), this);
-    for (std::shared_ptr<RenderTask> &r : renders.transparent)
-        draws.transparent.emplace_back(r.get(), this);
-    for (std::shared_ptr<RenderTask> &r : renders.infographic)
-        draws.Infographic.emplace_back(r.get(), this);
+    if (task.meshAgg)
+        touchResource(task.meshAgg);
+    if (task.textureColor)
+        touchResource(task.textureColor);
+    if (task.textureMask)
+        touchResource(task.textureMask);
 }
 
-void MapImpl::touchDraws(const std::shared_ptr<RenderTask> &task)
+void MapImpl::touchDraws(const std::vector<RenderTask> &renders)
 {
-    if (task->meshAgg)
-        touchResource(task->meshAgg);
-    if (task->textureColor)
-        touchResource(task->textureColor);
-    if (task->textureMask)
-        touchResource(task->textureMask);
+    for (auto &&it : renders)
+        touchDraws(it);
 }
 
-void MapImpl::touchDraws(Renders &renders)
+void MapImpl::touchDraws(const std::shared_ptr<TraverseNode> &trav)
 {
-    for (auto &&it : renders.opaque)
+    for (auto &&it : trav->opaque)
         touchDraws(it);
-    for (auto &&it : renders.transparent)
-        touchDraws(it);
-    for (auto &&it : renders.infographic)
+    for (auto &&it : trav->transparent)
         touchDraws(it);
 }
 
@@ -304,12 +298,10 @@ double MapImpl::coarsenessValue(const std::shared_ptr<TraverseNode> &trav)
     return result;
 }
 
-void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
+void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav,
+                         const vec4f &uvClip)
 {
     assert(trav->meta);
-    assert(trav->meta->surface);
-    assert(!trav->renders.empty());
-    assert(visibilityTest(trav));
 
     // statistics
     statistics.meshesRenderedTotal++;
@@ -318,7 +310,12 @@ void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
 
     // meshes
     if (!options.debugRenderNoMeshes)
-        drawRenders(trav->renders);
+    {
+        for (const RenderTask &r : trav->opaque)
+            draws.opaque.emplace_back(r, uvClip.data(), this);
+        for (const RenderTask &r : trav->transparent)
+            draws.transparent.emplace_back(r, uvClip.data(), this);
+    }
 
     // surrogate
     if (options.debugRenderSurrogates)
@@ -331,21 +328,21 @@ void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
         if (trav->meta->surface)
             task.color = vec3to4f(trav->meta->surface->color, task.color(3));
         if (task.ready())
-            draws.Infographic.emplace_back(&task, this);
+            draws.Infographic.emplace_back(task, this);
     }
 
     // mesh box
     if (options.debugRenderMeshBoxes)
     {
-        for (std::shared_ptr<RenderTask> &r : trav->renders.opaque)
+        for (RenderTask &r : trav->opaque)
         {
             RenderTask task;
-            task.model = r->model;
+            task.model = r.model;
             task.mesh = getMeshRenderable("internal://data/meshes/aabb.obj");
             task.mesh->priority = std::numeric_limits<float>::infinity();
             task.color = vec4f(0, 0, 1, 1);
             if (task.ready())
-                draws.Infographic.emplace_back(&task, this);
+                draws.Infographic.emplace_back(task, this);
         }
     }
 
@@ -369,7 +366,7 @@ void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav)
                 vec3 a = trav->meta->cornersPhys[cora[i]];
                 vec3 b = trav->meta->cornersPhys[corb[i]];
                 task.model = lookAt(a, b);
-                draws.Infographic.emplace_back(&task, this);
+                draws.Infographic.emplace_back(task, this);
             }
         }
     }
@@ -384,7 +381,7 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
 {
     assert(!trav->meta);
     assert(trav->childs.empty());
-    assert(trav->renders.empty());
+    assert(trav->rendersEmpty());
 
     // statistics
     statistics.currentNodeMetaUpdates++;
@@ -581,7 +578,7 @@ bool MapImpl::travDetermineDraws(const std::shared_ptr<TraverseNode> &trav)
 {
     assert(trav->meta);
     assert(trav->meta->surface);
-    assert(trav->renders.empty());
+    assert(trav->rendersEmpty());
 
     // statistics
     statistics.currentNodeDrawsUpdates++;
@@ -605,7 +602,8 @@ bool MapImpl::travDetermineDraws(const std::shared_ptr<TraverseNode> &trav)
     }
 
     bool determined = true;
-    Renders newRenders;
+    std::vector<RenderTask> newOpaque;
+    std::vector<RenderTask> newTransparent;
     std::vector<vtslibs::registry::CreditId> newCredits;
 
     // iterate over all submeshes
@@ -660,12 +658,11 @@ bool MapImpl::travDetermineDraws(const std::shared_ptr<TraverseNode> &trav)
                 }
 
                 // draw task
-                std::shared_ptr<RenderTask> task
-                        = std::make_shared<RenderTask>();
-                task->textureColor = getTexture(b.bound->urlExtTex(b.vars));
-                task->textureColor->updatePriority(trav->priority);
-                task->textureColor->availTest = b.bound->availability;
-                switch (getResourceValidity(task->textureColor))
+                RenderTask task;
+                task.textureColor = getTexture(b.bound->urlExtTex(b.vars));
+                task.textureColor->updatePriority(trav->priority);
+                task.textureColor->availTest = b.bound->availability;
+                switch (getResourceValidity(task.textureColor))
                 {
                 case Validity::Indeterminate:
                     determined = false;
@@ -677,9 +674,9 @@ bool MapImpl::travDetermineDraws(const std::shared_ptr<TraverseNode> &trav)
                 }
                 if (!b.watertight)
                 {
-                    task->textureMask = getTexture(b.bound->urlMask(b.vars));
-                    task->textureMask->updatePriority(trav->priority);
-                    switch (getResourceValidity(task->textureMask))
+                    task.textureMask = getTexture(b.bound->urlMask(b.vars));
+                    task.textureMask->updatePriority(trav->priority);
+                    switch (getResourceValidity(task.textureMask))
                     {
                     case Validity::Indeterminate:
                         determined = false;
@@ -690,16 +687,16 @@ bool MapImpl::travDetermineDraws(const std::shared_ptr<TraverseNode> &trav)
                         break;
                     }
                 }
-                task->color(3) = b.alpha ? *b.alpha : 1;
-                task->meshAgg = meshAgg;
-                task->mesh = mesh;
-                task->model = part.normToPhys;
-                task->uvm = b.uvMatrix();
-                task->externalUv = true;
+                task.color(3) = b.alpha ? *b.alpha : 1;
+                task.meshAgg = meshAgg;
+                task.mesh = mesh;
+                task.model = part.normToPhys;
+                task.uvm = b.uvMatrix();
+                task.externalUv = true;
                 if (b.transparent)
-                    newRenders.transparent.push_back(task);
+                    newTransparent.push_back(task);
                 else
-                    newRenders.opaque.push_back(task);
+                    newOpaque.push_back(task);
                 allTransparent = allTransparent && b.transparent;
             }
             if (!allTransparent)
@@ -711,11 +708,11 @@ bool MapImpl::travDetermineDraws(const std::shared_ptr<TraverseNode> &trav)
         {
             UrlTemplate::Vars vars(nodeId,
                     vtslibs::vts::local(trav->nodeInfo), subMeshIndex);
-            std::shared_ptr<RenderTask> task = std::make_shared<RenderTask>();
-            task->textureColor = getTexture(
+            RenderTask task;
+            task.textureColor = getTexture(
                         trav->meta->surface->surface->urlIntTex(vars));
-            task->textureColor->updatePriority(trav->priority);
-            switch (getResourceValidity(task->textureColor))
+            task.textureColor->updatePriority(trav->priority);
+            switch (getResourceValidity(task.textureColor))
             {
             case Validity::Indeterminate:
                 determined = false;
@@ -725,120 +722,30 @@ bool MapImpl::travDetermineDraws(const std::shared_ptr<TraverseNode> &trav)
             case Validity::Valid:
                 break;
             }
-            task->meshAgg = meshAgg;
-            task->mesh = mesh;
-            task->model = part.normToPhys;
-            task->uvm = identityMatrix3().cast<float>();
-            task->externalUv = false;
-            newRenders.opaque.insert(newRenders.opaque.begin(), task);
+            task.meshAgg = meshAgg;
+            task.mesh = mesh;
+            task.model = part.normToPhys;
+            task.uvm = identityMatrix3().cast<float>();
+            task.externalUv = false;
+            newOpaque.insert(newOpaque.begin(), task);
         }
     }
 
     if (determined)
     {
-        assert(trav->renders.empty());
-        std::swap(trav->renders, newRenders);
+        assert(trav->rendersEmpty());
+        std::swap(trav->opaque, newOpaque);
+        std::swap(trav->transparent, newTransparent);
         trav->meta->credits.insert(trav->meta->credits.end(),
                              newCredits.begin(), newCredits.end());
-        if (trav->renders.empty())
+        if (trav->rendersEmpty())
             trav->meta->surface = nullptr;
     }
 
     return determined;
 }
 
-void MapImpl::travModeHierarchical(const std::shared_ptr<TraverseNode> &trav,
-                                   bool loadOnly)
-{
-    touchDraws(trav->renders);
-
-    if (trav->meta->surface && trav->renders.empty())
-        travDetermineDraws(trav);
-
-    if (!visibilityTest(trav))
-        return;
-
-    bool renderable = trav->meta->surface && !trav->renders.empty();
-
-    if (coarsenessTest(trav))
-    {
-        if (!loadOnly && renderable)
-            renderNode(trav);
-        return;
-    }
-
-    if (!loadOnly && renderable)
-    {
-        bool ok = true;
-        for (std::shared_ptr<TraverseNode> &t : trav->childs)
-        {
-            if (!t->meta)
-            {
-                ok = false;
-                continue;
-            }
-            if ((!t->meta->surface || t->renders.empty())
-                    && (options.traverseMode == TraverseMode::Hierarchical
-                    || coarsenessValue(t) < options.maxBalancedCoarsenessScale))
-                ok = false;
-        }
-        if (!ok)
-        {
-            renderNode(trav);
-            loadOnly = true;
-        }
-    }
-
-    if (!trav->childs.empty())
-    {
-        for (std::shared_ptr<TraverseNode> &t : trav->childs)
-            traverseRender(t, loadOnly);
-        return;
-    }
-
-    if (!loadOnly && renderable)
-        renderNode(trav);
-}
-
-void MapImpl::travModeFlat(const std::shared_ptr<TraverseNode> &trav,
-                           bool loadOnly)
-{
-    if (!visibilityTest(trav))
-    {
-        trav->renders.clear();
-        return;
-    }
-
-    if (coarsenessTest(trav) || trav->childs.empty())
-    {
-        touchDraws(trav->renders);
-        if (!loadOnly && trav->meta->surface)
-        {
-            if (trav->renders.empty())
-                travDetermineDraws(trav);
-            else
-                renderNode(trav);
-        }
-        return;
-    }
-    else
-        trav->renders.clear();
-
-    for (std::shared_ptr<TraverseNode> &t : trav->childs)
-        traverseRender(t, loadOnly);
-}
-
-void MapImpl::travModeBalanced(const std::shared_ptr<TraverseNode> &trav,
-                               bool loadOnly)
-{
-    if (coarsenessValue(trav) < options.maxBalancedCoarsenessScale)
-        travModeHierarchical(trav, loadOnly);
-    else
-        travModeFlat(trav, loadOnly);
-}
-
-void MapImpl::traverseRender(const std::shared_ptr<TraverseNode> &trav,
-                                   bool loadOnly)
+bool MapImpl::travInit(const std::shared_ptr<TraverseNode> &trav)
 {
     // statistics
     statistics.metaNodesTraversedTotal++;
@@ -858,22 +765,189 @@ void MapImpl::traverseRender(const std::shared_ptr<TraverseNode> &trav,
 
     // prepare meta data
     if (!trav->meta)
+        return travDetermineMeta(trav);
+
+    return true;
+}
+
+void MapImpl::travModeHierarchical(const std::shared_ptr<TraverseNode> &trav,
+                                   bool loadOnly)
+{
+    if (!travInit(trav))
+        return;
+
+    touchDraws(trav);
+    if (trav->meta->surface && trav->rendersEmpty())
+        travDetermineDraws(trav);
+
+    if (loadOnly)
+        return;
+
+    if (!visibilityTest(trav))
+        return;
+
+    if (coarsenessTest(trav) || trav->childs.empty())
     {
-        travDetermineMeta(trav);
+        renderNode(trav);
         return;
     }
 
-    // traverse mode
+    bool ok = true;
+    for (std::shared_ptr<TraverseNode> &t : trav->childs)
+    {
+        if (!t->meta)
+        {
+            ok = false;
+            continue;
+        }
+        if (!t->meta->surface || t->rendersEmpty())
+            ok = false;
+    }
+
+    for (std::shared_ptr<TraverseNode> &t : trav->childs)
+        travModeHierarchical(t, !ok);
+
+    if (!ok)
+        renderNode(trav);
+}
+
+void MapImpl::travModeFlat(const std::shared_ptr<TraverseNode> &trav)
+{
+    if (!travInit(trav))
+        return;
+
+    if (!visibilityTest(trav))
+    {
+        trav->clearRenders();
+        return;
+    }
+
+    if (coarsenessTest(trav) || trav->childs.empty())
+    {
+        touchDraws(trav);
+        if (trav->meta->surface && trav->rendersEmpty())
+            travDetermineDraws(trav);
+        renderNode(trav);
+        return;
+    }
+
+    trav->clearRenders();
+
+    for (std::shared_ptr<TraverseNode> &t : trav->childs)
+        travModeFlat(t);
+}
+
+bool MapImpl::travModeBalanced(const std::shared_ptr<TraverseNode> &trav,
+                               bool loadOnly)
+{
+    if (!travInit(trav))
+        return false;
+
+    if (!visibilityTest(trav))
+    {
+        trav->clearRenders();
+        return true;
+    }
+
+    double coar = coarsenessValue(trav);
+
+    if (coar > options.maxBalancedCoarsenessScale)
+    {
+        if (loadOnly)
+            return true;
+        trav->clearRenders();
+        for (std::shared_ptr<TraverseNode> &t : trav->childs)
+            travModeBalanced(t, false);
+        return true;
+    }
+
+    touchDraws(trav);
+    if (trav->meta->surface && trav->rendersEmpty())
+        travDetermineDraws(trav);
+
+    bool renderable = trav->meta->surface && !trav->rendersEmpty();
+
+    if (loadOnly)
+        return renderable;
+
+    if (coar < options.maxTexelToPixelScale || trav->childs.empty())
+    {
+        renderNode(trav);
+        return renderable;
+    }
+
+    bool results[4];
+    assert(trav->childs.size() <= 4);
+    for (uint32 i = 0, e = trav->childs.size(); i != e; i++)
+        results[i] = travModeBalanced(trav->childs[i], true);
+    uint32 ok = 0;
+    for (uint32 i = 0, e = trav->childs.size(); i != e; i++)
+        if (results[i])
+            ok++;
+
+    if (ok == trav->childs.size())
+    {
+        for (auto &&it : trav->childs)
+        {
+            bool r = travModeBalanced(it, false);
+            assert(r); (void)r;
+        }
+        return true;
+    }
+
+    if (!renderable)
+        return false;
+
+    if (ok == 0)
+    {
+        for (auto &&it : trav->childs)
+            travModeBalanced(it, true);
+        renderNode(trav);
+        return true;
+    }
+
+    for (uint32 i = 0, e = trav->childs.size(); i != e; i++)
+    {
+        if (results[i])
+        {
+            bool r = travModeBalanced(trav->childs[i], false);
+            assert(r); (void)r;
+            continue;
+        }
+
+        auto id = trav->childs[i]->nodeInfo.nodeId();
+        vec4f uvClip;
+        if (id.y % 2 == 1)
+        {
+            if (id.x % 2 == 0)
+                uvClip = vec4f(-0.05, -0.05, 0.55, 0.55);
+            else
+                uvClip = vec4f(0.45, -0.05, 1.05, 0.55);
+        }
+        else
+        {
+            if (id.x % 2 == 0)
+                uvClip = vec4f(-0.05, 0.45, 0.55, 1.05);
+            else
+                uvClip = vec4f(0.45, 0.45, 1.05, 1.05);
+        }
+        renderNode(trav, uvClip);
+    }
+    return true;
+}
+
+void MapImpl::traverseRender(const std::shared_ptr<TraverseNode> &trav)
+{
     switch (options.traverseMode)
     {
     case TraverseMode::Hierarchical:
-        travModeHierarchical(trav, loadOnly);
+        travModeHierarchical(trav, false);
         break;
     case TraverseMode::Flat:
-        travModeFlat(trav, loadOnly);
+        travModeFlat(trav);
         break;
     case TraverseMode::Balanced:
-        travModeBalanced(trav, loadOnly);
+        travModeBalanced(trav, false);
         break;
     }
 }
@@ -889,7 +963,7 @@ void MapImpl::traverseClearing(const std::shared_ptr<TraverseNode> &trav)
     
     if (trav->lastAccessTime + 5 < renderer.tickIndex)
     {
-        trav->clear();
+        trav->clearAll();
         return;
     }
     
@@ -1009,7 +1083,7 @@ void MapImpl::updateCamera()
                 vec3 a = corners[cora[i]];
                 vec3 b = corners[corb[i]];
                 task.model = lookAt(a, b);
-                draws.Infographic.emplace_back(&task, this);
+                draws.Infographic.emplace_back(task, this);
             }
         }
     }
@@ -1026,7 +1100,7 @@ void MapImpl::updateCamera()
         r.model = translationMatrix(phys)
                 * scaleMatrix(pos.verticalExtent * 0.015);
         if (r.ready())
-            draws.Infographic.emplace_back(&r, this);
+            draws.Infographic.emplace_back(r, this);
     }
     
     // render target position
@@ -1041,7 +1115,7 @@ void MapImpl::updateCamera()
         r.model = translationMatrix(phys)
                 * scaleMatrix(navigation.targetViewExtent * 0.015);
         if (r.ready())
-            draws.Infographic.emplace_back(&r, this);
+            draws.Infographic.emplace_back(r, this);
     }
 }
 
@@ -1146,9 +1220,10 @@ void MapImpl::renderTickRender()
         return;
 
     updateCamera();
-    traverseRender(renderer.traverseRoot, false);
+    traverseRender(renderer.traverseRoot);
     renderer.credits.tick(credits);
-    drawRenders(navigation.renders);
+    for (const RenderTask &r : navigation.renders)
+        draws.Infographic.emplace_back(r, this);
 }
 
 } // namespace vts

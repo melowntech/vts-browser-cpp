@@ -1,14 +1,14 @@
 #version 330
 
-uniform vec4 uniColor;
-uniform int uniUseColorTexture;
-
 uniform sampler2D texDepth;
 uniform sampler2D texColor;
 
-layout(location = 0) out vec4 outColor;
+uniform vec4 uniColor;
+uniform int uniUseColorTexture;
 
 in vec2 varUvs;
+
+layout(location = 0) out vec4 outColor;
 
 void main()
 {

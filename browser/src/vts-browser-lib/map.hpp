@@ -94,18 +94,6 @@ public:
     bool ready() const;
 };
 
-class Renders
-{
-public:
-    std::vector<std::shared_ptr<RenderTask>> opaque;
-    std::vector<std::shared_ptr<RenderTask>> transparent;
-    std::vector<std::shared_ptr<RenderTask>> infographic;
-
-    void clear();
-    bool empty() const;
-    bool ready() const;
-};
-
 class TraverseNode
 {
 public:
@@ -129,7 +117,8 @@ public:
 
     boost::optional<MetaInfo> meta;
     std::vector<std::shared_ptr<TraverseNode>> childs;
-    Renders renders;
+    std::vector<RenderTask> opaque;
+    std::vector<RenderTask> transparent;
     NodeInfo nodeInfo;
     TraverseNode *const parent;
     uint32 lastAccessTime;
@@ -137,19 +126,10 @@ public:
 
     TraverseNode(TraverseNode *parent, const NodeInfo &nodeInfo);
     ~TraverseNode();
-    void clear();
-    bool ready() const;
-};
-
-class TraverseQueueItem
-{
-public:
-    TraverseQueueItem(const std::shared_ptr<TraverseNode> &trav, bool loadOnly);
-    
-    std::shared_ptr<TraverseNode> trav;
-    bool loadOnly;
-
-    bool operator < (const TraverseQueueItem &other) const;
+    void clearAll();
+    void clearRenders();
+    bool rendersReady() const;
+    bool rendersEmpty() const;
 };
 
 class MapImpl
@@ -175,7 +155,7 @@ public:
     class Navigation
     {
     public:
-        Renders renders;
+        std::vector<RenderTask> renders;
         vec3 changeRotation;
         vec3 targetPoint;
         double autoRotation;
@@ -293,25 +273,26 @@ public:
     const TileId roundId(TileId nodeId);
     Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
                            BoundParamInfo::List &boundList, double priority);
-    void drawRenders(Renders &renders);
-    void touchDraws(const std::shared_ptr<RenderTask> &task);
-    void touchDraws(Renders &renders);
+    void touchDraws(const RenderTask &task);
+    void touchDraws(const std::vector<RenderTask> &renders);
+    void touchDraws(const std::shared_ptr<TraverseNode> &trav);
     bool visibilityTest(const std::shared_ptr<TraverseNode> &trav);
     bool coarsenessTest(const std::shared_ptr<TraverseNode> &trav);
     double coarsenessValue(const std::shared_ptr<TraverseNode> &trav);
-    void renderNode(const std::shared_ptr<TraverseNode> &trav);
+    void renderNode(const std::shared_ptr<TraverseNode> &trav,
+                    const vec4f &uvClip = vec4f(-1,-1,2,2));
     bool travDetermineMeta(const std::shared_ptr<TraverseNode> &trav);
     bool travDetermineDraws(
             const std::shared_ptr<TraverseNode> &trav);
     double travDistance(const std::shared_ptr<TraverseNode> &trav,
                            const vec3 pointPhys);
+    bool travInit(const std::shared_ptr<TraverseNode> &trav);
     void travModeHierarchical(const std::shared_ptr<TraverseNode> &trav,
                               bool loadOnly);
-    void travModeFlat(const std::shared_ptr<TraverseNode> &trav,
-                      bool loadOnly);
-    void travModeBalanced(const std::shared_ptr<TraverseNode> &trav,
+    void travModeFlat(const std::shared_ptr<TraverseNode> &trav);
+    bool travModeBalanced(const std::shared_ptr<TraverseNode> &trav,
                           bool loadOnly);
-    void traverseRender(const std::shared_ptr<TraverseNode> &trav, bool loadOnly);
+    void traverseRender(const std::shared_ptr<TraverseNode> &trav);
     void traverseClearing(const std::shared_ptr<TraverseNode> &trav);
     void updateCamera();
     bool prerequisitesCheck();

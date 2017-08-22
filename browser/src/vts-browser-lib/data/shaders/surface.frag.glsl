@@ -4,23 +4,30 @@ uniform sampler2D texColor;
 uniform sampler2D texMask;
 
 uniform vec4 uniColor;
-uniform int uniUseMask;
-uniform int uniMonochromatic;
-uniform int uniFlatShading;
+uniform vec4 uniUvClip;
+uniform vec4 uniFlags; // mask, monochromatic, flat shading, uv source
+
+in vec2 varUvInternal;
+in vec2 varUvExternal;
+in vec3 derivativePosition;
 
 layout(location = 0) out vec4 outColor;
 
-in vec3 derivativePosition;
-in vec2 varUvs;
-
 void main()
 {
-    if (uniUseMask == 1)
+    vec2 uv = uniFlags.w > 0 ? varUvExternal : varUvInternal;
+    vec4 color = texture(texColor, uv);
+    if (uniFlags.x > 0)
     {
-        if (texture(texMask, varUvs).r < 0.5)
+        if (texture(texMask, uv).r < 0.5)
             discard;
     }
-    if (uniFlatShading == 1)
+    if (varUvExternal.x < uniUvClip.x
+            || varUvExternal.y < uniUvClip.y
+            || varUvExternal.x > uniUvClip.z
+            || varUvExternal.y > uniUvClip.w)
+        discard;
+    if (uniFlags.z > 0)
     {
         vec3 n = normalize(cross(dFdx(derivativePosition),
                                  dFdy(derivativePosition)));
@@ -28,11 +35,10 @@ void main()
     }
     else
     {
-        vec4 t = texture(texColor, varUvs);
-        if (uniMonochromatic == 1)
-            t = t.rrra;
-        t *= uniColor;
-        outColor = t;
+        if (uniFlags.y > 0)
+            color = color.rrra;
+        color *= uniColor;
+        outColor = color;
     }
 }
 

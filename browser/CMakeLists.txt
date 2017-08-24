@@ -17,7 +17,7 @@ find_package(Boost 1.46 REQUIRED
   date_time serialization regex chrono iostreams)
 link_directories(${Boost_LIBRARY_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-find_package(GDAL REQUIRED)
+find_package(GDAL 2 REQUIRED)
 include_directories(SYSTEM ${GDAL_INCLUDE_DIR})
 find_package(Proj REQUIRED)
 include_directories(${PROJ_INCLUDE_DIR})
@@ -55,7 +55,7 @@ find_package(glfw3 QUIET)
 
 # build glfw browser only when glfw3 library is found
 if(glfw3_FOUND
-    AND NOT DEFINED BUILDSYS_NOBUILD_TARGET_vts-browser-glfw)
+    AND BUILDSYS_BUILD_TARGET_vts-browser-glfw)
   message(STATUS "including vts-browser-glfw")
   include_directories(src/glad)
   include_directories(src/nuklear)
@@ -73,7 +73,7 @@ endif()
 find_package(Qt5Gui QUIET)
 
 if(Qt5Gui_FOUND
-    AND NOT DEFINED BUILDSYS_NOBUILD_TARGET_vts-browser-qt)
+    AND BUILDSYS_BUILD_TARGET_vts-browser-qt)
   message(STATUS "including vts-browser-qt")
   add_subdirectory(src/vts-browser-qt)
 else()

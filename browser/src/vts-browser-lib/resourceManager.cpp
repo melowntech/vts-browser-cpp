@@ -258,7 +258,7 @@ bool MapImpl::resourceDataTick()
     {
         if (processed++ >= options.maxResourceProcessesPerTick)
             return false; // tasks left
-        switch (r->state)
+        switch ((Resource::State)r->state)
         {
         case Resource::State::downloaded:
             r->processLoad();
@@ -459,7 +459,7 @@ void MapImpl::resourceRenderTick()
             std::shared_ptr<Resource> &r = it.second;
             if (r->lastAccessTick + 1 != renderer.tickIndex)
                 continue;
-            switch (r->state)
+            switch ((Resource::State)r->state)
             {
             case Resource::State::errorRetry:
                 if (r->retryNumber >= options.maxFetchRetries)
@@ -606,7 +606,7 @@ Validity MapImpl::getResourceValidity(const std::string &name)
 
 Validity MapImpl::getResourceValidity(const std::shared_ptr<Resource> &resource)
 {
-    switch (resource->state)
+    switch ((Resource::State)resource->state)
     {
     case Resource::State::errorFatal:
     case Resource::State::availFail:

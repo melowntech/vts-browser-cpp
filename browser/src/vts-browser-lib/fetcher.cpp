@@ -24,7 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <functional>
+#include <fstream>
 #include <unistd.h> // usleep
 #include <http/http.hpp>
 #include <http/resourcefetcher.hpp>
@@ -64,9 +64,9 @@ public:
         begin = std::chrono::high_resolution_clock::now();
         if (options.extraFileLog)
         {
-            extraLog = fopen("downloads.log", "at");
+            extraLog.open("downloads.log");
             if (extraLog)
-                fprintf(extraLog, "%ld starting download log\n", time());
+                extraLog << time() << " starting download log" << std::endl;
         }
     }
     
@@ -74,10 +74,7 @@ public:
     {
         assert(initCount == 0);
         if (extraLog)
-        {
-            fprintf(extraLog, "%ld finished download log\n", time());
-            fclose(extraLog);
-        }
+	        extraLog << time() << " finished download log" << std::endl;
     }
     
     virtual void initialize() override
@@ -109,8 +106,10 @@ public:
         fetcher.perform(t->query, std::bind(&Task::done, t,
                                             std::placeholders::_1));
         if (extraLog)
-            fprintf(extraLog, "%ld init %d %s\n", t->begin, t->id,
-                    task->query.url.c_str());
+        {
+            extraLog << t->begin << " init " << t->id
+                     << " " << task->query.url << std::endl;
+        }
     }
 
     uint64 time()
@@ -125,7 +124,7 @@ public:
     http::ResourceFetcher fetcher;
     std::atomic<int> initCount;
     std::atomic<uint32> taskId;
-    FILE *extraLog;
+    std::ofstream extraLog;
     std::chrono::high_resolution_clock::time_point begin;
 };
 
@@ -221,9 +220,10 @@ void Task::finish()
 {
     if (impl->extraLog)
     {
-        fprintf(impl->extraLog, "%ld done %d %ld %d %d %s\n",
-                impl->time(), id, (impl->time() - begin), task->reply.code,
-                task->reply.content.size(), task->reply.contentType.c_str());
+        impl->extraLog << 
+            impl->time() << " done " << id << " " << (impl->time() - begin)
+            << " " << task->reply.code << " " << task->reply.content.size()
+            << " " << task->reply.contentType << std::endl;
     }
     task->fetchDone();
 }

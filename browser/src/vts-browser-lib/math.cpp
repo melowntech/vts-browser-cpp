@@ -93,9 +93,10 @@ vec3 normalize(const vec3 &a)
 
 vec3 anyPerpendicular(const vec3 &v)
 {
-    vec3 a = abs(dot(normalize(v), vec3(0, 0, 1))) > 0.9
+    vec3 b = normalize(v);
+    vec3 a = std::abs(dot(b, vec3(0, 0, 1))) > 0.9
                             ? vec3(0,1,0) : vec3(0,0,1);
-    return cross(v, a);
+    return cross(b, a);
 }
 
 vec3 min(const vec3 &a, const vec3 &b)

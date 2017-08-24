@@ -211,7 +211,7 @@ void MapImpl::updateNavigation()
             break;
         case NavigationMode::Dynamic:
             // too close to pole -> switch to free mode
-            if (abs(navigation.targetPoint(1))
+            if (std::abs(navigation.targetPoint(1))
                     > options.navigationLatitudeThreshold - 1e-5)
                 navigation.mode = NavigationMode::Free;
             break;
@@ -461,7 +461,7 @@ void MapImpl::pan(const vec3 &value)
         switch (navigation.mode)
         {
         case NavigationMode::Azimuthal:
-            if (abs(angularDiff(pos.position[0], p(0))) < 150)
+            if (std::abs(angularDiff(pos.position[0], p(0))) < 150)
                 navigation.targetPoint = p;
             break;
         case NavigationMode::Free:

@@ -39,13 +39,13 @@ namespace
 {
 
 static const char Magic[] = "vtscache";
-static const uint16 Version = 2;
+static const uint16 Version = 3;
 
 struct CacheHeader
 {
     char magic[sizeof(Magic)];
     uint16 version;
-    std::time_t expires;
+    sint64 expires;
     uint16 nameLen;
 };
 
@@ -82,7 +82,7 @@ public:
     }
 
     void write(std::string name,
-               const Buffer &buffer, time_t expires) override
+               const Buffer &buffer, sint64 expires) override
     {
         if (disabled)
             return;
@@ -108,7 +108,7 @@ public:
     }
 
     bool read(std::string name,
-              Buffer &buffer, time_t &expires) override
+              Buffer &buffer, sint64 &expires) override
     {
         assert(buffer.size() == 0);
         if (disabled)
@@ -154,7 +154,7 @@ public:
         }
     }
 
-    void purge()
+    void purge() override
     {
         if (disabled)
             return;

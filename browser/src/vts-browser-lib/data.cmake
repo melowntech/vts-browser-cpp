@@ -18,7 +18,9 @@ set(DATA_LIST
 	data/textures/helper.jpg
 )
 
-set(GEN_CODE "\#include <map>\n")
+set(GEN_CODE)
+set(GEN_CODE "${GEN_CODE}\#include <map>\n")
+set(GEN_CODE "${GEN_CODE}\#include <string>\n")
 set(GEN_CODE "${GEN_CODE}extern std::map<std::string, std::pair<size_t, const unsigned char*>> data_map\;\n")
 set(GEN_CODE "${GEN_CODE}namespace\n{\nclass Data_mapInitializer\n{\npublic:\nData_mapInitializer()\n{\n")
 foreach(path ${DATA_LIST})
@@ -36,3 +38,4 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/data_map.cpp ${GEN_CODE})
 list(APPEND SRC_LIST ${CMAKE_CURRENT_BINARY_DIR}/data_map.cpp)
 
 add_custom_target(data SOURCES ${DATA_LIST})
+

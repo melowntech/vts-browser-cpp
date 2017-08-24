@@ -24,7 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/prctl.h>
 #include <dbglog/dbglog.hpp>
 #include "include/vts-browser/log.hpp"
 

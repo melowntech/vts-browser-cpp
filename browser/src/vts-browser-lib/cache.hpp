@@ -42,9 +42,9 @@ public:
     virtual ~Cache();
 
     virtual bool read(std::string name, Buffer &buffer,
-                      std::time_t &expires) = 0;
+                      sint64 &expires) = 0;
     virtual void write(std::string name, const Buffer &buffer,
-                       std::time_t expires) = 0;
+                       sint64 expires) = 0;
     virtual void purge() = 0;
     
     static std::shared_ptr<Cache> create(const class MapCreateOptions &options);

@@ -67,7 +67,6 @@ private:
     void loadMesh(vts::ResourceInfo &info, const vts::GpuMeshSpec &spec);
 
     std::shared_ptr<GpuShaderImpl> shaderSurface;
-    std::shared_ptr<GpuShaderImpl> shaderColor;
 
     QPoint mouseLastPosition;
     QPoint mouseOriginalPosition;

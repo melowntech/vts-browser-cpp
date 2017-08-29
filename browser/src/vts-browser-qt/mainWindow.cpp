@@ -125,7 +125,7 @@ void MainWindow::initialize()
     // luckily, the vts-browser library provides
     // ready-to-use standard shaders
 
-    // load shaderSurface
+    // load shader surface
     {
         shaderSurface = std::make_shared<GpuShaderImpl>();
         vts::Buffer vert = readInternalMemoryBuffer(
@@ -138,32 +138,15 @@ void MainWindow::initialize()
         std::vector<vts::uint32> &uls = shaderSurface->uniformLocations;
         GpuShaderImpl *s = shaderSurface.get();
         uls.push_back(s->uniformLocation("uniMvp"));
+        uls.push_back(s->uniformLocation("uniMv"));
         uls.push_back(s->uniformLocation("uniUvMat"));
-        uls.push_back(s->uniformLocation("uniUvSource"));
         uls.push_back(s->uniformLocation("uniColor"));
-        uls.push_back(s->uniformLocation("uniUseMask"));
-        uls.push_back(s->uniformLocation("uniMonochromatic"));
+        uls.push_back(s->uniformLocation("uniUvClip"));
+        uls.push_back(s->uniformLocation("uniFlags"));
         GLuint id = s->programId();
         gl->glUseProgram(id);
         gl->glUniform1i(gl->glGetUniformLocation(id, "texColor"), 0);
         gl->glUniform1i(gl->glGetUniformLocation(id, "texMask"), 1);
-        gl->glUniform1i(s->uniformLocation("uniFlatShading"), 0);
-    }
-
-    // load shaderColor
-    {
-        shaderColor = std::make_shared<GpuShaderImpl>();
-        vts::Buffer vert = readInternalMemoryBuffer(
-                    "data/shaders/color.vert.glsl");
-        vts::Buffer frag = readInternalMemoryBuffer(
-                    "data/shaders/color.frag.glsl");
-        shaderColor->loadShaders(
-            std::string(vert.data(), vert.size()),
-            std::string(frag.data(), frag.size()));
-        std::vector<vts::uint32> &uls = shaderColor->uniformLocations;
-        GpuShaderImpl *s = shaderColor.get();
-        uls.push_back(s->uniformLocation("uniMvp"));
-        uls.push_back(s->uniformLocation("uniColor"));
     }
 
     map->callbacks().loadTexture = std::bind(&MainWindow::loadTexture, this,
@@ -174,38 +157,32 @@ void MainWindow::initialize()
 
 void MainWindow::draw(const vts::DrawTask &t)
 {
-    // each render command uses either a color texture or flat color
-    if (t.texColor)
+    if (!t.texColor)
+        return;
+
+    // color texture
+    GpuTextureImpl *tex = (GpuTextureImpl*)t.texColor.get();
+    tex->bind();
+
+    shaderSurface->bind();
+    shaderSurface->uniformMat4(0, t.mvp); // model-view-projection matrix
+    shaderSurface->uniformMat3(2, t.uvm); // uv-transformation matrix
+    shaderSurface->uniformVec4(3, t.color); // color
+    shaderSurface->uniformVec4(4, t.uvClip); // some draws are clipped in uv space
+    float flags[4] = {
+        t.texMask ? 1.f : -1.f,
+        tex->grayscale ? 1.f : -1.f,
+        -1.f, // no flat shading here
+        t.externalUv ? 1.f : -1.f
+    };
+    shaderSurface->uniformVec4(5, flags);
+
+    // some draw commands also have pixel mask
+    if (t.texMask)
     {
-        shaderSurface->bind();
-        shaderSurface->uniformMat4(0, t.mvp); // model-view-projection matrix
-        shaderSurface->uniformMat3(1, t.uvm); // uv-transformation matrix
-        shaderSurface->uniform(2, (int)t.externalUv); // uv coordinates source
-        shaderSurface->uniformVec4(3, t.color); // color
-
-        // some draw commands also have pixel mask
-        if (t.texMask)
-        {
-            shaderSurface->uniform(4, 1);
-            gl->glActiveTexture(GL_TEXTURE0 + 1);
-            ((GpuTextureImpl*)t.texMask.get())->bind();
-            gl->glActiveTexture(GL_TEXTURE0 + 0);
-        }
-        else
-            shaderSurface->uniform(4, 0);
-
-        // color texture
-        GpuTextureImpl *tex = (GpuTextureImpl*)t.texColor.get();
-        tex->bind();
-
-        // grayscale textures require special handling
-        shaderSurface->uniform(5, (int)tex->grayscale);
-    }
-    else
-    {
-        shaderColor->bind();
-        shaderColor->uniformMat4(0, t.mvp); // model-view-projection matrix
-        shaderColor->uniformVec4(1, t.color); // the flat color
+        gl->glActiveTexture(GL_TEXTURE0 + 1);
+        ((GpuTextureImpl*)t.texMask.get())->bind();
+        gl->glActiveTexture(GL_TEXTURE0 + 0);
     }
 
     // draw the actual mesh

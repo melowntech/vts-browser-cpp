@@ -78,6 +78,9 @@ public:
     uint32 position() const;
 };
 
+VTS_API void addInternalMemoryData(const std::string name,
+                                   const unsigned char *data, size_t size);
+
 } // detail
 
 } // namespace vts

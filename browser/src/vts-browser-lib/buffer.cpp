@@ -31,10 +31,22 @@
 
 #include "include/vts-browser/buffer.hpp"
 
-std::map<std::string, std::pair<size_t, unsigned char *>> data_map;
-
 namespace vts
 {
+
+namespace
+{
+
+typedef std::map<std::string, std::pair<size_t, const unsigned char *>>
+    dataMapType;
+
+dataMapType &dataMap()
+{
+    static dataMapType data;
+    return data;
+}
+
+} // namespace
 
 Buffer::Buffer() : data_(nullptr), size_(0)
 {}
@@ -146,8 +158,8 @@ Buffer readLocalFileBuffer(const std::string &path)
 
 Buffer readInternalMemoryBuffer(const std::string &path)
 {
-    auto it = data_map.find(path);
-    if (it == data_map.end())
+    auto it = dataMap().find(path);
+    if (it == dataMap().end())
         LOGTHROW(err1, std::runtime_error) << "Internal buffer <"
                                            << path << "> not found";
     Buffer b(it->second.first);
@@ -169,6 +181,13 @@ uint32 Wrapper::position() const
     return gptr() - eback();
 }
 
-} // namespace
+void addInternalMemoryData(const std::string name,
+                           const unsigned char *data, size_t size)
+{
+    assert(dataMap().find(name) == dataMap().end());
+    dataMap()[name] = std::make_pair(size, data);
+}
+
+} // namespace detail
 
 } // namespace vts

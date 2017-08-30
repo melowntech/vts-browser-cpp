@@ -33,6 +33,7 @@
 
 bool anisotropicFilteringAvailable = false;
 bool openglDebugAvailable = false;
+vts::uint32 maxAntialiasingSamples;
 
 namespace
 {
@@ -136,8 +137,11 @@ namespace
 void initializeGpuContext()
 {
     if (openglDebugAvailable)
+    {
         glDebugMessageCallback(&openglErrorCallback, nullptr);
-    checkGl("glDebugMessageCallback");
+        checkGl("glDebugMessageCallback");
+    }
+    glGetIntegerv(GL_MAX_SAMPLES, (int*)&maxAntialiasingSamples);
 }
 
 void checkGlFramebuffer()

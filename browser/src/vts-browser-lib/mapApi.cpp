@@ -39,7 +39,7 @@ namespace vts
 namespace
 {
 
-const std::string srsConvert(MapConfig *config, Srs srs)
+std::string srsConvert(MapConfig *config, Srs srs)
 {
     switch(srs)
     {
@@ -84,7 +84,7 @@ void setMapViewBoundLayers(
     }
 }
 
-const MapView getMapView(const vtslibs::registry::View &view)
+MapView getMapView(const vtslibs::registry::View &view)
 {
     MapView value;
     value.description = view.description ? *view.description : "";
@@ -99,10 +99,10 @@ const MapView getMapView(const vtslibs::registry::View &view)
         f.style = it.second.style ? *it.second.style : "";
         getMapViewBoundLayers(it.second.boundLayers, f.boundLayers);
     }
-    return std::move(value);
+    return value;
 }
 
-const vtslibs::registry::View setMapView(const MapView &value)
+vtslibs::registry::View setMapView(const MapView &value)
 {
     vtslibs::registry::View view;
     if (!value.description.empty())
@@ -121,7 +121,7 @@ const vtslibs::registry::View setMapView(const MapView &value)
             f.style = it.second.style;
         setMapViewBoundLayers(it.second.boundLayers, f.boundLayers);
     }
-    return std::move(view);
+    return view;
 }
 
 } // namespace
@@ -554,7 +554,7 @@ std::vector<std::string> Map::getResourceSurfaces() const
     names.reserve(impl->mapConfig->surfaces.size());
     for (auto &&it : impl->mapConfig->surfaces)
         names.push_back(it.id);
-    return std::move(names);
+    return names;
 }
 
 std::vector<std::string> Map::getResourceBoundLayers() const
@@ -564,7 +564,7 @@ std::vector<std::string> Map::getResourceBoundLayers() const
     std::vector<std::string> names;
     for (auto &&it : impl->mapConfig->boundLayers)
         names.push_back(it.id);
-    return std::move(names);
+    return names;
 }
 
 std::vector<std::string> Map::getResourceFreeLayers() const
@@ -574,7 +574,7 @@ std::vector<std::string> Map::getResourceFreeLayers() const
     std::vector<std::string> names;
     for (auto &&it : impl->mapConfig->freeLayers)
         names.push_back(it.first);
-    return std::move(names);
+    return names;
 }
 
 std::vector<std::string> Map::getViewNames() const
@@ -585,7 +585,7 @@ std::vector<std::string> Map::getViewNames() const
     names.reserve(impl->mapConfig->namedViews.size());
     for (auto &&it : impl->mapConfig->namedViews)
         names.push_back(it.first);
-    return std::move(names);
+    return names;
 }
 
 std::string Map::getViewCurrent() const

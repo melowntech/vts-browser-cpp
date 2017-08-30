@@ -34,6 +34,7 @@
 
 extern bool anisotropicFilteringAvailable;
 extern bool openglDebugAvailable;
+extern vts::uint32 maxAntialiasingSamples;
 
 void checkGl(const char *name = nullptr);
 void checkGlFramebuffer();

@@ -2,3 +2,4 @@
 /*.changes
 /*.upload
 /build*
+*.DS_Store

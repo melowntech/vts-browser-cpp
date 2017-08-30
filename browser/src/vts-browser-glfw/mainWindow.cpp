@@ -134,7 +134,6 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
             = glfwExtensionSupported("GL_EXT_texture_filter_anisotropic");
     openglDebugAvailable
             = glfwExtensionSupported("GL_KHR_debug");
-
     initializeGpuContext();
 
     // load shader surface
@@ -462,6 +461,8 @@ void MainWindow::renderFrame()
     {
         widthPrev = width;
         heightPrev = height;
+        appOptions.antialiasing = std::max(std::min(appOptions.antialiasing,
+                                        maxAntialiasingSamples), 1u);
         antialiasingPrev = appOptions.antialiasing;
 
         GLenum target = antialiasingPrev > 1 ? GL_TEXTURE_2D_MULTISAMPLE

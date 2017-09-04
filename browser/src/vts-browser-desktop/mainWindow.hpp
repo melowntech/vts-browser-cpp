@@ -27,22 +27,15 @@
 #ifndef MAINWINDOW_H_wuiegfzbn
 #define MAINWINDOW_H_wuiegfzbn
 
-#include <vector>
-
 #include <vts-browser/math.hpp>
 #include <vts-browser/resources.hpp>
-#include "gpuContext.hpp"
-
-extern std::string debug;
-
-class GLFWwindow;
+#include <vts-renderer/renderer.hpp>
+#include <vts-renderer/classes.hpp>
 
 namespace vts
 {
 
 class Map;
-class Resource;
-class DrawTask;
 
 } // namespace vts
 
@@ -64,14 +57,12 @@ struct MapPaths
 
 struct AppOptions
 {
+    vts::renderer::RenderOptions render;
     std::vector<MapPaths> paths;
     std::string initialPosition;
-    vts::uint32 antialiasing;
     bool screenshotOnFullRender;
     bool closeOnFullRender;
     bool purgeDiskCache;
-    bool renderAtmosphere;
-    bool renderPolygonEdges;
 
     AppOptions();
 };
@@ -82,80 +73,40 @@ public:
     MainWindow(vts::Map *map, const AppOptions &appOptions);
     ~MainWindow();
 
-    void mousePositionCallback(double xpos, double ypos);
-    void mouseButtonCallback(int button, int action, int mods);
-    void mouseDblClickCallback(int mods);
-    void mouseScrollCallback(double xoffset, double yoffset);
-    void keyboardCallback(int key, int scancode, int action, int mods);
-    void keyboardUnicodeCallback(unsigned int codepoint);
-
     class Gui
     {
     public:
         void initialize(MainWindow *window);
         void finalize();
         void render(int width, int height);
-        void input();
-
-        void mousePositionCallback(double xpos, double ypos);
-        void mouseButtonCallback(int button, int action, int mods);
-        void mouseScrollCallback(double xoffset, double yoffset);
-        void keyboardCallback(int key, int scancode, int action, int mods);
-        void keyboardUnicodeCallback(unsigned int codepoint);
-
+        void inputBegin();
+        bool input(union SDL_Event &event);
+        void inputEnd();
+    private:
         std::shared_ptr<class GuiImpl> impl;
     } gui;
 
-    void run();
     void colorizeMarks();
     vts::vec3 getWorldPositionFromCursor();
 
-    void drawVtsTaskSurface(const vts::DrawTask &t);
-    void drawVtsTaskInfographic(const vts::DrawTask &t);
-    void drawMark(const Mark &m, const Mark *prev);
-
+    void run();
     void renderFrame();
-
-    void loadTexture(vts::ResourceInfo &info, const vts::GpuTextureSpec &spec);
-    void loadMesh(vts::ResourceInfo &info, const vts::GpuMeshSpec &spec);
-    void cameraOverrideParam(double &fov, double &aspect,
-                             double &near, double &far);
-    void cameraOverrideEye(double *eye);
-    void cameraOverrideTarget(double *target);
-    void cameraOverrideView(double *mat);
-    void cameraOverrideProj(double *mat);
+    bool processEvents();
 
     void setMapConfigPath(const MapPaths &paths);
 
     AppOptions appOptions;
-    std::shared_ptr<GpuShaderImpl> shaderSurface;
-    std::shared_ptr<GpuShaderImpl> shaderInfographic;
-    std::shared_ptr<GpuShaderImpl> shaderAtmosphere;
-    std::shared_ptr<GpuMeshImpl> meshSphere;
-    std::shared_ptr<GpuMeshImpl> meshLine;
-    std::shared_ptr<GpuMeshImpl> meshQuad;
+    std::shared_ptr<vts::renderer::Mesh> meshSphere;
+    std::shared_ptr<vts::renderer::Mesh> meshLine;
     std::vector<Mark> marks;
-    vts::mat4 camView;
-    vts::mat4 camProj;
-    vts::mat4 camViewProj;
-    double camNear, camFar;
-    double mousePrevX, mousePrevY;
-    double timingMapProcess;
-    double timingAppProcess;
-    double timingTotalFrame;
-    double timingDataFrame;
-    double dblClickInitTime;
-    int dblClickState;
-    int width, height;
-    int widthPrev, heightPrev;
-    vts::uint32 antialiasingPrev;
-    GLuint frameRenderBufferId;
-    GLuint frameSampleBufferId;
-    GLuint depthRenderTexId;
-    GLuint depthSampleTexId;
-    GLuint colorTexId;
+    vts::uint32 timingMapProcess;
+    vts::uint32 timingAppProcess;
+    vts::uint32 timingTotalFrame;
+    vts::uint32 timingDataFrame;
     vts::Map *const map;
-    GLFWwindow *window;
+    struct SDL_Window *window;
+    void *dataContext;
+    void *renderContext;
 };
 
 #endif

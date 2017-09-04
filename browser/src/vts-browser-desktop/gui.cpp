@@ -34,12 +34,15 @@
 #include <vts-browser/search.hpp>
 #include <vts-browser/log.hpp>
 
+#include <vts-renderer/classes.hpp>
+
+#include <SDL2/SDL.h>
+
 #include "mainWindow.hpp"
-#include <nuklear/nuklear.h>
-#include <GLFW/glfw3.h>
 #include "guiSkin.hpp"
 
-std::string debug;
+using namespace vts;
+using namespace renderer;
 
 namespace
 {
@@ -55,20 +58,20 @@ const nk_rune FontUnicodeRanges[] = {
     0
 };
 
-void clipBoardPaste(nk_handle usr, struct nk_text_edit *edit)
+void clipBoardPaste(nk_handle, struct nk_text_edit *edit)
 {
-    const char *text = glfwGetClipboardString((GLFWwindow*)usr.ptr);
+    const char *text = SDL_GetClipboardText();
     if (text)
         nk_textedit_paste(edit, text, strlen(text));
 }
 
-void clipBoardCopy(nk_handle usr, const char *text, int len)
+void clipBoardCopy(nk_handle, const char *text, int len)
 {
     assert(len < 300);
     char buffer[301];
     memcpy(buffer, text, len);
     buffer[len] = 0;
-    glfwSetClipboardString((GLFWwindow*)usr.ptr, buffer);
+    SDL_SetClipboardText(buffer);
 }
 
 static const char *traverseModeNames[] = {
@@ -113,6 +116,8 @@ public:
         optSensitivityDetails(false), posAutoDetails(false),
         positionSrs(2), searchDetails(-1), window(window), prepareFirst(true)
     {
+        gladLoadGLLoader(&SDL_GL_GetProcAddress);
+
         searchText[0] = 0;
         searchTextPrev[0] = 0;
         positionInputText[0] = 0;
@@ -125,22 +130,23 @@ public:
             cfg.range = FontUnicodeRanges;
             nk_font_atlas_init_default(&atlas);
             nk_font_atlas_begin(&atlas);
-            vts::Buffer buffer = vts::readInternalMemoryBuffer(
+            Buffer buffer = readInternalMemoryBuffer(
                         "data/fonts/roboto-regular.ttf");
             font = nk_font_atlas_add_from_memory(&atlas,
                 buffer.data(), buffer.size(), 14, &cfg);
-            vts::GpuTextureSpec spec;
+            GpuTextureSpec spec;
             const void* img = nk_font_atlas_bake(&atlas,
                 (int*)&spec.width, (int*)&spec.height, NK_FONT_ATLAS_RGBA32);
             spec.components = 4;
             spec.buffer.allocate(spec.width * spec.height * spec.components);
             memcpy(spec.buffer.data(), img, spec.buffer.size());
-            fontTexture = std::make_shared<GpuTextureImpl>();
-            vts::ResourceInfo info;
-            fontTexture->loadTexture(info, spec);
+            fontTexture = std::make_shared<Texture>();
+            ResourceInfo info;
+            fontTexture->load(info, spec);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            nk_font_atlas_end(&atlas, nk_handle_id(fontTexture->id), &null);
+            nk_font_atlas_end(&atlas, nk_handle_id(fontTexture->getId()),
+                              &null);
 
             // lodepng_encode32_file("font_atlas.png",
             //     (unsigned char*)spec.buffer.data(), spec.width, spec.height);
@@ -176,16 +182,16 @@ public:
 
         // load shader
         {
-            shader = std::make_shared<GpuShaderImpl>();
-            vts::Buffer vert = vts::readInternalMemoryBuffer(
+            shader = std::make_shared<Shader>();
+            Buffer vert = readInternalMemoryBuffer(
                         "data/shaders/gui.vert.glsl");
-            vts::Buffer frag = vts::readInternalMemoryBuffer(
+            Buffer frag = readInternalMemoryBuffer(
                         "data/shaders/gui.frag.glsl");
-            shader->loadShaders(
+            shader->load(
                 std::string(vert.data(), vert.size()),
                 std::string(frag.data(), frag.size()));
-            std::vector<vts::uint32> &uls = shader->uniformLocations;
-            GLuint id = shader->id;
+            std::vector<uint32> &uls = shader->uniformLocations;
+            GLuint id = shader->getId();
             uls.push_back(glGetUniformLocation(id, "ProjMtx"));
             glUseProgram(id);
             glUniform1i(glGetUniformLocation(id, "Texture"), 0);
@@ -193,13 +199,13 @@ public:
 
         // prepare mesh buffers
         {
-            mesh = std::make_shared<GpuMeshImpl>();
-            glGenVertexArrays(1, &mesh->vao);
-            glGenBuffers(1, &mesh->vbo);
-            glGenBuffers(1, &mesh->vio);
-            glBindVertexArray(mesh->vao);
-            glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->vio);
+            GLuint vao = 0, vbo = 0, vio = 0;
+            glGenVertexArrays(1, &vao);
+            glGenBuffers(1, &vbo);
+            glGenBuffers(1, &vio);
+            glBindVertexArray(vao);
+            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vio);
             glBufferData(GL_ARRAY_BUFFER, MaxVertexMemory,
                          NULL, GL_STREAM_DRAW);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, MaxElementMemory,
@@ -213,6 +219,8 @@ public:
                 sizeof(vertex), (void*)8);
             glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
                 sizeof(vertex), (void*)16);
+            mesh = std::make_shared<Mesh>();
+            mesh->load(vao, vbo, vio);
         }
     }
 
@@ -231,12 +239,13 @@ public:
         glDisable(GL_DEPTH_TEST);
         glEnable(GL_SCISSOR_TEST);
         glActiveTexture(GL_TEXTURE0);
-        glBindVertexArray(mesh->vao);
-        glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->vio);
+        glBindVertexArray(mesh->getVao());
+        glBindBuffer(GL_ARRAY_BUFFER, mesh->getVbo());
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->getVio());
         shader->bind();
-        
-        { // proj matrix
+
+        // proj matrix
+        {
             GLfloat ortho[4][4] = {
                     {2.0f, 0.0f, 0.0f, 0.0f},
                     {0.0f,-2.0f, 0.0f, 0.0f},
@@ -248,8 +257,9 @@ public:
             glUniformMatrix4fv(shader->uniformLocations[0], 1,
                     GL_FALSE, &ortho[0][0]);
         }
-        
-        { // upload buffer data
+
+        // upload buffer data
+        {
             void *vertices = glMapBuffer(GL_ARRAY_BUFFER,
                                          GL_WRITE_ONLY);
             void *elements = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER,
@@ -261,8 +271,9 @@ public:
             glUnmapBuffer(GL_ARRAY_BUFFER);
             glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
         }
-        
-        { // draw commands
+
+        // draw commands
+        {
             struct nk_vec2 scale;
             scale.x = 1;
             scale.y = 1;
@@ -284,102 +295,105 @@ public:
                 offset += cmd->elem_count;
             }
         }
-        
+
         nk_clear(&ctx);
-        
+
         glUseProgram(0);
+        glBindVertexArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
         glDisable(GL_SCISSOR_TEST);
     }
 
-    void input()
+    int handleEvent(SDL_Event *evt)
     {
-        auto &win = window->window;
-        nk_input_begin(&ctx);
-        glfwPollEvents();
-        
         // some code copied from the demos
-        
-        nk_input_key(&ctx, NK_KEY_DEL, glfwGetKey(win, GLFW_KEY_DELETE) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_ENTER, glfwGetKey(win, GLFW_KEY_ENTER) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_TAB, glfwGetKey(win, GLFW_KEY_TAB) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_BACKSPACE, glfwGetKey(win, GLFW_KEY_BACKSPACE) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_UP, glfwGetKey(win, GLFW_KEY_UP) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_DOWN, glfwGetKey(win, GLFW_KEY_DOWN) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_TEXT_START, glfwGetKey(win, GLFW_KEY_HOME) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_TEXT_END, glfwGetKey(win, GLFW_KEY_END) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_SCROLL_START, glfwGetKey(win, GLFW_KEY_HOME) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_SCROLL_END, glfwGetKey(win, GLFW_KEY_END) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_SCROLL_DOWN, glfwGetKey(win, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_SCROLL_UP, glfwGetKey(win, GLFW_KEY_PAGE_UP) == GLFW_PRESS);
-        nk_input_key(&ctx, NK_KEY_SHIFT, glfwGetKey(win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(win, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS);
-        
-        if (glfwGetKey(win, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(win, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS)
-        {
-            nk_input_key(&ctx, NK_KEY_COPY, glfwGetKey(win, GLFW_KEY_C) == GLFW_PRESS);
-            nk_input_key(&ctx, NK_KEY_PASTE, glfwGetKey(win, GLFW_KEY_V) == GLFW_PRESS);
-            nk_input_key(&ctx, NK_KEY_CUT, glfwGetKey(win, GLFW_KEY_X) == GLFW_PRESS);
-            nk_input_key(&ctx, NK_KEY_TEXT_UNDO, glfwGetKey(win, GLFW_KEY_Z) == GLFW_PRESS);
-            nk_input_key(&ctx, NK_KEY_TEXT_REDO, glfwGetKey(win, GLFW_KEY_R) == GLFW_PRESS);
-            nk_input_key(&ctx, NK_KEY_TEXT_WORD_LEFT, glfwGetKey(win, GLFW_KEY_LEFT) == GLFW_PRESS);
-            nk_input_key(&ctx, NK_KEY_TEXT_WORD_RIGHT, glfwGetKey(win, GLFW_KEY_RIGHT) == GLFW_PRESS);
-            nk_input_key(&ctx, NK_KEY_TEXT_LINE_START, glfwGetKey(win, GLFW_KEY_B) == GLFW_PRESS);
-            nk_input_key(&ctx, NK_KEY_TEXT_LINE_END, glfwGetKey(win, GLFW_KEY_E) == GLFW_PRESS);
+
+        if (evt->type == SDL_KEYUP || evt->type == SDL_KEYDOWN) {
+            /* key events */
+            int down = evt->type == SDL_KEYDOWN;
+            const Uint8* state = SDL_GetKeyboardState(0);
+            SDL_Keycode sym = evt->key.keysym.sym;
+            if (sym == SDLK_RSHIFT || sym == SDLK_LSHIFT)
+                nk_input_key(&ctx, NK_KEY_SHIFT, down);
+            else if (sym == SDLK_DELETE)
+                nk_input_key(&ctx, NK_KEY_DEL, down);
+            else if (sym == SDLK_RETURN)
+                nk_input_key(&ctx, NK_KEY_ENTER, down);
+            else if (sym == SDLK_TAB)
+                nk_input_key(&ctx, NK_KEY_TAB, down);
+            else if (sym == SDLK_BACKSPACE)
+                nk_input_key(&ctx, NK_KEY_BACKSPACE, down);
+            else if (sym == SDLK_HOME) {
+                nk_input_key(&ctx, NK_KEY_TEXT_START, down);
+                nk_input_key(&ctx, NK_KEY_SCROLL_START, down);
+            } else if (sym == SDLK_END) {
+                nk_input_key(&ctx, NK_KEY_TEXT_END, down);
+                nk_input_key(&ctx, NK_KEY_SCROLL_END, down);
+            } else if (sym == SDLK_PAGEDOWN) {
+                nk_input_key(&ctx, NK_KEY_SCROLL_DOWN, down);
+            } else if (sym == SDLK_PAGEUP) {
+                nk_input_key(&ctx, NK_KEY_SCROLL_UP, down);
+            } else if (sym == SDLK_z)
+                nk_input_key(&ctx, NK_KEY_TEXT_UNDO, down && state[SDL_SCANCODE_LCTRL]);
+            else if (sym == SDLK_r)
+                nk_input_key(&ctx, NK_KEY_TEXT_REDO, down && state[SDL_SCANCODE_LCTRL]);
+            else if (sym == SDLK_c)
+                nk_input_key(&ctx, NK_KEY_COPY, down && state[SDL_SCANCODE_LCTRL]);
+            else if (sym == SDLK_v)
+                nk_input_key(&ctx, NK_KEY_PASTE, down && state[SDL_SCANCODE_LCTRL]);
+            else if (sym == SDLK_x)
+                nk_input_key(&ctx, NK_KEY_CUT, down && state[SDL_SCANCODE_LCTRL]);
+            else if (sym == SDLK_b)
+                nk_input_key(&ctx, NK_KEY_TEXT_LINE_START, down && state[SDL_SCANCODE_LCTRL]);
+            else if (sym == SDLK_e)
+                nk_input_key(&ctx, NK_KEY_TEXT_LINE_END, down && state[SDL_SCANCODE_LCTRL]);
+            else if (sym == SDLK_UP)
+                nk_input_key(&ctx, NK_KEY_UP, down);
+            else if (sym == SDLK_DOWN)
+                nk_input_key(&ctx, NK_KEY_DOWN, down);
+            else if (sym == SDLK_LEFT) {
+                if (state[SDL_SCANCODE_LCTRL])
+                    nk_input_key(&ctx, NK_KEY_TEXT_WORD_LEFT, down);
+                else nk_input_key(&ctx, NK_KEY_LEFT, down);
+            } else if (sym == SDLK_RIGHT) {
+                if (state[SDL_SCANCODE_LCTRL])
+                    nk_input_key(&ctx, NK_KEY_TEXT_WORD_RIGHT, down);
+                else nk_input_key(&ctx, NK_KEY_RIGHT, down);
+            } else return 0;
+            return 1;
+        } else if (evt->type == SDL_MOUSEBUTTONDOWN || evt->type == SDL_MOUSEBUTTONUP) {
+            /* mouse button */
+            int down = evt->type == SDL_MOUSEBUTTONDOWN;
+            const int x = evt->button.x, y = evt->button.y;
+            if (evt->button.button == SDL_BUTTON_LEFT) {
+                if (evt->button.clicks > 1)
+                    nk_input_button(&ctx, NK_BUTTON_DOUBLE, x, y, down);
+                nk_input_button(&ctx, NK_BUTTON_LEFT, x, y, down);
+            } else if (evt->button.button == SDL_BUTTON_MIDDLE)
+                nk_input_button(&ctx, NK_BUTTON_MIDDLE, x, y, down);
+            else if (evt->button.button == SDL_BUTTON_RIGHT)
+                nk_input_button(&ctx, NK_BUTTON_RIGHT, x, y, down);
+            return 1;
+        } else if (evt->type == SDL_MOUSEMOTION) {
+            /* mouse motion */
+            if (ctx.input.mouse.grabbed) {
+                int x = (int)ctx.input.mouse.prev.x, y = (int)ctx.input.mouse.prev.y;
+                nk_input_motion(&ctx, x + evt->motion.xrel, y + evt->motion.yrel);
+            } else nk_input_motion(&ctx, evt->motion.x, evt->motion.y);
+            return 1;
+        } else if (evt->type == SDL_TEXTINPUT) {
+            /* text input */
+            nk_glyph glyph;
+            memcpy(glyph, evt->text.text, NK_UTF_SIZE);
+            nk_input_glyph(&ctx, glyph);
+            return 1;
+        } else if (evt->type == SDL_MOUSEWHEEL) {
+            /* mouse wheel */
+            nk_input_scroll(&ctx,nk_vec2((float)evt->wheel.x,(float)evt->wheel.y));
+            return 1;
         }
-        else
-        {
-            nk_input_key(&ctx, NK_KEY_LEFT, glfwGetKey(win, GLFW_KEY_LEFT) == GLFW_PRESS);
-            nk_input_key(&ctx, NK_KEY_RIGHT, glfwGetKey(win, GLFW_KEY_RIGHT) == GLFW_PRESS);
-            nk_input_key(&ctx, NK_KEY_COPY, 0);
-            nk_input_key(&ctx, NK_KEY_PASTE, 0);
-            nk_input_key(&ctx, NK_KEY_CUT, 0);
-        }
-        
-        double x, y;
-        glfwGetCursorPos(window->window, &x, &y);
-        nk_input_motion(&ctx, (int)x, (int)y);
-        nk_input_button(&ctx, NK_BUTTON_LEFT, (int)x, (int)y, glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
-        nk_input_button(&ctx, NK_BUTTON_MIDDLE, (int)x, (int)y, glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS);
-        nk_input_button(&ctx, NK_BUTTON_RIGHT, (int)x, (int)y, glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS);
-        nk_input_end(&ctx);
-    }
-
-    void mousePositionCallback(double xpos, double ypos)
-    {
-        if (!nk_item_is_any_active(&ctx))
-            window->mousePositionCallback(xpos, ypos);
-    }
-
-    void mouseButtonCallback(int button, int action, int mods)
-    {
-        if (!nk_item_is_any_active(&ctx))
-            window->mouseButtonCallback(button, action, mods);
-    }
-
-    void mouseScrollCallback(double xoffset, double yoffset)
-    {
-        struct nk_vec2 pos;
-        pos.x = xoffset;
-        pos.y = yoffset;
-        nk_input_scroll(&ctx, pos);
-        if (!nk_item_is_any_active(&ctx))
-            window->mouseScrollCallback(xoffset, yoffset);
-    }
-
-    void keyboardCallback(int key, int scancode, int action, int mods)
-    {
-        if (!nk_item_is_any_active(&ctx))
-            window->keyboardCallback(key, scancode, action, mods);
-    }
-
-    void keyboardUnicodeCallback(unsigned int codepoint)
-    {
-        if ((signed)codepoint > 0)
-            nk_input_unicode(&ctx, codepoint);
-        if (!nk_item_is_any_active(&ctx))
-            window->keyboardUnicodeCallback(codepoint);
+        return 0;
     }
 
     void prepareOptions()
@@ -391,7 +405,7 @@ public:
             flags |= NK_WINDOW_MINIMIZED;
         if (nk_begin(&ctx, "Options", nk_rect(10, 10, 250, 650), flags))
         {
-            vts::MapOptions &o = window->map->options();
+            MapOptions &o = window->map->options();
             AppOptions &a = window->appOptions;
             float width = nk_window_get_content_region_size(&ctx).x - 15;
             float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
@@ -440,7 +454,7 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset sensitivity"))
                 {
-                    vts::MapOptions d;
+                    MapOptions d;
                     o.cameraSensitivityPan       = d.cameraSensitivityPan;
                     o.cameraSensitivityZoom      = d.cameraSensitivityZoom;
                     o.cameraSensitivityRotate    = d.cameraSensitivityRotate;
@@ -464,7 +478,7 @@ public:
                     {
                         if (nk_combo_item_label(&ctx, traverseModeNames[i],
                                                 NK_TEXT_LEFT))
-                            o.traverseMode = (vts::TraverseMode)i;
+                            o.traverseMode = (TraverseMode)i;
                     }
                     nk_combo_end(&ctx);
                 }
@@ -486,7 +500,7 @@ public:
                         {
                             if (nk_combo_item_label(&ctx,
                                     navigationTypeNames[i], NK_TEXT_LEFT))
-                                o.navigationType = (vts::NavigationType)i;
+                                o.navigationType = (NavigationType)i;
                         }
                         nk_combo_end(&ctx);
                     }
@@ -506,7 +520,7 @@ public:
                         {
                             if (nk_combo_item_label(&ctx,
                                         navigationModeNames[i],NK_TEXT_LEFT))
-                                o.navigationMode = (vts::NavigationMode)i;
+                                o.navigationMode = (NavigationMode)i;
                         }
                         nk_combo_end(&ctx);
                     }
@@ -558,11 +572,11 @@ public:
             // antialiasing samples
             {
                 nk_label(&ctx, "Antialiasing:", NK_TEXT_LEFT);
-                a.antialiasing = nk_slide_int(&ctx,
-                        1, a.antialiasing, 16, 1);
-                if (a.antialiasing > 1)
+                a.render.antialiasingSamples = nk_slide_int(&ctx,
+                        1, a.render.antialiasingSamples, 16, 1);
+                if (a.render.antialiasingSamples > 1)
                 {
-                    sprintf(buffer, "%d", a.antialiasing);
+                    sprintf(buffer, "%d", a.render.antialiasingSamples);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 }
                 else
@@ -571,7 +585,7 @@ public:
 
             // maxResourcesMemory
             nk_label(&ctx, "Max memory:", NK_TEXT_LEFT);
-            o.maxResourcesMemory = 1024 * 1024 * (vts::uint64)nk_slide_int(&ctx,
+            o.maxResourcesMemory = 1024 * 1024 * (uint64)nk_slide_int(&ctx,
                     0, o.maxResourcesMemory / 1024 / 1024, 2048, 32);
             sprintf(buffer, "%3d", (int)(o.maxResourcesMemory / 1024 / 1024));
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
@@ -580,8 +594,8 @@ public:
             {
                 // render atmosphere
                 nk_label(&ctx, "Display:", NK_TEXT_LEFT);
-                a.renderAtmosphere = nk_check_label(&ctx, "atmosphere",
-                                                   a.renderAtmosphere);
+                a.render.renderAtmosphere = nk_check_label(&ctx, "atmosphere",
+                                                   a.render.renderAtmosphere);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
 
                 // render mesh wire boxes
@@ -628,8 +642,8 @@ public:
 
                 // polygon edges
                 nk_label(&ctx, "", NK_TEXT_LEFT);
-                a.renderPolygonEdges = nk_check_label(&ctx, "edges",
-                                                    a.renderPolygonEdges);
+                a.render.renderPolygonEdges = nk_check_label(&ctx, "edges",
+                                                a.render.renderPolygonEdges);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
 
                 // render no meshes
@@ -717,7 +731,7 @@ public:
             flags |= NK_WINDOW_MINIMIZED;
         if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 700), flags))
         {
-            vts::MapStatistics &s = window->map->statistics();
+            MapStatistics &s = window->map->statistics();
             float width = nk_window_get_content_region_size(&ctx).x - 15;
             float ratio[] = { width * 0.5f, width * 0.5f };
             nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
@@ -732,10 +746,10 @@ public:
             }
 
             // general
-            S("Time map:", (int)(1000 * window->timingMapProcess), " ms");
-            S("Time app:", (int)(1000 * window->timingAppProcess), " ms");
-            S("Time frame:", (int)(1000 * window->timingTotalFrame), " ms");
-            S("Time data:", (int)(1000 * window->timingDataFrame), " ms");
+            S("Time map:", window->timingMapProcess, " ms");
+            S("Time app:", window->timingAppProcess, " ms");
+            S("Time frame:", window->timingTotalFrame, " ms");
+            S("Time data:", window->timingDataFrame, " ms");
             S("Render ticks:", s.renderTicks, "");
             S("Data ticks:", s.dataTicks, "");
             S("Downloading:", s.currentResourceDownloads, "");
@@ -748,7 +762,8 @@ public:
             S("Des. Nav. lod:", s.desiredNavigationLod, "");
             S("Used Nav. lod:", s.usedNavigationlod, "");
             nk_label(&ctx, "Z range:", NK_TEXT_LEFT);
-            sprintf(buffer, "%0.0f - %0.0f", window->camNear, window->camFar);
+            sprintf(buffer, "%0.0f - %0.0f", window->map->draws().camera.near,
+                    window->map->draws().camera.far);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             nk_label(&ctx, "Nav. type:", NK_TEXT_LEFT);
             nk_label(&ctx, navigationTypeNames[(int)s.currentNavigationType],
@@ -773,7 +788,7 @@ public:
             nk_checkbox_label(&ctx, "details", &statTraversedDetails);
             if (statTraversedDetails)
             {
-                for (unsigned i = 0; i < vts::MapStatistics::MaxLods; i++)
+                for (unsigned i = 0; i < MapStatistics::MaxLods; i++)
                 {
                     if (s.metaNodesTraversedPerLod[i] == 0)
                         continue;
@@ -788,35 +803,12 @@ public:
             nk_checkbox_label(&ctx, "details", &statRenderedDetails);
             if (statRenderedDetails)
             {
-                for (unsigned i = 0; i < vts::MapStatistics::MaxLods; i++)
+                for (unsigned i = 0; i < MapStatistics::MaxLods; i++)
                 {
                     if (s.meshesRenderedPerLod[i] == 0)
                         continue;
                     sprintf(buffer, "[%d]:", i);
                     S(buffer, s.meshesRenderedPerLod[i], "");
-                }
-            }
-
-            if (!debug.empty())
-            {
-                nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
-                nk_label(&ctx, "Debug:", NK_TEXT_LEFT);
-                std::string d = debug;
-                while (!d.empty())
-                {
-                    auto p = d.find('\n');
-                    std::string a;
-                    if (p == std::string::npos)
-                    {
-                        a = d;
-                        d = "";
-                    }
-                    else
-                    {
-                        a = d.substr(0, p);
-                        d = d.substr(p + 1);
-                    }
-                    nk_label(&ctx, a.c_str(), NK_TEXT_LEFT);
                 }
             }
 #undef S
@@ -844,10 +836,9 @@ public:
                 {
                     try
                     {
-                        const char *text = glfwGetClipboardString(
-                                    window->window);
+                        const char *text = SDL_GetClipboardText();
                         window->map->setPositionUrl(text,
-                                    vts::NavigationType::Instant);
+                                    NavigationType::Instant);
                     }
                     catch(...)
                     {
@@ -890,8 +881,8 @@ public:
                 window->map->getPositionPoint(n);
                 try
                 {
-                    window->map->convert(n, n, vts::Srs::Navigation,
-                                         (vts::Srs)positionSrs);
+                    window->map->convert(n, n, Srs::Navigation,
+                                         (Srs)positionSrs);
                 }
                 catch (const std::exception &)
                 {
@@ -928,7 +919,7 @@ public:
                 if (nk_button_label(&ctx, "Reset rotation"))
                 {
                     window->map->setPositionRotation({0,270,0},
-                                            vts::NavigationType::Quick);
+                                            NavigationType::Quick);
                     window->map->resetNavigationMode();
                 }
             }
@@ -951,10 +942,7 @@ public:
             {
                 nk_label(&ctx, "Output:", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Copy to clipboard"))
-                {
-                    glfwSetClipboardString(window->window,
-                            window->map->getPositionUrl().c_str());
-                }
+                    SDL_SetClipboardText(window->map->getPositionUrl().c_str());
             }
             // auto movement
             {
@@ -982,8 +970,8 @@ public:
         nk_end(&ctx);
     }
 
-    bool prepareViewsBoundLayers(vts::MapView &,
-                                 vts::MapView::BoundLayerInfo::Map &bl)
+    bool prepareViewsBoundLayers(MapView &,
+                                 MapView::BoundLayerInfo::Map &bl)
     {
         const std::vector<std::string> boundLayers
                 = window->map->getResourceBoundLayers();
@@ -1027,7 +1015,7 @@ public:
             nk_label(&ctx, "", NK_TEXT_LEFT);
             if (nk_check_label(&ctx, bn.c_str(), 0))
             {
-                bl.push_back(vts::MapView::BoundLayerInfo(bn));
+                bl.push_back(MapView::BoundLayerInfo(bn));
                 return true;
             }
             nk_label(&ctx, "", NK_TEXT_LEFT);
@@ -1101,7 +1089,7 @@ public:
 
                 // current view
                 bool viewChanged = false;
-                vts::MapView view;
+                MapView view;
                 window->map->getViewData(window->map->getViewCurrent(), view);
                 // surfaces
                 {
@@ -1115,7 +1103,7 @@ public:
                         bool v2 = nk_check_label(&ctx, sn.c_str(), v1);
                         if (v2)
                         { // bound layers
-                            vts::MapView::SurfaceInfo &s = view.surfaces[sn];
+                            MapView::SurfaceInfo &s = view.surfaces[sn];
                             viewChanged = viewChanged
                                 || prepareViewsBoundLayers(view, s.boundLayers);
                         }
@@ -1161,7 +1149,7 @@ public:
                 sprintf(buffer, "%d", (i + 1));
                 nk_checkbox_label(&ctx, buffer, &m.open);
                 double l = prev
-                        ? vts::length(vts::vec3(prev->coord - m.coord))
+                        ? vts::length(vec3(prev->coord - m.coord))
                         : 0;
                 length += l;
                 sprintf(buffer, "%.3f", l);
@@ -1176,8 +1164,8 @@ public:
                     double n[3] = { m.coord(0), m.coord(1), m.coord(2) };
                     try
                     {
-                        window->map->convert(n, n, vts::Srs::Physical,
-                                             (vts::Srs)positionSrs);
+                        window->map->convert(n, n, Srs::Physical,
+                                             (Srs)positionSrs);
                     }
                     catch(...)
                     {
@@ -1189,10 +1177,10 @@ public:
                     if (nk_button_label(&ctx, "Go"))
                     {
                         double n[3] = { m.coord(0), m.coord(1), m.coord(2) };
-                        window->map->convert(n, n, vts::Srs::Physical,
-                                                 vts::Srs::Navigation);
+                        window->map->convert(n, n, Srs::Physical,
+                                                 Srs::Navigation);
                         window->map->setPositionPoint(n,
-                                                vts::NavigationType::Quick);
+                                                NavigationType::Quick);
                     }
                     sprintf(buffer, "%.8f", n[1]);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
@@ -1290,7 +1278,7 @@ public:
                 return;
             }
             char buffer[200];
-            std::vector<vts::SearchItem> &res = search->results;
+            std::vector<SearchItem> &res = search->results;
             int index = 0;
             for (auto &r : res)
             {
@@ -1304,13 +1292,13 @@ public:
                         window->map->setPositionSubjective(false, false);
                         window->map->setPositionViewExtent(
                                     std::max(6667.0, r.radius * 2),
-                                    vts::NavigationType::FlyOver);
+                                    NavigationType::FlyOver);
                         window->map->setPositionRotation({0,270,0},
-                                    vts::NavigationType::FlyOver);
+                                    NavigationType::FlyOver);
                         window->map->resetPositionAltitude();
                         window->map->resetNavigationMode();
                         window->map->setPositionPoint(r.position,
-                                    vts::NavigationType::FlyOver);
+                                    NavigationType::FlyOver);
                     }
                 }
                 else
@@ -1385,11 +1373,11 @@ public:
     char searchTextPrev[MaxSearchTextLength];
     char positionInputText[MaxSearchTextLength];
 
-    std::shared_ptr<GpuTextureImpl> fontTexture;
-    std::shared_ptr<GpuTextureImpl> skinTexture;
-    std::shared_ptr<GpuShaderImpl> shader;
-    std::shared_ptr<GpuMeshImpl> mesh;
-    std::shared_ptr<vts::SearchTask> search;
+    std::shared_ptr<Texture> fontTexture;
+    std::shared_ptr<Texture> skinTexture;
+    std::shared_ptr<Shader> shader;
+    std::shared_ptr<Mesh> mesh;
+    std::shared_ptr<SearchTask> search;
 
     GuiSkinMedia skinMedia;
     nk_context ctx;
@@ -1399,7 +1387,7 @@ public:
     nk_convert_config config;
     nk_draw_null_texture null;
 
-    vts::vec3 posAutoMotion;
+    vec3 posAutoMotion;
     double viewExtentLimitScaleMin;
     double viewExtentLimitScaleMax;
 
@@ -1417,32 +1405,6 @@ public:
     static const int MaxElementMemory = 4 * 1024 * 1024;
 };
 
-void MainWindow::Gui::mousePositionCallback(double xpos, double ypos)
-{
-    impl->mousePositionCallback(xpos, ypos);
-}
-
-void MainWindow::Gui::mouseButtonCallback(int button, int action, int mods)
-{
-    impl->mouseButtonCallback(button, action, mods);
-}
-
-void MainWindow::Gui::mouseScrollCallback(double xoffset, double yoffset)
-{
-    impl->mouseScrollCallback(xoffset, yoffset);
-}
-
-void MainWindow::Gui::keyboardCallback(int key, int scancode,
-                                       int action, int mods)
-{
-    impl->keyboardCallback(key, scancode, action, mods);
-}
-
-void MainWindow::Gui::keyboardUnicodeCallback(unsigned int codepoint)
-{
-    impl->keyboardUnicodeCallback(codepoint);
-}
-
 void MainWindow::Gui::initialize(MainWindow *window)
 {
     impl = std::make_shared<GuiImpl>(window);
@@ -1453,9 +1415,20 @@ void MainWindow::Gui::render(int width, int height)
     impl->render(width, height);
 }
 
-void MainWindow::Gui::input()
+void MainWindow::Gui::inputBegin()
 {
-    impl->input();
+    nk_input_begin(&impl->ctx);
+}
+
+bool MainWindow::Gui::input(SDL_Event &event)
+{
+    impl->handleEvent(&event);
+    return nk_item_is_any_active(&impl->ctx);
+}
+
+void MainWindow::Gui::inputEnd()
+{
+    nk_input_end(&impl->ctx);
 }
 
 void MainWindow::Gui::finalize()

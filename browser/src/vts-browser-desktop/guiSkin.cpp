@@ -26,8 +26,12 @@
 
 #include <cstring>
 
+#include <vts-browser/resources.hpp>
+#include <vts-renderer/classes.hpp>
+
 #include "guiSkin.hpp"
-#include "gpuContext.hpp"
+
+using vts::renderer::Texture;
 
 GuiSkinMedia::GuiSkinMedia()
 {
@@ -35,15 +39,15 @@ GuiSkinMedia::GuiSkinMedia()
 }
 
 void initializeGuiSkin(nk_context &ctx, GuiSkinMedia &media,
-std::shared_ptr<GpuTextureImpl> &tex)
+                       std::shared_ptr<Texture> &tex)
 {
     { // load texture
-        tex = std::make_shared<GpuTextureImpl>();
+        tex = std::make_shared<Texture>();
         vts::GpuTextureSpec spec(
         vts::readInternalMemoryBuffer("data/textures/gwen.png"));
         vts::ResourceInfo info;
-        tex->loadTexture(info, spec);
-        media.skin = tex->id;
+        tex->load(info, spec);
+        media.skin = tex->getId();
     }
 
     media.check = nk_subimage_id(media.skin, 512,512, nk_rect(464,32,15,15));

@@ -106,6 +106,24 @@ VTS_API double aabbPointDist(const vec3 &point,
 VTS_API vec3f convertRgbToHsv(const vec3f &inColor);
 VTS_API vec3f convertHsvToRgb(const vec3f &inColor);
 
+VTS_API vec3 rawToVec3(const double v[3]);
+VTS_API vec4 rawToVec4(const double v[4]);
+VTS_API mat3 rawToMat3(const double v[9]);
+VTS_API mat4 rawToMat4(const double v[16]);
+VTS_API vec3f rawToVec3(const float v[3]);
+VTS_API vec4f rawToVec4(const float v[4]);
+VTS_API mat3f rawToMat3(const float v[9]);
+VTS_API mat4f rawToMat4(const float v[16]);
+
+VTS_API void vecToRaw(const vec3 &a, double v[3]);
+VTS_API void vecToRaw(const vec4 &a, double v[4]);
+VTS_API void matToRaw(const mat3 &a, double v[9]);
+VTS_API void matToRaw(const mat4 &a, double v[16]);
+VTS_API void vecToRaw(const vec3f &a, float v[3]);
+VTS_API void vecToRaw(const vec4f &a, float v[4]);
+VTS_API void matToRaw(const mat3f &a, float v[9]);
+VTS_API void matToRaw(const mat4f &a, float v[16]);
+
 template<class T, class U>
 T vecFromUblas(const U &u)
 {

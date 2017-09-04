@@ -37,5 +37,5 @@ set(GEN_CODE "${GEN_CODE}}\n} data_mapInitializer\;\n}\n")
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/data_map.cpp ${GEN_CODE})
 list(APPEND SRC_LIST ${CMAKE_CURRENT_BINARY_DIR}/data_map.cpp)
 
-add_custom_target(data SOURCES ${DATA_LIST})
+add_custom_target(vts-renderer-data SOURCES ${DATA_LIST})
 

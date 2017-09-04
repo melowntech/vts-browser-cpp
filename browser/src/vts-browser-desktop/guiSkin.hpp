@@ -54,11 +54,17 @@ struct GuiSkinMedia
     struct nk_image slider;
     struct nk_image slider_hover;
     struct nk_image slider_active;
-    
+
     GuiSkinMedia();
 };
 
+namespace vts { namespace renderer {
+
+class Texture;
+
+} } // namespace
+
 void initializeGuiSkin(nk_context &ctx, GuiSkinMedia &media,
-                       std::shared_ptr<class GpuTextureImpl> &tex);
+                       std::shared_ptr<vts::renderer::Texture> &tex);
 
 #endif

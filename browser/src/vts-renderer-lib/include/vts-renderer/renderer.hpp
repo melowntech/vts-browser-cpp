@@ -24,59 +24,56 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DRAWS_H_qwedfzugvsdfh
-#define DRAWS_H_qwedfzugvsdfh
+#ifndef RENDERER_H_sghvfwjfn
+#define RENDERER_H_sghvfwjfn
 
-#include <vector>
-#include <memory>
+#include <vts-browser/resources.hpp>
+#include <vts-browser/draws.hpp>
+#include <vts-browser/celestial.hpp>
 
 #include "foundation.hpp"
 
-namespace vts
+namespace vts { namespace renderer
 {
 
-class RenderTask;
-class MapImpl;
+// initialize all gl functions
+// should be called once after the gl context has been created
+VTSR_API void loadGlFunctions(GLADloadproc functionLoader);
 
-class VTS_API DrawTask
+// can be directly bound to MapCallbacks
+VTSR_API void loadTexture(vts::ResourceInfo &info,
+                          const vts::GpuTextureSpec &spec);
+
+// can be directly bound to MapCallbacks
+VTSR_API void loadMesh(vts::ResourceInfo &info,
+                       const vts::GpuMeshSpec &spec);
+
+// load all shaders and initialize all state required for the rendering
+// should be called once after the gl functions were initialized
+VTSR_API void initialize();
+
+// clear the loaded shaders etc.
+// should be called once before the gl context is released
+VTSR_API void finalize();
+
+struct VTSR_API RenderOptions
 {
-public:
-    std::shared_ptr<void> mesh;
-    std::shared_ptr<void> texColor;
-    std::shared_ptr<void> texMask;
-    float mvp[16];
-    float uvm[9];
-    float color[4];
-    float uvClip[4];
-    bool externalUv;
-    bool flatShading;
+    int width;
+    int height;
+    int targetFrameBuffer;
+    int targetViewportX;
+    int targetViewportY;
+    int antialiasingSamples;
+    bool renderAtmosphere;
+    bool renderPolygonEdges;
 
-    DrawTask();
-    DrawTask(const RenderTask &r, const MapImpl *m);
-    DrawTask(const RenderTask &r, const float *uvClip, const MapImpl *m);
+    RenderOptions();
 };
 
-class VTS_API MapDraws
-{
-public:
-    std::vector<DrawTask> opaque;
-    std::vector<DrawTask> transparent;
-    std::vector<DrawTask> Infographic;
+VTSR_API void render(RenderOptions &options,
+                     const MapDraws &draws,
+                     const MapCelestialBody &celestialBody);
 
-    struct Camera
-    {
-        double view[16];
-        double proj[16];
-        double target[3];
-        double eye[3];
-        double near, far;
-        bool mapProjected;
-    } camera;
-
-    MapDraws();
-    void clear();
-};
-
-} // namespace vts
+} } // namespace vts::renderer
 
 #endif

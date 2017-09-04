@@ -256,12 +256,11 @@ void Map::pan(const double value[3])
 {
     if (!getMapConfigReady())
         return;
-    vec3 v(value[0], value[1], value[2]);
     if (impl->mapConfig->position.type
             == vtslibs::registry::Position::Type::objective)
-        impl->pan(v);
+        impl->pan(rawToVec3(value));
     else
-        impl->rotate(-v);
+        impl->rotate(-rawToVec3(value));
 }
 
 void Map::pan(const double (&value)[3])
@@ -273,7 +272,7 @@ void Map::rotate(const double value[3])
 {
     if (!getMapConfigReady())
         return;
-    impl->rotate(vec3(value[0], value[1], value[2])); 
+    impl->rotate(rawToVec3(value));
 }
 
 void Map::rotate(const double (&value)[3])
@@ -305,7 +304,7 @@ MapOptions &Map::options()
     return impl->options;
 }
 
-const MapDraws &Map::draws()
+MapDraws &Map::draws()
 {
     return impl->draws;
 }
@@ -352,7 +351,7 @@ void Map::setPositionPoint(const double point[3], NavigationType type)
         assert(point[0] >= -180 && point[0] <= 180);
         assert(point[1] >= -90 && point[1] <= 90);
     }
-    vec3 v(point[0], point[1], point[2]);
+    vec3 v = rawToVec3(point);
     impl->setPoint(v, type);
     if (impl->options.enableArbitrarySriRequests
             && impl->convertor->geoDistance(
@@ -379,8 +378,7 @@ void Map::getPositionPoint(double point[3]) const
         return;
     }
     auto p = impl->mapConfig->position.position;
-    for (int i = 0; i < 3; i++)
-        point[i] = p[i];
+    vecToRaw(vecFromUblas<vec3>(p), point);
 }
 
 void Map::setPositionRotation(const double point[3], NavigationType type)
@@ -390,7 +388,7 @@ void Map::setPositionRotation(const double point[3], NavigationType type)
     assert(point[0] == point[0]);
     assert(point[1] == point[1]);
     assert(point[2] == point[2]);
-    impl->setRotation(vec3(point[0], point[1], point[2]), type);
+    impl->setRotation(rawToVec3(point), type);
 }
 
 void Map::setPositionRotation(const double (&point)[3], NavigationType type)
@@ -407,8 +405,7 @@ void Map::getPositionRotation(double point[3]) const
         return;
     }
     auto p = impl->mapConfig->position.orientation;
-    for (int i = 0; i < 3; i++)
-        point[i] = p[i];
+    vecToRaw(vecFromUblas<vec3>(p), point);
 }
 
 void Map::setPositionViewExtent(double viewExtent, NavigationType type)
@@ -538,12 +535,11 @@ void Map::convert(const double pointFrom[3], double pointTo[3],
 {
     if (!getMapConfigReady())
         return;
-    vec3 a(pointFrom[0], pointFrom[1], pointFrom[2]);
+    vec3 a = rawToVec3(pointFrom);
     a = impl->convertor->convert(a,
                     srsConvert(impl->mapConfig.get(), srsFrom),
                     srsConvert(impl->mapConfig.get(), srsTo));
-    for (int i = 0; i < 3; i++)
-        pointTo[i] = a(i);
+    vecToRaw(a, pointTo);
 }
 
 std::vector<std::string> Map::getResourceSurfaces() const

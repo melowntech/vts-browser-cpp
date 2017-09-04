@@ -29,8 +29,12 @@ find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 add_subdirectory(src/lodepng)
 include_directories(src/lodepng)
+add_subdirectory(src/glad)
+include_directories(src/glad)
+add_subdirectory(src/nuklear)
+include_directories(src/nuklear)
 
-# dependencies
+# our dependencies
 add_subdirectory(src/dbglog)
 add_subdirectory(src/utility)
 add_subdirectory(src/math)
@@ -40,6 +44,7 @@ add_subdirectory(src/jsoncpp)
 add_subdirectory(src/geo)
 add_subdirectory(src/half)
 add_subdirectory(src/http)
+add_subdirectory(src/sdl)
 
 # vts libraries
 buildsys_nobuild_target(vts-libs-core)
@@ -50,38 +55,23 @@ add_subdirectory(src/vts-libs)
 add_subdirectory(src/vts-browser-lib)
 include_directories(src/vts-browser-lib/include)
 
-# glfw-based example browser
-if(BUILDSYS_BUILD_TARGET_vts-browser-glfw)
-  find_package(glfw3)
-  if(glfw3_FOUND)
-    message(STATUS "including vts-browser-glfw")
-    include_directories(src/glad)
-    include_directories(src/nuklear)
-    if(DEFINED GLFW3_INCLUDE_DIR)
-      include_directories(${GLFW3_INCLUDE_DIR})
-    endif()
-    add_subdirectory(src/glad)
-    add_subdirectory(src/nuklear)
-    add_subdirectory(src/vts-browser-glfw)
-  else()
-    message(STATUS "excluding vts-browser-glfw (dependencies not found)")
-  endif()
+# renderer library
+add_subdirectory(src/vts-renderer-lib)
+include_directories(src/vts-renderer-lib/include)
+
+if(IOS)
+
+  # ios application
+  message(STATUS "including vts-browser-ios")
+  add_subdirectory(src/vts-browser-ios)
+
 else()
-  message(STATUS "excluding vts-browser-glfw (disabled)")
-  message(STATUS "to enable it, run: make enable TARGET=vts-browser-glfw")
+
+  # desktop application
+  message(STATUS "including vts-browser-desktop")
+  add_subdirectory(src/vts-browser-desktop)
+
 endif()
 
-# QT5-based example browser
-if(BUILDSYS_BUILD_TARGET_vts-browser-qt)
-  find_package(Qt5Gui 5.9)
-  if(Qt5Gui_FOUND)
-    message(STATUS "including vts-browser-qt")
-    add_subdirectory(src/vts-browser-qt)
-  else()
-    message(STATUS "excluding vts-browser-qt (dependencies not found)")
-  endif()
-else()
-  message(STATUS "excluding vts-browser-qt (disabled)")
-  message(STATUS "to enable it, run: make enable TARGET=vts-browser-qt")
-endif()
+
 

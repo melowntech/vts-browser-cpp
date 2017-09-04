@@ -80,7 +80,7 @@ public:
     class MapCallbacks &callbacks();
     class MapStatistics &statistics();
     class MapOptions &options();
-    const class MapDraws &draws();
+    class MapDraws &draws();
     const class MapCredits &credits();
     const class MapCelestialBody &celestialBody();
 

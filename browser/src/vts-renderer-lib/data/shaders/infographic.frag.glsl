@@ -17,6 +17,6 @@ void main()
         outColor *= texture(texColor, varUvs);
     float depthNorm = texelFetch(texDepth, ivec2(gl_FragCoord.xy), 0).x;
     if (gl_FragCoord.z > depthNorm)
-        outColor.w *= 0.25;
+        outColor.w *= 0.35;
 }
 

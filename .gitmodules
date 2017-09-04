@@ -40,3 +40,6 @@
 [submodule "externals/vts-libs"]
 	path = externals/vts-libs
 	url = https://github.com/Melown/vts-libs.git
+[submodule "externals/sdl"]
+	path = externals/sdl
+	url = https://github.com/SDL-mirror/SDL.git

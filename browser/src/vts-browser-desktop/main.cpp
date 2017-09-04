@@ -29,17 +29,12 @@
 #include <vts-browser/map.hpp>
 #include <vts-browser/options.hpp>
 #include <vts-browser/log.hpp>
+
+#include <SDL2/SDL.h>
+
 #include "mainWindow.hpp"
 #include "dataThread.hpp"
 #include "programOptions.hpp"
-#include <GLFW/glfw3.h>
-
-void errorCallback(int, const char* description)
-{
-    std::stringstream s;
-    s << "GLFW error <" << description << ">";
-    vts::log(vts::LogLevel::err4, s.str());
-}
 
 int main(int argc, char *argv[])
 {
@@ -49,34 +44,39 @@ int main(int argc, char *argv[])
     try
     {
 #endif
+
         vts::setLogThreadName("main");
         //vts::setLogMask("I2W2E2");
 
         vts::MapCreateOptions createOptions;
-        createOptions.clientId = "vts-browser-glfw";
+        createOptions.clientId = "vts-browser-desktop";
         //createOptions.disableCache = true;
         vts::MapOptions mapOptions;
         vts::FetcherOptions fetcherOptions;
         AppOptions appOptions;
         if (!programOptions(createOptions, mapOptions, fetcherOptions,
                             appOptions, argc, argv))
-            return 3;
+            return 0;
 
-        glfwSetErrorCallback(&errorCallback);
-        if (!glfwInit())
-            return 2;
+        if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
+        {
+            vts::log(vts::LogLevel::err4, SDL_GetError());
+            throw std::runtime_error("Failed to initialize SDL");
+        }
 
         {
             vts::Map map(createOptions);
             map.options() = mapOptions;
             MainWindow main(&map, appOptions);
-            DataThread data(&map, main.window, &main.timingDataFrame,
+            DataThread data(&map, main.timingDataFrame,
+                            main.window, main.dataContext,
                             fetcherOptions);
             main.run();
         }
 
-        glfwTerminate();
+        SDL_Quit();
         return 0;
+
 #ifdef NDEBUG
     }
     catch(const std::exception &e)

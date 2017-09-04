@@ -45,12 +45,32 @@ double &at(mat4 &a, uint32 i)
     return a(i % 4, i / 4);
 }
 
+float &at(mat3f &a, uint32 i)
+{
+    return a(i % 3, i / 3);
+}
+
+float &at(mat4f &a, uint32 i)
+{
+    return a(i % 4, i / 4);
+}
+
 double atc(const mat3 &a, uint32 i)
 {
     return a(i % 3, i / 3);
 }
 
 double atc(const mat4 &a, uint32 i)
+{
+    return a(i % 4, i / 4);
+}
+
+float atc(const mat3f &a, uint32 i)
+{
+    return a(i % 3, i / 3);
+}
+
+float atc(const mat4f &a, uint32 i)
 {
     return a(i % 4, i / 4);
 }
@@ -439,6 +459,107 @@ double aabbPointDist(const vec3 &point, const vec3 &min, const vec3 &max)
         r += std::max(std::max(min[i] - point[i], point[i] - max[i]), 0.0);
     return sqrt(r);
 }
+
+vec3 rawToVec3(const double v[3])
+{
+    return vec3(v[0], v[1], v[2]);
+}
+
+vec4 rawToVec4(const double v[4])
+{
+    return vec4(v[0], v[1], v[2], v[3]);
+}
+
+mat3 rawToMat3(const double v[9])
+{
+    mat3 r;
+    for (int i = 0; i < 9; i++)
+        at(r, i) = v[i];
+    return r;
+}
+
+mat4 rawToMat4(const double v[16])
+{
+    mat4 r;
+    for (int i = 0; i < 16; i++)
+        at(r, i) = v[i];
+    return r;
+}
+
+vec3f rawToVec3(const float v[3])
+{
+    return vec3f(v[0], v[1], v[2]);
+}
+
+vec4f rawToVec4(const float v[4])
+{
+    return vec4f(v[0], v[1], v[2], v[3]);
+}
+
+mat3f rawToMat3(const float v[9])
+{
+    mat3f r;
+    for (int i = 0; i < 9; i++)
+        at(r, i) = v[i];
+    return r;
+}
+
+mat4f rawToMat4(const float v[16])
+{
+    mat4f r;
+    for (int i = 0; i < 16; i++)
+        at(r, i) = v[i];
+    return r;
+}
+
+void vecToRaw(const vec3 &a, double v[3])
+{
+    for (int i = 0; i < 3; i++)
+        v[i] = a[i];
+}
+
+void vecToRaw(const vec4 &a, double v[4])
+{
+    for (int i = 0; i < 4; i++)
+        v[i] = a[i];
+}
+
+void matToRaw(const mat3 &a, double v[9])
+{
+    for (int i = 0; i < 9; i++)
+        v[i] = atc(a, i);
+}
+
+void matToRaw(const mat4 &a, double v[16])
+{
+    for (int i = 0; i < 16; i++)
+        v[i] = atc(a, i);
+}
+
+void vecToRaw(const vec3f &a, float v[3])
+{
+    for (int i = 0; i < 3; i++)
+        v[i] = a[i];
+}
+
+void vecToRaw(const vec4f &a, float v[4])
+{
+    for (int i = 0; i < 4; i++)
+        v[i] = a[i];
+}
+
+void matToRaw(const mat3f &a, float v[9])
+{
+    for (int i = 0; i < 9; i++)
+        v[i] = atc(a, i);
+}
+
+void matToRaw(const mat4f &a, float v[16])
+{
+    for (int i = 0; i < 16; i++)
+        v[i] = atc(a, i);
+}
+
 
 } // namespace vts
 

@@ -1117,6 +1117,17 @@ void MapImpl::updateCamera()
         if (r.ready())
             draws.Infographic.emplace_back(r, this);
     }
+
+    // update draws camera
+    {
+        MapDraws::Camera &c = draws.camera;
+        matToRaw(view, c.view);
+        matToRaw(proj, c.proj);
+        vecToRaw(center, c.target);
+        vecToRaw(cameraPosPhys, c.eye);
+        c.near = near;
+        c.far = far;
+    }
 }
 
 bool MapImpl::prerequisitesCheck()

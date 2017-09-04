@@ -24,25 +24,43 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FETCHERIMPL_H_djghfubhj
-#define FETCHERIMPL_H_djghfubhj
+#ifndef DATATHREAD_H_wefvwehjzg
+#define DATATHREAD_H_wefvwehjzg
 
-#include <memory>
-#include <vts-browser/fetcher.hpp>
+#include <atomic>
+#include <thread>
 
-class FetcherDetail;
+#include <vts-browser/foundation.hpp>
 
-class FetcherImpl : public vts::Fetcher
+namespace vts
+{
+
+class Map;
+class Fetcher;
+class FetcherOptions;
+
+} // namespace
+
+class DataThread
 {
 public:
-    FetcherImpl();
-    ~FetcherImpl();
+    DataThread(vts::Map *map,
+               vts::uint32 &timing,
+               struct SDL_Window *window,
+               void *context,
+               const vts::FetcherOptions &fetcherOptions);
+    ~DataThread();
 
-    void initialize() override;
-    void finalize() override;
-    void fetch(const std::shared_ptr<vts::FetchTask> &task) override;
+    void run();
 
-    std::shared_ptr<FetcherDetail> impl;
+private:
+    std::shared_ptr<vts::Fetcher> fetcher;
+    std::thread thr;
+    vts::Map *const map;
+    vts::uint32 &timing;
+    struct SDL_Window *window;
+    void *context;
+    std::atomic<bool> stop;
 };
 
 #endif

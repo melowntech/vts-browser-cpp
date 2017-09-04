@@ -24,73 +24,80 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPUCONTEXT_H_awfvgbhjk
-#define GPUCONTEXT_H_awfvgbhjk
+#ifndef CLASSES_H_wefegfuhf
+#define CLASSES_H_wefegfuhf
 
 #include <string>
 #include <vector>
-#include <glad/glad.h>
+
 #include <vts-browser/resources.hpp>
 
-extern bool anisotropicFilteringAvailable;
-extern bool openglDebugAvailable;
-extern vts::uint32 maxAntialiasingSamples;
+#include "foundation.hpp"
 
-void checkGl(const char *name = nullptr);
-void checkGlFramebuffer();
+namespace vts
+{
 
-void initializeGpuContext();
+namespace renderer
+{
 
-class GpuShaderImpl
+class VTSR_API Shader
 {
 public:
-    GLuint id;
-
-    GpuShaderImpl();
-    ~GpuShaderImpl();
+    Shader();
+    ~Shader();
     void clear();
     void bind();
-    int loadShader(const std::string &source, int stage);
-    void loadShaders(const std::string &vertexShader,
-                     const std::string &fragmentShader);
-    void uniformMat4(vts::uint32 location, const float *value);
-    void uniformMat3(vts::uint32 location, const float *value);
-    void uniformVec4(vts::uint32 location, const float *value);
-    void uniformVec3(vts::uint32 location, const float *value);
-    void uniform(vts::uint32 location, const float value);
-    void uniform(vts::uint32 location, const int value);
-    
-    std::vector<vts::uint32> uniformLocations;
+    void load(const std::string &vertexShader,
+              const std::string &fragmentShader);
+    void uniformMat4(uint32 location, const float *value);
+    void uniformMat3(uint32 location, const float *value);
+    void uniformVec4(uint32 location, const float *value);
+    void uniformVec3(uint32 location, const float *value);
+    void uniform(uint32 location, float value);
+    void uniform(uint32 location, int value);
+    GLuint getId() const;
+
+    std::vector<uint32> uniformLocations;
+
+private:
+    GLuint id;
 };
 
-class GpuTextureImpl
+class VTSR_API Texture
 {
 public:
+    Texture();
+    ~Texture();
+    void clear();
+    void bind();
+    void load(ResourceInfo &info, const GpuTextureSpec &spec);
+    GLuint getId() const;
+    bool getGrayscale() const;
+
+private:
     GLuint id;
     bool grayscale;
-
-    static GLenum findInternalFormat(const vts::GpuTextureSpec &spec);
-    static GLenum findFormat(const vts::GpuTextureSpec &spec);
-    
-    GpuTextureImpl();
-    ~GpuTextureImpl();
-    void clear();
-    void bind();
-    void loadTexture(vts::ResourceInfo &info, const vts::GpuTextureSpec &spec);
 };
 
-class GpuMeshImpl
+class VTSR_API Mesh
 {
 public:
-    vts::GpuMeshSpec spec;
-    GLuint vao, vbo, vio;
-
-    GpuMeshImpl();
-    ~GpuMeshImpl();
+    Mesh();
+    ~Mesh();
     void clear();
     void bind();
     void dispatch();
-    void loadMesh(vts::ResourceInfo &info, const vts::GpuMeshSpec &spec);
+    void load(ResourceInfo &info, const GpuMeshSpec &spec);
+    void load(GLuint vao, GLuint vbo, GLuint vio);
+    GLuint getVao() const;
+    GLuint getVbo() const;
+    GLuint getVio() const;
+
+private:
+    GpuMeshSpec spec;
+    GLuint vao, vbo, vio;
 };
+
+} } // namespace renderer
 
 #endif

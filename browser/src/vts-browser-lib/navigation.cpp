@@ -510,7 +510,7 @@ void MapImpl::zoom(double value)
 {
     assert(isNavigationModeValid());
 
-    double c = value * options.cameraSensitivityZoom;
+    double c = value * options.cameraSensitivityZoom * 120;
     navigation.targetViewExtent *= pow(1.001, -c);
     navigation.autoRotation = 0;
     navigation.type = options.navigationType;

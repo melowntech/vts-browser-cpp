@@ -24,34 +24,53 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DATATHREAD_H_wefvwehjzg
-#define DATATHREAD_H_wefvwehjzg
-
-#include <thread>
+#include <unistd.h> // usleep
+#include <vts-browser/map.hpp>
+#include <vts-browser/log.hpp>
 #include <vts-browser/fetcher.hpp>
+#include <SDL2/SDL.h>
+#include "dataThread.hpp"
 
-class GLFWwindow;
-
-namespace vts
+namespace
 {
-class Map;
+    void run(DataThread *data)
+    {
+        data->run();
+    }
 }
 
-class DataThread
+DataThread::DataThread(vts::Map *map, vts::uint32 &timing,
+                       SDL_Window *window, void *context,
+                       const vts::FetcherOptions &fetcherOptions) :
+    map(map), timing(timing),
+    window(window), context(context),
+    stop(false)
 {
-public:
-    DataThread(vts::Map *map, GLFWwindow *shared, double *timing,
-               const vts::FetcherOptions &fetcherOptions);
-    ~DataThread();
+    fetcher = vts::Fetcher::create(fetcherOptions);
+    thr = std::thread(&::run, this);
+}
 
-    void run();
+DataThread::~DataThread()
+{
+    stop = true;
+    thr.join();
+}
 
-    std::shared_ptr<vts::Fetcher> fetcher;
-    std::thread thr;
-    GLFWwindow *window;
-    vts::Map *const map;
-    double *const timing;
-    volatile bool stop;
-};
-
-#endif
+void DataThread::run()
+{
+    vts::setLogThreadName("data");
+    SDL_GL_MakeCurrent(window, context);
+    while (!stop && !map)
+        usleep(1000);
+    map->dataInitialize(fetcher);
+    while (!stop)
+    {
+        vts::uint32 timeFrameStart = SDL_GetTicks();
+        map->dataTick();
+        vts::uint32 timeFrameEnd = SDL_GetTicks();
+        timing = timeFrameEnd - timeFrameStart;
+        usleep(50000);
+    }
+    map->dataFinalize();
+    SDL_GL_DeleteContext(context);
+}

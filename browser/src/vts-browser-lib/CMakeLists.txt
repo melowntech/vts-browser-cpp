@@ -64,22 +64,16 @@ set(SRC_LIST
   sri.cpp
 )
 
-include(data.cmake)
-
 buildsys_position_independent(${MODULE_LIBRARIES})
 
 add_library(vts-browser SHARED ${SRC_LIST} ${HDR_LIST} ${PUB_HDR_LIST})
-#target_compile_options(vts-browser PRIVATE -Wl,--no-undefined)
+target_compile_definitions(vts-browser PRIVATE VTS_BROWSER_BUILD_SHARED)
 buildsys_library(vts-browser)
 buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})
 
 # all libraries are PRIVATE -> do not forward static libraries out
 target_link_libraries(vts-browser PRIVATE ${MODULE_LIBRARIES})
 buildsys_target_compile_definitions(vts-browser ${MODULE_DEFINITIONS})
-
-# enforce the library to have all symbols defined
-# does not work at this moment
-# target_compile_options(vts-browser PRIVATE -Wl,-z,defs -Bsymbolic)
 
 #######################################################################
 # Install

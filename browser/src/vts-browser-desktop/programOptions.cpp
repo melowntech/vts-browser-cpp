@@ -101,14 +101,14 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 "Purge the disk cache during the initialization."
             )
             ("renderAtmosphere",
-                po::value<bool>(&appOptions.renderAtmosphere)
-                ->default_value(appOptions.renderAtmosphere)
-                ->implicit_value(!appOptions.renderAtmosphere),
+                po::value<bool>(&appOptions.render.renderAtmosphere)
+                ->default_value(appOptions.render.renderAtmosphere)
+                ->implicit_value(!appOptions.render.renderAtmosphere),
                 "Render atmosphere."
             )
             ("antialiasing",
-                po::value<vts::uint32>(&appOptions.antialiasing)
-                ->default_value(appOptions.antialiasing)
+                po::value<int>(&appOptions.render.antialiasingSamples)
+                ->default_value(appOptions.render.antialiasingSamples)
                 ->implicit_value(16),
                 "Antialiasing samples."
             )

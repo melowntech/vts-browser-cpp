@@ -24,56 +24,20 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <unistd.h> // usleep
-#include <vts-browser/map.hpp>
+#ifndef RENDERER_H_qwergfbhjk
+#define RENDERER_H_qwergfbhjk
+
 #include <vts-browser/log.hpp>
-#include "dataThread.hpp"
-#include "gpuContext.hpp"
-#include <GLFW/glfw3.h>
 
-namespace
-{
-    void run(DataThread *data)
-    {
-        data->run();
-    }
-}
+#include "include/vts-renderer/classes.hpp"
+#include "include/vts-renderer/renderer.hpp"
 
-DataThread::DataThread(vts::Map *map, GLFWwindow *shared, double *timing,
-                       const vts::FetcherOptions &fetcherOptions) :
-    window(nullptr), map(map), timing(timing), stop(false)
+namespace vts { namespace renderer { namespace priv
 {
-    fetcher = vts::Fetcher::create(fetcherOptions);
-    glfwWindowHint(GLFW_VISIBLE, false);
-    window = glfwCreateWindow(1, 1, "data context", NULL, shared);
-    glfwSetWindowUserPointer(window, this);
-    glfwHideWindow(window);
-    initializeGpuContext();
-    thr = std::thread(&::run, this);
-}
 
-DataThread::~DataThread()
-{
-    stop = true;
-    thr.join();
-    glfwDestroyWindow(window);
-    window = nullptr;
-}
+extern int maxAntialiasingSamples;
+extern float maxAnisotropySamples;
 
-void DataThread::run()
-{
-    vts::setLogThreadName("data");
-    glfwMakeContextCurrent(window);
-    while (!stop && !map)
-        usleep(1000);
-    map->dataInitialize(fetcher);
-    while (!stop)
-    {
-        double timeFrameStart = glfwGetTime();
-        map->dataTick();
-        double timeFrameEnd = glfwGetTime();
-        *timing = timeFrameEnd - timeFrameStart;
-        usleep(50000);
-    }
-    map->dataFinalize();
-}
+} } } // namespace
+
+#endif

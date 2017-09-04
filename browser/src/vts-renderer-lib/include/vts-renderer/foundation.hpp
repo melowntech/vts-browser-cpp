@@ -24,53 +24,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef FOUNDATION_H_wefwghefi
+#define FOUNDATION_H_wefwghefi
 
-#include <QWindow>
+#include <glad/glad.h>
 
-namespace vts
+#include <vts-browser/foundation.hpp>
+
+#ifdef VTS_RENDERER_BUILD_SHARED
+#define VTSR_API VTS_API_EXPORT
+#else
+#define VTSR_API VTS_API_IMPORT
+#endif
+
+namespace vts { namespace renderer
 {
-    class Map;
-    class Fetcher;
-    class DrawTask;
-    class ResourceInfo;
-    class GpuTextureSpec;
-    class GpuMeshSpec;
-}
 
-class Gl;
-class GpuShaderImpl;
+VTSR_API void checkGl(const char *name = "");
+VTSR_API void checkGlFramebuffer();
 
-class MainWindow : public QWindow
-{
-public:
-    MainWindow();
-    ~MainWindow();
-
-    bool event(QEvent *event);
-    void initialize();
-    void tick();
-
-    vts::Map *map;
-    std::shared_ptr<Gl> gl;
-    std::shared_ptr<vts::Fetcher> fetcher;
-
-private:
-    void mouseMove(class QMouseEvent *event);
-    void mousePress(class QMouseEvent *event);
-    void mouseRelease(class QMouseEvent *event);
-    void mouseWheel(class QWheelEvent *event);
-    void draw(const vts::DrawTask &task);
-
-    void loadTexture(vts::ResourceInfo &info, const vts::GpuTextureSpec &spec);
-    void loadMesh(vts::ResourceInfo &info, const vts::GpuMeshSpec &spec);
-
-    std::shared_ptr<GpuShaderImpl> shaderSurface;
-
-    QPoint mouseLastPosition;
-    QPoint mouseOriginalPosition;
-    bool isMouseDetached;
-};
+} } // namespace vts::renderer
 
 #endif

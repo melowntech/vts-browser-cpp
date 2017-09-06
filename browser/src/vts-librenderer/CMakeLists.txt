@@ -18,12 +18,12 @@ set(SRC_LIST
 
 include(data.cmake)
 
-buildsys_position_independent(${MODULE_LIBRARIES})
-
 add_library(vts-renderer SHARED ${SRC_LIST} ${HDR_LIST} ${PUB_HDR_LIST})
 target_compile_definitions(vts-browser PRIVATE VTS_RENDERER_BUILD_SHARED)
-buildsys_library(vts-renderer)
 target_link_libraries(vts-renderer PRIVATE ${MODULE_LIBRARIES})
+buildsys_library(vts-renderer)
+buildsys_soversion(vts-renderer ${vts-browser_SO_VERSION})
 buildsys_target_compile_definitions(vts-renderer ${MODULE_DEFINITIONS})
+buildsys_position_independent(${MODULE_LIBRARIES})
 
 

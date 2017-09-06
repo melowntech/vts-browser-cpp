@@ -1,7 +1,27 @@
-# Bump shared library version here
-set(vts-browser_SO_VERSION 0.0.0)
 
-define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus http>=1.2 lodepng jsoncpp)
+set(EXTRA_SRC_LIST)
+set(EXTRA_MODULE_DEPS)
+
+if(IOS)
+
+  # ios
+  list(APPEND EXTRA_SRC_LIST fetcher/ios.cpp image/ios.cpp)
+
+else()
+
+  # desktop
+  find_package(JPEG REQUIRED)
+  find_package(PNG REQUIRED)
+  find_package(CURL REQUIRED)
+  add_subdirectory(fetcher/http)
+  include_directories(fetcher)
+  list(APPEND EXTRA_SRC_LIST fetcher/curl.cpp image/desktop.cpp)
+  list(APPEND EXTRA_MODULE_DEPS http)
+
+endif()
+
+define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus jsoncpp
+  ${EXTRA_MODULE_DEPS})
 
 set(PUB_HDR_LIST
   include/vts-browser/buffer.hpp
@@ -18,8 +38,8 @@ set(PUB_HDR_LIST
   include/vts-browser/credits.hpp
   include/vts-browser/search.hpp
   include/vts-browser/log.hpp
-  include/vts-browser/boostProgramOptions.hpp
   include/vts-browser/celestial.hpp
+  include/vts-browser/boostProgramOptions.hpp
 )
 
 set(HDR_LIST
@@ -40,7 +60,6 @@ set(SRC_LIST
   coordsManip.cpp
   exceptions.cpp
   fetcher.cpp
-  image.cpp
   mapApi.cpp
   mapUtilities.cpp
   math.cpp
@@ -62,18 +81,18 @@ set(SRC_LIST
   log.cpp
   boostProgramOptions.cpp
   sri.cpp
+  image.cpp
+  ${EXTRA_SRC_LIST}
 )
-
-buildsys_position_independent(${MODULE_LIBRARIES})
 
 add_library(vts-browser SHARED ${SRC_LIST} ${HDR_LIST} ${PUB_HDR_LIST})
 target_compile_definitions(vts-browser PRIVATE VTS_BROWSER_BUILD_SHARED)
+target_link_libraries(vts-browser PRIVATE ${MODULE_LIBRARIES})
 buildsys_library(vts-browser)
 buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})
-
-# all libraries are PRIVATE -> do not forward static libraries out
-target_link_libraries(vts-browser PRIVATE ${MODULE_LIBRARIES})
 buildsys_target_compile_definitions(vts-browser ${MODULE_DEFINITIONS})
+buildsys_position_independent(${MODULE_LIBRARIES})
+
 
 #######################################################################
 # Install

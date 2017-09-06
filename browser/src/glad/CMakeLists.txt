@@ -10,6 +10,7 @@ set(glad_SOURCES
 
 add_library(glad STATIC ${glad_SOURCES})
 buildsys_library(glad)
-target_link_libraries(glad ${MODULE_LIBRARIES} dl)
+target_link_libraries(glad dl)
+target_link_libraries(glad ${MODULE_LIBRARIES})
 buildsys_target_compile_definitions(glad ${MODULE_DEFINITIONS})
 

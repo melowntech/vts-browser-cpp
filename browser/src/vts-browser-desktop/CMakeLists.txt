@@ -1,4 +1,6 @@
-define_module(BINARY vts-browser-desktop DEPENDS vts-browser vts-renderer nuklear glad SDL2 THREADS Boost_PROGRAM_OPTIONS)
+define_module(BINARY vts-browser-desktop DEPENDS
+  vts-browser vts-renderer
+  nuklear glad SDL2 THREADS Boost_PROGRAM_OPTIONS)
 
 set(HDR_LIST
   dataThread.hpp
@@ -17,14 +19,8 @@ set(SRC_LIST
 )
 
 add_executable(vts-browser-desktop ${SRC_LIST} ${HDR_LIST})
-buildsys_binary(vts-browser-desktop)
-target_link_libraries(vts-browser-desktop ${MODULE_LIBRARIES})
-buildsys_target_compile_definitions(vts-browser-desktop ${MODULE_DEFINITIONS})
 target_compile_definitions(vts-browser-desktop PUBLIC ${NUKLEAR_COMPONENTS})
-
-# install
-install(TARGETS vts-browser-desktop
-  RUNTIME DESTINATION bin
-  COMPONENT browser-desktop
-)
+target_link_libraries(vts-browser-desktop ${MODULE_LIBRARIES})
+buildsys_binary(vts-browser-desktop)
+buildsys_target_compile_definitions(vts-browser-desktop ${MODULE_DEFINITIONS})
 

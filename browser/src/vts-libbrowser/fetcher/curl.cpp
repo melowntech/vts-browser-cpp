@@ -28,8 +28,7 @@
 #include <unistd.h> // usleep
 #include <http/http.hpp>
 #include <http/resourcefetcher.hpp>
-
-#include "include/vts-browser/fetcher.hpp"
+#include "../include/vts-browser/fetcher.hpp"
 
 namespace vts
 {
@@ -230,38 +229,10 @@ void Task::finish()
 
 } // namespace
 
-FetcherOptions::FetcherOptions()
-    : threads(1),
-      timeout(30000),
-      extraFileLog(false),
-      maxHostConnections(0),
-      maxTotalConections(10),
-      maxCacheConections(0),
-      pipelining(2)
-{}
-
-Fetcher::~Fetcher()
-{}
-
 std::shared_ptr<Fetcher> Fetcher::create(const FetcherOptions &options)
 {
     return std::dynamic_pointer_cast<Fetcher>(
                 std::make_shared<FetcherImpl>(options));
 }
-
-FetchTask::Query::Query(const std::string &url,
-                        FetchTask::ResourceType resourceType) :
-    url(url), resourceType(resourceType)
-{}
-
-FetchTask::Reply::Reply() : expires(-1), code(0)
-{}
-
-FetchTask::FetchTask(const std::string &url, ResourceType resourceType) :
-    query(url, resourceType)
-{}
-
-FetchTask::~FetchTask()
-{}
 
 } // namespace vts

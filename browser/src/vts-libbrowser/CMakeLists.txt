@@ -1,11 +1,16 @@
 
 set(EXTRA_SRC_LIST)
+set(EXTRA_LIB_DEPS)
 set(EXTRA_MODULE_DEPS)
 
 if(IOS)
 
   # ios
-  list(APPEND EXTRA_SRC_LIST fetcher/ios.cpp image/ios.cpp)
+  find_package(ZLIB REQUIRED)
+  include_directories(${ZLIB_INCLUDE_DIRS})
+  find_library(COREGRAPHICS CoreGraphics)
+  list(APPEND EXTRA_LIB_DEPS ${ZLIB_LIBRARIES} iconv "-framework CoreGraphics" objc)
+  list(APPEND EXTRA_SRC_LIST fetcher/ios.mm image/ios.mm)
 
 else()
 
@@ -15,8 +20,8 @@ else()
   find_package(CURL REQUIRED)
   add_subdirectory(fetcher/http)
   include_directories(fetcher)
-  list(APPEND EXTRA_SRC_LIST fetcher/curl.cpp image/desktop.cpp)
   list(APPEND EXTRA_MODULE_DEPS http)
+  list(APPEND EXTRA_SRC_LIST fetcher/curl.cpp image/desktop.cpp)
 
 endif()
 
@@ -87,7 +92,7 @@ set(SRC_LIST
 
 add_library(vts-browser SHARED ${SRC_LIST} ${HDR_LIST} ${PUB_HDR_LIST})
 target_compile_definitions(vts-browser PRIVATE VTS_BROWSER_BUILD_SHARED)
-target_link_libraries(vts-browser PRIVATE ${MODULE_LIBRARIES})
+target_link_libraries(vts-browser PRIVATE ${MODULE_LIBRARIES} ${EXTRA_LIB_DEPS})
 buildsys_library(vts-browser)
 buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})
 buildsys_target_compile_definitions(vts-browser ${MODULE_DEFINITIONS})

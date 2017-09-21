@@ -14,6 +14,7 @@ set(vts-browser_SO_VERSION 0.0.0)
 enable_hidden_visibility()
 
 # 3rd party dependencies
+message(STATUS "looking for 3rd-party dependencies")
 find_package(Boost 1.46 REQUIRED
   COMPONENTS thread program_options filesystem system
   date_time serialization regex chrono iostreams)
@@ -36,6 +37,7 @@ add_subdirectory(src/nuklear)
 include_directories(src/nuklear)
 
 # our dependencies
+message(STATUS "including our dependencies")
 add_subdirectory(src/dbglog)
 add_subdirectory(src/utility)
 add_subdirectory(src/math)
@@ -45,14 +47,21 @@ add_subdirectory(src/jsoncpp)
 add_subdirectory(src/geo)
 add_subdirectory(src/half)
 
-# vts libraries
+# vts libs
+message(STATUS "including vts libs")
 buildsys_nobuild_target(vts-libs-core)
 buildsys_nobuild_target(vts-libs)
 add_subdirectory(src/vts-libs)
+
+# vts browser
+message(STATUS "including vts browser library")
 add_subdirectory(src/vts-libbrowser)
 include_directories(src/vts-libbrowser/include)
 add_subdirectory(src/vts-librenderer)
 include_directories(src/vts-librenderer/include)
+
+# application
+message(STATUS "including vts browser application")
 
 if(IOS)
 

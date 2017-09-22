@@ -2,6 +2,8 @@
 cmake_minimum_required(VERSION 2.8.11)
 project(vts-browser)
 
+cmake_policy(SET CMP0004 OLD) # because SDL installed on some systems has improperly configured libraries
+
 # by default, this is OSS build (can be overriden by customer machinery)
 set(BUILDSYS_DEFAULT_CUSTOMER_NAME oss)
 include(buildsys/cmake/buildsys.cmake)
@@ -72,6 +74,8 @@ if(IOS)
 else()
   # desktop application
   message(STATUS "including vts-browser-desktop")
+  add_subdirectory(src/nuklear)
+  include_directories(src/nuklear)
   add_subdirectory(src/vts-browser-desktop)
 endif()
 

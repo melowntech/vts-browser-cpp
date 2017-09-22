@@ -18,9 +18,9 @@ set(SRC_LIST
 
 include(data.cmake)
 
-add_library(vts-renderer SHARED ${SRC_LIST} ${HDR_LIST} ${PUB_HDR_LIST})
-target_compile_definitions(vts-browser PRIVATE VTS_RENDERER_BUILD_SHARED)
-target_link_libraries(vts-renderer PRIVATE ${MODULE_LIBRARIES})
+add_library(vts-renderer ${LIB_TYPE} ${SRC_LIST} ${HDR_LIST} ${PUB_HDR_LIST})
+target_compile_definitions(vts-renderer ${LIB_VIS} VTS_RENDERER_BUILD_${LIB_TYPE})
+target_link_libraries(vts-renderer ${LIB_VIS} ${MODULE_LIBRARIES})
 buildsys_library(vts-renderer)
 buildsys_soversion(vts-renderer ${vts-browser_SO_VERSION})
 buildsys_target_compile_definitions(vts-renderer ${MODULE_DEFINITIONS})

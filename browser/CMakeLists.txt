@@ -2,8 +2,6 @@
 cmake_minimum_required(VERSION 2.8.11)
 project(vts-browser)
 
-cmake_policy(SET CMP0004 OLD) # sdl has improperly configured libraries
-
 # by default, this is OSS build (can be overriden by customer machinery)
 set(BUILDSYS_DEFAULT_CUSTOMER_NAME oss)
 include(buildsys/cmake/buildsys.cmake)
@@ -13,7 +11,7 @@ set(vts-browser_SO_VERSION 0.0.0)
 
 enable_hidden_visibility()
 
-# 3rd party dependencies
+# find 3rd party dependencies
 message(STATUS "looking for 3rd-party dependencies")
 find_package(Boost 1.46 REQUIRED
   COMPONENTS thread program_options filesystem system
@@ -33,8 +31,6 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIR})
 add_subdirectory(src/glad)
-add_subdirectory(src/nuklear)
-include_directories(src/nuklear)
 
 # our dependencies
 message(STATUS "including our dependencies")
@@ -55,6 +51,13 @@ add_subdirectory(src/vts-libs)
 
 # vts browser
 message(STATUS "including vts browser library")
+if(IOS)
+  set(LIB_TYPE STATIC)
+  set(LIB_VIS PUBLIC)
+else()
+  set(LIB_TYPE SHARED)
+  set(LIB_VIS PRIVATE)
+endif()
 add_subdirectory(src/vts-libbrowser)
 include_directories(src/vts-libbrowser/include)
 add_subdirectory(src/vts-librenderer)
@@ -62,19 +65,14 @@ include_directories(src/vts-librenderer/include)
 
 # application
 message(STATUS "including vts browser application")
-
 if(IOS)
-
   # ios application
   message(STATUS "including vts-browser-ios")
   add_subdirectory(src/vts-browser-ios)
-
 else()
-
   # desktop application
   message(STATUS "including vts-browser-desktop")
   add_subdirectory(src/vts-browser-desktop)
-
 endif()
 
 

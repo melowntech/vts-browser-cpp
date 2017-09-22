@@ -8,8 +8,7 @@ if(IOS)
   # ios
   find_package(ZLIB REQUIRED)
   include_directories(${ZLIB_INCLUDE_DIRS})
-  find_library(COREGRAPHICS CoreGraphics)
-  list(APPEND EXTRA_LIB_DEPS ${ZLIB_LIBRARIES} iconv "-framework CoreGraphics" objc)
+  list(APPEND EXTRA_LIB_DEPS ${ZLIB_LIBRARIES} iconv objc "-framework CoreGraphics")
   list(APPEND EXTRA_SRC_LIST fetcher/ios.mm image/ios.mm)
 
 else()
@@ -90,9 +89,9 @@ set(SRC_LIST
   ${EXTRA_SRC_LIST}
 )
 
-add_library(vts-browser SHARED ${SRC_LIST} ${HDR_LIST} ${PUB_HDR_LIST})
-target_compile_definitions(vts-browser PRIVATE VTS_BROWSER_BUILD_SHARED)
-target_link_libraries(vts-browser PRIVATE ${MODULE_LIBRARIES} ${EXTRA_LIB_DEPS})
+add_library(vts-browser ${LIB_TYPE} ${SRC_LIST} ${HDR_LIST} ${PUB_HDR_LIST})
+target_compile_definitions(vts-browser ${LIB_VIS} VTS_BROWSER_BUILD_${LIB_TYPE})
+target_link_libraries(vts-browser ${LIB_VIS} ${MODULE_LIBRARIES} ${EXTRA_LIB_DEPS})
 buildsys_library(vts-browser)
 buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})
 buildsys_target_compile_definitions(vts-browser ${MODULE_DEFINITIONS})
@@ -101,6 +100,8 @@ buildsys_position_independent(${MODULE_LIBRARIES})
 
 #######################################################################
 # Install
+
+if(NOT IOS)
 
 set(INCLUDE_INSTALL_DIR include)
 set(LIB_INSTALL_DIR lib)
@@ -119,6 +120,7 @@ install(TARGETS vts-browser
   EXPORT vts-browser
   RUNTIME DESTINATION ${BIN_INSTALL}
   LIBRARY DESTINATION ${LIB_INSTALL_DIR}
+  ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
   COMPONENT browser
   )
 
@@ -149,3 +151,6 @@ install(FILES
   DESTINATION ${SHARE_INSTALL_DIR}/VtsBrowser
   COMPONENT browser-dev
   )
+
+endif()
+

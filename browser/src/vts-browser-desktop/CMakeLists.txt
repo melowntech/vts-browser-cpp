@@ -1,3 +1,7 @@
+
+add_subdirectory(src/nuklear)
+include_directories(src/nuklear)
+
 define_module(BINARY vts-browser-desktop DEPENDS
   vts-browser vts-renderer
   nuklear glad SDL2 THREADS Boost_PROGRAM_OPTIONS)

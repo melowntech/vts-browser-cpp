@@ -31,7 +31,9 @@
 
 #include <vts-browser/foundation.hpp>
 
-#ifdef VTS_RENDERER_BUILD_SHARED
+#ifdef VTS_RENDERER_BUILD_STATIC
+#define VTSR_API
+#elif VTS_RENDERER_BUILD_SHARED
 #define VTSR_API VTS_API_EXPORT
 #else
 #define VTSR_API VTS_API_IMPORT

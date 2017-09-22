@@ -113,7 +113,9 @@ enum class TraverseMode
 #define VTS_THREAD_LOCAL_STORAGE __thread
 #endif
 
-#ifdef VTS_BROWSER_BUILD_SHARED
+#ifdef VTS_BROWSER_BUILD_STATIC
+#define VTS_API
+#elif VTS_BROWSER_BUILD_SHARED
 #define VTS_API VTS_API_EXPORT
 #else
 #define VTS_API VTS_API_IMPORT

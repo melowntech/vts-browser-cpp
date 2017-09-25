@@ -40,7 +40,20 @@ namespace priv
 int maxAntialiasingSamples;
 float maxAnisotropySamples;
 
+void initializeRenderData();
+namespace
+{
+    class RenderDataInitializator
+    {
+    public:
+        RenderDataInitializator()
+        {
+            initializeRenderData();
+        }
+    } RenderDataInitializatorInstance;
 } // namespace
+
+} // namespace priv
 
 using namespace priv;
 

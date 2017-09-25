@@ -65,6 +65,10 @@ set(CMAKE_SHARED_MODULE_LOADER_C_FLAG "-Wl,-bundle_loader,")
 set(CMAKE_SHARED_MODULE_LOADER_CXX_FLAG "-Wl,-bundle_loader,")
 set(CMAKE_FIND_LIBRARY_SUFFIXES ".dylib" ".so" ".a")
 
+# hack: overcome issue in try_compile for xcode generator
+set(CMAKE_MACOSX_BUNDLE YES)
+set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "NO")
+
 # Required as of cmake 2.8.10
 set(CMAKE_OSX_DEPLOYMENT_TARGET "" CACHE STRING "Force unset of the deployment target for iOS" FORCE)
 

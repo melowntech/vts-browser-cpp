@@ -250,11 +250,13 @@ void Texture::load(ResourceInfo &info, const GpuTextureSpec &spec)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+	#ifndef VTSR_OPENGLES
     if (GLAD_GL_EXT_texture_filter_anisotropic)
     {
         glTexParameterf(GL_TEXTURE_2D,
                         GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropySamples);
     }
+    #endif
 
     grayscale = spec.components == 1;
 

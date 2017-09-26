@@ -36,28 +36,45 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
 
-int main(int argc, char *args[])
+SDL_Window *window;
+SDL_GLContext renderContext;
+std::shared_ptr<vts::Map> map;
+vts::renderer::RenderOptions renderOptions;
+bool shouldClose = false;
+
+int handleAppEvents(void *, SDL_Event *event);
+
+void updateResolution()
 {
-	// initialization
+	if (!map || !window)
+		return;
+    SDL_GL_GetDrawableSize(window, &renderOptions.width, &renderOptions.height);
+    map->setWindowSize(renderOptions.width, renderOptions.height);
 
-    vts::setLogThreadName("main");
-    //vts::setLogMask("I2W2E2");
+    std::stringstream s;
+    s << "Resolution: " << renderOptions.width << " x " << renderOptions.height;
+    vts::log(vts::LogLevel::info2, s.str());
+}
 
-    vts::log(vts::LogLevel::info3, "initializing SDL library");
+void initialize()
+{
+    vts::log(vts::LogLevel::info3, "Initializing SDL library");
     if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
     {
         vts::log(vts::LogLevel::err4, SDL_GetError());
         throw std::runtime_error("Failed to initialize SDL");
     }
+    SDL_SetEventFilter(&handleAppEvents, nullptr);
 
-    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 6);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
     SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
+    SDL_GL_SetAttribute(SDL_GL_RETAINED_BACKING, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
@@ -65,14 +82,16 @@ int main(int argc, char *args[])
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #endif
 
-    SDL_DisplayMode displayMode;
-	SDL_GetDesktopDisplayMode(0, &displayMode);
-
-    vts::log(vts::LogLevel::info3, "creating window");
-    auto window = SDL_CreateWindow("vts-browser-ios",
-              0, 0, displayMode.w, displayMode.h,
-              SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN
-              | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+	{
+		vts::log(vts::LogLevel::info3, "Creating window");
+		SDL_DisplayMode displayMode;
+		SDL_GetDesktopDisplayMode(0, &displayMode);
+		window = SDL_CreateWindow("vts-browser-ios",
+		          0, 0, displayMode.w, displayMode.h,
+		          SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN
+		          | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN
+		          | SDL_WINDOW_ALLOW_HIGHDPI);
+	}
 
     if (!window)
     {
@@ -80,8 +99,8 @@ int main(int argc, char *args[])
         throw std::runtime_error("Failed to create window");
     }
 
-    vts::log(vts::LogLevel::info3, "creating opengl context");
-    auto renderContext = SDL_GL_CreateContext(window);
+    vts::log(vts::LogLevel::info3, "Creating opengl context");
+    renderContext = SDL_GL_CreateContext(window);
     
     SDL_GL_MakeCurrent(window, renderContext);
     SDL_GL_SetSwapInterval(1);
@@ -99,7 +118,6 @@ int main(int argc, char *args[])
 
     vts::renderer::initialize();
 
-	std::shared_ptr<vts::Map> map;
 	{
 		vts::MapCreateOptions createOptions;
 		createOptions.clientId = "vts-browser-ios";
@@ -111,7 +129,6 @@ int main(int argc, char *args[])
     map->callbacks().loadMesh = std::bind(&vts::renderer::loadMesh,
                 std::placeholders::_1, std::placeholders::_2);
 
-	vts::renderer::RenderOptions ro;
 	{
 		// get default framebuffer object
 		SDL_SysWMinfo info;
@@ -119,19 +136,79 @@ int main(int argc, char *args[])
 		if (!SDL_GetWindowWMInfo(window,&info))
         	throw std::runtime_error("SDL_GetWindowWMInfo");
         assert(info.subsystem == SDL_SYSWM_UIKIT);
-        ro.targetFrameBuffer = info.info.uikit.framebuffer;
+        renderOptions.targetFrameBuffer = info.info.uikit.framebuffer;
 	}
-	SDL_GL_GetDrawableSize(window, &ro.width, &ro.height);
-	map->setWindowSize(ro.width, ro.height);
+	
+	updateResolution();
     
     map->dataInitialize(vts::Fetcher::create(vts::FetcherOptions()));
     map->renderInitialize();
     
-    map->setMapConfigPath("");
-    
-    // run
+    map->options().traverseMode = vts::TraverseMode::Hierarchical;
+    map->options().maxTexelToPixelScale *= 3;
+}
 
-	bool shouldClose = false;
+void finalize()
+{
+    vts::renderer::finalize();
+    
+    if (map)
+    {
+    	map->dataFinalize();
+        map->renderFinalize();
+    	map.reset();
+    }
+
+	if (renderContext)
+	{
+	    SDL_GL_DeleteContext(renderContext);
+	    renderContext = nullptr;
+    }
+    
+    if (window)
+    {
+	    SDL_DestroyWindow(window);
+	    window = nullptr;
+	}
+}
+
+int handleAppEvents(void *, SDL_Event *event)
+{
+    switch (event->type)
+    {
+    case SDL_APP_TERMINATING:
+    	vts::log(vts::LogLevel::info3, "Event: terminating");
+    	shouldClose = true;
+    	finalize();
+        return 0;
+    case SDL_APP_LOWMEMORY:
+    	vts::log(vts::LogLevel::info3, "Event: low memory");
+        return 0;
+    case SDL_APP_WILLENTERBACKGROUND:
+    	vts::log(vts::LogLevel::info3, "Event: will enter background");
+        return 0;
+    case SDL_APP_DIDENTERBACKGROUND:
+    	vts::log(vts::LogLevel::info3, "Event: did enter background");
+        return 0;
+    case SDL_APP_WILLENTERFOREGROUND:
+    	vts::log(vts::LogLevel::info3, "Event: will enter foreground");
+        return 0;
+    case SDL_APP_DIDENTERFOREGROUND:
+    	vts::log(vts::LogLevel::info3, "Event: did enter foreground");
+        return 0;
+    default:
+        return 1;
+    }
+}
+
+int main(int argc, char *args[])
+{
+    vts::setLogThreadName("main");
+    //vts::setLogMask("I2W2E2");
+    
+	initialize();
+    map->setMapConfigPath("https://cdn.melown.com/mario/store/melown2015/map-config/melown/Intergeo-Melown-Earth/mapConfig.json");
+    
     while (!shouldClose)
     {
 		{
@@ -139,62 +216,27 @@ int main(int argc, char *args[])
 			while (SDL_PollEvent(&event))
 			{
 				switch (event.type)
-				{
-                case SDL_APP_DIDENTERFOREGROUND:
-                    SDL_Log("SDL_APP_DIDENTERFOREGROUND");
-                    break;
-                    
-                case SDL_APP_DIDENTERBACKGROUND:
-                    SDL_Log("SDL_APP_DIDENTERBACKGROUND");
-                    break;
-                    
-                case SDL_APP_LOWMEMORY:
-                    SDL_Log("SDL_APP_LOWMEMORY");
-                    break;
-                    
+				{                    
                 case SDL_APP_TERMINATING:
                 case SDL_QUIT:
-                    SDL_Log("SDL_APP_TERMINATING");
 				    shouldClose = true;
                     break;
-                    
-                case SDL_APP_WILLENTERBACKGROUND:
-                    SDL_Log("SDL_APP_WILLENTERBACKGROUND");
-                    break;
-                    
-                case SDL_APP_WILLENTERFOREGROUND:
-                    SDL_Log("SDL_APP_WILLENTERFOREGROUND");
-					break;
 				}
 			}
 		}
 
-        SDL_GL_GetDrawableSize(window, &ro.width, &ro.height);
-        map->setWindowSize(ro.width, ro.height);
+		updateResolution();
         
         map->dataTick();
         map->renderTickPrepare();
         map->renderTickRender();
         
-		vts::renderer::render(ro, map->draws(), map->celestialBody());
+		vts::renderer::render(renderOptions, map->draws(), map->celestialBody());
 
         SDL_GL_SwapWindow(window);
     }
     
-    // finalization
-    
-    if (map)
-    {
-    	map->dataFinalize();
-        map->renderFinalize();
-    }
-
-    vts::renderer::finalize();
-    map.reset();
-
-    SDL_GL_DeleteContext(renderContext);
-    SDL_DestroyWindow(window);
-    
+    finalize();
     return 0;
 }
 

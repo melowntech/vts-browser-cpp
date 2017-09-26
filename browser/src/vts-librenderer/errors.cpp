@@ -73,7 +73,7 @@ void checkGlFramebuffer()
     case GL_FRAMEBUFFER_UNSUPPORTED:
         throw std::runtime_error("GL_FRAMEBUFFER_UNSUPPORTED");
     default:
-        throw std::runtime_error("unknown error with opengl framebuffer");
+        throw std::runtime_error("Unknown error with opengl framebuffer");
     }
 }
 
@@ -175,7 +175,7 @@ void APIENTRY openglErrorCallback(GLenum source,
 
 void loadGlFunctions(GLADloadproc functionLoader)
 {
-    vts::log(vts::LogLevel::info2, "loading opengl function pointers");
+    vts::log(vts::LogLevel::info2, "Loading opengl function pointers");
 
     gladLoadGLLoader(functionLoader);
     checkGl("loadGlFunctions");
@@ -193,7 +193,7 @@ void loadGlFunctions(GLADloadproc functionLoader)
     checkGl("load gl extensions and attributes");
 #endif
 
-    vts::log(vts::LogLevel::info1, "loaded opengl function pointers");
+    vts::log(vts::LogLevel::info1, "Loaded opengl function pointers");
 }
 
 } } // namespace

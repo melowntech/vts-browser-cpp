@@ -75,7 +75,7 @@ public:
 
 void initialize()
 {
-    vts::log(vts::LogLevel::info3, "initializing vts renderer library");
+    vts::log(vts::LogLevel::info3, "Initializing vts renderer library");
 
     // load shader surface
     {
@@ -172,12 +172,12 @@ void initialize()
         meshQuad->load(info, spec);
     }
 
-    vts::log(vts::LogLevel::info1, "initialized vts renderer library");
+    vts::log(vts::LogLevel::info1, "Initialized vts renderer library");
 }
 
 void finalize()
 {
-    vts::log(vts::LogLevel::info3, "finalizing vts renderer library");
+    vts::log(vts::LogLevel::info3, "Finalizing vts renderer library");
 
     shaderSurface.reset();
     shaderInfographic.reset();
@@ -216,7 +216,7 @@ void finalize()
 
     widthPrev = heightPrev = antialiasingPrev = 0;
 
-    vts::log(vts::LogLevel::info1, "finalized vts renderer library");
+    vts::log(vts::LogLevel::info1, "Finalized vts renderer library");
 }
 
 RenderOptions::RenderOptions() : width(0), height(0),

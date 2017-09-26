@@ -41,6 +41,7 @@ int main(int argc, char *args[])
 	// initialization
 
     vts::setLogThreadName("main");
+    //vts::setLogMask("I2W2E2");
 
     vts::log(vts::LogLevel::info3, "initializing SDL library");
     if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
@@ -105,6 +106,11 @@ int main(int argc, char *args[])
 		map = std::make_shared<vts::Map>(createOptions);
     }
     
+    map->callbacks().loadTexture = std::bind(&vts::renderer::loadTexture,
+                std::placeholders::_1, std::placeholders::_2);
+    map->callbacks().loadMesh = std::bind(&vts::renderer::loadMesh,
+                std::placeholders::_1, std::placeholders::_2);
+
 	vts::renderer::RenderOptions ro;
 	{
 		// get default framebuffer object
@@ -166,6 +172,7 @@ int main(int argc, char *args[])
         SDL_GL_GetDrawableSize(window, &ro.width, &ro.height);
         map->setWindowSize(ro.width, ro.height);
         
+        map->dataTick();
         map->renderTickPrepare();
         map->renderTickRender();
         

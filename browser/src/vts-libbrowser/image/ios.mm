@@ -63,12 +63,11 @@ void decodeImg(const Buffer &in, Buffer &out,
 			LOGTHROW(err1, std::runtime_error) << "invalid image components count <" << components << ">";
 		NSData *data = (id)CGDataProviderCopyData(CGImageGetDataProvider(image));
 		[data autorelease];
-		const void *bytes = [data bytes];
 		size_t size = [data length];
 		if (size != components * width * height)
 			LOGTHROW(err1, std::runtime_error) << "invalid image data size";
 		out.allocate(size);
-		memcpy(out.data(), bytes, out.size());
+		memcpy(out.data(), [data bytes], out.size());
 	}
 	catch(...)
 	{

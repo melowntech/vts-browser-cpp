@@ -26,6 +26,8 @@
 
 #include "../include/vts-browser/fetcher.hpp"
 
+#import <Foundation/Foundation.h>
+
 namespace vts
 {
 
@@ -37,26 +39,42 @@ class FetcherImpl : public Fetcher
 public:
 	
 	virtual void initialize()
-	{
-	
-	}
+	{}
 	
     virtual void finalize()
+    {}
+    
+    NSURLSession *session;
+    
+    virtual void fetch(const std::shared_ptr<FetchTask> &task_)
     {
-    
-    }
-    
-    virtual void fetch(const std::shared_ptr<FetchTask> &task)
-    {
-    
+    	std::shared_ptr<FetchTask> task = task_;
+    	NSString *urlString = [NSString stringWithCString:task->query.url.c_str() encoding:NSUTF8StringEncoding];
+	    NSURL *url = [NSURL URLWithString:urlString];
+    	[[session dataTaskWithURL:url completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+			if (error)
+				task->reply.code = error.code;
+			else
+			{
+				task->reply.code = 200;
+				task->reply.expires = -1;
+				task->reply.content.allocate([data length]);
+				memcpy(task->reply.content.data(), [data bytes], [data length]);
+			}
+			task->fetchDone();
+		}] resume];
     }
 
 	FetcherImpl(const FetcherOptions &options)
 	{
-
-	
+		NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
+		session = [NSURLSession sessionWithConfiguration:config];
 	}
 
+	~FetcherImpl()
+	{
+		[session invalidateAndCancel];
+	}
 };
 
 }

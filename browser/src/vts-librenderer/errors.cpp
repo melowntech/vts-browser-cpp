@@ -37,7 +37,7 @@ void checkGl(const char *name)
 {
     GLint err = glGetError();
     if (err != GL_NO_ERROR)
-        log(LogLevel::warn4, std::string("OpenGL error in ") + name);
+        log(LogLevel::warn3, std::string("OpenGL error in <") + name + ">");
     switch (err)
     {
     case GL_NO_ERROR:
@@ -162,7 +162,7 @@ void APIENTRY openglErrorCallback(GLenum source,
         std::stringstream s;
         s << "OpenGL: " << id << ", " << src << ", " << tp
           << ", " << sevr << ", " << message;
-        log(throwing ? LogLevel::err4 : LogLevel::warn4,
+        log(throwing ? LogLevel::err3 : LogLevel::warn3,
                  s.str());
     }
 
@@ -175,22 +175,25 @@ void APIENTRY openglErrorCallback(GLenum source,
 
 void loadGlFunctions(GLADloadproc functionLoader)
 {
-    gladLoadGLLoader(functionLoader);
+    vts::log(vts::LogLevel::info2, "loading opengl function pointers");
 
+    gladLoadGLLoader(functionLoader);
+    checkGl("loadGlFunctions");
+
+#ifndef VTSR_OPENGLES
     if (GLAD_GL_KHR_debug)
         glDebugMessageCallback(&openglErrorCallback, nullptr);
 
     if (GLAD_GL_EXT_texture_filter_anisotropic)
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropySamples);
-    else
-        maxAnisotropySamples = 0.f;
 
     if (GLAD_GL_EXT_texture_filter_anisotropic)
         glGetIntegerv(GL_MAX_SAMPLES, &maxAntialiasingSamples);
-    else
-        maxAntialiasingSamples = 1;
 
-    checkGl("loadGlFunctions");
+    checkGl("load gl extensions and attributes");
+#endif
+
+    vts::log(vts::LogLevel::info1, "loaded opengl function pointers");
 }
 
 } } // namespace

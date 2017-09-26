@@ -1,11 +1,10 @@
-#version 330
 
 uniform sampler2D texColor;
 uniform sampler2D texMask;
 
 uniform vec4 uniColor;
 uniform vec4 uniUvClip;
-uniform vec4 uniFlags; // mask, monochromatic, flat shading, uv source
+uniform ivec4 uniFlags; // mask, monochromatic, flat shading, uv source
 
 in vec2 varUvInternal;
 in vec2 varUvExternal;
@@ -31,7 +30,7 @@ void main()
     {
         vec3 n = normalize(cross(dFdx(derivativePosition),
                                  dFdy(derivativePosition)));
-        outColor = uniColor * vec4(vec3(max(n.z * 0.8, 0) + 0.125), 1.0);
+        outColor = uniColor * vec4(vec3(max(n.z * 0.8, 0.0) + 0.125), 1.0);
     }
     else
     {

@@ -26,4 +26,7 @@ buildsys_soversion(vts-renderer ${vts-browser_SO_VERSION})
 buildsys_target_compile_definitions(vts-renderer ${MODULE_DEFINITIONS})
 buildsys_position_independent(${MODULE_LIBRARIES})
 
+if(IOS)
+  target_compile_definitions(vts-renderer PRIVATE VTSR_OPENGLES)
+endif()
 

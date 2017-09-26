@@ -1,4 +1,3 @@
-#version 330
 
 uniform sampler2D texDepth;
 uniform sampler2D texColor;

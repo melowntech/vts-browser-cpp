@@ -33,6 +33,14 @@ namespace vts { namespace renderer
 
 using namespace priv;
 
+#ifdef VTSR_OPENGLES
+std::string Shader::preamble = "#version 300 es\n"
+        "precision highp float;\n"
+        "precision highp int;\n";
+#else
+std::string Shader::preamble = "#version 330\n";
+#endif
+
 Shader::Shader() : id(0)
 {
     uniformLocations.reserve(20);
@@ -74,7 +82,7 @@ int loadShader(const std::string &source, int stage)
         {
             char *buf = (char*)malloc(len + 1);
             glGetShaderInfoLog(s, len, &len, buf);
-            fprintf(stderr, "shader compilation log:\n%s\n\n", buf);
+            vts::log(vts::LogLevel::err4, std::string("shader compilation log:\n") + buf + "\n\n");
         }
 
         glGetShaderiv(s, GL_COMPILE_STATUS, &len);
@@ -84,6 +92,7 @@ int loadShader(const std::string &source, int stage)
     catch (...)
     {
         glDeleteShader(s);
+        vts::log(vts::LogLevel::err4, std::string("shader source: \n") + source);
         throw;
     }
     checkGl("load shader source");
@@ -99,8 +108,8 @@ void Shader::load(const std::string &vertexShader,
     id = glCreateProgram();
     try
     {
-        GLuint v = loadShader(vertexShader, GL_VERTEX_SHADER);
-        GLuint f = loadShader(fragmentShader, GL_FRAGMENT_SHADER);
+        GLuint v = loadShader(preamble + vertexShader, GL_VERTEX_SHADER);
+        GLuint f = loadShader(preamble + fragmentShader, GL_FRAGMENT_SHADER);
         glAttachShader(id, v);
         glAttachShader(id, f);
         glLinkProgram(id);
@@ -148,6 +157,16 @@ void Shader::uniformVec4(uint32 location, const float *value)
 void Shader::uniformVec3(uint32 location, const float *value)
 {
     glUniform3fv(uniformLocations[location], 1, value);
+}
+    
+void Shader::uniformVec4(uint32 location, const int *value)
+{
+    glUniform4iv(uniformLocations[location], 1, value);
+}
+
+void Shader::uniformVec3(uint32 location, const int *value)
+{
+    glUniform3iv(uniformLocations[location], 1, value);
 }
 
 void Shader::uniform(uint32 location, const float value)
@@ -367,4 +386,5 @@ GLuint Mesh::getVio() const
     return vio;
 }
 
-} } // namespace
+} } // namespace vts renderer
+

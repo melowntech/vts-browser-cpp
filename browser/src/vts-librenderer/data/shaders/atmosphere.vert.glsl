@@ -1,4 +1,3 @@
-#version 330
 
 uniform vec3 uniCameraDirections[4];
 uniform int uniProjected;

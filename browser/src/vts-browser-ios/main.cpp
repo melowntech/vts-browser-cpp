@@ -25,6 +25,7 @@
  */
 
 #include <sstream>
+#include <cassert>
 #include <vts-browser/map.hpp>
 #include <vts-browser/draws.hpp>
 #include <vts-browser/options.hpp>
@@ -33,6 +34,7 @@
 #include <vts-renderer/classes.hpp>
 #include <vts-renderer/renderer.hpp>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_syswm.h>
 
 int main(int argc, char *args[])
 {
@@ -40,6 +42,7 @@ int main(int argc, char *args[])
 
     vts::setLogThreadName("main");
 
+    vts::log(vts::LogLevel::info3, "initializing SDL library");
     if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
     {
         vts::log(vts::LogLevel::err4, SDL_GetError());
@@ -64,6 +67,7 @@ int main(int argc, char *args[])
     SDL_DisplayMode displayMode;
 	SDL_GetDesktopDisplayMode(0, &displayMode);
 
+    vts::log(vts::LogLevel::info3, "creating window");
     auto window = SDL_CreateWindow("vts-browser-ios",
               0, 0, displayMode.w, displayMode.h,
               SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN
@@ -74,12 +78,13 @@ int main(int argc, char *args[])
         vts::log(vts::LogLevel::err4, SDL_GetError());
         throw std::runtime_error("Failed to create window");
     }
-    
+
+    vts::log(vts::LogLevel::info3, "creating opengl context");
     auto renderContext = SDL_GL_CreateContext(window);
     
     SDL_GL_MakeCurrent(window, renderContext);
     SDL_GL_SetSwapInterval(1);
-    
+
     vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
     
     {
@@ -101,6 +106,15 @@ int main(int argc, char *args[])
     }
     
 	vts::renderer::RenderOptions ro;
+	{
+		// get default framebuffer object
+		SDL_SysWMinfo info;
+		SDL_VERSION(&info.version);
+		if (!SDL_GetWindowWMInfo(window,&info))
+        	throw std::runtime_error("SDL_GetWindowWMInfo");
+        assert(info.subsystem == SDL_SYSWM_UIKIT);
+        ro.targetFrameBuffer = info.info.uikit.framebuffer;
+	}
 	SDL_GL_GetDrawableSize(window, &ro.width, &ro.height);
 	map->setWindowSize(ro.width, ro.height);
     

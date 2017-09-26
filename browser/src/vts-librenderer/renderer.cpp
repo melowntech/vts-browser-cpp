@@ -37,21 +37,10 @@ namespace vts { namespace renderer
 namespace priv
 {
 
-int maxAntialiasingSamples;
-float maxAnisotropySamples;
+int maxAntialiasingSamples = 1;
+float maxAnisotropySamples = 0.f;
 
 void initializeRenderData();
-namespace
-{
-    class RenderDataInitializator
-    {
-    public:
-        RenderDataInitializator()
-        {
-            initializeRenderData();
-        }
-    } RenderDataInitializatorInstance;
-} // namespace
 
 } // namespace priv
 
@@ -73,10 +62,21 @@ int widthPrev;
 int heightPrev;
 int antialiasingPrev;
 
-}
+class RenderDataInitializator
+{
+public:
+    RenderDataInitializator()
+    {
+        initializeRenderData();
+    }
+} RenderDataInitializatorInstance;
+
+} // namespace
 
 void initialize()
 {
+    vts::log(vts::LogLevel::info3, "initializing vts renderer library");
+
     // load shader surface
     {
         shaderSurface = std::make_shared<Shader>();
@@ -171,10 +171,14 @@ void initialize()
         vts::ResourceInfo info;
         meshQuad->load(info, spec);
     }
+
+    vts::log(vts::LogLevel::info1, "initialized vts renderer library");
 }
 
 void finalize()
 {
+    vts::log(vts::LogLevel::info3, "finalizing vts renderer library");
+
     shaderSurface.reset();
     shaderInfographic.reset();
     shaderAtmosphere.reset();
@@ -211,6 +215,8 @@ void finalize()
     }
 
     widthPrev = heightPrev = antialiasingPrev = 0;
+
+    vts::log(vts::LogLevel::info1, "finalized vts renderer library");
 }
 
 RenderOptions::RenderOptions() : width(0), height(0),
@@ -272,11 +278,11 @@ public:
         shaderSurface->uniformMat3(2, t.uvm);
         shaderSurface->uniformVec4(3, t.color);
         shaderSurface->uniformVec4(4, t.uvClip);
-        float flags[4] = {
-            t.texMask ? 1.f : -1.f,
-            tex->getGrayscale() ? 1.f : -1.f,
-            t.flatShading ? 1.f : -1.f,
-            t.externalUv ? 1.f : -1.f
+        int flags[4] = {
+            t.texMask ? 1 : -1,
+            tex->getGrayscale() ? 1 : -1,
+            t.flatShading ? 1 : -1,
+            t.externalUv ? 1 : -1
         };
         shaderSurface->uniformVec4(5, flags);
         if (t.flatShading)
@@ -355,7 +361,7 @@ public:
             {
                 glTexImage2D(target, 0, GL_DEPTH_COMPONENT32,
                              options.width, options.height,
-                             0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+                             0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             }
@@ -412,8 +418,8 @@ public:
             glDeleteFramebuffers(1, &frameSampleBufferId);
             glGenFramebuffers(1, &frameSampleBufferId);
             glBindFramebuffer(GL_FRAMEBUFFER, frameSampleBufferId);
-            glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                                 depthSampleTexId, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                                   GL_TEXTURE_2D, depthSampleTexId, 0);
             checkGlFramebuffer();
 
             checkGl("update frame buffer");
@@ -425,10 +431,13 @@ public:
         glBindFramebuffer(GL_FRAMEBUFFER, frameRenderBufferId);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_CULL_FACE);
+        #ifndef VTSR_OPENGLES
         glEnable(GL_POLYGON_OFFSET_LINE);
         glPolygonOffset(0, -1000);
+        #endif
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        checkGl("initialized opengl");
 
         // render opaque
         glDisable(GL_BLEND);
@@ -436,11 +445,13 @@ public:
         glDepthFunc(GL_LEQUAL);
         for (const DrawTask &t : draws.opaque)
             drawSurface(t);
+        checkGl("rendered opaque");
 
         // render transparent
         glEnable(GL_BLEND);
         for (const DrawTask &t : draws.transparent)
             drawSurface(t);
+        checkGl("rendered transparent");
 
         // render polygon edges
         if (options.renderPolygonEdges)
@@ -456,6 +467,7 @@ public:
             }
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             glEnable(GL_BLEND);
+        	checkGl("rendered polygon edges");
         }
 
         // copy the depth (resolve multisampling)
@@ -467,6 +479,7 @@ public:
                               0, 0, options.width, options.height,
                               GL_DEPTH_BUFFER_BIT, GL_NEAREST);
             glBindFramebuffer(GL_FRAMEBUFFER, frameRenderBufferId);
+        	checkGl("copied the depth (resolved multisampling)");
         }
         glDisable(GL_DEPTH_TEST);
 
@@ -551,11 +564,13 @@ public:
             // dispatch
             meshQuad->bind();
             meshQuad->dispatch();
+        	checkGl("rendered atmosphere");
         }
 
         // render infographics
         for (const DrawTask &t : draws.Infographic)
             drawInfographic(t);
+        checkGl("rendered infographics");
 
         // copy the color to screen
         glBindFramebuffer(GL_READ_FRAMEBUFFER, frameRenderBufferId);
@@ -564,6 +579,7 @@ public:
                           options.targetViewportX, options.targetViewportY,
                           options.width, options.height,
                           GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        checkGl("copied the color to screen (resolve multisampling)");
 
         // make it possible to read the depth
         glBindFramebuffer(GL_READ_FRAMEBUFFER, frameSampleBufferId);
@@ -589,4 +605,5 @@ void render(RenderOptions &options,
     r.render();
 }
 
-} } // namespace
+} } // namespace vts renderer
+

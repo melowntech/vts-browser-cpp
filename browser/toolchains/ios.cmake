@@ -1,4 +1,8 @@
 
+message(STATUS "***************************")
+message(STATUS "*** Using ios toolchain ***")
+message(STATUS "***************************")
+
 # Policies
 cmake_policy(SET CMP0054 NEW)
 
@@ -11,7 +15,7 @@ set(IOS TRUE)
 
 # Setup iOS platform unless specified manually with IOS_PLATFORM
 if (NOT DEFINED IOS_PLATFORM)
-  set(IOS_PLATFORM "iphonesimulator")
+  set(IOS_PLATFORM "iphoneos")
 endif()
 
 # Check the platform selection and setup for developer root
@@ -104,18 +108,4 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 macro(set_xcode_property TARGET XCODE_PROPERTY XCODE_VALUE)
 	set_property(TARGET ${TARGET} PROPERTY XCODE_ATTRIBUTE_${XCODE_PROPERTY} ${XCODE_VALUE})
 endmacro(set_xcode_property)
-
-# This macro lets you find executable programs on the host system
-macro(find_host_package)
-	set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-	set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY NEVER)
-	set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
-	set(IOS FALSE)
-	find_package(${ARGN})
-	set(IOS TRUE)
-	set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM ONLY)
-	set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-	set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-endmacro(find_host_package)
-
 

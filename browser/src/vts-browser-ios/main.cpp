@@ -24,6 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
 #include <sstream>
 #include <cassert>
 #include <vts-browser/map.hpp>
@@ -144,8 +145,13 @@ void initialize()
     map->dataInitialize(vts::Fetcher::create(vts::FetcherOptions()));
     map->renderInitialize();
     
-    map->options().traverseMode = vts::TraverseMode::Hierarchical;
-    map->options().maxTexelToPixelScale *= 3;
+    {
+		vts::MapOptions &opt = map->options();
+		//opt.traverseMode = vts::TraverseMode::Hierarchical;
+		opt.maxTexelToPixelScale *= 3;
+		opt.maxResourcesMemory /= 3;
+		opt.tiltLimitAngleHigh = 320;
+    }
 }
 
 void finalize()
@@ -221,6 +227,40 @@ int main(int argc, char *args[])
                 case SDL_QUIT:
 				    shouldClose = true;
                     break;
+                case SDL_MULTIGESTURE:
+                	{
+                		SDL_MultiGestureEvent &e = event.mgesture;
+		            	double values[3] = { 0, 0, 0 };
+		            	switch (e.numFingers)
+		            	{
+				        case 2:
+			        	{
+			        		if (std::abs(e.dTheta) < 0.015)
+				        		map->zoom(e.dDist * 50);
+				        	else
+				        	{
+					    		values[0] = e.dTheta * -300;
+					    		map->rotate(values);
+			        		}
+	            		} break;
+		            	case 3:
+	            		{
+			        		values[1] = e.dTheta * -100;
+			        		map->rotate(values);
+			        	} break;
+		            	}
+                	}
+                	break;
+                case SDL_FINGERMOTION:
+                	{
+                		SDL_TouchFingerEvent &e = event.tfinger;
+						if (SDL_GetNumTouchFingers(e.touchId) == 1)
+						{
+		            		double values[3] = { e.dx * 500, e.dy * 500, 0 };
+		            		map->pan(values);
+                		}
+                	}
+                	break;
 				}
 			}
 		}

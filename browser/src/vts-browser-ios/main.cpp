@@ -122,6 +122,7 @@ void initialize()
 	{
 		vts::MapCreateOptions createOptions;
 		createOptions.clientId = "vts-browser-ios";
+		createOptions.disableCache = true;
 		map = std::make_shared<vts::Map>(createOptions);
     }
     
@@ -235,13 +236,9 @@ int main(int argc, char *args[])
 		            	{
 				        case 2:
 			        	{
-			        		if (std::abs(e.dTheta) < 0.015)
-				        		map->zoom(e.dDist * 50);
-				        	else
-				        	{
-					    		values[0] = e.dTheta * -300;
-					    		map->rotate(values);
-			        		}
+			        		map->zoom(e.dDist * 50);
+				    		values[0] = e.dTheta * -300;
+				    		map->rotate(values);
 	            		} break;
 		            	case 3:
 	            		{
@@ -256,7 +253,8 @@ int main(int argc, char *args[])
                 		SDL_TouchFingerEvent &e = event.tfinger;
 						if (SDL_GetNumTouchFingers(e.touchId) == 1)
 						{
-		            		double values[3] = { e.dx * 500, e.dy * 500, 0 };
+							double ratio = double(renderOptions.height) / double(renderOptions.width);
+		            		double values[3] = { e.dx * 500, e.dy * 500 * ratio, 0 };
 		            		map->pan(values);
                 		}
                 	}

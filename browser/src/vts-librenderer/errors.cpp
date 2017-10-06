@@ -177,7 +177,11 @@ void loadGlFunctions(GLADloadproc functionLoader)
 {
     vts::log(vts::LogLevel::info2, "Loading opengl function pointers");
 
+#ifdef VTSR_OPENGLES
+	gladLoadGLES2Loader(functionLoader);
+#else
     gladLoadGLLoader(functionLoader);
+#endif
     checkGl("loadGlFunctions");
 
 #ifndef VTSR_OPENGLES

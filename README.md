@@ -22,48 +22,14 @@ vts-browser-cpp api documentation is available at the
 Documentation for the whole vts maps technology is at
 [read the docs](https://melown.readthedocs.io).
 
-## Install from Melown Repository
+## Install from Melown Repository (linux desktop)
 
 We provide precompiled packages for some popular linux distributions.
 See [Melown OSS package repository](https://cdn.melown.com/packages/) for more information.
 
 ## Build from Source
 
-Install required packages to build the library.
-
-```bash
-sudo apt-get install \
-	libboost-all-dev \
-	libeigen3-dev \
-	libgdal-dev \
-	libproj-dev \
-	libgeographic-dev \
-	libjsoncpp-dev
-```
-
-Install optional packages required to build the example applications.
-
-```bash
-sudo apt-get install \
-	libglfw3-dev \
-	qt5-default
-```
-
-Clone the git repository with all submodules.
-The library build system is cmake based.
-However, for a convenience, a make shortcuts exist.
-
-```bash
-git clone --recursive https://github.com/Melown/vts-browser-cpp.git
-cd vts-browser-cpp/browser
-make
-```
-
-And run the example application.
-
-```bash
-bin/vts-browser-glfw <mapconfig-url>
-```
+See [BUILDING.md](BUILDING.md) for detailed instructions.
 
 ## Bug Reports
 

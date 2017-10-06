@@ -24,29 +24,42 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FOUNDATION_H_wefwghefi
-#define FOUNDATION_H_wefwghefi
+#import "ConfigViewController.h"
 
-#ifndef VTS_RENDERER_NO_GL_INCLUDE
-#include <glad/glad.h>
-#endif
+@implementation ConfigViewController
 
-#include <vts-browser/foundation.hpp>
-
-#ifdef VTS_RENDERER_BUILD_STATIC
-#define VTSR_API
-#elif VTS_RENDERER_BUILD_SHARED
-#define VTSR_API VTS_API_EXPORT
-#else
-#define VTSR_API VTS_API_IMPORT
-#endif
-
-namespace vts { namespace renderer
+- (void)viewDidLoad
 {
+    [super viewDidLoad];
+    self.navigationItem.leftBarButtonItem.style = UIBarButtonSystemItemSave;
+}
 
-VTSR_API void checkGl(const char *name = "");
-VTSR_API void checkGlFramebuffer();
+- (void)viewDidDisappear:(BOOL)animated
+{
+    if ([_item.name isEqualToString:@""])
+        _item.name = _item.url;
+    if ([_item.url isEqualToString:@""])
+        _item.url = _item.name;
+    [super viewDidDisappear:animated];
+}
 
-} } // namespace vts::renderer
+- (void)setItem:(ConfigItem*)item
+{
+    (void)self.view; // force load
+    _item = item;
+    _name.text = _item.name;
+    _url.text = _item.url;
+    self.title = _item.name;
+}
 
-#endif
+- (IBAction)nameChanged:(UITextField *)sender
+{
+    _item.name = sender.text;
+}
+
+- (IBAction)urlChanged:(UITextField *)sender
+{
+    _item.url = sender.text;
+}
+
+@end

@@ -24,29 +24,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FOUNDATION_H_wefwghefi
-#define FOUNDATION_H_wefwghefi
+#import <UIKit/UIKit.h>
+#import "ConfigItem.h"
 
-#ifndef VTS_RENDERER_NO_GL_INCLUDE
-#include <glad/glad.h>
-#endif
+@interface ConfigViewController : UIViewController
 
-#include <vts-browser/foundation.hpp>
+@property (strong, nonatomic) ConfigItem *item;
 
-#ifdef VTS_RENDERER_BUILD_STATIC
-#define VTSR_API
-#elif VTS_RENDERER_BUILD_SHARED
-#define VTSR_API VTS_API_EXPORT
-#else
-#define VTSR_API VTS_API_IMPORT
-#endif
+@property (weak, nonatomic) IBOutlet UITextField *name;
+@property (weak, nonatomic) IBOutlet UITextField *url;
 
-namespace vts { namespace renderer
-{
-
-VTSR_API void checkGl(const char *name = "");
-VTSR_API void checkGlFramebuffer();
-
-} } // namespace vts::renderer
-
-#endif
+@end

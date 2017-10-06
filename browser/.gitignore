@@ -1,4 +1,3 @@
-/build
 /cache
 /*.user*
 /callgrind.out.*
@@ -9,5 +8,5 @@
 /corrupted
 /bin
 /lib
-/build.*
+/build*
 

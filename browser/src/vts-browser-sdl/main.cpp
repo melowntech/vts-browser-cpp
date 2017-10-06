@@ -45,6 +45,11 @@ bool shouldClose = false;
 
 int handleAppEvents(void *, SDL_Event *event);
 
+void *functionPointerLoader(const char *name)
+{
+    return SDL_GL_GetProcAddress(name);
+}
+
 void updateResolution()
 {
 	if (!map || !window)
@@ -87,7 +92,7 @@ void initialize()
 		vts::log(vts::LogLevel::info3, "Creating window");
 		SDL_DisplayMode displayMode;
 		SDL_GetDesktopDisplayMode(0, &displayMode);
-		window = SDL_CreateWindow("vts-browser-ios",
+		window = SDL_CreateWindow("vts-browser-sdl",
 		          0, 0, displayMode.w, displayMode.h,
 		          SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN
 		          | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN
@@ -106,7 +111,7 @@ void initialize()
     SDL_GL_MakeCurrent(window, renderContext);
     SDL_GL_SetSwapInterval(1);
 
-    vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
+    vts::renderer::loadGlFunctions(&functionPointerLoader);
     
     {
         int major = 0, minor = 0;
@@ -211,10 +216,10 @@ int handleAppEvents(void *, SDL_Event *event)
 int main(int argc, char *args[])
 {
     vts::setLogThreadName("main");
-    //vts::setLogMask("I2W2E2");
+    vts::setLogMask("I2W2E2");
     
 	initialize();
-    map->setMapConfigPath("https://cdn.melown.com/mario/store/melown2015/map-config/melown/Intergeo-Melown-Earth/mapConfig.json");
+    map->setMapConfigPath("https://cdn.melown.com/mario/store/melown2015/map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
     
     while (!shouldClose)
     {

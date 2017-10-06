@@ -24,29 +24,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FOUNDATION_H_wefwghefi
-#define FOUNDATION_H_wefwghefi
+#import <UIKit/UIKit.h>
+#import "AppDelegate.h"
 
-#ifndef VTS_RENDERER_NO_GL_INCLUDE
-#include <glad/glad.h>
-#endif
-
-#include <vts-browser/foundation.hpp>
-
-#ifdef VTS_RENDERER_BUILD_STATIC
-#define VTSR_API
-#elif VTS_RENDERER_BUILD_SHARED
-#define VTSR_API VTS_API_EXPORT
-#else
-#define VTSR_API VTS_API_IMPORT
-#endif
-
-namespace vts { namespace renderer
-{
-
-VTSR_API void checkGl(const char *name = "");
-VTSR_API void checkGlFramebuffer();
-
-} } // namespace vts::renderer
-
-#endif
+int main(int argc, char * argv[]) {
+    @autoreleasepool {
+        return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
+    }
+}

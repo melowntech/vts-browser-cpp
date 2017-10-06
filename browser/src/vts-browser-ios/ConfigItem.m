@@ -24,29 +24,47 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FOUNDATION_H_wefwghefi
-#define FOUNDATION_H_wefwghefi
+#import "ConfigItem.h"
 
-#ifndef VTS_RENDERER_NO_GL_INCLUDE
-#include <glad/glad.h>
-#endif
+@implementation ConfigItem
 
-#include <vts-browser/foundation.hpp>
-
-#ifdef VTS_RENDERER_BUILD_STATIC
-#define VTSR_API
-#elif VTS_RENDERER_BUILD_SHARED
-#define VTSR_API VTS_API_EXPORT
-#else
-#define VTSR_API VTS_API_IMPORT
-#endif
-
-namespace vts { namespace renderer
+- (ConfigItem*)init
 {
+    self = [super init];
+    if (self)
+    {
+        _name = [[NSString alloc] init];
+        _url = [[NSString alloc] init];
+    }
+    return self;
+}
 
-VTSR_API void checkGl(const char *name = "");
-VTSR_API void checkGlFramebuffer();
+- (ConfigItem*)initWithName:(NSString*)name url:(NSString*)url
+{
+    self = [super init];
+    if (self)
+    {
+        _name = name;
+        _url = url;
+    }
+    return self;
+}
 
-} } // namespace vts::renderer
+- (ConfigItem*)initWithCoder:(NSCoder*)coder
+{
+    self = [super init];
+    if (self)
+    {
+        _name = [coder decodeObjectForKey:@"name"];
+        _url = [coder decodeObjectForKey:@"url"];
+    }
+    return self;
+}
 
-#endif
+- (void)encodeWithCoder:(NSCoder*)coder
+{
+    [coder encodeObject:_name forKey:@"name"];
+    [coder encodeObject:_url forKey:@"url"];
+}
+
+@end

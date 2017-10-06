@@ -179,7 +179,7 @@ void Shader::uniform(uint32 location, const int value)
     glUniform1i(uniformLocations[location], value);
 }
 
-GLuint Shader::getId() const
+uint32 Shader::getId() const
 {
     return id;
 }
@@ -266,7 +266,7 @@ void Texture::load(ResourceInfo &info, const GpuTextureSpec &spec)
     info.gpuMemoryCost += spec.buffer.size();
 }
 
-GLuint Texture::getId() const
+uint32 Texture::getId() const
 {
     return id;
 }
@@ -365,7 +365,7 @@ void Mesh::load(ResourceInfo &info, const GpuMeshSpec &specp)
     spec.indices.free();
 }
 
-void Mesh::load(GLuint vao, GLuint vbo, GLuint vio)
+void Mesh::load(uint32 vao, uint32 vbo, uint32 vio)
 {
     clear();
     this->vao = vao;
@@ -373,17 +373,17 @@ void Mesh::load(GLuint vao, GLuint vbo, GLuint vio)
     this->vio = vio;
 }
 
-GLuint Mesh::getVao() const
+uint32 Mesh::getVao() const
 {
     return vao;
 }
 
-GLuint Mesh::getVbo() const
+uint32 Mesh::getVbo() const
 {
     return vbo;
 }
 
-GLuint Mesh::getVio() const
+uint32 Mesh::getVio() const
 {
     return vio;
 }

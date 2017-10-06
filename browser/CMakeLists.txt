@@ -71,6 +71,7 @@ if(IOS)
   # ios application
   message(STATUS "including vts-browser-ios")
   add_subdirectory(src/vts-browser-ios)
+  add_subdirectory(src/vts-browser-sdl)
 else()
   # desktop application
   message(STATUS "including vts-browser-desktop")

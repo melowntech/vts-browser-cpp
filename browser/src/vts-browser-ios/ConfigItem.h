@@ -24,29 +24,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FOUNDATION_H_wefwghefi
-#define FOUNDATION_H_wefwghefi
+#import <Foundation/Foundation.h>
 
-#ifndef VTS_RENDERER_NO_GL_INCLUDE
-#include <glad/glad.h>
-#endif
+@interface ConfigItem : NSObject
 
-#include <vts-browser/foundation.hpp>
+@property (strong, nonatomic) NSString *name;
+@property (strong, nonatomic) NSString *url;
 
-#ifdef VTS_RENDERER_BUILD_STATIC
-#define VTSR_API
-#elif VTS_RENDERER_BUILD_SHARED
-#define VTSR_API VTS_API_EXPORT
-#else
-#define VTSR_API VTS_API_IMPORT
-#endif
+- (ConfigItem*)init;
+- (ConfigItem*)initWithName:(NSString*)name url:(NSString*)url;
 
-namespace vts { namespace renderer
-{
-
-VTSR_API void checkGl(const char *name = "");
-VTSR_API void checkGlFramebuffer();
-
-} } // namespace vts::renderer
-
-#endif
+@end

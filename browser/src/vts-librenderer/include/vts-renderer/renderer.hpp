@@ -33,6 +33,10 @@
 
 #include "foundation.hpp"
 
+#ifdef VTS_RENDERER_NO_GL_INCLUDE
+typedef void* (* GLADloadproc)(const char *name);
+#endif
+
 namespace vts { namespace renderer
 {
 

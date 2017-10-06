@@ -57,14 +57,14 @@ public:
     void uniformVec3(uint32 location, const int *value);
     void uniform(uint32 location, float value);
     void uniform(uint32 location, int value);
-    GLuint getId() const;
+    uint32 getId() const;
 
     std::vector<uint32> uniformLocations;
     
     static std::string preamble;
 
 private:
-    GLuint id;
+    uint32 id;
 };
 
 class VTSR_API Texture
@@ -75,11 +75,11 @@ public:
     void clear();
     void bind();
     void load(ResourceInfo &info, const GpuTextureSpec &spec);
-    GLuint getId() const;
+    uint32 getId() const;
     bool getGrayscale() const;
 
 private:
-    GLuint id;
+    uint32 id;
     bool grayscale;
 };
 
@@ -92,14 +92,14 @@ public:
     void bind();
     void dispatch();
     void load(ResourceInfo &info, const GpuMeshSpec &spec);
-    void load(GLuint vao, GLuint vbo, GLuint vio);
-    GLuint getVao() const;
-    GLuint getVbo() const;
-    GLuint getVio() const;
+    void load(uint32 vao, uint32 vbo, uint32 vio);
+    uint32 getVao() const;
+    uint32 getVbo() const;
+    uint32 getVio() const;
 
 private:
     GpuMeshSpec spec;
-    GLuint vao, vbo, vio;
+    uint32 vao, vbo, vio;
 };
 
 } } // namespace renderer

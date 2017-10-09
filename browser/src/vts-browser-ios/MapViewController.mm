@@ -37,7 +37,7 @@
 #include <vts-renderer/renderer.hpp>
 
 #import "MapViewController.h"
-
+#import <SpriteKit/SpriteKit.h>
 #import <dlfcn.h>
 
 static void *iosGlGetProcAddress(const char *name)
@@ -50,6 +50,12 @@ static void *iosGlGetProcAddress(const char *name)
 	std::shared_ptr<vts::Map> map;
 	vts::renderer::RenderOptions renderOptions;
 }
+
+@property (weak, nonatomic) IBOutlet SKView *gestureViewCenter;
+@property (weak, nonatomic) IBOutlet SKView *gestureViewBottom;
+@property (weak, nonatomic) IBOutlet SKView *gestureViewLeft;
+@property (weak, nonatomic) IBOutlet SKView *gestureViewRight;
+
 @end
 
 @implementation MapViewController

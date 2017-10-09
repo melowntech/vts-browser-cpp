@@ -67,9 +67,51 @@
         <scene sceneID="l2n-IU-62h">
             <objects>
                 <glkViewController title="Map" preferredFramesPerSecond="30" id="1Sk-xd-pa8" customClass="MapViewController" sceneMemberID="viewController">
-                    <glkView key="view" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" drawableColorFormat="RGB565" enableSetNeedsDisplay="NO" id="Ywz-5S-keG">
+                    <glkView key="view" opaque="NO" clipsSubviews="YES" clearsContextBeforeDrawing="NO" multipleTouchEnabled="YES" contentMode="center" drawableColorFormat="RGB565" enableSetNeedsDisplay="NO" id="Ywz-5S-keG" userLabel="rendering">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="480"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ySS-hs-uu9" userLabel="bottom">
+                                <rect key="frame" x="0.0" y="460" width="320" height="20"/>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="20" id="ggg-LE-LVH"/>
+                                </constraints>
+                            </view>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="3ym-2h-IiQ" userLabel="center">
+                                <rect key="frame" x="20" y="64" width="280" height="396"/>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
+                            </view>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="G04-P9-84c" userLabel="left">
+                                <rect key="frame" x="0.0" y="64" width="20" height="396"/>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="20" id="atW-yl-JPZ"/>
+                                </constraints>
+                            </view>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="qKz-eK-7re" userLabel="right">
+                                <rect key="frame" x="300" y="64" width="20" height="396"/>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="20" id="0ho-Vo-d7i"/>
+                                </constraints>
+                            </view>
+                        </subviews>
+                        <constraints>
+                            <constraint firstItem="ySS-hs-uu9" firstAttribute="top" secondItem="G04-P9-84c" secondAttribute="bottom" id="4Py-vM-YmH"/>
+                            <constraint firstItem="3ym-2h-IiQ" firstAttribute="top" secondItem="c8X-gU-GYv" secondAttribute="top" id="5Dv-LI-S89"/>
+                            <constraint firstItem="c8X-gU-GYv" firstAttribute="trailing" secondItem="qKz-eK-7re" secondAttribute="trailing" id="5IC-fo-fvO"/>
+                            <constraint firstItem="c8X-gU-GYv" firstAttribute="trailing" secondItem="ySS-hs-uu9" secondAttribute="trailing" id="AZF-qT-9jB"/>
+                            <constraint firstItem="G04-P9-84c" firstAttribute="leading" secondItem="c8X-gU-GYv" secondAttribute="leading" id="DRe-ND-4JA"/>
+                            <constraint firstItem="ySS-hs-uu9" firstAttribute="top" secondItem="3ym-2h-IiQ" secondAttribute="bottom" id="Hic-e7-NLs"/>
+                            <constraint firstItem="c8X-gU-GYv" firstAttribute="bottom" secondItem="ySS-hs-uu9" secondAttribute="bottom" id="Ldg-yo-0Ke"/>
+                            <constraint firstItem="qKz-eK-7re" firstAttribute="leading" secondItem="3ym-2h-IiQ" secondAttribute="trailing" id="M3y-v4-HLV"/>
+                            <constraint firstItem="ySS-hs-uu9" firstAttribute="leading" secondItem="c8X-gU-GYv" secondAttribute="leading" id="Wfx-z4-bJz"/>
+                            <constraint firstItem="G04-P9-84c" firstAttribute="top" secondItem="c8X-gU-GYv" secondAttribute="top" id="jeD-cV-UAj"/>
+                            <constraint firstItem="3ym-2h-IiQ" firstAttribute="leading" secondItem="G04-P9-84c" secondAttribute="trailing" id="mD4-97-2cD"/>
+                            <constraint firstItem="ySS-hs-uu9" firstAttribute="top" secondItem="qKz-eK-7re" secondAttribute="bottom" id="og9-n2-kCn"/>
+                            <constraint firstItem="qKz-eK-7re" firstAttribute="top" secondItem="c8X-gU-GYv" secondAttribute="top" id="tm1-xv-Sg7"/>
+                        </constraints>
                         <viewLayoutGuide key="safeArea" id="c8X-gU-GYv"/>
                         <connections>
                             <outlet property="delegate" destination="1Sk-xd-pa8" id="sTt-vv-OQa"/>
@@ -78,7 +120,7 @@
                 </glkViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="zAo-Gd-uH0" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1198" y="546"/>
+            <point key="canvasLocation" x="1196.25" y="545"/>
         </scene>
         <!--Config-->
         <scene sceneID="ycG-OP-pvF">
@@ -89,10 +131,10 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacingType="standard" translatesAutoresizingMaskIntoConstraints="NO" id="AVa-X1-orh">
-                                <rect key="frame" x="0.0" y="74" width="320" height="68"/>
+                                <rect key="frame" x="0.0" y="64" width="320" height="84"/>
                                 <subviews>
                                     <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="name" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="Ge1-4k-w0c">
-                                        <rect key="frame" x="0.0" y="0.0" width="320" height="30"/>
+                                        <rect key="frame" x="8" y="8" width="304" height="30"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="30" id="TIz-zH-f4p"/>
                                         </constraints>
@@ -104,7 +146,7 @@
                                         </connections>
                                     </textField>
                                     <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="map config url" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="dR3-en-wTR">
-                                        <rect key="frame" x="0.0" y="38" width="320" height="30"/>
+                                        <rect key="frame" x="8" y="46" width="304" height="30"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="30" id="qUe-Up-B7k"/>
                                         </constraints>
@@ -124,13 +166,14 @@
                                     <constraint firstItem="Ge1-4k-w0c" firstAttribute="leading" secondItem="AVa-X1-orh" secondAttribute="leadingMargin" id="oiC-vS-igU"/>
                                     <constraint firstItem="Ge1-4k-w0c" firstAttribute="top" secondItem="AVa-X1-orh" secondAttribute="topMargin" id="uZ6-dH-oLI"/>
                                 </constraints>
+                                <edgeInsets key="layoutMargins" top="8" left="8" bottom="8" right="8"/>
                             </stackView>
                         </subviews>
                         <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
                             <constraint firstItem="9cX-Zb-vU0" firstAttribute="trailing" secondItem="AVa-X1-orh" secondAttribute="trailing" id="9IS-TN-Xtv"/>
                             <constraint firstItem="AVa-X1-orh" firstAttribute="leading" secondItem="9cX-Zb-vU0" secondAttribute="leading" id="EAz-6i-xWh"/>
-                            <constraint firstItem="AVa-X1-orh" firstAttribute="top" secondItem="9cX-Zb-vU0" secondAttribute="top" constant="10" id="EZy-yS-2Fi"/>
+                            <constraint firstItem="AVa-X1-orh" firstAttribute="top" secondItem="9cX-Zb-vU0" secondAttribute="top" id="EZy-yS-2Fi"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="9cX-Zb-vU0"/>
                     </view>

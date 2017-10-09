@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="13189.4" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="cH3-TI-blm">
-    <device id="retina3_5" orientation="portrait">
+    <device id="retina4_7" orientation="portrait">
         <adaptation id="fullscreen"/>
     </device>
     <dependencies>
@@ -18,7 +18,7 @@
                 <navigationController title="Navigation" automaticallyAdjustsScrollViewInsets="NO" id="cH3-TI-blm" sceneMemberID="viewController">
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="GAM-PZ-faB">
-                        <rect key="frame" x="0.0" y="20" width="320" height="44"/>
+                        <rect key="frame" x="0.0" y="20" width="375" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>
                     <nil name="viewControllers"/>
@@ -35,15 +35,15 @@
             <objects>
                 <tableViewController title="Configurations" id="GLd-nL-Ucq" customClass="UrlsViewController" sceneMemberID="viewController">
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" id="Me8-DU-swV">
-                        <rect key="frame" x="0.0" y="0.0" width="320" height="480"/>
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <prototypes>
                             <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="default" accessoryType="detailButton" indentationWidth="10" reuseIdentifier="urlCell" id="ptP-PZ-2wI">
-                                <rect key="frame" x="0.0" y="28" width="320" height="44"/>
+                                <rect key="frame" x="0.0" y="28" width="375" height="44"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="ptP-PZ-2wI" id="Aod-It-Tvw">
-                                    <rect key="frame" x="0.0" y="0.0" width="273" height="43.5"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="328" height="43.5"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </tableViewCellContentView>
                                 <connections>
@@ -68,32 +68,32 @@
             <objects>
                 <glkViewController title="Map" preferredFramesPerSecond="30" id="1Sk-xd-pa8" customClass="MapViewController" sceneMemberID="viewController">
                     <glkView key="view" opaque="NO" clipsSubviews="YES" clearsContextBeforeDrawing="NO" multipleTouchEnabled="YES" contentMode="center" drawableColorFormat="RGB565" enableSetNeedsDisplay="NO" id="Ywz-5S-keG" userLabel="rendering">
-                        <rect key="frame" x="0.0" y="0.0" width="320" height="480"/>
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ySS-hs-uu9" userLabel="bottom">
-                                <rect key="frame" x="0.0" y="460" width="320" height="20"/>
+                                <rect key="frame" x="0.0" y="617" width="375" height="50"/>
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="20" id="ggg-LE-LVH"/>
+                                    <constraint firstAttribute="height" constant="50" id="ggg-LE-LVH"/>
                                 </constraints>
                             </view>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="3ym-2h-IiQ" userLabel="center">
-                                <rect key="frame" x="20" y="64" width="280" height="396"/>
+                                <rect key="frame" x="50" y="64" width="275" height="553"/>
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                             </view>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="G04-P9-84c" userLabel="left">
-                                <rect key="frame" x="0.0" y="64" width="20" height="396"/>
+                                <rect key="frame" x="0.0" y="64" width="50" height="553"/>
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                                 <constraints>
-                                    <constraint firstAttribute="width" constant="20" id="atW-yl-JPZ"/>
+                                    <constraint firstAttribute="width" constant="50" id="atW-yl-JPZ"/>
                                 </constraints>
                             </view>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="qKz-eK-7re" userLabel="right">
-                                <rect key="frame" x="300" y="64" width="20" height="396"/>
+                                <rect key="frame" x="325" y="64" width="50" height="553"/>
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                                 <constraints>
-                                    <constraint firstAttribute="width" constant="20" id="0ho-Vo-d7i"/>
+                                    <constraint firstAttribute="width" constant="50" id="0ho-Vo-d7i"/>
                                 </constraints>
                             </view>
                         </subviews>
@@ -117,6 +117,12 @@
                             <outlet property="delegate" destination="1Sk-xd-pa8" id="sTt-vv-OQa"/>
                         </connections>
                     </glkView>
+                    <connections>
+                        <outlet property="gestureViewBottom" destination="ySS-hs-uu9" id="SgY-Ob-5Gz"/>
+                        <outlet property="gestureViewCenter" destination="3ym-2h-IiQ" id="luZ-y1-jq7"/>
+                        <outlet property="gestureViewLeft" destination="G04-P9-84c" id="UDe-yF-xGY"/>
+                        <outlet property="gestureViewRight" destination="qKz-eK-7re" id="Ka5-rB-aQA"/>
+                    </connections>
                 </glkViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="zAo-Gd-uH0" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
@@ -127,14 +133,14 @@
             <objects>
                 <viewController title="Config" id="7OV-uf-3yE" customClass="ConfigViewController" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="tsM-bV-f8L">
-                        <rect key="frame" x="0.0" y="0.0" width="320" height="480"/>
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacingType="standard" translatesAutoresizingMaskIntoConstraints="NO" id="AVa-X1-orh">
-                                <rect key="frame" x="0.0" y="64" width="320" height="84"/>
+                                <rect key="frame" x="0.0" y="64" width="375" height="84"/>
                                 <subviews>
                                     <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="name" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="Ge1-4k-w0c">
-                                        <rect key="frame" x="8" y="8" width="304" height="30"/>
+                                        <rect key="frame" x="8" y="8" width="359" height="30"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="30" id="TIz-zH-f4p"/>
                                         </constraints>
@@ -146,7 +152,7 @@
                                         </connections>
                                     </textField>
                                     <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="map config url" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="dR3-en-wTR">
-                                        <rect key="frame" x="8" y="46" width="304" height="30"/>
+                                        <rect key="frame" x="8" y="46" width="359" height="30"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="30" id="qUe-Up-B7k"/>
                                         </constraints>

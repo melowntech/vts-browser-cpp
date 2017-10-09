@@ -37,12 +37,14 @@
 #include <vts-renderer/renderer.hpp>
 
 #import "MapViewController.h"
-#import <SpriteKit/SpriteKit.h>
 #import <dlfcn.h>
 
-static void *iosGlGetProcAddress(const char *name)
+namespace
 {
-    return dlsym(RTLD_DEFAULT, name);
+	void *iosGlGetProcAddress(const char *name)
+	{
+		return dlsym(RTLD_DEFAULT, name);
+	}
 }
 
 @interface MapViewController ()
@@ -51,14 +53,78 @@ static void *iosGlGetProcAddress(const char *name)
 	vts::renderer::RenderOptions renderOptions;
 }
 
-@property (weak, nonatomic) IBOutlet SKView *gestureViewCenter;
-@property (weak, nonatomic) IBOutlet SKView *gestureViewBottom;
-@property (weak, nonatomic) IBOutlet SKView *gestureViewLeft;
-@property (weak, nonatomic) IBOutlet SKView *gestureViewRight;
+@property (weak, nonatomic) IBOutlet UIView *gestureViewCenter;
+@property (weak, nonatomic) IBOutlet UIView *gestureViewBottom;
+@property (weak, nonatomic) IBOutlet UIView *gestureViewLeft;
+@property (weak, nonatomic) IBOutlet UIView *gestureViewRight;
 
 @end
 
 @implementation MapViewController
+
+- (void)panCenter:(UIPanGestureRecognizer*)recognizer
+{
+    switch (recognizer.state)
+	{
+		case UIGestureRecognizerStateEnded:
+		case UIGestureRecognizerStateChanged:
+		{
+			CGPoint p = [recognizer translationInView:_gestureViewCenter];
+			[recognizer setTranslation:CGPoint() inView:_gestureViewCenter];
+			map->pan({p.x, p.y, 0});
+		} break;
+		default:
+			break;
+	}
+}
+
+- (void)panBottom:(UIPanGestureRecognizer*)recognizer
+{
+    switch (recognizer.state)
+	{
+		case UIGestureRecognizerStateEnded:
+		case UIGestureRecognizerStateChanged:
+		{
+			CGPoint p = [recognizer translationInView:_gestureViewCenter];
+			[recognizer setTranslation:CGPoint() inView:_gestureViewCenter];
+			map->rotate({1000 * p.x / renderOptions.width, 0, 0});
+		} break;
+		default:
+			break;
+	}
+}
+
+- (void)panLeft:(UIPanGestureRecognizer*)recognizer
+{
+    switch (recognizer.state)
+	{
+		case UIGestureRecognizerStateEnded:
+		case UIGestureRecognizerStateChanged:
+		{
+			CGPoint p = [recognizer translationInView:_gestureViewCenter];
+			[recognizer setTranslation:CGPoint() inView:_gestureViewCenter];
+			map->rotate({0, 1000 * p.y / renderOptions.height, 0});
+		} break;
+		default:
+			break;
+	}
+}
+
+- (void)panRight:(UIPanGestureRecognizer*)recognizer
+{
+    switch (recognizer.state)
+	{
+		case UIGestureRecognizerStateEnded:
+		case UIGestureRecognizerStateChanged:
+		{
+			CGPoint p = [recognizer translationInView:_gestureViewCenter];
+			[recognizer setTranslation:CGPoint() inView:_gestureViewCenter];
+			map->zoom(-50 * p.y / renderOptions.height);
+		} break;
+		default:
+			break;
+	}
+}
 
 - (void)configureView
 {
@@ -80,12 +146,16 @@ static void *iosGlGetProcAddress(const char *name)
 {
     [super viewDidLoad];
     
+    // initialize rendering
+    
     GLKView *view = (GLKView *)self.view;
     view.context = [[EAGLContext alloc] initWithAPI: kEAGLRenderingAPIOpenGLES3];
     [EAGLContext setCurrentContext:view.context];
     
     vts::renderer::loadGlFunctions(&iosGlGetProcAddress);
     vts::renderer::initialize();
+    
+    // initialize the vts::Map
     
     {
         vts::MapCreateOptions createOptions;
@@ -105,6 +175,33 @@ static void *iosGlGetProcAddress(const char *name)
         opt.maxTexelToPixelScale *= 3;
         opt.maxResourcesMemory /= 3;
         opt.tiltLimitAngleHigh = 320;
+    }
+    
+    // initialize gesture recognizers
+    
+    {
+	    // center view
+	    assert(_gestureViewCenter);
+		UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panCenter:)];
+        [_gestureViewCenter addGestureRecognizer:r];
+    }
+    {
+	    // bottom view
+	    assert(_gestureViewBottom);
+		UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panBottom:)];
+        [_gestureViewBottom addGestureRecognizer:r];
+    }
+    {
+	    // left view
+	    assert(_gestureViewLeft);
+		UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panLeft:)];
+        [_gestureViewLeft addGestureRecognizer:r];
+    }
+    {
+	    // right view
+	    assert(_gestureViewRight);
+		UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panRight:)];
+        [_gestureViewRight addGestureRecognizer:r];
     }
     
     [self configureView];
@@ -147,3 +244,4 @@ static void *iosGlGetProcAddress(const char *name)
 }
 
 @end
+

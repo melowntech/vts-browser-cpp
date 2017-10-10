@@ -24,19 +24,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define VTS_RENDERER_NO_GL_INCLUDE
-
 #include <sstream>
 #include <cassert>
-#include <vts-browser/log.hpp>
-#include <vts-browser/map.hpp>
-#include <vts-browser/draws.hpp>
-#include <vts-browser/options.hpp>
-#include <vts-browser/fetcher.hpp>
-#include <vts-renderer/classes.hpp>
-#include <vts-renderer/renderer.hpp>
+#include "Map.h"
 
 #import "MapViewController.h"
+#import <SpriteKit/SpriteKit.h>
 #import <dlfcn.h>
 
 namespace
@@ -49,7 +42,6 @@ namespace
 
 @interface MapViewController ()
 {
-	std::shared_ptr<vts::Map> map;
 	vts::renderer::RenderOptions renderOptions;
 }
 
@@ -149,33 +141,12 @@ namespace
     // initialize rendering
     
     GLKView *view = (GLKView *)self.view;
-    view.context = [[EAGLContext alloc] initWithAPI: kEAGLRenderingAPIOpenGLES3];
+    view.context = [[EAGLContext alloc] initWithAPI: kEAGLRenderingAPIOpenGLES3 sharegroup:mapGlSharegroup()];
     [EAGLContext setCurrentContext:view.context];
     
     vts::renderer::loadGlFunctions(&iosGlGetProcAddress);
     vts::renderer::initialize();
-    
-    // initialize the vts::Map
-    
-    {
-        vts::MapCreateOptions createOptions;
-        createOptions.clientId = "vts-browser-ios";
-        createOptions.disableCache = true;
-        map = std::make_shared<vts::Map>(createOptions);
-    }
-    
-    map->callbacks().loadTexture = std::bind(&vts::renderer::loadTexture, std::placeholders::_1, std::placeholders::_2);
-    map->callbacks().loadMesh = std::bind(&vts::renderer::loadMesh, std::placeholders::_1, std::placeholders::_2);
-    
-    map->dataInitialize(vts::Fetcher::create(vts::FetcherOptions()));
     map->renderInitialize();
-    
-    {
-        vts::MapOptions &opt = map->options();
-        opt.maxTexelToPixelScale *= 3;
-        opt.maxResourcesMemory /= 3;
-        opt.tiltLimitAngleHigh = 320;
-    }
     
     // initialize gesture recognizers
     
@@ -209,19 +180,12 @@ namespace
 
 - (void)dealloc
 {
-    if (map)
-    {
-        map->dataFinalize();
-        map->renderFinalize();
-        map.reset();
-    }
-    
+	map->renderFinalize();
     vts::renderer::finalize();
 }
 
 - (void)update
 {
-    map->dataTick();
     map->renderTickPrepare();
     map->renderTickRender();
 }

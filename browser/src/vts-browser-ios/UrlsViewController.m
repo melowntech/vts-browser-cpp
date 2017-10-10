@@ -28,10 +28,16 @@
 #import "MapViewController.h"
 #import "ConfigViewController.h"
 
+static NSString *itemsStorePath()
+{
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    return [[paths objectAtIndex:0] stringByAppendingPathComponent:@"configItems.plist"];
+}
+
+
 @interface UrlsViewController ()
 {
     NSMutableArray *urls;
-    NSString *itemsStorePath;
 }
 @end
 
@@ -40,12 +46,12 @@
 
 - (void)saveItems
 {
-    [NSKeyedArchiver archiveRootObject:urls toFile:itemsStorePath];
+    [NSKeyedArchiver archiveRootObject:urls toFile:itemsStorePath()];
 }
 
 - (void)loadItems
 {
-    urls = [NSKeyedUnarchiver unarchiveObjectWithFile:itemsStorePath];
+    urls = [NSKeyedUnarchiver unarchiveObjectWithFile:itemsStorePath()];
     if (!urls)
     {
         urls = [[NSMutableArray alloc] init];
@@ -61,13 +67,6 @@
     [super viewDidLoad];
     self.navigationItem.leftBarButtonItem = self.editButtonItem;
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAdd target:self action:@selector(newItem)];
-    itemsStorePath = @"wtf.plist";
-    
-    {
-        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-        itemsStorePath = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"configItems.plist"];
-    }
-    
     [self loadItems];
 }
 

@@ -24,14 +24,21 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import <UIKit/UIKit.h>
-#import "AppDelegate.h"
+#define VTS_RENDERER_NO_GL_INCLUDE
 
-int main(int argc, char * argv[])
-{
-    @autoreleasepool
-    {
-        return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
-    }
-}
+#include <vts-browser/log.hpp>
+#include <vts-browser/map.hpp>
+#include <vts-browser/draws.hpp>
+#include <vts-browser/options.hpp>
+#include <vts-browser/fetcher.hpp>
+#include <vts-renderer/classes.hpp>
+#include <vts-renderer/renderer.hpp>
+
+#import <OpenGLES/EAGL.h>
+
+extern std::shared_ptr<vts::Map> map;
+
+void mapInitialize();
+void mapFinalize();
+EAGLSharegroup *mapGlSharegroup();
 

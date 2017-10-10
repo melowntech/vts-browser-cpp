@@ -6,9 +6,10 @@ define_module(BINARY vts-browser-ios DEPENDS
 set(SRC_LIST
   ConfigItem.h ConfigItem.m
   ConfigViewController.h ConfigViewController.m
+  Map.h Map.mm
   MapViewController.h MapViewController.mm
   UrlsViewController.h UrlsViewController.m
-  AppDelegate.h AppDelegate.m
+  AppDelegate.h AppDelegate.mm
   main.m
 )
 

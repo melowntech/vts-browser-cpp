@@ -319,7 +319,7 @@ void Resource::fetchDone()
         }
     }
 
-    // these resources must always revalidate
+    // some resources must always revalidate
     if (!allowDiskCache(query.resourceType))
         reply.expires = -2;
 

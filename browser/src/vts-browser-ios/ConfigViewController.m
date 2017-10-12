@@ -31,35 +31,29 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    self.navigationItem.leftBarButtonItem.style = UIBarButtonSystemItemSave;
+    //self.navigationItem.leftBarButtonItem.style = UIBarButtonSystemItemCancel;
+    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCancel target:self.navigationController action:@selector(popViewControllerAnimated:)];
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSave target:self action:@selector(save)];
+    self.title = [_item.name isEqualToString:@""] ? @"<New>" : _item.name;
+    _name.text = _item.name;
+    _url.text = _item.url;
 }
 
-- (void)viewDidDisappear:(BOOL)animated
+- (void)save
 {
+    _item.name = _name.text;
+    _item.url = _url.text;
     if ([_item.name isEqualToString:@""])
         _item.name = _item.url;
     if ([_item.url isEqualToString:@""])
         _item.url = _item.name;
-    [super viewDidDisappear:animated];
+	[self.navigationController popViewControllerAnimated:YES];
 }
 
-- (void)setItem:(ConfigItem*)item
+- (BOOL)textFieldShouldReturn:(UITextField *)textField 
 {
-    (void)self.view; // force load
-    _item = item;
-    _name.text = _item.name;
-    _url.text = _item.url;
-    self.title = _item.name;
-}
-
-- (IBAction)nameChanged:(UITextField *)sender
-{
-    _item.name = sender.text;
-}
-
-- (IBAction)urlChanged:(UITextField *)sender
-{
-    _item.url = sender.text;
+	[self save];
 }
 
 @end
+

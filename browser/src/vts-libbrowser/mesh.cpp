@@ -67,7 +67,7 @@ GpuMesh::GpuMesh(MapImpl *map, const std::string &name) :
 
 void GpuMesh::load()
 {
-    LOG(info2) << "Loading gpu mesh '" << name << "'";
+    LOG(info1) << "Loading (gpu) mesh '" << name << "'";
     GpuMeshSpec spec(reply.content);
     spec.attributes.resize(3);
     spec.attributes[0].enable = true;
@@ -108,7 +108,7 @@ MeshAggregate::MeshAggregate(MapImpl *map, const std::string &name) :
 
 void MeshAggregate::load()
 {
-    LOG(info1) << "Loading (aggregated) mesh <" << name << ">";
+    LOG(info2) << "Loading (aggregated) mesh <" << name << ">";
     
     detail::Wrapper w(reply.content);
     vtslibs::vts::NormalizedSubMesh::list meshes = vtslibs::vts::

@@ -43,7 +43,7 @@
                                 <rect key="frame" x="0.0" y="28" width="375" height="44"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="ptP-PZ-2wI" id="Aod-It-Tvw">
-                                    <rect key="frame" x="0.0" y="0.0" width="328" height="43.5"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="328" height="44"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </tableViewCellContentView>
                                 <connections>
@@ -57,7 +57,9 @@
                             <outlet property="delegate" destination="GLd-nL-Ucq" id="cjI-Pa-wI3"/>
                         </connections>
                     </tableView>
-                    <navigationItem key="navigationItem" title="Configurations" id="Lny-Ee-aAi"/>
+                    <navigationItem key="navigationItem" title="VTS Browser" id="Lny-Ee-aAi">
+                        <barButtonItem key="backBarButtonItem" title=" " id="bwj-Cy-3Tp"/>
+                    </navigationItem>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="fi7-HQ-H6i" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
@@ -96,8 +98,12 @@
                                     <constraint firstAttribute="width" constant="50" id="0ho-Vo-d7i"/>
                                 </constraints>
                             </view>
+                            <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" hidesWhenStopped="YES" animating="YES" style="whiteLarge" translatesAutoresizingMaskIntoConstraints="NO" id="wGc-Jt-0iw">
+                                <rect key="frame" x="169.5" y="347.5" width="37" height="37"/>
+                            </activityIndicatorView>
                         </subviews>
                         <constraints>
+                            <constraint firstItem="wGc-Jt-0iw" firstAttribute="centerY" secondItem="c8X-gU-GYv" secondAttribute="centerY" id="0aA-pj-VQU"/>
                             <constraint firstItem="ySS-hs-uu9" firstAttribute="top" secondItem="G04-P9-84c" secondAttribute="bottom" id="4Py-vM-YmH"/>
                             <constraint firstItem="3ym-2h-IiQ" firstAttribute="top" secondItem="c8X-gU-GYv" secondAttribute="top" id="5Dv-LI-S89"/>
                             <constraint firstItem="c8X-gU-GYv" firstAttribute="trailing" secondItem="qKz-eK-7re" secondAttribute="trailing" id="5IC-fo-fvO"/>
@@ -107,6 +113,7 @@
                             <constraint firstItem="c8X-gU-GYv" firstAttribute="bottom" secondItem="ySS-hs-uu9" secondAttribute="bottom" id="Ldg-yo-0Ke"/>
                             <constraint firstItem="qKz-eK-7re" firstAttribute="leading" secondItem="3ym-2h-IiQ" secondAttribute="trailing" id="M3y-v4-HLV"/>
                             <constraint firstItem="ySS-hs-uu9" firstAttribute="leading" secondItem="c8X-gU-GYv" secondAttribute="leading" id="Wfx-z4-bJz"/>
+                            <constraint firstItem="wGc-Jt-0iw" firstAttribute="centerX" secondItem="c8X-gU-GYv" secondAttribute="centerX" id="cy9-ix-bGM"/>
                             <constraint firstItem="G04-P9-84c" firstAttribute="top" secondItem="c8X-gU-GYv" secondAttribute="top" id="jeD-cV-UAj"/>
                             <constraint firstItem="3ym-2h-IiQ" firstAttribute="leading" secondItem="G04-P9-84c" secondAttribute="trailing" id="mD4-97-2cD"/>
                             <constraint firstItem="ySS-hs-uu9" firstAttribute="top" secondItem="qKz-eK-7re" secondAttribute="bottom" id="og9-n2-kCn"/>
@@ -118,6 +125,7 @@
                         </connections>
                     </glkView>
                     <connections>
+                        <outlet property="activityIndicator" destination="wGc-Jt-0iw" id="tLR-NI-s1d"/>
                         <outlet property="gestureViewBottom" destination="ySS-hs-uu9" id="SgY-Ob-5Gz"/>
                         <outlet property="gestureViewCenter" destination="3ym-2h-IiQ" id="luZ-y1-jq7"/>
                         <outlet property="gestureViewLeft" destination="G04-P9-84c" id="UDe-yF-xGY"/>
@@ -148,7 +156,7 @@
                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                         <textInputTraits key="textInputTraits"/>
                                         <connections>
-                                            <action selector="nameChanged:" destination="7OV-uf-3yE" eventType="editingDidEnd" id="coE-Kk-wSG"/>
+                                            <outlet property="delegate" destination="7OV-uf-3yE" id="ksr-od-bvX"/>
                                         </connections>
                                     </textField>
                                     <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="map config url" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="dR3-en-wTR">
@@ -160,7 +168,7 @@
                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                         <textInputTraits key="textInputTraits" textContentType="url"/>
                                         <connections>
-                                            <action selector="urlChanged:" destination="7OV-uf-3yE" eventType="editingDidEnd" id="f6u-BV-sJf"/>
+                                            <outlet property="delegate" destination="7OV-uf-3yE" id="PeR-s6-4q4"/>
                                         </connections>
                                     </textField>
                                 </subviews>

@@ -27,22 +27,24 @@
 #include <cassert>
 #include <unistd.h> // usleep
 #include "Map.h"
+#include <vts-browser/options.hpp>
+#include <vts-browser/fetcher.hpp>
+#include <vts-renderer/classes.hpp>
+#include <vts-renderer/renderer.hpp>
 
 #import <Dispatch/Dispatch.h>
+#import <dlfcn.h> // dlsym
 
-std::shared_ptr<vts::Map> map;
+vts::Map *map;
 
 namespace
 {
-	bool dataFinishing;
 	dispatch_queue_t dataQueue;
-	EAGLContext *glContext;
+	EAGLContext *dataContext;
+	EAGLContext *renderContext;
 	
 	void dataUpdate()
 	{
-		if (dataFinishing)
-			return;
-		
 		// queue next iteration
 		dispatch_async(dataQueue,
 		^{
@@ -50,70 +52,69 @@ namespace
 		});
 		
 		// process some resources (which may require opengl context)
-		[EAGLContext setCurrentContext:glContext];
+		[EAGLContext setCurrentContext:dataContext];
 		map->dataTick();
 		[EAGLContext setCurrentContext:nullptr];
+		
+		// save some cpu cycles
         usleep(50000);
+	}
+	
+	void *iosGlGetProcAddress(const char *name)
+	{
+		return dlsym(RTLD_DEFAULT, name);
 	}
 }
 
 void mapInitialize()
 {
-	assert(!map);
-
 	// create the map
 	{
         vts::MapCreateOptions createOptions;
         createOptions.clientId = "vts-browser-ios";
         createOptions.disableCache = true;
-        map = std::make_shared<vts::Map>(createOptions);
+        assert(!map);
+        map = new vts::Map(createOptions);
     }
     
     // configure the map for mobile use
     {
         vts::MapOptions &opt = map->options();
         opt.maxTexelToPixelScale = 3.2;
-        opt.maxBalancedCoarsenessScale = 4.5;
-        opt.maxResourcesMemory = 0;
-        opt.tiltLimitAngleHigh = 320;
+        opt.maxBalancedCoarsenessScale = 5.3;
+        opt.maxResourcesMemory = 0; // force the map to unload all resources as soon as possible
         opt.maxResourceProcessesPerTick = -1; // the resources are processed on a separate thread
+        //opt.traverseMode = vts::TraverseMode::Hierarchical;
+    }
+    
+    // configure opengl contexts
+    {
+		dataContext = [[EAGLContext alloc] initWithAPI: kEAGLRenderingAPIOpenGLES3];
+		renderContext = [[EAGLContext alloc] initWithAPI: kEAGLRenderingAPIOpenGLES3 sharegroup:dataContext.sharegroup];
+		[EAGLContext setCurrentContext:renderContext];
+
+		vts::renderer::loadGlFunctions(&iosGlGetProcAddress);
+		vts::renderer::initialize();
+		map->renderInitialize();
+		
+		[EAGLContext setCurrentContext:nullptr];
     }
     
     map->callbacks().loadTexture = std::bind(&vts::renderer::loadTexture, std::placeholders::_1, std::placeholders::_2);
     map->callbacks().loadMesh = std::bind(&vts::renderer::loadMesh, std::placeholders::_1, std::placeholders::_2);
     
     // create data thread
-	dataQueue = dispatch_queue_create("vts.map.data", NULL);
+	dataQueue = dispatch_queue_create("com.melown.vts.map.data", NULL);
 	dispatch_async(dataQueue,
-	^{
-		glContext = [[EAGLContext alloc] initWithAPI: kEAGLRenderingAPIOpenGLES3];
-		[EAGLContext setCurrentContext:glContext];
-	
+	^{	
 	    map->dataInitialize(vts::Fetcher::create(vts::FetcherOptions()));
-	    dataFinishing = false;
 	    dataUpdate();
 	});
 }
 
-void mapFinalize()
+EAGLContext *mapRenderContext()
 {
-	if (dataQueue)
-	{
-		dispatch_sync(dataQueue,
-		^{
-			map->dataFinalize();
-			dataFinishing = true;
-			glContext = nullptr;
-		});
-		dataQueue = nullptr;
-	}
-
-	map.reset();
-}
-
-EAGLSharegroup *mapGlSharegroup()
-{
-	return glContext.sharegroup;
+	return renderContext;
 }
 
 

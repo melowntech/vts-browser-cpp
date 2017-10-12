@@ -50,7 +50,7 @@ public:
     {
         task->reply.contentType = [response.MIMEType UTF8String];
         task->reply.code = response.statusCode;
-        task->reply.expires = -1;
+        task->reply.expires = -2;
         task->reply.content.allocate([data length]);
         memcpy(task->reply.content.data(), [data bytes], [data length]);
     }

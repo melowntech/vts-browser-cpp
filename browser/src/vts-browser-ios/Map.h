@@ -28,17 +28,11 @@
 
 #include <vts-browser/log.hpp>
 #include <vts-browser/map.hpp>
-#include <vts-browser/draws.hpp>
-#include <vts-browser/options.hpp>
-#include <vts-browser/fetcher.hpp>
-#include <vts-renderer/classes.hpp>
-#include <vts-renderer/renderer.hpp>
 
 #import <OpenGLES/EAGL.h>
 
-extern std::shared_ptr<vts::Map> map;
+extern vts::Map *map;
 
 void mapInitialize();
-void mapFinalize();
-EAGLSharegroup *mapGlSharegroup();
+EAGLContext *mapRenderContext();
 

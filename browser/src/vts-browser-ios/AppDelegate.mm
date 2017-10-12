@@ -24,30 +24,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Map.h"
 #import "AppDelegate.h"
+#include "Map.h"
 
 
 @interface AppDelegate ()
+{
+	struct MapInitializer
+	{
+		MapInitializer()
+		{
+			vts::setLogMask("I2W2E2");
+			mapInitialize();
+		}
+	} mapInitializer;
+}
 @end
 
 
 @implementation AppDelegate
-
-- (AppDelegate*)init
-{
-	self = [super init];
-	if (self)
-	{
-		mapInitialize();
-	}
-	return self;
-}
-
-- (void)dealloc
-{
-	mapFinalize();
-}
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {

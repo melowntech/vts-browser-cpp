@@ -404,6 +404,7 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
             TileId pid = vtslibs::vts::parent(nodeId);
             uint32 idx = (nodeId.x % 2) + (nodeId.y % 2) * 2;
             const vtslibs::vts::MetaNode &node = p->get(pid);
+            assert(&node);
             if ((node.flags()
                  & (vtslibs::vts::MetaNode::Flag::ulChild << idx)) == 0)
                 continue;

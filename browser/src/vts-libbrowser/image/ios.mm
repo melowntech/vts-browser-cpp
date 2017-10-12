@@ -62,7 +62,6 @@ void decodeImg(const Buffer &in, Buffer &out,
 		if (components < 1 || components > 4)
 			LOGTHROW(err1, std::runtime_error) << "invalid image components count <" << components << ">";
 		NSData *data = (id)CGDataProviderCopyData(CGImageGetDataProvider(image));
-		[data autorelease];
 		try
 		{
 			size_t size = [data length];

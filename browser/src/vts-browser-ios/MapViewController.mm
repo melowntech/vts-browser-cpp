@@ -24,37 +24,33 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sstream>
-#include <cassert>
 #include "Map.h"
+#include <vts-browser/draws.hpp>
+#include <vts-renderer/renderer.hpp>
 
 #import "MapViewController.h"
-#import <SpriteKit/SpriteKit.h>
-#import <dlfcn.h>
-
-namespace
-{
-	void *iosGlGetProcAddress(const char *name)
-	{
-		return dlsym(RTLD_DEFAULT, name);
-	}
-}
 
 @interface MapViewController ()
 {
 	vts::renderer::RenderOptions renderOptions;
+	bool fullscreenStatus;
+	bool fullscreenOverride;
 }
 
 @property (weak, nonatomic) IBOutlet UIView *gestureViewCenter;
 @property (weak, nonatomic) IBOutlet UIView *gestureViewBottom;
 @property (weak, nonatomic) IBOutlet UIView *gestureViewLeft;
 @property (weak, nonatomic) IBOutlet UIView *gestureViewRight;
+@property (weak, nonatomic) IBOutlet UIActivityIndicatorView *activityIndicator;
 
 @end
 
+
 @implementation MapViewController
 
-- (void)panCenter:(UIPanGestureRecognizer*)recognizer
+// gestures
+
+- (void)gesturePan:(UIPanGestureRecognizer*)recognizer
 {
     switch (recognizer.state)
 	{
@@ -63,14 +59,15 @@ namespace
 		{
 			CGPoint p = [recognizer translationInView:_gestureViewCenter];
 			[recognizer setTranslation:CGPoint() inView:_gestureViewCenter];
-			map->pan({p.x, p.y, 0});
+			map->pan({p.x * 2, p.y * 2, 0});
+			fullscreenOverride = false;
 		} break;
 		default:
 			break;
 	}
 }
 
-- (void)panBottom:(UIPanGestureRecognizer*)recognizer
+- (void)gestureYaw:(UIPanGestureRecognizer*)recognizer
 {
     switch (recognizer.state)
 	{
@@ -79,14 +76,15 @@ namespace
 		{
 			CGPoint p = [recognizer translationInView:_gestureViewCenter];
 			[recognizer setTranslation:CGPoint() inView:_gestureViewCenter];
-			map->rotate({1000 * p.x / renderOptions.width, 0, 0});
+			map->rotate({2000 * p.x / renderOptions.width, 0, 0});
+			fullscreenOverride = false;
 		} break;
 		default:
 			break;
 	}
 }
 
-- (void)panLeft:(UIPanGestureRecognizer*)recognizer
+- (void)gesturePitch:(UIPanGestureRecognizer*)recognizer
 {
     switch (recognizer.state)
 	{
@@ -95,14 +93,15 @@ namespace
 		{
 			CGPoint p = [recognizer translationInView:_gestureViewCenter];
 			[recognizer setTranslation:CGPoint() inView:_gestureViewCenter];
-			map->rotate({0, 1000 * p.y / renderOptions.height, 0});
+			map->rotate({0, 2000 * p.y / renderOptions.height, 0});
+			fullscreenOverride = false;
 		} break;
 		default:
 			break;
 	}
 }
 
-- (void)panRight:(UIPanGestureRecognizer*)recognizer
+- (void)gestureZoom:(UIPanGestureRecognizer*)recognizer
 {
     switch (recognizer.state)
 	{
@@ -111,17 +110,58 @@ namespace
 		{
 			CGPoint p = [recognizer translationInView:_gestureViewCenter];
 			[recognizer setTranslation:CGPoint() inView:_gestureViewCenter];
-			map->zoom(-50 * p.y / renderOptions.height);
+			map->zoom(-100 * p.y / renderOptions.height);
+			fullscreenOverride = false;
 		} break;
 		default:
 			break;
 	}
+}
+
+- (void)gestureNorthUp:(UILongPressGestureRecognizer*)recognizer
+{
+    switch (recognizer.state)
+	{
+        case UIGestureRecognizerStateBegan:
+            map->setPositionRotation({0,270,0}, vts::NavigationType::Quick);
+            map->resetNavigationMode();
+			fullscreenOverride = false;
+			break;
+		default:
+			break;
+	}
+}
+
+- (void)gestureFullscreen:(UITapGestureRecognizer*)recognizer
+{
+    switch (recognizer.state)
+	{
+        case UIGestureRecognizerStateEnded:
+			fullscreenOverride = !fullscreenOverride;
+			break;
+		default:
+			break;
+	}
+}
+
+// controller status
+
+- (BOOL)prefersStatusBarHidden
+{
+   return fullscreenStatus;
+}
+
+- (void)updateFullscreen
+{
+	bool enable = !fullscreenOverride;
+	fullscreenStatus = enable;
+	[self setNeedsStatusBarAppearanceUpdate];
+    [self.navigationController setNavigationBarHidden:enable animated:YES];
 }
 
 - (void)configureView
 {
     self.title = _item.name;
-    if (map)
     {
         std::string url([_item.url UTF8String]);
         map->setMapConfigPath(url);
@@ -131,61 +171,90 @@ namespace
 - (void)setItem:(ConfigItem*)item
 {
     _item = item;
-    [self configureView];
+}
+
+- (void)showSearch
+{
+	// todo
+}
+
+- (void)showOptions
+{
+	// todo
+}
+
+// view controls
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+	[self updateFullscreen];
 }
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
     
+    self.navigationItem.rightBarButtonItems = @[
+    	[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemOrganize target:self action:@selector(showOptions)],
+    	[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(showSearch)]
+    ];
+    
+    fullscreenStatus = false;
+    fullscreenOverride = false;
+    
     // initialize rendering
-    
     GLKView *view = (GLKView *)self.view;
-    view.context = [[EAGLContext alloc] initWithAPI: kEAGLRenderingAPIOpenGLES3 sharegroup:mapGlSharegroup()];
-    [EAGLContext setCurrentContext:view.context];
-    
-    vts::renderer::loadGlFunctions(&iosGlGetProcAddress);
-    vts::renderer::initialize();
-    map->renderInitialize();
+    view.context = mapRenderContext();
     
     // initialize gesture recognizers
-    
     {
-	    // center view
+	    // pan recognizer
 	    assert(_gestureViewCenter);
-		UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panCenter:)];
+		UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePan:)];
         [_gestureViewCenter addGestureRecognizer:r];
     }
     {
-	    // bottom view
+	    // yaw recognizer
 	    assert(_gestureViewBottom);
-		UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panBottom:)];
+		UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gestureYaw:)];
         [_gestureViewBottom addGestureRecognizer:r];
     }
     {
-	    // left view
+	    // pitch recognizer
 	    assert(_gestureViewLeft);
-		UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panLeft:)];
+		UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePitch:)];
         [_gestureViewLeft addGestureRecognizer:r];
     }
     {
-	    // right view
+	    // zoom recognizer
 	    assert(_gestureViewRight);
-		UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panRight:)];
+		UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gestureZoom:)];
         [_gestureViewRight addGestureRecognizer:r];
+    }
+    {
+    	// north up recognizer
+		UILongPressGestureRecognizer *r = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(gestureNorthUp:)];
+        [view addGestureRecognizer:r];
+    }
+    {
+    	// fullscreen
+		UITapGestureRecognizer *r = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(gestureFullscreen:)];
+        [view addGestureRecognizer:r];
     }
     
     [self configureView];
 }
 
-- (void)dealloc
-{
-	map->renderFinalize();
-    vts::renderer::finalize();
-}
+// rendering
 
 - (void)update
 {
+	[self updateFullscreen];
+	if (map->getMapConfigReady())
+	    [_activityIndicator stopAnimating];
+	else
+	    [_activityIndicator startAnimating];
     map->renderTickPrepare();
     map->renderTickRender();
 }

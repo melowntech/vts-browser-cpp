@@ -65,14 +65,24 @@ static NSString *itemsStorePath()
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    
     self.navigationItem.leftBarButtonItem = self.editButtonItem;
-    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAdd target:self action:@selector(newItem)];
+    self.navigationItem.rightBarButtonItems = @[
+    	[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemOrganize target:self action:@selector(showOptions)],
+    	[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAdd target:self action:@selector(newItem)]
+    ];
+    
     [self loadItems];
 }
 
 - (void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
+    for (int i = 0; i < [urls count]; i++)
+    {
+    	if ([((ConfigItem*)urls[i]).name length] == 0)
+    		[urls removeObjectAtIndex:i--];
+    }
     [self.tableView reloadData];
     [self saveItems];
 }
@@ -83,6 +93,11 @@ static NSString *itemsStorePath()
     NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[urls count] - 1 inSection:0];
     [self.tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationBottom];
     [self performSegueWithIdentifier: @"config" sender: [self.tableView cellForRowAtIndexPath:indexPath]];
+}
+
+- (void)showOptions
+{
+	// todo
 }
 
 #pragma mark - Table view data source

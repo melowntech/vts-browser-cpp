@@ -30,12 +30,12 @@
 #include <vts-browser/options.hpp>
 #include <vts-browser/fetcher.hpp>
 #include <vts-renderer/classes.hpp>
-#include <vts-renderer/renderer.hpp>
 
 #import <Dispatch/Dispatch.h>
 #import <dlfcn.h> // dlsym
 
 vts::Map *map;
+vts::renderer::RenderOptions renderOptions;
 
 namespace
 {

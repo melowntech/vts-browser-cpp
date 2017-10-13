@@ -24,50 +24,44 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SEARCH_H_gtvuigshefh
-#define SEARCH_H_gtvuigshefh
+#include "../../Map.h"
+#include <vts-browser/options.hpp>
 
-#include <string>
-#include <vector>
-#include <memory>
-#include <atomic>
+#import "OptionsViewController.h"
 
-#include "foundation.hpp"
 
-namespace vts
+@interface OptionsViewController ()
+
+@property (weak, nonatomic) IBOutlet UISegmentedControl *optTraversal;
+@property (weak, nonatomic) IBOutlet UISlider *optQualityDegrad;
+@property (weak, nonatomic) IBOutlet UISwitch *optAtmosphere;
+
+@end
+
+
+@implementation OptionsViewController
+
+- (void)viewDidLoad
 {
+    [super viewDidLoad];
+    _optTraversal.selectedSegmentIndex = (int)map->options().traverseMode;
+    _optQualityDegrad.value = map->options().maxTexelToPixelScale;
+    _optAtmosphere.on = renderOptions.renderAtmosphere;
+}
 
-class VTS_API SearchItem
+- (IBAction)optTraversalChanged:(UISegmentedControl *)sender
 {
-public:
-    SearchItem();
+    map->options().traverseMode = (vts::TraverseMode)sender.selectedSegmentIndex;
+}
 
-    std::string displayName, title, type, region;
-    std::string road, city, county, state, houseNumber,
-                stateDistrict, country, countryCode;
-
-    double position[3]; // navigation srs
-    double radius; // physical srs length
-    double distance; // physical srs length
-    double importance;
-};
-
-class VTS_API SearchTask
+- (IBAction)optQualityDegradChanged:(UISlider *)sender
 {
-public:
-    SearchTask(const std::string &query, const double point[3]);
-    virtual ~SearchTask();
+    map->options().maxTexelToPixelScale = sender.value;
+}
 
-    void updateDistances(const double point[3]); // navigation srs
+- (IBAction)optAtmosphereChanged:(UISwitch *)sender
+{
+    renderOptions.renderAtmosphere = sender.on;
+}
 
-    const std::string query;
-    const double position[3];
-    std::vector<SearchItem> results;
-    std::atomic<bool> done;
-
-    std::shared_ptr<class SearchTaskImpl> impl;
-};
-
-} // namespace vts
-
-#endif
+@end

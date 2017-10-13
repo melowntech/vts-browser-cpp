@@ -24,50 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SEARCH_H_gtvuigshefh
-#define SEARCH_H_gtvuigshefh
+#import <UIKit/UIKit.h>
 
-#include <string>
-#include <vector>
-#include <memory>
-#include <atomic>
+@interface PositionViewController : UIViewController
 
-#include "foundation.hpp"
-
-namespace vts
-{
-
-class VTS_API SearchItem
-{
-public:
-    SearchItem();
-
-    std::string displayName, title, type, region;
-    std::string road, city, county, state, houseNumber,
-                stateDistrict, country, countryCode;
-
-    double position[3]; // navigation srs
-    double radius; // physical srs length
-    double distance; // physical srs length
-    double importance;
-};
-
-class VTS_API SearchTask
-{
-public:
-    SearchTask(const std::string &query, const double point[3]);
-    virtual ~SearchTask();
-
-    void updateDistances(const double point[3]); // navigation srs
-
-    const std::string query;
-    const double position[3];
-    std::vector<SearchItem> results;
-    std::atomic<bool> done;
-
-    std::shared_ptr<class SearchTaskImpl> impl;
-};
-
-} // namespace vts
-
-#endif
+@end

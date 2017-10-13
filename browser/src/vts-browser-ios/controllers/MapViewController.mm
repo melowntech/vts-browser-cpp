@@ -24,7 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Map.h"
+#include "../Map.h"
 #include <vts-browser/draws.hpp>
 #include <vts-renderer/renderer.hpp>
 
@@ -32,7 +32,6 @@
 
 @interface MapViewController ()
 {
-	vts::renderer::RenderOptions renderOptions;
 	bool fullscreenStatus;
 	bool fullscreenOverride;
 }
@@ -42,6 +41,8 @@
 @property (weak, nonatomic) IBOutlet UIView *gestureViewLeft;
 @property (weak, nonatomic) IBOutlet UIView *gestureViewRight;
 @property (weak, nonatomic) IBOutlet UIActivityIndicatorView *activityIndicator;
+
+@property (strong, nonatomic) UIBarButtonItem *searchButton;
 
 @end
 
@@ -148,7 +149,9 @@
 
 - (BOOL)prefersStatusBarHidden
 {
-   return fullscreenStatus;
+	if (fullscreenStatus)
+		return true;
+	return [super prefersStatusBarHidden];
 }
 
 - (void)updateFullscreen
@@ -175,12 +178,12 @@
 
 - (void)showSearch
 {
-	// todo
+	[self performSegueWithIdentifier:@"search" sender:self];
 }
 
 - (void)showOptions
 {
-	// todo
+	[self performSegueWithIdentifier:@"position" sender:self];
 }
 
 // view controls
@@ -195,13 +198,14 @@
 {
     [super viewDidLoad];
     
+    _searchButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(showSearch)];
     self.navigationItem.rightBarButtonItems = @[
     	[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemOrganize target:self action:@selector(showOptions)],
-    	[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(showSearch)]
+    	_searchButton
     ];
     
     fullscreenStatus = false;
-    fullscreenOverride = false;
+    fullscreenOverride = true;
     
     // initialize rendering
     GLKView *view = (GLKView *)self.view;
@@ -251,10 +255,14 @@
 - (void)update
 {
 	[self updateFullscreen];
+	
 	if (map->getMapConfigReady())
 	    [_activityIndicator stopAnimating];
 	else
-	    [_activityIndicator startAnimating];
+        [_activityIndicator startAnimating];
+	
+	_searchButton.enabled = map->searchable();
+
     map->renderTickPrepare();
     map->renderTickRender();
 }

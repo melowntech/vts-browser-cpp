@@ -4,13 +4,18 @@ define_module(BINARY vts-browser-ios DEPENDS
   glad THREADS)
 
 set(SRC_LIST
-  ConfigItem.h ConfigItem.m
-  ConfigViewController.h ConfigViewController.m
-  Map.h Map.mm
-  MapViewController.h MapViewController.mm
-  UrlsViewController.h UrlsViewController.m
-  AppDelegate.h AppDelegate.mm
   main.m
+  AppDelegate.h AppDelegate.mm
+  ConfigItem.h ConfigItem.m
+  Map.h Map.mm
+  controllers/UrlsViewController.h controllers/UrlsViewController.m
+  controllers/ConfigViewController.h controllers/ConfigViewController.m
+  controllers/MapViewController.h controllers/MapViewController.mm
+  controllers/SearchViewController.h controllers/SearchViewController.mm
+  controllers/SearchCell.h controllers/SearchCell.m
+  controllers/control/PositionViewController.h controllers/control/PositionViewController.mm
+  controllers/control/OptionsViewController.h controllers/control/OptionsViewController.mm
+  controllers/control/StatisticsViewController.h controllers/control/StatisticsViewController.mm
 )
 
 set(RES_LIST

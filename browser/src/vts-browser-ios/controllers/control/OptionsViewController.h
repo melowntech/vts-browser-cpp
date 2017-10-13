@@ -25,13 +25,7 @@
  */
 
 #import <UIKit/UIKit.h>
-#import <GLKit/GLKit.h>
-#import "ConfigItem.h"
 
-@interface MapViewController : GLKViewController
-
-@property (strong, nonatomic) ConfigItem *item;
+@interface OptionsViewController : UIViewController
 
 @end
-
-

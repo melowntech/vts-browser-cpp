@@ -25,13 +25,13 @@
  */
 
 #import <UIKit/UIKit.h>
-#import "ConfigItem.h"
+#import <GLKit/GLKit.h>
+#import "../ConfigItem.h"
 
-@interface ConfigViewController : UIViewController
+@interface MapViewController : GLKViewController
 
 @property (strong, nonatomic) ConfigItem *item;
 
-@property (weak, nonatomic) IBOutlet UITextField *name;
-@property (weak, nonatomic) IBOutlet UITextField *url;
-
 @end
+
+

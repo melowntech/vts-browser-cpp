@@ -97,15 +97,10 @@ static NSString *itemsStorePath()
 
 - (void)showOptions
 {
-	// todo
+	[self performSegueWithIdentifier:@"options" sender:self];
 }
 
 #pragma mark - Table view data source
-
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
-{
-    return 1;
-}
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
@@ -114,7 +109,7 @@ static NSString *itemsStorePath()
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"urlCell" forIndexPath:indexPath];
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"UrlCell" forIndexPath:indexPath];
     ConfigItem *item = (ConfigItem*)[urls objectAtIndex:indexPath.row];
     cell.textLabel.text = item.name;
     return cell;

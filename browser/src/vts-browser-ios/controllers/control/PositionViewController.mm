@@ -24,36 +24,44 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import "ConfigViewController.h"
+#include "../../Map.h"
 
-@implementation ConfigViewController
+#import "PositionViewController.h"
+
+
+@interface PositionViewController ()
+
+@property (weak, nonatomic) IBOutlet UILabel *labX;
+@property (weak, nonatomic) IBOutlet UILabel *labY;
+@property (weak, nonatomic) IBOutlet UILabel *labZ;
+@property (weak, nonatomic) IBOutlet UILabel *labYaw;
+@property (weak, nonatomic) IBOutlet UILabel *labPitch;
+@property (weak, nonatomic) IBOutlet UILabel *labRoll;
+@property (weak, nonatomic) IBOutlet UILabel *labViewExtent;
+@property (weak, nonatomic) IBOutlet UILabel *labFov;
+
+@end
+
+
+@implementation PositionViewController
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    //self.navigationItem.leftBarButtonItem.style = UIBarButtonSystemItemCancel;
-    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCancel target:self.navigationController action:@selector(popViewControllerAnimated:)];
-    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSave target:self action:@selector(save)];
-    self.title = [_item.name isEqualToString:@""] ? @"<New>" : _item.name;
-    _name.text = _item.name;
-    _url.text = _item.url;
-}
-
-- (void)save
-{
-    _item.name = _name.text;
-    _item.url = _url.text;
-    if ([_item.name isEqualToString:@""])
-        _item.name = _item.url;
-    if ([_item.url isEqualToString:@""])
-        _item.url = _item.name;
-	[self.navigationController popViewControllerAnimated:YES];
-}
-
-- (BOOL)textFieldShouldReturn:(UITextField *)textField 
-{
-	[self save];
+    double tmp[3];
+    // position
+    map->getPositionPoint(tmp);
+    _labX.text = [NSString stringWithFormat:@"%f", tmp[0]];
+    _labY.text = [NSString stringWithFormat:@"%f", tmp[1]];
+    _labZ.text = [NSString stringWithFormat:@"%f", tmp[2]];
+    // rotation
+    map->getPositionRotation(tmp);
+    _labYaw.text = [NSString stringWithFormat:@"%f", tmp[0]];
+    _labPitch.text = [NSString stringWithFormat:@"%f", tmp[1]];
+    _labRoll.text = [NSString stringWithFormat:@"%f", tmp[2]];
+    // other
+    _labViewExtent.text = [NSString stringWithFormat:@"%f", map->getPositionViewExtent()];
+    _labFov.text = [NSString stringWithFormat:@"%f", map->getPositionFov()];
 }
 
 @end
-

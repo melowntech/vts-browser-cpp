@@ -24,50 +24,36 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SEARCH_H_gtvuigshefh
-#define SEARCH_H_gtvuigshefh
+#import "ConfigViewController.h"
 
-#include <string>
-#include <vector>
-#include <memory>
-#include <atomic>
+@implementation ConfigViewController
 
-#include "foundation.hpp"
-
-namespace vts
+- (void)viewDidLoad
 {
+    [super viewDidLoad];
+    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCancel target:self.navigationController action:@selector(popViewControllerAnimated:)];
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSave target:self action:@selector(save)];
+    self.title = [_item.name isEqualToString:@""] ? @"<New>" : _item.name;
+    _name.text = _item.name;
+    _url.text = _item.url;
+}
 
-class VTS_API SearchItem
+- (void)save
 {
-public:
-    SearchItem();
+    _item.name = _name.text;
+    _item.url = _url.text;
+    if ([_item.name isEqualToString:@""])
+        _item.name = _item.url;
+    if ([_item.url isEqualToString:@""])
+        _item.url = _item.name;
+	[self.navigationController popViewControllerAnimated:YES];
+}
 
-    std::string displayName, title, type, region;
-    std::string road, city, county, state, houseNumber,
-                stateDistrict, country, countryCode;
-
-    double position[3]; // navigation srs
-    double radius; // physical srs length
-    double distance; // physical srs length
-    double importance;
-};
-
-class VTS_API SearchTask
+- (BOOL)textFieldShouldReturn:(UITextField *)textField 
 {
-public:
-    SearchTask(const std::string &query, const double point[3]);
-    virtual ~SearchTask();
+	[self save];
+    return NO;
+}
 
-    void updateDistances(const double point[3]); // navigation srs
+@end
 
-    const std::string query;
-    const double position[3];
-    std::vector<SearchItem> results;
-    std::atomic<bool> done;
-
-    std::shared_ptr<class SearchTaskImpl> impl;
-};
-
-} // namespace vts
-
-#endif

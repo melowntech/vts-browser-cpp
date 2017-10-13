@@ -28,10 +28,12 @@
 
 #include <vts-browser/log.hpp>
 #include <vts-browser/map.hpp>
+#include <vts-renderer/renderer.hpp>
 
 #import <OpenGLES/EAGL.h>
 
 extern vts::Map *map;
+extern vts::renderer::RenderOptions renderOptions;
 
 void mapInitialize();
 EAGLContext *mapRenderContext();

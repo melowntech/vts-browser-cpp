@@ -162,7 +162,9 @@ DrawTask::DrawTask(const RenderTask &r, const float *uvClip, const MapImpl *m)
 }
 
 MapDraws::MapDraws()
-{}
+{
+    memset(&camera, 0, sizeof(camera));
+}
 
 void MapDraws::clear()
 {

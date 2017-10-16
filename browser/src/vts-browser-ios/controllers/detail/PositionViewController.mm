@@ -45,9 +45,8 @@
 
 @implementation PositionViewController
 
-- (void)viewDidLoad
+- (void)updateView
 {
-    [super viewDidLoad];
     double tmp[3];
     // position
     map->getPositionPoint(tmp);
@@ -62,6 +61,18 @@
     // other
     _labViewExtent.text = [NSString stringWithFormat:@"%f", map->getPositionViewExtent()];
     _labFov.text = [NSString stringWithFormat:@"%f", map->getPositionFov()];
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    [self updateView];
+    mapTimerStart(self, @selector(timerTick));
+}
+
+- (void)timerTick
+{
+    [self updateView];
 }
 
 @end

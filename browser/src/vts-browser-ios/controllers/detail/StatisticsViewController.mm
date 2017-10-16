@@ -31,6 +31,9 @@
 
 
 @interface StatisticsViewController ()
+{
+	NSTimer* timer;
+}
 
 @property (weak, nonatomic) IBOutlet UILabel *statDownloading;
 @property (weak, nonatomic) IBOutlet UILabel *statMetaUpdates;
@@ -43,14 +46,25 @@
 
 @implementation StatisticsViewController
 
-- (void)viewDidLoad
+- (void)updateView
 {
-    [super viewDidLoad];
     _statDownloading.text = [NSString stringWithFormat:@"%u", map->statistics().currentResourceDownloads];
     _statMetaUpdates.text = [NSString stringWithFormat:@"%u", map->statistics().currentNodeMetaUpdates];
     _statDrawUpdates.text = [NSString stringWithFormat:@"%u", map->statistics().currentNodeDrawsUpdates];
     _statActiveResources.text = [NSString stringWithFormat:@"%u", map->statistics().currentResources];
     _statPreparingResources.text = [NSString stringWithFormat:@"%u", map->statistics().currentResourcePreparing];
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    [self updateView];
+    mapTimerStart(self, @selector(timerTick));
+}
+
+- (void)timerTick
+{
+    [self updateView];
 }
 
 @end

@@ -34,6 +34,51 @@
 #import <Dispatch/Dispatch.h>
 #import <dlfcn.h> // dlsym
 
+
+@interface TimerObj : NSObject
+
+- (void)setObject:(id)object Selector:(SEL)selector;
+
+@end
+
+@interface TimerObj ()
+{
+	NSTimer* timer;
+    id object;
+    SEL selector;
+}
+@end
+
+@implementation TimerObj
+
+- (id)init
+{
+    if (self = [super init])
+    {
+		timer = [NSTimer timerWithTimeInterval:0.2 target:self selector:@selector(timerTick) userInfo:nil repeats:YES];
+		[[NSRunLoop mainRunLoop] addTimer:timer forMode:NSRunLoopCommonModes];
+	}
+	return self;
+}
+
+- (void)timerTick
+{
+	if (!object || !map)
+		return;
+    map->renderTickPrepare();
+    map->renderTickRender();
+	[object performSelector:selector];
+}
+
+- (void)setObject:(id)object Selector:(SEL)selector
+{
+	self->object = object;
+	self->selector = selector;
+}
+
+@end
+
+
 vts::Map *map;
 vts::renderer::RenderOptions renderOptions;
 
@@ -42,6 +87,7 @@ namespace
 	dispatch_queue_t dataQueue;
 	EAGLContext *dataContext;
 	EAGLContext *renderContext;
+	TimerObj *timer;
 	
 	void dataUpdate()
 	{
@@ -57,7 +103,7 @@ namespace
 		[EAGLContext setCurrentContext:nullptr];
 		
 		// save some cpu cycles
-        usleep(50000);
+        usleep(100000);
 	}
 	
 	void *iosGlGetProcAddress(const char *name)
@@ -110,11 +156,24 @@ void mapInitialize()
 	    map->dataInitialize(vts::Fetcher::create(vts::FetcherOptions()));
 	    dataUpdate();
 	});
+	
+	// prepare timer
+	timer = [[TimerObj alloc] init];
 }
 
 EAGLContext *mapRenderContext()
 {
 	return renderContext;
+}
+
+void mapTimerStart(id object, SEL selector)
+{
+	[timer setObject:object Selector:selector];
+}
+
+void mapTimerStop()
+{
+    [timer setObject:nil Selector:nil];
 }
 
 

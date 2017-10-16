@@ -36,7 +36,6 @@
 #include <vts-libs/vts/urltemplate.hpp>
 #include <vts-libs/vts/metatile.hpp>
 #include <vts-libs/vts/tsmap.hpp>
-#include <boost/optional.hpp>
 
 #include "include/vts-browser/resources.hpp"
 #include "include/vts-browser/math.hpp"
@@ -78,8 +77,9 @@ public:
 
     ResourceInfo info;
     const std::string name;
+    std::shared_ptr<vtslibs::registry::BoundLayer::Availability>
+    									availTest;
     MapImpl *const map;
-    boost::optional<vtslibs::registry::BoundLayer::Availability> availTest;
     std::atomic<State> state;
     std::time_t retryTime;
     uint32 retryNumber;
@@ -88,6 +88,8 @@ public:
     float priority;
     float priorityCopy;
 };
+
+std::ostream &operator << (std::ostream &stream, Resource::State state);
 
 class GpuMesh : public Resource
 {
@@ -135,6 +137,8 @@ public:
         BoundInfo(const vtslibs::registry::BoundLayer &bl,
                   const std::string &url);
     
+	    std::shared_ptr<vtslibs::registry::BoundLayer::Availability>
+	    								availability;
         vtslibs::vts::UrlTemplate urlExtTex;
         vtslibs::vts::UrlTemplate urlMeta;
         vtslibs::vts::UrlTemplate urlMask;

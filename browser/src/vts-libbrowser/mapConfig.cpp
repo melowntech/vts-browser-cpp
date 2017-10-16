@@ -59,6 +59,12 @@ MapConfig::BoundInfo::BoundInfo(const vtslibs::registry::BoundLayer &bl,
         urlMeta.parse(MapConfig::convertPath(*metaUrl, url));
         urlMask.parse(MapConfig::convertPath(*maskUrl, url));
     }
+    if (bl.availability)
+    {
+	    availability = std::make_shared<
+        vtslibs::registry::BoundLayer::Availability>(
+            *bl.availability);
+    }
 }
 
 MapConfig::SurfaceStackItem::SurfaceStackItem() : alien(false)

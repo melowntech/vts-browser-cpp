@@ -79,17 +79,17 @@
                                     <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="5" translatesAutoresizingMaskIntoConstraints="NO" id="eIR-VC-jQw">
                                         <rect key="frame" x="0.0" y="0.0" width="375" height="115"/>
                                         <subviews>
-                                            <stackView opaque="NO" contentMode="scaleToFill" alignment="center" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="Ecs-aa-hCJ">
+                                            <stackView opaque="NO" contentMode="scaleToFill" distribution="fillProportionally" alignment="center" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="Ecs-aa-hCJ">
                                                 <rect key="frame" x="8" y="8" width="359" height="28"/>
                                                 <subviews>
                                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Traversal:" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="EoL-WB-ePn">
-                                                        <rect key="frame" x="0.0" y="4" width="74" height="20.5"/>
+                                                        <rect key="frame" x="0.0" y="4" width="95" height="20.5"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                         <nil key="textColor"/>
                                                         <nil key="highlightedColor"/>
                                                     </label>
-                                                    <segmentedControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="right" contentVerticalAlignment="top" segmentControlStyle="plain" translatesAutoresizingMaskIntoConstraints="NO" id="g29-gE-5d8">
-                                                        <rect key="frame" x="84" y="0.0" width="275" height="29"/>
+                                                    <segmentedControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="right" contentVerticalAlignment="top" apportionsSegmentWidthsByContent="YES" segmentControlStyle="plain" translatesAutoresizingMaskIntoConstraints="NO" id="g29-gE-5d8">
+                                                        <rect key="frame" x="105" y="0.0" width="254" height="29"/>
                                                         <segments>
                                                             <segment title="Hierarchical"/>
                                                             <segment title="Flat"/>
@@ -641,13 +641,18 @@
                                     <outlet property="delegate" destination="nrX-6B-OKu" id="9tR-3S-bKf"/>
                                 </connections>
                             </tableView>
+                            <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" hidesWhenStopped="YES" animating="YES" style="gray" translatesAutoresizingMaskIntoConstraints="NO" id="dSG-eZ-1cU">
+                                <rect key="frame" x="177.5" y="355.5" width="20" height="20"/>
+                            </activityIndicatorView>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
                             <constraint firstItem="ZCO-L9-EOn" firstAttribute="bottom" secondItem="rJQ-Zz-OyC" secondAttribute="bottom" id="018-5M-rIk"/>
+                            <constraint firstItem="dSG-eZ-1cU" firstAttribute="centerY" secondItem="ZCO-L9-EOn" secondAttribute="centerY" id="8Vx-N1-DJL"/>
                             <constraint firstItem="umg-52-cdM" firstAttribute="trailing" secondItem="ZCO-L9-EOn" secondAttribute="trailing" id="KPz-7z-5eT"/>
                             <constraint firstItem="rJQ-Zz-OyC" firstAttribute="leading" secondItem="ZCO-L9-EOn" secondAttribute="leading" id="Koz-ou-bJ3"/>
                             <constraint firstItem="ZCO-L9-EOn" firstAttribute="trailing" secondItem="rJQ-Zz-OyC" secondAttribute="trailing" id="S2X-MY-pyW"/>
+                            <constraint firstItem="dSG-eZ-1cU" firstAttribute="centerX" secondItem="ZCO-L9-EOn" secondAttribute="centerX" id="fsg-BR-mLL"/>
                             <constraint firstItem="umg-52-cdM" firstAttribute="leading" secondItem="ZCO-L9-EOn" secondAttribute="leading" id="lbl-T5-AKO"/>
                             <constraint firstItem="umg-52-cdM" firstAttribute="top" secondItem="ZCO-L9-EOn" secondAttribute="top" id="nQR-ui-cjh"/>
                             <constraint firstItem="rJQ-Zz-OyC" firstAttribute="top" secondItem="umg-52-cdM" secondAttribute="bottom" id="vZO-0c-VT7"/>
@@ -655,6 +660,7 @@
                         <viewLayoutGuide key="safeArea" id="ZCO-L9-EOn"/>
                     </view>
                     <connections>
+                        <outlet property="activityIndicator" destination="dSG-eZ-1cU" id="TYR-cm-ZeF"/>
                         <outlet property="searchBar" destination="umg-52-cdM" id="2RE-nJ-Yeh"/>
                         <outlet property="tableView" destination="rJQ-Zz-OyC" id="GLv-1Y-YAx"/>
                     </connections>
@@ -671,47 +677,36 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7mC-rW-hJx">
-                                <rect key="frame" x="0.0" y="64" width="375" height="603"/>
+                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacingType="standard" translatesAutoresizingMaskIntoConstraints="NO" id="AVa-X1-orh">
+                                <rect key="frame" x="0.0" y="64" width="375" height="84"/>
                                 <subviews>
-                                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacingType="standard" translatesAutoresizingMaskIntoConstraints="NO" id="AVa-X1-orh">
-                                        <rect key="frame" x="0.0" y="0.0" width="375" height="84"/>
-                                        <subviews>
-                                            <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="name" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="Ge1-4k-w0c">
-                                                <rect key="frame" x="8" y="8" width="359" height="30"/>
-                                                <nil key="textColor"/>
-                                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                                <textInputTraits key="textInputTraits" returnKeyType="done"/>
-                                                <connections>
-                                                    <outlet property="delegate" destination="7OV-uf-3yE" id="ksr-od-bvX"/>
-                                                </connections>
-                                            </textField>
-                                            <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="map config url" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="dR3-en-wTR">
-                                                <rect key="frame" x="8" y="46" width="359" height="30"/>
-                                                <nil key="textColor"/>
-                                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                                <textInputTraits key="textInputTraits" keyboardType="URL" returnKeyType="done" textContentType="url"/>
-                                                <connections>
-                                                    <outlet property="delegate" destination="7OV-uf-3yE" id="PeR-s6-4q4"/>
-                                                </connections>
-                                            </textField>
-                                        </subviews>
-                                        <edgeInsets key="layoutMargins" top="8" left="8" bottom="8" right="8"/>
-                                    </stackView>
+                                    <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="name" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="Ge1-4k-w0c">
+                                        <rect key="frame" x="8" y="8" width="359" height="30"/>
+                                        <nil key="textColor"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                        <textInputTraits key="textInputTraits" returnKeyType="done"/>
+                                        <connections>
+                                            <outlet property="delegate" destination="7OV-uf-3yE" id="ksr-od-bvX"/>
+                                        </connections>
+                                    </textField>
+                                    <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="map config url" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="dR3-en-wTR">
+                                        <rect key="frame" x="8" y="46" width="359" height="30"/>
+                                        <nil key="textColor"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                        <textInputTraits key="textInputTraits" keyboardType="URL" returnKeyType="done" textContentType="url"/>
+                                        <connections>
+                                            <outlet property="delegate" destination="7OV-uf-3yE" id="PeR-s6-4q4"/>
+                                        </connections>
+                                    </textField>
                                 </subviews>
-                                <constraints>
-                                    <constraint firstItem="AVa-X1-orh" firstAttribute="width" secondItem="7mC-rW-hJx" secondAttribute="width" id="7rg-Uk-a8o"/>
-                                    <constraint firstItem="AVa-X1-orh" firstAttribute="top" secondItem="7mC-rW-hJx" secondAttribute="top" id="JQb-b1-btN"/>
-                                    <constraint firstItem="AVa-X1-orh" firstAttribute="leading" secondItem="7mC-rW-hJx" secondAttribute="leading" id="bq2-PC-zzX"/>
-                                </constraints>
-                            </scrollView>
+                                <edgeInsets key="layoutMargins" top="8" left="8" bottom="8" right="8"/>
+                            </stackView>
                         </subviews>
                         <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
-                            <constraint firstItem="7mC-rW-hJx" firstAttribute="top" secondItem="9cX-Zb-vU0" secondAttribute="top" id="HJf-Ua-E1S"/>
-                            <constraint firstItem="7mC-rW-hJx" firstAttribute="leading" secondItem="9cX-Zb-vU0" secondAttribute="leading" id="IyT-4f-lGf"/>
-                            <constraint firstItem="7mC-rW-hJx" firstAttribute="trailing" secondItem="9cX-Zb-vU0" secondAttribute="trailing" id="koQ-eh-FJi"/>
-                            <constraint firstItem="7mC-rW-hJx" firstAttribute="bottom" secondItem="9cX-Zb-vU0" secondAttribute="bottom" id="yQP-U8-8Jz"/>
+                            <constraint firstItem="AVa-X1-orh" firstAttribute="width" secondItem="9cX-Zb-vU0" secondAttribute="width" id="3Cl-xB-UZt"/>
+                            <constraint firstItem="AVa-X1-orh" firstAttribute="leading" secondItem="9cX-Zb-vU0" secondAttribute="leading" id="4p0-yF-XM4"/>
+                            <constraint firstItem="AVa-X1-orh" firstAttribute="top" secondItem="9cX-Zb-vU0" secondAttribute="top" id="4vP-1x-4Yg"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="9cX-Zb-vU0"/>
                     </view>
@@ -724,10 +719,10 @@
             </objects>
             <point key="canvasLocation" x="1436" y="-196.55172413793105"/>
         </scene>
-        <!--Control-->
+        <!--Detail-->
         <scene sceneID="Byc-Ux-Vft">
             <objects>
-                <tabBarController title="Control" automaticallyAdjustsScrollViewInsets="NO" id="xUh-91-nrW" sceneMemberID="viewController">
+                <tabBarController title="Detail" automaticallyAdjustsScrollViewInsets="NO" id="xUh-91-nrW" sceneMemberID="viewController">
                     <toolbarItems/>
                     <tabBar key="tabBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="ieT-Ll-VOg">
                         <rect key="frame" x="0.0" y="0.0" width="1000" height="1000"/>

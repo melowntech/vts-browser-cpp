@@ -34,11 +34,11 @@
 @interface SearchViewController ()
 {
 	std::shared_ptr<vts::SearchTask> task;
-	NSTimer* timer;
 }
 
 @property (weak, nonatomic) IBOutlet UISearchBar *searchBar;
 @property (weak, nonatomic) IBOutlet UITableView *tableView;
+@property (weak, nonatomic) IBOutlet UIActivityIndicatorView *activityIndicator;
 
 @end
 
@@ -47,26 +47,30 @@
 
 - (void)viewDidLoad
 {
-	timer = [NSTimer timerWithTimeInterval:1 target:self selector:@selector(timerTick) userInfo:nil repeats:YES];
-	[[NSRunLoop mainRunLoop] addTimer:timer forMode:NSRunLoopCommonModes];
+    [super viewDidLoad];
+    mapTimerStart(self, @selector(timerTick));
 }
 
-- (void)dealloc
+- (void)timerTick
 {
-	[timer invalidate];
+	if (task && !task->done)
+		[_activityIndicator startAnimating];
+	else
+		[_activityIndicator stopAnimating];
+
+	if (task && task->done)
+	{
+		double pos[3];
+		map->getPositionPoint(pos);
+		task->updateDistances(pos);
+		[_tableView reloadData];
+	}
 }
 
 - (void)searchCommit
 {
 	task = map->search([_searchBar.text UTF8String]);
     [_searchBar resignFirstResponder];
-}
-
-- (void)timerTick
-{
-    map->renderTickPrepare();
-	if (task && task->done)
-		[_tableView reloadData];
 }
 
 - (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar

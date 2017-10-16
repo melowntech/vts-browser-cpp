@@ -13,9 +13,9 @@ set(SRC_LIST
   controllers/MapViewController.h controllers/MapViewController.mm
   controllers/SearchViewController.h controllers/SearchViewController.mm
   controllers/SearchCell.h controllers/SearchCell.m
-  controllers/control/PositionViewController.h controllers/control/PositionViewController.mm
-  controllers/control/OptionsViewController.h controllers/control/OptionsViewController.mm
-  controllers/control/StatisticsViewController.h controllers/control/StatisticsViewController.mm
+  controllers/detail/PositionViewController.h controllers/detail/PositionViewController.mm
+  controllers/detail/OptionsViewController.h controllers/detail/OptionsViewController.mm
+  controllers/detail/StatisticsViewController.h controllers/detail/StatisticsViewController.mm
 )
 
 set(RES_LIST

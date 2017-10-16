@@ -254,6 +254,8 @@
 
 - (void)update
 {
+	mapTimerStop();
+
 	[self updateFullscreen];
 	
 	if (map->getMapConfigReady())

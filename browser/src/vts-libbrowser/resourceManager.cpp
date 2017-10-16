@@ -105,15 +105,52 @@ Resource::Resource(vts::MapImpl *map, const std::string &name,
     priority(std::numeric_limits<float>::quiet_NaN()),
     priorityCopy(std::numeric_limits<float>::quiet_NaN())
 {
+    LOG(debug) << "Constructing resource <" << name
+    		   << "> at <" << this << ">";
     initializeFetchTask(map, this);
 }
 
 Resource::~Resource()
-{}
+{
+    LOG(debug) << "Destroying resource <" << name
+    		   << "> at <" << this << ">";
+}
 
 Resource::operator bool() const
 {
     return state == Resource::State::ready;
+}
+
+std::ostream &operator << (std::ostream &stream, Resource::State state)
+{
+	switch (state)
+	{
+        case Resource::State::initializing:
+        	stream << "initializing";
+        	break;
+        case Resource::State::downloading:
+        	stream << "downloading";
+        	break;
+        case Resource::State::downloaded:
+        	stream << "downloaded";
+        	break;
+        case Resource::State::ready:
+        	stream << "ready";
+        	break;
+        case Resource::State::errorFatal:
+        	stream << "errorFatal";
+        	break;
+        case Resource::State::errorRetry:
+        	stream << "errorRetry";
+        	break;
+        case Resource::State::availFail:
+        	stream << "availFail";
+        	break;
+        case Resource::State::finalizing:
+        	stream << "finalizing";
+        	break;
+	}
+	return stream;
 }
 
 ////////////////////////////
@@ -158,17 +195,16 @@ void MapImpl::resourceLoad(const std::shared_ptr<Resource> &r)
         else if (resources.downloads < options.maxConcurrentDownloads)
         {
             statistics.resourcesDownloaded++;
-            resources.fetcher->fetch(r);
             resources.downloads++;
             r->state = Resource::State::downloading;
+            resources.fetcher->fetch(r);
         }
     }
     catch (const std::exception &e)
     {
         statistics.resourcesFailed++;
         r->state = Resource::State::errorFatal;
-        LOG(err3) << "Failed loading resource <"
-                  << r->name
+        LOG(err3) << "Failed loading resource <" << r->name
                   << ">, exception <" << e.what() << ">";
     }
 }
@@ -203,6 +239,7 @@ void Resource::processLoad()
         return;
     }
     reply.content.free();
+    availTest.reset();
     state = Resource::State::ready;
 }
 
@@ -302,7 +339,7 @@ bool Resource::performAvailTest() const
 
 void Resource::fetchDone()
 {
-    LOG(debug) << "Fetched file <" << name << ">";
+    LOG(debug) << "Resource <" << name << "> finished fetching";
     assert(map);
     map->resources.downloads--;
     state = Resource::State::downloading;
@@ -310,9 +347,12 @@ void Resource::fetchDone()
     // handle error or invalid codes
     if (reply.code >= 400 || reply.code < 200)
     {
-        if (reply.code == FetchTask::ExtraCodes::ProhibitedContent) {
+        if (reply.code == FetchTask::ExtraCodes::ProhibitedContent)
+        {
             state = Resource::State::errorFatal;
-        } else {
+        }
+        else
+        {
             LOG(err2) << "Error downloading <" << name
                       << ">, http code " << reply.code;
             state = Resource::State::errorRetry;
@@ -327,8 +367,8 @@ void Resource::fetchDone()
     if (state == Resource::State::downloading
             && !performAvailTest())
     {
-        LOG(info1) << "Availability test failed for resource <"
-                   << name << ">";
+        LOG(info1) << "Resource <" << name
+        		   << "> failed availability test";
         state = Resource::State::availFail;
         reply.content.free();
         map->resources.cache->write(name, reply.content, reply.expires);
@@ -434,10 +474,10 @@ void MapImpl::resourceRenderTick()
                     releaseIfLast(it);
                     if (!it)
                     {
-                        LOG(info1) << "Releasing resource <" << name << ">";
+                        LOG(info1) << "Released resource <" << name << ">";
                         resources.resources.erase(name);
-                        memUse -= mem;
                         statistics.resourcesReleased++;
+                        memUse -= mem;
                         if (memUse <= options.maxResourcesMemory)
                             break;
                     }

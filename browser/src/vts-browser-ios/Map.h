@@ -31,10 +31,14 @@
 #include <vts-renderer/renderer.hpp>
 
 #import <OpenGLES/EAGL.h>
+#import <UIKit/UIKit.h>
 
 extern vts::Map *map;
 extern vts::renderer::RenderOptions renderOptions;
 
 void mapInitialize();
 EAGLContext *mapRenderContext();
+
+void mapTimerStart(id object, SEL selector);
+void mapTimerStop();
 

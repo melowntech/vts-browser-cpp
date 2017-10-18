@@ -61,7 +61,7 @@ void DataThread::run()
     vts::setLogThreadName("data");
     SDL_GL_MakeCurrent(window, context);
     while (!stop && !map)
-        usleep(1000);
+        usleep(10000);
     map->dataInitialize(fetcher);
     while (!stop)
     {
@@ -69,7 +69,7 @@ void DataThread::run()
         map->dataTick();
         vts::uint32 timeFrameEnd = SDL_GetTicks();
         timing = timeFrameEnd - timeFrameStart;
-        usleep(50000);
+        usleep(100000);
     }
     map->dataFinalize();
     SDL_GL_DeleteContext(context);

@@ -121,11 +121,12 @@ public:
     // maximum position change allowed for PIHA, must be positive
     double navigationMaxPositionChange;
 
-    // scale of every tile.
+    // relative scale of every tile.
     // small up-scale may reduce occasional holes on tile borders.
     double renderTilesScale;
 
-    uint64 maxResourcesMemory; // bytes
+    // memory threshold at which resources start to be released
+    uint64 targetResourcesMemory; // bytes
 
     // maximum size of the queue for the resources to be downloaded
     uint32 maxConcurrentDownloads;

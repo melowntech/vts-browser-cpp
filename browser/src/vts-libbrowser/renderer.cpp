@@ -302,6 +302,7 @@ void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav,
                          const vec4f &uvClip)
 {
     assert(trav->meta);
+    assert(trav->rendersReady());
 
     // statistics
     statistics.meshesRenderedTotal++;

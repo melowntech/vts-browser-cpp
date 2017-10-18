@@ -584,10 +584,10 @@ public:
             }
 
             // maxResourcesMemory
-            nk_label(&ctx, "Max memory:", NK_TEXT_LEFT);
-            o.maxResourcesMemory = 1024 * 1024 * (uint64)nk_slide_int(&ctx,
-                    0, o.maxResourcesMemory / 1024 / 1024, 2048, 32);
-            sprintf(buffer, "%3d", (int)(o.maxResourcesMemory / 1024 / 1024));
+            nk_label(&ctx, "Target memory:", NK_TEXT_LEFT);
+            o.targetResourcesMemory = 1024 * 1024 * (uint64)nk_slide_int(&ctx,
+                    0, o.targetResourcesMemory / 1024 / 1024, 2048, 32);
+            sprintf(buffer, "%3d", (int)(o.targetResourcesMemory / 1024 / 1024));
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
             // display

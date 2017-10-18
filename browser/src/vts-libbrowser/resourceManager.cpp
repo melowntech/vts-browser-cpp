@@ -219,27 +219,32 @@ void Resource::processLoad()
     }
     catch (const std::exception &e)
     {
+        LOG(err3) << "Failed processing resource <" << name
+                  << ">, exception <" << e.what() << ">";
         if (map->options.debugSaveCorruptedFiles)
         {
+            std::string path = std::string() + "corrupted/"
+                    + convertNameToPath(name, false);
             try
             {
-                writeLocalFileBuffer(std::string() + "corrupted/"
-                    + convertNameToPath(name, false), reply.content);
+                writeLocalFileBuffer(path, reply.content);
+                LOG(info1) << "Resource <" << name
+                           << "> saved into file <"
+                           << path << "> for further inspection";
             }
             catch(...)
             {
-                // do nothing
+                LOG(warn1) << "Failed saving resource <" << name
+                           << "> into file <"
+                           << path << "> for further inspection";
             }
         }
         map->statistics.resourcesFailed++;
-		reply.content.free();
-        state = Resource::State::errorFatal;
-        LOG(err3) << "Failed processing resource <" << name
-                  << ">, exception <" << e.what() << ">";
+        reply.content.free();
+        state = Resource::State::errorRetry;
         return;
     }
     reply.content.free();
-    availTest.reset();
     state = Resource::State::ready;
 }
 
@@ -432,7 +437,7 @@ void MapImpl::resourceRenderFinalize()
 void MapImpl::resourceRenderTick()
 {
     // clear old resources
-    if (renderer.tickIndex % 30 == 0)
+    if (renderer.tickIndex % 20 == 0)
     {
         struct Res
         {
@@ -453,11 +458,11 @@ void MapImpl::resourceRenderTick()
             memRamUse += it.second->info.ramMemoryCost;
             memGpuUse += it.second->info.gpuMemoryCost;
             // consider long time not used resources only
-            if (it.second->lastAccessTick + 100 < renderer.tickIndex)
+            if (it.second->lastAccessTick + 50 < renderer.tickIndex)
                 resToRemove.emplace(it.first, it.second->lastAccessTick);
         }
         uint64 memUse = memRamUse + memGpuUse;
-        if (memUse > options.maxResourcesMemory)
+        if (memUse > options.targetResourcesMemory)
         {
             while (!resToRemove.empty())
             {
@@ -478,7 +483,7 @@ void MapImpl::resourceRenderTick()
                         resources.resources.erase(name);
                         statistics.resourcesReleased++;
                         memUse -= mem;
-                        if (memUse <= options.maxResourcesMemory)
+                        if (memUse <= options.targetResourcesMemory)
                             break;
                     }
                 }

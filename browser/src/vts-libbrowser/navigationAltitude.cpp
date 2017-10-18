@@ -188,7 +188,8 @@ void MapImpl::updatePositionAltitudeShift()
             task.model = translationMatrix(t->meta->surrogatePhys)
                     * scaleMatrix(t->nodeInfo.extents().size() * 0.031);
             task.color = vec4f(1.f, 1.f, 1.f, 1.f);
-            navigation.renders.push_back(task);
+            if (*task.mesh)
+                navigation.renders.push_back(task);
         }
     }
     statistics.usedNavigationlod = minUsedLod;

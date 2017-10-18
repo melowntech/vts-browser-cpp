@@ -136,10 +136,10 @@ void optionsConfigMapOptions(
         "Scale of every tile. "
         "Small up-scale may reduce occasional holes on tile borders.")
 
-    ((section + "maxResourcesMemory").c_str(),
-        po::value<uint64>(&opts->maxResourcesMemory)
-        ->default_value(opts->maxResourcesMemory),
-        "Maximum memory (in bytes) used by resources "
+    ((section + "targetResourcesMemory").c_str(),
+        po::value<uint64>(&opts->targetResourcesMemory)
+        ->default_value(opts->targetResourcesMemory),
+        "Target memory (in bytes) used by resources "
         "before they begin to unload.")
 
     ((section + "maxConcurrentDownloads").c_str(),

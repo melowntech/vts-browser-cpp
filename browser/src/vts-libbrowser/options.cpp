@@ -60,7 +60,7 @@ MapOptions::MapOptions() :
     navigationMaxViewExtentMult(1.02),
     navigationMaxPositionChange(0.02),
     renderTilesScale(1.001),
-    maxResourcesMemory(512 * 1024 * 1024),
+    targetResourcesMemory(0),
     maxConcurrentDownloads(10),
     maxResourceProcessesPerTick(10),
     navigationSamplesPerViewExtent(8),

@@ -35,6 +35,7 @@
 @property (weak, nonatomic) IBOutlet UISegmentedControl *optTraversal;
 @property (weak, nonatomic) IBOutlet UISlider *optQualityDegrad;
 @property (weak, nonatomic) IBOutlet UISwitch *optAtmosphere;
+@property (weak, nonatomic) IBOutlet UISwitch *optTouchAreas;
 
 @end
 
@@ -47,6 +48,7 @@
     _optTraversal.selectedSegmentIndex = (int)map->options().traverseMode;
     _optQualityDegrad.value = map->options().maxTexelToPixelScale;
     _optAtmosphere.on = renderOptions.renderAtmosphere;
+    _optTouchAreas.on = extraConfig.showControlAreas;
 }
 
 - (IBAction)optTraversalChanged:(UISegmentedControl *)sender
@@ -62,6 +64,11 @@
 - (IBAction)optAtmosphereChanged:(UISwitch *)sender
 {
     renderOptions.renderAtmosphere = sender.on;
+}
+
+- (IBAction)optTouchAreasChanged:(UISwitch *)sender
+{
+	extraConfig.showControlAreas = sender.on;
 }
 
 @end

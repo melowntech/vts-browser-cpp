@@ -278,6 +278,7 @@
     }
     
 	vts::renderer::render(renderOptions, map->draws(), map->celestialBody());
+	mapRenderScales(view.contentScaleFactor, rect, _gestureViewLeft.frame, _gestureViewBottom.frame, _gestureViewRight.frame);
     
     renderOptions.targetViewportX = rect.origin.x * view.contentScaleFactor;
     renderOptions.targetViewportY = rect.origin.y * view.contentScaleFactor;

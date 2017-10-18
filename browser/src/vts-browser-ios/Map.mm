@@ -27,11 +27,13 @@
 #include <cassert>
 #include <unistd.h> // usleep
 #include "Map.h"
+#include <vts-browser/math.hpp>
 #include <vts-browser/options.hpp>
 #include <vts-browser/fetcher.hpp>
 #include <vts-renderer/classes.hpp>
 
 #import <Dispatch/Dispatch.h>
+#import <OpenGLES/ES2/gl.h>
 #import <dlfcn.h> // dlsym
 
 
@@ -78,15 +80,25 @@
 
 @end
 
+using namespace vts;
+using namespace vts::renderer;
 
-vts::Map *map;
-vts::renderer::RenderOptions renderOptions;
+ExtraConfig::ExtraConfig() : showControlAreas(false)
+{}
+
+Map *map;
+RenderOptions renderOptions;
+ExtraConfig extraConfig; 
 
 namespace
 {
 	dispatch_queue_t dataQueue;
 	EAGLContext *dataContext;
 	EAGLContext *renderContext;
+	std::shared_ptr<Shader> scalesShader;
+	std::shared_ptr<Mesh> scalesMeshQuad;
+	std::shared_ptr<Texture> textureControlAreas;
+	std::shared_ptr<Texture> scalesTextureYaw;
 	TimerObj *timer;
 	
 	void dataUpdate()
@@ -103,7 +115,7 @@ namespace
 		[EAGLContext setCurrentContext:nullptr];
 		
 		// save some cpu cycles
-        usleep(100000);
+        usleep(150000);
 	}
 	
 	void *iosGlGetProcAddress(const char *name)
@@ -116,16 +128,16 @@ void mapInitialize()
 {
 	// create the map
 	{
-        vts::MapCreateOptions createOptions;
+        MapCreateOptions createOptions;
         createOptions.clientId = "vts-browser-ios";
         createOptions.disableCache = true;
         assert(!map);
-        map = new vts::Map(createOptions);
+        map = new Map(createOptions);
     }
     
     // configure the map for mobile use
     {
-        vts::MapOptions &opt = map->options();
+        MapOptions &opt = map->options();
         opt.maxTexelToPixelScale = 3.2;
         opt.maxBalancedCoarsenessScale = 5.3;
         opt.maxResourcesMemory = 0; // force the map to unload all resources as soon as possible
@@ -139,15 +151,70 @@ void mapInitialize()
 		renderContext = [[EAGLContext alloc] initWithAPI: kEAGLRenderingAPIOpenGLES3 sharegroup:dataContext.sharegroup];
 		[EAGLContext setCurrentContext:renderContext];
 
-		vts::renderer::loadGlFunctions(&iosGlGetProcAddress);
+		loadGlFunctions(&iosGlGetProcAddress);
 		vts::renderer::initialize();
 		map->renderInitialize();
 		
+		map->callbacks().loadTexture = std::bind(&loadTexture, std::placeholders::_1, std::placeholders::_2);
+		map->callbacks().loadMesh = std::bind(&loadMesh, std::placeholders::_1, std::placeholders::_2);
+		
+		// load data for rendering scales
+		{
+		    // load shader
+		    {
+		        scalesShader = std::make_shared<Shader>();
+		        Buffer vert = readInternalMemoryBuffer("data/shaders/scales.vert.glsl");
+		        Buffer frag = readInternalMemoryBuffer("data/shaders/scales.frag.glsl");
+		        scalesShader->load(
+		            std::string(vert.data(), vert.size()),
+		            std::string(frag.data(), frag.size()));
+		        std::vector<uint32> &uls = scalesShader->uniformLocations;
+		        GLuint id = scalesShader->getId();
+		        uls.push_back(glGetUniformLocation(id, "uniMvp"));
+		        uls.push_back(glGetUniformLocation(id, "uniUvm"));
+		        glUseProgram(id);
+		        glUniform1i(glGetUniformLocation(id, "uniTexture"), 0);
+		        checkGl();
+		    }
+
+		    // load mesh
+		    {
+		    	Buffer buff = readInternalMemoryBuffer("data/meshes/rect.obj");
+		        ResourceInfo info;
+		        GpuMeshSpec spec(buff);
+		        spec.attributes.resize(2);
+				spec.attributes[0].enable = true;
+				spec.attributes[0].stride = sizeof(vec3f) + sizeof(vec2f);
+				spec.attributes[0].components = 3;
+				spec.attributes[1].enable = true;
+				spec.attributes[1].stride = spec.attributes[0].stride;
+				spec.attributes[1].components = 2;
+				spec.attributes[1].offset = sizeof(vec3f);
+		        scalesMeshQuad = std::make_shared<Mesh>();
+		        scalesMeshQuad->load(info, spec);
+		    }
+		    
+		    // load texture control areas
+		    {
+		    	Buffer buff = readInternalMemoryBuffer("data/textures/border.png");
+		        ResourceInfo info;
+		        GpuTextureSpec spec(buff);
+		        textureControlAreas = std::make_shared<Texture>();
+		        textureControlAreas->load(info, spec);
+		    }
+		    
+		    // load texture yaw
+		    {
+		    	Buffer buff = readInternalMemoryBuffer("data/textures/scale-yaw.png");
+		        ResourceInfo info;
+		        GpuTextureSpec spec(buff);
+		        scalesTextureYaw = std::make_shared<Texture>();
+		        scalesTextureYaw->load(info, spec);
+		    }
+		}
+		
 		[EAGLContext setCurrentContext:nullptr];
     }
-    
-    map->callbacks().loadTexture = std::bind(&vts::renderer::loadTexture, std::placeholders::_1, std::placeholders::_2);
-    map->callbacks().loadMesh = std::bind(&vts::renderer::loadMesh, std::placeholders::_1, std::placeholders::_2);
     
     // create data thread
 	dataQueue = dispatch_queue_create("com.melown.vts.map.data", NULL);
@@ -164,6 +231,55 @@ void mapInitialize()
 EAGLContext *mapRenderContext()
 {
 	return renderContext;
+}
+
+namespace
+{
+	void renderQuad(mat4 proj, CGRect screenPos, CGRect texturePos)
+	{
+		mat4 model = identityMatrix4();
+		model(0,0) = screenPos.size.width;
+		model(1,1) = screenPos.size.height;
+		model(0,3) = screenPos.origin.x;
+		model(1,3) = screenPos.origin.y;
+		mat4f mvp = (proj * model).cast<float>();
+		mat3f uvm = identityMatrix3().cast<float>();
+		scalesShader->uniformMat4(0, mvp.data());
+		scalesShader->uniformMat3(1, uvm.data());
+		scalesMeshQuad->dispatch();
+	}
+}
+
+void mapRenderScales(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, CGRect zoom)
+{
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_SCISSOR_TEST);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glViewport(whole.origin.x * retinaScale, whole.origin.y * retinaScale, whole.size.width * retinaScale, whole.size.height * retinaScale);
+    glActiveTexture(GL_TEXTURE0);
+    
+	scalesTextureYaw->bind();
+	scalesShader->bind();
+	scalesMeshQuad->bind();
+	mat4 proj = orthographicMatrix(0, whole.size.width, whole.size.height, 0, 0, 1);
+    checkGl("prepare render scale");
+	
+	if (extraConfig.showControlAreas)
+	{
+		textureControlAreas->bind();
+		renderQuad(proj, pitch, CGRectMake(0, 0, 1, 1));
+		renderQuad(proj, yaw, CGRectMake(0, 0, 1, 1));
+		renderQuad(proj, zoom, CGRectMake(0, 0, 1, 1));
+	}
+	
+	// yaw
+	{
+		scalesTextureYaw->bind();
+	}
+	
+    checkGl("render scale");
 }
 
 void mapTimerStart(id object, SEL selector)

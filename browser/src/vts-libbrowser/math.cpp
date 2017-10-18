@@ -166,6 +166,18 @@ mat4 perspectiveMatrix(double fovyDegs, double aspect,
 	return frustumMatrix(-xmax, xmax, -ymax, ymax, near, far);
 }
 
+mat4 orthographicMatrix(double left, double right,
+                        double bottom, double top,
+                        double near, double far)
+{
+	mat4 m = (mat4() <<
+			2 / (right - left), 0, 0, -(right + left) / (right - left),
+			0, 2 / (top - bottom), 0, -(top + bottom) / (top - bottom),
+			0, 0, -2 / (far - near), -(far + near) / (far - near),
+			0, 0, 0, 1).finished();
+	return m;
+}
+
 mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up)
 {
     vec3 f = normalize(target - eye);

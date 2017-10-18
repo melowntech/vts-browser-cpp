@@ -5,6 +5,7 @@ set(DATA_LIST
 	data/meshes/cube.obj
 	data/meshes/line.obj
 	data/meshes/quad.obj
+	data/meshes/rect.obj
 	data/meshes/sphere.obj
 	data/shaders/atmosphere.frag.glsl
 	data/shaders/atmosphere.vert.glsl
@@ -14,8 +15,12 @@ set(DATA_LIST
 	data/shaders/infographic.vert.glsl
 	data/shaders/gui.frag.glsl
 	data/shaders/gui.vert.glsl
+	data/shaders/scales.frag.glsl
+	data/shaders/scales.vert.glsl
+	data/textures/border.png
 	data/textures/gwen.png
 	data/textures/helper.jpg
+	data/textures/scale-yaw.png
 )
 
 set(GEN_CODE)

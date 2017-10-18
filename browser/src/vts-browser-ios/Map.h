@@ -33,11 +33,21 @@
 #import <OpenGLES/EAGL.h>
 #import <UIKit/UIKit.h>
 
+struct ExtraConfig
+{
+	ExtraConfig();
+	
+	bool showControlAreas;
+};
+
 extern vts::Map *map;
 extern vts::renderer::RenderOptions renderOptions;
+extern ExtraConfig extraConfig; 
 
 void mapInitialize();
+
 EAGLContext *mapRenderContext();
+void mapRenderScales(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, CGRect zoom);
 
 void mapTimerStart(id object, SEL selector);
 void mapTimerStop();

@@ -437,7 +437,7 @@ void MapImpl::resourceRenderFinalize()
 void MapImpl::resourceRenderTick()
 {
     // clear old resources
-    if (renderer.tickIndex % 20 == 0)
+    if (renderer.tickIndex % 30 == 0)
     {
         struct Res
         {
@@ -458,7 +458,7 @@ void MapImpl::resourceRenderTick()
             memRamUse += it.second->info.ramMemoryCost;
             memGpuUse += it.second->info.gpuMemoryCost;
             // consider long time not used resources only
-            if (it.second->lastAccessTick + 50 < renderer.tickIndex)
+            if (it.second->lastAccessTick + 70 < renderer.tickIndex)
                 resToRemove.emplace(it.first, it.second->lastAccessTick);
         }
         uint64 memUse = memRamUse + memGpuUse;

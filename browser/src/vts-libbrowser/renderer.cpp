@@ -962,13 +962,13 @@ void MapImpl::traverseClearing(const std::shared_ptr<TraverseNode> &trav)
         if ((id.y * 8 + id.x) % 64 != renderer.tickIndex % 64)
             return;
     }
-    
+
     if (trav->lastAccessTime + 5 < renderer.tickIndex)
     {
         trav->clearAll();
         return;
     }
-    
+
     for (auto &&it : trav->childs)
         traverseClearing(it);
 }

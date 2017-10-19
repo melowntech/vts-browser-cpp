@@ -188,6 +188,14 @@
 
 // view controls
 
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    _gestureViewBottom.constraints.firstObject.constant = extraConfig.touchSize;
+    _gestureViewLeft.constraints.firstObject.constant = extraConfig.touchSize;
+    _gestureViewRight.constraints.firstObject.constant = extraConfig.touchSize;
+}
+
 - (void)viewWillDisappear:(BOOL)animated
 {
     [super viewWillDisappear:animated];

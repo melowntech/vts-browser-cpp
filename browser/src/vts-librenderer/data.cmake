@@ -21,6 +21,8 @@ set(DATA_LIST
 	data/textures/gwen.png
 	data/textures/helper.jpg
 	data/textures/scale-yaw.png
+	data/textures/scale-pitch.png
+	data/textures/scale-zoom.png
 )
 
 set(GEN_CODE)

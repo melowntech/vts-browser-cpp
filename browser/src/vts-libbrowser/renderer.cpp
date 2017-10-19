@@ -383,6 +383,7 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
     assert(!trav->meta);
     assert(trav->childs.empty());
     assert(trav->rendersEmpty());
+    assert(!trav->parent || trav->parent->meta);
 
     // statistics
     statistics.currentNodeMetaUpdates++;
@@ -404,9 +405,9 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
                 continue;
             TileId pid = vtslibs::vts::parent(nodeId);
             uint32 idx = (nodeId.x % 2) + (nodeId.y % 2) * 2;
-            const vtslibs::vts::MetaNode &node = p->get(pid);
-            assert(&node);
-            if ((node.flags()
+            const vtslibs::vts::MetaNode *node = p->get(pid, std::nothrow);
+            assert(node);
+            if ((node->flags()
                  & (vtslibs::vts::MetaNode::Flag::ulChild << idx)) == 0)
                 continue;
         }
@@ -461,7 +462,7 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
     }
 
     assert(node);
-    trav->meta = boost::in_place(*node);
+    trav->meta = std::make_shared<TraverseNode::MetaInfo>(*node);
     trav->meta->metaTiles.swap(metaTiles);
 
     // corners
@@ -508,7 +509,7 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
                 obb.points[1] = max(obb.points[1], p);
             }
 
-            trav->meta->obb = obb;
+            trav->meta->obb = std::make_shared<TraverseNode::Obb>(obb);
         }
     }
     else if (node->extents.ll != node->extents.ur)

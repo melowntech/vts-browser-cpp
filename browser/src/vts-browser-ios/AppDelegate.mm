@@ -34,7 +34,7 @@
 	{
 		MapInitializer()
 		{
-			vts::setLogMask("I2W2E2");
+			//vts::setLogMask("I2W2E2");
 			//vts::setLogMask("ALL");
 			mapInitialize();
 		}

@@ -30,6 +30,7 @@
 #include <vts-browser/math.hpp>
 #include <vts-browser/options.hpp>
 #include <vts-browser/fetcher.hpp>
+#include <vts-browser/celestial.hpp>
 #include <vts-renderer/classes.hpp>
 
 #import <Dispatch/Dispatch.h>
@@ -83,7 +84,7 @@
 using namespace vts;
 using namespace vts::renderer;
 
-ExtraConfig::ExtraConfig() : showControlAreas(false)
+ExtraConfig::ExtraConfig() : touchSize(50), showControlScales(true), showControlAreas(false)
 {}
 
 Map *map;
@@ -99,6 +100,8 @@ namespace
 	std::shared_ptr<Mesh> scalesMeshQuad;
 	std::shared_ptr<Texture> textureControlAreas;
 	std::shared_ptr<Texture> scalesTextureYaw;
+	std::shared_ptr<Texture> scalesTexturePitch;
+	std::shared_ptr<Texture> scalesTextureZoom;
 	TimerObj *timer;
 	
 	void dataUpdate()
@@ -210,6 +213,24 @@ void mapInitialize()
 		        scalesTextureYaw = std::make_shared<Texture>();
 		        scalesTextureYaw->load(info, spec);
 		    }
+		    
+		    // load texture pitch
+		    {
+		    	Buffer buff = readInternalMemoryBuffer("data/textures/scale-pitch.png");
+		        ResourceInfo info;
+		        GpuTextureSpec spec(buff);
+		        scalesTexturePitch = std::make_shared<Texture>();
+		        scalesTexturePitch->load(info, spec);
+		    }
+		    
+		    // load texture zoom
+		    {
+		    	Buffer buff = readInternalMemoryBuffer("data/textures/scale-zoom.png");
+		        ResourceInfo info;
+		        GpuTextureSpec spec(buff);
+		        scalesTextureZoom = std::make_shared<Texture>();
+		        scalesTextureZoom->load(info, spec);
+		    }
 		}
 		
 		[EAGLContext setCurrentContext:nullptr];
@@ -243,6 +264,10 @@ namespace
 		model(1,3) = screenPos.origin.y;
 		mat4f mvp = (proj * model).cast<float>();
 		mat3f uvm = identityMatrix3().cast<float>();
+		uvm(0.0) = texturePos.size.width;
+		uvm(1,1) = texturePos.size.height;
+		uvm(0,2) = texturePos.origin.x;
+		uvm(1,2) = texturePos.origin.y;
 		scalesShader->uniformMat4(0, mvp.data());
 		scalesShader->uniformMat3(1, uvm.data());
 		scalesMeshQuad->dispatch();
@@ -252,8 +277,8 @@ namespace
 void mapRenderScales(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, CGRect zoom)
 {
 	glDisable(GL_CULL_FACE);
-	glDisable(GL_SCISSOR_TEST);
 	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_SCISSOR_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glViewport(whole.origin.x * retinaScale, whole.origin.y * retinaScale, whole.size.width * retinaScale, whole.size.height * retinaScale);
@@ -273,9 +298,127 @@ void mapRenderScales(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, 
 		renderQuad(proj, zoom, CGRectMake(0, 0, 1, 1));
 	}
 	
-	// yaw
+	if (extraConfig.showControlScales)
 	{
-		scalesTextureYaw->bind();
+		glEnable(GL_SCISSOR_TEST);
+		
+		double rotation[3];
+		map->getPositionRotation(rotation);
+	
+		// yaw
+		{
+		    glScissor(yaw.origin.x * retinaScale, (whole.size.height - yaw.size.height - yaw.origin.y) * retinaScale, yaw.size.width * retinaScale, yaw.size.height * retinaScale);
+			scalesTextureYaw->bind();
+			float radius = std::min(10.f * retinaScale, (float)yaw.size.height * 0.5f);
+			float startX = yaw.origin.x + yaw.size.width * 0.5 - radius;
+			float startY = yaw.origin.y + yaw.size.height - 1.7 * radius;
+			float singleWidth = 8 * radius;
+			float totalWidth = 4 * singleWidth;
+			float startOffset = totalWidth * rotation[0] / 360;
+			float texH = 0.11;
+			// render numbers
+			for (int i = -10; i < 7; i++)
+			{
+				renderQuad(proj,
+					CGRectMake(startX + startOffset + i * singleWidth, startY, 2 * radius, 2 * radius),
+					CGRectMake(0, ((100 - i) % 4) * texH, 1, texH));
+			}
+			// render dots
+			CGRect dotRect = CGRectMake(0, 4 * texH, 1, texH);
+			float dotOffset = startOffset + 0.5 * singleWidth;
+			for (int i = -30; i < 17; i++)
+			{
+				if ((i + 100) % 4 == 2)
+					continue;
+				renderQuad(proj,
+					CGRectMake(startX + dotOffset + (i * singleWidth) / 4, startY, 2 * radius, 2 * radius),
+					dotRect);
+			}
+			// render arrow
+			renderQuad(proj,
+				CGRectMake(startX, startY, 2 * radius, 1.7 * radius),
+				CGRectMake(0, 0.52, 1, texH));
+		}
+		
+		// pitch
+		{
+		    glScissor(pitch.origin.x * retinaScale, (whole.size.height - pitch.size.height - pitch.origin.y) * retinaScale, pitch.size.width * retinaScale, pitch.size.height * retinaScale);
+			scalesTexturePitch->bind();
+			float radius = std::min(8.f * retinaScale, (float)pitch.size.width * 0.5f);
+			float startX = pitch.origin.x;
+			float startY = pitch.origin.y + pitch.size.height * 0.5 - radius;
+			float singleHeight = 10 * radius;
+			float totalHeight = 8 * singleHeight;
+			float startOffset = totalHeight * -rotation[1] / 360;
+			float texH = 0.1;
+			// render arrows
+			for (int i = -10; i < 17; i++)
+			{
+				renderQuad(proj,
+					CGRectMake(startX, startY + startOffset + i * singleHeight, 2 * radius, 2 * radius),
+					CGRectMake(0, ((80 + i) % 8) * texH, 1, texH));
+			}
+			// render dots
+			CGRect dotRect = CGRectMake(0, 8 * texH, 1, texH);
+			float dotOffset = startOffset + 0.5 * singleHeight;
+			for (int i = -40; i < 37; i++)
+			{
+				if ((i + 100) % 4 == 2)
+					continue;
+				renderQuad(proj,
+					CGRectMake(startX, startY + dotOffset + (i * singleHeight) / 4, 2 * radius, 2 * radius),
+					dotRect);
+			}
+			// render arrow
+			renderQuad(proj,
+				CGRectMake(startX, startY, 2 * radius, 2 * radius),
+				CGRectMake(0, 0.9, 1, texH));
+		}
+		
+		// zoom
+		{
+		    glScissor(zoom.origin.x * retinaScale, (whole.size.height - zoom.size.height - zoom.origin.y) * retinaScale, zoom.size.width * retinaScale, zoom.size.height * retinaScale);
+			scalesTextureZoom->bind();
+			float radius = std::min(16.f * retinaScale, (float)zoom.size.width * 0.5f);
+			float startX = zoom.origin.x + zoom.size.width - 2 * radius;
+			float startY = zoom.origin.y + zoom.size.height * 0.5 - radius;
+			float singleHeight = 6 * radius;
+			float totalHeight = 8 * singleHeight;
+			double zoomVal = map->getPositionViewExtent();
+            double zoomScale = map->celestialBody().majorRadius;
+			double zoomMin = map->options().viewExtentLimitScaleMin * zoomScale;
+			double zoomMax = map->options().viewExtentLimitScaleMax * zoomScale;
+			zoomVal = std::log2(zoomVal);
+			zoomMin = std::log2(zoomMin);
+			zoomMax = std::log2(zoomMax);
+			double zoomNorm = (zoomVal - zoomMin) / (zoomMax - zoomMin) * 8 / 10;
+            float startOffset = totalHeight * (zoomNorm - 1);
+			float texH = 0.1;
+			// render lines
+			for (int i = 0; i < 9; i++)
+			{
+				renderQuad(proj,
+					CGRectMake(startX, startY + startOffset + i * singleHeight, 2 * radius, 2 * radius),
+					CGRectMake(0, (8 - i) * texH, 1, texH));
+			}
+			// render dots
+			CGRect dotRect = CGRectMake(0, 8 * texH, 1, texH);
+			float dotOffset = startOffset + 0.5 * singleHeight;
+			for (int i = 2; i < 30; i++)
+			{
+				if (i % 4 == 2)
+					continue;
+				renderQuad(proj,
+					CGRectMake(startX, startY + dotOffset + (i * singleHeight) / 4, 2 * radius, 2 * radius),
+					dotRect);
+			}
+			// render arrow
+			renderQuad(proj,
+				CGRectMake(startX, startY, 2 * radius, 2 * radius),
+				CGRectMake(0, 0.9, 1, texH));
+		}
+		
+		glDisable(GL_SCISSOR_TEST);
 	}
 	
     checkGl("render scale");

@@ -107,7 +107,7 @@ public:
     {
         std::vector<std::shared_ptr<MetaTile>> metaTiles;
         std::vector<vtslibs::registry::CreditId> credits;
-        boost::optional<Obb> obb;
+        std::shared_ptr<Obb> obb;
         vec3 cornersPhys[8];
         vec3 aabbPhys[2];
         vec3 surrogatePhys;
@@ -115,7 +115,7 @@ public:
         MetaInfo(const vtslibs::vts::MetaNode &node);
     };
 
-    boost::optional<MetaInfo> meta;
+    std::shared_ptr<MetaInfo> meta;
     std::vector<std::shared_ptr<TraverseNode>> childs;
     std::vector<RenderTask> opaque;
     std::vector<RenderTask> transparent;

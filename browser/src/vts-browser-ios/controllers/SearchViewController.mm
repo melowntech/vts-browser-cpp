@@ -49,6 +49,7 @@
 {
     [super viewDidLoad];
     mapTimerStart(self, @selector(timerTick));
+    [_searchBar becomeFirstResponder];
 }
 
 - (void)timerTick

@@ -37,6 +37,7 @@ struct ExtraConfig
 {
 	ExtraConfig();
 	
+	int controlType;
 	float touchSize;
 	bool showControlScales;
 	bool showControlAreas;

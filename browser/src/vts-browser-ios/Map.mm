@@ -84,8 +84,17 @@
 using namespace vts;
 using namespace vts::renderer;
 
-ExtraConfig::ExtraConfig() : touchSize(50), showControlScales(true), showControlAreas(false)
-{}
+ExtraConfig::ExtraConfig() :
+	controlType(0), touchSize(45),
+	showControlScales(true), showControlAreas(false)
+{
+	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
+	{
+		controlType = 1;
+		touchSize = 90;
+		showControlScales = false;
+	}
+}
 
 Map *map;
 RenderOptions renderOptions;
@@ -352,18 +361,18 @@ void mapRenderScales(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, 
 			float startOffset = totalHeight * -rotation[1] / 360;
 			float texH = 0.1;
 			// render arrows
-			for (int i = -10; i < 17; i++)
+			for (int i = 6; i < 9; i++)
 			{
 				renderQuad(proj,
 					CGRectMake(startX, startY + startOffset + i * singleHeight, 2 * radius, 2 * radius),
-					CGRectMake(0, ((80 + i) % 8) * texH, 1, texH));
+					CGRectMake(0, (i % 8) * texH, 1, texH));
 			}
 			// render dots
 			CGRect dotRect = CGRectMake(0, 8 * texH, 1, texH);
 			float dotOffset = startOffset + 0.5 * singleHeight;
-			for (int i = -40; i < 37; i++)
+			for (int i = 23; i < 30; i++)
 			{
-				if ((i + 100) % 4 == 2)
+				if ((i % 4) == 2)
 					continue;
 				renderQuad(proj,
 					CGRectMake(startX, startY + dotOffset + (i * singleHeight) / 4, 2 * radius, 2 * radius),

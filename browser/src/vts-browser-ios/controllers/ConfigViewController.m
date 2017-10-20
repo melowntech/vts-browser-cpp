@@ -36,6 +36,10 @@
     self.title = [_item.name isEqualToString:@""] ? @"<New>" : _item.name;
     _name.text = _item.name;
     _url.text = _item.url;
+    if (_name.text.length == 0)
+	    [_name becomeFirstResponder];
+    else
+    	[_url becomeFirstResponder];
 }
 
 - (void)save
@@ -51,7 +55,10 @@
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField 
 {
-	[self save];
+	if (textField == _url)
+		[self save];
+	else
+    	[_url becomeFirstResponder];
     return NO;
 }
 

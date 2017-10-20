@@ -26,12 +26,17 @@
 
 #include "../Map.h"
 #include <vts-browser/draws.hpp>
+#include <vts-browser/math.hpp>
 #include <vts-renderer/renderer.hpp>
 
 #import "MapViewController.h"
 
+using namespace vts;
+
+
 @interface MapViewController ()
 {
+	vec3 gotoPoint;
 	bool fullscreenStatus;
 	bool fullscreenOverride;
 }
@@ -68,7 +73,7 @@
 	}
 }
 
-- (void)gestureYaw:(UIPanGestureRecognizer*)recognizer
+- (void)gestureYawPan:(UIPanGestureRecognizer*)recognizer
 {
     switch (recognizer.state)
 	{
@@ -78,6 +83,22 @@
 			CGPoint p = [recognizer translationInView:_gestureViewCenter];
 			[recognizer setTranslation:CGPoint() inView:_gestureViewCenter];
 			map->rotate({2000 * p.x / renderOptions.width, 0, 0});
+			fullscreenOverride = false;
+		} break;
+		default:
+			break;
+	}
+}
+
+- (void)gestureYawRot:(UIRotationGestureRecognizer*)recognizer
+{
+    switch (recognizer.state)
+	{
+		case UIGestureRecognizerStateEnded:
+		case UIGestureRecognizerStateChanged:
+		{
+			map->rotate({-400 * recognizer.rotation, 0, 0});
+			[recognizer setRotation:0];
 			fullscreenOverride = false;
 		} break;
 		default:
@@ -102,7 +123,7 @@
 	}
 }
 
-- (void)gestureZoom:(UIPanGestureRecognizer*)recognizer
+- (void)gestureZoomPan:(UIPanGestureRecognizer*)recognizer
 {
     switch (recognizer.state)
 	{
@@ -112,6 +133,22 @@
 			CGPoint p = [recognizer translationInView:_gestureViewCenter];
 			[recognizer setTranslation:CGPoint() inView:_gestureViewCenter];
 			map->zoom(-100 * p.y / renderOptions.height);
+			fullscreenOverride = false;
+		} break;
+		default:
+			break;
+	}
+}
+
+- (void)gestureZoomPinch:(UIPinchGestureRecognizer*)recognizer
+{
+    switch (recognizer.state)
+	{
+		case UIGestureRecognizerStateEnded:
+		case UIGestureRecognizerStateChanged:
+		{
+			map->zoom(10 * (recognizer.scale - 1));
+			[recognizer setScale:1];
 			fullscreenOverride = false;
 		} break;
 		default:
@@ -133,6 +170,23 @@
 	}
 }
 
+- (void)gestureGoto:(UITapGestureRecognizer*)recognizer
+{
+    switch (recognizer.state)
+	{
+        case UIGestureRecognizerStateEnded:
+	    {
+	    	CGPoint point = [recognizer locationInView:self.view];
+			float x = point.x * self.view.contentScaleFactor;
+			float y = point.y * self.view.contentScaleFactor;
+	    	gotoPoint = vec3(x, y, 0);
+			fullscreenOverride = false;
+	    } break;
+		default:
+			break;
+	}
+}
+
 - (void)gestureFullscreen:(UITapGestureRecognizer*)recognizer
 {
     switch (recognizer.state)
@@ -143,6 +197,95 @@
 		default:
 			break;
 	}
+}
+
+- (void)removeAllGestures:(UIView*)view
+{
+	if (!view.gestureRecognizers)
+		return;
+    while (view.gestureRecognizers.count)
+        [view removeGestureRecognizer:[view.gestureRecognizers lastObject]];
+}
+
+- (void)initializeGestures
+{
+	assert(_gestureViewCenter);
+	assert(_gestureViewBottom);
+	assert(_gestureViewLeft);
+	assert(_gestureViewRight);
+	
+	[self removeAllGestures:self.view];
+	[self removeAllGestures:_gestureViewCenter];
+	[self removeAllGestures:_gestureViewBottom];
+	[self removeAllGestures:_gestureViewLeft];
+	[self removeAllGestures:_gestureViewRight];
+	
+	if (extraConfig.controlType == 0)
+	{
+		// single touch
+		{
+			// pan recognizer
+			UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePan:)];
+		    [_gestureViewCenter addGestureRecognizer:r];
+		}
+		{
+			// yaw recognizer
+			UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gestureYawPan:)];
+		    [_gestureViewBottom addGestureRecognizer:r];
+		}
+		{
+			// pitch recognizer
+			UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePitch:)];
+		    [_gestureViewLeft addGestureRecognizer:r];
+		}
+		{
+			// zoom recognizer
+			UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gestureZoomPan:)];
+		    [_gestureViewRight addGestureRecognizer:r];
+		}
+    }
+    else
+    {
+    	// multitouch
+		{
+			// pan recognizer
+			UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePan:)];
+			r.maximumNumberOfTouches = 1;
+		    [self.view addGestureRecognizer:r];
+		}
+		{
+			// yaw recognizer
+			UIRotationGestureRecognizer *r = [[UIRotationGestureRecognizer alloc] initWithTarget:self action:@selector(gestureYawRot:)];
+		    [self.view addGestureRecognizer:r];
+		}
+		{
+			// pitch recognizer
+			UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePitch:)];
+			r.minimumNumberOfTouches = 2;
+		    [self.view addGestureRecognizer:r];
+		}
+		{
+			// zoom recognizer
+			UIPinchGestureRecognizer *r = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(gestureZoomPinch:)];
+		    [self.view addGestureRecognizer:r];
+		}
+    }
+    {
+    	// north up recognizer
+		UILongPressGestureRecognizer *r = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(gestureNorthUp:)];
+        [self.view addGestureRecognizer:r];
+    }
+    {
+    	// goto
+		UITapGestureRecognizer *r = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(gestureGoto:)];
+		r.numberOfTapsRequired = 2;
+        [self.view addGestureRecognizer:r];
+    }
+    {
+    	// fullscreen
+		UITapGestureRecognizer *r = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(gestureFullscreen:)];
+        [self.view addGestureRecognizer:r];
+    }
 }
 
 // controller status
@@ -194,6 +337,7 @@
     _gestureViewBottom.constraints.firstObject.constant = extraConfig.touchSize;
     _gestureViewLeft.constraints.firstObject.constant = extraConfig.touchSize;
     _gestureViewRight.constraints.firstObject.constant = extraConfig.touchSize;
+    [self initializeGestures];
 }
 
 - (void)viewWillDisappear:(BOOL)animated
@@ -212,6 +356,7 @@
     	_searchButton
     ];
     
+    gotoPoint(0) = std::numeric_limits<float>::quiet_NaN();
     fullscreenStatus = false;
     fullscreenOverride = true;
     
@@ -219,46 +364,29 @@
     GLKView *view = (GLKView *)self.view;
     view.context = mapRenderContext();
     
-    // initialize gesture recognizers
-    {
-	    // pan recognizer
-	    assert(_gestureViewCenter);
-		UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePan:)];
-        [_gestureViewCenter addGestureRecognizer:r];
-    }
-    {
-	    // yaw recognizer
-	    assert(_gestureViewBottom);
-		UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gestureYaw:)];
-        [_gestureViewBottom addGestureRecognizer:r];
-    }
-    {
-	    // pitch recognizer
-	    assert(_gestureViewLeft);
-		UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePitch:)];
-        [_gestureViewLeft addGestureRecognizer:r];
-    }
-    {
-	    // zoom recognizer
-	    assert(_gestureViewRight);
-		UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gestureZoom:)];
-        [_gestureViewRight addGestureRecognizer:r];
-    }
-    {
-    	// north up recognizer
-		UILongPressGestureRecognizer *r = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(gestureNorthUp:)];
-        [view addGestureRecognizer:r];
-    }
-    {
-    	// fullscreen
-		UITapGestureRecognizer *r = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(gestureFullscreen:)];
-        [view addGestureRecognizer:r];
-    }
-    
     [self configureView];
 }
 
 // rendering
+
+- (vec3)worldPositionFromScreen:(vec3)screenPos
+{
+	float x = screenPos(0);
+	float y = screenPos(1);
+    y = renderOptions.height - y - 1;
+    float depth = std::numeric_limits<float>::quiet_NaN();
+    glReadPixels((int)x, (int)y, 1, 1,
+                 GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+    renderer::checkGl("glReadPixels");
+    if (depth > 1 - 1e-7)
+        depth = std::numeric_limits<float>::quiet_NaN();
+    depth = depth * 2 - 1;
+    x = x / renderOptions.width * 2 - 1;
+    y = y / renderOptions.height * 2 - 1;
+    mat4 viewProj = rawToMat4(map->draws().camera.proj)
+            * rawToMat4(map->draws().camera.view);
+    return vec4to3(viewProj.inverse() * vec4(x, y, depth, 1), true);
+}
 
 - (void)update
 {
@@ -286,6 +414,23 @@
     }
     
 	vts::renderer::render(renderOptions, map->draws(), map->celestialBody());
+	
+	if (gotoPoint(0) == gotoPoint(0))
+	{
+		// todo fix error in glReadPixels
+		/*
+        vec3 posPhys = [self worldPositionFromScreen:gotoPoint];
+        if (posPhys(0) == posPhys(0))
+        {
+            double posNav[3];
+            map->convert(posPhys.data(), posNav,
+                         Srs::Physical, Srs::Navigation);
+            map->setPositionPoint(posNav, NavigationType::Quick);
+        }
+        */
+        gotoPoint(0) = std::numeric_limits<float>::quiet_NaN();
+    }
+	
 	mapRenderScales(view.contentScaleFactor, rect, _gestureViewLeft.frame, _gestureViewBottom.frame, _gestureViewRight.frame);
     
     renderOptions.targetViewportX = rect.origin.x * view.contentScaleFactor;

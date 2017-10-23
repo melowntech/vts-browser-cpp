@@ -66,7 +66,7 @@ add_subdirectory(src/vts-librenderer)
 include_directories(src/vts-librenderer/include)
 
 # application
-message(STATUS "including vts browser application")
+message(STATUS "include vts browser application")
 if(IOS)
   # ios application
   message(STATUS "including vts-browser-ios")

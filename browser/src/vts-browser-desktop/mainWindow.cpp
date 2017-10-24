@@ -396,7 +396,7 @@ vts::vec3 MainWindow::getWorldPositionFromCursor()
 {
     int xx, yy;
     SDL_GetMouseState(&xx, &yy);
-    double screenPos[2] = {xx, yy};
+    double screenPos[2] = { (double)xx, (double)yy };
     vts::vec3 result;
     vts::renderer::getWorldPosition(screenPos, result.data());
     return result;

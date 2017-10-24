@@ -34,6 +34,7 @@
 @interface SearchViewController ()
 {
 	std::shared_ptr<vts::SearchTask> task;
+	std::shared_ptr<vts::SearchTask> result;
 }
 
 @property (weak, nonatomic) IBOutlet UISearchBar *searchBar;
@@ -54,18 +55,20 @@
 
 - (void)timerTick
 {
-	if (task && !task->done)
-		[_activityIndicator startAnimating];
-	else
-		[_activityIndicator stopAnimating];
-
 	if (task && task->done)
+		[_activityIndicator stopAnimating];
+	else
+		[_activityIndicator startAnimating];
+
+	if (result)
 	{
+		assert(result->done);
 		double pos[3];
 		map->getPositionPoint(pos);
-		task->updateDistances(pos);
-		[_tableView reloadData];
+		result->updateDistances(pos);
 	}
+	
+	[_tableView reloadData];
 }
 
 - (void)searchBar:(UISearchBar*)searchBar textDidChange:(NSString*)searchText
@@ -87,9 +90,10 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-	if (!task || !task->done)
+	if (!result)
 		return;
-    vts::SearchItem &item = task->results[indexPath.row];
+	assert(result->done);
+    vts::SearchItem &item = result->results[indexPath.row];
     map->setPositionSubjective(false, false);
     map->setPositionViewExtent(std::max(6667.0, item.radius * 2), vts::NavigationType::FlyOver);
     map->setPositionRotation({0,270,0}, vts::NavigationType::FlyOver);
@@ -103,14 +107,18 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-	return task && task->done ? task->results.size() : 0;
+	if (task && task->done)
+		result = task;
+	else
+		result = nullptr;
+	return result ? result->results.size() : 0;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-	assert(task && task->done);
+	assert(result && result->done);
     SearchCell *cell = [tableView dequeueReusableCellWithIdentifier:@"SearchCell" forIndexPath:indexPath];
-    vts::SearchItem &item = task->results[indexPath.row];
+    vts::SearchItem &item = result->results[indexPath.row];
     cell.cellName1.text = [NSString stringWithUTF8String:item.title.c_str()];
     cell.cellName2.text = [NSString stringWithUTF8String:item.displayName.c_str()];
     if (item.distance >= 1e3)

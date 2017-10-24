@@ -41,12 +41,13 @@ using namespace vts;
 	vec3 gotoPoint;
 	bool fullscreenStatus;
 	bool fullscreenOverride;
+	bool pitchMultiEnabled;
 
-	std::map<UIGestureRecognizer*, std::set<UIGestureRecognizer*>> gesturesAllowSimultaneous;
 	std::map<UIGestureRecognizer*, std::set<UIGestureRecognizer*>> gesturesRequireFail;
 
 	UIPanGestureRecognizer *rPanSingle, *rYawSingle, *rPitchSingle, *rZoomSingle;
-	UIPanGestureRecognizer *rPanMulti, *rPitchMulti;
+	UIPanGestureRecognizer *rPanMulti, *rPitchMultiEval;
+	UISwipeGestureRecognizer *rPitchMultiInitUp, *rPitchMultiInitDown;
 	UIRotationGestureRecognizer *rYawMulti;
 	UIPinchGestureRecognizer *rZoomMulti;
 	UILongPressGestureRecognizer *rNorth;
@@ -76,9 +77,12 @@ using namespace vts;
 		case UIGestureRecognizerStateEnded:
 		case UIGestureRecognizerStateChanged:
 		{
-			CGPoint p = [recognizer translationInView:_gestureViewCenter];
-			[recognizer setTranslation:CGPoint() inView:_gestureViewCenter];
-			map->pan({p.x * 2, p.y * 2, 0});
+			if (extraConfig.controlType == 0 || !pitchMultiEnabled)
+			{
+				CGPoint p = [recognizer translationInView:self.view];
+				map->pan({p.x * 2, p.y * 2, 0});
+			}
+			[recognizer setTranslation:CGPoint() inView:self.view];
 			fullscreenOverride = false;
 		} break;
 		default:
@@ -86,16 +90,16 @@ using namespace vts;
 	}
 }
 
-- (void)gestureYawPan:(UIPanGestureRecognizer*)recognizer
+- (void)gestureYawSingle:(UIPanGestureRecognizer*)recognizer
 {
     switch (recognizer.state)
 	{
 		case UIGestureRecognizerStateEnded:
 		case UIGestureRecognizerStateChanged:
 		{
-			CGPoint p = [recognizer translationInView:_gestureViewCenter];
-			[recognizer setTranslation:CGPoint() inView:_gestureViewCenter];
+			CGPoint p = [recognizer translationInView:self.view];
 			map->rotate({2000 * p.x / renderOptions.width, 0, 0});
+			[recognizer setTranslation:CGPoint() inView:self.view];
 			fullscreenOverride = false;
 		} break;
 		default:
@@ -103,14 +107,49 @@ using namespace vts;
 	}
 }
 
-- (void)gestureYawRot:(UIRotationGestureRecognizer*)recognizer
+- (void)gesturePitchSingle:(UIPanGestureRecognizer*)recognizer
 {
     switch (recognizer.state)
 	{
 		case UIGestureRecognizerStateEnded:
 		case UIGestureRecognizerStateChanged:
 		{
-			map->rotate({-400 * recognizer.rotation, 0, 0});
+			CGPoint p = [recognizer translationInView:self.view];
+			map->rotate({0, 2000 * p.y / renderOptions.height, 0});
+			[recognizer setTranslation:CGPoint() inView:self.view];
+			fullscreenOverride = false;
+		} break;
+		default:
+			break;
+	}
+}
+
+- (void)gestureZoomSingle:(UIPanGestureRecognizer*)recognizer
+{
+    switch (recognizer.state)
+	{
+		case UIGestureRecognizerStateEnded:
+		case UIGestureRecognizerStateChanged:
+		{
+			CGPoint p = [recognizer translationInView:self.view];
+			map->zoom(-100 * p.y / renderOptions.height);
+			[recognizer setTranslation:CGPoint() inView:self.view];
+			fullscreenOverride = false;
+		} break;
+		default:
+			break;
+	}
+}
+
+- (void)gestureYawMulti:(UIRotationGestureRecognizer*)recognizer
+{
+    switch (recognizer.state)
+	{
+		case UIGestureRecognizerStateEnded:
+		case UIGestureRecognizerStateChanged:
+		{
+			if (!pitchMultiEnabled)
+				map->rotate({-400 * recognizer.rotation, 0, 0});
 			[recognizer setRotation:0];
 			fullscreenOverride = false;
 		} break;
@@ -119,16 +158,29 @@ using namespace vts;
 	}
 }
 
-- (void)gesturePitch:(UIPanGestureRecognizer*)recognizer
+- (void)gesturePitchMultiInit:(UISwipeGestureRecognizer*)recognizer
+{
+	pitchMultiEnabled = true;
+}
+
+- (void)gesturePitchMultiEval:(UIPanGestureRecognizer*)recognizer
 {
     switch (recognizer.state)
 	{
 		case UIGestureRecognizerStateEnded:
+		case UIGestureRecognizerStateFailed:
+		case UIGestureRecognizerStateCancelled:
+		{
+			pitchMultiEnabled = false;
+		} break;
 		case UIGestureRecognizerStateChanged:
 		{
-			CGPoint p = [recognizer translationInView:_gestureViewCenter];
-			[recognizer setTranslation:CGPoint() inView:_gestureViewCenter];
-			map->rotate({0, 2000 * p.y / renderOptions.height, 0});
+			if (pitchMultiEnabled)
+			{
+				CGPoint p = [recognizer translationInView:self.view];
+				map->rotate({0, 2000 * p.y / renderOptions.height, 0});
+			}
+			[recognizer setTranslation:CGPoint() inView:self.view];
 			fullscreenOverride = false;
 		} break;
 		default:
@@ -136,31 +188,15 @@ using namespace vts;
 	}
 }
 
-- (void)gestureZoomPan:(UIPanGestureRecognizer*)recognizer
+- (void)gestureZoomMulti:(UIPinchGestureRecognizer*)recognizer
 {
     switch (recognizer.state)
 	{
 		case UIGestureRecognizerStateEnded:
 		case UIGestureRecognizerStateChanged:
 		{
-			CGPoint p = [recognizer translationInView:_gestureViewCenter];
-			[recognizer setTranslation:CGPoint() inView:_gestureViewCenter];
-			map->zoom(-100 * p.y / renderOptions.height);
-			fullscreenOverride = false;
-		} break;
-		default:
-			break;
-	}
-}
-
-- (void)gestureZoomPinch:(UIPinchGestureRecognizer*)recognizer
-{
-    switch (recognizer.state)
-	{
-		case UIGestureRecognizerStateEnded:
-		case UIGestureRecognizerStateChanged:
-		{
-			map->zoom(10 * (recognizer.scale - 1));
+			if (!pitchMultiEnabled)
+				map->zoom(10 * (recognizer.scale - 1));
 			[recognizer setScale:1];
 			fullscreenOverride = false;
 		} break;
@@ -174,10 +210,11 @@ using namespace vts;
     switch (recognizer.state)
 	{
         case UIGestureRecognizerStateBegan:
+        {
             map->setPositionRotation({0,270,0}, vts::NavigationType::Quick);
             map->resetNavigationMode();
 			fullscreenOverride = false;
-			break;
+		} break;
 		default:
 			break;
 	}
@@ -190,8 +227,8 @@ using namespace vts;
         case UIGestureRecognizerStateEnded:
 	    {
 	    	CGPoint point = [recognizer locationInView:self.view];
-			float x = point.x * self.view.contentScaleFactor;
-			float y = point.y * self.view.contentScaleFactor;
+			double x = point.x * self.view.contentScaleFactor;
+			double y = point.y * self.view.contentScaleFactor;
 	    	gotoPoint = vec3(x, y, 0);
 			fullscreenOverride = false;
 	    } break;
@@ -205,8 +242,9 @@ using namespace vts;
     switch (recognizer.state)
 	{
         case UIGestureRecognizerStateEnded:
+        {
 			fullscreenOverride = !fullscreenOverride;
-			break;
+		} break;
 		default:
 			break;
 	}
@@ -214,20 +252,13 @@ using namespace vts;
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer*)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer*)otherGestureRecognizer
 {
-	auto s = gesturesAllowSimultaneous[gestureRecognizer];
-	return s.find(otherGestureRecognizer) != s.end();
+	return extraConfig.controlType == 1;
 }
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer*)gestureRecognizer shouldRequireFailureOfGestureRecognizer:(UIGestureRecognizer*)otherGestureRecognizer
 {
 	auto s = gesturesRequireFail[gestureRecognizer];
 	return s.find(otherGestureRecognizer) != s.end();
-}
-
-- (void)allowSimultaneous:(UIGestureRecognizer*)a with:(UIGestureRecognizer*)b
-{
-    gesturesAllowSimultaneous[a].insert(b);
-    gesturesAllowSimultaneous[b].insert(a);
 }
 
 - (void)initializeGestures
@@ -237,7 +268,6 @@ using namespace vts;
 	assert(_gestureViewLeft);
 	assert(_gestureViewRight);
 	
-	gesturesAllowSimultaneous.clear();
 	gesturesRequireFail.clear();
 	
 	// single touch
@@ -249,19 +279,19 @@ using namespace vts;
 	}
 	{
 		// yaw recognizer
-		UIPanGestureRecognizer *r = rYawSingle = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gestureYawPan:)];
+		UIPanGestureRecognizer *r = rYawSingle = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gestureYawSingle:)];
 		r.maximumNumberOfTouches = 1;
 	    [_gestureViewBottom addGestureRecognizer:r];
 	}
 	{
 		// pitch recognizer
-		UIPanGestureRecognizer *r = rPitchSingle = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePitch:)];
+		UIPanGestureRecognizer *r = rPitchSingle = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePitchSingle:)];
 		r.maximumNumberOfTouches = 1;
 	    [_gestureViewLeft addGestureRecognizer:r];
 	}
 	{
 		// zoom recognizer
-		UIPanGestureRecognizer *r = rZoomSingle = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gestureZoomPan:)];
+		UIPanGestureRecognizer *r = rZoomSingle = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gestureZoomSingle:)];
 		r.maximumNumberOfTouches = 1;
 	    [_gestureViewRight addGestureRecognizer:r];
 	}
@@ -275,23 +305,40 @@ using namespace vts;
 	}
 	{
 		// yaw recognizer
-		UIRotationGestureRecognizer *r = rYawMulti = [[UIRotationGestureRecognizer alloc] initWithTarget:self action:@selector(gestureYawRot:)];
+		UIRotationGestureRecognizer *r = rYawMulti = [[UIRotationGestureRecognizer alloc] initWithTarget:self action:@selector(gestureYawMulti:)];
 	    [self.view addGestureRecognizer:r];
 	}
 	{
-		// pitch recognizer
-		UIPanGestureRecognizer *r = rPitchMulti = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePitch:)];
-		r.minimumNumberOfTouches = r.maximumNumberOfTouches = 3;
+		// pitch recognizer init up
+		UISwipeGestureRecognizer *r = rPitchMultiInitUp = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePitchMultiInit:)];
+		r.numberOfTouchesRequired = 2;
+		r.direction = UISwipeGestureRecognizerDirectionUp;
+	    [self.view addGestureRecognizer:r];
+	}
+	{
+		// pitch recognizer init down
+		UISwipeGestureRecognizer *r = rPitchMultiInitDown = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePitchMultiInit:)];
+		r.numberOfTouchesRequired = 2;
+		r.direction = UISwipeGestureRecognizerDirectionDown;
+	    [self.view addGestureRecognizer:r];
+	}
+	{
+		// pitch recognizer eval
+		UIPanGestureRecognizer *r = rPitchMultiEval = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePitchMultiEval:)];
+		r.minimumNumberOfTouches = r.maximumNumberOfTouches = 2;
 	    [self.view addGestureRecognizer:r];
 	}
 	{
 		// zoom recognizer
-		UIPinchGestureRecognizer *r = rZoomMulti = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(gestureZoomPinch:)];
+		UIPinchGestureRecognizer *r = rZoomMulti = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(gestureZoomMulti:)];
 	    [self.view addGestureRecognizer:r];
 	}
-	[self allowSimultaneous:rZoomMulti with:rYawMulti];
-	[self allowSimultaneous:rPanMulti with:rYawMulti];
-	[self allowSimultaneous:rPanMulti with:rZoomMulti];
+    gesturesRequireFail[rPanMulti].insert(rPitchMultiInitUp);
+    gesturesRequireFail[rYawMulti].insert(rPitchMultiInitUp);
+    gesturesRequireFail[rZoomMulti].insert(rPitchMultiInitUp);
+    gesturesRequireFail[rPanMulti].insert(rPitchMultiInitDown);
+    gesturesRequireFail[rYawMulti].insert(rPitchMultiInitDown);
+    gesturesRequireFail[rZoomMulti].insert(rPitchMultiInitDown);
     
     // extra recognizers
     {
@@ -321,7 +368,8 @@ using namespace vts;
 - (void)updateGestures
 {
 	rPanSingle.enabled = rYawSingle.enabled = rPitchSingle.enabled = rZoomSingle.enabled = extraConfig.controlType == 0;
-	rPanMulti.enabled = rYawMulti.enabled = rPitchMulti.enabled = rZoomMulti.enabled = extraConfig.controlType == 1;
+	rPanMulti.enabled = rYawMulti.enabled = rPitchMultiInitUp.enabled = rPitchMultiInitDown.enabled = rPitchMultiEval.enabled = rZoomMulti.enabled = extraConfig.controlType == 1;
+	pitchMultiEnabled = false;
 }
 
 // controller status
@@ -392,7 +440,7 @@ using namespace vts;
     	_searchButton
     ];
     
-    gotoPoint(0) = std::numeric_limits<float>::quiet_NaN();
+    gotoPoint(0) = std::numeric_limits<double>::quiet_NaN();
     fullscreenStatus = false;
     fullscreenOverride = true;
     
@@ -469,7 +517,7 @@ using namespace vts;
                          Srs::Physical, Srs::Navigation);
             map->setPositionPoint(posNav, NavigationType::Quick);
         }
-        gotoPoint(0) = std::numeric_limits<float>::quiet_NaN();
+        gotoPoint(0) = std::numeric_limits<double>::quiet_NaN();
     }
 	
 	mapRenderScales(view.contentScaleFactor, rect, _gestureViewLeft.frame, _gestureViewBottom.frame, _gestureViewRight.frame);

@@ -36,50 +36,7 @@
 #import <Dispatch/Dispatch.h>
 #import <OpenGLES/ES2/gl.h>
 #import <dlfcn.h> // dlsym
-
-
-@interface TimerObj : NSObject
-
-- (void)setObject:(id)object Selector:(SEL)selector;
-
-@end
-
-@interface TimerObj ()
-{
-	NSTimer* timer;
-    id object;
-    SEL selector;
-}
-@end
-
-@implementation TimerObj
-
-- (id)init
-{
-    if (self = [super init])
-    {
-		timer = [NSTimer timerWithTimeInterval:0.2 target:self selector:@selector(timerTick) userInfo:nil repeats:YES];
-		[[NSRunLoop mainRunLoop] addTimer:timer forMode:NSRunLoopCommonModes];
-	}
-	return self;
-}
-
-- (void)timerTick
-{
-	if (!object || !map)
-		return;
-    map->renderTickPrepare();
-    map->renderTickRender();
-	[object performSelector:selector];
-}
-
-- (void)setObject:(id)object Selector:(SEL)selector
-{
-	self->object = object;
-	self->selector = selector;
-}
-
-@end
+#import "TimerObj.h"
 
 using namespace vts;
 using namespace vts::renderer;

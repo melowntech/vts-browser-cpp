@@ -8,6 +8,7 @@ set(SRC_LIST
   AppDelegate.h AppDelegate.mm
   ConfigItem.h ConfigItem.m
   Map.h Map.mm
+  TimerObj.h TimerObj.mm
   controllers/UrlsViewController.h controllers/UrlsViewController.m
   controllers/ConfigViewController.h controllers/ConfigViewController.m
   controllers/MapViewController.h controllers/MapViewController.mm

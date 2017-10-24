@@ -29,17 +29,6 @@
 
 
 @interface AppDelegate ()
-{
-	struct MapInitializer
-	{
-		MapInitializer()
-		{
-			//vts::setLogMask("I2W2E2");
-			//vts::setLogMask("ALL");
-			mapInitialize();
-		}
-	} mapInitializer;
-}
 @end
 
 
@@ -48,6 +37,11 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     // Override point for customization after application launch.
+
+	//vts::setLogMask("I2W2E2");
+	//vts::setLogMask("ALL");
+	mapInitialize();
+
     return YES;
 }
 

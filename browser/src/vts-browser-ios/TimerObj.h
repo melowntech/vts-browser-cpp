@@ -24,14 +24,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import <UIKit/UIKit.h>
-#import <GLKit/GLKit.h>
-#import "../ConfigItem.h"
+#import <Foundation/Foundation.h>
 
-@interface MapViewController : GLKViewController <UIGestureRecognizerDelegate>
+@interface TimerObj : NSObject
 
-@property (strong, nonatomic) ConfigItem *item;
+- (void)setObject:(id)object Selector:(SEL)selector;
 
 @end
-
 

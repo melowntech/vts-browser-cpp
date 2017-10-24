@@ -24,14 +24,44 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import <UIKit/UIKit.h>
-#import <GLKit/GLKit.h>
-#import "../ConfigItem.h"
+#include "map.h"
 
-@interface MapViewController : GLKViewController <UIGestureRecognizerDelegate>
+#import "TimerObj.h"
 
-@property (strong, nonatomic) ConfigItem *item;
-
+@interface TimerObj ()
+{
+	NSTimer* timer;
+    id object;
+    SEL selector;
+}
 @end
 
+@implementation TimerObj
+
+- (id)init
+{
+    if (self = [super init])
+    {
+		timer = [NSTimer timerWithTimeInterval:0.2 target:self selector:@selector(timerTick) userInfo:nil repeats:YES];
+		[[NSRunLoop mainRunLoop] addTimer:timer forMode:NSRunLoopCommonModes];
+	}
+	return self;
+}
+
+- (void)timerTick
+{
+	if (!object || !map)
+		return;
+    map->renderTickPrepare();
+    map->renderTickRender();
+	[object performSelector:selector];
+}
+
+- (void)setObject:(id)object Selector:(SEL)selector
+{
+	self->object = object;
+	self->selector = selector;
+}
+
+@end
 

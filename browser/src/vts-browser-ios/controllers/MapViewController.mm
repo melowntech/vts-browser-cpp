@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <map>
+#include <set>
 #include "../Map.h"
 #include <vts-browser/draws.hpp>
 #include <vts-browser/math.hpp>
@@ -39,6 +41,16 @@ using namespace vts;
 	vec3 gotoPoint;
 	bool fullscreenStatus;
 	bool fullscreenOverride;
+
+	std::map<UIGestureRecognizer*, std::set<UIGestureRecognizer*>> gesturesAllowSimultaneous;
+	std::map<UIGestureRecognizer*, std::set<UIGestureRecognizer*>> gesturesRequireFail;
+
+	UIPanGestureRecognizer *rPanSingle, *rYawSingle, *rPitchSingle, *rZoomSingle;
+	UIPanGestureRecognizer *rPanMulti, *rPitchMulti;
+	UIRotationGestureRecognizer *rYawMulti;
+	UIPinchGestureRecognizer *rZoomMulti;
+	UILongPressGestureRecognizer *rNorth;
+	UITapGestureRecognizer *rFullscreen, *rGoto;
 }
 
 @property (weak, nonatomic) IBOutlet UIView *gestureViewCenter;
@@ -199,12 +211,22 @@ using namespace vts;
 	}
 }
 
-- (void)removeAllGestures:(UIView*)view
+- (BOOL)gestureRecognizer:(UIGestureRecognizer*)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer*)otherGestureRecognizer
 {
-	if (!view.gestureRecognizers)
-		return;
-    while (view.gestureRecognizers.count)
-        [view removeGestureRecognizer:[view.gestureRecognizers lastObject]];
+	auto s = gesturesAllowSimultaneous[gestureRecognizer];
+	return s.find(otherGestureRecognizer) != s.end();
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer*)gestureRecognizer shouldRequireFailureOfGestureRecognizer:(UIGestureRecognizer*)otherGestureRecognizer
+{
+	auto s = gesturesRequireFail[gestureRecognizer];
+	return s.find(otherGestureRecognizer) != s.end();
+}
+
+- (void)allowSimultaneous:(UIGestureRecognizer*)a with:(UIGestureRecognizer*)b
+{
+    gesturesAllowSimultaneous[a].insert(b);
+    gesturesAllowSimultaneous[b].insert(a);
 }
 
 - (void)initializeGestures
@@ -214,78 +236,91 @@ using namespace vts;
 	assert(_gestureViewLeft);
 	assert(_gestureViewRight);
 	
-	[self removeAllGestures:self.view];
-	[self removeAllGestures:_gestureViewCenter];
-	[self removeAllGestures:_gestureViewBottom];
-	[self removeAllGestures:_gestureViewLeft];
-	[self removeAllGestures:_gestureViewRight];
+	gesturesAllowSimultaneous.clear();
+	gesturesRequireFail.clear();
 	
-	if (extraConfig.controlType == 0)
+	// single touch
 	{
-		// single touch
-		{
-			// pan recognizer
-			UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePan:)];
-		    [_gestureViewCenter addGestureRecognizer:r];
-		}
-		{
-			// yaw recognizer
-			UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gestureYawPan:)];
-		    [_gestureViewBottom addGestureRecognizer:r];
-		}
-		{
-			// pitch recognizer
-			UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePitch:)];
-		    [_gestureViewLeft addGestureRecognizer:r];
-		}
-		{
-			// zoom recognizer
-			UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gestureZoomPan:)];
-		    [_gestureViewRight addGestureRecognizer:r];
-		}
-    }
-    else
-    {
-    	// multitouch
-		{
-			// pan recognizer
-			UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePan:)];
-			r.maximumNumberOfTouches = 1;
-		    [self.view addGestureRecognizer:r];
-		}
-		{
-			// yaw recognizer
-			UIRotationGestureRecognizer *r = [[UIRotationGestureRecognizer alloc] initWithTarget:self action:@selector(gestureYawRot:)];
-		    [self.view addGestureRecognizer:r];
-		}
-		{
-			// pitch recognizer
-			UIPanGestureRecognizer *r = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePitch:)];
-			r.minimumNumberOfTouches = 2;
-		    [self.view addGestureRecognizer:r];
-		}
-		{
-			// zoom recognizer
-			UIPinchGestureRecognizer *r = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(gestureZoomPinch:)];
-		    [self.view addGestureRecognizer:r];
-		}
-    }
+		// pan recognizer
+		UIPanGestureRecognizer *r = rPanSingle = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePan:)];
+		r.maximumNumberOfTouches = 1;
+	    [_gestureViewCenter addGestureRecognizer:r];
+	}
+	{
+		// yaw recognizer
+		UIPanGestureRecognizer *r = rYawSingle = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gestureYawPan:)];
+		r.maximumNumberOfTouches = 1;
+	    [_gestureViewBottom addGestureRecognizer:r];
+	}
+	{
+		// pitch recognizer
+		UIPanGestureRecognizer *r = rPitchSingle = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePitch:)];
+		r.maximumNumberOfTouches = 1;
+	    [_gestureViewLeft addGestureRecognizer:r];
+	}
+	{
+		// zoom recognizer
+		UIPanGestureRecognizer *r = rZoomSingle = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gestureZoomPan:)];
+		r.maximumNumberOfTouches = 1;
+	    [_gestureViewRight addGestureRecognizer:r];
+	}
+	
+	// multitouch
+	{
+		// pan recognizer
+		UIPanGestureRecognizer *r = rPanMulti = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePan:)];
+		r.maximumNumberOfTouches = 2;
+	    [self.view addGestureRecognizer:r];
+	}
+	{
+		// yaw recognizer
+		UIRotationGestureRecognizer *r = rYawMulti = [[UIRotationGestureRecognizer alloc] initWithTarget:self action:@selector(gestureYawRot:)];
+	    [self.view addGestureRecognizer:r];
+	}
+	{
+		// pitch recognizer
+		UIPanGestureRecognizer *r = rPitchMulti = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gesturePitch:)];
+		r.minimumNumberOfTouches = r.maximumNumberOfTouches = 3;
+	    [self.view addGestureRecognizer:r];
+	}
+	{
+		// zoom recognizer
+		UIPinchGestureRecognizer *r = rZoomMulti = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(gestureZoomPinch:)];
+	    [self.view addGestureRecognizer:r];
+	}
+	[self allowSimultaneous:rZoomMulti with:rYawMulti];
+	[self allowSimultaneous:rPanMulti with:rYawMulti];
+	[self allowSimultaneous:rPanMulti with:rZoomMulti];
+    
+    // extra recognizers
     {
     	// north up recognizer
-		UILongPressGestureRecognizer *r = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(gestureNorthUp:)];
+		UILongPressGestureRecognizer *r = rNorth = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(gestureNorthUp:)];
         [self.view addGestureRecognizer:r];
     }
     {
     	// goto
-		UITapGestureRecognizer *r = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(gestureGoto:)];
+		UITapGestureRecognizer *r = rGoto = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(gestureGoto:)];
 		r.numberOfTapsRequired = 2;
         [self.view addGestureRecognizer:r];
     }
     {
     	// fullscreen
-		UITapGestureRecognizer *r = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(gestureFullscreen:)];
+		UITapGestureRecognizer *r = rFullscreen = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(gestureFullscreen:)];
         [self.view addGestureRecognizer:r];
     }
+    gesturesRequireFail[rFullscreen].insert(rGoto);
+    gesturesRequireFail[rFullscreen].insert(rNorth);
+    
+    // set delegate for all recognizers
+    for (int i = 0, e = self.view.gestureRecognizers.count; i != e; i++)
+        [[self.view.gestureRecognizers objectAtIndex:i] setDelegate:self];
+}
+
+- (void)updateGestures
+{
+	rPanSingle.enabled = rYawSingle.enabled = rPitchSingle.enabled = rZoomSingle.enabled = extraConfig.controlType == 0;
+	rPanMulti.enabled = rYawMulti.enabled = rPitchMulti.enabled = rZoomMulti.enabled = extraConfig.controlType == 1;
 }
 
 // controller status
@@ -337,7 +372,7 @@ using namespace vts;
     _gestureViewBottom.constraints.firstObject.constant = extraConfig.touchSize;
     _gestureViewLeft.constraints.firstObject.constant = extraConfig.touchSize;
     _gestureViewRight.constraints.firstObject.constant = extraConfig.touchSize;
-    [self initializeGestures];
+    [self updateGestures];
 }
 
 - (void)viewWillDisappear:(BOOL)animated
@@ -363,6 +398,8 @@ using namespace vts;
     // initialize rendering
     GLKView *view = (GLKView *)self.view;
     view.context = mapRenderContext();
+    
+    [self initializeGestures];
     
     [self configureView];
 }

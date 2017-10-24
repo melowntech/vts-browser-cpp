@@ -68,20 +68,21 @@
 	}
 }
 
-- (void)searchCommit
+- (void)searchBar:(UISearchBar*)searchBar textDidChange:(NSString*)searchText
+{
+	task = map->search([_searchBar.text UTF8String]);
+}
+
+- (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar
 {
 	task = map->search([_searchBar.text UTF8String]);
     [_searchBar resignFirstResponder];
 }
 
-- (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar
-{
-	[self searchCommit];
-}
-
 - (void)searchBarResultsListButtonClicked:(UISearchBar *)searchBar
 {
-	[self searchCommit];
+	task = map->search([_searchBar.text UTF8String]);
+    [_searchBar resignFirstResponder];
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
@@ -108,14 +109,14 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
 	assert(task && task->done);
-
     SearchCell *cell = [tableView dequeueReusableCellWithIdentifier:@"SearchCell" forIndexPath:indexPath];
-    
     vts::SearchItem &item = task->results[indexPath.row];
     cell.cellName1.text = [NSString stringWithUTF8String:item.title.c_str()];
     cell.cellName2.text = [NSString stringWithUTF8String:item.displayName.c_str()];
-    cell.cellDistance.text = [NSString stringWithFormat:@"%f", item.distance];
-    
+    if (item.distance >= 1e3)
+    	cell.cellDistance.text = [NSString stringWithFormat:@"%.1f km", item.distance / 1e3];
+    else
+    	cell.cellDistance.text = [NSString stringWithFormat:@"%.1f m", item.distance];
     return cell;
 }
 

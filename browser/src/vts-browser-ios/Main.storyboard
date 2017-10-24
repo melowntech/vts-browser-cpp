@@ -626,6 +626,12 @@
                             <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" hidesWhenStopped="YES" animating="YES" style="whiteLarge" translatesAutoresizingMaskIntoConstraints="NO" id="wGc-Jt-0iw">
                                 <rect key="frame" x="169" y="347" width="37" height="37"/>
                             </activityIndicatorView>
+                            <progressView opaque="NO" contentMode="scaleToFill" verticalHuggingPriority="750" progress="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="FRK-Cz-tOB">
+                                <rect key="frame" x="0.0" y="64" width="375" height="2"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="2" id="lu0-66-5es"/>
+                                </constraints>
+                            </progressView>
                         </subviews>
                         <constraints>
                             <constraint firstItem="wGc-Jt-0iw" firstAttribute="centerY" secondItem="c8X-gU-GYv" secondAttribute="centerY" id="0aA-pj-VQU"/>
@@ -637,11 +643,14 @@
                             <constraint firstItem="ySS-hs-uu9" firstAttribute="top" secondItem="3ym-2h-IiQ" secondAttribute="bottom" id="Hic-e7-NLs"/>
                             <constraint firstItem="c8X-gU-GYv" firstAttribute="bottom" secondItem="ySS-hs-uu9" secondAttribute="bottom" id="Ldg-yo-0Ke"/>
                             <constraint firstItem="qKz-eK-7re" firstAttribute="leading" secondItem="3ym-2h-IiQ" secondAttribute="trailing" id="M3y-v4-HLV"/>
+                            <constraint firstItem="FRK-Cz-tOB" firstAttribute="leading" secondItem="Ywz-5S-keG" secondAttribute="leading" id="RNR-3W-ZwL"/>
                             <constraint firstItem="ySS-hs-uu9" firstAttribute="leading" secondItem="c8X-gU-GYv" secondAttribute="leading" id="Wfx-z4-bJz"/>
+                            <constraint firstItem="FRK-Cz-tOB" firstAttribute="top" secondItem="c8X-gU-GYv" secondAttribute="top" id="bWo-jX-FfI"/>
                             <constraint firstItem="wGc-Jt-0iw" firstAttribute="centerX" secondItem="c8X-gU-GYv" secondAttribute="centerX" id="cy9-ix-bGM"/>
                             <constraint firstItem="G04-P9-84c" firstAttribute="top" secondItem="c8X-gU-GYv" secondAttribute="top" id="jeD-cV-UAj"/>
                             <constraint firstItem="3ym-2h-IiQ" firstAttribute="leading" secondItem="G04-P9-84c" secondAttribute="trailing" id="mD4-97-2cD"/>
                             <constraint firstItem="ySS-hs-uu9" firstAttribute="top" secondItem="qKz-eK-7re" secondAttribute="bottom" id="og9-n2-kCn"/>
+                            <constraint firstAttribute="trailing" secondItem="FRK-Cz-tOB" secondAttribute="trailing" id="r7f-pL-AJU"/>
                             <constraint firstItem="qKz-eK-7re" firstAttribute="top" secondItem="c8X-gU-GYv" secondAttribute="top" id="tm1-xv-Sg7"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="c8X-gU-GYv"/>
@@ -655,6 +664,7 @@
                         <outlet property="gestureViewCenter" destination="3ym-2h-IiQ" id="luZ-y1-jq7"/>
                         <outlet property="gestureViewLeft" destination="G04-P9-84c" id="UDe-yF-xGY"/>
                         <outlet property="gestureViewRight" destination="qKz-eK-7re" id="Ka5-rB-aQA"/>
+                        <outlet property="progressBar" destination="FRK-Cz-tOB" id="oy5-Bd-sJU"/>
                         <outlet property="searchDisplayController" destination="a4A-7m-ghS" id="NWo-El-ELx"/>
                         <segue destination="xUh-91-nrW" kind="show" identifier="position" id="7Ay-Gl-rVC"/>
                         <segue destination="nrX-6B-OKu" kind="show" identifier="search" id="aCm-K2-jBr"/>

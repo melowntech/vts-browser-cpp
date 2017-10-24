@@ -396,20 +396,10 @@ vts::vec3 MainWindow::getWorldPositionFromCursor()
 {
     int xx, yy;
     SDL_GetMouseState(&xx, &yy);
-    double x = xx, y = yy;
-    y = appOptions.render.height - y - 1;
-    float depth = std::numeric_limits<float>::quiet_NaN();
-    glReadPixels((int)x, (int)y, 1, 1,
-                 GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
-    if (depth > 1 - 1e-7)
-        depth = std::numeric_limits<float>::quiet_NaN();
-    depth = depth * 2 - 1;
-    x = x / appOptions.render.width * 2 - 1;
-    y = y / appOptions.render.height * 2 - 1;
-    vts::mat4 viewProj = vts::rawToMat4(map->draws().camera.proj)
-            * vts::rawToMat4(map->draws().camera.view);
-    return vts::vec4to3(viewProj.inverse()
-                              * vts::vec4(x, y, depth, 1), true);
+    double screenPos[2] = {xx, yy};
+    vts::vec3 result;
+    vts::renderer::getWorldPosition(screenPos, result.data());
+    return result;
 }
 
 void MainWindow::setMapConfigPath(const MapPaths &paths)

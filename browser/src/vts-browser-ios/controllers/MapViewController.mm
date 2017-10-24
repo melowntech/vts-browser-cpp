@@ -58,6 +58,7 @@ using namespace vts;
 @property (weak, nonatomic) IBOutlet UIView *gestureViewLeft;
 @property (weak, nonatomic) IBOutlet UIView *gestureViewRight;
 @property (weak, nonatomic) IBOutlet UIActivityIndicatorView *activityIndicator;
+@property (weak, nonatomic) IBOutlet UIProgressView *progressBar;
 
 @property (strong, nonatomic) UIBarButtonItem *searchButton;
 
@@ -400,46 +401,51 @@ using namespace vts;
     view.context = mapRenderContext();
     
     [self initializeGestures];
-    
     [self configureView];
 }
 
 // rendering
 
-- (vec3)worldPositionFromScreen:(vec3)screenPos
+- (bool)progressDone
 {
-	float x = screenPos(0);
-	float y = screenPos(1);
-    y = renderOptions.height - y - 1;
-    float depth = std::numeric_limits<float>::quiet_NaN();
-    glReadPixels((int)x, (int)y, 1, 1,
-                 GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
-    renderer::checkGl("glReadPixels");
-    if (depth > 1 - 1e-7)
-        depth = std::numeric_limits<float>::quiet_NaN();
-    depth = depth * 2 - 1;
-    x = x / renderOptions.width * 2 - 1;
-    y = y / renderOptions.height * 2 - 1;
-    mat4 viewProj = rawToMat4(map->draws().camera.proj)
-            * rawToMat4(map->draws().camera.view);
-    return vec4to3(viewProj.inverse() * vec4(x, y, depth, 1), true);
+	return map->getMapRenderProgress() > 1 - 1e-15;
+}
+
+- (void)progressUpdate
+{
+	if (map->getMapConfigReady())
+	    [_activityIndicator stopAnimating];
+	else
+        [_activityIndicator startAnimating];
+
+    [_progressBar setProgress:map->getMapRenderProgress() animated:YES];
+    if ([self progressDone])
+    {
+    	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^(void)
+    	{
+		    sleep(2);
+		    dispatch_async(dispatch_get_main_queue(), ^(void)
+		    {
+		    	if ([self progressDone])
+				    _progressBar.hidden = YES;
+		    });
+        });
+    }
+    else
+	    _progressBar.hidden = NO;
 }
 
 - (void)update
 {
 	mapTimerStop();
-
-	[self updateFullscreen];
-	
-	if (map->getMapConfigReady())
-	    [_activityIndicator stopAnimating];
-	else
-        [_activityIndicator startAnimating];
 	
 	_searchButton.enabled = map->searchable();
 
     map->renderTickPrepare();
     map->renderTickRender();
+
+	[self updateFullscreen];
+	[self progressUpdate];
 }
 
 - (void)glkView:(nonnull GLKView *)view drawInRect:(CGRect)rect
@@ -454,17 +460,15 @@ using namespace vts;
 	
 	if (gotoPoint(0) == gotoPoint(0))
 	{
-		// todo fix error in glReadPixels
-		/*
-        vec3 posPhys = [self worldPositionFromScreen:gotoPoint];
-        if (posPhys(0) == posPhys(0))
+		vec3 posWorld;
+		renderer::getWorldPosition(gotoPoint.data(), posWorld.data());
+        if (posWorld(0) == posWorld(0))
         {
             double posNav[3];
-            map->convert(posPhys.data(), posNav,
+            map->convert(posWorld.data(), posNav,
                          Srs::Physical, Srs::Navigation);
             map->setPositionPoint(posNav, NavigationType::Quick);
         }
-        */
         gotoPoint(0) = std::numeric_limits<float>::quiet_NaN();
     }
 	

@@ -61,185 +61,10 @@ GLuint colorTexId;
 int widthPrev;
 int heightPrev;
 int antialiasingPrev;
-
-class RenderDataInitializator
-{
-public:
-    RenderDataInitializator()
-    {
-        initializeRenderData();
-    }
-} RenderDataInitializatorInstance;
-
-} // namespace
-
-void initialize()
-{
-    vts::log(vts::LogLevel::info3, "Initializing vts renderer library");
-
-    // load shader surface
-    {
-        shaderSurface = std::make_shared<Shader>();
-        Buffer vert = readInternalMemoryBuffer(
-                    "data/shaders/surface.vert.glsl");
-        Buffer frag = readInternalMemoryBuffer(
-                    "data/shaders/surface.frag.glsl");
-        shaderSurface->load(
-            std::string(vert.data(), vert.size()),
-            std::string(frag.data(), frag.size()));
-        std::vector<uint32> &uls = shaderSurface->uniformLocations;
-        GLuint id = shaderSurface->getId();
-        uls.push_back(glGetUniformLocation(id, "uniMvp"));
-        uls.push_back(glGetUniformLocation(id, "uniMv"));
-        uls.push_back(glGetUniformLocation(id, "uniUvMat"));
-        uls.push_back(glGetUniformLocation(id, "uniColor"));
-        uls.push_back(glGetUniformLocation(id, "uniUvClip"));
-        uls.push_back(glGetUniformLocation(id, "uniFlags"));
-        glUseProgram(id);
-        glUniform1i(glGetUniformLocation(id, "texColor"), 0);
-        glUniform1i(glGetUniformLocation(id, "texMask"), 1);
-        glUseProgram(0);
-    }
-
-    // load shader infographic
-    {
-        shaderInfographic = std::make_shared<Shader>();
-        Buffer vert = readInternalMemoryBuffer(
-                    "data/shaders/infographic.vert.glsl");
-        Buffer frag = readInternalMemoryBuffer(
-                    "data/shaders/infographic.frag.glsl");
-        shaderInfographic->load(
-            std::string(vert.data(), vert.size()),
-            std::string(frag.data(), frag.size()));
-        std::vector<uint32> &uls = shaderInfographic->uniformLocations;
-        GLuint id = shaderInfographic->getId();
-        uls.push_back(glGetUniformLocation(id, "uniMvp"));
-        uls.push_back(glGetUniformLocation(id, "uniColor"));
-        uls.push_back(glGetUniformLocation(id, "uniUseColorTexture"));
-        glUseProgram(id);
-        glUniform1i(glGetUniformLocation(id, "texColor"), 0);
-        glUniform1i(glGetUniformLocation(id, "texDepth"), 6);
-        glUseProgram(0);
-    }
-
-    // load shader atmosphere
-    {
-        shaderAtmosphere = std::make_shared<Shader>();
-        Buffer vert = readInternalMemoryBuffer(
-                    "data/shaders/atmosphere.vert.glsl");
-        Buffer frag = readInternalMemoryBuffer(
-                    "data/shaders/atmosphere.frag.glsl");
-        shaderAtmosphere->load(
-            std::string(vert.data(), vert.size()),
-            std::string(frag.data(), frag.size()));
-        std::vector<uint32> &uls = shaderAtmosphere->uniformLocations;
-        GLuint id = shaderAtmosphere->getId();
-        uls.push_back(glGetUniformLocation(id, "uniColorLow"));
-        uls.push_back(glGetUniformLocation(id, "uniColorHigh"));
-        uls.push_back(glGetUniformLocation(id, "uniBody"));
-        uls.push_back(glGetUniformLocation(id, "uniPlanes"));
-        uls.push_back(glGetUniformLocation(id, "uniAtmosphere"));
-        uls.push_back(glGetUniformLocation(id, "uniCameraPosition"));
-        uls.push_back(glGetUniformLocation(id, "uniCameraPosNorm"));
-        uls.push_back(glGetUniformLocation(id, "uniProjected"));
-        uls.push_back(glGetUniformLocation(id, "uniCameraDirections[0]"));
-        uls.push_back(glGetUniformLocation(id, "uniCameraDirections[1]"));
-        uls.push_back(glGetUniformLocation(id, "uniCameraDirections[2]"));
-        uls.push_back(glGetUniformLocation(id, "uniCameraDirections[3]"));
-        uls.push_back(glGetUniformLocation(id, "uniInvView"));
-        uls.push_back(glGetUniformLocation(id, "uniMultiSamples"));
-        glUseProgram(id);
-        glUniform1i(glGetUniformLocation(id, "texDepthSingle"), 6);
-        glUniform1i(glGetUniformLocation(id, "texDepthMulti"), 5);
-        glUseProgram(0);
-    }
-
-    // load mesh quad
-    {
-        meshQuad = std::make_shared<Mesh>();
-        vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
-                                  "data/meshes/quad.obj"));
-        assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Triangles);
-        spec.attributes.resize(2);
-        spec.attributes[0].enable = true;
-        spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
-        spec.attributes[0].components = 3;
-        spec.attributes[1].enable = true;
-        spec.attributes[1].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
-        spec.attributes[1].components = 2;
-        spec.attributes[1].offset = sizeof(vts::vec3f);
-        vts::ResourceInfo info;
-        meshQuad->load(info, spec);
-    }
-
-    vts::log(vts::LogLevel::info1, "Initialized vts renderer library");
-}
-
-void finalize()
-{
-    vts::log(vts::LogLevel::info3, "Finalizing vts renderer library");
-
-    shaderSurface.reset();
-    shaderInfographic.reset();
-    shaderAtmosphere.reset();
-    meshQuad.reset();
-
-    if (frameRenderBufferId)
-    {
-        glDeleteFramebuffers(1, &frameRenderBufferId);
-        frameRenderBufferId = 0;
-    }
-
-    if (frameSampleBufferId)
-    {
-        glDeleteFramebuffers(1, &frameSampleBufferId);
-        frameSampleBufferId = 0;
-    }
-
-    if (depthRenderTexId)
-    {
-        glDeleteTextures(1, &depthRenderTexId);
-        depthRenderTexId = 0;
-    }
-
-    if (depthSampleTexId)
-    {
-        glDeleteTextures(1, &depthSampleTexId);
-        depthSampleTexId = 0;
-    }
-
-    if (colorTexId)
-    {
-        glDeleteTextures(1, &colorTexId);
-        colorTexId = 0;
-    }
-
-    widthPrev = heightPrev = antialiasingPrev = 0;
-
-    vts::log(vts::LogLevel::info1, "Finalized vts renderer library");
-}
-
-RenderOptions::RenderOptions() : width(0), height(0),
-    targetFrameBuffer(0), targetViewportX(0), targetViewportY(0),
-    antialiasingSamples(1), renderAtmosphere(true), renderPolygonEdges(false)
-{}
-
-void loadTexture(ResourceInfo &info, const GpuTextureSpec &spec)
-{
-    auto r = std::make_shared<Texture>();
-    r->load(info, spec);
-    info.userData = r;
-}
-
-void loadMesh(ResourceInfo &info, const GpuMeshSpec &spec)
-{
-    auto r = std::make_shared<Mesh>();
-    r->load(info, spec);
-    info.userData = r;
-}
-
-namespace
-{
+mat4 view;
+mat4 proj;
+mat4 viewProj;
+mat4 viewProjInv;
 
 double sqr(double a)
 {
@@ -253,10 +78,6 @@ public:
     const MapDraws &draws;
     const MapCelestialBody &body;
 
-    mat4 view;
-    mat4 proj;
-    mat4 viewProj;
-
     Renderer(RenderOptions &options,
              const MapDraws &draws,
              const MapCelestialBody &body) :
@@ -267,6 +88,7 @@ public:
         view = rawToMat4(draws.camera.view);
         proj = rawToMat4(draws.camera.proj);
         viewProj = proj * view;
+        viewProjInv =  viewProj.inverse();
     }
 
     void drawSurface(const DrawTask &t)
@@ -288,7 +110,7 @@ public:
         if (t.flatShading)
         {
             mat4f mv = mat4f(t.mvp);
-            mv = proj.cast<float>().inverse() * mv;
+            mv = proj.inverse().cast<float>() * mv;
             shaderSurface->uniformMat4(1, (float*)mv.data());
         }
         if (t.texMask)
@@ -488,9 +310,8 @@ public:
                 && body.majorRadius > 0 && body.atmosphereThickness > 0)
         {
             // atmosphere properties
-            mat4 inv =  viewProj.inverse();
-            vec3 camPos = vec4to3(inv * vec4(0, 0, -1, 1), true);
-            mat4f uniInvView = inv.cast<float>();
+            vec3 camPos = vec4to3(viewProjInv * vec4(0, 0, -1, 1), true);
+            mat4f uniInvView = viewProjInv.cast<float>();
             double camRad = length(camPos);
             double lowRad = body.majorRadius;
             double atmRad = body.majorRadius + body.atmosphereThickness;
@@ -531,15 +352,15 @@ public:
                                        (float)horizonAngle };
 
             // camera directions
-            vec3 near = vec4to3(inv * vec4(0, 0, -1, 1), true);
+            vec3 near = vec4to3(viewProjInv * vec4(0, 0, -1, 1), true);
             vec3f uniCameraDirections[4] = {
-                normalize(vec4to3(inv * vec4(-1, -1, 1, 1)
+                normalize(vec4to3(viewProjInv * vec4(-1, -1, 1, 1)
                     , true)- near).cast<float>(),
-                normalize(vec4to3(inv * vec4(+1, -1, 1, 1)
+                normalize(vec4to3(viewProjInv * vec4(+1, -1, 1, 1)
                     , true)- near).cast<float>(),
-                normalize(vec4to3(inv * vec4(-1, +1, 1, 1)
+                normalize(vec4to3(viewProjInv * vec4(-1, +1, 1, 1)
                     , true)- near).cast<float>(),
-                normalize(vec4to3(inv * vec4(+1, +1, 1, 1)
+                normalize(vec4to3(viewProjInv * vec4(+1, +1, 1, 1)
                     , true)- near).cast<float>(),
             };
 
@@ -581,8 +402,6 @@ public:
                           GL_COLOR_BUFFER_BIT, GL_NEAREST);
         checkGl("copied the color to screen (resolve multisampling)");
 
-        // make it possible to read the depth
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, frameSampleBufferId);
 
         // clear the state
         glUseProgram(0);
@@ -595,7 +414,181 @@ public:
     }
 };
 
+class RenderDataInitializator
+{
+public:
+    RenderDataInitializator()
+    {
+        initializeRenderData();
+    }
+} renderDataInitializatorInstance;
+
 } // namespace
+
+void initialize()
+{
+    vts::log(vts::LogLevel::info3, "Initializing vts renderer library");
+
+    // load shader surface
+    {
+        shaderSurface = std::make_shared<Shader>();
+        Buffer vert = readInternalMemoryBuffer(
+                    "data/shaders/surface.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
+                    "data/shaders/surface.frag.glsl");
+        shaderSurface->load(
+            std::string(vert.data(), vert.size()),
+            std::string(frag.data(), frag.size()));
+        std::vector<uint32> &uls = shaderSurface->uniformLocations;
+        GLuint id = shaderSurface->getId();
+        uls.push_back(glGetUniformLocation(id, "uniMvp"));
+        uls.push_back(glGetUniformLocation(id, "uniMv"));
+        uls.push_back(glGetUniformLocation(id, "uniUvMat"));
+        uls.push_back(glGetUniformLocation(id, "uniColor"));
+        uls.push_back(glGetUniformLocation(id, "uniUvClip"));
+        uls.push_back(glGetUniformLocation(id, "uniFlags"));
+        glUseProgram(id);
+        glUniform1i(glGetUniformLocation(id, "texColor"), 0);
+        glUniform1i(glGetUniformLocation(id, "texMask"), 1);
+        glUseProgram(0);
+    }
+
+    // load shader infographic
+    {
+        shaderInfographic = std::make_shared<Shader>();
+        Buffer vert = readInternalMemoryBuffer(
+                    "data/shaders/infographic.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
+                    "data/shaders/infographic.frag.glsl");
+        shaderInfographic->load(
+            std::string(vert.data(), vert.size()),
+            std::string(frag.data(), frag.size()));
+        std::vector<uint32> &uls = shaderInfographic->uniformLocations;
+        GLuint id = shaderInfographic->getId();
+        uls.push_back(glGetUniformLocation(id, "uniMvp"));
+        uls.push_back(glGetUniformLocation(id, "uniColor"));
+        uls.push_back(glGetUniformLocation(id, "uniUseColorTexture"));
+        glUseProgram(id);
+        glUniform1i(glGetUniformLocation(id, "texColor"), 0);
+        glUniform1i(glGetUniformLocation(id, "texDepth"), 6);
+        glUseProgram(0);
+    }
+
+    // load shader atmosphere
+    {
+        shaderAtmosphere = std::make_shared<Shader>();
+        Buffer vert = readInternalMemoryBuffer(
+                    "data/shaders/atmosphere.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
+                    "data/shaders/atmosphere.frag.glsl");
+        shaderAtmosphere->load(
+            std::string(vert.data(), vert.size()),
+            std::string(frag.data(), frag.size()));
+        std::vector<uint32> &uls = shaderAtmosphere->uniformLocations;
+        GLuint id = shaderAtmosphere->getId();
+        uls.push_back(glGetUniformLocation(id, "uniColorLow"));
+        uls.push_back(glGetUniformLocation(id, "uniColorHigh"));
+        uls.push_back(glGetUniformLocation(id, "uniBody"));
+        uls.push_back(glGetUniformLocation(id, "uniPlanes"));
+        uls.push_back(glGetUniformLocation(id, "uniAtmosphere"));
+        uls.push_back(glGetUniformLocation(id, "uniCameraPosition"));
+        uls.push_back(glGetUniformLocation(id, "uniCameraPosNorm"));
+        uls.push_back(glGetUniformLocation(id, "uniProjected"));
+        uls.push_back(glGetUniformLocation(id, "uniCameraDirections[0]"));
+        uls.push_back(glGetUniformLocation(id, "uniCameraDirections[1]"));
+        uls.push_back(glGetUniformLocation(id, "uniCameraDirections[2]"));
+        uls.push_back(glGetUniformLocation(id, "uniCameraDirections[3]"));
+        uls.push_back(glGetUniformLocation(id, "uniInvView"));
+        uls.push_back(glGetUniformLocation(id, "uniMultiSamples"));
+        glUseProgram(id);
+        glUniform1i(glGetUniformLocation(id, "texDepthSingle"), 6);
+        glUniform1i(glGetUniformLocation(id, "texDepthMulti"), 5);
+        glUseProgram(0);
+    }
+
+    // load mesh quad
+    {
+        meshQuad = std::make_shared<Mesh>();
+        vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
+                                  "data/meshes/quad.obj"));
+        assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Triangles);
+        spec.attributes.resize(2);
+        spec.attributes[0].enable = true;
+        spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
+        spec.attributes[0].components = 3;
+        spec.attributes[1].enable = true;
+        spec.attributes[1].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
+        spec.attributes[1].components = 2;
+        spec.attributes[1].offset = sizeof(vts::vec3f);
+        vts::ResourceInfo info;
+        meshQuad->load(info, spec);
+    }
+
+    vts::log(vts::LogLevel::info1, "Initialized vts renderer library");
+}
+
+void finalize()
+{
+    vts::log(vts::LogLevel::info3, "Finalizing vts renderer library");
+
+    shaderSurface.reset();
+    shaderInfographic.reset();
+    shaderAtmosphere.reset();
+    meshQuad.reset();
+
+    if (frameRenderBufferId)
+    {
+        glDeleteFramebuffers(1, &frameRenderBufferId);
+        frameRenderBufferId = 0;
+    }
+
+    if (frameSampleBufferId)
+    {
+        glDeleteFramebuffers(1, &frameSampleBufferId);
+        frameSampleBufferId = 0;
+    }
+
+    if (depthRenderTexId)
+    {
+        glDeleteTextures(1, &depthRenderTexId);
+        depthRenderTexId = 0;
+    }
+
+    if (depthSampleTexId)
+    {
+        glDeleteTextures(1, &depthSampleTexId);
+        depthSampleTexId = 0;
+    }
+
+    if (colorTexId)
+    {
+        glDeleteTextures(1, &colorTexId);
+        colorTexId = 0;
+    }
+
+    widthPrev = heightPrev = antialiasingPrev = 0;
+
+    vts::log(vts::LogLevel::info1, "Finalized vts renderer library");
+}
+
+RenderOptions::RenderOptions() : width(0), height(0),
+    targetFrameBuffer(0), targetViewportX(0), targetViewportY(0),
+    antialiasingSamples(1), renderAtmosphere(true), renderPolygonEdges(false)
+{}
+
+void loadTexture(ResourceInfo &info, const GpuTextureSpec &spec)
+{
+    auto r = std::make_shared<Texture>();
+    r->load(info, spec);
+    info.userData = r;
+}
+
+void loadMesh(ResourceInfo &info, const GpuMeshSpec &spec)
+{
+    auto r = std::make_shared<Mesh>();
+    r->load(info, spec);
+    info.userData = r;
+}
 
 void render(RenderOptions &options,
             const MapDraws &draws,
@@ -603,6 +596,30 @@ void render(RenderOptions &options,
 {
     Renderer r(options, draws, body);
     r.render();
+}
+
+void getWorldPosition(const double screenPos[2], double worldPos[3])
+{    
+	double x = screenPos[0];
+	double y = screenPos[1];
+    y = heightPrev - y - 1;
+    float depth = std::numeric_limits<float>::quiet_NaN();
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, frameSampleBufferId);
+    glReadPixels((int)x, (int)y, 1, 1,
+                 GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+    #ifdef VTSR_OPENGLES
+    glGetError(); // throw away the error
+    #else
+    renderer::checkGl("glReadPixels");
+    #endif
+    if (depth > 1 - 1e-7)
+        depth = std::numeric_limits<float>::quiet_NaN();
+    depth = depth * 2 - 1;
+    x = x / widthPrev * 2 - 1;
+    y = y / heightPrev * 2 - 1;
+    vec3 res = vec4to3(viewProjInv * vec4(x, y, depth, 1), true);
+    for (int i = 0; i < 3; i++)
+	    worldPos[i] = res[i];
 }
 
 } } // namespace vts renderer

@@ -45,16 +45,25 @@
 
 @implementation OptionsViewController
 
+- (void)consolidateOptions
+{
+    _optTouchSize.enabled = extraConfig.controlType == 0;
+    _optTouchAreas.enabled = extraConfig.controlType == 0;
+}
+
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    // rendering
     _optTraversal.selectedSegmentIndex = (int)map->options().traverseMode;
     _optQualityDegrad.value = map->options().maxTexelToPixelScale;
     _optAtmosphere.on = renderOptions.renderAtmosphere;
+    // controls
     _optControlType.selectedSegmentIndex = extraConfig.controlType;
     _optTouchSize.value = extraConfig.touchSize;
     _optTouchAreas.on = extraConfig.showControlAreas;
     _optControlScales.on = extraConfig.showControlScales;
+    [self consolidateOptions];
 }
 
 - (IBAction)optTraversalChanged:(UISegmentedControl *)sender
@@ -76,6 +85,8 @@
 - (IBAction)optControlTypeChanged:(UISegmentedControl *)sender
 {
 	extraConfig.controlType = sender.selectedSegmentIndex;
+	_optControlScales.on = extraConfig.showControlScales = extraConfig.controlType == 0;
+    [self consolidateOptions];
 }
 
 - (IBAction)optTouchSizeChanged:(UISlider *)sender

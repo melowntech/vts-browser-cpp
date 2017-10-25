@@ -52,7 +52,9 @@ namespace
 std::shared_ptr<Shader> shaderSurface;
 std::shared_ptr<Shader> shaderInfographic;
 std::shared_ptr<Shader> shaderAtmosphere;
-std::shared_ptr<Mesh> meshQuad;
+std::shared_ptr<Shader> shaderCopyDepth;
+std::shared_ptr<Mesh> meshQuad; // positions: -1 .. 1
+std::shared_ptr<Mesh> meshRect; // positions: 0 .. 1
 GLuint frameRenderBufferId;
 GLuint frameSampleBufferId;
 GLuint depthRenderTexId;
@@ -69,6 +71,22 @@ mat4 viewProjInv;
 double sqr(double a)
 {
     return a * a;
+}
+
+void clearGlState()
+{
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_SCISSOR_TEST);
+	glDisable(GL_BLEND);
+    glUseProgram(0);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    checkGl("cleared gl state");
 }
 
 class Renderer
@@ -402,15 +420,8 @@ public:
                           GL_COLOR_BUFFER_BIT, GL_NEAREST);
         checkGl("copied the color to screen (resolve multisampling)");
 
-
         // clear the state
-        glUseProgram(0);
-        glBindVertexArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        checkGl("frame finished");
+        clearGlState();
     }
 };
 
@@ -506,6 +517,24 @@ void initialize()
         glUseProgram(0);
     }
 
+    // load shader copy depth
+    {
+        shaderCopyDepth = std::make_shared<Shader>();
+        Buffer vert = readInternalMemoryBuffer(
+                    "data/shaders/copyDepth.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
+                    "data/shaders/copyDepth.frag.glsl");
+        shaderCopyDepth->load(
+            std::string(vert.data(), vert.size()),
+            std::string(frag.data(), frag.size()));
+        std::vector<uint32> &uls = shaderCopyDepth->uniformLocations;
+        GLuint id = shaderCopyDepth->getId();
+        uls.push_back(glGetUniformLocation(id, "uniTexPos"));
+        glUseProgram(id);
+        glUniform1i(glGetUniformLocation(id, "texDepth"), 0);
+        glUseProgram(0);
+    }
+
     // load mesh quad
     {
         meshQuad = std::make_shared<Mesh>();
@@ -522,6 +551,24 @@ void initialize()
         spec.attributes[1].offset = sizeof(vts::vec3f);
         vts::ResourceInfo info;
         meshQuad->load(info, spec);
+    }
+
+    // load mesh rect
+    {
+        meshRect = std::make_shared<Mesh>();
+        vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
+                                  "data/meshes/rect.obj"));
+        assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Triangles);
+        spec.attributes.resize(2);
+        spec.attributes[0].enable = true;
+        spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
+        spec.attributes[0].components = 3;
+        spec.attributes[1].enable = true;
+        spec.attributes[1].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
+        spec.attributes[1].components = 2;
+        spec.attributes[1].offset = sizeof(vts::vec3f);
+        vts::ResourceInfo info;
+        meshRect->load(info, spec);
     }
 
     vts::log(vts::LogLevel::info1, "Initialized vts renderer library");
@@ -603,15 +650,59 @@ void getWorldPosition(const double screenPos[2], double worldPos[3])
 	double x = screenPos[0];
 	double y = screenPos[1];
     y = heightPrev - y - 1;
+    
     float depth = std::numeric_limits<float>::quiet_NaN();
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, frameSampleBufferId);
-    glReadPixels((int)x, (int)y, 1, 1,
-                 GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
     #ifdef VTSR_OPENGLES
-    glGetError(); // throw away the error
+    // opengl ES does not support reading depth with glReadPixels
+    {
+	    clearGlState();
+		uint32 fbId = 0, texId = 0;
+
+		glGenTextures(1, &texId);
+		glBindTexture(GL_TEXTURE_2D, texId);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+		glGenFramebuffers(1, &fbId);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbId);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                               GL_TEXTURE_2D, texId, 0);
+        checkGlFramebuffer();
+        
+		shaderCopyDepth->bind();
+		int pos[2] = { (int)x, (int)y };
+		shaderCopyDepth->uniformVec2(0, pos);
+        glBindTexture(GL_TEXTURE_2D, depthSampleTexId);
+		meshQuad->bind();
+		meshQuad->dispatch();
+
+		unsigned char res[4];
+		glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, res);
+        if (res[0] != 0 || res[1] != 0 || res[2] != 0 || res[3] != 0)
+		{
+			static const vec4 bitSh = vec4(1.0 / (256.0*256.0*256.0), 1.0 / (256.0*256.0), 1.0 / 256.0, 1.0);
+			depth = 0;
+			for (int i = 0; i < 4; i++)
+				depth += res[i] * bitSh[i];
+		    depth /= 255;
+        }
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDeleteFramebuffers(1, &fbId);
+		glDeleteTextures(1, &texId);
+    }
     #else
-    renderer::checkGl("glReadPixels");
+    {
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, frameSampleBufferId);
+		glReadPixels((int)x, (int)y, 1, 1,
+		             GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+    }
     #endif
+    checkGl("read depth");
+    clearGlState();
+    
     if (depth > 1 - 1e-7)
         depth = std::numeric_limits<float>::quiet_NaN();
     depth = depth * 2 - 1;

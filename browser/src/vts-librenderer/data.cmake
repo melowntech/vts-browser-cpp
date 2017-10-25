@@ -17,6 +17,8 @@ set(DATA_LIST
 	data/shaders/gui.vert.glsl
 	data/shaders/scales.frag.glsl
 	data/shaders/scales.vert.glsl
+	data/shaders/copyDepth.frag.glsl
+	data/shaders/copyDepth.vert.glsl
 	data/textures/border.png
 	data/textures/gwen.png
 	data/textures/helper.jpg

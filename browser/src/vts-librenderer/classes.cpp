@@ -158,6 +158,11 @@ void Shader::uniformVec3(uint32 location, const float *value)
 {
     glUniform3fv(uniformLocations[location], 1, value);
 }
+
+void Shader::uniformVec2(uint32 location, const float *value)
+{
+    glUniform2fv(uniformLocations[location], 1, value);
+}
     
 void Shader::uniformVec4(uint32 location, const int *value)
 {
@@ -167,6 +172,11 @@ void Shader::uniformVec4(uint32 location, const int *value)
 void Shader::uniformVec3(uint32 location, const int *value)
 {
     glUniform3iv(uniformLocations[location], 1, value);
+}
+
+void Shader::uniformVec2(uint32 location, const int *value)
+{
+    glUniform2iv(uniformLocations[location], 1, value);
 }
 
 void Shader::uniform(uint32 location, const float value)

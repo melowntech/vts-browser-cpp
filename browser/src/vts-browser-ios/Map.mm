@@ -387,7 +387,7 @@ void mapRenderScales(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, 
 		glDisable(GL_SCISSOR_TEST);
 	}
 	
-    checkGl("render scale");
+    checkGl("rendered scale");
 }
 
 void mapTimerStart(id object, SEL selector)

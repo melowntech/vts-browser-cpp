@@ -53,8 +53,10 @@ public:
     void uniformMat3(uint32 location, const float *value);
     void uniformVec4(uint32 location, const float *value);
     void uniformVec3(uint32 location, const float *value);
+    void uniformVec2(uint32 location, const float *value);
     void uniformVec4(uint32 location, const int *value);
     void uniformVec3(uint32 location, const int *value);
+    void uniformVec2(uint32 location, const int *value);
     void uniform(uint32 location, float value);
     void uniform(uint32 location, int value);
     uint32 getId() const;

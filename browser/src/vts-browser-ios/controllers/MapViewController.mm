@@ -38,11 +38,6 @@ using namespace vts;
 
 @interface MapViewController ()
 {
-	vec3 gotoPoint;
-	bool fullscreenStatus;
-	bool fullscreenOverride;
-	bool pitchMultiEnabled;
-
 	std::map<UIGestureRecognizer*, std::set<UIGestureRecognizer*>> gesturesRequireFail;
 
 	UIPanGestureRecognizer *rPanSingle, *rYawSingle, *rPitchSingle, *rZoomSingle;
@@ -52,6 +47,11 @@ using namespace vts;
 	UIPinchGestureRecognizer *rZoomMulti;
 	UILongPressGestureRecognizer *rNorth;
 	UITapGestureRecognizer *rFullscreen, *rGoto;
+	
+	vec2 gotoPoint;
+	bool fullscreenStatus;
+	bool fullscreenOverride;
+	bool pitchMultiEnabled;
 }
 
 @property (weak, nonatomic) IBOutlet UIView *gestureViewCenter;
@@ -229,7 +229,7 @@ using namespace vts;
 	    	CGPoint point = [recognizer locationInView:self.view];
 			double x = point.x * self.view.contentScaleFactor;
 			double y = point.y * self.view.contentScaleFactor;
-	    	gotoPoint = vec3(x, y, 0);
+	    	gotoPoint = vec2(x, y);
 			fullscreenOverride = false;
 	    } break;
 		default:
@@ -505,6 +505,7 @@ using namespace vts;
     }
     
 	vts::renderer::render(renderOptions, map->draws(), map->celestialBody());
+	glBindFramebuffer(GL_FRAMEBUFFER, renderOptions.targetFrameBuffer);
 	
 	if (gotoPoint(0) == gotoPoint(0))
 	{
@@ -518,6 +519,7 @@ using namespace vts;
             map->setPositionPoint(posNav, NavigationType::Quick);
         }
         gotoPoint(0) = std::numeric_limits<double>::quiet_NaN();
+		glBindFramebuffer(GL_FRAMEBUFFER, renderOptions.targetFrameBuffer);
     }
 	
 	mapRenderScales(view.contentScaleFactor, rect, _gestureViewLeft.frame, _gestureViewBottom.frame, _gestureViewRight.frame);

@@ -42,7 +42,7 @@
                                 <rect key="frame" x="0.0" y="28" width="375" height="44"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="ptP-PZ-2wI" id="Aod-It-Tvw">
-                                    <rect key="frame" x="0.0" y="0.0" width="328" height="44"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="328" height="43.5"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </tableViewCellContentView>
                                 <connections>
@@ -56,7 +56,7 @@
                             <outlet property="delegate" destination="GLd-nL-Ucq" id="cjI-Pa-wI3"/>
                         </connections>
                     </tableView>
-                    <navigationItem key="navigationItem" title="VTS" id="Lny-Ee-aAi"/>
+                    <navigationItem key="navigationItem" title="VTS Browser" id="Lny-Ee-aAi"/>
                     <connections>
                         <segue destination="xUh-91-nrW" kind="show" identifier="options" id="DFe-Rx-oU4"/>
                     </connections>
@@ -402,6 +402,70 @@
             </objects>
             <point key="canvasLocation" x="537" y="2391"/>
         </scene>
+        <!--About-->
+        <scene sceneID="NLz-4c-8j1">
+            <objects>
+                <viewController title="About" id="nD1-Et-sSu" customClass="AboutViewController" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="9gS-Ry-Els">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="n70-1A-eBw">
+                                <rect key="frame" x="0.0" y="64" width="375" height="554"/>
+                                <subviews>
+                                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="equalSpacing" alignment="center" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="Ezi-H6-dnL">
+                                        <rect key="frame" x="0.0" y="0.0" width="375" height="579.5"/>
+                                        <subviews>
+                                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="About" translatesAutoresizingMaskIntoConstraints="NO" id="jfc-aH-hqM">
+                                                <rect key="frame" x="0.0" y="0.0" width="375" height="475"/>
+                                            </imageView>
+                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="VTS Browser made by Melown Technologies." textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Jcc-p9-Aoe">
+                                                <rect key="frame" x="16" y="483" width="343" height="20.5"/>
+                                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                <nil key="textColor"/>
+                                                <nil key="highlightedColor"/>
+                                            </label>
+                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="mrA-1x-wVj">
+                                                <rect key="frame" x="150" y="511.5" width="75" height="30"/>
+                                                <state key="normal" title="Homepage"/>
+                                                <connections>
+                                                    <action selector="gotoHomepage:" destination="nD1-Et-sSu" eventType="touchUpInside" id="jc8-MX-y9b"/>
+                                                </connections>
+                                            </button>
+                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="r4B-u1-B53">
+                                                <rect key="frame" x="163" y="549.5" width="49" height="30"/>
+                                                <state key="normal" title="GitHub"/>
+                                                <connections>
+                                                    <action selector="gotoGithub:" destination="nD1-Et-sSu" eventType="touchUpInside" id="wWU-aG-vSa"/>
+                                                </connections>
+                                            </button>
+                                        </subviews>
+                                    </stackView>
+                                </subviews>
+                                <constraints>
+                                    <constraint firstAttribute="bottom" secondItem="Ezi-H6-dnL" secondAttribute="bottom" id="H1L-S2-T2b"/>
+                                    <constraint firstItem="Ezi-H6-dnL" firstAttribute="top" secondItem="n70-1A-eBw" secondAttribute="top" id="n5V-bN-3gj"/>
+                                    <constraint firstAttribute="trailing" secondItem="Ezi-H6-dnL" secondAttribute="trailing" id="nDQ-fT-uFv"/>
+                                    <constraint firstItem="Ezi-H6-dnL" firstAttribute="leading" secondItem="n70-1A-eBw" secondAttribute="leading" id="wN6-Nu-rgs"/>
+                                </constraints>
+                            </scrollView>
+                        </subviews>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <constraints>
+                            <constraint firstItem="n70-1A-eBw" firstAttribute="top" secondItem="ABO-m8-Qst" secondAttribute="top" id="Tze-7N-ahL"/>
+                            <constraint firstItem="Ezi-H6-dnL" firstAttribute="width" secondItem="ABO-m8-Qst" secondAttribute="width" id="YqP-x7-Lgr"/>
+                            <constraint firstItem="n70-1A-eBw" firstAttribute="bottom" secondItem="ABO-m8-Qst" secondAttribute="bottom" id="Zkb-WG-dqj"/>
+                            <constraint firstItem="n70-1A-eBw" firstAttribute="leading" secondItem="ABO-m8-Qst" secondAttribute="leading" id="vRU-wB-61c"/>
+                            <constraint firstItem="n70-1A-eBw" firstAttribute="trailing" secondItem="ABO-m8-Qst" secondAttribute="trailing" id="xQZ-eE-irY"/>
+                        </constraints>
+                        <viewLayoutGuide key="safeArea" id="ABO-m8-Qst"/>
+                    </view>
+                    <tabBarItem key="tabBarItem" title="About" id="Fd5-Fe-1Cg"/>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="p99-H2-uBS" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="1994" y="2389"/>
+        </scene>
         <!--Position-->
         <scene sceneID="w6W-6P-NQl">
             <objects>
@@ -705,7 +769,7 @@
                                         <rect key="frame" x="0.0" y="28" width="375" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="KYb-YJ-Gza" id="yxf-AE-mWL">
-                                            <rect key="frame" x="0.0" y="0.0" width="375" height="44"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="375" height="43.5"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="5" translatesAutoresizingMaskIntoConstraints="NO" id="kTY-sb-EUW">
@@ -849,6 +913,7 @@
                         <segue destination="QfH-wW-XEh" kind="relationship" relationship="viewControllers" id="1zA-S0-Fy4"/>
                         <segue destination="iva-Fi-72q" kind="relationship" relationship="viewControllers" id="62g-ln-vt8"/>
                         <segue destination="0jM-kM-7j6" kind="relationship" relationship="viewControllers" id="zLF-xx-nk3"/>
+                        <segue destination="nD1-Et-sSu" kind="relationship" relationship="viewControllers" id="jsH-8M-znx"/>
                     </connections>
                 </tabBarController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="1CI-ZH-AYT" userLabel="First Responder" sceneMemberID="firstResponder"/>
@@ -856,7 +921,10 @@
             <point key="canvasLocation" x="537" y="1525"/>
         </scene>
     </scenes>
+    <resources>
+        <image name="About" width="831" height="475"/>
+    </resources>
     <inferredMetricsTieBreakers>
-        <segue reference="7Ay-Gl-rVC"/>
+        <segue reference="DFe-Rx-oU4"/>
     </inferredMetricsTieBreakers>
 </document>

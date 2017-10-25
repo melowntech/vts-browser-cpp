@@ -27,7 +27,7 @@ make
 And run the example application.
 
 ```bash
-bin/vts-browser-glfw <mapconfig-url>
+bin/vts-browser-desktop <mapconfig-url>
 ```
 
 ## Build from Source (mac osx)
@@ -40,8 +40,8 @@ Use cmake to generate xcode project.
 ```bash
 git clone --recursive https://github.com/Melown/vts-browser-cpp.git
 cd vts-browser-cpp/browser
-mkdir build
-cd build
+mkdir build-osx
+cd build-osx
 cmake -GXcode ..
 ```
 

@@ -17,6 +17,7 @@ set(SRC_LIST
   controllers/detail/PositionViewController.h controllers/detail/PositionViewController.mm
   controllers/detail/OptionsViewController.h controllers/detail/OptionsViewController.mm
   controllers/detail/StatisticsViewController.h controllers/detail/StatisticsViewController.mm
+  controllers/detail/AboutViewController.h controllers/detail/AboutViewController.m
 )
 
 set(RES_LIST
@@ -29,7 +30,7 @@ target_link_libraries(vts-browser-ios ${MODULE_LIBRARIES} objc "-framework CoreD
 buildsys_binary(vts-browser-ios)
 buildsys_target_compile_definitions(vts-browser-ios ${MODULE_DEFINITIONS})
 set_target_properties(vts-browser-ios PROPERTIES
-  MACOSX_BUNDLE_GUI_IDENTIFIER vts-browser
+  MACOSX_BUNDLE_GUI_IDENTIFIER "VTS Browser"
   MACOSX_BUNDLE_BUNDLE_NAME vts-browser-ios
   MACOSX_BUNDLE_BUNDLE_VERSION ${vts-browser_SO_VERSION}
   MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in

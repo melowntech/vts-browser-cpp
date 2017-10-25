@@ -1,10 +1,10 @@
-# Contributing to vts-browser-cpp
+# Contributing to VTS Browser
 
-[Melown](http://melown.com) vts-browser-cpp project openly welcomes
+[Melown](http://melown.com) VTS Browser project openly welcomes
 contributions (bug reports, bug fixes, code enhancements/features, etc.).  
-This document will outline some guidelines on contributing to vts-browser-cpp. 
+This document will outline some guidelines on contributing to it. 
 
-vts-browser-cpp has the following modes of contribution:
+VTS Browser has the following modes of contribution:
 
 - GitHub Pull Requests (accepted and moderated by contributors with git write access)
 - GitHub Commit Access (granted to long-term core developers)

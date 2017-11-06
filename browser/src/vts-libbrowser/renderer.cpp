@@ -399,8 +399,7 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
     {
         if (trav->parent)
         {
-            const std::shared_ptr<MetaTile> &p
-                    = trav->parent->meta->metaTiles[i];
+            std::shared_ptr<MetaTile> p = trav->parent->meta->metaTiles[i];
             if (!p)
                 continue;
             TileId pid = vtslibs::vts::parent(nodeId);

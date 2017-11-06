@@ -1,6 +1,6 @@
-# VTS Browser
+# VTS Browser CPP
 
-[VTS Browser](https://github.com/melown/vts-browser-cpp) is a library
+[VTS Browser CPP](https://github.com/melown/vts-browser-cpp) is a library
 that brings VTS capabilities to your native c++ applications.
 
 ## Design & Features

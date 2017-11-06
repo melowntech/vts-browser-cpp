@@ -57,7 +57,7 @@ const mat3f BoundParamInfo::uvMatrix() const
 
 Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
                              uint32 subMeshIndex, double priority)
-{    
+{
     bound = impl->mapConfig->getBoundInfo(id);
     if (!bound)
         return Validity::Indeterminate;
@@ -367,8 +367,8 @@ double MapImpl::travDistance(const std::shared_ptr<TraverseNode> &trav,
 float MapImpl::computeResourcePriority(
         const std::shared_ptr<TraverseNode> &trav)
 {
-	if (options.traverseMode == TraverseMode::Hierarchical)
-		return 1.f / trav->nodeInfo.distanceFromRoot();
+    if (options.traverseMode == TraverseMode::Hierarchical)
+        return 1.f / trav->nodeInfo.distanceFromRoot();
     return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1));
 }
 

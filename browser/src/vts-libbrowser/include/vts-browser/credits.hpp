@@ -45,15 +45,15 @@ public:
         uint32 hits;
         uint32 maxLod;
     };
-    
+
     struct Scope
     {
         std::vector<Credit> credits;
     };
-    
+
     Scope imagery;
     Scope data;
-    
+
     std::string textShort() const;
     std::string textFull() const;
 };

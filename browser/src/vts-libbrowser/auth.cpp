@@ -64,7 +64,7 @@ AuthConfig::AuthConfig(MapImpl *map, const std::string &name) :
     timeValid(0), timeParsed(0)
 {
     priority = std::numeric_limits<float>::infinity();
-    
+
     static const std::string tokenPrefix = "token:";
     if (name.substr(0, tokenPrefix.size()) == tokenPrefix)
     {

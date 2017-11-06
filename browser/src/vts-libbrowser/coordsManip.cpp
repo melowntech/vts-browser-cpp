@@ -47,7 +47,7 @@ namespace
 
 void GDALErrorHandlerEmpty(CPLErr, int, const char *)
 {
-    // do nothing    
+    // do nothing
 }
 
 struct gdalInitClass
@@ -86,7 +86,7 @@ public:
             registry.srs.replace(searchKey, s);
         }
     }
-    
+
     vec3 navToPhys(const vec3 &value) override
     {
         return convert(value, nav, phys);
@@ -140,35 +140,35 @@ public:
         res(2) = position(2);
         return res;
     }
-    
+
     vec3 geoDirect(const vec3 &position, double distance,
                                  double azimuthIn) override
     {
         double a;
         return geoDirect(position, distance, azimuthIn, a);
     }
-    
+
     void geoInverse(const vec3 &a, const vec3 &b,
             double &distance, double &azimuthA, double &azimuthB) override
     {
         geodesic_->Inverse(a(1), a(0), b(1), b(0),
                            distance, azimuthA, azimuthB);
     }
-    
+
     double geoAzimuth(const vec3 &a, const vec3 &b) override
     {
         double d, a1, a2;
         geoInverse(a, b, d, a1, a2);
         return a1;
     }
-    
+
     double geoDistance(const vec3 &a, const vec3 &b) override
     {
         double d, a1, a2;
         geoInverse(a, b, d, a1, a2);
         return d;
     }
-    
+
     double geoArcDist(const vec3 &a, const vec3 &b) override
     {
         double dummy;

@@ -61,14 +61,14 @@ void MapImpl::convertPositionSubjObj()
 void MapImpl::positionToCamera(vec3 &center, vec3 &dir, vec3 &up)
 {
     vtslibs::registry::Position &pos = mapConfig->position;
-    
+
     // camera-space vectors
     vec3 rot = vecFromUblas<vec3>(pos.orientation);
     applyCameraRotationNormalization(rot);
     center = vecFromUblas<vec3>(pos.position);
     dir = vec3(1, 0, 0);
     up = vec3(0, 0, -1);
-    
+
     // apply rotation
     {
         double yaw = mapConfig->srs.get(
@@ -81,7 +81,7 @@ void MapImpl::positionToCamera(vec3 &center, vec3 &dir, vec3 &up)
         dir = tmp * dir;
         up = tmp * up;
     }
-    
+
     // transform to physical srs
     switch (mapConfig->navigationSrsType())
     {
@@ -238,7 +238,7 @@ void MapImpl::updateNavigation()
 
     // auto rotation
     navigation.changeRotation(0) += navigation.autoRotation;
-    
+
     // find inputs for perceptually invariant motion
     double azi1 = std::numeric_limits<double>::quiet_NaN();
     double azi2 = std::numeric_limits<double>::quiet_NaN();
@@ -280,11 +280,11 @@ void MapImpl::updateNavigation()
 
     // vertical move
     p(2) += vertical2;
-    
+
     // rotation
     navigation.changeRotation -= r2 - r;
     r = r2;
-    
+
     // horizontal move
     if (horizontal1 > 0)
     {
@@ -356,7 +356,7 @@ void MapImpl::updateNavigation()
         }
         navigation.targetPoint += p - pp;
     }
-    
+
     // normalize rotation
     for (int i = 0; i < 3; i++)
         normalizeAngle(r[i]);

@@ -154,7 +154,7 @@ public:
 
         nk_init_default(&ctx, &font->handle);
         nk_buffer_init_default(&cmds);
-        
+
         ctx.clip.paste = &clipBoardPaste;
         ctx.clip.copy = &clipBoardCopy;
         ctx.clip.userdata.ptr = window->window;
@@ -434,7 +434,7 @@ public:
                         0.1, o.cameraSensitivityRotate, 3, 0.01);
                 sprintf(buffer, "%4.2f", o.cameraSensitivityRotate);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                
+
                 nk_label(&ctx, "Pan inertia:", NK_TEXT_LEFT);
                 o.cameraInertiaPan = nk_slide_float(&ctx,
                         0, o.cameraInertiaPan, 0.99, 0.01);
@@ -450,7 +450,7 @@ public:
                         0, o.cameraInertiaRotate, 0.99, 0.01);
                 sprintf(buffer, "%4.2f", o.cameraInertiaRotate);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                
+
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset sensitivity"))
                 {

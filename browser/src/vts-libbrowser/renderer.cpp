@@ -202,7 +202,7 @@ Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
         if (!determined)
             return Validity::Indeterminate;
     }
-    
+
     // skip overlapping layers
     std::reverse(boundList.begin(), boundList.end());
     auto it = boundList.begin(), et = boundList.end();
@@ -1104,7 +1104,7 @@ void MapImpl::updateCamera()
         if (r.ready())
             draws.Infographic.emplace_back(r, this);
     }
-    
+
     // render target position
     if (options.debugRenderTargetPosition)
     {
@@ -1204,7 +1204,7 @@ bool MapImpl::prerequisitesCheck()
     LOG(info3) << "Map config ready";
     initialized = true;
     if (callbacks.mapconfigReady)
-        callbacks.mapconfigReady();    
+        callbacks.mapconfigReady();
     return initialized;
 }
 

@@ -77,8 +77,7 @@ public:
 
     ResourceInfo info;
     const std::string name;
-    std::shared_ptr<vtslibs::registry::BoundLayer::Availability>
-    									availTest;
+    std::shared_ptr<vtslibs::registry::BoundLayer::Availability> availTest;
     MapImpl *const map;
     std::atomic<State> state;
     std::time_t retryTime;
@@ -136,9 +135,9 @@ public:
     public:
         BoundInfo(const vtslibs::registry::BoundLayer &bl,
                   const std::string &url);
-    
-	    std::shared_ptr<vtslibs::registry::BoundLayer::Availability>
-	    								availability;
+
+        std::shared_ptr<vtslibs::registry::BoundLayer::Availability>
+                                        availability;
         vtslibs::vts::UrlTemplate urlExtTex;
         vtslibs::vts::UrlTemplate urlMeta;
         vtslibs::vts::UrlTemplate urlMask;
@@ -149,14 +148,14 @@ public:
     public:
         SurfaceInfo(const SurfaceCommonConfig &surface,
                     const std::string &parentPath);
-    
+
         vtslibs::vts::UrlTemplate urlMeta;
         vtslibs::vts::UrlTemplate urlMesh;
         vtslibs::vts::UrlTemplate urlIntTex;
         vtslibs::vts::UrlTemplate urlNav;
         vtslibs::vts::TilesetIdList name;
     };
-    
+
     class SurfaceStackItem
     {
     public:
@@ -166,7 +165,7 @@ public:
         vec3f color;
         bool alien;
     };
-    
+
     class BrowserOptions
     {
     public:
@@ -177,14 +176,14 @@ public:
         double autorotate;
         bool searchFilter;
     };
-    
+
     MapConfig(MapImpl *map, const std::string &name);
     void load() override;
     void clear();
     static const std::string convertPath(const std::string &path,
                                          const std::string &parent);
     vtslibs::registry::Srs::Type navigationSrsType() const;
-    
+
     vtslibs::vts::SurfaceCommonConfig *findGlue(
             const vtslibs::vts::Glue::Id &id);
     vtslibs::vts::SurfaceCommonConfig *findSurface(const std::string &id);
@@ -197,7 +196,7 @@ public:
     void consolidateView();
     void initializeCelestialBody() const;
     bool isEarth() const;
-    
+
     std::unordered_map<std::string, std::shared_ptr<SurfaceInfo>> surfaceInfos;
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
     std::vector<SurfaceStackItem> surfaceStack;
@@ -256,9 +255,9 @@ class NavTile : public Resource
 public:
     NavTile(MapImpl *map, const std::string &name);
     void load() override;
-    
+
     std::vector<unsigned char> data;
-    
+
     static vec2 sds2px(const vec2 &point, const math::Extents2 &extents);
 };
 
@@ -267,7 +266,7 @@ class SearchTaskImpl : public Resource
 public:
     SearchTaskImpl(MapImpl *map, const std::string &name);
     void load() override;
-    
+
     Buffer data;
     const std::string validityUrl;
     const std::string validitySrs;
@@ -290,7 +289,7 @@ public:
     SriIndex(MapImpl *map, const std::string &name);
     void load() override;
     void update();
-    
+
     std::vector<std::shared_ptr<MetaTile>> metatiles;
 };
 

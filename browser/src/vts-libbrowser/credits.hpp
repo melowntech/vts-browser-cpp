@@ -47,7 +47,7 @@ public:
     {
         Imagery,
         Data,
-        
+
         Total_
     };
     

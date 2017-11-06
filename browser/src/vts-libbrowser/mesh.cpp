@@ -87,7 +87,8 @@ MeshPart::MeshPart() :
     internalUv(false), externalUv(false)
 {}
 
-namespace {
+namespace
+{
 
 const mat4 findNormToPhys(const math::Extents3 &extents)
 {

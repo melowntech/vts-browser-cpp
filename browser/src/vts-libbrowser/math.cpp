@@ -151,31 +151,31 @@ mat4 frustumMatrix(double left, double right,
 mat4 perspectiveMatrix(double fovyDegs, double aspect,
                              double near, double far)
 {
-	double ymax, xmax;
+    double ymax, xmax;
     double nf = near * tanf(fovyDegs * M_PI / 360.0);
     if (aspect > 1)
     {
-		ymax = nf;
-		xmax = nf * aspect;
+        ymax = nf;
+        xmax = nf * aspect;
     }
     else
     {
-		xmax = nf;
-		ymax = nf / aspect;
+        xmax = nf;
+        ymax = nf / aspect;
     }
-	return frustumMatrix(-xmax, xmax, -ymax, ymax, near, far);
+    return frustumMatrix(-xmax, xmax, -ymax, ymax, near, far);
 }
 
 mat4 orthographicMatrix(double left, double right,
                         double bottom, double top,
                         double near, double far)
 {
-	mat4 m = (mat4() <<
-			2 / (right - left), 0, 0, -(right + left) / (right - left),
-			0, 2 / (top - bottom), 0, -(top + bottom) / (top - bottom),
-			0, 0, -2 / (far - near), -(far + near) / (far - near),
-			0, 0, 0, 1).finished();
-	return m;
+    mat4 m = (mat4() <<
+            2 / (right - left), 0, 0, -(right + left) / (right - left),
+            0, 2 / (top - bottom), 0, -(top + bottom) / (top - bottom),
+            0, 0, -2 / (far - near), -(far + near) / (far - near),
+            0, 0, 0, 1).finished();
+    return m;
 }
 
 mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up)
@@ -581,7 +581,6 @@ void matToRaw(const mat4f &a, float v[16])
     for (int i = 0; i < 16; i++)
         v[i] = atc(a, i);
 }
-
 
 } // namespace vts
 

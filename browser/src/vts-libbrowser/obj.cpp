@@ -54,7 +54,7 @@ void decodeObj(const Buffer &in, uint32 &outFaceMode,
         uint32 j = std::unique(v, v + 3) - v;
         outFaceMode = std::min(outFaceMode, j);
     }
-    
+
     struct F
     {
         vec3f vertex;

@@ -33,7 +33,7 @@ namespace vts
 
 namespace
 {
-    
+
 /*
 double signum(double a)
 {

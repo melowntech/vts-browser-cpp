@@ -106,14 +106,14 @@ Resource::Resource(vts::MapImpl *map, const std::string &name,
     priorityCopy(std::numeric_limits<float>::quiet_NaN())
 {
     LOG(debug) << "Constructing resource <" << name
-    		   << "> at <" << this << ">";
+               << "> at <" << this << ">";
     initializeFetchTask(map, this);
 }
 
 Resource::~Resource()
 {
     LOG(debug) << "Destroying resource <" << name
-    		   << "> at <" << this << ">";
+               << "> at <" << this << ">";
 }
 
 Resource::operator bool() const
@@ -123,34 +123,34 @@ Resource::operator bool() const
 
 std::ostream &operator << (std::ostream &stream, Resource::State state)
 {
-	switch (state)
-	{
+    switch (state)
+    {
         case Resource::State::initializing:
-        	stream << "initializing";
-        	break;
+            stream << "initializing";
+            break;
         case Resource::State::downloading:
-        	stream << "downloading";
-        	break;
+            stream << "downloading";
+            break;
         case Resource::State::downloaded:
-        	stream << "downloaded";
-        	break;
+            stream << "downloaded";
+            break;
         case Resource::State::ready:
-        	stream << "ready";
-        	break;
+            stream << "ready";
+            break;
         case Resource::State::errorFatal:
-        	stream << "errorFatal";
-        	break;
+            stream << "errorFatal";
+            break;
         case Resource::State::errorRetry:
-        	stream << "errorRetry";
-        	break;
+            stream << "errorRetry";
+            break;
         case Resource::State::availFail:
-        	stream << "availFail";
-        	break;
+            stream << "availFail";
+            break;
         case Resource::State::finalizing:
-        	stream << "finalizing";
-        	break;
-	}
-	return stream;
+            stream << "finalizing";
+            break;
+    }
+    return stream;
 }
 
 ////////////////////////////

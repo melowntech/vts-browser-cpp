@@ -303,7 +303,7 @@ void MapConfig::generateSurfaceStack(const vtslibs::vts::VirtualSurfaceConfig
             }
         }
     }
-    
+
     colorizeSurfaceStack(surfaceStack);
 }
 

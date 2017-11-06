@@ -50,7 +50,7 @@ public:
         BoundLayerInfo();
         BoundLayerInfo(const std::string &id);
     };
-    
+
     class SurfaceInfo
     {
     public:
@@ -58,7 +58,7 @@ public:
         
         BoundLayerInfo::Map boundLayers;
     };
-    
+
     class FreeLayerInfo
     {
     public:
@@ -67,7 +67,7 @@ public:
         std::string style;
         BoundLayerInfo::Map boundLayers;
     };
-    
+
     std::string description;
     SurfaceInfo::Map surfaces;
     FreeLayerInfo::Map freeLayers;

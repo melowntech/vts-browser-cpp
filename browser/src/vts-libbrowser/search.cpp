@@ -99,7 +99,7 @@ void filterSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
             return a.displayName == b.displayName;
         }), task->results.end());
     }
-    
+
     // filter results, that are close to each other
     if (task->results.size() > 1)
     {
@@ -109,7 +109,7 @@ void filterSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
             return distance(map, a.position, b.position) < 1e4;
         }), task->results.end());
     }
-    
+
     // update some fields
     for (SearchItem &it : task->results)
     {
@@ -137,7 +137,7 @@ void filterSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
         if (it.title == it.houseNumber && !it.road.empty())
             it.title = it.road;
     }
-    
+
     // reshake hits by distance
     std::stable_sort(task->results.begin(), task->results.end(),
                      [](const SearchItem &a, const SearchItem &b){

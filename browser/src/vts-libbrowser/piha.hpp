@@ -46,5 +46,5 @@ void navigationPiha(
     double &outVerticalMove,
     vec3 &outRotation
 );
-    
+
 } // namespace vts

@@ -204,7 +204,7 @@ public:
                     + "/" + convertNameToPath(c, false);
         }
     }
-    
+
     std::string stripScheme(const std::string &name)
     {
         auto p = name.find("://");

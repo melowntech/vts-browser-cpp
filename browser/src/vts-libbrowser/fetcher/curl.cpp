@@ -45,7 +45,7 @@ public:
     ~Task();
     void done(http::ResourceFetcher::MultiQuery &&queries);
     void finish();
-    
+
     const uint64 begin;
     FetcherImpl *const impl;
     const uint32 id;
@@ -68,14 +68,14 @@ public:
                 extraLog << time() << " starting download log" << std::endl;
         }
     }
-    
+
     ~FetcherImpl()
     {
         assert(initCount == 0);
         if (extraLog)
-	        extraLog << time() << " finished download log" << std::endl;
+            extraLog << time() << " finished download log" << std::endl;
     }
-    
+
     virtual void initialize() override
     {
         if (initCount++ == 0)
@@ -88,7 +88,7 @@ public:
             htt.startClient(options.threads, &o);
         }
     }
-    
+
     virtual void finalize() override
     {
         if (--initCount == 0)

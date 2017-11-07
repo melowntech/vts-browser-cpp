@@ -6,6 +6,7 @@
     <dependencies>
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="13165.3"/>
+        <capability name="Aspect ratio constraints" minToolsVersion="5.1"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="Stack View standard spacing" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
@@ -414,26 +415,29 @@
                                 <rect key="frame" x="0.0" y="64" width="375" height="554"/>
                                 <subviews>
                                     <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="equalSpacing" alignment="center" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="Ezi-H6-dnL">
-                                        <rect key="frame" x="0.0" y="0.0" width="375" height="579.5"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="375" height="319"/>
                                         <subviews>
-                                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="About" translatesAutoresizingMaskIntoConstraints="NO" id="jfc-aH-hqM">
-                                                <rect key="frame" x="0.0" y="0.0" width="375" height="475"/>
+                                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="About" translatesAutoresizingMaskIntoConstraints="NO" id="jfc-aH-hqM">
+                                                <rect key="frame" x="0.0" y="0.0" width="375" height="214.5"/>
+                                                <constraints>
+                                                    <constraint firstAttribute="width" secondItem="jfc-aH-hqM" secondAttribute="height" multiplier="1662:951" id="fNR-jd-o5X"/>
+                                                </constraints>
                                             </imageView>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="VTS Browser made by Melown Technologies." textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Jcc-p9-Aoe">
-                                                <rect key="frame" x="16" y="483" width="343" height="20.5"/>
+                                                <rect key="frame" x="16" y="222.5" width="343" height="20.5"/>
                                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                 <nil key="textColor"/>
                                                 <nil key="highlightedColor"/>
                                             </label>
                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="mrA-1x-wVj">
-                                                <rect key="frame" x="150" y="511.5" width="75" height="30"/>
-                                                <state key="normal" title="Homepage"/>
+                                                <rect key="frame" x="113.5" y="251" width="148" height="30"/>
+                                                <state key="normal" title="Melown Technologies"/>
                                                 <connections>
                                                     <action selector="gotoHomepage:" destination="nD1-Et-sSu" eventType="touchUpInside" id="jc8-MX-y9b"/>
                                                 </connections>
                                             </button>
                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="r4B-u1-B53">
-                                                <rect key="frame" x="163" y="549.5" width="49" height="30"/>
+                                                <rect key="frame" x="163" y="289" width="49" height="30"/>
                                                 <state key="normal" title="GitHub"/>
                                                 <connections>
                                                     <action selector="gotoGithub:" destination="nD1-Et-sSu" eventType="touchUpInside" id="wWU-aG-vSa"/>
@@ -922,7 +926,7 @@
         </scene>
     </scenes>
     <resources>
-        <image name="About" width="831" height="475"/>
+        <image name="About" width="1662" height="951"/>
     </resources>
     <inferredMetricsTieBreakers>
         <segue reference="DFe-Rx-oU4"/>

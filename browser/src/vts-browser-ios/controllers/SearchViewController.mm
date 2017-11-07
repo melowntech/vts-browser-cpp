@@ -55,10 +55,10 @@
 
 - (void)timerTick
 {
-	if (task && task->done)
-		[_activityIndicator stopAnimating];
-	else
+	if (task && !task->done)
 		[_activityIndicator startAnimating];
+	else
+		[_activityIndicator stopAnimating];
 
 	if (result)
 	{
@@ -71,20 +71,28 @@
 	[_tableView reloadData];
 }
 
+- (void)searchCommit:(NSString*)text
+{
+    if ([text length] > 1)
+        task = map->search([text UTF8String]);
+    else
+        task.reset();
+}
+
 - (void)searchBar:(UISearchBar*)searchBar textDidChange:(NSString*)searchText
 {
-	task = map->search([_searchBar.text UTF8String]);
+    [self searchCommit:_searchBar.text];
 }
 
 - (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar
 {
-	task = map->search([_searchBar.text UTF8String]);
+    [self searchCommit:_searchBar.text];
     [_searchBar resignFirstResponder];
 }
 
 - (void)searchBarResultsListButtonClicked:(UISearchBar *)searchBar
 {
-	task = map->search([_searchBar.text UTF8String]);
+    [self searchCommit:_searchBar.text];
     [_searchBar resignFirstResponder];
 }
 

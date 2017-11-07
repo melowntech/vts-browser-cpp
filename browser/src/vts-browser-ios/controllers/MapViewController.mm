@@ -178,7 +178,7 @@ using namespace vts;
 			if (pitchMultiEnabled)
 			{
 				CGPoint p = [recognizer translationInView:self.view];
-				map->rotate({0, 2000 * p.y / renderOptions.height, 0});
+				map->rotate({0, 8000 * p.y / renderOptions.height, 0});
 			}
 			[recognizer setTranslation:CGPoint() inView:self.view];
 			fullscreenOverride = false;

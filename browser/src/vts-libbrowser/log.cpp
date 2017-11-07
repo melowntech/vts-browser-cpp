@@ -26,6 +26,7 @@
 
 #include <dbglog/dbglog.hpp>
 #include "include/vts-browser/log.hpp"
+#include "threadName.hpp"
 
 namespace vts
 {
@@ -53,6 +54,7 @@ void setLogFile(const std::string &filename)
 void setLogThreadName(const std::string &name)
 {
     dbglog::thread_id(name);
+    setThreadName((name.c_str()));
 }
 
 namespace

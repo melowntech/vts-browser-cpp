@@ -85,7 +85,8 @@ void releaseIfLast(std::shared_ptr<Resource> &p)
 
 } // namespace
 
-MapImpl::Resources::Resources() : downloads(0), tickIndex(0)
+MapImpl::Resources::Resources() : downloads(0), tickIndex(0),
+    progressEstimationMaxResources(0)
 {}
 
 bool FetchTask::isResourceTypeMandatory(FetchTask::ResourceType resourceType)
@@ -145,9 +146,6 @@ std::ostream &operator << (std::ostream &stream, Resource::State state)
             break;
         case Resource::State::availFail:
             stream << "availFail";
-            break;
-        case Resource::State::finalizing:
-            stream << "finalizing";
             break;
     }
     return stream;
@@ -346,8 +344,8 @@ void Resource::fetchDone()
 {
     LOG(debug) << "Resource <" << name << "> finished fetching";
     assert(map);
+    assert(state == Resource::State::downloading);
     map->resources.downloads--;
-    state = Resource::State::downloading;
 
     // handle error or invalid codes
     if (reply.code >= 400 || reply.code < 200)
@@ -436,9 +434,9 @@ void MapImpl::resourceRenderFinalize()
 
 void MapImpl::resourceRenderTick()
 {
-    // clear old resources
-    if (renderer.tickIndex % 30 == 0)
+    if (renderer.tickIndex % 2 == 0)
     {
+        // clear old resources
         struct Res
         {
             std::string s;
@@ -458,7 +456,7 @@ void MapImpl::resourceRenderTick()
             memRamUse += it.second->info.ramMemoryCost;
             memGpuUse += it.second->info.gpuMemoryCost;
             // consider long time not used resources only
-            if (it.second->lastAccessTick + 70 < renderer.tickIndex)
+            if (it.second->lastAccessTick + 5 < renderer.tickIndex)
                 resToRemove.emplace(it.first, it.second->lastAccessTick);
         }
         uint64 memUse = memRamUse + memGpuUse;
@@ -469,33 +467,26 @@ void MapImpl::resourceRenderTick()
                 Res res = resToRemove.top();
                 resToRemove.pop();
                 auto &it = resources.resources[res.s];
-                if (it->state != Resource::State::finalizing)
-                    it->state = Resource::State::finalizing;
-                else
+                std::string name = it->name;
+                uint64 mem = it->info.gpuMemoryCost + it->info.ramMemoryCost;
+                releaseIfLast(it);
+                if (!it)
                 {
-                    std::string name = it->name;
-                    uint64 mem = it->info.gpuMemoryCost
-                            + it->info.ramMemoryCost;
-                    releaseIfLast(it);
-                    if (!it)
-                    {
-                        LOG(info1) << "Released resource <" << name << ">";
-                        resources.resources.erase(name);
-                        statistics.resourcesReleased++;
-                        memUse -= mem;
-                        if (memUse <= options.targetResourcesMemory)
-                            break;
-                    }
+                    LOG(info1) << "Released resource <" << name << ">";
+                    resources.resources.erase(name);
+                    statistics.resourcesReleased++;
+                    memUse -= mem;
+                    if (memUse <= options.targetResourcesMemory)
+                        break;
                 }
             }
         }
         statistics.currentGpuMemUse = memGpuUse;
         statistics.currentRamMemUse = memRamUse;
     }
-    statistics.currentResources = resources.resources.size();
-
-    // check which resources need attention
+    else
     {
+        // check which resources need attention
         std::vector<std::shared_ptr<Resource>> res;
         res.reserve(resources.resources.size());
         std::time_t current = std::time(nullptr);
@@ -531,9 +522,8 @@ void MapImpl::resourceRenderTick()
                            << r->name << "> (attempt "
                            << r->retryNumber << ")";
                 r->retryTime = -1;
-                // no break here
-            case Resource::State::finalizing:
                 r->state = Resource::State::initializing;
+                // no break here
             case Resource::State::initializing:
             case Resource::State::downloaded:
                 res.push_back(r);
@@ -563,6 +553,7 @@ void MapImpl::resourceRenderTick()
             res.swap(resources.resourcesCopy);
         }
     }
+    statistics.currentResources = resources.resources.size();
 }
 
 void MapImpl::touchResource(const std::shared_ptr<Resource> &resource)

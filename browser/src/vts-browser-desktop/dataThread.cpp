@@ -58,11 +58,13 @@ DataThread::~DataThread()
 
 void DataThread::run()
 {
+    vts::setLogThreadName("fetcher");
+    map->dataInitialize(fetcher);
+
     vts::setLogThreadName("data");
     SDL_GL_MakeCurrent(window, context);
     while (!stop && !map)
         usleep(10000);
-    map->dataInitialize(fetcher);
     while (!stop)
     {
         vts::uint32 timeFrameStart = SDL_GetTicks();

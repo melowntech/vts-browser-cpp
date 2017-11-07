@@ -372,5 +372,20 @@ float MapImpl::computeResourcePriority(
     return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1));
 }
 
+double MapImpl::getMapRenderProgress()
+{
+    uint32 active = statistics.currentResourcePreparing;
+    if (active == 0)
+    {
+        resources.progressEstimationMaxResources = 0;
+        return 0;
+    }
+
+    resources.progressEstimationMaxResources
+            = std::max(resources.progressEstimationMaxResources, active);
+    return double(resources.progressEstimationMaxResources - active)
+            / resources.progressEstimationMaxResources;
+}
+
 } // namespace vts
 

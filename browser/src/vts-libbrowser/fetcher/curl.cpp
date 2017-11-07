@@ -153,8 +153,6 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
 {
     assert(queries.size() == 1);
     assert(task->reply.code == 0);
-    assert(!called);
-    called = true;
     http::ResourceFetcher::Query &q = *queries.begin();
     if (q.valid())
     {
@@ -217,6 +215,8 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
 
 void Task::finish()
 {
+    assert(!called);
+    called = true;
     if (impl->extraLog)
     {
         impl->extraLog << 

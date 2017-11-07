@@ -432,7 +432,7 @@ void MapImpl::pan(const vec3 &value)
     {
         assert(mapConfig->navigationSrsType()
                == vtslibs::registry::Srs::Type::geographic);
-        // camera rotation taken from current (aka previous) target position
+        // camera rotation taken from previous target position
         // this prevents strange turning near poles
         double d, a1, a2;
         convertor->geoInverse(

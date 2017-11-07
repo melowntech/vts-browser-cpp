@@ -55,6 +55,7 @@ set(HDR_LIST
   obj.hpp
   cache.hpp
   piha.hpp
+  threadName.hpp
 )
 
 set(SRC_LIST
@@ -86,6 +87,7 @@ set(SRC_LIST
   boostProgramOptions.cpp
   sri.cpp
   image.cpp
+  threadName.cpp
   ${EXTRA_SRC_LIST}
 )
 

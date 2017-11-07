@@ -249,7 +249,7 @@ double Map::getMapRenderProgress() const
         return 0;
     if (getMapRenderComplete())
         return 1;
-    return 0.5; // todo some better heuristic
+    return impl->getMapRenderProgress();
 }
 
 void Map::pan(const double value[3])

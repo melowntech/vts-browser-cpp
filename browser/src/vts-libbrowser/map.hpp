@@ -182,9 +182,10 @@ public:
         boost::mutex mutResourcesCopy;
         std::string authPath;
         std::string sriPath;
-        std::atomic_uint downloads;
+        std::atomic<uint32> downloads;
         uint32 tickIndex;
-        
+        uint32 progressEstimationMaxResources;
+
         Resources();
     } resources;
 
@@ -264,6 +265,7 @@ public:
     void updateSearch();
     void initiateSri(const vtslibs::registry::Position *position);
     void updateSris();
+    double getMapRenderProgress();
 
     // renderer methods
     void renderInitialize();

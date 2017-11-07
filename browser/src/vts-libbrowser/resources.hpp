@@ -62,7 +62,6 @@ public:
         errorFatal,
         errorRetry,
         availFail,
-        finalizing,
     };
 
     Resource(MapImpl *map, const std::string &name,

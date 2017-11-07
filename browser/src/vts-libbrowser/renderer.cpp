@@ -43,7 +43,6 @@ bool testAndThrow(Resource::State state, const std::string &message)
     case Resource::State::errorRetry:
     case Resource::State::downloaded:
     case Resource::State::downloading:
-    case Resource::State::finalizing:
     case Resource::State::initializing:
         return false;
     case Resource::State::ready:
@@ -135,9 +134,15 @@ void MapImpl::purgeMapConfig()
     LOG(info2) << "Purge map config";
 
     if (resources.auth)
-        resources.auth->state = Resource::State::finalizing;
+    {
+        resources.auth->state = Resource::State::errorRetry;
+        resources.auth->retryTime = 0;
+    }
     if (mapConfig)
-        mapConfig->state = Resource::State::finalizing;
+    {
+        mapConfig->state = Resource::State::errorRetry;
+        mapConfig->retryTime = 0;
+    }
 
     resources.auth.reset();
     mapConfig.reset();
@@ -956,13 +961,6 @@ void MapImpl::traverseRender(const std::shared_ptr<TraverseNode> &trav)
 
 void MapImpl::traverseClearing(const std::shared_ptr<TraverseNode> &trav)
 {
-    TileId id = trav->nodeInfo.nodeId();
-    if (id.lod == 3)
-    {
-        if ((id.y * 8 + id.x) % 64 != renderer.tickIndex % 64)
-            return;
-    }
-
     if (trav->lastAccessTime + 5 < renderer.tickIndex)
     {
         trav->clearAll();

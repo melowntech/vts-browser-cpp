@@ -5,7 +5,7 @@ that brings VTS capabilities to your native c++ applications.
 
 ## Design & Features
 
-- Simple -> Minimalistic opengl application using this library has couple hundred LOC.
+- Simple -> Minimalistic opengl application using this library has about 150 LOC.
 - Clean c++11 classfull API.
 - Highly flexible -> almost all aspects can be changed through configuration or callbacks.
 - Rendering API independent -> The library, on its own, does not render anything.
@@ -14,7 +14,7 @@ However, a convenient opengl-based rendering library is also provided.
 
 ## WIP
 
-Be warned, this library is still in early state of development.
+Be warned, this library is still in development.
 We make no attempt on maintaining ABI nor API compatibility yet.
 
 ## Api Documentation
@@ -25,7 +25,7 @@ VTS Browser library API documentation is available at the
 Documentation for the whole VTS technology is at
 [read the docs](https://melown.readthedocs.io).
 
-## Install from Melown Repository (linux desktop)
+## Install from Melown Repository (Linux Desktop)
 
 We provide precompiled packages for some popular linux distributions.
 See [Melown OSS package repository](https://cdn.melown.com/packages/) for more information.

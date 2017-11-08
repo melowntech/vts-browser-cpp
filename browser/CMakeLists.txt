@@ -52,7 +52,7 @@ buildsys_nobuild_target(vts-libs)
 add_subdirectory(src/vts-libs)
 
 # vts browser
-message(STATUS "including vts browser library")
+message(STATUS "including vts browser and renderer libraries")
 if(IOS)
   set(LIB_TYPE STATIC)
   set(LIB_VIS PUBLIC)
@@ -66,13 +66,15 @@ add_subdirectory(src/vts-librenderer)
 include_directories(src/vts-librenderer/include)
 
 # application
-message(STATUS "include vts browser application")
 if(IOS)
   # ios application
   message(STATUS "including vts-browser-ios")
   add_subdirectory(src/vts-browser-ios)
-  add_subdirectory(src/vts-browser-sdl)
 else()
+  # minimal application
+  message(STATUS "including vts-browser-minimal")
+  add_subdirectory(src/vts-browser-minimal)
+  
   # desktop application
   message(STATUS "including vts-browser-desktop")
   add_subdirectory(src/nuklear)

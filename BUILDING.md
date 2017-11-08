@@ -1,5 +1,5 @@
 
-## Build from Source (linux)
+## Build for Linux Desktop
 
 Install required packages to build the library.
 
@@ -30,7 +30,7 @@ And run the example application.
 bin/vts-browser-desktop <mapconfig-url>
 ```
 
-## Build from Source (mac osx)
+## Build for Mac OS X
 
 Install all required libraries using eg. brew or ports.
 
@@ -47,9 +47,9 @@ cmake -GXcode ..
 
 Use the generated xcode project as usual.
 
-## Build from Source (ios)
+## Build for iOS
 
-Build all required library dependencies in some folder and provide cmake find package modules for them.
+Build all required library dependencies and prepare cmake find package modules for them.
 
 Clone the git repository with all submodules.
 Use cmake to generate xcode project.
@@ -63,4 +63,6 @@ cmake -DCMAKE_MODULE_PATH="path to the prepared cmake modules directory" -DCMAKE
 ```
 
 Use the generated xcode project as usual.
+
+
 

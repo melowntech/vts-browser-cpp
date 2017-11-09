@@ -29,6 +29,7 @@
 #include "../Map.h"
 #include <vts-browser/draws.hpp>
 #include <vts-browser/math.hpp>
+#include <vts-browser/exceptions.hpp>
 #include <vts-renderer/renderer.hpp>
 
 #import "MapViewController.h"
@@ -489,8 +490,16 @@ using namespace vts;
 	
 	_searchButton.enabled = map->searchable();
 
-    map->renderTickPrepare();
-    map->renderTickRender();
+    try
+    {
+        map->renderTickPrepare();
+        map->renderTickRender();
+    }
+    catch (const vts::MapConfigException &)
+    {
+        [[self navigationController] popViewControllerAnimated:YES];
+        return;
+    }
 
 	[self updateFullscreen];
 	[self progressUpdate];

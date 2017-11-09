@@ -24,7 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "map.h"
+#include "Map.h"
+#include <vts-browser/exceptions.hpp>
 
 #import "TimerObj.h"
 
@@ -52,8 +53,15 @@
 {
 	if (!object || !map)
 		return;
-    map->renderTickPrepare();
-    map->renderTickRender();
+	try
+	{
+        map->renderTickPrepare();
+        map->renderTickRender();
+    }
+    catch (const vts::MapConfigException &)
+    {
+        // do nothing
+    }
 	[object performSelector:selector];
 }
 

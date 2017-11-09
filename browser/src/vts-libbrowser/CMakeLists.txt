@@ -19,7 +19,7 @@ else()
   find_package(CURL REQUIRED)
   add_subdirectory(fetcher/http)
   include_directories(fetcher)
-  list(APPEND EXTRA_MODULE_DEPS http)
+  list(APPEND EXTRA_MODULE_DEPS http JPEG PNG)
   list(APPEND EXTRA_SRC_LIST fetcher/curl.cpp image/desktop.cpp)
 
 endif()

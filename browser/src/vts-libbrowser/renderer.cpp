@@ -404,14 +404,14 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
     {
         if (trav->parent)
         {
-            std::shared_ptr<MetaTile> p = trav->parent->meta->metaTiles[i];
+            const std::shared_ptr<MetaTile> &p
+                    = trav->parent->meta->metaTiles[i];
             if (!p)
                 continue;
             TileId pid = vtslibs::vts::parent(nodeId);
             uint32 idx = (nodeId.x % 2) + (nodeId.y % 2) * 2;
-            const vtslibs::vts::MetaNode *node = p->get(pid, std::nothrow);
-            assert(node);
-            if ((node->flags()
+            const vtslibs::vts::MetaNode &node = p->get(pid);
+            if ((node.flags()
                  & (vtslibs::vts::MetaNode::Flag::ulChild << idx)) == 0)
                 continue;
         }

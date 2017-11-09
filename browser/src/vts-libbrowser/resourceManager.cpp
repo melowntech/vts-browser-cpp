@@ -492,7 +492,7 @@ void MapImpl::resourceRenderTick()
         std::time_t current = std::time(nullptr);
         for (auto it : resources.resources)
         {
-            std::shared_ptr<Resource> &r = it.second;
+            const std::shared_ptr<Resource> &r = it.second;
             if (r->lastAccessTick + 1 != renderer.tickIndex)
                 continue;
             switch ((Resource::State)r->state)

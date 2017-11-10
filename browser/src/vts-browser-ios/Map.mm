@@ -177,6 +177,7 @@ void mapInitialize()
 		        GpuTextureSpec spec(buff);
 		        scalesTextureYaw = std::make_shared<Texture>();
 		        scalesTextureYaw->load(info, spec);
+		        scalesTextureYaw->generateMipmaps();
 		    }
 		    
 		    // load texture pitch
@@ -186,6 +187,7 @@ void mapInitialize()
 		        GpuTextureSpec spec(buff);
 		        scalesTexturePitch = std::make_shared<Texture>();
 		        scalesTexturePitch->load(info, spec);
+		        scalesTexturePitch->generateMipmaps();
 		    }
 		    
 		    // load texture zoom
@@ -195,6 +197,7 @@ void mapInitialize()
 		        GpuTextureSpec spec(buff);
 		        scalesTextureZoom = std::make_shared<Texture>();
 		        scalesTextureZoom->load(info, spec);
+		        scalesTextureZoom->generateMipmaps();
 		    }
 		}
 		
@@ -274,24 +277,24 @@ void mapRenderScales(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, 
 		{
 		    glScissor(yaw.origin.x * retinaScale, (whole.size.height - yaw.size.height - yaw.origin.y) * retinaScale, yaw.size.width * retinaScale, yaw.size.height * retinaScale);
 			scalesTextureYaw->bind();
-			float radius = std::min(10.f * retinaScale, (float)yaw.size.height * 0.5f);
+			float radius = std::min(11.f * retinaScale, (float)yaw.size.height * 0.5f);
 			float startX = yaw.origin.x + yaw.size.width * 0.5 - radius;
 			float startY = yaw.origin.y + yaw.size.height - 1.7 * radius;
-			float singleWidth = 8 * radius;
-			float totalWidth = 4 * singleWidth;
+			float singleWidth = 7 * radius;
+			float totalWidth = 8 * singleWidth;
 			float startOffset = totalWidth * rotation[0] / 360;
-			float texH = 0.11;
+			float texH = 0.1;
 			// render numbers
-			for (int i = -10; i < 7; i++)
+			for (int i = -16; i < 10; i++)
 			{
 				renderQuad(proj,
 					CGRectMake(startX + startOffset + i * singleWidth, startY, 2 * radius, 2 * radius),
-					CGRectMake(0, ((100 - i) % 4) * texH, 1, texH));
+					CGRectMake(0, ((100 - i + 4) % 8) * texH, 1, texH));
 			}
 			// render dots
-			CGRect dotRect = CGRectMake(0, 4 * texH, 1, texH);
+			CGRect dotRect = CGRectMake(0, 8 * texH, 1, texH);
 			float dotOffset = startOffset + 0.5 * singleWidth;
-			for (int i = -30; i < 17; i++)
+			for (int i = -70; i < 30; i++)
 			{
 				if ((i + 100) % 4 == 2)
 					continue;
@@ -302,21 +305,21 @@ void mapRenderScales(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, 
 			// render arrow
 			renderQuad(proj,
 				CGRectMake(startX, startY, 2 * radius, 1.7 * radius),
-				CGRectMake(0, 0.52, 1, texH));
+				CGRectMake(0, 0.9, 1, texH));
 		}
 		
 		// pitch
 		{
 		    glScissor(pitch.origin.x * retinaScale, (whole.size.height - pitch.size.height - pitch.origin.y) * retinaScale, pitch.size.width * retinaScale, pitch.size.height * retinaScale);
 			scalesTexturePitch->bind();
-			float radius = std::min(8.f * retinaScale, (float)pitch.size.width * 0.5f);
+			float radius = std::min(11.f * retinaScale, (float)pitch.size.width * 0.5f);
 			float startX = pitch.origin.x;
 			float startY = pitch.origin.y + pitch.size.height * 0.5 - radius;
-			float singleHeight = 10 * radius;
+			float singleHeight = 7 * radius;
 			float totalHeight = 8 * singleHeight;
 			float startOffset = totalHeight * -rotation[1] / 360;
 			float texH = 0.1;
-			// render arrows
+			// render numbers
 			for (int i = 6; i < 9; i++)
 			{
 				renderQuad(proj,
@@ -344,10 +347,10 @@ void mapRenderScales(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, 
 		{
 		    glScissor(zoom.origin.x * retinaScale, (whole.size.height - zoom.size.height - zoom.origin.y) * retinaScale, zoom.size.width * retinaScale, zoom.size.height * retinaScale);
 			scalesTextureZoom->bind();
-			float radius = std::min(16.f * retinaScale, (float)zoom.size.width * 0.5f);
+			float radius = std::min(11.f * retinaScale, (float)zoom.size.width * 0.5f);
 			float startX = zoom.origin.x + zoom.size.width - 2 * radius;
 			float startY = zoom.origin.y + zoom.size.height * 0.5 - radius;
-			float singleHeight = 6 * radius;
+			float singleHeight = 7 * radius;
 			float totalHeight = 8 * singleHeight;
 			double zoomVal = map->getPositionViewExtent();
             double zoomScale = map->celestialBody().majorRadius;
@@ -356,22 +359,22 @@ void mapRenderScales(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, 
 			zoomVal = std::log2(zoomVal);
 			zoomMin = std::log2(zoomMin);
 			zoomMax = std::log2(zoomMax);
-			double zoomNorm = (zoomVal - zoomMin) / (zoomMax - zoomMin) * 8 / 10;
-            float startOffset = totalHeight * (zoomNorm - 1);
+			double zoomNorm = (zoomVal - zoomMin) / (zoomMax - zoomMin);
+            float startOffset = totalHeight * ((zoomNorm - 1) * 7 / 8);
 			float texH = 0.1;
-			// render lines
-			for (int i = 0; i < 9; i++)
+			// render numbers
+			for (int i = 0; i < 8; i++)
 			{
 				renderQuad(proj,
 					CGRectMake(startX, startY + startOffset + i * singleHeight, 2 * radius, 2 * radius),
-					CGRectMake(0, (8 - i) * texH, 1, texH));
+					CGRectMake(0, i * texH, 1, texH));
 			}
 			// render dots
 			CGRect dotRect = CGRectMake(0, 8 * texH, 1, texH);
 			float dotOffset = startOffset + 0.5 * singleHeight;
-			for (int i = 2; i < 30; i++)
+			for (int i = -1; i < 26; i++)
 			{
-				if (i % 4 == 2)
+				if ((100 + i) % 4 == 2)
 					continue;
 				renderQuad(proj,
 					CGRectMake(startX, startY + dotOffset + (i * singleHeight) / 4, 2 * radius, 2 * radius),

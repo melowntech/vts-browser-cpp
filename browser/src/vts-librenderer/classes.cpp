@@ -278,6 +278,14 @@ void Texture::load(ResourceInfo &info, const GpuTextureSpec &spec)
     info.gpuMemoryCost += spec.buffer.size();
 }
 
+void Texture::generateMipmaps()
+{
+    glBindTexture(GL_TEXTURE_2D, id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                                    GL_LINEAR_MIPMAP_LINEAR);
+    glGenerateMipmap(GL_TEXTURE_2D);
+}
+
 uint32 Texture::getId() const
 {
     return id;

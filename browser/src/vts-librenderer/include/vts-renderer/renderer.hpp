@@ -33,7 +33,7 @@
 
 #include "foundation.hpp"
 
-#ifdef VTS_RENDERER_NO_GL_INCLUDE
+#ifndef VTSR_INCLUDE_GL
 typedef void* (* GLADloadproc)(const char *name);
 #endif
 

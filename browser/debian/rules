@@ -1,56 +1,28 @@
 #!/usr/bin/make -f
 # -*- gnumakefile -*-
 
-PACKAGE_VERSION=$(shell dpkg-parsechangelog | grep ^Version: | cut -d' ' -f2)
+# include common debian support
+include buildsys/common/include/debian.mk
 
 # list of packages to build
-PACKAGES=BROWSER BROWSER_DEVEL BROWSER_GLFW BROWSER_QT
+PACKAGES=BROWSER BROWSER_DEVEL BROWSER_DESKTOP
 
 # package names
 DEB_PACKAGE_BROWSER=libvts-browser0
 DEB_PACKAGE_BROWSER_DEVEL=libvts-browser-dev
-DEB_PACKAGE_BROWSER_DEBUG=libvts-browser-dbg
-DEB_PACKAGE_BROWSER_GLFW=vts-browser-glfw
-DEB_PACKAGE_BROWSER_QT=vts-browser-qt
+DEB_PACKAGE_BROWSER_DESKTOP=vts-browser-desktop
+DEB_PACKAGE_DEBUG=libvts-browser-dbg
 
 PREFIX=/usr
 
-# use this build directory
-DEB_BUILDDIR=obj-$(DEB_BUILD_GNU_TYPE)
 # install components
-INSTALL_COMPONENTS_BROWSER=browser
-INSTALL_COMPONENTS_BROWSER_GLFW=browser-glfw
-INSTALL_COMPONENTS_BROWSER_QT=browser-qt
-INSTALL_COMPONENTS_BROWSER_DEVEL=browser-dev
-INSTALL_COMPONENTS_BROWSER_DEBUG=browser-dbg
+INSTALL_COMPONENTS_BROWSER=browser renderer
+INSTALL_COMPONENTS_BROWSER_DEVEL=browser-dev renderer-dev
+INSTALL_COMPONENTS_BROWSER_DEBUG=browser-dbg renderer-dbg
+INSTALL_COMPONENTS_BROWSER_DESKTOP=browser-desktop
 
-# add settings here
-CMAKE_FLAGS =  \
-	-DCMAKE_INSTALL_PREFIX:PATH=$(PREFIX) \
-	-DCMAKE_BUILD_TYPE=Release \
-	-DBUILDSYS_PACKAGE_VERSION=${PACKAGE_VERSION}
-
-# default rule; tell debhelper we use CMake
-%:
-	dh $@ -Scmake -B$(DEB_BUILDDIR) --parallel -O--version-info
-
-# override configuration
-override_dh_auto_configure:
-	dh_auto_configure -- $(CMAKE_FLAGS)
-
-# custom installation
-override_dh_auto_install:
-	$(foreach package, $(PACKAGES) \
-      , $(foreach component, $(INSTALL_COMPONENTS_$(package)) \
-          , DESTDIR=debian/$(DEB_PACKAGE_$(package)) \
-                cmake -DCOMPONENT=$(component) \
-                      -P $(DEB_BUILDDIR)/cmake_install.cmake;))
-	mkdir -p debian/$(DEB_PACKAGE_BROWSER_DEVEL)/usr/lib
-	mv debian/$(DEB_PACKAGE_BROWSER)/usr/lib/libvts-browser.so debian/$(DEB_PACKAGE_BROWSER_DEVEL)/usr/lib/libvts-browser.so
-
-# place debug info to debug package
-override_dh_strip:
-	dh_strip --dbg-package=$(DEB_PACKAGE_BROWSER_DEBUG)
+# include cmake debian support
+include buildsys/cmake/include/debian.mk
 
 # ignore these:
 override_dh_auto_test:
@@ -79,3 +51,10 @@ override_dh_icons:
 override_dh_perl:
 override_dh_usrlocal:
 override_dh_installexamples:
+
+
+
+
+
+
+

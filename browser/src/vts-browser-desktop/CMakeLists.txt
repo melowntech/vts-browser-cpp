@@ -18,3 +18,14 @@ target_link_libraries(vts-browser-desktop ${MODULE_LIBRARIES})
 buildsys_binary(vts-browser-desktop)
 buildsys_target_compile_definitions(vts-browser-desktop ${MODULE_DEFINITIONS})
 
+
+
+# install
+install(TARGETS vts-browser-desktop
+  RUNTIME DESTINATION ${BIN_INSTALL_DIR}
+  COMPONENT browser-desktop
+)
+
+
+
+

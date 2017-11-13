@@ -5,32 +5,38 @@ that brings VTS capabilities to your native c++ applications.
 
 ## Design & Features
 
-- Simple -> Minimalistic opengl application using this library has about 150 LOC.
-- Clean c++11 classfull API.
+- Simple -> minimal application using this library has about 150 LOC.
+  See [vts-browser-minimal](https://github.com/Melown/vts-browser-cpp/wiki/examples-minimal).
+- Clean c++11 class-full API.
 - Highly flexible -> almost all aspects can be changed through configuration or callbacks.
 - Rendering API independent -> The library, on its own, does not render anything.
-Instead, it just tells the application what to render.
-However, a convenient opengl-based rendering library is also provided.
+  Instead, it just tells the application what to render.
+  However, a convenient OpenGL-based rendering library is also provided.
 
-## WIP
+### WIP
 
 Be warned, this library is still in development.
 We make no attempt on maintaining ABI nor API compatibility yet.
 
-## Api Documentation
+## Documentation
 
-VTS Browser library API documentation is available at the
+Browser documentation is available at the
 [wiki](https://github.com/melown/vts-browser-cpp/wiki).
 
-Documentation for the whole VTS technology is at
-[read the docs](https://melown.readthedocs.io).
+Documentation for the whole VTS is at
+[Read the Docs](https://melown.readthedocs.io).
 
-## Install from Melown Repository (Linux Desktop)
+### Install from Melown Repository (Linux Desktop)
 
-We provide precompiled packages for some popular linux distributions.
+We provide pre-compiled packages for some popular linux distributions.
 See [Melown OSS package repository](https://cdn.melown.com/packages/) for more information.
 
-## Build from Source
+The packages are named _libvts-browser0_ (the library itself),
+_libvts-browser-dbg_ (debug symbols for the library),
+_libvts-browser-dev_ (developer files for the library)
+and _vts-browser-desktop_ (example application).
+
+### Build from Source
 
 See [BUILDING.md](BUILDING.md) for detailed instructions.
 
@@ -46,4 +52,6 @@ Check the [CONTRIBUTING.md](CONTRIBUTING.md) file.
 ## License
 
 See the [LICENSE](LICENSE) file.
+
+
 

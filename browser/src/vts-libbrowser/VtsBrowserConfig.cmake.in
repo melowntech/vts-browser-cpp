@@ -6,3 +6,5 @@ set(VtsBrowser_LIBRARIES @VTSBROWSER_LIBRARIES@)
 include(${CMAKE_CURRENT_LIST_DIR}/vts-browser.cmake)
 
 check_required_components(VtsBrowser)
+
+

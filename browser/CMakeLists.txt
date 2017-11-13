@@ -51,6 +51,12 @@ buildsys_nobuild_target(vts-libs-core)
 buildsys_nobuild_target(vts-libs)
 add_subdirectory(src/vts-libs)
 
+# install paths
+set(INCLUDE_INSTALL_DIR include)
+set(LIB_INSTALL_DIR lib)
+set(BIN_INSTALL_DIR bin)
+set(SHARE_INSTALL_DIR share)
+
 # vts browser
 message(STATUS "including vts browser and renderer libraries")
 if(IOS)

@@ -7,10 +7,9 @@ Build-Depends: debhelper (>= 7.0.50~)
                , libeigen3-dev (>= 3.1.0-1)
                , libgdal-dev (>= 2.0)
                , libproj-dev (>= 4.9)
-               , libglfw3-dev (>= 3.1.2-3)
                , libgeographic-dev
                , libjsoncpp-dev
-               , qt5-default
+               , libsdl2-dev
 Standards-Version: 3.8.4
 Homepage: https://github.com/Melown/vts-browser-cpp
 
@@ -19,38 +18,31 @@ Architecture: any
 Depends: ${shlibs:Depends}
 			, ${misc:Depends}
 			, proj-data-vts
-Description: vts browser library
- vts browser c++ library
+Description: VTS Browser library
+ VTS Browser c++ library.
 
 Package: libvts-browser-dbg
 Architecture: any
 Depends: ${misc:Depends}
 			, libvts-browser0 (= ${binary:Version})
-Description: vts browser debug symbols
- debug symbols for vts browser library
+Description: VTS Browser debug symbols
+ Debug symbols for VTS Browser library.
 
 Package: libvts-browser-dev
 Architecture: any
 Depends: ${misc:Depends}
 			, libvts-browser0 (= ${binary:Version})
 Suggests: libeigen3-dev (>= 3.1.0-1)
-Description: vts browser developer files
- developer files for vts browser library
+Description: VTS Browser developer files
+ Developer files for VTS Browser library.
 
-Package: vts-browser-glfw
+Package: vts-browser-desktop
 Architecture: any
 Depends: ${shlibs:Depends}
 			, ${misc:Depends}
 			, libvts-browser0 (= ${binary:Version})
-Description: glfw example using vts browser
- complete vts browser example application build on glfw
+Description: Example application using VTS Browser
+ Comprehensive example application that uses VTS Browser.
 
-Package: vts-browser-qt
-Architecture: any
-Depends: ${shlibs:Depends}
-			, ${misc:Depends}
-			, libvts-browser0 (= ${binary:Version})
-Description: qt example using vts browser
- simplified vts browser example application build on qt
 
 

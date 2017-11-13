@@ -100,15 +100,12 @@ buildsys_target_compile_definitions(vts-browser ${MODULE_DEFINITIONS})
 buildsys_position_independent(${MODULE_LIBRARIES})
 
 
+
 #######################################################################
 # Install
 
 if(NOT IOS)
 
-set(INCLUDE_INSTALL_DIR include)
-set(LIB_INSTALL_DIR lib)
-set(BIN_INSTALL_DIR bin)
-set(SHARE_INSTALL_DIR share)
 set(VTSBROWSER_LIBRARIES vts-browser)
 
 # headers
@@ -119,11 +116,10 @@ install(FILES ${PUB_HDR_LIST}
 
 # library and binaries
 install(TARGETS vts-browser
-  EXPORT vts-browser
-  RUNTIME DESTINATION ${BIN_INSTALL}
-  LIBRARY DESTINATION ${LIB_INSTALL_DIR}
-  ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
   COMPONENT browser
+  EXPORT vts-browser
+  RUNTIME DESTINATION ${BIN_INSTALL_DIR}
+  LIBRARY DESTINATION ${LIB_INSTALL_DIR}
   )
 
 install(EXPORT vts-browser
@@ -155,4 +151,6 @@ install(FILES
   )
 
 endif()
+
+
 

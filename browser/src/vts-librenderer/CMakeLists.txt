@@ -20,6 +20,7 @@ include(data.cmake)
 
 add_library(vts-renderer ${LIB_TYPE} ${SRC_LIST} ${HDR_LIST} ${PUB_HDR_LIST})
 target_compile_definitions(vts-renderer ${LIB_VIS} VTSR_BUILD_${LIB_TYPE})
+target_compile_definitions(vts-renderer PRIVATE VTSR_INCLUDE_GL)
 target_link_libraries(vts-renderer ${LIB_VIS} ${MODULE_LIBRARIES})
 buildsys_library(vts-renderer)
 buildsys_soversion(vts-renderer ${vts-browser_SO_VERSION})
@@ -28,8 +29,6 @@ buildsys_position_independent(${MODULE_LIBRARIES})
 
 if(IOS)
   target_compile_definitions(vts-renderer PRIVATE VTSR_OPENGLES)
-else()
-  target_compile_definitions(vts-renderer PRIVATE VTSR_INCLUDE_GL)
 endif()
 
 

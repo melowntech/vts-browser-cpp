@@ -16,7 +16,7 @@ sudo apt-get install \
 
 Clone the git repository with all submodules.
 The library build system is cmake based.
-However, for a convenience, a make shortcuts exist.
+However, for a convenience, a make shortcut exists.
 
 ```bash
 git clone --recursive https://github.com/Melown/vts-browser-cpp.git

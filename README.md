@@ -1,13 +1,13 @@
 # VTS Browser CPP
 
 [VTS Browser CPP](https://github.com/melown/vts-browser-cpp) is a library
-that brings VTS capabilities to your native c++ applications.
+that brings VTS capabilities to your native C++ applications.
 
 ## Design & Features
 
 - Simple -> minimal application using this library has about 150 LOC.
   See [vts-browser-minimal](https://github.com/Melown/vts-browser-cpp/wiki/examples-minimal).
-- Clean c++11 class-full API.
+- Clean C++11 class-full API.
 - Highly flexible -> almost all aspects can be changed through configuration or callbacks.
 - Rendering API independent -> The library, on its own, does not render anything.
   Instead, it just tells the application what to render.
@@ -40,6 +40,39 @@ and _vts-browser-desktop_ (example application).
 
 See [BUILDING.md](BUILDING.md) for detailed instructions.
 
+### Using the Library
+
+Install the libraries.
+
+Write a cmake file _CMakeLists.txt_:
+
+```cmake
+cmake_minimum_required(VERSION 3.0)
+project(vts-example CXX)
+set(CMAKE_CXX_STANDARD 11)
+
+find_package(VtsBrowser REQUIRED)
+include_directories(${VtsBrowser_INCLUDE_DIR})
+find_package(VtsRenderer REQUIRED)
+include_directories(${VtsRenderer_INCLUDE_DIR})
+find_package(SDL2 REQUIRED)
+include_directories(${SDL2_INCLUDE_DIR})
+
+add_executable(vts-example main.cpp)
+target_link_libraries(vts-example ${VtsBrowser_LIBRARIES} ${VtsRenderer_LIBRARIES} SDL2)
+```
+
+Copy the _main.cpp_ from the [vts-browser-minimal](https://github.com/Melown/vts-browser-cpp/wiki/examples-minimal).
+
+Build and run:
+
+```sh
+mkdir build && cd build
+cmake ..
+cmake --build .
+./vts-example <map-config-url>
+```
+
 ## Bug Reports
 
 For bug reports or enhancement suggestions use the
@@ -52,6 +85,7 @@ Check the [CONTRIBUTING.md](CONTRIBUTING.md) file.
 ## License
 
 See the [LICENSE](LICENSE) file.
+
 
 
 

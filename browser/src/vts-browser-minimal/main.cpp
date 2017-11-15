@@ -24,18 +24,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cmath>
-#include <sstream>
-#include <cassert>
 #include <vts-browser/map.hpp>
 #include <vts-browser/draws.hpp>
 #include <vts-browser/options.hpp>
 #include <vts-browser/log.hpp>
 #include <vts-browser/fetcher.hpp>
-#include <vts-renderer/classes.hpp>
 #include <vts-renderer/renderer.hpp>
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_syswm.h>
 
 SDL_Window *window;
 SDL_GLContext renderContext;
@@ -55,16 +50,18 @@ int main(int, char *[])
 {
     // initialize SDL
     vts::log(vts::LogLevel::info3, "Initializing SDL library");
-    if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
     {
         vts::log(vts::LogLevel::err4, SDL_GetError());
         throw std::runtime_error("Failed to initialize SDL");
     }
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+
+    // configure parameters for OpenGL context
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0); // we do not need default depth buffer, the rendering library uses its own
     SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3); // use OpenGL version 3.0
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                         SDL_GL_CONTEXT_PROFILE_CORE);
@@ -75,6 +72,7 @@ int main(int, char *[])
     // create window
     vts::log(vts::LogLevel::info3, "Creating window");
     {
+        // the created window should fill the whole screen
         SDL_DisplayMode displayMode;
         SDL_GetDesktopDisplayMode(0, &displayMode);
         window = SDL_CreateWindow("vts-browser-minimal",
@@ -95,13 +93,13 @@ int main(int, char *[])
 
     // notify the vts renderer library on how to load OpenGL function pointers
     vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
-    // and initialize the library
+    // and initialize the library, which will load required shaders and other local files
     vts::renderer::initialize();
 
     // create instance of the vts::Map class
     map = std::make_shared<vts::Map>(vts::MapCreateOptions());
 
-    // inform about required callbacks for creating mesh and texture resources
+    // set required callbacks for creating mesh and texture resources
     map->callbacks().loadTexture = std::bind(&vts::renderer::loadTexture,
                 std::placeholders::_1, std::placeholders::_2);
     map->callbacks().loadMesh = std::bind(&vts::renderer::loadMesh,
@@ -124,23 +122,31 @@ int main(int, char *[])
             SDL_Event event;
             while (SDL_PollEvent(&event))
             {
-                // parse the event
                 switch (event.type)
                 {
+                // handle window close
                 case SDL_APP_TERMINATING:
                 case SDL_QUIT:
                     shouldClose = true;
                     break;
-                // handle mouse events here
+                // handle mouse events
+                case SDL_MOUSEMOTION:
+                    if (event.motion.state & SDL_BUTTON(SDL_BUTTON_LEFT))
+                    {
+                        double p[3] = { (double)event.motion.xrel,
+                                    (double)event.motion.yrel, 0 };
+                        map->pan(p);
+                    }
+                    break;
                 }
             }
         }
 
         // update the map (both resources and rendering)
         updateResolution();
-        map->dataTick();
-        map->renderTickPrepare();
-        map->renderTickRender();
+        map->dataTick(); // update downloads
+        map->renderTickPrepare(); // update navigation etc.
+        map->renderTickRender(); // prepare the rendering data
 
         // actually render the map
         vts::renderer::render(renderOptions, map->draws(),

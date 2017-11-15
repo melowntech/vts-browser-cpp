@@ -212,7 +212,8 @@ using namespace vts;
 	{
         case UIGestureRecognizerStateBegan:
         {
-            map->setPositionRotation({0,270,0}, vts::NavigationType::Quick);
+            map->setPositionRotation({0,270,0});
+            map->setNavigationType(vts::NavigationType::Quick);
             map->resetNavigationMode();
 			fullscreenOverride = false;
 		} break;
@@ -472,7 +473,7 @@ using namespace vts;
     {
     	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^(void)
     	{
-		    sleep(2);
+		    sleep(1);
 		    dispatch_async(dispatch_get_main_queue(), ^(void)
 		    {
 		    	if ([self progressDone])
@@ -525,7 +526,8 @@ using namespace vts;
             double posNav[3];
             map->convert(posWorld.data(), posNav,
                          Srs::Physical, Srs::Navigation);
-            map->setPositionPoint(posNav, NavigationType::Quick);
+            map->setPositionPoint(posNav);
+            map->setNavigationType(vts::NavigationType::Quick);
         }
         gotoPoint(0) = std::numeric_limits<double>::quiet_NaN();
 		glBindFramebuffer(GL_FRAMEBUFFER, renderOptions.targetFrameBuffer);

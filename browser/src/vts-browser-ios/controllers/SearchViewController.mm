@@ -103,11 +103,12 @@
 	assert(result->done);
     vts::SearchItem &item = result->results[indexPath.row];
     map->setPositionSubjective(false, false);
-    map->setPositionViewExtent(std::max(6667.0, item.radius * 2), vts::NavigationType::FlyOver);
-    map->setPositionRotation({0,270,0}, vts::NavigationType::FlyOver);
+    map->setPositionViewExtent(std::max(6667.0, item.radius * 2));
+    map->setPositionRotation({0,270,0});
     map->resetPositionAltitude();
     map->resetNavigationMode();
-    map->setPositionPoint(item.position, vts::NavigationType::FlyOver);
+    map->setNavigationType(vts::NavigationType::FlyOver);
+    map->setPositionPoint(item.position);
 	[self.navigationController popViewControllerAnimated:YES];
 }
 

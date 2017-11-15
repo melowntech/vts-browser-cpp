@@ -226,7 +226,8 @@ bool MainWindow::processEvents()
         // north-up button
         if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_SPACE)
         {
-            map->setPositionRotation({0,270,0}, vts::NavigationType::Quick);
+            map->setPositionRotation({0,270,0});
+            map->setNavigationType(vts::NavigationType::Quick);
             map->resetNavigationMode();
         }
 
@@ -247,7 +248,8 @@ bool MainWindow::processEvents()
                 double posNav[3];
                 map->convert(posPhys.data(), posNav,
                              vts::Srs::Physical, vts::Srs::Navigation);
-                map->setPositionPoint(posNav, vts::NavigationType::Quick);
+                map->setPositionPoint(posNav);
+                map->setNavigationType(vts::NavigationType::Quick);
             }
         }
 
@@ -319,8 +321,8 @@ void MainWindow::run()
             {
                 try
                 {
-                    map->setPositionUrl(appOptions.initialPosition,
-                                        vts::NavigationType::Instant);
+                    map->setPositionUrl(appOptions.initialPosition);
+                    map->setNavigationType(vts::NavigationType::Instant);
                 }
                 catch (...)
                 {

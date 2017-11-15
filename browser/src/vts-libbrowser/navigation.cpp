@@ -239,6 +239,18 @@ void MapImpl::updateNavigation()
     // auto rotation
     navigation.changeRotation(0) += navigation.autoRotation;
 
+    // limit rotation for seamless navigation mode
+    if (options.navigationMode == NavigationMode::Seamless
+            && navigation.mode == NavigationMode::Azimuthal)
+    {
+        double yaw = mapConfig->position.orientation[0];
+        double &ch = navigation.changeRotation(0);
+        if (yaw > 180)
+            ch = std::max(ch, 180 + 1e-7 - yaw);
+        else
+            ch = std::min(ch, 180 - 1e-7 - yaw);
+    }
+
     // find inputs for perceptually invariant motion
     double azi1 = std::numeric_limits<double>::quiet_NaN();
     double azi2 = std::numeric_limits<double>::quiet_NaN();
@@ -260,7 +272,7 @@ void MapImpl::updateNavigation()
     }
     double vertical1 = navigation.targetPoint(2) - p(2);
     double vertical2 = std::numeric_limits<double>::quiet_NaN();
-    vec3 r2;
+    vec3 r2(vertical2, vertical2, vertical2);
     navigationPiha(
                 options,
                 navigation.type,
@@ -425,6 +437,7 @@ void MapImpl::pan(const vec3 &value)
     vec3 move = value.cwiseProduct(vec3(-2 * v * h, 2 * v, 2)
                                    * options.cameraSensitivityPan);
 
+    // compute change of azimuth
     vec3 posRot = vecFromUblas<vec3>(pos.orientation);
     applyCameraRotationNormalization(posRot);
     double azi = posRot(0);
@@ -444,6 +457,7 @@ void MapImpl::pan(const vec3 &value)
     // the move is rotated by the camera
     move = mat4to3(rotationMatrix(2, -azi)) * move;
 
+    // apply the pan
     switch (mapConfig->navigationSrsType())
     {
     case vtslibs::registry::Srs::Type::projected:
@@ -457,22 +471,12 @@ void MapImpl::pan(const vec3 &value)
         double dist = length(vec3to2(move));
         p = convertor->geoDirect(p, dist, ang1);
         p(2) += move(2);
-        // ignore the pan, if it would cause too rapid direction change
-        switch (navigation.mode)
-        {
-        case NavigationMode::Azimuthal:
-            if (std::abs(angularDiff(pos.position[0], p(0))) < 150)
-                navigation.targetPoint = p;
-            break;
-        case NavigationMode::Free:
-            if (convertor->geoArcDist(
-                        vecFromUblas<vec3>(pos.position), p) < 150)
-                navigation.targetPoint = p;
-            break;
-        default:
-            LOGTHROW(fatal, std::invalid_argument)
-                    << "Invalid navigation mode";
-        }
+
+        // prevent the pan if it would cause unexpected direction change
+        double r1 = angularDiff(pos.position[0], p(0));
+        double r2 = angularDiff(pos.position[0], navigation.targetPoint[0]);
+        if (std::abs(r1) < 30 || (r1 < 0) == (r2 < 0))
+            navigation.targetPoint = p;
     } break;
     default:
         LOGTHROW(fatal, std::invalid_argument)
@@ -489,13 +493,9 @@ void MapImpl::rotate(const vec3 &value)
 {
     assert(isNavigationModeValid());
 
-    {
-        vec3 r = vecFromUblas<vec3>(mapConfig->position.orientation);
-        applyCameraRotationNormalization(r);
-        mapConfig->position.orientation = vecToUblas<math::Point3>(r);
-    }
     navigation.changeRotation += value.cwiseProduct(vec3(0.2, -0.1, 0.2)
                                         * options.cameraSensitivityRotate);
+
     if (mapConfig->navigationSrsType()
             == vtslibs::registry::Srs::Type::geographic
             && options.navigationMode == NavigationMode::Dynamic)
@@ -518,40 +518,31 @@ void MapImpl::zoom(double value)
     assert(isNavigationModeValid());
 }
 
-void MapImpl::setPoint(const vec3 &point, NavigationType type)
+void MapImpl::setPoint(const vec3 &point)
 {
     assert(isNavigationModeValid());
 
     navigation.targetPoint = point;
     navigation.autoRotation = 0;
-    navigation.type = type;
     if (navigation.type == NavigationType::Instant)
         navigation.lastPositionAltitudeShift.reset();
-
-    assert(isNavigationModeValid());
 }
 
-void MapImpl::setRotation(const vec3 &euler, NavigationType type)
+void MapImpl::setRotation(const vec3 &euler)
 {
     assert(isNavigationModeValid());
 
     navigation.changeRotation = angularDiff(
                 vecFromUblas<vec3>(mapConfig->position.orientation), euler);
     navigation.autoRotation = 0;
-    navigation.type = type;
-
-    assert(isNavigationModeValid());
 }
 
-void MapImpl::setViewExtent(double viewExtent, NavigationType type)
+void MapImpl::setViewExtent(double viewExtent)
 {
     assert(isNavigationModeValid());
 
     navigation.targetViewExtent = viewExtent;
     navigation.autoRotation = 0;
-    navigation.type = type;
-
-    assert(isNavigationModeValid());
 }
 
 } // namespace vts

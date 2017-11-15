@@ -74,19 +74,21 @@ enum class NavigationType
 enum class NavigationMode
 {
     // constricts the viewer only to limited range of latitudes
+    // the camera is always aligned north-up
     // generally, this mode is easier to use
     Azimuthal,
 
     // the viewer is free to navigato to anywhere, including the poles
+    // camera yaw rotation is also unlimited
     Free,
 
     // starts in the azimuthal mode and switches to the free mode
-    //   when the viewer gets too close to a pole,
-    //   or when he/she changes camera orientation
+    //   when the viewer gets too close to any pole,
+    //   or when the viewer changes camera orientation
     // it can be reset back to azimuthal with Map::resetNavigationMode()
     Dynamic,
 
-    // actual navigation mode depends on zoom level
+    // actual navigation mode changes with zoom level and has smooth transition
     Seamless,
 };
 

@@ -221,9 +221,9 @@ public:
     void pan(const vec3 &value);
     void rotate(const vec3 &value);
     void zoom(double value);
-    void setPoint(const vec3 &point, NavigationType type);
-    void setRotation(const vec3 &euler, NavigationType type);
-    void setViewExtent(double viewExtent, NavigationType type);
+    void setPoint(const vec3 &point);
+    void setRotation(const vec3 &euler);
+    void setViewExtent(double viewExtent);
     void updatePositionAltitudeShift();
     void resetNavigationMode();
     void convertPositionSubjObj();

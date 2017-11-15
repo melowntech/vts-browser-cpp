@@ -68,7 +68,7 @@ MapOptions::MapOptions() :
     maxFetchRetries(5),
     fetchFirstRetryTimeOffset(1),
     navigationType(NavigationType::Quick),
-    navigationMode(NavigationMode::Dynamic),
+    navigationMode(NavigationMode::Seamless),
     traverseMode(TraverseMode::Balanced),
     enableSearchResultsFilter(true),
     enableRuntimeResourceExpiration(false),

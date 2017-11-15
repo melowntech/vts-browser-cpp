@@ -992,7 +992,7 @@ void MapImpl::updateCamera()
     if (callbacks.cameraOverrideView)
     {
         callbacks.cameraOverrideView((double*)&view);
-        // update dir and up
+        // update center, dir and up
         mat4 vi = view.inverse();
         cameraPosPhys = vec4to3(vi * vec4(0, 0, -1, 1), true);
         dir = vec4to3(vi * vec4(0, 0, -1, 0), false);

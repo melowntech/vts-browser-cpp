@@ -750,8 +750,8 @@ public:
             S("Time app:", window->timingAppProcess, " ms");
             S("Time frame:", window->timingTotalFrame, " ms");
             S("Time data:", window->timingDataFrame, " ms");
-            S("Render ticks:", s.renderTicks, "");
-            S("Data ticks:", s.dataTicks, "");
+            S("Render tick:", s.renderTicks, "");
+            S("Data tick:", s.dataTicks, "");
             S("Downloading:", s.currentResourceDownloads, "");
             S("Node meta updates:", s.currentNodeMetaUpdates, "");
             S("Node draw updates:", s.currentNodeDrawsUpdates, "");
@@ -837,8 +837,8 @@ public:
                     try
                     {
                         const char *text = SDL_GetClipboardText();
-                        window->map->setPositionUrl(text,
-                                    NavigationType::Instant);
+                        window->map->setPositionUrl(text);
+                        window->map->setNavigationType(NavigationType::Instant);
                     }
                     catch(...)
                     {
@@ -918,8 +918,8 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset rotation"))
                 {
-                    window->map->setPositionRotation({0,270,0},
-                                            NavigationType::Quick);
+                    window->map->setPositionRotation({0,270,0});
+                    window->map->setNavigationType(NavigationType::Quick);
                     window->map->resetNavigationMode();
                 }
             }
@@ -1179,8 +1179,8 @@ public:
                         double n[3] = { m.coord(0), m.coord(1), m.coord(2) };
                         window->map->convert(n, n, Srs::Physical,
                                                  Srs::Navigation);
-                        window->map->setPositionPoint(n,
-                                                NavigationType::Quick);
+                        window->map->setPositionPoint(n);
+                        window->map->setNavigationType(NavigationType::Quick);
                     }
                     sprintf(buffer, "%.8f", n[1]);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
@@ -1289,16 +1289,15 @@ public:
                 {
                     if (nk_button_label(&ctx, "Go"))
                     {
+                        double pr = window->map->celestialBody().majorRadius;
                         window->map->setPositionSubjective(false, false);
                         window->map->setPositionViewExtent(
-                                    std::max(6667.0, r.radius * 2),
-                                    NavigationType::FlyOver);
-                        window->map->setPositionRotation({0,270,0},
-                                    NavigationType::FlyOver);
+                            std::max(6667.0 * pr / 6378e3, r.radius * 2));
+                        window->map->setPositionRotation({0,270,0});
                         window->map->resetPositionAltitude();
                         window->map->resetNavigationMode();
-                        window->map->setPositionPoint(r.position,
-                                    NavigationType::FlyOver);
+                        window->map->setPositionPoint(r.position);
+                        window->map->setNavigationType(NavigationType::FlyOver);
                     }
                 }
                 else

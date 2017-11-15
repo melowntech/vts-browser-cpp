@@ -138,6 +138,9 @@ int main(int, char *[])
                         map->pan(p);
                     }
                     break;
+                case SDL_MOUSEWHEEL:
+                    map->zoom(event.wheel.y);
+                    break;
                 }
             }
         }

@@ -97,15 +97,16 @@ public:
     void resetNavigationMode();
 
     void setPositionSubjective(bool subjective, bool convert);
-    void setPositionPoint(const double point[3], NavigationType type);
-    void setPositionPoint(const double (&point)[3], NavigationType type);
-    void setPositionRotation(const double point[3], NavigationType type);
-    void setPositionRotation(const double (&point)[3], NavigationType type);
-    void setPositionViewExtent(double viewExtent, NavigationType type);
+    void setPositionPoint(const double point[3]);
+    void setPositionPoint(const double (&point)[3]);
+    void setPositionRotation(const double point[3]);
+    void setPositionRotation(const double (&point)[3]);
+    void setPositionViewExtent(double viewExtent);
     void setPositionFov(double fov);
-    void setPositionJson(const std::string &position, NavigationType type);
-    void setPositionUrl(const std::string &position, NavigationType type);
+    void setPositionJson(const std::string &position);
+    void setPositionUrl(const std::string &position);
     void setAutoRotation(double value);
+    void setNavigationType(NavigationType type);
 
     bool getPositionSubjective() const;
     void getPositionPoint(double point[3]) const;

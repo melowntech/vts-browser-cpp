@@ -338,7 +338,7 @@ bool Map::getPositionSubjective() const
             == vtslibs::registry::Position::Type::subjective;
 }
 
-void Map::setPositionPoint(const double point[3], NavigationType type)
+void Map::setPositionPoint(const double point[3])
 {
     if (!getMapConfigReady())
         return;
@@ -352,7 +352,7 @@ void Map::setPositionPoint(const double point[3], NavigationType type)
         assert(point[1] >= -90 && point[1] <= 90);
     }
     vec3 v = rawToVec3(point);
-    impl->setPoint(v, type);
+    impl->setPoint(v);
     if (impl->options.enableArbitrarySriRequests
             && impl->convertor->geoDistance(
                 vecFromUblas<vec3>(impl->mapConfig->position.position), v)
@@ -364,9 +364,9 @@ void Map::setPositionPoint(const double point[3], NavigationType type)
     }
 }
 
-void Map::setPositionPoint(const double (&point)[3], NavigationType type)
+void Map::setPositionPoint(const double (&point)[3])
 {
-    setPositionPoint(&point[0], type);
+    setPositionPoint(&point[0]);
 }
 
 void Map::getPositionPoint(double point[3]) const
@@ -381,19 +381,19 @@ void Map::getPositionPoint(double point[3]) const
     vecToRaw(vecFromUblas<vec3>(p), point);
 }
 
-void Map::setPositionRotation(const double point[3], NavigationType type)
+void Map::setPositionRotation(const double point[3])
 {
     if (!impl->mapConfig || !*impl->mapConfig)
         return;
     assert(point[0] == point[0]);
     assert(point[1] == point[1]);
     assert(point[2] == point[2]);
-    impl->setRotation(rawToVec3(point), type);
+    impl->setRotation(rawToVec3(point));
 }
 
-void Map::setPositionRotation(const double (&point)[3], NavigationType type)
+void Map::setPositionRotation(const double (&point)[3])
 {
-    setPositionRotation(&point[0], type);
+    setPositionRotation(&point[0]);
 }
 
 void Map::getPositionRotation(double point[3]) const
@@ -408,12 +408,12 @@ void Map::getPositionRotation(double point[3]) const
     vecToRaw(vecFromUblas<vec3>(p), point);
 }
 
-void Map::setPositionViewExtent(double viewExtent, NavigationType type)
+void Map::setPositionViewExtent(double viewExtent)
 {
     if (!getMapConfigReady())
         return;
     assert(viewExtent == viewExtent);
-    impl->setViewExtent(viewExtent, type);
+    impl->setViewExtent(viewExtent);
 }
 
 double Map::getPositionViewExtent() const
@@ -456,8 +456,7 @@ std::string Map::getPositionUrl() const
 namespace
 {
 
-void setPosition(Map *map, const vtslibs::registry::Position &pos,
-                 NavigationType type)
+void setPosition(Map *map, const vtslibs::registry::Position &pos)
 {
     if (pos.heightMode != vtslibs::registry::Position::HeightMode::fixed)
         LOGTHROW(err2, std::runtime_error) << "position must have fixed height";
@@ -465,16 +464,16 @@ void setPosition(Map *map, const vtslibs::registry::Position &pos,
     map->setPositionSubjective(
             pos.type == vtslibs::registry::Position::Type::subjective, false);
     map->setPositionFov(pos.verticalFov);
-    map->setPositionViewExtent(pos.verticalExtent, type);
+    map->setPositionViewExtent(pos.verticalExtent);
     vec3 v = vecFromUblas<vec3>(pos.orientation);
-    map->setPositionRotation(v.data(), type);
+    map->setPositionRotation(v.data());
     v = vecFromUblas<vec3>(pos.position);
-    map->setPositionPoint(v.data(), type);
+    map->setPositionPoint(v.data());
 }
 
 } // namespace
 
-void Map::setPositionJson(const std::string &position, NavigationType type)
+void Map::setPositionJson(const std::string &position)
 {
     if (!getMapConfigReady())
         return;
@@ -482,10 +481,10 @@ void Map::setPositionJson(const std::string &position, NavigationType type)
     if (!Json::Reader().parse(position, val))
         LOGTHROW(err2, std::runtime_error) << "invalid position from json";
     vtslibs::registry::Position pos = vtslibs::registry::positionFromJson(val);
-    setPosition(this, pos, type);
+    setPosition(this, pos);
 }
 
-void Map::setPositionUrl(const std::string &position, NavigationType type)
+void Map::setPositionUrl(const std::string &position)
 {
     if (!getMapConfigReady())
         return;
@@ -498,7 +497,7 @@ void Map::setPositionUrl(const std::string &position, NavigationType type)
     {
         LOGTHROW(err2, std::runtime_error) << "invalid position from url";
     }
-    setPosition(this, pos, type);
+    setPosition(this, pos);
 }
 
 void Map::resetPositionAltitude()
@@ -520,7 +519,12 @@ void Map::setAutoRotation(double value)
     if (!getMapConfigReady())
         return;
     impl->navigation.autoRotation = value;
-    impl->navigation.type = NavigationType::Quick;
+    impl->navigation.type = impl->options.navigationType;
+}
+
+void Map::setNavigationType(NavigationType type)
+{
+    impl->navigation.type = type;
 }
 
 double Map::getAutoRotation() const

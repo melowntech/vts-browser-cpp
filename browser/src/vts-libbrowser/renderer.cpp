@@ -807,7 +807,7 @@ void MapImpl::travModeHierarchical(const std::shared_ptr<TraverseNode> &trav,
             ok = false;
             continue;
         }
-        if (!t->meta->surface || t->rendersEmpty())
+        if (t->meta->surface && t->rendersEmpty())
             ok = false;
     }
 

@@ -282,18 +282,22 @@ public:
     bool coarsenessTest(const std::shared_ptr<TraverseNode> &trav);
     double coarsenessValue(const std::shared_ptr<TraverseNode> &trav);
     void renderNode(const std::shared_ptr<TraverseNode> &trav,
+                             const vec4f &uvClip = vec4f(-1,-1,2,2));
+    void renderNode(TraverseNode *const trav,
                     const vec4f &uvClip = vec4f(-1,-1,2,2));
     bool travDetermineMeta(const std::shared_ptr<TraverseNode> &trav);
     bool travDetermineDraws(
             const std::shared_ptr<TraverseNode> &trav);
     double travDistance(const std::shared_ptr<TraverseNode> &trav,
                            const vec3 pointPhys);
-    bool travInit(const std::shared_ptr<TraverseNode> &trav);
+    bool travInit(const std::shared_ptr<TraverseNode> &trav,
+                  bool skipStatistics = false);
     void travModeHierarchical(const std::shared_ptr<TraverseNode> &trav,
                               bool loadOnly);
     void travModeFlat(const std::shared_ptr<TraverseNode> &trav);
-    bool travModeBalanced(const std::shared_ptr<TraverseNode> &trav,
-                          bool loadOnly);
+    void travModeBalancedRenderPartial(const std::shared_ptr<TraverseNode> &trav,
+            vec4f uvClip);
+    void travModeBalanced(const std::shared_ptr<TraverseNode> &trav);
     void traverseRender(const std::shared_ptr<TraverseNode> &trav);
     void traverseClearing(const std::shared_ptr<TraverseNode> &trav);
     void updateCamera();

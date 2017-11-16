@@ -306,6 +306,11 @@ double MapImpl::coarsenessValue(const std::shared_ptr<TraverseNode> &trav)
 void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav,
                          const vec4f &uvClip)
 {
+    renderNode(trav.get(), uvClip);
+}
+
+void MapImpl::renderNode(TraverseNode *const trav, const vec4f &uvClip)
+{
     assert(trav->meta);
     assert(trav->rendersReady());
 
@@ -752,13 +757,17 @@ bool MapImpl::travDetermineDraws(const std::shared_ptr<TraverseNode> &trav)
     return determined;
 }
 
-bool MapImpl::travInit(const std::shared_ptr<TraverseNode> &trav)
+bool MapImpl::travInit(const std::shared_ptr<TraverseNode> &trav,
+                       bool skipStatistics)
 {
     // statistics
-    statistics.metaNodesTraversedTotal++;
-    statistics.metaNodesTraversedPerLod[
-            std::min<uint32>(trav->nodeInfo.nodeId().lod,
-                             MapStatistics::MaxLods-1)]++;
+    if (!skipStatistics)
+    {
+        statistics.metaNodesTraversedTotal++;
+        statistics.metaNodesTraversedPerLod[
+                std::min<uint32>(trav->nodeInfo.nodeId().lod,
+                                 MapStatistics::MaxLods-1)]++;
+    }
 
     // update trav
     trav->lastAccessTime = renderer.tickIndex;
@@ -844,103 +853,73 @@ void MapImpl::travModeFlat(const std::shared_ptr<TraverseNode> &trav)
         travModeFlat(t);
 }
 
-bool MapImpl::travModeBalanced(const std::shared_ptr<TraverseNode> &trav,
-                               bool loadOnly)
+void MapImpl::travModeBalancedRenderPartial(
+        const std::shared_ptr<TraverseNode> &trav,
+        vec4f uvClip)
+{
+    if (!trav->parent)
+        return;
+
+    // todo rework this method to recursive
+    // update the uvClip accordingly
+    auto id = trav->nodeInfo.nodeId();
+    if (id.y % 2 == 1)
+    {
+        if (id.x % 2 == 0)
+            uvClip = vec4f(-0.05, -0.05, 0.55, 0.55);
+        else
+            uvClip = vec4f(0.45, -0.05, 1.05, 0.55);
+    }
+    else
+    {
+        if (id.x % 2 == 0)
+            uvClip = vec4f(-0.05, 0.45, 0.55, 1.05);
+        else
+            uvClip = vec4f(0.45, 0.45, 1.05, 1.05);
+    }
+
+    if (trav->parent->meta->surface && trav->parent->rendersReady())
+        renderNode(trav->parent, uvClip);
+}
+
+void MapImpl::travModeBalanced(const std::shared_ptr<TraverseNode> &trav)
 {
     if (!travInit(trav))
-        return false;
+        return;
 
     if (!visibilityTest(trav))
     {
         trav->clearRenders();
-        return true;
+        return;
     }
 
     double coar = coarsenessValue(trav);
 
-    if (coar > options.maxBalancedCoarsenessScale)
+    if (coar < options.maxBalancedCoarsenessScale)
     {
-        if (loadOnly)
-            return true;
+        touchDraws(trav);
+        if (trav->meta->surface && trav->rendersEmpty())
+            travDetermineDraws(trav);
+    }
+    else
         trav->clearRenders();
-        for (std::shared_ptr<TraverseNode> &t : trav->childs)
-            travModeBalanced(t, false);
-        return true;
-    }
 
-    touchDraws(trav);
-    if (trav->meta->surface && trav->rendersEmpty())
-        travDetermineDraws(trav);
+    bool childsHaveMeta = true;
+    for (auto &it : trav->childs)
+        childsHaveMeta = childsHaveMeta && travInit(it, true);
 
-    bool renderable = trav->meta->surface && !trav->rendersEmpty();
-
-    if (loadOnly)
-        return renderable;
-
-    if (coar < options.maxTexelToPixelScale || trav->childs.empty())
+    if (coar < options.maxTexelToPixelScale || trav->childs.empty()
+            || !childsHaveMeta)
     {
-        renderNode(trav);
-        return renderable;
-    }
-
-    bool results[4];
-    assert(trav->childs.size() <= 4);
-    for (uint32 i = 0, e = trav->childs.size(); i != e; i++)
-        results[i] = travModeBalanced(trav->childs[i], true);
-    uint32 ok = 0;
-    for (uint32 i = 0, e = trav->childs.size(); i != e; i++)
-        if (results[i])
-            ok++;
-
-    if (ok == trav->childs.size())
-    {
-        for (auto &&it : trav->childs)
-        {
-            bool r = travModeBalanced(it, false);
-            assert(r); (void)r;
-        }
-        return true;
-    }
-
-    if (!renderable)
-        return false;
-
-    if (ok == 0)
-    {
-        for (auto &&it : trav->childs)
-            travModeBalanced(it, true);
-        renderNode(trav);
-        return true;
-    }
-
-    for (uint32 i = 0, e = trav->childs.size(); i != e; i++)
-    {
-        if (results[i])
-        {
-            bool r = travModeBalanced(trav->childs[i], false);
-            assert(r); (void)r;
-            continue;
-        }
-
-        auto id = trav->childs[i]->nodeInfo.nodeId();
-        vec4f uvClip;
-        if (id.y % 2 == 1)
-        {
-            if (id.x % 2 == 0)
-                uvClip = vec4f(-0.05, -0.05, 0.55, 0.55);
-            else
-                uvClip = vec4f(0.45, -0.05, 1.05, 0.55);
-        }
+        if (!trav->rendersEmpty() && trav->rendersReady())
+            renderNode(trav);
         else
-        {
-            if (id.x % 2 == 0)
-                uvClip = vec4f(-0.05, 0.45, 0.55, 1.05);
-            else
-                uvClip = vec4f(0.45, 0.45, 1.05, 1.05);
-        }
-        renderNode(trav, uvClip);
+            travModeBalancedRenderPartial(trav, vec4f(0,0,1,1));
+        return;
     }
-    return true;
+
+    for (std::shared_ptr<TraverseNode> &t : trav->childs)
+        travModeBalanced(t);
 }
 
 void MapImpl::traverseRender(const std::shared_ptr<TraverseNode> &trav)
@@ -954,7 +933,7 @@ void MapImpl::traverseRender(const std::shared_ptr<TraverseNode> &trav)
         travModeFlat(trav);
         break;
     case TraverseMode::Balanced:
-        travModeBalanced(trav, false);
+        travModeBalanced(trav);
         break;
     }
 }

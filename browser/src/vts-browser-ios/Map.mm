@@ -108,7 +108,6 @@ void mapInitialize()
     {
         MapOptions &opt = map->options();
         opt.maxTexelToPixelScale = 3.2;
-        opt.maxBalancedCoarsenessScale = 5.3;
         opt.maxResourceProcessesPerTick = -1; // the resources are processed on a separate thread
     }
     

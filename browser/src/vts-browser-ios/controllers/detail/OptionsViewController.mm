@@ -74,7 +74,6 @@
 - (IBAction)optQualityDegradChanged:(UISlider *)sender
 {
     map->options().maxTexelToPixelScale = sender.value;
-    map->options().maxBalancedCoarsenessScale = sender.value + 2;
 }
 
 - (IBAction)optAtmosphereChanged:(UISwitch *)sender

@@ -43,7 +43,7 @@ MapCreateOptions::MapCreateOptions() :
 
 MapOptions::MapOptions() :
     maxTexelToPixelScale(1.2),
-    maxBalancedCoarsenessScale(3.2),
+    maxTexelToPixelScaleBalancedAddition(3),
     viewExtentLimitScaleMin(0.00001175917), // 75 metres on earth
     viewExtentLimitScaleMax(2.35183443086), // 1.5e7 metres on earth
     viewExtentThresholdScaleLow(0.03135779241), // 200000 metres on earth
@@ -75,7 +75,6 @@ MapOptions::MapOptions() :
     enableArbitrarySriRequests(true),
     enableCameraNormalization(true),
     debugDetachedCamera(false),
-    debugDisableMeta5(false),
     debugDisableVirtualSurfaces(false),
     debugDisableSri(true),
     debugSaveCorruptedFiles(true),

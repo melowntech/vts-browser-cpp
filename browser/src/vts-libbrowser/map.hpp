@@ -122,6 +122,7 @@ public:
     NodeInfo nodeInfo;
     TraverseNode *const parent;
     uint32 lastAccessTime;
+    uint32 lastRenderTime;
     float priority;
 
     TraverseNode(TraverseNode *parent, const NodeInfo &nodeInfo);
@@ -259,7 +260,7 @@ public:
     std::shared_ptr<SriIndex> getSriIndex(const std::string &name);
     Validity getResourceValidity(const std::string &name);
     Validity getResourceValidity(const std::shared_ptr<Resource> &resource);
-    float computeResourcePriority(const std::shared_ptr<TraverseNode> &trav);
+    float computeResourcePriority(TraverseNode *trav);
     std::shared_ptr<SearchTask> search(const std::string &query,
                                        const double point[3]);
     void updateSearch();
@@ -277,29 +278,23 @@ public:
                            BoundParamInfo::List &boundList, double priority);
     void touchDraws(const RenderTask &task);
     void touchDraws(const std::vector<RenderTask> &renders);
-    void touchDraws(const std::shared_ptr<TraverseNode> &trav);
-    bool visibilityTest(const std::shared_ptr<TraverseNode> &trav);
-    bool coarsenessTest(const std::shared_ptr<TraverseNode> &trav);
-    double coarsenessValue(const std::shared_ptr<TraverseNode> &trav);
-    void renderNode(const std::shared_ptr<TraverseNode> &trav,
-                             const vec4f &uvClip = vec4f(-1,-1,2,2));
-    void renderNode(TraverseNode *const trav,
+    void touchDraws(TraverseNode *trav);
+    bool visibilityTest(TraverseNode *trav);
+    bool coarsenessTest(TraverseNode *trav);
+    double coarsenessValue(TraverseNode *trav);
+    void renderNode(TraverseNode *trav,
                     const vec4f &uvClip = vec4f(-1,-1,2,2));
-    bool travDetermineMeta(const std::shared_ptr<TraverseNode> &trav);
-    bool travDetermineDraws(
-            const std::shared_ptr<TraverseNode> &trav);
-    double travDistance(const std::shared_ptr<TraverseNode> &trav,
-                           const vec3 pointPhys);
-    bool travInit(const std::shared_ptr<TraverseNode> &trav,
-                  bool skipStatistics = false);
-    void travModeHierarchical(const std::shared_ptr<TraverseNode> &trav,
-                              bool loadOnly);
-    void travModeFlat(const std::shared_ptr<TraverseNode> &trav);
-    void travModeBalancedRenderPartial(const std::shared_ptr<TraverseNode> &trav,
-            vec4f uvClip);
-    void travModeBalanced(const std::shared_ptr<TraverseNode> &trav);
-    void traverseRender(const std::shared_ptr<TraverseNode> &trav);
-    void traverseClearing(const std::shared_ptr<TraverseNode> &trav);
+    void renderNodePartialRecursive(TraverseNode *trav,
+                    vec4f uvClip = vec4f(0,0,1,1));
+    bool travDetermineMeta(TraverseNode *trav);
+    bool travDetermineDraws(TraverseNode *trav);
+    double travDistance(TraverseNode *trav, const vec3 pointPhys);
+    bool travInit(TraverseNode *trav, bool skipStatistics = false);
+    void travModeHierarchical(TraverseNode *trav, bool loadOnly);
+    void travModeFlat(TraverseNode *trav);
+    void travModeBalanced(TraverseNode *trav);
+    void traverseRender(TraverseNode *trav);
+    void traverseClearing(TraverseNode *trav);
     void updateCamera();
     bool prerequisitesCheck();
     void applyCameraRotationNormalization(vec3 &rot);

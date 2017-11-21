@@ -159,6 +159,15 @@ DrawTask::DrawTask(const RenderTask &r, const float *uvClip, const MapImpl *m)
 {
     for (int i = 0; i < 4; i++)
         this->uvClip[i] = uvClip[i];
+
+    // debug
+    /*
+    if (uvClip[0] != -1)
+    {
+        for (int i = 0; i < 3; i++)
+            color[i] *= 0.4;
+    }
+    */
 }
 
 MapDraws::MapDraws()
@@ -217,7 +226,7 @@ TraverseNode::MetaInfo::MetaInfo(const MetaNode &node) :
 }
 
 TraverseNode::TraverseNode(TraverseNode *parent, const NodeInfo &nodeInfo)
-    : nodeInfo(nodeInfo), parent(parent), lastAccessTime(0),
+    : nodeInfo(nodeInfo), parent(parent), lastAccessTime(0), lastRenderTime(0),
       priority(std::numeric_limits<double>::quiet_NaN())
 {}
 
@@ -346,12 +355,10 @@ void MapImpl::applyCameraRotationNormalization(vec3 &rot)
     }
 }
 
-double MapImpl::travDistance(const std::shared_ptr<TraverseNode> &trav,
-                             const vec3 pointPhys)
+double MapImpl::travDistance(TraverseNode *trav, const vec3 pointPhys)
 {
     if (!vtslibs::vts::empty(trav->meta->geomExtents)
-            && !trav->nodeInfo.srs().empty()
-            && !options.debugDisableMeta5)
+            && !trav->nodeInfo.srs().empty())
     {
         // todo periodicity
         vec2 fl = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
@@ -366,8 +373,7 @@ double MapImpl::travDistance(const std::shared_ptr<TraverseNode> &trav,
             trav->meta->aabbPhys[1]);
 }
 
-float MapImpl::computeResourcePriority(
-        const std::shared_ptr<TraverseNode> &trav)
+float MapImpl::computeResourcePriority(TraverseNode *trav)
 {
     if (options.traverseMode == TraverseMode::Hierarchical)
         return 1.f / trav->nodeInfo.distanceFromRoot();

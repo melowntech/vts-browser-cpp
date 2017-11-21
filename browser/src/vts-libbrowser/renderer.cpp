@@ -236,7 +236,7 @@ void MapImpl::touchDraws(const std::vector<RenderTask> &renders)
         touchDraws(it);
 }
 
-void MapImpl::touchDraws(const std::shared_ptr<TraverseNode> &trav)
+void MapImpl::touchDraws(TraverseNode *trav)
 {
     for (auto &&it : trav->opaque)
         touchDraws(it);
@@ -244,7 +244,7 @@ void MapImpl::touchDraws(const std::shared_ptr<TraverseNode> &trav)
         touchDraws(it);
 }
 
-bool MapImpl::visibilityTest(const std::shared_ptr<TraverseNode> &trav)
+bool MapImpl::visibilityTest(TraverseNode *trav)
 {
     assert(trav->meta);
     // aabb test
@@ -263,13 +263,13 @@ bool MapImpl::visibilityTest(const std::shared_ptr<TraverseNode> &trav)
     return true;
 }
 
-bool MapImpl::coarsenessTest(const std::shared_ptr<TraverseNode> &trav)
+bool MapImpl::coarsenessTest(TraverseNode *trav)
 {
     assert(trav->meta);
     return coarsenessValue(trav) < options.maxTexelToPixelScale;
 }
 
-double MapImpl::coarsenessValue(const std::shared_ptr<TraverseNode> &trav)
+double MapImpl::coarsenessValue(TraverseNode *trav)
 {
     bool applyTexelSize = trav->meta->flags()
             & vtslibs::vts::MetaNode::Flag::applyTexelSize;
@@ -303,16 +303,12 @@ double MapImpl::coarsenessValue(const std::shared_ptr<TraverseNode> &trav)
     return result;
 }
 
-void MapImpl::renderNode(const std::shared_ptr<TraverseNode> &trav,
-                         const vec4f &uvClip)
-{
-    renderNode(trav.get(), uvClip);
-}
-
-void MapImpl::renderNode(TraverseNode *const trav, const vec4f &uvClip)
+void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
 {
     assert(trav->meta);
+    assert(!trav->rendersEmpty());
     assert(trav->rendersReady());
+    assert(visibilityTest(trav));
 
     // statistics
     statistics.meshesRenderedTotal++;
@@ -386,9 +382,43 @@ void MapImpl::renderNode(TraverseNode *const trav, const vec4f &uvClip)
     for (auto &it : trav->meta->credits)
         renderer.credits.hit(Credits::Scope::Imagery, it,
                              trav->nodeInfo.distanceFromRoot());
+
+    trav->lastRenderTime = renderer.tickIndex;
 }
 
-bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
+namespace
+{
+
+void updateRangeToHalf(float &a, float &b, int which)
+{
+    a *= 0.5;
+    b *= 0.5;
+    if (which)
+    {
+        a += 0.5;
+        b += 0.5;
+    }
+}
+
+} // namespace
+
+void MapImpl::renderNodePartialRecursive(TraverseNode *trav, vec4f uvClip)
+{
+    if (!trav->parent || !trav->parent->meta->surface)
+        return;
+
+    auto id = trav->nodeInfo.nodeId();
+    float *arr = uvClip.data();
+    updateRangeToHalf(arr[0], arr[2], id.x % 2);
+    updateRangeToHalf(arr[1], arr[3], 1 - (id.y % 2));
+
+    if (!trav->parent->rendersEmpty() && trav->parent->rendersReady())
+        renderNode(trav->parent, uvClip);
+    else
+        renderNodePartialRecursive(trav->parent, uvClip);
+}
+
+bool MapImpl::travDetermineMeta(TraverseNode *trav)
 {
     assert(!trav->meta);
     assert(trav->childs.empty());
@@ -476,8 +506,7 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
 
     // corners
     if (!vtslibs::vts::empty(node->geomExtents)
-            && !trav->nodeInfo.srs().empty()
-            && !options.debugDisableMeta5)
+            && !trav->nodeInfo.srs().empty())
     {
         vec2 fl = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
         vec2 fu = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
@@ -577,7 +606,7 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
     {
         if (childsAvailable[i])
             trav->childs.push_back(std::make_shared<TraverseNode>(
-                        trav.get(), trav->nodeInfo.child(childs[i])));
+                        trav, trav->nodeInfo.child(childs[i])));
     }
 
     // update priority
@@ -586,7 +615,7 @@ bool MapImpl::travDetermineMeta(const std::shared_ptr<TraverseNode> &trav)
     return true;
 }
 
-bool MapImpl::travDetermineDraws(const std::shared_ptr<TraverseNode> &trav)
+bool MapImpl::travDetermineDraws(TraverseNode *trav)
 {
     assert(trav->meta);
     assert(trav->meta->surface);
@@ -757,8 +786,7 @@ bool MapImpl::travDetermineDraws(const std::shared_ptr<TraverseNode> &trav)
     return determined;
 }
 
-bool MapImpl::travInit(const std::shared_ptr<TraverseNode> &trav,
-                       bool skipStatistics)
+bool MapImpl::travInit(TraverseNode *trav, bool skipStatistics)
 {
     // statistics
     if (!skipStatistics)
@@ -786,8 +814,7 @@ bool MapImpl::travInit(const std::shared_ptr<TraverseNode> &trav,
     return true;
 }
 
-void MapImpl::travModeHierarchical(const std::shared_ptr<TraverseNode> &trav,
-                                   bool loadOnly)
+void MapImpl::travModeHierarchical(TraverseNode *trav, bool loadOnly)
 {
     if (!travInit(trav))
         return;
@@ -809,7 +836,7 @@ void MapImpl::travModeHierarchical(const std::shared_ptr<TraverseNode> &trav,
     }
 
     bool ok = true;
-    for (std::shared_ptr<TraverseNode> &t : trav->childs)
+    for (auto &t : trav->childs)
     {
         if (!t->meta)
         {
@@ -820,14 +847,14 @@ void MapImpl::travModeHierarchical(const std::shared_ptr<TraverseNode> &trav,
             ok = false;
     }
 
-    for (std::shared_ptr<TraverseNode> &t : trav->childs)
-        travModeHierarchical(t, !ok);
+    for (auto &t : trav->childs)
+        travModeHierarchical(t.get(), !ok);
 
-    if (!ok)
+    if (!ok && !trav->rendersEmpty())
         renderNode(trav);
 }
 
-void MapImpl::travModeFlat(const std::shared_ptr<TraverseNode> &trav)
+void MapImpl::travModeFlat(TraverseNode *trav)
 {
     if (!travInit(trav))
         return;
@@ -843,46 +870,18 @@ void MapImpl::travModeFlat(const std::shared_ptr<TraverseNode> &trav)
         touchDraws(trav);
         if (trav->meta->surface && trav->rendersEmpty())
             travDetermineDraws(trav);
-        renderNode(trav);
+        if (!trav->rendersEmpty())
+            renderNode(trav);
         return;
     }
 
     trav->clearRenders();
 
-    for (std::shared_ptr<TraverseNode> &t : trav->childs)
-        travModeFlat(t);
+    for (auto &t : trav->childs)
+        travModeFlat(t.get());
 }
 
-void MapImpl::travModeBalancedRenderPartial(
-        const std::shared_ptr<TraverseNode> &trav,
-        vec4f uvClip)
-{
-    if (!trav->parent)
-        return;
-
-    // todo rework this method to recursive
-    // update the uvClip accordingly
-    auto id = trav->nodeInfo.nodeId();
-    if (id.y % 2 == 1)
-    {
-        if (id.x % 2 == 0)
-            uvClip = vec4f(-0.05, -0.05, 0.55, 0.55);
-        else
-            uvClip = vec4f(0.45, -0.05, 1.05, 0.55);
-    }
-    else
-    {
-        if (id.x % 2 == 0)
-            uvClip = vec4f(-0.05, 0.45, 0.55, 1.05);
-        else
-            uvClip = vec4f(0.45, 0.45, 1.05, 1.05);
-    }
-
-    if (trav->parent->meta->surface && trav->parent->rendersReady())
-        renderNode(trav->parent, uvClip);
-}
-
-void MapImpl::travModeBalanced(const std::shared_ptr<TraverseNode> &trav)
+void MapImpl::travModeBalanced(TraverseNode *trav)
 {
     if (!travInit(trav))
         return;
@@ -895,18 +894,19 @@ void MapImpl::travModeBalanced(const std::shared_ptr<TraverseNode> &trav)
 
     double coar = coarsenessValue(trav);
 
-    if (coar < options.maxBalancedCoarsenessScale)
+    if (coar < options.maxTexelToPixelScale
+            + options.maxTexelToPixelScaleBalancedAddition)
     {
         touchDraws(trav);
         if (trav->meta->surface && trav->rendersEmpty())
             travDetermineDraws(trav);
     }
-    else
+    else if (trav->lastRenderTime + 1 < renderer.tickIndex)
         trav->clearRenders();
 
     bool childsHaveMeta = true;
     for (auto &it : trav->childs)
-        childsHaveMeta = childsHaveMeta && travInit(it, true);
+        childsHaveMeta = childsHaveMeta && travInit(it.get(), true);
 
     if (coar < options.maxTexelToPixelScale || trav->childs.empty()
             || !childsHaveMeta)
@@ -914,15 +914,15 @@ void MapImpl::travModeBalanced(const std::shared_ptr<TraverseNode> &trav)
         if (!trav->rendersEmpty() && trav->rendersReady())
             renderNode(trav);
         else
-            travModeBalancedRenderPartial(trav, vec4f(0,0,1,1));
+            renderNodePartialRecursive(trav);
         return;
     }
 
-    for (std::shared_ptr<TraverseNode> &t : trav->childs)
-        travModeBalanced(t);
+    for (auto &t : trav->childs)
+        travModeBalanced(t.get());
 }
 
-void MapImpl::traverseRender(const std::shared_ptr<TraverseNode> &trav)
+void MapImpl::traverseRender(TraverseNode *trav)
 {
     switch (options.traverseMode)
     {
@@ -938,7 +938,7 @@ void MapImpl::traverseRender(const std::shared_ptr<TraverseNode> &trav)
     }
 }
 
-void MapImpl::traverseClearing(const std::shared_ptr<TraverseNode> &trav)
+void MapImpl::traverseClearing(TraverseNode *trav)
 {
     if (trav->lastAccessTime + 5 < renderer.tickIndex)
     {
@@ -946,8 +946,8 @@ void MapImpl::traverseClearing(const std::shared_ptr<TraverseNode> &trav)
         return;
     }
 
-    for (auto &&it : trav->childs)
-        traverseClearing(it);
+    for (auto &it : trav->childs)
+        traverseClearing(it.get());
 }
 
 void MapImpl::updateCamera()
@@ -1198,7 +1198,7 @@ void MapImpl::renderTickPrepare()
     updateNavigation();
     updateSearch();
     updateSris();
-    traverseClearing(renderer.traverseRoot);
+    traverseClearing(renderer.traverseRoot.get());
 }
 
 void MapImpl::renderTickRender()
@@ -1210,7 +1210,7 @@ void MapImpl::renderTickRender()
         return;
 
     updateCamera();
-    traverseRender(renderer.traverseRoot);
+    traverseRender(renderer.traverseRoot.get());
     renderer.credits.tick(credits);
     for (const RenderTask &r : navigation.renders)
         draws.Infographic.emplace_back(r, this);

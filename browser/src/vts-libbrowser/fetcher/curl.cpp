@@ -172,7 +172,7 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
 
             // testing start
             //if (task->query.resourceType == FetchTask::ResourceType::Mesh
-            //    && (std::hash<std::string>()(task->query.url) % 123) == 42)
+            //    && (std::hash<std::string>()(task->query.url) % 13) == 0)
             //    task->reply.code = FetchTask::ExtraCodes::SimulatedError;
             // testing end
         }

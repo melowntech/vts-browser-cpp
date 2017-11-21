@@ -553,19 +553,16 @@ public:
             {
                 // maxTexelToPixelScale
                 nk_label(&ctx, "Texel to pixel:", NK_TEXT_LEFT);
-                double prev = o.maxTexelToPixelScale;
                 o.maxTexelToPixelScale = nk_slide_float(&ctx,
                         1, o.maxTexelToPixelScale, 5, 0.01);
                 sprintf(buffer, "%3.1f", o.maxTexelToPixelScale);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                o.maxBalancedCoarsenessScale += o.maxTexelToPixelScale - prev;
 
-                // maxBalancedCoarsenessScale
-                nk_label(&ctx, "Balanced ratio:", NK_TEXT_LEFT);
-                o.maxBalancedCoarsenessScale = nk_slide_float(&ctx,
-                        o.maxTexelToPixelScale, o.maxBalancedCoarsenessScale,
-                        o.maxTexelToPixelScale + 5, 0.01);
-                sprintf(buffer, "%3.1f", o.maxBalancedCoarsenessScale);
+                // maxTexelToPixelScaleBalancedAddition
+                nk_label(&ctx, "Balanced addition:", NK_TEXT_LEFT);
+                o.maxTexelToPixelScaleBalancedAddition = nk_slide_float(&ctx,
+                        1, o.maxTexelToPixelScaleBalancedAddition, 10, 0.01);
+                sprintf(buffer, "%3.1f",o.maxTexelToPixelScaleBalancedAddition);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             }
 
@@ -683,17 +680,6 @@ public:
                 o.debugDetachedCamera = nk_check_label(&ctx,
                                 "detached camera", o.debugDetachedCamera);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
-
-                // debug disable meta 5
-                {
-                    nk_label(&ctx, "", NK_TEXT_LEFT);
-                    bool old = o.debugDisableMeta5;
-                    o.debugDisableMeta5 = nk_check_label(&ctx, "disable meta5",
-                                                        o.debugDisableMeta5);
-                    nk_label(&ctx, "", NK_TEXT_LEFT);
-                    if (old != o.debugDisableMeta5)
-                        window->map->purgeViewCache();
-                }
 
                 // debug disable virtual surfaces
                 {

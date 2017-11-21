@@ -85,7 +85,7 @@ public:
 
     // maximum ratio of kept textures in the balanced traverse mode
     // increasing this ratio will store more lods above the optimal one
-    double maxBalancedCoarsenessScale;
+    double maxTexelToPixelScaleBalancedAddition;
 
     // lower and upper limit for view-extent
     // expressed as multiplicative factor of planet major radius
@@ -176,7 +176,6 @@ public:
     bool enableCameraNormalization;
 
     bool debugDetachedCamera;
-    bool debugDisableMeta5;
     bool debugDisableVirtualSurfaces;
     bool debugDisableSri;
     bool debugSaveCorruptedFiles;

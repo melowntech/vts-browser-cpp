@@ -80,10 +80,11 @@ int loadShader(const std::string &source, int stage)
         glGetShaderiv(s, GL_INFO_LOG_LENGTH, &len);
         if (len > 5)
         {
-            char *buf = (char*)malloc(len + 1);
-            glGetShaderInfoLog(s, len, &len, buf);
-            vts::log(vts::LogLevel::err4,
-                     std::string("shader compilation log:\n") + buf + "\n\n");
+            Buffer buf(len + 1);
+            glGetShaderInfoLog(s, len, &len, buf.data());
+            vts::log(vts::LogLevel::err3,
+                     std::string("shader compilation log:\n")
+                     + std::string(buf.data(), len) + "\n\n");
         }
 
         glGetShaderiv(s, GL_COMPILE_STATUS, &len);
@@ -122,9 +123,11 @@ void Shader::load(const std::string &vertexShader,
         glGetProgramiv(id, GL_INFO_LOG_LENGTH, &len);
         if (len > 5)
         {
-            char *buf = (char*)malloc(len + 1);
-            glGetProgramInfoLog(id, len, &len, buf);
-            fprintf(stderr, "shader link log:\n%s\n\n", buf);
+            Buffer buf(len + 1);
+            glGetProgramInfoLog(id, len, &len, buf.data());
+            vts::log(vts::LogLevel::err3,
+                     std::string("shader link log:\n")
+                     + std::string(buf.data(), len) + "\n\n");
         }
 
         glGetProgramiv(id, GL_LINK_STATUS, &len);

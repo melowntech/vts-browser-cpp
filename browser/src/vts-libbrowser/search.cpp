@@ -25,6 +25,7 @@
  */
 
 #include <jsoncpp/json.hpp>
+#include <utility/uri.hpp>
 
 #include "map.hpp"
 
@@ -40,7 +41,7 @@ std::string generateSearchUrl(MapImpl *impl, const std::string &query)
     static const std::string rep = "{value}";
     auto s = url.find(rep);
     if (s != std::string::npos)
-        url.replace(s, rep.length(), query);
+        url.replace(s, rep.length(), utility::urlEncode(query));
     return url;
 }
 

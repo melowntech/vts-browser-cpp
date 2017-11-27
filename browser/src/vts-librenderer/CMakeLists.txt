@@ -54,6 +54,8 @@ endif()
 #######################################################################
 # Install
 
+if(NOT IOS)
+
 set(VTSRENDERER_LIBRARIES vts-renderer)
 
 # headers
@@ -99,6 +101,6 @@ install(FILES
     COMPONENT renderer-dev
 )
 
-
+endif()
 
 

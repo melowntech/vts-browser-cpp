@@ -34,8 +34,8 @@ find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIR})
 add_subdirectory(src/glad)
 
-# our dependencies
-message(STATUS "including our dependencies")
+# vts dependencies
+message(STATUS "including vts dependencies")
 add_subdirectory(src/dbglog)
 add_subdirectory(src/utility)
 add_subdirectory(src/math)
@@ -56,6 +56,9 @@ set(INCLUDE_INSTALL_DIR include)
 set(LIB_INSTALL_DIR lib)
 set(BIN_INSTALL_DIR bin)
 set(SHARE_INSTALL_DIR share)
+
+# cmake functions
+include(cmake/pack_data.cmake)
 
 # vts browser
 message(STATUS "including vts browser and renderer libraries")

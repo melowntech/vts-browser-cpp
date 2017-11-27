@@ -59,7 +59,7 @@ git clone --recursive https://github.com/Melown/vts-browser-cpp.git
 cd vts-browser-cpp/browser
 mkdir build-ios
 cd build-ios
-cmake -DCMAKE_MODULE_PATH="path to the prepared cmake modules directory" -DCMAKE_TOOLCHAIN_FILE=../toolchains/ios.cmake -GXcode ..
+cmake -DCMAKE_MODULE_PATH="path to the prepared cmake modules directory" -DCMAKE_TOOLCHAIN_FILE=../cmake/ios.toolchain.cmake -GXcode ..
 ```
 
 Use the generated xcode project as usual.

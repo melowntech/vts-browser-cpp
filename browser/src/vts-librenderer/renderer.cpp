@@ -40,8 +40,6 @@ namespace priv
 int maxAntialiasingSamples = 1;
 float maxAnisotropySamples = 0.f;
 
-void initializeRenderData();
-
 } // namespace priv
 
 using namespace priv;
@@ -424,15 +422,6 @@ public:
         clearGlState();
     }
 };
-
-class RenderDataInitializator
-{
-public:
-    RenderDataInitializator()
-    {
-        initializeRenderData();
-    }
-} renderDataInitializatorInstance;
 
 } // namespace
 

@@ -28,6 +28,22 @@
 
 #include "renderer.hpp"
 
+void initializeRenderData();
+
+namespace
+{
+
+class RenderDataInitializator
+{
+public:
+    RenderDataInitializator()
+    {
+        initializeRenderData();
+    }
+} renderDataInitializatorInstance;
+
+} // namespace
+
 namespace vts { namespace renderer
 {
 

@@ -9,9 +9,10 @@ that brings VTS capabilities to your native C++ applications.
   See [vts-browser-minimal](https://github.com/Melown/vts-browser-cpp/wiki/examples-minimal).
 - Clean C++11 class-full API.
 - Highly flexible -> almost all aspects can be changed through configuration or callbacks.
-- Rendering API independent -> The library, on its own, does not render anything.
+- Rendering API independent -> the library, on its own, does not render anything.
   Instead, it just tells the application what to render.
   However, a convenient OpenGL-based rendering library is also provided.
+- Currently works on Linux, Mac OS and iOS.
 
 ### WIP
 
@@ -42,7 +43,7 @@ See [BUILDING.md](BUILDING.md) for detailed instructions.
 
 ### Using the Library
 
-Install the libraries.
+Install the libraries, eg. from packages or build them.
 
 Write a cmake file _CMakeLists.txt_:
 
@@ -68,9 +69,9 @@ Build and run:
 
 ```sh
 mkdir build && cd build
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=RELWITHDEBINFO ..
 cmake --build .
-./vts-example <map-config-url>
+./vts-example
 ```
 
 ## Bug Reports

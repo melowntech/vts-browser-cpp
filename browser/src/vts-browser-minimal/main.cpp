@@ -40,8 +40,6 @@ bool shouldClose = false;
 
 void updateResolution()
 {
-    if (!map || !window)
-        return;
     SDL_GL_GetDrawableSize(window, &renderOptions.width, &renderOptions.height);
     map->setWindowSize(renderOptions.width, renderOptions.height);
 }
@@ -57,17 +55,16 @@ int main(int, char *[])
     }
 
     // configure parameters for OpenGL context
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0); // we do not need default depth buffer, the rendering library uses its own
+    // we do not need default depth buffer, the rendering library uses its own
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
     SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3); // use OpenGL version 3.0
+    // use OpenGL version 3.0 core profile
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                         SDL_GL_CONTEXT_PROFILE_CORE);
-#ifndef NDEBUG
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
-#endif
 
     // create window
     vts::log(vts::LogLevel::info3, "Creating window");
@@ -88,18 +85,21 @@ int main(int, char *[])
     // create OpenGL context
     vts::log(vts::LogLevel::info3, "Creating OpenGL context");
     renderContext = SDL_GL_CreateContext(window);
+    // bind the OpenGL context to current thread
     SDL_GL_MakeCurrent(window, renderContext);
-    SDL_GL_SetSwapInterval(1);
+    SDL_GL_SetSwapInterval(1); // enable v-sync
 
     // notify the vts renderer library on how to load OpenGL function pointers
     vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
-    // and initialize the library, which will load required shaders and other local files
+    // and initialize the renderer library
+    // this will load required shaders and other local files
     vts::renderer::initialize();
 
     // create instance of the vts::Map class
     map = std::make_shared<vts::Map>(vts::MapCreateOptions());
 
     // set required callbacks for creating mesh and texture resources
+    // we use the standard callbacks provided by the rendering library
     map->callbacks().loadTexture = std::bind(&vts::renderer::loadTexture,
                 std::placeholders::_1, std::placeholders::_2);
     map->callbacks().loadMesh = std::bind(&vts::renderer::loadMesh,
@@ -108,12 +108,13 @@ int main(int, char *[])
     // initialize the resource processing with default fetcher
     map->dataInitialize(vts::Fetcher::create(vts::FetcherOptions()));
 
-    // initialize the rendering part of the map
+    // initialize the render preparation component of the map
     updateResolution();
     map->renderInitialize();
 
     // configure an url to the map that should be displayed
-    map->setMapConfigPath("https://cdn.melown.com/mario/store/melown2015/map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
+    map->setMapConfigPath("https://cdn.melown.com/mario/store/melown2015/"
+            "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
 
     // keep processing window events
     while (!shouldClose)
@@ -131,13 +132,15 @@ int main(int, char *[])
                     break;
                 // handle mouse events
                 case SDL_MOUSEMOTION:
+                {
+                    // relative mouse position
+                    double p[3] = { (double)event.motion.xrel,
+                                (double)event.motion.yrel, 0 };
                     if (event.motion.state & SDL_BUTTON(SDL_BUTTON_LEFT))
-                    {
-                        double p[3] = { (double)event.motion.xrel,
-                                    (double)event.motion.yrel, 0 };
                         map->pan(p);
-                    }
-                    break;
+                    if (event.motion.state & SDL_BUTTON(SDL_BUTTON_RIGHT))
+                        map->rotate(p);
+                } break;
                 case SDL_MOUSEWHEEL:
                     map->zoom(event.wheel.y);
                     break;

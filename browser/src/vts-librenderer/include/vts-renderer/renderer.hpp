@@ -60,21 +60,51 @@ VTSR_API void initialize();
 // should be called once before the gl context is released
 VTSR_API void finalize();
 
+// options provided from the application (you set these)
 struct VTSR_API RenderOptions
 {
+    // render resolution in pixels
     int width;
     int height;
+
+    // when colorToTargetFrameBuffer is true, the render method will blit
+    //   the resulting color into this frame buffer
     int targetFrameBuffer;
     int targetViewportX;
     int targetViewportY;
-    int antialiasingSamples;
+
+    // other options
+    int antialiasingSamples; // two or more to enable multisampling
     bool renderAtmosphere;
     bool renderPolygonEdges;
+
+    // where to copy the result (and resolve multisampling)
+    bool colorToTargetFrameBuffer;
+    bool colorToTexture; // accessible as RenderVariables::colorReadTexId
 
     RenderOptions();
 };
 
+// these variables are controlled by the library
+//   and are provided to you for potential further use
+// do not change any attributes on the objects
+struct VTSR_API RenderVariables
+{
+    uint32 frameRenderBufferId;
+    uint32 frameReadBufferId; // (may be same as frameRenderBufferId)
+    uint32 depthRenderTexId; // textureTargetType
+    uint32 depthReadTexId; // GL_TEXTURE_2D (may be same as depthRenderTexId)
+    uint32 colorRenderTexId; // textureTargetType
+    uint32 colorReadTexId; // GL_TEXTURE_2D (may be same as colorRenderTexId)
+    uint32 textureTargetType; // GL_TEXTURE_2D or GL_TEXTURE_2D_MULTISAMPLE
+    RenderVariables();
+};
+
 VTSR_API void render(RenderOptions &options,
+                     const MapDraws &draws,
+                     const MapCelestialBody &celestialBody);
+VTSR_API void render(RenderOptions &options,
+                     RenderVariables &variables,
                      const MapDraws &draws,
                      const MapCelestialBody &celestialBody);
 

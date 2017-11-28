@@ -53,14 +53,13 @@ std::shared_ptr<Shader> shaderAtmosphere;
 std::shared_ptr<Shader> shaderCopyDepth;
 std::shared_ptr<Mesh> meshQuad; // positions: -1 .. 1
 std::shared_ptr<Mesh> meshRect; // positions: 0 .. 1
-GLuint frameRenderBufferId;
-GLuint frameSampleBufferId;
-GLuint depthRenderTexId;
-GLuint depthSampleTexId;
-GLuint colorTexId;
+
+RenderVariables vars;
+
 int widthPrev;
 int heightPrev;
 int antialiasingPrev;
+
 mat4 view;
 mat4 proj;
 mat4 viewProj;
@@ -171,46 +170,51 @@ public:
             heightPrev = options.height;
             options.antialiasingSamples =
                     std::max(std::min(options.antialiasingSamples,
-                                      maxAntialiasingSamples), 1);
+                             maxAntialiasingSamples), 1);
             antialiasingPrev = options.antialiasingSamples;
 
-            GLenum target = antialiasingPrev > 1 ? GL_TEXTURE_2D_MULTISAMPLE
-                                                 : GL_TEXTURE_2D;
+            vars.textureTargetType
+                    = antialiasingPrev > 1 ? GL_TEXTURE_2D_MULTISAMPLE
+                                           : GL_TEXTURE_2D;
 
             // delete old textures
-            glDeleteTextures(1, &depthSampleTexId);
-            if (depthRenderTexId != depthSampleTexId)
-                glDeleteTextures(1, &depthRenderTexId);
-            glDeleteTextures(1, &colorTexId);
-            depthSampleTexId = depthRenderTexId = colorTexId = 0;
+            glDeleteTextures(1, &vars.depthReadTexId);
+            if (vars.depthRenderTexId != vars.depthReadTexId)
+                glDeleteTextures(1, &vars.depthRenderTexId);
+            glDeleteTextures(1, &vars.colorRenderTexId);
+            if (vars.colorRenderTexId != vars.colorReadTexId)
+                glDeleteTextures(1, &vars.colorRenderTexId);
+            vars.depthReadTexId = vars.depthRenderTexId = 0;
+            vars.colorReadTexId = vars.colorRenderTexId = 0;
 
             // depth texture for rendering
             glActiveTexture(GL_TEXTURE0 + 5);
-            glGenTextures(1, &depthRenderTexId);
-            glBindTexture(target, depthRenderTexId);
+            glGenTextures(1, &vars.depthRenderTexId);
+            glBindTexture(vars.textureTargetType, vars.depthRenderTexId);
             if (antialiasingPrev > 1)
             {
-                glTexImage2DMultisample(target, antialiasingPrev,
-                                        GL_DEPTH_COMPONENT32,
-                                        options.width, options.height,
-                                        GL_TRUE);
+                glTexImage2DMultisample(vars.textureTargetType,
+                    antialiasingPrev, GL_DEPTH_COMPONENT32,
+                    options.width, options.height, GL_TRUE);
             }
             else
             {
-                glTexImage2D(target, 0, GL_DEPTH_COMPONENT32,
+                glTexImage2D(vars.textureTargetType, 0, GL_DEPTH_COMPONENT32,
                              options.width, options.height,
                              0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
-                glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(vars.textureTargetType,
+                                GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(vars.textureTargetType,
+                                GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             }
-            checkGl("update depth texture");
+            checkGl("update depth texture for rendering");
 
             // depth texture for sampling
             glActiveTexture(GL_TEXTURE0 + 6);
             if (antialiasingPrev > 1)
             {
-                glGenTextures(1, &depthSampleTexId);
-                glBindTexture(GL_TEXTURE_2D, depthSampleTexId);
+                glGenTextures(1, &vars.depthReadTexId);
+                glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32,
                              options.width, options.height,
                              0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
@@ -221,43 +225,68 @@ public:
             }
             else
             {
-                depthSampleTexId = depthRenderTexId;
-                glBindTexture(GL_TEXTURE_2D, depthSampleTexId);
+                vars.depthReadTexId = vars.depthRenderTexId;
+                glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
             }
+            checkGl("update depth texture for sampling");
 
-            // color texture
+            // color texture for rendering
             glActiveTexture(GL_TEXTURE0 + 7);
-            glGenTextures(1, &colorTexId);
-            glBindTexture(target, colorTexId);
+            glGenTextures(1, &vars.colorRenderTexId);
+            glBindTexture(vars.textureTargetType, vars.colorRenderTexId);
             if (antialiasingPrev > 1)
-                glTexImage2DMultisample(target, antialiasingPrev,
-                      GL_RGB8, options.width, options.height, GL_TRUE);
+                glTexImage2DMultisample(
+                    vars.textureTargetType, antialiasingPrev, GL_RGB8,
+                            options.width, options.height, GL_TRUE);
             else
             {
-                glTexImage2D(target, 0, GL_RGB8,
+                glTexImage2D(vars.textureTargetType, 0, GL_RGB8,
                              options.width, options.height,
                              0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-                glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(vars.textureTargetType,
+                                GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(vars.textureTargetType,
+                                GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             }
-            checkGl("update color texture");
+            checkGl("update color texture for rendering");
+
+            // color texture for sampling
+            glActiveTexture(GL_TEXTURE0 + 8);
+            if (antialiasingPrev > 1)
+            {
+                glGenTextures(1, &vars.colorReadTexId);
+                glBindTexture(GL_TEXTURE_2D, vars.colorReadTexId);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8,
+                             options.width, options.height,
+                             0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                                GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                                GL_NEAREST);
+            }
+            else
+            {
+                vars.colorReadTexId = vars.colorRenderTexId;
+                glBindTexture(GL_TEXTURE_2D, vars.colorReadTexId);
+            }
+            checkGl("update color texture for sampling");
 
             // render frame buffer
-            glDeleteFramebuffers(1, &frameRenderBufferId);
-            glGenFramebuffers(1, &frameRenderBufferId);
-            glBindFramebuffer(GL_FRAMEBUFFER, frameRenderBufferId);
+            glDeleteFramebuffers(1, &vars.frameRenderBufferId);
+            glGenFramebuffers(1, &vars.frameRenderBufferId);
+            glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                                   target, depthRenderTexId, 0);
+                    vars.textureTargetType, vars.depthRenderTexId, 0);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                   target, colorTexId, 0);
+                    vars.textureTargetType, vars.colorRenderTexId, 0);
             checkGlFramebuffer();
 
             // sample frame buffer
-            glDeleteFramebuffers(1, &frameSampleBufferId);
-            glGenFramebuffers(1, &frameSampleBufferId);
-            glBindFramebuffer(GL_FRAMEBUFFER, frameSampleBufferId);
+            glDeleteFramebuffers(1, &vars.frameReadBufferId);
+            glGenFramebuffers(1, &vars.frameReadBufferId);
+            glBindFramebuffer(GL_FRAMEBUFFER, vars.frameReadBufferId);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                                   GL_TEXTURE_2D, depthSampleTexId, 0);
+                                   GL_TEXTURE_2D, vars.depthReadTexId, 0);
             checkGlFramebuffer();
 
             checkGl("update frame buffer");
@@ -266,7 +295,7 @@ public:
         // initialize opengl
         glViewport(0, 0, options.width, options.height);
         glActiveTexture(GL_TEXTURE0);
-        glBindFramebuffer(GL_FRAMEBUFFER, frameRenderBufferId);
+        glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_CULL_FACE);
         #ifndef VTSR_OPENGLES
@@ -309,14 +338,14 @@ public:
         }
 
         // copy the depth (resolve multisampling)
-        if (depthSampleTexId != depthRenderTexId)
+        if (vars.depthReadTexId != vars.depthRenderTexId)
         {
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, frameRenderBufferId);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameSampleBufferId);
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, vars.frameReadBufferId);
             glBlitFramebuffer(0, 0, options.width, options.height,
                               0, 0, options.width, options.height,
                               GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-            glBindFramebuffer(GL_FRAMEBUFFER, frameRenderBufferId);
+            glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
             checkGl("copied the depth (resolved multisampling)");
         }
         glDisable(GL_DEPTH_TEST);
@@ -396,7 +425,7 @@ public:
                                 (float*)uniCameraDirections[i].data());
             }
             shaderAtmosphere->uniformMat4(12, (float*)uniInvView.data());
-            shaderAtmosphere->uniform(13, (int)options.antialiasingSamples);
+            shaderAtmosphere->uniform(13, options.antialiasingSamples);
 
             // dispatch
             meshQuad->bind();
@@ -409,14 +438,30 @@ public:
             drawInfographic(t);
         checkGl("rendered infographics");
 
+        // copy the color (resolve multisampling)
+        if (options.colorToTexture
+                && vars.colorReadTexId != vars.colorRenderTexId)
+        {
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, vars.frameReadBufferId);
+            glBlitFramebuffer(0, 0, options.width, options.height,
+                              0, 0, options.width, options.height,
+                              GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
+            checkGl("copied the color (resolved multisampling)");
+        }
+
         // copy the color to screen
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, frameRenderBufferId);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, options.targetFrameBuffer);
-        glBlitFramebuffer(0, 0, options.width, options.height,
-                          options.targetViewportX, options.targetViewportY,
-                          options.width, options.height,
-                          GL_COLOR_BUFFER_BIT, GL_NEAREST);
-        checkGl("copied the color to screen (resolve multisampling)");
+        if (options.colorToTargetFrameBuffer)
+        {
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, options.targetFrameBuffer);
+            glBlitFramebuffer(0, 0, options.width, options.height,
+                              options.targetViewportX, options.targetViewportY,
+                              options.width, options.height,
+                              GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            checkGl("copied the color to screen (resolve multisampling)");
+        }
 
         // clear the state
         clearGlState();
@@ -572,34 +617,34 @@ void finalize()
     shaderAtmosphere.reset();
     meshQuad.reset();
 
-    if (frameRenderBufferId)
+    if (vars.frameRenderBufferId)
     {
-        glDeleteFramebuffers(1, &frameRenderBufferId);
-        frameRenderBufferId = 0;
+        glDeleteFramebuffers(1, &vars.frameRenderBufferId);
+        vars.frameRenderBufferId = 0;
     }
 
-    if (frameSampleBufferId)
+    if (vars.frameReadBufferId)
     {
-        glDeleteFramebuffers(1, &frameSampleBufferId);
-        frameSampleBufferId = 0;
+        glDeleteFramebuffers(1, &vars.frameReadBufferId);
+        vars.frameReadBufferId = 0;
     }
 
-    if (depthRenderTexId)
+    if (vars.depthRenderTexId)
     {
-        glDeleteTextures(1, &depthRenderTexId);
-        depthRenderTexId = 0;
+        glDeleteTextures(1, &vars.depthRenderTexId);
+        vars.depthRenderTexId = 0;
     }
 
-    if (depthSampleTexId)
+    if (vars.depthReadTexId)
     {
-        glDeleteTextures(1, &depthSampleTexId);
-        depthSampleTexId = 0;
+        glDeleteTextures(1, &vars.depthReadTexId);
+        vars.depthReadTexId = 0;
     }
 
-    if (colorTexId)
+    if (vars.colorRenderTexId)
     {
-        glDeleteTextures(1, &colorTexId);
-        colorTexId = 0;
+        glDeleteTextures(1, &vars.colorRenderTexId);
+        vars.colorRenderTexId = 0;
     }
 
     widthPrev = heightPrev = antialiasingPrev = 0;
@@ -609,7 +654,16 @@ void finalize()
 
 RenderOptions::RenderOptions() : width(0), height(0),
     targetFrameBuffer(0), targetViewportX(0), targetViewportY(0),
-    antialiasingSamples(1), renderAtmosphere(true), renderPolygonEdges(false)
+    antialiasingSamples(1),
+    renderAtmosphere(true), renderPolygonEdges(false),
+    colorToTargetFrameBuffer(true), colorToTexture(false)
+{}
+
+RenderVariables::RenderVariables() :
+    frameRenderBufferId(0), frameReadBufferId(0),
+    depthRenderTexId(0), depthReadTexId(0),
+    colorRenderTexId(0),
+    textureTargetType(0)
 {}
 
 void loadTexture(ResourceInfo &info, const GpuTextureSpec &spec)
@@ -632,6 +686,15 @@ void render(RenderOptions &options,
 {
     Renderer r(options, draws, body);
     r.render();
+}
+
+void render(RenderOptions &options,
+            RenderVariables &variables,
+            const MapDraws &draws,
+            const MapCelestialBody &celestialBody)
+{
+    render(options, draws, celestialBody);
+    variables = vars;
 }
 
 void getWorldPosition(const double screenPos[2], double worldPos[3])
@@ -663,7 +726,7 @@ void getWorldPosition(const double screenPos[2], double worldPos[3])
         shaderCopyDepth->bind();
         int pos[2] = { (int)x, (int)y };
         shaderCopyDepth->uniformVec2(0, pos);
-        glBindTexture(GL_TEXTURE_2D, depthSampleTexId);
+        glBindTexture(GL_TEXTURE_2D, vars.depthSampleTexId);
         meshQuad->bind();
         meshQuad->dispatch();
 
@@ -671,7 +734,9 @@ void getWorldPosition(const double screenPos[2], double worldPos[3])
         glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, res);
         if (res[0] != 0 || res[1] != 0 || res[2] != 0 || res[3] != 0)
         {
-            static const vec4 bitSh = vec4(1.0 / (256.0*256.0*256.0), 1.0 / (256.0*256.0), 1.0 / 256.0, 1.0);
+            static const vec4 bitSh = vec4(1.0 / (256.0*256.0*256.0),
+                                           1.0 / (256.0*256.0),
+                                           1.0 / 256.0, 1.0);
             depth = 0;
             for (int i = 0; i < 4; i++)
                 depth += res[i] * bitSh[i];
@@ -684,7 +749,7 @@ void getWorldPosition(const double screenPos[2], double worldPos[3])
     }
     #else
     {
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, frameSampleBufferId);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameReadBufferId);
         glReadPixels((int)x, (int)y, 1, 1,
                  GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
     }

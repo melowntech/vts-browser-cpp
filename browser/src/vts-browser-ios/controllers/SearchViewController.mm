@@ -26,6 +26,7 @@
 
 #include "../Map.h"
 #include <vts-browser/search.hpp>
+#include <vts-browser/options.hpp>
 
 #import "SearchCell.h"
 #import "SearchViewController.h"
@@ -33,8 +34,8 @@
 
 @interface SearchViewController ()
 {
-	std::shared_ptr<vts::SearchTask> task;
-	std::shared_ptr<vts::SearchTask> result;
+    std::shared_ptr<vts::SearchTask> task;
+    std::shared_ptr<vts::SearchTask> result;
 }
 
 @property (weak, nonatomic) IBOutlet UISearchBar *searchBar;
@@ -55,20 +56,20 @@
 
 - (void)timerTick
 {
-	if (task && !task->done)
-		[_activityIndicator startAnimating];
-	else
-		[_activityIndicator stopAnimating];
+    if (task && !task->done)
+        [_activityIndicator startAnimating];
+    else
+        [_activityIndicator stopAnimating];
 
-	if (result)
-	{
-		assert(result->done);
-		double pos[3];
-		map->getPositionPoint(pos);
-		result->updateDistances(pos);
-	}
-	
-	[_tableView reloadData];
+    if (result)
+    {
+        assert(result->done);
+        double pos[3];
+        map->getPositionPoint(pos);
+        result->updateDistances(pos);
+    }
+
+    [_tableView reloadData];
 }
 
 - (void)searchCommit:(NSString*)text
@@ -98,42 +99,42 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-	if (!result)
-		return;
-	assert(result->done);
+    if (!result)
+        return;
+    assert(result->done);
     vts::SearchItem &item = result->results[indexPath.row];
     map->setPositionSubjective(false, false);
     map->setPositionViewExtent(std::max(6667.0, item.radius * 2));
     map->setPositionRotation({0,270,0});
     map->resetPositionAltitude();
     map->resetNavigationMode();
-    map->setNavigationType(vts::NavigationType::FlyOver);
+    map->options().navigationType = vts::NavigationType::FlyOver;
     map->setPositionPoint(item.position);
-	[self.navigationController popViewControllerAnimated:YES];
+    [self.navigationController popViewControllerAnimated:YES];
 }
 
 #pragma mark - Table view data source
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-	if (task && task->done)
-		result = task;
-	else
-		result = nullptr;
-	return result ? result->results.size() : 0;
+    if (task && task->done)
+        result = task;
+    else
+        result = nullptr;
+    return result ? result->results.size() : 0;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-	assert(result && result->done);
+    assert(result && result->done);
     SearchCell *cell = [tableView dequeueReusableCellWithIdentifier:@"SearchCell" forIndexPath:indexPath];
     vts::SearchItem &item = result->results[indexPath.row];
     cell.cellName1.text = [NSString stringWithUTF8String:item.title.c_str()];
     cell.cellName2.text = [NSString stringWithUTF8String:item.displayName.c_str()];
     if (item.distance >= 1e3)
-    	cell.cellDistance.text = [NSString stringWithFormat:@"%.1f km", item.distance / 1e3];
+        cell.cellDistance.text = [NSString stringWithFormat:@"%.1f km", item.distance / 1e3];
     else
-    	cell.cellDistance.text = [NSString stringWithFormat:@"%.1f m", item.distance];
+        cell.cellDistance.text = [NSString stringWithFormat:@"%.1f m", item.distance];
     return cell;
 }
 

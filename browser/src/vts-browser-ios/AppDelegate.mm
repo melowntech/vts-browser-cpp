@@ -38,10 +38,10 @@ void initializeIosData();
 
 - (BOOL)application:(UIApplication *)application willFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-	//vts::setLogMask("I2W2E2");
-	//vts::setLogMask("ALL");
+    //vts::setLogMask("I2W2E2");
+    //vts::setLogMask("ALL");
     initializeIosData();
-	mapInitialize();
+    mapInitialize();
     return YES;
 }
 

@@ -161,7 +161,7 @@ public:
 
     // some resources may intentionally change over time,
     //   thus they need to be reloaded when they expire
-    // enable this *experimental* feature to allow ther expiration
+    // enable this *experimental* feature to allow resource expiration
     //   even after they were successfully loaded into gpu memory
     bool enableRuntimeResourceExpiration;
 

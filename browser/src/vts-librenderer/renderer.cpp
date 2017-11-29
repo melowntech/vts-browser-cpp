@@ -726,7 +726,7 @@ void getWorldPosition(const double screenPos[2], double worldPos[3])
         shaderCopyDepth->bind();
         int pos[2] = { (int)x, (int)y };
         shaderCopyDepth->uniformVec2(0, pos);
-        glBindTexture(GL_TEXTURE_2D, vars.depthSampleTexId);
+        glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
         meshQuad->bind();
         meshQuad->dispatch();
 

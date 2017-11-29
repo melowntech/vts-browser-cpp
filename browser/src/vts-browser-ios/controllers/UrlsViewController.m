@@ -65,13 +65,13 @@ static NSString *itemsStorePath()
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    
+
     self.navigationItem.leftBarButtonItem = self.editButtonItem;
     self.navigationItem.rightBarButtonItems = @[
-    	[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemOrganize target:self action:@selector(showOptions)],
-    	[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAdd target:self action:@selector(newItem)]
+        [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemOrganize target:self action:@selector(showOptions)],
+        [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAdd target:self action:@selector(newItem)]
     ];
-    
+
     [self loadItems];
 }
 
@@ -80,8 +80,8 @@ static NSString *itemsStorePath()
     [super viewDidAppear:animated];
     for (int i = 0; i < [urls count]; i++)
     {
-    	if ([((ConfigItem*)urls[i]).name length] == 0)
-    		[urls removeObjectAtIndex:i--];
+        if ([((ConfigItem*)urls[i]).name length] == 0)
+            [urls removeObjectAtIndex:i--];
     }
     [self.tableView reloadData];
     [self saveItems];
@@ -97,7 +97,7 @@ static NSString *itemsStorePath()
 
 - (void)showOptions
 {
-	[self performSegueWithIdentifier:@"options" sender:self];
+    [self performSegueWithIdentifier:@"options" sender:self];
 }
 
 #pragma mark - Table view data source

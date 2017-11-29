@@ -145,6 +145,9 @@ U vecToUblas(const T &t)
     return res;
 }
 
+static const double RadToDeg = 180 / 3.141592653589793;
+static const double DegtoRad = 3.141592653589793 / 180;
+
 } // namespace vts
 
 #endif // MATH_H_wegfzebvgfhjusd

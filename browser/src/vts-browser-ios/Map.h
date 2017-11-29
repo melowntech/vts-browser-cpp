@@ -35,12 +35,12 @@
 
 struct ExtraConfig
 {
-	ExtraConfig();
-	
-	int controlType;
-	float touchSize;
-	bool showControlScales;
-	bool showControlAreas;
+    ExtraConfig();
+
+    int controlType;
+    float touchSize;
+    bool showControlScales;
+    bool showControlAreas;
 };
 
 extern vts::Map *map;

@@ -34,7 +34,7 @@
 #include "foundation.hpp"
 
 #ifndef VTSR_INCLUDE_GL
-typedef void* (* GLADloadproc)(const char *name);
+typedef void *(*GLADloadproc)(const char *name);
 #endif
 
 namespace vts { namespace renderer

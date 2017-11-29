@@ -83,24 +83,24 @@
 
 - (IBAction)optControlTypeChanged:(UISegmentedControl *)sender
 {
-	extraConfig.controlType = sender.selectedSegmentIndex;
-	_optControlScales.on = extraConfig.showControlScales = extraConfig.controlType == 0;
+    extraConfig.controlType = sender.selectedSegmentIndex;
+    _optControlScales.on = extraConfig.showControlScales = extraConfig.controlType == 0;
     [self consolidateOptions];
 }
 
 - (IBAction)optTouchSizeChanged:(UISlider *)sender
 {
-	extraConfig.touchSize = sender.value;
+    extraConfig.touchSize = sender.value;
 }
 
 - (IBAction)optTouchAreasChanged:(UISwitch *)sender
 {
-	extraConfig.showControlAreas = sender.on;
+    extraConfig.showControlAreas = sender.on;
 }
 
 - (IBAction)optControlScalesChanged:(UISwitch *)sender
 {
-	extraConfig.showControlScales = sender.on;
+    extraConfig.showControlScales = sender.on;
 }
 
 @end

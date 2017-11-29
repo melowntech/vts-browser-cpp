@@ -37,9 +37,9 @@
     _name.text = _item.name;
     _url.text = _item.url;
     if (_name.text.length == 0)
-	    [_name becomeFirstResponder];
+        [_name becomeFirstResponder];
     else
-    	[_url becomeFirstResponder];
+        [_url becomeFirstResponder];
 }
 
 - (void)save
@@ -50,15 +50,15 @@
         _item.name = _item.url;
     if ([_item.url isEqualToString:@""])
         _item.url = _item.name;
-	[self.navigationController popViewControllerAnimated:YES];
+    [self.navigationController popViewControllerAnimated:YES];
 }
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField 
 {
-	if (textField == _url)
-		[self save];
-	else
-    	[_url becomeFirstResponder];
+    if (textField == _url)
+        [self save];
+    else
+        [_url becomeFirstResponder];
     return NO;
 }
 

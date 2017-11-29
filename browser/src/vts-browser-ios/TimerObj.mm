@@ -31,7 +31,7 @@
 
 @interface TimerObj ()
 {
-	NSTimer* timer;
+    NSTimer* timer;
     id object;
     SEL selector;
 }
@@ -43,18 +43,18 @@
 {
     if (self = [super init])
     {
-		timer = [NSTimer timerWithTimeInterval:0.2 target:self selector:@selector(timerTick) userInfo:nil repeats:YES];
-		[[NSRunLoop mainRunLoop] addTimer:timer forMode:NSRunLoopCommonModes];
-	}
-	return self;
+        timer = [NSTimer timerWithTimeInterval:0.2 target:self selector:@selector(timerTick) userInfo:nil repeats:YES];
+        [[NSRunLoop mainRunLoop] addTimer:timer forMode:NSRunLoopCommonModes];
+    }
+    return self;
 }
 
 - (void)timerTick
 {
-	if (!object || !map)
-		return;
-	try
-	{
+    if (!object || !map)
+        return;
+    try
+    {
         map->renderTickPrepare();
         map->renderTickRender();
     }
@@ -62,13 +62,13 @@
     {
         // do nothing
     }
-	[object performSelector:selector];
+    [object performSelector:selector];
 }
 
 - (void)setObject:(id)object Selector:(SEL)selector
 {
-	self->object = object;
-	self->selector = selector;
+    self->object = object;
+    self->selector = selector;
 }
 
 @end

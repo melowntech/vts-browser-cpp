@@ -32,7 +32,7 @@
 
 @interface StatisticsViewController ()
 {
-	NSTimer* timer;
+    NSTimer* timer;
 }
 
 @property (weak, nonatomic) IBOutlet UILabel *statDownloading;

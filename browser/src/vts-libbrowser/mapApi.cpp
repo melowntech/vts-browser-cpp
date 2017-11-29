@@ -519,12 +519,6 @@ void Map::setAutoRotation(double value)
     if (!getMapConfigReady())
         return;
     impl->navigation.autoRotation = value;
-    impl->navigation.type = impl->options.navigationType;
-}
-
-void Map::setNavigationType(NavigationType type)
-{
-    impl->navigation.type = type;
 }
 
 double Map::getAutoRotation() const

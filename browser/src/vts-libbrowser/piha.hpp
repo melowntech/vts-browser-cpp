@@ -30,9 +30,7 @@
 namespace vts
 {
 
-void navigationPiha(
-    const class MapOptions &inOptions,
-    NavigationType inType,
+void navigationPiha(const class MapOptions &inOptions,
     double inTimeDiff, // seconds
     double inFov, // degrees
     double inHorizontalDistance, // unsigned

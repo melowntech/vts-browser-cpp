@@ -55,7 +55,6 @@ double sumExtents(double v1, double v2, double mult)
 
 void navigationPiha(
         const MapOptions &inOptions,
-        NavigationType inType,
         double inTimeDiff,
         double inFov,
         double inHorizontalDistance,
@@ -69,7 +68,7 @@ void navigationPiha(
         double &outVerticalMove,
         vec3 &outRotation)
 {
-    if (inType == NavigationType::Instant)
+    if (inOptions.navigationType == NavigationType::Instant)
     {
         outHorizontalMove = inHorizontalDistance;
         outVerticalMove = inVerticalChange;
@@ -78,7 +77,7 @@ void navigationPiha(
         return;
     }
 
-    if (inType == NavigationType::Quick)
+    if (inOptions.navigationType == NavigationType::Quick)
     {
         outHorizontalMove = inHorizontalDistance
                 * (1 - inOptions.cameraInertiaPan);

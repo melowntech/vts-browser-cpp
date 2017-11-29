@@ -106,7 +106,6 @@ public:
     void setPositionJson(const std::string &position);
     void setPositionUrl(const std::string &position);
     void setAutoRotation(double value);
-    void setNavigationType(NavigationType type);
 
     bool getPositionSubjective() const;
     void getPositionPoint(double point[3]) const;

@@ -325,7 +325,7 @@ void TilesetMapping::update(const std::vector<std::string> &vsId)
 void MapImpl::applyCameraRotationNormalization(vec3 &rot)
 {
     if (!options.enableCameraNormalization
-            || navigation.type == NavigationType::FlyOver)
+            || options.navigationType == NavigationType::FlyOver)
         return;
 
     // find the interpolation factor

@@ -71,8 +71,6 @@ public:
     uint32 usedNavigationlod;
     uint32 currentNodeMetaUpdates;
     uint32 currentNodeDrawsUpdates;
-
-    NavigationType currentNavigationType;
     NavigationMode currentNavigationMode;
 };
 

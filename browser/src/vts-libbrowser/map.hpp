@@ -164,7 +164,6 @@ public:
         boost::optional<double> lastPositionAltitudeShift;
         boost::optional<double> positionAltitudeResetHeight;
         NavigationMode mode;
-        NavigationType type;
         NavigationType previousType;
 
         Navigation();

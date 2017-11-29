@@ -751,9 +751,6 @@ public:
             sprintf(buffer, "%0.0f - %0.0f", window->map->draws().camera.near,
                     window->map->draws().camera.far);
             nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-            nk_label(&ctx, "Nav. type:", NK_TEXT_LEFT);
-            nk_label(&ctx, navigationTypeNames[(int)s.currentNavigationType],
-                    NK_TEXT_RIGHT);
             nk_label(&ctx, "Nav. mode:", NK_TEXT_LEFT);
             nk_label(&ctx, navigationModeNames[(int)s.currentNavigationMode],
                     NK_TEXT_RIGHT);
@@ -824,7 +821,8 @@ public:
                     {
                         const char *text = SDL_GetClipboardText();
                         window->map->setPositionUrl(text);
-                        window->map->setNavigationType(NavigationType::Instant);
+                        window->map->options().navigationType
+                                = vts::NavigationType::FlyOver;
                     }
                     catch(...)
                     {
@@ -886,7 +884,11 @@ public:
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset altitude"))
+                {
+                    window->map->options().navigationType
+                            = vts::NavigationType::Quick;
                     window->map->resetPositionAltitude();
+                }
             }
             // rotation
             {
@@ -905,7 +907,8 @@ public:
                 if (nk_button_label(&ctx, "Reset rotation"))
                 {
                     window->map->setPositionRotation({0,270,0});
-                    window->map->setNavigationType(NavigationType::Quick);
+                    window->map->options().navigationType
+                            = vts::NavigationType::Quick;
                     window->map->resetNavigationMode();
                 }
             }
@@ -950,6 +953,8 @@ public:
                     nk_label(&ctx, "Rotate:", NK_TEXT_LEFT);
                     window->map->setAutoRotation(nk_slide_float(&ctx, -1,
                                     window->map->getAutoRotation(), 1, 0.05));
+                    window->map->options().navigationType
+                            = vts::NavigationType::Quick;
                 }
             }
         }
@@ -1166,7 +1171,8 @@ public:
                         window->map->convert(n, n, Srs::Physical,
                                                  Srs::Navigation);
                         window->map->setPositionPoint(n);
-                        window->map->setNavigationType(NavigationType::Quick);
+                        window->map->options().navigationType
+                                = vts::NavigationType::FlyOver;
                     }
                     sprintf(buffer, "%.8f", n[1]);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
@@ -1283,7 +1289,8 @@ public:
                         window->map->resetPositionAltitude();
                         window->map->resetNavigationMode();
                         window->map->setPositionPoint(r.position);
-                        window->map->setNavigationType(NavigationType::FlyOver);
+                        window->map->options().navigationType
+                                = vts::NavigationType::FlyOver;
                     }
                 }
                 else

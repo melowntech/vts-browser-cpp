@@ -56,7 +56,6 @@ void MapStatistics::resetAll()
     desiredNavigationLod = 0;
     usedNavigationlod = 0;
     currentResourcePreparing = 0;
-    currentNavigationType = (NavigationType)0;
     currentNavigationMode = (NavigationMode)0;
 }
 

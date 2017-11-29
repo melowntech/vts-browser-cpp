@@ -33,7 +33,7 @@ namespace vts
 MapImpl::Navigation::Navigation() :
     changeRotation(0,0,0), targetPoint(0,0,0), autoRotation(0),
     targetViewExtent(0), mode(NavigationMode::Azimuthal),
-    type(NavigationType::Quick), previousType(NavigationType::Quick)
+    previousType(NavigationType::Quick)
 {}
 
 void MapImpl::resetNavigationMode()
@@ -183,12 +183,12 @@ void MapImpl::updateNavigation()
     assert(pos.heightMode == vtslibs::registry::Position::HeightMode::fixed);
 
     // navigation type has changed
-    if (navigation.previousType != navigation.type)
+    if (navigation.previousType != options.navigationType)
     {
-        std::swap(navigation.previousType, navigation.type);
+        std::swap(navigation.previousType, options.navigationType);
         // fly over must first apply the current camera limits
         applyCameraRotationNormalization(r);
-        navigation.type = navigation.previousType;
+        options.navigationType = navigation.previousType;
     }
 
     // limit zoom
@@ -275,7 +275,6 @@ void MapImpl::updateNavigation()
     vec3 r2(vertical2, vertical2, vertical2);
     navigationPiha(
                 options,
-                navigation.type,
                 1.0 / 60.0, // todo
                 pos.verticalFov,
                 horizontal1,
@@ -393,7 +392,6 @@ void MapImpl::updateNavigation()
     pos.orientation = vecToUblas<math::Point3>(r);
 
     // statistics
-    statistics.currentNavigationType = navigation.type;
     statistics.currentNavigationMode = navigation.mode;
 }
 
@@ -484,7 +482,6 @@ void MapImpl::pan(const vec3 &value)
     }
 
     navigation.autoRotation = 0;
-    navigation.type = options.navigationType;
 
     assert(isNavigationModeValid());
 }
@@ -501,7 +498,6 @@ void MapImpl::rotate(const vec3 &value)
             && options.navigationMode == NavigationMode::Dynamic)
         navigation.mode = NavigationMode::Free;
     navigation.autoRotation = 0;
-    navigation.type = options.navigationType;
 
     assert(isNavigationModeValid());
 }
@@ -513,7 +509,6 @@ void MapImpl::zoom(double value)
     double c = value * options.cameraSensitivityZoom * 120;
     navigation.targetViewExtent *= pow(1.001, -c);
     navigation.autoRotation = 0;
-    navigation.type = options.navigationType;
 
     assert(isNavigationModeValid());
 }
@@ -524,7 +519,7 @@ void MapImpl::setPoint(const vec3 &point)
 
     navigation.targetPoint = point;
     navigation.autoRotation = 0;
-    if (navigation.type == NavigationType::Instant)
+    if (options.navigationType == NavigationType::Instant)
         navigation.lastPositionAltitudeShift.reset();
 }
 

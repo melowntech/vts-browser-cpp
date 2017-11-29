@@ -227,7 +227,7 @@ bool MainWindow::processEvents()
         if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_SPACE)
         {
             map->setPositionRotation({0,270,0});
-            map->setNavigationType(vts::NavigationType::Quick);
+            map->options().navigationType = vts::NavigationType::Quick;
             map->resetNavigationMode();
         }
 
@@ -235,6 +235,7 @@ bool MainWindow::processEvents()
         if (event.type == SDL_MOUSEWHEEL)
         {
             map->zoom(event.wheel.y);
+            map->options().navigationType = vts::NavigationType::Quick;
         }
 
         // camera jump to double click
@@ -249,7 +250,7 @@ bool MainWindow::processEvents()
                 map->convert(posPhys.data(), posNav,
                              vts::Srs::Physical, vts::Srs::Navigation);
                 map->setPositionPoint(posNav);
-                map->setNavigationType(vts::NavigationType::Quick);
+                map->options().navigationType = vts::NavigationType::Quick;
             }
         }
 
@@ -275,9 +276,11 @@ bool MainWindow::processEvents()
             {
             case 1:
                 map->pan(p);
+                map->options().navigationType = vts::NavigationType::Quick;
                 break;
             case 2:
                 map->rotate(p);
+                map->options().navigationType = vts::NavigationType::Quick;
                 break;
             }
         }
@@ -322,7 +325,8 @@ void MainWindow::run()
                 try
                 {
                     map->setPositionUrl(appOptions.initialPosition);
-                    map->setNavigationType(vts::NavigationType::Instant);
+                    map->options().navigationType
+                            = vts::NavigationType::Instant;
                 }
                 catch (...)
                 {

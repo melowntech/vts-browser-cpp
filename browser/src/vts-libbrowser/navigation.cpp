@@ -171,9 +171,11 @@ void MapImpl::updateNavigation()
 
     navigation.renders.clear();
 
-    updatePositionAltitudeShift();
-
     vtslibs::registry::Position &pos = mapConfig->position;
+
+    if (pos.type == vtslibs::registry::Position::Type::objective)
+        updatePositionAltitudeShift();
+
     vec3 p = vecFromUblas<vec3>(pos.position);
     vec3 r = vecFromUblas<vec3>(pos.orientation);
 
@@ -371,9 +373,12 @@ void MapImpl::updateNavigation()
     // normalize rotation
     for (int i = 0; i < 3; i++)
         normalizeAngle(r[i]);
-    r[1] = clamp(r[1],
+    if (pos.type == vtslibs::registry::Position::Type::objective)
+    {
+        r[1] = clamp(r[1],
             options.tiltLimitAngleLow,
             options.tiltLimitAngleHigh);
+    }
 
     // asserts
     assert(isNavigationModeValid());

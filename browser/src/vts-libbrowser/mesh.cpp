@@ -193,7 +193,7 @@ void MeshAggregate::load()
     }
 
     info.ramMemoryCost += sizeof(*this) + meshes.size() * sizeof(MeshPart);
-    for (auto &&it : submeshes)
+    for (auto &it : submeshes)
     {
         info.gpuMemoryCost += it.renderable->info.gpuMemoryCost;
         info.ramMemoryCost += it.renderable->info.ramMemoryCost;

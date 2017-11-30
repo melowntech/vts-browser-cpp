@@ -146,7 +146,7 @@ bool programOptions(vts::MapCreateOptions &createOptions,
     if (configs.empty())
         throw std::runtime_error("At least one mapconfig url is required.");
 
-    for (auto &&it : configs)
+    for (auto &it : configs)
         appOptions.paths.push_back(parseConfigPaths(it, auth, sri));
 
     return true;

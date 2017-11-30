@@ -972,7 +972,7 @@ public:
         nk_layout_row(&ctx, NK_STATIC, 16, 4, ratio);
         bool changed = false;
         int idx = 0;
-        for (auto &&bn : bl)
+        for (auto &bn : bl)
         {
             nk_label(&ctx, "", NK_TEXT_LEFT);
             if (!nk_check_label(&ctx, bn.id.c_str(), 1))
@@ -1001,7 +1001,7 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
             idx++;
         }
-        for (auto &&bn : bls)
+        for (auto &bn : bls)
         {
             nk_label(&ctx, "", NK_TEXT_LEFT);
             if (nk_check_label(&ctx, bn.c_str(), 0))

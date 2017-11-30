@@ -135,9 +135,9 @@ public:
     bool searchable() const;
     std::shared_ptr<class SearchTask> search(const std::string &query);
     std::shared_ptr<class SearchTask> search(const std::string &query,
-                                const double point[3]);
+                                const double point[3]); // navigation srs
     std::shared_ptr<class SearchTask> search(const std::string &query,
-                                const double (&point)[3]);
+                                const double (&point)[3]); // navigation srs
 
     void printDebugInfo();
 

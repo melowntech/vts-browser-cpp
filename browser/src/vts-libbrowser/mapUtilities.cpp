@@ -248,10 +248,10 @@ void TraverseNode::clearRenders()
 
 bool TraverseNode::rendersReady() const
 {
-    for (auto &&it : opaque)
+    for (auto &it : opaque)
         if (!it.ready())
             return false;
-    for (auto &&it : transparent)
+    for (auto &it : transparent)
         if (!it.ready())
             return false;
     return true;
@@ -294,7 +294,7 @@ void TilesetMapping::update(const std::vector<std::string> &vsId)
     surfaceStack.reserve(dataRaw.size() + 1);
     // the sourceReference in metanodes is one-based
     surfaceStack.push_back(MapConfig::SurfaceStackItem());
-    for (auto &&it : dataRaw)
+    for (auto &it : dataRaw)
     {
         if (it.size() == 1)
         { // surface
@@ -309,7 +309,7 @@ void TilesetMapping::update(const std::vector<std::string> &vsId)
         { // glue
             std::vector<std::string> id;
             id.reserve(it.size());
-            for (auto &&it2 : it)
+            for (auto &it2 : it)
                 id.push_back(vsId[it2]);
             MapConfig::SurfaceStackItem i;
             i.surface = std::make_shared<MapConfig::SurfaceInfo>(
@@ -366,7 +366,7 @@ double MapImpl::travDistance(TraverseNode *trav, const vec3 pointPhys)
         vec3 el = vec2to3(fl, trav->meta->geomExtents.z.min);
         vec3 eu = vec2to3(fu, trav->meta->geomExtents.z.max);
         vec3 p = convertor->convert(pointPhys,
-            mapConfig->referenceFrame.model.physicalSrs, trav->nodeInfo.srs());
+            Srs::Physical, trav->nodeInfo.node());
         return aabbPointDist(p, el, eu);
     }
     return aabbPointDist(pointPhys, trav->meta->aabbPhys[0],

@@ -39,28 +39,12 @@ namespace vts
 namespace
 {
 
-std::string srsConvert(MapConfig *config, Srs srs)
-{
-    switch(srs)
-    {
-    case Srs::Navigation:
-        return config->referenceFrame.model.navigationSrs;
-    case Srs::Physical:
-        return config->referenceFrame.model.physicalSrs;
-    case Srs::Public:
-        return config->referenceFrame.model.publicSrs;
-    default:
-        LOGTHROW(fatal, std::invalid_argument) << "Invalid srs";
-        throw;
-    }
-}
-
 void getMapViewBoundLayers(
         const vtslibs::registry::View::BoundLayerParams::list &in,
         MapView::BoundLayerInfo::Map &out)
 {
     out.clear();
-    for (auto &&it : in)
+    for (auto &it : in)
     {
         MapView::BoundLayerInfo b(it.id);
         b.alpha = it.alpha ? *it.alpha : 1;
@@ -74,7 +58,7 @@ void setMapViewBoundLayers(
         )
 {
     out.clear();
-    for (auto &&it : in)
+    for (auto &it : in)
     {
         vtslibs::registry::View::BoundLayerParams b;
         b.id = it.id;
@@ -88,12 +72,12 @@ MapView getMapView(const vtslibs::registry::View &view)
 {
     MapView value;
     value.description = view.description ? *view.description : "";
-    for (auto &&it : view.surfaces)
+    for (auto &it : view.surfaces)
     {
         MapView::SurfaceInfo &s = value.surfaces[it.first];
         getMapViewBoundLayers(it.second, s.boundLayers);
     }
-    for (auto &&it : view.freeLayers)
+    for (auto &it : view.freeLayers)
     {
         MapView::FreeLayerInfo &f = value.freeLayers[it.first];
         f.style = it.second.style ? *it.second.style : "";
@@ -107,13 +91,13 @@ vtslibs::registry::View setMapView(const MapView &value)
     vtslibs::registry::View view;
     if (!value.description.empty())
         view.description = value.description;
-    for (auto &&it : value.surfaces)
+    for (auto &it : value.surfaces)
     {
         vtslibs::registry::View::BoundLayerParams::list &b
                 = view.surfaces[it.first];
         setMapViewBoundLayers(it.second.boundLayers, b);
     }
-    for (auto &&it : value.freeLayers)
+    for (auto &it : value.freeLayers)
     {
         vtslibs::registry::View::FreeLayerParams &f
                 = view.freeLayers[it.first];
@@ -535,9 +519,7 @@ void Map::convert(const double pointFrom[3], double pointTo[3],
     if (!getMapConfigReady())
         return;
     vec3 a = rawToVec3(pointFrom);
-    a = impl->convertor->convert(a,
-                    srsConvert(impl->mapConfig.get(), srsFrom),
-                    srsConvert(impl->mapConfig.get(), srsTo));
+    a = impl->convertor->convert(a, srsFrom, srsTo);
     vecToRaw(a, pointTo);
 }
 
@@ -547,7 +529,7 @@ std::vector<std::string> Map::getResourceSurfaces() const
         return {};
     std::vector<std::string> names;
     names.reserve(impl->mapConfig->surfaces.size());
-    for (auto &&it : impl->mapConfig->surfaces)
+    for (auto &it : impl->mapConfig->surfaces)
         names.push_back(it.id);
     return names;
 }
@@ -557,7 +539,7 @@ std::vector<std::string> Map::getResourceBoundLayers() const
     if (!getMapConfigReady())
         return {};
     std::vector<std::string> names;
-    for (auto &&it : impl->mapConfig->boundLayers)
+    for (auto &it : impl->mapConfig->boundLayers)
         names.push_back(it.id);
     return names;
 }
@@ -567,7 +549,7 @@ std::vector<std::string> Map::getResourceFreeLayers() const
     if (!getMapConfigReady())
         return {};
     std::vector<std::string> names;
-    for (auto &&it : impl->mapConfig->freeLayers)
+    for (auto &it : impl->mapConfig->freeLayers)
         names.push_back(it.first);
     return names;
 }
@@ -578,7 +560,7 @@ std::vector<std::string> Map::getViewNames() const
         return {};
     std::vector<std::string> names;
     names.reserve(impl->mapConfig->namedViews.size());
-    for (auto &&it : impl->mapConfig->namedViews)
+    for (auto &it : impl->mapConfig->namedViews)
         names.push_back(it.first);
     return names;
 }
@@ -676,8 +658,6 @@ bool Map::searchable() const
 
 std::shared_ptr<SearchTask> Map::search(const std::string &query)
 {
-    if (!getMapConfigReady())
-        return {};
     return search(query, impl->mapConfig->position.position.data().begin());
 }
 

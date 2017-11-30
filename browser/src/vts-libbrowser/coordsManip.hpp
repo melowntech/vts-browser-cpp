@@ -30,13 +30,9 @@
 #include <string>
 #include <memory>
 
+#include <vts-libs/vts/mapconfig.hpp>
+
 #include "include/vts-browser/math.hpp"
-
-namespace vtslibs { namespace registry {
-
-class Registry;
-
-} } // namespace vtslibs::registry
 
 namespace vts
 {
@@ -44,25 +40,24 @@ namespace vts
 class CoordManip
 {
 public:
-    static std::shared_ptr<CoordManip> create(const std::string &phys,
-                               const std::string &nav,
-                               const std::string &pub,
-                               const std::string &search,
-                               vtslibs::registry::Registry &registry);
+    static std::shared_ptr<CoordManip> create(
+            const vtslibs::vts::MapConfig &mapconfig,
+            const std::string &searchSrs,
+            const std::string &customSrs1,
+            const std::string &customSrs2);
 
     virtual ~CoordManip();
 
     virtual vec3 navToPhys(const vec3 &value) = 0;
     virtual vec3 physToNav(const vec3 &value) = 0;
-    virtual vec3 navToPub (const vec3 &value) = 0;
-    virtual vec3 pubToNav (const vec3 &value) = 0;
-    virtual vec3 pubToPhys(const vec3 &value) = 0;
-    virtual vec3 physToPub(const vec3 &value) = 0;
     virtual vec3 searchToNav(const vec3 &value) = 0;
 
+    virtual vec3 convert(const vec3 &value, Srs from, Srs to) = 0;
     virtual vec3 convert(const vec3 &value,
-                         const std::string &from,
-                         const std::string &to) = 0;
+            const vtslibs::registry::ReferenceFrame::Division::Node &from,
+            Srs to) = 0;
+    virtual vec3 convert(const vec3 &value, Srs from,
+            const vtslibs::registry::ReferenceFrame::Division::Node &to) = 0;
 
     virtual vec3 geoDirect(const vec3 &position, double distance,
                               double azimuthIn, double &azimuthOut) = 0;

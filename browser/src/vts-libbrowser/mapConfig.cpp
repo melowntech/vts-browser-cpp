@@ -146,7 +146,7 @@ vtslibs::registry::Srs::Type MapConfig::navigationSrsType() const
 vtslibs::vts::SurfaceCommonConfig *MapConfig::findGlue(
         const vtslibs::vts::Glue::Id &id)
 {
-    for (auto &&it : glues)
+    for (auto &it : glues)
     {
         if (it.id == id)
             return &it;
@@ -156,7 +156,7 @@ vtslibs::vts::SurfaceCommonConfig *MapConfig::findGlue(
 
 vtslibs::vts::SurfaceCommonConfig *MapConfig::findSurface(const std::string &id)
 {
-    for (auto &&it : surfaces)
+    for (auto &it : surfaces)
     {
         if (it.id == id)
             return &it;
@@ -206,7 +206,7 @@ void MapConfig::printSurfaceStack()
 {
     std::ostringstream ss;
     ss << "Surface stack: " << std::endl;
-    for (auto &&l : surfaceStack)
+    for (auto &l : surfaceStack)
         ss << (l.alien ? "* " : "  ")
            << std::setw(100) << std::left << (std::string()
            + "[" + boost::algorithm::join(l.surface->name, ",") + "]")
@@ -232,13 +232,13 @@ void MapConfig::generateSurfaceStack(const vtslibs::vts::VirtualSurfaceConfig
 
     // prepare initial surface stack
     vtslibs::vts::TileSetGlues::list lst;
-    for (auto &&s : view.surfaces)
+    for (auto &s : view.surfaces)
     {
         vtslibs::vts::TileSetGlues ts(s.first);
-        for (auto &&g : glues)
+        for (auto &g : glues)
         {
             bool active = g.id.back() == ts.tilesetId;
-            for (auto &&it : g.id)
+            for (auto &it : g.id)
                 if (view.surfaces.find(it) == view.surfaces.end())
                     active = false;
             if (active)
@@ -250,7 +250,7 @@ void MapConfig::generateSurfaceStack(const vtslibs::vts::VirtualSurfaceConfig
     // sort surfaces by their order in mapConfig
     std::unordered_map<std::string, uint32> order;
     uint32 i = 0;
-    for (auto &&it : surfaces)
+    for (auto &it : surfaces)
         order[it.id] = i++;
     std::sort(lst.begin(), lst.end(), [order](
               vtslibs::vts::TileSetGlues &a,
@@ -266,9 +266,9 @@ void MapConfig::generateSurfaceStack(const vtslibs::vts::VirtualSurfaceConfig
 
     // generate proper surface stack
     assert(surfaceStack.empty());
-    for (auto &&ts : lst)
+    for (auto &ts : lst)
     {
-        for (auto &&g : ts.glues)
+        for (auto &g : ts.glues)
         {
             SurfaceStackItem i;
             i.surface = std::shared_ptr<SurfaceInfo> (new SurfaceInfo(
@@ -285,7 +285,7 @@ void MapConfig::generateSurfaceStack(const vtslibs::vts::VirtualSurfaceConfig
 
     // generate alien surface stack positions
     auto copy(surfaceStack);
-    for (auto &&it : copy)
+    for (auto &it : copy)
     {
         if (it.surface->name.size() > 1)
         {
@@ -320,7 +320,7 @@ void MapConfig::consolidateView()
 {
     // remove invalid surfaces from current view
     std::set<std::string> resSurf;
-    for (auto &&it : surfaces)
+    for (auto &it : surfaces)
         resSurf.insert(it.id);
     for (auto it = view.surfaces.begin(); it != view.surfaces.end();)
     {
@@ -336,9 +336,9 @@ void MapConfig::consolidateView()
 
     // remove invalid bound layers from surfaces in current view
     std::set<std::string> resBound;
-    for (auto &&it : boundLayers)
+    for (auto &it : boundLayers)
         resBound.insert(it.id);
-    for (auto &&s : view.surfaces)
+    for (auto &s : view.surfaces)
     {
         for (auto it = s.second.begin(); it != s.second.end();)
         {

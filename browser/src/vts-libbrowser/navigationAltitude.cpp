@@ -57,7 +57,7 @@ std::shared_ptr<TraverseNode> findTravById(
         return nullptr;
     if (where->nodeInfo.nodeId() == id)
         return where;
-    for (auto &&it : where->childs)
+    for (auto &it : where->childs)
     {
         auto r = findTravById(it, id);
         if (r)
@@ -75,7 +75,7 @@ std::shared_ptr<TraverseNode> findTravSds(
     while (t->nodeInfo.nodeId().lod < maxLod)
     {
         auto p = t;
-        for (auto &&it : t->childs)
+        for (auto &it : t->childs)
         {
             if (!it->meta)
                 continue;
@@ -104,7 +104,7 @@ void MapImpl::updatePositionAltitudeShift()
     // find surface division coordinates (and appropriate node info)
     vec2 sds;
     boost::optional<NodeInfo> info;
-    for (auto &&it : mapConfig->referenceFrame.division.nodes)
+    for (auto &it : mapConfig->referenceFrame.division.nodes)
     {
         if (it.second.partitioning.mode
                 != vtslibs::registry::PartitioningMode::bisection)
@@ -113,7 +113,7 @@ void MapImpl::updatePositionAltitudeShift()
         try
         {
             sds = vec3to2(convertor->convert(navigation.targetPoint,
-                mapConfig->referenceFrame.model.navigationSrs, it.second.srs));
+                Srs::Navigation, it.second));
             if (!ni.inside(vecToUblas<math::Point2>(sds)))
                 continue;
             info = ni;

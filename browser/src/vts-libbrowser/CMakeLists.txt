@@ -73,6 +73,7 @@ set(SRC_LIST
     obj.cpp
     options.cpp
     renderer.cpp
+    rendererTraversal.cpp
     auth.cpp
     mapConfig.cpp
     mesh.cpp

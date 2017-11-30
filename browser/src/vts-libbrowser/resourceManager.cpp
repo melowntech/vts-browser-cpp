@@ -280,7 +280,7 @@ bool MapImpl::resourceDataTick()
     }
 
     // sort resources by priority
-    for (auto &&it : res)
+    for (auto &it : res)
     {
         assert(it->priority == it->priority);
         it->priorityCopy = it->priority;
@@ -451,7 +451,7 @@ void MapImpl::resourceRenderTick()
         std::priority_queue<Res> resToRemove;
         uint64 memRamUse = 0;
         uint64 memGpuUse = 0;
-        for (auto &&it : resources.resources)
+        for (auto &it : resources.resources)
         {
             memRamUse += it.second->info.ramMemoryCost;
             memGpuUse += it.second->info.gpuMemoryCost;

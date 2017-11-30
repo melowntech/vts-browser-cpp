@@ -54,6 +54,15 @@ enum class Srs
     // coordinate system for presentation to people
     // eg. geographic with altitude above sea level
     Public,
+
+    // coordinate system used for search
+    // generally, you do not need this because search coordinates
+    //   are automatically converted to/from navigation srs
+    Search,
+
+    // Custom srs for application use
+    Custom1,
+    Custom2,
 };
 
 enum class NavigationType

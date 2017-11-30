@@ -39,6 +39,19 @@
 
 // todo use void pj_set_finder( const char *(*)(const char *) );
 
+#define Node vtslibs::registry::ReferenceFrame::Division::Node
+
+namespace std
+{
+    template<> struct hash<vts::Srs>
+    {
+        size_t operator()(vts::Srs srs) const
+        {
+            return (int)srs;
+        }
+    };
+}
+
 namespace vts
 {
 
@@ -60,75 +73,129 @@ struct gdalInitClass
 
 class CoordManipImpl : public CoordManip
 {
-    static const char *searchKey;
-    
+    const vtslibs::vts::MapConfig &mapconfig;
+    const std::string &searchSrs;
+    const std::string &customSrs1;
+    const std::string &customSrs2;
+
+    std::unordered_map<int, std::string>idxToProj;
+    std::unordered_map<std::string, int> projToIdx;
+    std::unordered_map<Srs, int> srsToIdx;
+    std::unordered_map<const Node*, int> nodeToIdx;
+    std::unordered_map<int, std::unordered_map<int,
+                    std::shared_ptr<vtslibs::vts::CsConvertor>>> convertors;
+    int nextIdx;
+
+    boost::optional<GeographicLib::Geodesic> geodesic_;
+
 public:
-    CoordManipImpl(const std::string &phys,
-                   const std::string &nav,
-                   const std::string &pub,
-                   const std::string &search,
-                   vtslibs::registry::Registry &registry) :
-        registry(registry), phys(phys), nav(nav), pub(pub)
+    CoordManipImpl(
+            const vtslibs::vts::MapConfig &mapconfig,
+            const std::string &searchSrs,
+            const std::string &customSrs1,
+            const std::string &customSrs2) :
+        mapconfig(mapconfig), searchSrs(searchSrs),
+        customSrs1(customSrs1), customSrs2(customSrs2),
+        nextIdx(0)
     {
         // create geodesic
         {
-            auto n = registry.srs(nav);
-            auto r = n.srsDef.reference();
+            auto r = mapconfig.srs(mapconfig.referenceFrame.model.navigationSrs)
+                        .srsDef.reference();
             auto a = r.GetSemiMajor();
             auto b = r.GetSemiMinor();
             geodesic_ = boost::in_place(a, (a - b) / a);
         }
-        // prepare search srs
+    }
+
+    std::string srsToProj(Srs srs)
+    {
+        switch(srs)
         {
-            vtslibs::registry::Srs s;
-            s.comment = "search";
-            s.srsDef = search;
-            registry.srs.replace(searchKey, s);
+        case Srs::Physical:
+            return mapconfig.referenceFrame.model.physicalSrs;
+        case Srs::Navigation:
+            return mapconfig.referenceFrame.model.navigationSrs;
+        case Srs::Public:
+            return mapconfig.referenceFrame.model.publicSrs;
+        case Srs::Search:
+            return searchSrs;
+        case Srs::Custom1:
+            return customSrs1;
+        case Srs::Custom2:
+            return customSrs2;
+        default:
+            LOGTHROW(fatal, std::invalid_argument) << "Invalid srs enum";
+            throw;
         }
     }
 
     vec3 navToPhys(const vec3 &value) override
     {
-        return convert(value, nav, phys);
+        return convert(value, Srs::Navigation, Srs::Physical);
     }
 
     vec3 physToNav(const vec3 &value) override
     {
-        return convert(value, phys, nav);
-    }
-
-    vec3 navToPub(const vec3 &value) override
-    {
-        return convert(value, nav, pub);
-    }
-
-    vec3 pubToNav(const vec3 &value) override
-    {
-        return convert(value, pub, nav);
-    }
-
-    vec3 pubToPhys(const vec3 &value) override
-    {
-        return convert(value, pub, phys);
-    }
-
-    vec3 physToPub(const vec3 &value) override
-    {
-        return convert(value, phys, pub);
+        return convert(value, Srs::Physical, Srs::Navigation);
     }
 
     vec3 searchToNav(const vec3 &value) override
     {
-        return convert(value, searchKey, nav);
+        return convert(value, Srs::Search, Srs::Navigation);
     }
-    
-    vec3 convert(const vec3 &value, const std::string &from,
-                                    const std::string &to) override
+
+    vec3 convert(const vec3 &value, int from, int to)
     {
         std::shared_ptr<vtslibs::vts::CsConvertor> &p = convertors[from][to];
         if (!p)
-            p = std::make_shared<vtslibs::vts::CsConvertor>(from, to, registry);
+        {
+            p = std::make_shared<vtslibs::vts::CsConvertor>(
+                idxToProj[from], idxToProj[to], mapconfig);
+        }
         return vecFromUblas<vec3>((*p)(vecFromUblas<math::Point3>(value)));
+    }
+
+    int idx(const std::string &proj)
+    {
+        auto it = projToIdx.find(proj);
+        if (it != projToIdx.end())
+            return it->second;
+        int i = nextIdx++;
+        idxToProj[i] = proj;
+        return projToIdx[proj] = i;
+    }
+
+    int idx(const Node &node)
+    {
+        const Node *n = &node;
+        auto it = nodeToIdx.find(n);
+        if (it != nodeToIdx.end())
+            return it->second;
+        return nodeToIdx[n] = idx(n->srs);
+    }
+
+    int idx(Srs srs)
+    {
+        auto it = srsToIdx.find(srs);
+        if (it != srsToIdx.end())
+            return it->second;
+        return srsToIdx[srs] = idx(srsToProj(srs));
+    }
+
+    vec3 convert(const vec3 &value, Srs from, Srs to) override
+    {
+        return convert(value, idx(from), idx(to));
+    }
+
+    vec3 convert(const vec3 &value, const Node &from, Srs to) override
+    {
+        return convert(value, idx(from), idx(to));
+    }
+
+    vec3 convert(const vec3 &value, Srs from, const Node &to) override
+    {
+        return convert(value, idx(from), idx(to));
     }
 
     vec3 geoDirect(const vec3 &position, double distance,
@@ -174,27 +241,18 @@ public:
         double dummy;
         return geodesic_->Inverse(a(1), a(0), b(1), b(0), dummy);
     }
-
-    const vtslibs::registry::Registry &registry;
-    const std::string &phys;
-    const std::string &nav;
-    const std::string &pub;
-    std::unordered_map<std::string, std::unordered_map<std::string,
-            std::shared_ptr<vtslibs::vts::CsConvertor>>> convertors;
-    boost::optional<GeographicLib::Geodesic> geodesic_;
 };
-
-const char *CoordManipImpl::searchKey = "$search$";
 
 } // namespace
 
-std::shared_ptr<CoordManip> CoordManip::create(const std::string &phys,
-                                 const std::string &nav,
-                                 const std::string &pub,
-                                 const std::string &search,
-                                 vtslibs::registry::Registry &registry)
+std::shared_ptr<CoordManip> CoordManip::create(
+        const vtslibs::vts::MapConfig &mapconfig,
+        const std::string &searchSrs,
+        const std::string &customSrs1,
+        const std::string &customSrs2)
 {
-    return std::make_shared<CoordManipImpl>(phys, nav, pub, search, registry);
+    return std::make_shared<CoordManipImpl>(
+                mapconfig, searchSrs, customSrs1, customSrs2);
 }
 
 CoordManip::~CoordManip()

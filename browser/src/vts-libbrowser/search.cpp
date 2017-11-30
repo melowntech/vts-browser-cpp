@@ -45,13 +45,11 @@ std::string generateSearchUrl(MapImpl *impl, const std::string &query)
     return url;
 }
 
-void latlonToNav(MapImpl *map, double point[3])
+void searchToNav(MapImpl *map, double point[3])
 {
-    vec3 p(point[0], point[1], point[2]);
+    vec3 p = rawToVec3(point);
     p = map->convertor->searchToNav(p);
-    point[0] = p[0];
-    point[1] = p[1];
-    point[2] = p[2];
+    vecToRaw(p, point);
 }
 
 // both points are in navigation srs
@@ -192,7 +190,7 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
             t.position[0] = vtod(it["lon"]);
             t.position[1] = vtod(it["lat"]);
             t.position[2] = 0;
-            latlonToNav(map, t.position);
+            searchToNav(map, t.position);
             t.distance = distance(map, task->position, t.position);
             Json::Value bj = it["boundingbox"];
             if (bj.size() == 4)
@@ -210,7 +208,7 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
                 t.radius = 0;
                 for (int i = 0; i < 4; i++)
                 {
-                    latlonToNav(map, bbs[i]);
+                    searchToNav(map, bbs[i]);
                     t.radius = std::max(t.radius,
                                         distance(map, t.position, bbs[i]));
                 }
@@ -266,7 +264,7 @@ void SearchTask::updateDistances(const double point[3])
     {
         LOGTHROW(err1, std::runtime_error) << "Search is no longer valid";
     }
-    for (auto &&it : results)
+    for (auto &it : results)
     {
         it.distance = distance(impl->map, it.position, point);
     }

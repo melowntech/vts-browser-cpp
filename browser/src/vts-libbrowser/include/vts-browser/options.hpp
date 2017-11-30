@@ -55,6 +55,11 @@ public:
     std::string searchUrlFallback;
     std::string searchSrsFallback;
 
+    // custom srs definitions that you may use
+    //   for additional coordinate transformations
+    std::string customSrs1;
+    std::string customSrs2;
+
     // true to disable the hard drive cache entirely
     bool disableCache;
 

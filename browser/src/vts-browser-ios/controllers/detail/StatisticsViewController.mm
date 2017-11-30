@@ -35,11 +35,13 @@
     NSTimer* timer;
 }
 
+@property (weak, nonatomic) IBOutlet UILabel *statCpuMem;
+@property (weak, nonatomic) IBOutlet UILabel *statGpuMem;
+@property (weak, nonatomic) IBOutlet UILabel *statActiveResources;
+@property (weak, nonatomic) IBOutlet UILabel *statPreparingResources;
 @property (weak, nonatomic) IBOutlet UILabel *statDownloading;
 @property (weak, nonatomic) IBOutlet UILabel *statMetaUpdates;
 @property (weak, nonatomic) IBOutlet UILabel *statDrawUpdates;
-@property (weak, nonatomic) IBOutlet UILabel *statActiveResources;
-@property (weak, nonatomic) IBOutlet UILabel *statPreparingResources;
 
 @end
 
@@ -48,11 +50,13 @@
 
 - (void)updateView
 {
+    _statCpuMem.text = [NSString stringWithFormat:@"%llu MB", map->statistics().currentRamMemUse / 1024 / 1024];
+    _statGpuMem.text = [NSString stringWithFormat:@"%llu MB", map->statistics().currentGpuMemUse / 1024 / 1024];
+    _statActiveResources.text = [NSString stringWithFormat:@"%u", map->statistics().currentResources];
+    _statPreparingResources.text = [NSString stringWithFormat:@"%u", map->statistics().currentResourcePreparing];
     _statDownloading.text = [NSString stringWithFormat:@"%u", map->statistics().currentResourceDownloads];
     _statMetaUpdates.text = [NSString stringWithFormat:@"%u", map->statistics().currentNodeMetaUpdates];
     _statDrawUpdates.text = [NSString stringWithFormat:@"%u", map->statistics().currentNodeDrawsUpdates];
-    _statActiveResources.text = [NSString stringWithFormat:@"%u", map->statistics().currentResources];
-    _statPreparingResources.text = [NSString stringWithFormat:@"%u", map->statistics().currentResourcePreparing];
 }
 
 - (void)viewDidLoad

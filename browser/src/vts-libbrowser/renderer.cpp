@@ -499,8 +499,9 @@ bool MapImpl::travDetermineMeta(TraverseNode *trav)
         if (!node)
             node = &n;
     }
+    if (!node)
+        return false; // all surfaces failed to download, what can i do?
 
-    assert(node);
     trav->meta = std::make_shared<TraverseNode::MetaInfo>(*node);
     trav->meta->metaTiles.swap(metaTiles);
 

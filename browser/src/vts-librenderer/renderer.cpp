@@ -89,11 +89,11 @@ void clearGlState()
 class Renderer
 {
 public:
-    RenderOptions &options;
+    const RenderOptions &options;
     const MapDraws &draws;
     const MapCelestialBody &body;
 
-    Renderer(RenderOptions &options,
+    Renderer(const RenderOptions &options,
              const MapDraws &draws,
              const MapCelestialBody &body) :
         options(options), draws(draws), body(body)
@@ -168,10 +168,8 @@ public:
         {
             widthPrev = options.width;
             heightPrev = options.height;
-            options.antialiasingSamples =
-                    std::max(std::min(options.antialiasingSamples,
+            antialiasingPrev = std::max(std::min(options.antialiasingSamples,
                              maxAntialiasingSamples), 1);
-            antialiasingPrev = options.antialiasingSamples;
 
             vars.textureTargetType
                     = antialiasingPrev > 1 ? GL_TEXTURE_2D_MULTISAMPLE
@@ -666,21 +664,21 @@ RenderVariables::RenderVariables() :
     textureTargetType(0)
 {}
 
-void loadTexture(ResourceInfo &info, const GpuTextureSpec &spec)
+void loadTexture(ResourceInfo &info, GpuTextureSpec &spec)
 {
     auto r = std::make_shared<Texture>();
     r->load(info, spec);
     info.userData = r;
 }
 
-void loadMesh(ResourceInfo &info, const GpuMeshSpec &spec)
+void loadMesh(ResourceInfo &info, GpuMeshSpec &spec)
 {
     auto r = std::make_shared<Mesh>();
     r->load(info, spec);
     info.userData = r;
 }
 
-void render(RenderOptions &options,
+void render(const RenderOptions &options,
             const MapDraws &draws,
             const MapCelestialBody &body)
 {
@@ -688,7 +686,7 @@ void render(RenderOptions &options,
     r.render();
 }
 
-void render(RenderOptions &options,
+void render(const RenderOptions &options,
             RenderVariables &variables,
             const MapDraws &draws,
             const MapCelestialBody &celestialBody)

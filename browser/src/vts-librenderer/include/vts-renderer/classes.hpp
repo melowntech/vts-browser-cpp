@@ -76,7 +76,7 @@ public:
     ~Texture();
     void clear();
     void bind();
-    void load(ResourceInfo &info, const GpuTextureSpec &spec);
+    void load(ResourceInfo &info, GpuTextureSpec &spec);
     void generateMipmaps();
     uint32 getId() const;
     bool getGrayscale() const;
@@ -94,7 +94,7 @@ public:
     void clear();
     void bind();
     void dispatch();
-    void load(ResourceInfo &info, const GpuMeshSpec &spec);
+    void load(ResourceInfo &info, GpuMeshSpec &spec);
     void load(uint32 vao, uint32 vbo, uint32 vio);
     uint32 getVao() const;
     uint32 getVbo() const;

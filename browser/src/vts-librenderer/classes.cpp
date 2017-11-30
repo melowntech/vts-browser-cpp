@@ -252,7 +252,7 @@ GLenum findFormat(const GpuTextureSpec &spec)
 
 } // namespace
 
-void Texture::load(ResourceInfo &info, const GpuTextureSpec &spec)
+void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec)
 {
     clear();
     glGenTextures(1, &id);
@@ -360,7 +360,7 @@ void Mesh::dispatch()
     checkGl("dispatch mesh");
 }
 
-void Mesh::load(ResourceInfo &info, const GpuMeshSpec &specp)
+void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp)
 {
     clear();
     spec = std::move(specp);

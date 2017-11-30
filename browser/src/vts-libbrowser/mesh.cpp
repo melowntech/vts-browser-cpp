@@ -178,9 +178,6 @@ void MeshAggregate::load()
             offset += m.faces.size() * sizeof(vec2f) * 3;
         }
 
-        map->callbacks.loadMesh(gm->info, spec);
-        gm->state = Resource::State::ready;
-
         MeshPart part;
         part.renderable = gm;
         part.normToPhys = findNormToPhys(meshes[mi].extents) 
@@ -190,6 +187,9 @@ void MeshAggregate::load()
         part.textureLayer = m.textureLayer ? *m.textureLayer : 0;
         part.surfaceReference = m.surfaceReference;
         submeshes.push_back(part);
+
+        map->callbacks.loadMesh(gm->info, spec);
+        gm->state = Resource::State::ready;
     }
 
     info.ramMemoryCost += sizeof(*this) + meshes.size() * sizeof(MeshPart);

@@ -56,34 +56,18 @@ Buffer::Buffer(uint32 size) : data_(nullptr), size_(size)
     allocate(size);
 }
 
-Buffer::Buffer(const Buffer &other) : data_(nullptr), size_(other.size_)
-{
-    allocate(size_);
-    memcpy(data_, other.data_, size_);
-}
-
-Buffer::Buffer(Buffer &&other) : data_(other.data_), size_(other.size_)
-{
-    other.data_ = nullptr;
-    other.size_ = 0;
-}
-
 Buffer::~Buffer()
 {
     this->free();
 }
 
-Buffer &Buffer::operator = (const Buffer &other)
+Buffer::Buffer(Buffer &&other) noexcept : data_(other.data_), size_(other.size_)
 {
-    if (&other == this)
-        return *this;
-    this->free();
-    allocate(other.size_);
-    memcpy(data_, other.data_, size_);
-    return *this;
+    other.data_ = nullptr;
+    other.size_ = 0;
 }
 
-Buffer &Buffer::operator = (Buffer &&other)
+Buffer &Buffer::operator = (Buffer &&other) noexcept
 {
     if (&other == this)
         return *this;
@@ -93,6 +77,13 @@ Buffer &Buffer::operator = (Buffer &&other)
     other.data_ = nullptr;
     other.size_ = 0;
     return *this;
+}
+
+Buffer Buffer::copy() const
+{
+    Buffer r(size_);
+    memcpy(r.data(), data_, size_);
+    return r;
 }
 
 void Buffer::allocate(uint32 size)

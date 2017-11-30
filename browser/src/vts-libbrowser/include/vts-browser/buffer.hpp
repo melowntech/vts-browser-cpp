@@ -40,11 +40,18 @@ class VTS_API Buffer
 public:
     Buffer();
     Buffer(uint32 size); // create preallocated buffer (it is not zeroed)
-    Buffer(const Buffer &other);
-    Buffer(Buffer &&other);
-    Buffer &operator = (const Buffer &other);
-    Buffer &operator = (Buffer &&other);
     ~Buffer();
+
+    // move semantics
+    Buffer(Buffer &&other) noexcept;
+    Buffer &operator = (Buffer &&other) noexcept;
+
+    // implicit copy semantics are disabled for performance reasons
+    Buffer(const Buffer &other) = delete;
+    Buffer &operator = (const Buffer &other) = delete;
+
+    // explicitly create a copy
+    Buffer copy() const;
 
     // allocates a new buffer of the specified size
     //   any previous content is lost

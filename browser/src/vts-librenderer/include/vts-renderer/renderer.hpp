@@ -46,11 +46,11 @@ VTSR_API void loadGlFunctions(GLADloadproc functionLoader);
 
 // can be directly bound to MapCallbacks
 VTSR_API void loadTexture(vts::ResourceInfo &info,
-                          const vts::GpuTextureSpec &spec);
+                          vts::GpuTextureSpec &spec);
 
 // can be directly bound to MapCallbacks
 VTSR_API void loadMesh(vts::ResourceInfo &info,
-                       const vts::GpuMeshSpec &spec);
+                       vts::GpuMeshSpec &spec);
 
 // load all shaders and initialize all state required for the rendering
 // should be called once after the gl functions were initialized
@@ -100,10 +100,10 @@ struct VTSR_API RenderVariables
     RenderVariables();
 };
 
-VTSR_API void render(RenderOptions &options,
+VTSR_API void render(const RenderOptions &options,
                      const MapDraws &draws,
                      const MapCelestialBody &celestialBody);
-VTSR_API void render(RenderOptions &options,
+VTSR_API void render(const RenderOptions &options,
                      RenderVariables &variables,
                      const MapDraws &draws,
                      const MapCelestialBody &celestialBody);

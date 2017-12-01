@@ -41,7 +41,7 @@ class CoordManip
 {
 public:
     static std::shared_ptr<CoordManip> create(
-            const vtslibs::vts::MapConfig &mapconfig,
+            vtslibs::vts::MapConfig &mapconfig,
             const std::string &searchSrs,
             const std::string &customSrs1,
             const std::string &customSrs2);

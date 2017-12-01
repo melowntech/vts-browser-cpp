@@ -73,7 +73,7 @@ struct gdalInitClass
 
 class CoordManipImpl : public CoordManip
 {
-    const vtslibs::vts::MapConfig &mapconfig;
+    vtslibs::vts::MapConfig &mapconfig;
     const std::string &searchSrs;
     const std::string &customSrs1;
     const std::string &customSrs2;
@@ -90,7 +90,7 @@ class CoordManipImpl : public CoordManip
 
 public:
     CoordManipImpl(
-            const vtslibs::vts::MapConfig &mapconfig,
+            vtslibs::vts::MapConfig &mapconfig,
             const std::string &searchSrs,
             const std::string &customSrs1,
             const std::string &customSrs2) :
@@ -106,6 +106,17 @@ public:
             auto b = r.GetSemiMinor();
             geodesic_ = boost::in_place(a, (a - b) / a);
         }
+        addSrsDef("$search$", searchSrs);
+        addSrsDef("$custom1$", customSrs1);
+        addSrsDef("$custom2$", customSrs2);
+    }
+
+    void addSrsDef(const std::string &name, const std::string &def)
+    {
+        vtslibs::registry::Srs s;
+        s.comment = name;
+        s.srsDef = def;
+        mapconfig.srs.replace(name, s);
     }
 
     std::string srsToProj(Srs srs)
@@ -119,11 +130,11 @@ public:
         case Srs::Public:
             return mapconfig.referenceFrame.model.publicSrs;
         case Srs::Search:
-            return searchSrs;
+            return "$search$";
         case Srs::Custom1:
-            return customSrs1;
+            return "$custom1$";
         case Srs::Custom2:
-            return customSrs2;
+            return "$custom2$";
         default:
             LOGTHROW(fatal, std::invalid_argument) << "Invalid srs enum";
             throw;
@@ -246,7 +257,7 @@ public:
 } // namespace
 
 std::shared_ptr<CoordManip> CoordManip::create(
-        const vtslibs::vts::MapConfig &mapconfig,
+        vtslibs::vts::MapConfig &mapconfig,
         const std::string &searchSrs,
         const std::string &customSrs1,
         const std::string &customSrs2)

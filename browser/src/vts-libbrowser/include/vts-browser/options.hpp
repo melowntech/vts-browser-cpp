@@ -223,6 +223,8 @@ public:
     std::function<void(double*)> cameraOverrideProj;
 };
 
+VTS_API extern std::function<const char *(const char *)> projFinder;
+
 } // namespace vts
 
 #endif

@@ -26,6 +26,7 @@
 
 #include <unordered_map>
 #include <memory>
+#include <functional>
 
 #include <boost/utility/in_place_factory.hpp>
 
@@ -36,8 +37,7 @@
 #include "coordsManip.hpp"
 
 #include <gdalwarper.h>
-
-// todo use void pj_set_finder( const char *(*)(const char *) );
+#include <proj_api.h>
 
 #define Node vtslibs::registry::ReferenceFrame::Division::Node
 
@@ -55,8 +55,17 @@ namespace std
 namespace vts
 {
 
+std::function<const char *(const char *)> projFinder;
+
 namespace
 {
+
+const char *pjFind(const char *p)
+{
+    if (projFinder)
+        return projFinder(p);
+    return nullptr;
+}
 
 void GDALErrorHandlerEmpty(CPLErr, int, const char *)
 {
@@ -67,6 +76,7 @@ struct gdalInitClass
 {
     gdalInitClass()
     {
+        pj_set_finder(&pjFind);
         CPLSetErrorHandler(&GDALErrorHandlerEmpty);
     }
 } gdalInitInstance;

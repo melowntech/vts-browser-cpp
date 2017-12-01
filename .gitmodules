@@ -37,3 +37,6 @@
 [submodule "externals/vts-libs"]
 	path = externals/vts-libs
 	url = https://github.com/Melown/vts-libs.git
+[submodule "externals/proj-data"]
+	path = externals/proj-data
+	url = https://github.com/Melown/proj-data.git

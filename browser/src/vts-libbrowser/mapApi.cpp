@@ -488,8 +488,8 @@ void Map::resetPositionAltitude()
 {
     if (!getMapConfigReady())
         return;
-    impl->navigation.positionAltitudeResetHeight = 0;
-    impl->updatePositionAltitudeShift();
+    impl->navigation.positionAltitudeReset = 0;
+    impl->updatePositionAltitude();
 }
 
 void Map::resetNavigationMode()

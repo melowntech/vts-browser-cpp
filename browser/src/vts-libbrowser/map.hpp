@@ -161,8 +161,8 @@ public:
         vec3 targetPoint;
         double autoRotation;
         double targetViewExtent;
-        boost::optional<double> lastPositionAltitudeShift;
-        boost::optional<double> positionAltitudeResetHeight;
+        boost::optional<double> lastPositionAltitude;
+        boost::optional<double> positionAltitudeReset;
         NavigationMode mode;
         NavigationType previousType;
 
@@ -224,7 +224,8 @@ public:
     void setPoint(const vec3 &point);
     void setRotation(const vec3 &euler);
     void setViewExtent(double viewExtent);
-    void updatePositionAltitudeShift();
+    void updatePositionAltitude(double fadeOutFactor
+                = std::numeric_limits<double>::quiet_NaN());
     void resetNavigationMode();
     void convertPositionSubjObj();
     void positionToCamera(vec3 &center, vec3 &dir, vec3 &up);

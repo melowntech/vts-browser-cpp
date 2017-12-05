@@ -92,7 +92,7 @@ std::shared_ptr<TraverseNode> findTravSds(
 
 } // namespace
 
-void MapImpl::updatePositionAltitudeShift()
+void MapImpl::updatePositionAltitude(double fadeOutFactor)
 {
     assert(convertor);
 
@@ -198,22 +198,28 @@ void MapImpl::updatePositionAltitudeShift()
     double altitude = generalInterpolation(sds, points, altitudes);
 
     // set the altitude
-    if (navigation.positionAltitudeResetHeight)
+    if (navigation.positionAltitudeReset)
     {
         navigation.targetPoint[2] = altitude
-                + *navigation.positionAltitudeResetHeight;
-        navigation.positionAltitudeResetHeight.reset();
+                + *navigation.positionAltitudeReset;
+        navigation.positionAltitudeReset.reset();
     }
-    else if (navigation.lastPositionAltitudeShift)
+    else if (navigation.lastPositionAltitude)
     {
         navigation.targetPoint[2] += altitude
-                - *navigation.lastPositionAltitudeShift;
+                - *navigation.lastPositionAltitude;
+        if (fadeOutFactor == fadeOutFactor)
+        {
+            navigation.targetPoint[2] = interpolate(navigation.targetPoint[2],
+                    altitude, std::min(1.0, fadeOutFactor)
+                    * options.cameraAltitudeFadeOutFactor);
+        }
     }
     else
     {
         navigation.targetPoint[2] = altitude;
     }
-    navigation.lastPositionAltitudeShift = altitude;
+    navigation.lastPositionAltitude = altitude;
 }
 
 } // namespace vts

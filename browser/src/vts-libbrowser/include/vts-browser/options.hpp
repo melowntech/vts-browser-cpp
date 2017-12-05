@@ -76,7 +76,7 @@ public:
     bool disableBrowserOptionsSearchUrls;
 };
 
-// options of the map which may change be changed anytime
+// options of the map which may be changed anytime
 // (although, some of the options may take effect slowly
 //    as some internal caches are beeing rebuild)
 class VTS_API MapOptions
@@ -85,10 +85,11 @@ public:
     MapOptions();
 
     // maximum ratio of texture details to the viewport resolution
-    // increasing this ratio yealds less detailed map but reduces memory usage
+    // increasing this ratio yealds less detailed map
+    //   but reduces memory usage and memory bandwith
     double maxTexelToPixelScale;
 
-    // maximum ratio of kept textures in the balanced traverse mode
+    // addition to ratio of kept textures res. in the balanced traverse mode
     // increasing this ratio will store more lods above the optimal one
     double maxTexelToPixelScaleBalancedAddition;
 
@@ -102,7 +103,7 @@ public:
     double viewExtentThresholdScaleLow;
     double viewExtentThresholdScaleHigh;
 
-    // the actual angle (270 - 360) limit for the tilt
+    // camera tilt limits (eg. 270 - 360)
     double tiltLimitAngleLow;
     double tiltLimitAngleHigh;
 
@@ -117,6 +118,11 @@ public:
     double cameraInertiaPan;
     double cameraInertiaZoom;
     double cameraInertiaRotate;
+
+    // multiplicative factor at which camera altitude will converge to terrain
+    //   when panning or zooming
+    // range 0 (off) to 1 (fast)
+    double cameraAltitudeFadeOutFactor;
 
     // latitude threshold (0 - 90) used for azimuthal navigation
     double navigationLatitudeThreshold;
@@ -141,7 +147,7 @@ public:
 
     // number of virtual samples to fit the view-extent
     // it is used to determine lod index at which to retrieve
-    //   the altitude used to correct the camera possition
+    //   the altitude used to correct camera position
     uint32 navigationSamplesPerViewExtent;
 
     // maximum number of redirections before the download fails

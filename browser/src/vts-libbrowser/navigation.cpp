@@ -172,9 +172,6 @@ void MapImpl::updateNavigation()
 
     vtslibs::registry::Position &pos = mapConfig->position;
 
-    if (pos.type == vtslibs::registry::Position::Type::objective)
-        updatePositionAltitudeShift();
-
     vec3 p = vecFromUblas<vec3>(pos.position);
     vec3 r = vecFromUblas<vec3>(pos.orientation);
 
@@ -274,6 +271,7 @@ void MapImpl::updateNavigation()
     double vertical1 = navigation.targetPoint(2) - p(2);
     double vertical2 = std::numeric_limits<double>::quiet_NaN();
     vec3 r2(vertical2, vertical2, vertical2);
+    double prevVerticalExtent = pos.verticalExtent;
     navigationPiha(
                 options,
                 1.0 / 60.0, // todo
@@ -394,6 +392,16 @@ void MapImpl::updateNavigation()
     // store changed values
     pos.position = vecToUblas<math::Point3>(p);
     pos.orientation = vecToUblas<math::Point3>(r);
+
+    // altitude corrections
+    {
+        double horFac = horizontal2 / pos.verticalExtent;
+        double vertFac = std::log(pos.verticalExtent)
+                    / std::log(prevVerticalExtent);
+        vertFac = 2 * std::abs(1 - vertFac);
+        if (pos.type == vtslibs::registry::Position::Type::objective)
+            updatePositionAltitude(std::max(horFac, vertFac));
+    }
 
     // statistics
     statistics.currentNavigationMode = navigation.mode;
@@ -524,7 +532,7 @@ void MapImpl::setPoint(const vec3 &point)
     navigation.targetPoint = point;
     navigation.autoRotation = 0;
     if (options.navigationType == NavigationType::Instant)
-        navigation.lastPositionAltitudeShift.reset();
+        navigation.lastPositionAltitude.reset();
 }
 
 void MapImpl::setRotation(const vec3 &euler)

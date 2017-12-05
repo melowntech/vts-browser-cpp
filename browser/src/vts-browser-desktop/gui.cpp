@@ -418,6 +418,7 @@ public:
             nk_label(&ctx, "", NK_TEXT_LEFT);
             if (optSensitivityDetails)
             {
+                // sensitivity
                 nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
                 nk_label(&ctx, "Pan speed:", NK_TEXT_LEFT);
                 o.cameraSensitivityPan = nk_slide_float(&ctx,
@@ -435,6 +436,7 @@ public:
                 sprintf(buffer, "%4.2f", o.cameraSensitivityRotate);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
+                // inertia
                 nk_label(&ctx, "Pan inertia:", NK_TEXT_LEFT);
                 o.cameraInertiaPan = nk_slide_float(&ctx,
                         0, o.cameraInertiaPan, 0.99, 0.01);
@@ -451,6 +453,14 @@ public:
                 sprintf(buffer, "%4.2f", o.cameraInertiaRotate);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
+                // altitude fade out
+                nk_label(&ctx, "Altitude fade:", NK_TEXT_LEFT);
+                o.cameraAltitudeFadeOutFactor = nk_slide_float(&ctx,
+                        0, o.cameraAltitudeFadeOutFactor, 0.5, 0.01);
+                sprintf(buffer, "%4.2f", o.cameraAltitudeFadeOutFactor);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                // reset
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset sensitivity"))
                 {

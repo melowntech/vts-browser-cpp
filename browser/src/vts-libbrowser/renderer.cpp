@@ -105,8 +105,8 @@ void MapImpl::purgeMapConfig()
     resources.searchTasks.clear();
     resetNavigationMode();
     navigation.autoRotation = 0;
-    navigation.lastPositionAltitudeShift.reset();
-    navigation.positionAltitudeResetHeight.reset();
+    navigation.lastPositionAltitude.reset();
+    navigation.positionAltitudeReset.reset();
     body = MapCelestialBody();
     purgeViewCache();
 }

@@ -56,6 +56,7 @@ MapOptions::MapOptions() :
     cameraInertiaPan(0.9),
     cameraInertiaZoom(0.9),
     cameraInertiaRotate(0.9),
+    cameraAltitudeFadeOutFactor(0.2),
     navigationLatitudeThreshold(80),
     navigationMaxViewExtentMult(1.02),
     navigationMaxPositionChange(0.02),

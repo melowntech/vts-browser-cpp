@@ -434,7 +434,7 @@ void MapImpl::resourceRenderFinalize()
 
 void MapImpl::resourceRenderTick()
 {
-    if (renderer.tickIndex % 2 == 0)
+    if (renderer.tickIndex % 4 == 0)
     {
         // clear old resources
         struct Res
@@ -484,7 +484,8 @@ void MapImpl::resourceRenderTick()
         statistics.currentGpuMemUse = memGpuUse;
         statistics.currentRamMemUse = memRamUse;
     }
-    else
+
+    if (renderer.tickIndex % 4 == 2)
     {
         // check which resources need attention
         std::vector<std::shared_ptr<Resource>> res;
@@ -553,6 +554,7 @@ void MapImpl::resourceRenderTick()
             res.swap(resources.resourcesCopy);
         }
     }
+
     statistics.currentResources = resources.resources.size();
 }
 

@@ -121,6 +121,7 @@ public:
     std::vector<RenderTask> transparent;
     NodeInfo nodeInfo;
     TraverseNode *const parent;
+    const uint32 hash;
     uint32 lastAccessTime;
     uint32 lastRenderTime;
     float priority;

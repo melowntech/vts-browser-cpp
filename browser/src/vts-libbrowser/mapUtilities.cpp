@@ -225,8 +225,18 @@ TraverseNode::MetaInfo::MetaInfo(const MetaNode &node) :
     }
 }
 
+namespace
+{
+    uint32 hashf(const NodeInfo &node)
+    {
+        auto id = node.nodeId();
+        return std::hash<uint32>()(((uint32)id.x << id.lod) + id.y);
+    }
+}
+
 TraverseNode::TraverseNode(TraverseNode *parent, const NodeInfo &nodeInfo)
-    : nodeInfo(nodeInfo), parent(parent), lastAccessTime(0), lastRenderTime(0),
+    : nodeInfo(nodeInfo), parent(parent), hash(hashf(nodeInfo)),
+      lastAccessTime(0), lastRenderTime(0),
       priority(std::numeric_limits<double>::quiet_NaN())
 {}
 
@@ -377,7 +387,9 @@ float MapImpl::computeResourcePriority(TraverseNode *trav)
 {
     if (options.traverseMode == TraverseMode::Hierarchical)
         return 1.f / trav->nodeInfo.distanceFromRoot();
-    return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1));
+    if ((trav->hash + renderer.tickIndex) % 4 == 0) // skip expensive function
+        return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1));
+    return trav->priority;
 }
 
 double MapImpl::getMapRenderProgress()

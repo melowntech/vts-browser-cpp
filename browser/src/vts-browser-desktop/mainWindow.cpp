@@ -298,11 +298,6 @@ void MainWindow::run()
     SDL_GL_GetDrawableSize(window, &ro.width, &ro.height);
     map->setWindowSize(ro.width, ro.height);
 
-    // this application uses separate thread for resource processing,
-    //   therefore it is safe to process as many resources as possible
-    //   in single dataTick without causing any lag spikes
-    map->options().maxResourceProcessesPerTick = -1;
-
     map->callbacks().loadTexture = std::bind(&vts::renderer::loadTexture,
                 std::placeholders::_1, std::placeholders::_2);
     map->callbacks().loadMesh = std::bind(&vts::renderer::loadMesh,

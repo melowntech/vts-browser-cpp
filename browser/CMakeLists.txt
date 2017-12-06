@@ -16,8 +16,8 @@ enable_hidden_visibility()
 # find 3rd party dependencies
 message(STATUS "looking for 3rd-party dependencies")
 find_package(Boost 1.46 REQUIRED
-  COMPONENTS thread program_options filesystem system
-  date_time serialization regex chrono iostreams)
+    COMPONENTS thread program_options filesystem system
+    date_time serialization regex chrono iostreams)
 link_directories(${Boost_LIBRARY_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 find_package(GDAL 2 REQUIRED)
@@ -30,8 +30,6 @@ find_package(JsonCPP REQUIRED)
 include_directories(${JSONCPP_INCLUDE_DIR})
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
-find_package(SDL2 REQUIRED)
-include_directories(${SDL2_INCLUDE_DIR})
 add_subdirectory(src/glad)
 
 # vts dependencies
@@ -63,11 +61,11 @@ include(cmake/pack_data.cmake)
 # vts browser
 message(STATUS "including vts browser and renderer libraries")
 if(IOS)
-  set(LIB_TYPE STATIC)
-  set(LIB_VIS PUBLIC)
+    set(LIB_TYPE STATIC)
+    set(LIB_VIS PUBLIC)
 else()
-  set(LIB_TYPE SHARED)
-  set(LIB_VIS PRIVATE)
+    set(LIB_TYPE SHARED)
+    set(LIB_VIS PRIVATE)
 endif()
 add_subdirectory(src/vts-libbrowser)
 include_directories(src/vts-libbrowser/include)
@@ -76,19 +74,27 @@ include_directories(src/vts-librenderer/include)
 
 # application
 if(IOS)
-  # ios application
-  message(STATUS "including vts-browser-ios")
-  add_subdirectory(src/vts-browser-ios)
+
+    # ios application
+    message(STATUS "including vts-browser-ios")
+    add_subdirectory(src/vts-browser-ios)
+
 else()
-  # minimal application
-  message(STATUS "including vts-browser-minimal")
-  add_subdirectory(src/vts-browser-minimal)
-  
-  # desktop application
-  message(STATUS "including vts-browser-desktop")
-  add_subdirectory(src/nuklear)
-  include_directories(src/nuklear)
-  add_subdirectory(src/vts-browser-desktop)
+
+    # find SDL
+    find_package(SDL2 REQUIRED)
+    include_directories(${SDL2_INCLUDE_DIR})
+
+    # minimal application
+    message(STATUS "including vts-browser-minimal")
+    add_subdirectory(src/vts-browser-minimal)
+
+    # desktop application
+    message(STATUS "including vts-browser-desktop")
+    add_subdirectory(src/nuklear)
+    include_directories(src/nuklear)
+    add_subdirectory(src/vts-browser-desktop)
+
 endif()
 
 

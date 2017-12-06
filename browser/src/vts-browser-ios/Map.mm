@@ -109,6 +109,7 @@ void mapInitialize()
         MapOptions &opt = map->options();
         opt.maxTexelToPixelScale = 3.2;
         opt.maxResourceProcessesPerTick = -1; // the resources are processed on a separate thread
+        opt.targetResourcesMemory = 256 * 1024 * 1024;
     }
 
     // configure opengl contexts

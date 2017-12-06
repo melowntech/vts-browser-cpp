@@ -56,11 +56,17 @@ int main(int argc, char *argv[])
         createOptions.clientId = "vts-browser-desktop";
         //createOptions.disableCache = true;
         vts::MapOptions mapOptions;
+        mapOptions.targetResourcesMemory = 512 * 1024 * 1024;
         vts::FetcherOptions fetcherOptions;
         AppOptions appOptions;
         if (!programOptions(createOptions, mapOptions, fetcherOptions,
                             appOptions, argc, argv))
             return 0;
+
+        // this application uses separate thread for resource processing,
+        //   therefore it is safe to process as many resources as possible
+        //   in single dataTick without causing any lag spikes
+        mapOptions.maxResourceProcessesPerTick = -1;
 
         if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
         {

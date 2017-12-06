@@ -398,7 +398,7 @@ void MapImpl::updateNavigation()
         double horFac = horizontal2 / pos.verticalExtent;
         double vertFac = std::log(pos.verticalExtent)
                     / std::log(prevVerticalExtent);
-        vertFac = 2 * std::abs(1 - vertFac);
+        vertFac = 3 * std::abs(1 - vertFac);
         if (pos.type == vtslibs::registry::Position::Type::objective)
             updatePositionAltitude(std::max(horFac, vertFac));
     }
@@ -443,7 +443,7 @@ void MapImpl::pan(const vec3 &value)
     }
 
     // pan speed depends on zoom level
-    double v = pos.verticalExtent / 800;
+    double v = pos.verticalExtent / 600;
     vec3 move = value.cwiseProduct(vec3(-2 * v * h, 2 * v, 2)
                                    * options.cameraSensitivityPan);
 
@@ -519,7 +519,7 @@ void MapImpl::zoom(double value)
     assert(isNavigationModeValid());
 
     double c = value * options.cameraSensitivityZoom * 120;
-    navigation.targetViewExtent *= pow(1.001, -c);
+    navigation.targetViewExtent *= pow(1.002, -c);
     navigation.autoRotation = 0;
 
     assert(isNavigationModeValid());

@@ -78,6 +78,7 @@ public:
             }
             if (root.back() != '/')
                 root += "/";
+            LOG(info2) << "Disk cache path: <" << root << ">";
         }
     }
 
@@ -158,6 +159,7 @@ public:
     {
         if (disabled)
             return;
+        LOG(info2) << "Purging disk cache";
         assert(root.length() > 0 && root[root.length() - 1] == '/');
         std::string op = root.substr(0, root.length() - 1);
         if (!boost::filesystem::exists(op))

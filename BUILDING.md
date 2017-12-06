@@ -51,6 +51,10 @@ Use the generated xcode project as usual.
 
 Build all required library dependencies and prepare cmake find package modules for them.
 
+We know that crosscompiling all the dependencies for iOS is boring and tedious, therefore, as an alternative to kick-start you, we have
+[published them all](http://cdn.melown.com/pub/ios/vts-ios-libs.7z) already built for arm64 and for x86_64.
+Please note that these binary files are not regularly updated and you use them at your own risk.
+
 Clone the git repository with all submodules.
 Use cmake to generate xcode project.
 

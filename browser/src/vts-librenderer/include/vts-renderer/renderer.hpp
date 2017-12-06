@@ -108,9 +108,13 @@ VTSR_API void render(const RenderOptions &options,
                      const MapDraws &draws,
                      const MapCelestialBody &celestialBody);
 
+VTSR_API void renderCompass(const double screenPosSize[3],
+                            const double mapRotation[3]);
+
 // reconstruct world position for mouse picking
 // uses data from last call to render
-VTSR_API void getWorldPosition(const double screenPosIn[2], double worldPosOut[3]);
+VTSR_API void getWorldPosition(const double screenPosIn[2],
+                               double worldPosOut[3]);
 
 } } // namespace vts::renderer
 

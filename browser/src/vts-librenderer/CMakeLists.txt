@@ -25,10 +25,10 @@ set(DATA_LIST
     data/shaders/surface.vert.glsl
     data/shaders/infographic.frag.glsl
     data/shaders/infographic.vert.glsl
-    data/shaders/gui.frag.glsl
-    data/shaders/gui.vert.glsl
-    data/shaders/scales.frag.glsl
-    data/shaders/scales.vert.glsl
+    data/shaders/texture.frag.glsl
+    data/shaders/texture.vert.glsl
+    data/shaders/color.frag.glsl
+    data/shaders/color.vert.glsl
     data/shaders/copyDepth.frag.glsl
     data/shaders/copyDepth.vert.glsl
     data/textures/compas.png

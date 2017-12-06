@@ -60,6 +60,7 @@ struct AppOptions
     vts::renderer::RenderOptions render;
     std::vector<MapPaths> paths;
     std::string initialPosition;
+    int renderCompas;
     bool screenshotOnFullRender;
     bool closeOnFullRender;
     bool purgeDiskCache;

@@ -658,6 +658,12 @@ public:
                 o.debugRenderNoMeshes = nk_check_label(&ctx,
                     "no meshes", o.debugRenderNoMeshes);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
+
+                // render compas
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+                nk_checkbox_label(&ctx,
+                    "compas", &a.renderCompas);
+                nk_label(&ctx, "", NK_TEXT_LEFT);
             }
 
             // debug

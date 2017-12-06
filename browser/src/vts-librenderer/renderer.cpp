@@ -47,6 +47,8 @@ using namespace priv;
 namespace
 {
 
+std::shared_ptr<Texture> texCompas;
+std::shared_ptr<Shader> shaderTexture;
 std::shared_ptr<Shader> shaderSurface;
 std::shared_ptr<Shader> shaderInfographic;
 std::shared_ptr<Shader> shaderAtmosphere;
@@ -472,6 +474,36 @@ void initialize()
 {
     vts::log(vts::LogLevel::info3, "Initializing vts renderer library");
 
+    // load texture compas
+    {
+        texCompas = std::make_shared<Texture>();
+        vts::GpuTextureSpec spec(vts::readInternalMemoryBuffer(
+                                  "data/textures/compas.png"));
+        spec.verticalFlip();
+        vts::ResourceInfo info;
+        texCompas->load(info, spec);
+        texCompas->generateMipmaps();
+    }
+
+    // load shader texture
+    {
+        shaderTexture = std::make_shared<Shader>();
+        Buffer vert = readInternalMemoryBuffer(
+                    "data/shaders/texture.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
+                    "data/shaders/texture.frag.glsl");
+        shaderTexture->load(
+            std::string(vert.data(), vert.size()),
+            std::string(frag.data(), frag.size()));
+        std::vector<uint32> &uls = shaderTexture->uniformLocations;
+        GLuint id = shaderTexture->getId();
+        uls.push_back(glGetUniformLocation(id, "uniMvp"));
+        uls.push_back(glGetUniformLocation(id, "uniUvm"));
+        glUseProgram(id);
+        glUniform1i(glGetUniformLocation(id, "uniTexture"), 0);
+        glUseProgram(0);
+    }
+
     // load shader surface
     {
         shaderSurface = std::make_shared<Shader>();
@@ -610,10 +642,14 @@ void finalize()
 {
     vts::log(vts::LogLevel::info3, "Finalizing vts renderer library");
 
+    texCompas.reset();
+    shaderTexture.reset();
     shaderSurface.reset();
     shaderInfographic.reset();
     shaderAtmosphere.reset();
+    shaderCopyDepth.reset();
     meshQuad.reset();
+    meshRect.reset();
 
     if (vars.frameRenderBufferId)
     {
@@ -693,6 +729,29 @@ void render(const RenderOptions &options,
 {
     render(options, draws, celestialBody);
     variables = vars;
+}
+
+void renderCompass(const double screenPosSize[3],
+                   const double mapRotation[3])
+{
+    (void)mapRotation;
+    glEnable(GL_BLEND);
+    glActiveTexture(GL_TEXTURE0);
+    texCompas->bind();
+    shaderTexture->bind();
+    mat4 p = orthographicMatrix(-1, 1, -1, 1, -1, 1)
+            * scaleMatrix(1.0 / widthPrev, 1.0 / heightPrev, 1);
+    mat4 v = translationMatrix(screenPosSize[0] * 2 - widthPrev,
+                                screenPosSize[1] * 2 - heightPrev, 0)
+            * scaleMatrix(screenPosSize[2], screenPosSize[2], 1);
+    mat4 m = rotationMatrix(0, mapRotation[1] + 90)
+         * rotationMatrix(2, mapRotation[0]);
+    mat4f mvpf = (p * v * m).cast<float>();
+    mat3f uvmf = identityMatrix3().cast<float>();
+    shaderTexture->uniformMat4(0, mvpf.data());
+    shaderTexture->uniformMat3(1, uvmf.data());
+    meshQuad->bind();
+    meshQuad->dispatch();
 }
 
 void getWorldPosition(const double screenPos[2], double worldPos[3])

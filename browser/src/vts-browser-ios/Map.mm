@@ -130,8 +130,8 @@ void mapInitialize()
             // load shader
             {
                 scalesShader = std::make_shared<Shader>();
-                Buffer vert = readInternalMemoryBuffer("data/shaders/scales.vert.glsl");
-                Buffer frag = readInternalMemoryBuffer("data/shaders/scales.frag.glsl");
+                Buffer vert = readInternalMemoryBuffer("data/shaders/texture.vert.glsl");
+                Buffer frag = readInternalMemoryBuffer("data/shaders/texture.frag.glsl");
                 scalesShader->load(
                     std::string(vert.data(), vert.size()),
                     std::string(frag.data(), frag.size()));

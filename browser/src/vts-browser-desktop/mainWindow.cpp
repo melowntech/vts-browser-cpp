@@ -46,6 +46,7 @@
 #include "mainWindow.hpp"
 
 AppOptions::AppOptions() :
+    renderCompas(false),
     screenshotOnFullRender(false),
     closeOnFullRender(false),
     purgeDiskCache(false)
@@ -191,6 +192,18 @@ void MainWindow::renderFrame()
     }
 
     vts::renderer::render(ro, map->draws(), map->celestialBody());
+
+    // compas
+    if (appOptions.renderCompas)
+    {
+        double size = std::min(ro.width, ro.height) * 0.09;
+        double offset = size * (0.5 + 0.2);
+        double posSize[3] = { offset, offset, size };
+        double rot[3];
+        map->getPositionRotation(rot);
+        vts::renderer::renderCompass(posSize, rot);
+    }
+
     gui.render(ro.width, ro.height);
 }
 

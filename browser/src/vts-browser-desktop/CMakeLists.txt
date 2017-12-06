@@ -13,6 +13,8 @@ set(SRC_LIST
 )
 
 set(DATA_LIST
+    data/shaders/gui.frag.glsl
+    data/shaders/gui.vert.glsl
     data/fonts/roboto-regular.ttf
     data/textures/gwen.png
 )

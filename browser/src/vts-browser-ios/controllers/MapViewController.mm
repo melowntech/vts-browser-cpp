@@ -61,7 +61,6 @@ using namespace vts;
 @property (weak, nonatomic) IBOutlet UIView *gestureViewLeft;
 @property (weak, nonatomic) IBOutlet UIView *gestureViewRight;
 @property (weak, nonatomic) IBOutlet UIActivityIndicatorView *activityIndicator;
-@property (weak, nonatomic) IBOutlet UIProgressView *progressBar;
 
 @property (strong, nonatomic) UIBarButtonItem *searchButton;
 
@@ -82,7 +81,7 @@ using namespace vts;
             if (extraConfig.controlType == 0 || !pitchMultiEnabled)
             {
                 CGPoint p = [recognizer translationInView:self.view];
-                map->pan({p.x * 2, p.y * 2, 0});
+                map->pan({p.x * 1.5, p.y * 1.5, 0});
                 map->options().navigationType = vts::NavigationType::Quick;
             }
             [recognizer setTranslation:CGPoint() inView:self.view];
@@ -137,7 +136,7 @@ using namespace vts;
         case UIGestureRecognizerStateChanged:
         {
             CGPoint p = [recognizer translationInView:self.view];
-            map->zoom(-100 * p.y / renderOptions.height);
+            map->zoom(-60 * p.y / renderOptions.height);
             map->options().navigationType = vts::NavigationType::Quick;
             [recognizer setTranslation:CGPoint() inView:self.view];
             fullscreenOverride = false;
@@ -156,7 +155,7 @@ using namespace vts;
         {
             if (!pitchMultiEnabled)
             {
-                map->rotate({-400 * recognizer.rotation, 0, 0});
+                map->rotate({-380 * recognizer.rotation, 0, 0});
                 map->options().navigationType = vts::NavigationType::Quick;
             }
             [recognizer setRotation:0];
@@ -187,7 +186,7 @@ using namespace vts;
             if (pitchMultiEnabled)
             {
                 CGPoint p = [recognizer translationInView:self.view];
-                map->rotate({0, 8000 * p.y / renderOptions.height, 0});
+                map->rotate({0, 7000 * p.y / renderOptions.height, 0});
                 map->options().navigationType = vts::NavigationType::Quick;
             }
             [recognizer setTranslation:CGPoint() inView:self.view];
@@ -207,7 +206,7 @@ using namespace vts;
         {
             if (!pitchMultiEnabled)
             {
-                map->zoom(10 * (recognizer.scale - 1));
+                map->zoom(6 * (recognizer.scale - 1));
                 map->options().navigationType = vts::NavigationType::Quick;
             }
             [recognizer setScale:1];
@@ -468,33 +467,12 @@ using namespace vts;
 
 // rendering
 
-- (bool)progressDone
-{
-    return map->getMapRenderProgress() > 1 - 1e-15;
-}
-
 - (void)progressUpdate
 {
     if (map->getMapConfigReady())
         [_activityIndicator stopAnimating];
     else
         [_activityIndicator startAnimating];
-
-    [_progressBar setProgress:map->getMapRenderProgress() animated:YES];
-    if ([self progressDone])
-    {
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^(void)
-        {
-            sleep(1);
-            dispatch_async(dispatch_get_main_queue(), ^(void)
-            {
-                if ([self progressDone])
-                    _progressBar.hidden = YES;
-            });
-        });
-    }
-    else
-        _progressBar.hidden = NO;
 }
 
 - (void)update

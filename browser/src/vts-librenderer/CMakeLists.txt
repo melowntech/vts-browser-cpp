@@ -31,6 +31,7 @@ set(DATA_LIST
     data/shaders/scales.vert.glsl
     data/shaders/copyDepth.frag.glsl
     data/shaders/copyDepth.vert.glsl
+    data/textures/compas.png
     data/textures/helper.jpg
 )
 

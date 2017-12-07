@@ -53,7 +53,7 @@ MapOptions::MapOptions() :
     cameraSensitivityPan(1),
     cameraSensitivityZoom(1),
     cameraSensitivityRotate(1),
-    cameraInertiaPan(0.93),
+    cameraInertiaPan(0.92),
     cameraInertiaZoom(0.92),
     cameraInertiaRotate(0.91),
     cameraAltitudeFadeOutFactor(0.2),

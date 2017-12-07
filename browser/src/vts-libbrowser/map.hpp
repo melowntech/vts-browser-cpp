@@ -287,6 +287,8 @@ public:
                     const vec4f &uvClip = vec4f(-1,-1,2,2));
     void renderNodePartialRecursive(TraverseNode *trav,
                     vec4f uvClip = vec4f(0,0,1,1));
+    std::shared_ptr<Resource> travInternalTexture(TraverseNode *trav,
+                                                  uint32 subMeshIndex);
     bool travDetermineMeta(TraverseNode *trav);
     bool travDetermineDraws(TraverseNode *trav);
     double travDistance(TraverseNode *trav, const vec3 pointPhys);

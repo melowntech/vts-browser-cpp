@@ -49,6 +49,8 @@ int main(int argc, char *argv[])
 
         vts::setLogThreadName("main");
         //vts::setLogMask("I2W2E2");
+        //vts::setLogMask("D");
+        //vts::setLogFile("vts-browser.log");
 
         initializeDesktopData();
 

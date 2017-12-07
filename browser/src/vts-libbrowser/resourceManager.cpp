@@ -195,6 +195,7 @@ void MapImpl::resourceLoad(const std::shared_ptr<Resource> &r)
             statistics.resourcesDownloaded++;
             resources.downloads++;
             r->state = Resource::State::downloading;
+            LOG(debug) << "Resource <" << r->name << "> initializing fetch";
             resources.fetcher->fetch(r);
         }
     }

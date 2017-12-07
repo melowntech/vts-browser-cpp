@@ -291,6 +291,17 @@ void MapImpl::renderNodePartialRecursive(TraverseNode *trav, vec4f uvClip)
         renderNodePartialRecursive(trav->parent, uvClip);
 }
 
+std::shared_ptr<Resource> MapImpl::travInternalTexture(TraverseNode *trav,
+                                                       uint32 subMeshIndex)
+{
+    UrlTemplate::Vars vars(trav->nodeInfo.nodeId(),
+            vtslibs::vts::local(trav->nodeInfo), subMeshIndex);
+    std::shared_ptr<Resource> res = getTexture(
+                trav->meta->surface->surface->urlIntTex(vars));
+    res->updatePriority(trav->priority);
+    return res;
+}
+
 bool MapImpl::travDetermineMeta(TraverseNode *trav)
 {
     assert(!trav->meta);
@@ -484,6 +495,13 @@ bool MapImpl::travDetermineMeta(TraverseNode *trav)
     // update priority
     trav->priority = computeResourcePriority(trav);
 
+    // prefetch internal textures
+    if (node->geometry())
+    {
+        for (uint32 i = 0; i < node->internalTextureCount(); i++)
+            travInternalTexture(trav, i);
+    }
+
     return true;
 }
 
@@ -619,12 +637,8 @@ bool MapImpl::travDetermineDraws(TraverseNode *trav)
         // internal texture
         if (part.internalUv)
         {
-            UrlTemplate::Vars vars(nodeId,
-                    vtslibs::vts::local(trav->nodeInfo), subMeshIndex);
             RenderTask task;
-            task.textureColor = getTexture(
-                        trav->meta->surface->surface->urlIntTex(vars));
-            task.textureColor->updatePriority(trav->priority);
+            task.textureColor = travInternalTexture(trav, subMeshIndex);
             switch (getResourceValidity(task.textureColor))
             {
             case Validity::Indeterminate:

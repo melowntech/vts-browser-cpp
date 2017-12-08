@@ -271,7 +271,6 @@ void MapImpl::updateNavigation()
     double vertical1 = navigation.targetPoint(2) - p(2);
     double vertical2 = std::numeric_limits<double>::quiet_NaN();
     vec3 r2(vertical2, vertical2, vertical2);
-    double prevVerticalExtent = pos.verticalExtent;
     navigationPiha(
                 options,
                 1.0 / 60.0, // todo
@@ -395,12 +394,8 @@ void MapImpl::updateNavigation()
 
     // altitude corrections
     {
-        double horFac = horizontal2 / pos.verticalExtent;
-        double vertFac = std::log(pos.verticalExtent)
-                    / std::log(prevVerticalExtent);
-        vertFac = 3 * std::abs(1 - vertFac);
         if (pos.type == vtslibs::registry::Position::Type::objective)
-            updatePositionAltitude(std::max(horFac, vertFac));
+            updatePositionAltitude(horizontal2 / pos.verticalExtent);
     }
 
     // statistics

@@ -128,9 +128,9 @@ public:
     double navigationLatitudeThreshold;
 
     // maximum view-extent multiplier allowed for PIHA, must be larger than 1
-    double navigationMaxViewExtentMult;
+    double navigationPihaViewExtentMult;
     // maximum position change allowed for PIHA, must be positive
-    double navigationMaxPositionChange;
+    double navigationPihaPositionChange;
 
     // relative scale of every tile.
     // small up-scale may reduce occasional holes on tile borders.

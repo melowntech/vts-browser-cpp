@@ -92,8 +92,8 @@ void navigationPiha(
 
     double distanceWhileExtentChanges = sumExtents(inStartViewExtent,
             inStartViewExtent + inViewExtentChange,
-            inOptions.navigationMaxViewExtentMult)
-            * inOptions.navigationMaxPositionChange;
+            inOptions.navigationPihaViewExtentMult)
+            * inOptions.navigationPihaPositionChange;
 
     static const double piHalf = 3.14159265358979323846264338327 * 0.5;
 
@@ -107,18 +107,18 @@ void navigationPiha(
         a = piHalf - (piHalf - a) * 2.0;
     }
     double dr = distanceWhileExtentChanges + inHorizontalDistance;
-    double dc = inStartViewExtent * inOptions.navigationMaxPositionChange;
+    double dc = inStartViewExtent * inOptions.navigationPihaPositionChange;
     double d = std::min(dr / (dc * 60 + 1), 1.0); // smooth landing
     double vf = std::sin(a) * d; // view extent factor
     double hf = std::cos(a) * d; // horizontal factor
 
     // view extent and horizontal move
     outViewExtent = inStartViewExtent
-            * std::pow(inOptions.navigationMaxViewExtentMult, vf);
+            * std::pow(inOptions.navigationPihaViewExtentMult, vf);
     outViewExtent = std::max(outViewExtent,
                         inStartViewExtent - std::abs(inViewExtentChange));
     outHorizontalMove = std::min(outViewExtent
-                    * inOptions.navigationMaxPositionChange
+                    * inOptions.navigationPihaPositionChange
                     * std::max(hf, 0.0), inHorizontalDistance);
 
     // vertical move and camera rotation

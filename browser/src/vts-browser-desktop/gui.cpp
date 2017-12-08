@@ -456,7 +456,7 @@ public:
                 // altitude fade out
                 nk_label(&ctx, "Altitude fade:", NK_TEXT_LEFT);
                 o.cameraAltitudeFadeOutFactor = nk_slide_float(&ctx,
-                        0, o.cameraAltitudeFadeOutFactor, 0.5, 0.01);
+                        0, o.cameraAltitudeFadeOutFactor, 1, 0.01);
                 sprintf(buffer, "%4.2f", o.cameraAltitudeFadeOutFactor);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
@@ -539,16 +539,16 @@ public:
 
                 // navigation max view extent multiplier
                 nk_label(&ctx, "Piha zoom:", NK_TEXT_LEFT);
-                o.navigationMaxViewExtentMult = nk_slide_float(&ctx,
-                        1.002, o.navigationMaxViewExtentMult, 1.2, 0.002);
-                sprintf(buffer, "%5.3f", o.navigationMaxViewExtentMult);
+                o.navigationPihaViewExtentMult = nk_slide_float(&ctx,
+                        1.002, o.navigationPihaViewExtentMult, 1.2, 0.002);
+                sprintf(buffer, "%5.3f", o.navigationPihaViewExtentMult);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                 // navigation max position change
                 nk_label(&ctx, "Piha move:", NK_TEXT_LEFT);
-                o.navigationMaxPositionChange = nk_slide_float(&ctx,
-                        0.002, o.navigationMaxPositionChange, 0.2, 0.002);
-                sprintf(buffer, "%5.3f", o.navigationMaxPositionChange);
+                o.navigationPihaPositionChange = nk_slide_float(&ctx,
+                        0.002, o.navigationPihaPositionChange, 0.2, 0.002);
+                sprintf(buffer, "%5.3f", o.navigationPihaPositionChange);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                 // navigation samples per view extent

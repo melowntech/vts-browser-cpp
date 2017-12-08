@@ -787,7 +787,7 @@ void MapImpl::travModeBalanced(TraverseNode *trav)
         if (trav->meta->surface && trav->rendersEmpty())
             travDetermineDraws(trav);
     }
-    else if (trav->lastRenderTime + 1 < renderer.tickIndex)
+    else if (trav->lastRenderTime + 5 < renderer.tickIndex)
         trav->clearRenders();
 
     bool childsHaveMeta = true;

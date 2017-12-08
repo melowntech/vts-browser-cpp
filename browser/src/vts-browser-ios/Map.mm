@@ -54,6 +54,8 @@ ExtraConfig::ExtraConfig() :
     }
 }
 
+void loadAppConfig();
+
 Map *map;
 RenderOptions renderOptions;
 ExtraConfig extraConfig; 
@@ -106,12 +108,8 @@ void mapInitialize()
     }
 
     // configure the map for mobile use
-    {
-        MapOptions &opt = map->options();
-        opt.maxTexelToPixelScale = 3.2;
-        opt.maxResourceProcessesPerTick = -1; // the resources are processed on a separate thread
-        opt.targetResourcesMemory = 256 * 1024 * 1024;
-    }
+    map->options() = defaultMapOptions();
+    loadAppConfig();
 
     // configure opengl contexts
     {
@@ -215,6 +213,15 @@ void mapInitialize()
 
     // prepare timer
     timer = [[TimerObj alloc] init];
+}
+
+vts::MapOptions defaultMapOptions()
+{
+    vts::MapOptions opt;
+    opt.maxTexelToPixelScale = 3.2;
+    opt.maxResourceProcessesPerTick = -1; // the resources are processed on a separate thread
+    opt.targetResourcesMemory = 256 * 1024 * 1024;
+    return opt;
 }
 
 EAGLContext *mapRenderContext()

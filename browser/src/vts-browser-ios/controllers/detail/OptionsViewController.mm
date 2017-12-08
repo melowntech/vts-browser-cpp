@@ -34,7 +34,6 @@
 
 @property (weak, nonatomic) IBOutlet UISegmentedControl *optTraversal;
 @property (weak, nonatomic) IBOutlet UISlider *optQualityDegrad;
-@property (weak, nonatomic) IBOutlet UISwitch *optAtmosphere;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *optControlType;
 @property (weak, nonatomic) IBOutlet UISlider *optTouchSize;
 @property (weak, nonatomic) IBOutlet UISwitch *optTouchAreas;
@@ -42,6 +41,63 @@
 @property (weak, nonatomic) IBOutlet UISwitch *optControlCompas;
 
 @end
+
+
+namespace
+{
+    NSURL *configStorePath()
+    {
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+        return [[NSURL fileURLWithPath:[paths objectAtIndex:0]] URLByAppendingPathComponent:@"configApp.plist"];
+    }
+
+    void loadConfig()
+    {
+        NSURL *path = configStorePath();
+        NSData *data = [NSData dataWithContentsOfURL:path];
+        NSKeyedUnarchiver *coder = [[NSKeyedUnarchiver alloc] initForReadingWithData:data];
+
+        if ([coder containsValueForKey:@"traverseMode"])
+            map->options().traverseMode = (vts::TraverseMode)[coder decodeIntForKey:@"traverseMode"];
+        if ([coder containsValueForKey:@"maxTexelToPixelScale"])
+            map->options().maxTexelToPixelScale = [coder decodeDoubleForKey:@"maxTexelToPixelScale"];
+        if ([coder containsValueForKey:@"controlType"])
+            extraConfig.controlType = [coder decodeIntForKey:@"controlType"];
+        if ([coder containsValueForKey:@"touchSize"])
+            extraConfig.touchSize = [coder decodeFloatForKey:@"touchSize"];
+        if ([coder containsValueForKey:@"showControlAreas"])
+            extraConfig.showControlAreas = [coder decodeBoolForKey:@"showControlAreas"];
+        if ([coder containsValueForKey:@"showControlScales"])
+            extraConfig.showControlScales = [coder decodeBoolForKey:@"showControlScales"];
+        if ([coder containsValueForKey:@"showControlCompas"])
+            extraConfig.showControlCompas = [coder decodeBoolForKey:@"showControlCompas"];
+
+        [coder finishDecoding];
+    }
+
+    void saveConfig()
+    {
+        NSMutableData *data = [NSMutableData data];
+        NSKeyedArchiver *coder = [[NSKeyedArchiver alloc] initForWritingWithMutableData:data];
+
+        [coder encodeInt:(int)map->options().traverseMode forKey:@"traverseMode"];
+        [coder encodeDouble:map->options().maxTexelToPixelScale forKey:@"maxTexelToPixelScale"];
+        [coder encodeInt:extraConfig.controlType forKey:@"controlType"];
+        [coder encodeFloat:extraConfig.touchSize forKey:@"touchSize"];
+        [coder encodeBool:extraConfig.showControlAreas forKey:@"showControlAreas"];
+        [coder encodeBool:extraConfig.showControlScales forKey:@"showControlScales"];
+        [coder encodeBool:extraConfig.showControlCompas forKey:@"showControlCompas"];
+
+        [coder finishEncoding];
+        NSURL *path = configStorePath();
+        [data writeToURL:path atomically:YES];
+    }
+}
+
+void loadAppConfig()
+{
+    loadConfig();
+}
 
 
 @implementation OptionsViewController
@@ -54,12 +110,14 @@
 
 - (void)updateViewControls
 {
+    // rendering
+    _optTraversal.selectedSegmentIndex = (int)map->options().traverseMode;
+    _optQualityDegrad.value = map->options().maxTexelToPixelScale;
+    // controls
     _optTouchSize.enabled = extraConfig.controlType == 0;
     _optTouchAreas.enabled = extraConfig.controlType == 0;
     if (!_optTouchAreas.enabled)
         extraConfig.showControlAreas = false;
-    //if (extraConfig.showControlScales && extraConfig.showControlCompas)
-    //    [self updateShowControls];
     _optTouchSize.value = extraConfig.touchSize;
     _optTouchAreas.on = extraConfig.showControlAreas;
     _optControlScales.on = extraConfig.showControlScales;
@@ -70,27 +128,19 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    // rendering
-    _optTraversal.selectedSegmentIndex = (int)map->options().traverseMode;
-    _optQualityDegrad.value = map->options().maxTexelToPixelScale;
-    _optAtmosphere.on = renderOptions.renderAtmosphere;
-    // controls
     [self updateViewControls];
 }
 
 - (IBAction)optTraversalChanged:(UISegmentedControl *)sender
 {
     map->options().traverseMode = (vts::TraverseMode)sender.selectedSegmentIndex;
+    saveConfig();
 }
 
 - (IBAction)optQualityDegradChanged:(UISlider *)sender
 {
     map->options().maxTexelToPixelScale = sender.value;
-}
-
-- (IBAction)optAtmosphereChanged:(UISwitch *)sender
-{
-    renderOptions.renderAtmosphere = sender.on;
+    saveConfig();
 }
 
 - (IBAction)optControlTypeChanged:(UISegmentedControl *)sender
@@ -98,29 +148,43 @@
     extraConfig.controlType = sender.selectedSegmentIndex;
     [self updateShowControls];
     [self updateViewControls];
+    saveConfig();
 }
 
 - (IBAction)optTouchSizeChanged:(UISlider *)sender
 {
     extraConfig.touchSize = sender.value;
+    saveConfig();
 }
 
 - (IBAction)optTouchAreasChanged:(UISwitch *)sender
 {
     extraConfig.showControlAreas = sender.on;
+    saveConfig();
 }
 
 - (IBAction)optControlScalesChanged:(UISwitch *)sender
 {
     extraConfig.showControlScales = sender.on;
     [self updateViewControls];
+    saveConfig();
 }
 
 - (IBAction)optControlCompasChanged:(UISwitch *)sender
 {
     extraConfig.showControlCompas = sender.on;
     [self updateViewControls];
+    saveConfig();
 }
+
+- (IBAction)resetAllToDefaults:(UIButton *)sender
+{
+    extraConfig = ExtraConfig();
+    map->options() = defaultMapOptions();
+    [self updateViewControls];
+    saveConfig();
+}
+
 
 @end
 

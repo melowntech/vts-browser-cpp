@@ -35,3 +35,4 @@
 - (ConfigItem*)initWithName:(NSString*)name url:(NSString*)url;
 
 @end
+

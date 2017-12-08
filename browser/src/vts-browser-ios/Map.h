@@ -46,9 +46,10 @@ struct ExtraConfig
 
 extern vts::Map *map;
 extern vts::renderer::RenderOptions renderOptions;
-extern ExtraConfig extraConfig; 
+extern ExtraConfig extraConfig;
 
 void mapInitialize();
+vts::MapOptions defaultMapOptions();
 
 EAGLContext *mapRenderContext();
 void mapRenderControls(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, CGRect zoom, CGRect compas);

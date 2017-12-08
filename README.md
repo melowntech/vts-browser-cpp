@@ -3,9 +3,15 @@
 [VTS Browser CPP](https://github.com/melown/vts-browser-cpp) is a library
 that brings VTS capabilities to your native C++ applications.
 
+## iOS Example App Preview on YouTube
+
+[![Youtube Preview](https://raw.githubusercontent.com/wiki/Melown/vts-browser-cpp/vts-browser-ios.jpg)](https://www.youtube.com/watch?v=BP_zyMTHVlg&feature=youtu.be)
+
+(Click the image to play)
+
 ## Design & Features
 
-- Simple -> minimal application using this library has about 150 LOC.
+- Simple -> minimal application using this library has about 200 LOC.
   See [vts-browser-minimal](https://github.com/Melown/vts-browser-cpp/wiki/examples-minimal).
 - Clean C++11 class-full API.
 - Highly flexible -> almost all aspects can be changed through configuration or callbacks.
@@ -73,12 +79,6 @@ cmake -DCMAKE_BUILD_TYPE=RELWITHDEBINFO ..
 cmake --build .
 ./vts-example
 ```
-
-## iOS Example App Preview on YouTube
-
-[![Youtube Preview](https://raw.githubusercontent.com/wiki/Melown/vts-browser-cpp/vts-browser-ios.jpg)](https://www.youtube.com/watch?v=BP_zyMTHVlg&feature=youtu.be)
-
-(Click the image to play)
 
 ## Bug Reports
 

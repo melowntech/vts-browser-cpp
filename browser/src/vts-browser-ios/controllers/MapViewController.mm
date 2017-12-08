@@ -49,6 +49,7 @@ using namespace vts;
     UIPinchGestureRecognizer *rZoomMulti;
     UILongPressGestureRecognizer *rNorth;
     UITapGestureRecognizer *rFullscreen, *rGoto;
+    UIPanGestureRecognizer *rCompas;
 
     vec2 gotoPoint;
     bool fullscreenStatus;
@@ -60,6 +61,7 @@ using namespace vts;
 @property (weak, nonatomic) IBOutlet UIView *gestureViewBottom;
 @property (weak, nonatomic) IBOutlet UIView *gestureViewLeft;
 @property (weak, nonatomic) IBOutlet UIView *gestureViewRight;
+@property (weak, nonatomic) IBOutlet UIView *gestureViewCompas;
 @property (weak, nonatomic) IBOutlet UIActivityIndicatorView *activityIndicator;
 
 @property (strong, nonatomic) UIBarButtonItem *searchButton;
@@ -263,8 +265,31 @@ using namespace vts;
     }
 }
 
+- (void)gestureCompas:(UIPanGestureRecognizer*)recognizer
+{
+    switch (recognizer.state)
+    {
+        case UIGestureRecognizerStateEnded:
+        case UIGestureRecognizerStateChanged:
+        {
+            {
+                double speed = 2500.0 / self.view.frame.size.width;
+                CGPoint p = [recognizer translationInView:self.view];
+                map->rotate({p.x * speed, p.y * speed, 0});
+                map->options().navigationType = vts::NavigationType::Quick;
+            }
+            [recognizer setTranslation:CGPoint() inView:self.view];
+            fullscreenOverride = false;
+        } break;
+        default:
+            break;
+    }
+}
+
 - (BOOL)gestureRecognizer:(UIGestureRecognizer*)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer*)otherGestureRecognizer
 {
+    if (gestureRecognizer == rCompas || otherGestureRecognizer == rCompas)
+        return false;
     return extraConfig.controlType == 1;
 }
 
@@ -280,6 +305,7 @@ using namespace vts;
     assert(_gestureViewBottom);
     assert(_gestureViewLeft);
     assert(_gestureViewRight);
+    assert(_gestureViewCompas);
 
     gesturesRequireFail.clear();
 
@@ -370,6 +396,12 @@ using namespace vts;
         UITapGestureRecognizer *r = rFullscreen = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(gestureFullscreen:)];
         [self.view addGestureRecognizer:r];
     }
+    {
+        // compas
+        UIPanGestureRecognizer *r = rCompas = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(gestureCompas:)];
+        r.maximumNumberOfTouches = 1;
+        [_gestureViewCompas addGestureRecognizer:r];
+    }
     gesturesRequireFail[rFullscreen].insert(rGoto);
     gesturesRequireFail[rFullscreen].insert(rNorth);
 
@@ -383,6 +415,8 @@ using namespace vts;
     rPanSingle.enabled = rYawSingle.enabled = rPitchSingle.enabled = rZoomSingle.enabled = extraConfig.controlType == 0;
     rPanMulti.enabled = rYawMulti.enabled = rPitchMultiInitUp.enabled = rPitchMultiInitDown.enabled = rPitchMultiEval.enabled = rZoomMulti.enabled = extraConfig.controlType == 1;
     pitchMultiEnabled = false;
+    rCompas.enabled = extraConfig.showControlCompas;
+    _gestureViewCompas.userInteractionEnabled = extraConfig.showControlCompas;
 }
 
 // controller status
@@ -523,7 +557,7 @@ using namespace vts;
         glBindFramebuffer(GL_FRAMEBUFFER, renderOptions.targetFrameBuffer);
     }
 
-    mapRenderScales(view.contentScaleFactor, rect, _gestureViewLeft.frame, _gestureViewBottom.frame, _gestureViewRight.frame);
+    mapRenderControls(view.contentScaleFactor, rect, _gestureViewLeft.frame, _gestureViewBottom.frame, _gestureViewRight.frame, _gestureViewCompas.frame);
 
     renderOptions.targetViewportX = rect.origin.x * view.contentScaleFactor;
     renderOptions.targetViewportY = rect.origin.y * view.contentScaleFactor;

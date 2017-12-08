@@ -110,6 +110,7 @@ public:
     bool getPositionSubjective() const;
     void getPositionPoint(double point[3]) const;
     void getPositionRotation(double point[3]) const;
+    void getPositionRotationLimited(double point[3]) const;
     double getPositionViewExtent() const;
     double getPositionFov() const;
     std::string getPositionJson() const;

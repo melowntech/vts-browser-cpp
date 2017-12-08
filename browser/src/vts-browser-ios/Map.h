@@ -41,6 +41,7 @@ struct ExtraConfig
     float touchSize;
     bool showControlScales;
     bool showControlAreas;
+    bool showControlCompas;
 };
 
 extern vts::Map *map;
@@ -50,7 +51,7 @@ extern ExtraConfig extraConfig;
 void mapInitialize();
 
 EAGLContext *mapRenderContext();
-void mapRenderScales(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, CGRect zoom);
+void mapRenderControls(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, CGRect zoom, CGRect compas);
 
 void mapTimerStart(id object, SEL selector);
 void mapTimerStop();

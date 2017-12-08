@@ -39,16 +39,32 @@
 @property (weak, nonatomic) IBOutlet UISlider *optTouchSize;
 @property (weak, nonatomic) IBOutlet UISwitch *optTouchAreas;
 @property (weak, nonatomic) IBOutlet UISwitch *optControlScales;
+@property (weak, nonatomic) IBOutlet UISwitch *optControlCompas;
 
 @end
 
 
 @implementation OptionsViewController
 
-- (void)consolidateOptions
+- (void)updateShowControls
+{
+    extraConfig.showControlScales = extraConfig.controlType == 0;
+    extraConfig.showControlCompas = extraConfig.controlType == 1;
+}
+
+- (void)updateViewControls
 {
     _optTouchSize.enabled = extraConfig.controlType == 0;
     _optTouchAreas.enabled = extraConfig.controlType == 0;
+    if (!_optTouchAreas.enabled)
+        extraConfig.showControlAreas = false;
+    //if (extraConfig.showControlScales && extraConfig.showControlCompas)
+    //    [self updateShowControls];
+    _optTouchSize.value = extraConfig.touchSize;
+    _optTouchAreas.on = extraConfig.showControlAreas;
+    _optControlScales.on = extraConfig.showControlScales;
+    _optControlCompas.on = extraConfig.showControlCompas;
+    _optControlType.selectedSegmentIndex = extraConfig.controlType;
 }
 
 - (void)viewDidLoad
@@ -59,11 +75,7 @@
     _optQualityDegrad.value = map->options().maxTexelToPixelScale;
     _optAtmosphere.on = renderOptions.renderAtmosphere;
     // controls
-    _optControlType.selectedSegmentIndex = extraConfig.controlType;
-    _optTouchSize.value = extraConfig.touchSize;
-    _optTouchAreas.on = extraConfig.showControlAreas;
-    _optControlScales.on = extraConfig.showControlScales;
-    [self consolidateOptions];
+    [self updateViewControls];
 }
 
 - (IBAction)optTraversalChanged:(UISegmentedControl *)sender
@@ -84,8 +96,8 @@
 - (IBAction)optControlTypeChanged:(UISegmentedControl *)sender
 {
     extraConfig.controlType = sender.selectedSegmentIndex;
-    _optControlScales.on = extraConfig.showControlScales = extraConfig.controlType == 0;
-    [self consolidateOptions];
+    [self updateShowControls];
+    [self updateViewControls];
 }
 
 - (IBAction)optTouchSizeChanged:(UISlider *)sender
@@ -101,6 +113,14 @@
 - (IBAction)optControlScalesChanged:(UISwitch *)sender
 {
     extraConfig.showControlScales = sender.on;
+    [self updateViewControls];
+}
+
+- (IBAction)optControlCompasChanged:(UISwitch *)sender
+{
+    extraConfig.showControlCompas = sender.on;
+    [self updateViewControls];
 }
 
 @end
+

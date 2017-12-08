@@ -46,16 +46,16 @@ MapOptions::MapOptions() :
     maxTexelToPixelScaleBalancedAddition(3),
     viewExtentLimitScaleMin(0.00001175917), // 75 metres on earth
     viewExtentLimitScaleMax(2.35183443086), // 1.5e7 metres on earth
-    viewExtentThresholdScaleLow(0.03135779241), // 200000 metres on earth
-    viewExtentThresholdScaleHigh(0.20382565067), // 1300000 metres on earth
+    viewExtentThresholdScaleLow(0.03135779241), // 200 000 metres on earth
+    viewExtentThresholdScaleHigh(0.20382565067), // 1 300 000 metres on earth
     tiltLimitAngleLow(270),
     tiltLimitAngleHigh(350),
     cameraSensitivityPan(1),
     cameraSensitivityZoom(1),
     cameraSensitivityRotate(1),
-    cameraInertiaPan(0.92),
-    cameraInertiaZoom(0.92),
-    cameraInertiaRotate(0.91),
+    cameraInertiaPan(0.9),
+    cameraInertiaZoom(0.9),
+    cameraInertiaRotate(0.9),
     cameraAltitudeFadeOutFactor(0.2),
     navigationLatitudeThreshold(80),
     navigationMaxViewExtentMult(1.02),

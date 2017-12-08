@@ -392,6 +392,13 @@ void Map::getPositionRotation(double point[3]) const
     vecToRaw(vecFromUblas<vec3>(p), point);
 }
 
+void Map::getPositionRotationLimited(double point[3]) const
+{
+    vec3 p = vecFromUblas<vec3>(impl->mapConfig->position.orientation);
+    impl->applyCameraRotationNormalization(p);
+    vecToRaw(p, point);
+}
+
 void Map::setPositionViewExtent(double viewExtent)
 {
     if (!getMapConfigReady())

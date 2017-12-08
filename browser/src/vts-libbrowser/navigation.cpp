@@ -368,14 +368,14 @@ void MapImpl::updateNavigation()
     }
 
     // normalize rotation
-    for (int i = 0; i < 3; i++)
-        normalizeAngle(r[i]);
     if (pos.type == vtslibs::registry::Position::Type::objective)
     {
         r[1] = clamp(r[1],
             options.tiltLimitAngleLow,
             options.tiltLimitAngleHigh);
     }
+    for (int i = 0; i < 3; i++)
+        normalizeAngle(r[i]);
 
     // asserts
     assert(isNavigationModeValid());
@@ -414,14 +414,14 @@ bool MapImpl::isNavigationModeValid() const
         return false;
     if (navigation.mode == NavigationMode::Free)
     {
-        if(mapConfig->navigationSrsType()
+        if (mapConfig->navigationSrsType()
                != vtslibs::registry::Srs::Type::geographic)
             return false;
     }
     if (mapConfig->navigationSrsType()
             == vtslibs::registry::Srs::Type::projected)
     {
-        if(navigation.mode != NavigationMode::Azimuthal)
+        if (navigation.mode != NavigationMode::Azimuthal)
             return false;
     }
     return true;

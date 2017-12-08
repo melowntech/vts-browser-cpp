@@ -6,6 +6,7 @@
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="13165.3"/>
         <capability name="Aspect ratio constraints" minToolsVersion="5.1"/>
+        <capability name="Constraints with non-1.0 multipliers" minToolsVersion="5.1"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="Stack View standard spacing" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
@@ -77,7 +78,7 @@
                                 <rect key="frame" x="0.0" y="64" width="375" height="554"/>
                                 <subviews>
                                     <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="KYJ-Lc-quQ">
-                                        <rect key="frame" x="0.0" y="0.0" width="375" height="350"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="375" height="389"/>
                                         <subviews>
                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="eIR-VC-jQw">
                                                 <rect key="frame" x="0.0" y="0.0" width="375" height="149.5"/>
@@ -148,7 +149,7 @@
                                                 <edgeInsets key="layoutMargins" top="8" left="8" bottom="8" right="8"/>
                                             </stackView>
                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="dxF-se-jT3">
-                                                <rect key="frame" x="0.0" y="161.5" width="375" height="188.5"/>
+                                                <rect key="frame" x="0.0" y="161.5" width="375" height="227.5"/>
                                                 <subviews>
                                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Controls" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="OIU-8b-ljy">
                                                         <rect key="frame" x="8" y="8" width="359" height="20.5"/>
@@ -228,6 +229,23 @@
                                                             </switch>
                                                         </subviews>
                                                     </stackView>
+                                                    <stackView opaque="NO" contentMode="scaleToFill" alignment="center" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="dFj-1E-Nvk">
+                                                        <rect key="frame" x="8" y="188.5" width="359" height="31"/>
+                                                        <subviews>
+                                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Show control compas:" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="v2r-rI-dRg">
+                                                                <rect key="frame" x="0.0" y="5.5" width="300" height="20.5"/>
+                                                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                                <nil key="textColor"/>
+                                                                <nil key="highlightedColor"/>
+                                                            </label>
+                                                            <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="right" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7qT-eP-KOu">
+                                                                <rect key="frame" x="310" y="0.0" width="51" height="31"/>
+                                                                <connections>
+                                                                    <action selector="optControlCompasChanged:" destination="0jM-kM-7j6" eventType="valueChanged" id="hHC-p4-wzK"/>
+                                                                </connections>
+                                                            </switch>
+                                                        </subviews>
+                                                    </stackView>
                                                 </subviews>
                                                 <edgeInsets key="layoutMargins" top="8" left="8" bottom="8" right="8"/>
                                             </stackView>
@@ -256,6 +274,7 @@
                     <simulatedTabBarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
                         <outlet property="optAtmosphere" destination="9dn-BA-bMB" id="bLa-zn-0os"/>
+                        <outlet property="optControlCompas" destination="7qT-eP-KOu" id="nys-5X-nya"/>
                         <outlet property="optControlScales" destination="8Z7-tS-zlh" id="UHp-vk-7Xt"/>
                         <outlet property="optControlType" destination="fDB-SD-hjM" id="joc-Li-R9b"/>
                         <outlet property="optQualityDegrad" destination="jDI-IS-zIu" id="mTp-vk-Qdi"/>
@@ -726,6 +745,13 @@
                                     <constraint firstAttribute="width" constant="50" id="0ho-Vo-d7i"/>
                                 </constraints>
                             </view>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="T45-JW-nQS" userLabel="compas">
+                                <rect key="frame" x="300" y="592" width="75" height="75"/>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="T45-JW-nQS" secondAttribute="height" multiplier="1:1" id="U6f-9y-967"/>
+                                </constraints>
+                            </view>
                             <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" hidesWhenStopped="YES" animating="YES" style="whiteLarge" translatesAutoresizingMaskIntoConstraints="NO" id="wGc-Jt-0iw">
                                 <rect key="frame" x="169" y="347" width="37" height="37"/>
                             </activityIndicatorView>
@@ -740,12 +766,18 @@
                             <constraint firstItem="ySS-hs-uu9" firstAttribute="top" secondItem="3ym-2h-IiQ" secondAttribute="bottom" id="Hic-e7-NLs"/>
                             <constraint firstItem="c8X-gU-GYv" firstAttribute="bottom" secondItem="ySS-hs-uu9" secondAttribute="bottom" id="Ldg-yo-0Ke"/>
                             <constraint firstItem="qKz-eK-7re" firstAttribute="leading" secondItem="3ym-2h-IiQ" secondAttribute="trailing" id="M3y-v4-HLV"/>
+                            <constraint firstItem="T45-JW-nQS" firstAttribute="height" relation="lessThanOrEqual" secondItem="Ywz-5S-keG" secondAttribute="height" multiplier="1:5" id="SqB-ti-izd"/>
+                            <constraint firstItem="T45-JW-nQS" firstAttribute="width" relation="lessThanOrEqual" secondItem="Ywz-5S-keG" secondAttribute="width" multiplier="1:5" id="WWu-Sl-fRh"/>
                             <constraint firstItem="ySS-hs-uu9" firstAttribute="leading" secondItem="c8X-gU-GYv" secondAttribute="leading" id="Wfx-z4-bJz"/>
+                            <constraint firstItem="T45-JW-nQS" firstAttribute="width" secondItem="Ywz-5S-keG" secondAttribute="width" multiplier="1:5" priority="900" id="XTf-j4-oZY"/>
                             <constraint firstItem="wGc-Jt-0iw" firstAttribute="centerX" secondItem="c8X-gU-GYv" secondAttribute="centerX" id="cy9-ix-bGM"/>
+                            <constraint firstItem="c8X-gU-GYv" firstAttribute="trailing" secondItem="T45-JW-nQS" secondAttribute="trailing" id="fUv-Od-eYc"/>
                             <constraint firstItem="G04-P9-84c" firstAttribute="top" secondItem="c8X-gU-GYv" secondAttribute="top" id="jeD-cV-UAj"/>
                             <constraint firstItem="3ym-2h-IiQ" firstAttribute="leading" secondItem="G04-P9-84c" secondAttribute="trailing" id="mD4-97-2cD"/>
                             <constraint firstItem="ySS-hs-uu9" firstAttribute="top" secondItem="qKz-eK-7re" secondAttribute="bottom" id="og9-n2-kCn"/>
+                            <constraint firstItem="c8X-gU-GYv" firstAttribute="bottom" secondItem="T45-JW-nQS" secondAttribute="bottom" id="tRn-81-N7R"/>
                             <constraint firstItem="qKz-eK-7re" firstAttribute="top" secondItem="c8X-gU-GYv" secondAttribute="top" id="tm1-xv-Sg7"/>
+                            <constraint firstItem="T45-JW-nQS" firstAttribute="height" secondItem="Ywz-5S-keG" secondAttribute="height" multiplier="1:5" priority="900" id="vlz-qA-yaN"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="c8X-gU-GYv"/>
                         <connections>
@@ -756,6 +788,7 @@
                         <outlet property="activityIndicator" destination="wGc-Jt-0iw" id="tLR-NI-s1d"/>
                         <outlet property="gestureViewBottom" destination="ySS-hs-uu9" id="SgY-Ob-5Gz"/>
                         <outlet property="gestureViewCenter" destination="3ym-2h-IiQ" id="luZ-y1-jq7"/>
+                        <outlet property="gestureViewCompas" destination="T45-JW-nQS" id="C1g-71-HDm"/>
                         <outlet property="gestureViewLeft" destination="G04-P9-84c" id="UDe-yF-xGY"/>
                         <outlet property="gestureViewRight" destination="qKz-eK-7re" id="Ka5-rB-aQA"/>
                         <outlet property="searchDisplayController" destination="a4A-7m-ghS" id="NWo-El-ELx"/>
@@ -851,19 +884,19 @@
                                 </connections>
                             </tableView>
                             <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" hidesWhenStopped="YES" animating="YES" style="gray" translatesAutoresizingMaskIntoConstraints="NO" id="dSG-eZ-1cU">
-                                <rect key="frame" x="177.5" y="355.5" width="20" height="20"/>
+                                <rect key="frame" x="177.5" y="222.5" width="20" height="20"/>
                             </activityIndicatorView>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
                             <constraint firstItem="ZCO-L9-EOn" firstAttribute="bottom" secondItem="rJQ-Zz-OyC" secondAttribute="bottom" id="018-5M-rIk"/>
-                            <constraint firstItem="dSG-eZ-1cU" firstAttribute="centerY" secondItem="ZCO-L9-EOn" secondAttribute="centerY" id="8Vx-N1-DJL"/>
                             <constraint firstItem="umg-52-cdM" firstAttribute="trailing" secondItem="ZCO-L9-EOn" secondAttribute="trailing" id="KPz-7z-5eT"/>
                             <constraint firstItem="rJQ-Zz-OyC" firstAttribute="leading" secondItem="ZCO-L9-EOn" secondAttribute="leading" id="Koz-ou-bJ3"/>
                             <constraint firstItem="ZCO-L9-EOn" firstAttribute="trailing" secondItem="rJQ-Zz-OyC" secondAttribute="trailing" id="S2X-MY-pyW"/>
-                            <constraint firstItem="dSG-eZ-1cU" firstAttribute="centerX" secondItem="ZCO-L9-EOn" secondAttribute="centerX" id="fsg-BR-mLL"/>
                             <constraint firstItem="umg-52-cdM" firstAttribute="leading" secondItem="ZCO-L9-EOn" secondAttribute="leading" id="lbl-T5-AKO"/>
                             <constraint firstItem="umg-52-cdM" firstAttribute="top" secondItem="ZCO-L9-EOn" secondAttribute="top" id="nQR-ui-cjh"/>
+                            <constraint firstItem="dSG-eZ-1cU" firstAttribute="top" secondItem="rJQ-Zz-OyC" secondAttribute="bottom" multiplier="1:3" id="ouQ-vy-uDq"/>
+                            <constraint firstItem="dSG-eZ-1cU" firstAttribute="centerX" secondItem="rJQ-Zz-OyC" secondAttribute="centerX" id="ukp-qU-6aa"/>
                             <constraint firstItem="rJQ-Zz-OyC" firstAttribute="top" secondItem="umg-52-cdM" secondAttribute="bottom" id="vZO-0c-VT7"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="ZCO-L9-EOn"/>

@@ -43,13 +43,14 @@ using namespace vts::renderer;
 
 ExtraConfig::ExtraConfig() :
     controlType(0), touchSize(45),
-    showControlScales(true), showControlAreas(false)
+    showControlScales(true), showControlAreas(false), showControlCompas(false)
 {
     if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
     {
         controlType = 1;
         touchSize = 90;
         showControlScales = false;
+        showControlCompas = true;
     }
 }
 
@@ -242,7 +243,7 @@ namespace
     }
 }
 
-void mapRenderScales(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, CGRect zoom)
+void mapRenderControls(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, CGRect zoom, CGRect compas)
 {
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
@@ -266,12 +267,12 @@ void mapRenderScales(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, 
         renderQuad(proj, zoom, CGRectMake(0, 0, 1, 1));
     }
 
+    double rotation[3];
+    map->getPositionRotationLimited(rotation);
+
     if (extraConfig.showControlScales)
     {
         glEnable(GL_SCISSOR_TEST);
-
-        double rotation[3];
-        map->getPositionRotation(rotation);
 
         // yaw
         {
@@ -387,6 +388,14 @@ void mapRenderScales(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, 
         }
 
         glDisable(GL_SCISSOR_TEST);
+    }
+
+    if (extraConfig.showControlCompas)
+    {
+        double posSize[3] = { (compas.origin.x + compas.size.width * 0.5) * retinaScale,
+            (whole.size.height - (compas.origin.y + compas.size.height * 0.5)) * retinaScale,
+            compas.size.width * retinaScale };
+        renderCompass(posSize, rotation);
     }
 
     checkGl("rendered scale");

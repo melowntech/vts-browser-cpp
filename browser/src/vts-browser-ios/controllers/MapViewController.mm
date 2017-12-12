@@ -102,7 +102,7 @@ using namespace vts;
         case UIGestureRecognizerStateChanged:
         {
             CGPoint p = [recognizer translationInView:self.view];
-            map->rotate({2000 * p.x / renderOptions.width, 0, 0});
+            map->rotate({3 * p.x, 0, 0});
             map->options().navigationType = vts::NavigationType::Quick;
             [recognizer setTranslation:CGPoint() inView:self.view];
             fullscreenOverride = false;
@@ -120,7 +120,7 @@ using namespace vts;
         case UIGestureRecognizerStateChanged:
         {
             CGPoint p = [recognizer translationInView:self.view];
-            map->rotate({0, 2000 * p.y / renderOptions.height, 0});
+            map->rotate({0, 3 * p.y, 0});
             map->options().navigationType = vts::NavigationType::Quick;
             [recognizer setTranslation:CGPoint() inView:self.view];
             fullscreenOverride = false;
@@ -138,7 +138,7 @@ using namespace vts;
         case UIGestureRecognizerStateChanged:
         {
             CGPoint p = [recognizer translationInView:self.view];
-            map->zoom(-60 * p.y / renderOptions.height);
+            map->zoom(-0.05 * p.y);
             map->options().navigationType = vts::NavigationType::Quick;
             [recognizer setTranslation:CGPoint() inView:self.view];
             fullscreenOverride = false;
@@ -188,7 +188,7 @@ using namespace vts;
             if (pitchMultiEnabled)
             {
                 CGPoint p = [recognizer translationInView:self.view];
-                map->rotate({0, 7000 * p.y / renderOptions.height, 0});
+                map->rotate({0, 5 * p.y, 0});
                 map->options().navigationType = vts::NavigationType::Quick;
             }
             [recognizer setTranslation:CGPoint() inView:self.view];
@@ -273,7 +273,7 @@ using namespace vts;
         case UIGestureRecognizerStateChanged:
         {
             {
-                double speed = 2500.0 / self.view.frame.size.width;
+                double speed = 10;
                 CGPoint p = [recognizer translationInView:self.view];
                 map->rotate({p.x * speed, p.y * speed, 0});
                 map->options().navigationType = vts::NavigationType::Quick;
@@ -406,7 +406,7 @@ using namespace vts;
     gesturesRequireFail[rFullscreen].insert(rNorth);
 
     // set delegate for all recognizers
-    for (int i = 0, e = self.view.gestureRecognizers.count; i != e; i++)
+    for (int i = 0, e = (int)self.view.gestureRecognizers.count; i != e; i++)
         [[self.view.gestureRecognizers objectAtIndex:i] setDelegate:self];
 }
 

@@ -145,7 +145,7 @@ void loadAppConfig()
 
 - (IBAction)optControlTypeChanged:(UISegmentedControl *)sender
 {
-    extraConfig.controlType = sender.selectedSegmentIndex;
+    extraConfig.controlType = (int)sender.selectedSegmentIndex;
     [self updateShowControls];
     [self updateViewControls];
     saveConfig();

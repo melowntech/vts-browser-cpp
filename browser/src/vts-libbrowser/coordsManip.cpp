@@ -41,17 +41,6 @@
 
 #define Node vtslibs::registry::ReferenceFrame::Division::Node
 
-namespace std
-{
-    template<> struct hash<vts::Srs>
-    {
-        size_t operator()(vts::Srs srs) const
-        {
-            return (int)srs;
-        }
-    };
-}
-
 namespace vts
 {
 
@@ -88,13 +77,8 @@ class CoordManipImpl : public CoordManip
     const std::string &customSrs1;
     const std::string &customSrs2;
 
-    std::unordered_map<int, std::string>idxToProj;
-    std::unordered_map<std::string, int> projToIdx;
-    std::unordered_map<Srs, int> srsToIdx;
-    std::unordered_map<const Node*, int> nodeToIdx;
-    std::unordered_map<int, std::unordered_map<int,
-                    std::shared_ptr<vtslibs::vts::CsConvertor>>> convertors;
-    int nextIdx;
+    std::unordered_map<std::string, std::shared_ptr<vtslibs::vts::CsConvertor>>
+        convertors;
 
     boost::optional<GeographicLib::Geodesic> geodesic_;
 
@@ -105,8 +89,7 @@ public:
             const std::string &customSrs1,
             const std::string &customSrs2) :
         mapconfig(mapconfig), searchSrs(searchSrs),
-        customSrs1(customSrs1), customSrs2(customSrs2),
-        nextIdx(0)
+        customSrs1(customSrs1), customSrs2(customSrs2)
     {
         // create geodesic
         {
@@ -151,6 +134,36 @@ public:
         }
     }
 
+    vtslibs::vts::CsConvertor &convertor(const std::string &a,
+                                         const std::string &b)
+    {
+        std::string key = a + " >>> " + b;
+        auto it = convertors.find(key);
+        if (it == convertors.end())
+            return *(convertors[key]
+                    = std::make_shared<vtslibs::vts::CsConvertor>(
+                        a, b, mapconfig));
+        return *it->second;
+    }
+
+    vec3 convert(const vec3 &value, Srs from, Srs to) override
+    {
+        auto cs = convertor(srsToProj(from), srsToProj(to));
+        return vecFromUblas<vec3>(cs(vecFromUblas<math::Point3>(value)));
+    }
+
+    vec3 convert(const vec3 &value, const Node &from, Srs to) override
+    {
+        auto cs = convertor(from.srs, srsToProj(to));
+        return vecFromUblas<vec3>(cs(vecFromUblas<math::Point3>(value)));
+    }
+
+    vec3 convert(const vec3 &value, Srs from, const Node &to) override
+    {
+        auto cs = convertor(srsToProj(from), to.srs);
+        return vecFromUblas<vec3>(cs(vecFromUblas<math::Point3>(value)));
+    }
+
     vec3 navToPhys(const vec3 &value) override
     {
         return convert(value, Srs::Navigation, Srs::Physical);
@@ -164,59 +177,6 @@ public:
     vec3 searchToNav(const vec3 &value) override
     {
         return convert(value, Srs::Search, Srs::Navigation);
-    }
-
-    vec3 convert(const vec3 &value, int from, int to)
-    {
-        std::shared_ptr<vtslibs::vts::CsConvertor> &p = convertors[from][to];
-        if (!p)
-        {
-            p = std::make_shared<vtslibs::vts::CsConvertor>(
-                idxToProj[from], idxToProj[to], mapconfig);
-        }
-        return vecFromUblas<vec3>((*p)(vecFromUblas<math::Point3>(value)));
-    }
-
-    int idx(const std::string &proj)
-    {
-        auto it = projToIdx.find(proj);
-        if (it != projToIdx.end())
-            return it->second;
-        int i = nextIdx++;
-        idxToProj[i] = proj;
-        return projToIdx[proj] = i;
-    }
-
-    int idx(const Node &node)
-    {
-        const Node *n = &node;
-        auto it = nodeToIdx.find(n);
-        if (it != nodeToIdx.end())
-            return it->second;
-        return nodeToIdx[n] = idx(n->srs);
-    }
-
-    int idx(Srs srs)
-    {
-        auto it = srsToIdx.find(srs);
-        if (it != srsToIdx.end())
-            return it->second;
-        return srsToIdx[srs] = idx(srsToProj(srs));
-    }
-
-    vec3 convert(const vec3 &value, Srs from, Srs to) override
-    {
-        return convert(value, idx(from), idx(to));
-    }
-
-    vec3 convert(const vec3 &value, const Node &from, Srs to) override
-    {
-        return convert(value, idx(from), idx(to));
-    }
-
-    vec3 convert(const vec3 &value, Srs from, const Node &to) override
-    {
-        return convert(value, idx(from), idx(to));
     }
 
     vec3 geoDirect(const vec3 &position, double distance,

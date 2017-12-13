@@ -397,10 +397,11 @@ bool MapImpl::travDetermineMeta(TraverseNode *trav)
         vec2 fu = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
         vec3 el = vec2to3(fl, node->geomExtents.z.min);
         vec3 eu = vec2to3(fu, node->geomExtents.z.max);
+        vec3 ed = eu - el;
         vec3 *corners = trav->meta->cornersPhys;
         for (uint32 i = 0; i < 8; i++)
         {
-            vec3 f = lowerUpperCombine(i).cwiseProduct(eu - el) + el;
+            vec3 f = lowerUpperCombine(i).cwiseProduct(ed) + el;
             f = convertor->convert(f, trav->nodeInfo.node(), Srs::Physical);
             corners[i] = f;
         }
@@ -438,14 +439,16 @@ bool MapImpl::travDetermineMeta(TraverseNode *trav)
     {
         vec3 fl = vecFromUblas<vec3>(node->extents.ll);
         vec3 fu = vecFromUblas<vec3>(node->extents.ur);
+        vec3 fd = fu - fl;
         vec3 el = vecFromUblas<vec3>
                 (mapConfig->referenceFrame.division.extents.ll);
         vec3 eu = vecFromUblas<vec3>
                 (mapConfig->referenceFrame.division.extents.ur);
+        vec3 ed = eu - el;
         for (uint32 i = 0; i < 8; i++)
         {
-            vec3 f = lowerUpperCombine(i).cwiseProduct(fu - fl) + fl;
-            trav->meta->cornersPhys[i] = f.cwiseProduct(eu - el) + el;
+            vec3 f = lowerUpperCombine(i).cwiseProduct(fd) + fl;
+            trav->meta->cornersPhys[i] = f.cwiseProduct(ed) + el;
         }
     }
 
@@ -513,6 +516,9 @@ bool MapImpl::travDetermineDraws(TraverseNode *trav)
 
     // statistics
     statistics.currentNodeDrawsUpdates++;
+
+    // update priority
+    trav->priority = computeResourcePriority(trav);
 
     const TileId nodeId = trav->nodeInfo.nodeId();
 

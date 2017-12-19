@@ -101,7 +101,7 @@ void Credits::tick(MapCredits &credits)
         {
             MapCredits::Credit c;
             auto t = stor(it.id, std::nothrow);
-            if (!t)
+            if (!t || t->notice.empty())
                 continue;
             c.notice = t->notice;
             c.url = t->url ? *t->url : "";

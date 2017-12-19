@@ -902,6 +902,7 @@ void MapImpl::updateCamera()
     double mountainsBehindHorizon = std::sqrt(mountains * mountains
                                     - terrainAboveOrigin * terrainAboveOrigin);
     double far = cameraToHorizon + mountainsBehindHorizon;
+    far = std::max(far, near * 10);
     double fov = pos.verticalFov;
     double aspect = (double)renderer.windowWidth/(double)renderer.windowHeight;
     if (callbacks.cameraOverrideFovAspectNearFar)

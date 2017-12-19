@@ -34,13 +34,6 @@ namespace vts
 namespace
 {
 
-/*
-double signum(double a)
-{
-    return a < 0 ? -1 : a > 0 ? 1 : 0;
-}
-*/
-
 double sumExtents(double v1, double v2, double mult)
 {
     assert(v1 > 0);

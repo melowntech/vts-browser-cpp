@@ -239,7 +239,8 @@ void MapImpl::updateNavigation()
 
     // limit rotation for seamless navigation mode
     if (options.navigationMode == NavigationMode::Seamless
-            && navigation.mode == NavigationMode::Azimuthal)
+            && navigation.mode == NavigationMode::Azimuthal
+            && options.enableCameraNormalization)
     {
         double yaw = mapConfig->position.orientation[0];
         double &ch = navigation.changeRotation(0);
@@ -367,7 +368,8 @@ void MapImpl::updateNavigation()
     }
 
     // normalize rotation
-    if (pos.type == vtslibs::registry::Position::Type::objective)
+    if (pos.type == vtslibs::registry::Position::Type::objective
+            && options.enableCameraNormalization)
     {
         r[1] = clamp(r[1],
             options.tiltLimitAngleLow,

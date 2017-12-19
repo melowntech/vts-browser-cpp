@@ -50,7 +50,7 @@ public:
 
         Total_
     };
-    
+
     boost::optional<vtslibs::registry::CreditId> find(
             const std::string &name) const;
     void hit(Scope scope, vtslibs::registry::CreditId id, uint32 lod);
@@ -58,14 +58,14 @@ public:
     void merge(vtslibs::registry::RegistryBase *reg);
     void merge(vtslibs::registry::Credit credit);
     void purge();
-    
+
 private:
     vtslibs::registry::Credit::dict stor;
     
     struct Hit
     {
         Hit(vtslibs::registry::CreditId id);
-        
+
         vtslibs::registry::CreditId id;
         uint32 hits;
         uint32 maxLod;

@@ -78,6 +78,7 @@ void clearGlState()
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_SCISSOR_TEST);
     glDisable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glUseProgram(0);
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -354,78 +355,37 @@ public:
         if (options.renderAtmosphere
                 && body.majorRadius > 0 && body.atmosphereThickness > 0)
         {
-            // atmosphere properties
-            vec3 camPos = vec4to3(viewProjInv * vec4(0, 0, -1, 1), true);
-            mat4f uniInvView = viewProjInv.cast<float>();
-            double camRad = length(camPos);
-            double lowRad = body.majorRadius;
-            double atmRad = body.majorRadius + body.atmosphereThickness;
-            double aurDotLow = camRad > lowRad
-                    ? -sqrt(sqr(camRad) - sqr(lowRad)) / camRad : 0;
-            double aurDotHigh = camRad > atmRad
-                    ? -sqrt(sqr(camRad) - sqr(atmRad)) / camRad : 0;
-            aurDotHigh = std::max(aurDotHigh, aurDotLow + 1e-4);
-            double horizonDistance = camRad > body.majorRadius
-                    ? sqrt(sqr(camRad) - sqr(body.majorRadius)) : 0;
-            double horizonAngle = camRad > body.majorRadius
-                    ? body.majorRadius / camRad : 1;
-
-            // fog properties
-            double fogInsideStart = 0;
-            double fogInsideFull = sqrt(sqr(atmRad) - sqr(body.majorRadius))
-                                    * 0.5;
-            double fogOutsideStart = std::max(camRad - body.majorRadius, 0.0);
-            double fogOutsideFull = std::max(horizonDistance,
-                                             fogOutsideStart + 1);
-            double fogFactor = clamp((camRad - body.majorRadius)
-                    / body.atmosphereThickness, 0, 1);
-            double fogStart = interpolate(fogInsideStart,
-                                               fogOutsideStart, fogFactor);
-            double fogFull = interpolate(fogInsideFull,
-                                              fogOutsideFull, fogFactor);
-
-            // body properties
-            vec3f uniCameraPosition = camPos.cast<float>();
-            vec3f uniCameraPosNorm = normalize(camPos).cast<float>();
-            float uniBody[4]
-                = { (float)body.majorRadius, (float)body.minorRadius,
-                    (float)body.atmosphereThickness };
-            float uniPlanes[4] = { (float)draws.camera.near,
-                                   (float)draws.camera.far,
-                                   (float)fogStart, (float)fogFull };
-            float uniAtmosphere[4] = { (float)aurDotLow, (float)aurDotHigh,
-                                       (float)horizonAngle };
-
-            // camera directions
-            vec3 near = vec4to3(viewProjInv * vec4(0, 0, -1, 1), true);
-            vec3f uniCameraDirections[4] = {
-                normalize(vec4to3(viewProjInv * vec4(-1, -1, 1, 1)
-                    , true)- near).cast<float>(),
-                normalize(vec4to3(viewProjInv * vec4(+1, -1, 1, 1)
-                    , true)- near).cast<float>(),
-                normalize(vec4to3(viewProjInv * vec4(-1, +1, 1, 1)
-                    , true)- near).cast<float>(),
-                normalize(vec4to3(viewProjInv * vec4(+1, +1, 1, 1)
-                    , true)- near).cast<float>(),
+            // prepare shader uniforms
+            float uniBody[4] = {
+                (float)body.majorRadius,
+                (float)body.minorRadius,
+                (float)body.atmosphereThickness,
+                (float)(body.atmosphereThickness / body.majorRadius)
             };
+            float uniPlanes[4] = {
+                (float)draws.camera.near,
+                (float)draws.camera.far
+            };
+            int uniParams[4] = {
+                (int)draws.camera.mapProjected,
+                options.antialiasingSamples
+            };
+            mat4 norm = scaleMatrix(1.0 / body.majorRadius);
+            mat4f uniInvView = (norm * viewProjInv).cast<float>();
+            vec3 camPos = vec4to3(viewProjInv * vec4(0, 0, -1, 1), true);
+            vec3f uniCameraPosition = (camPos / body.majorRadius).cast<float>();
+            vec3f uniCameraPosNorm = normalize(camPos).cast<float>();
 
-            // shader uniforms
+            // upload shader uniforms
             shaderAtmosphere->bind();
             shaderAtmosphere->uniformVec4(0, body.atmosphereColorLow);
             shaderAtmosphere->uniformVec4(1, body.atmosphereColorHigh);
             shaderAtmosphere->uniformVec4(2, uniBody);
             shaderAtmosphere->uniformVec4(3, uniPlanes);
-            shaderAtmosphere->uniformVec4(4, uniAtmosphere);
-            shaderAtmosphere->uniformVec3(5, (float*)uniCameraPosition.data());
-            shaderAtmosphere->uniformVec3(6, (float*)uniCameraPosNorm.data());
-            shaderAtmosphere->uniform(7, (int)draws.camera.mapProjected);
-            for (int i = 0; i < 4; i++)
-            {
-                shaderAtmosphere->uniformVec3(8 + i,
-                                (float*)uniCameraDirections[i].data());
-            }
-            shaderAtmosphere->uniformMat4(12, (float*)uniInvView.data());
-            shaderAtmosphere->uniform(13, options.antialiasingSamples);
+            shaderAtmosphere->uniformVec4(4, uniParams);
+            shaderAtmosphere->uniformMat4(5, (float*)uniInvView.data());
+            shaderAtmosphere->uniformVec3(6, (float*)uniCameraPosition.data());
+            shaderAtmosphere->uniformVec3(7, (float*)uniCameraPosNorm.data());
 
             // dispatch
             meshQuad->bind();
@@ -448,7 +408,7 @@ public:
                               0, 0, options.width, options.height,
                               GL_COLOR_BUFFER_BIT, GL_NEAREST);
             glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
-            checkGl("copied the color (resolved multisampling)");
+            checkGl("copied the color to texture (resolving multisampling)");
         }
 
         // copy the color to screen
@@ -460,7 +420,7 @@ public:
                               options.targetViewportX, options.targetViewportY,
                               options.width, options.height,
                               GL_COLOR_BUFFER_BIT, GL_NEAREST);
-            checkGl("copied the color to screen (resolve multisampling)");
+            checkGl("copied the color to screen (resolving multisampling)");
         }
 
         // clear the state
@@ -561,20 +521,14 @@ void initialize()
             std::string(frag.data(), frag.size()));
         std::vector<uint32> &uls = shaderAtmosphere->uniformLocations;
         GLuint id = shaderAtmosphere->getId();
-        uls.push_back(glGetUniformLocation(id, "uniColorLow"));
-        uls.push_back(glGetUniformLocation(id, "uniColorHigh"));
+        uls.push_back(glGetUniformLocation(id, "uniAtmColorLow"));
+        uls.push_back(glGetUniformLocation(id, "uniAtmColorHigh"));
         uls.push_back(glGetUniformLocation(id, "uniBody"));
         uls.push_back(glGetUniformLocation(id, "uniPlanes"));
-        uls.push_back(glGetUniformLocation(id, "uniAtmosphere"));
+        uls.push_back(glGetUniformLocation(id, "uniParams"));
+        uls.push_back(glGetUniformLocation(id, "uniInvView"));
         uls.push_back(glGetUniformLocation(id, "uniCameraPosition"));
         uls.push_back(glGetUniformLocation(id, "uniCameraPosNorm"));
-        uls.push_back(glGetUniformLocation(id, "uniProjected"));
-        uls.push_back(glGetUniformLocation(id, "uniCameraDirections[0]"));
-        uls.push_back(glGetUniformLocation(id, "uniCameraDirections[1]"));
-        uls.push_back(glGetUniformLocation(id, "uniCameraDirections[2]"));
-        uls.push_back(glGetUniformLocation(id, "uniCameraDirections[3]"));
-        uls.push_back(glGetUniformLocation(id, "uniInvView"));
-        uls.push_back(glGetUniformLocation(id, "uniMultiSamples"));
         glUseProgram(id);
         glUniform1i(glGetUniformLocation(id, "texDepthSingle"), 6);
         glUniform1i(glGetUniformLocation(id, "texDepthMulti"), 5);

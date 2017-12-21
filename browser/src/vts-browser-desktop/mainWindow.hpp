@@ -91,6 +91,7 @@ public:
     vts::vec3 getWorldPositionFromCursor();
 
     void run();
+    void prepareMarks();
     void renderFrame();
     bool processEvents();
 

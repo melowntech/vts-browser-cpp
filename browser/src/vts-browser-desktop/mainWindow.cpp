@@ -39,6 +39,7 @@
 #include <vts-browser/credits.hpp>
 #include <vts-browser/log.hpp>
 #include <vts-browser/celestial.hpp>
+#include <vts-browser/math.hpp>
 #include <vts-renderer/classes.hpp>
 
 #include <SDL2/SDL.h>
@@ -159,38 +160,6 @@ MainWindow::~MainWindow()
 void MainWindow::renderFrame()
 {
     vts::renderer::RenderOptions &ro = appOptions.render;
-
-    // draw marks
-    {
-        vts::mat4 viewProj = vts::rawToMat4(map->draws().camera.proj)
-                * vts::rawToMat4(map->draws().camera.view);
-        const Mark *prev = nullptr;
-        for (const Mark &m : marks)
-        {
-            // view proj
-            vts::mat4 mvp = viewProj
-                    * vts::translationMatrix(m.coord)
-                    * vts::scaleMatrix(map->getPositionViewExtent() * 0.005);
-            vts::mat4f mvpf = mvp.cast<float>();
-            vts::DrawTask t;
-            vts::vec4f c = vts::vec3to4f(m.color, 1);
-            for (int i = 0; i < 4; i++)
-                t.color[i] = c(i);
-            t.mesh = meshSphere;
-            memcpy(t.mvp, mvpf.data(), sizeof(t.mvp));
-            map->draws().Infographic.push_back(t);
-            if (prev)
-            {
-                t.mesh = meshLine;
-                mvp = viewProj * vts::lookAt(m.coord, prev->coord);
-                mvpf = mvp.cast<float>();
-                memcpy(t.mvp, mvpf.data(), sizeof(t.mvp));
-                map->draws().Infographic.push_back(t);
-            }
-            prev = &m;
-        }
-    }
-
     vts::renderer::render(ro, map->draws(), map->celestialBody());
 
     // compas
@@ -205,6 +174,50 @@ void MainWindow::renderFrame()
     }
 
     gui.render(ro.width, ro.height);
+}
+
+void MainWindow::prepareMarks()
+{
+    vts::mat4 viewProj = vts::rawToMat4(map->draws().camera.proj)
+            * vts::rawToMat4(map->draws().camera.view);
+
+    const Mark *prev = nullptr;
+    for (const Mark &m : marks)
+    {
+        vts::mat4 mvp = viewProj
+                * vts::translationMatrix(m.coord)
+                * vts::scaleMatrix(map->getPositionViewExtent() * 0.005);
+        vts::mat4f mvpf = mvp.cast<float>();
+        vts::DrawTask t;
+        vts::vec4f c = vts::vec3to4f(m.color, 1);
+        for (int i = 0; i < 4; i++)
+            t.color[i] = c(i);
+        t.mesh = meshSphere;
+        memcpy(t.mvp, mvpf.data(), sizeof(t.mvp));
+        map->draws().Infographic.push_back(t);
+        if (prev)
+        {
+            t.mesh = meshLine;
+            mvp = viewProj * vts::lookAt(m.coord, prev->coord);
+            mvpf = mvp.cast<float>();
+            memcpy(t.mvp, mvpf.data(), sizeof(t.mvp));
+            map->draws().Infographic.push_back(t);
+        }
+        prev = &m;
+    }
+
+    // debug world anchor
+    /*
+    {
+        vts::mat4 mvp = viewProj
+                * vts::scaleMatrix(map->celestialBody().majorRadius);
+        vts::mat4f mvpf = mvp.cast<float>();
+        vts::DrawTask t;
+        t.mesh = meshSphere;
+        memcpy(t.mvp, mvpf.data(), sizeof(t.mvp));
+        map->draws().Infographic.push_back(t);
+    }
+    */
 }
 
 bool MainWindow::processEvents()
@@ -365,6 +378,7 @@ void MainWindow::run()
                 throw;
         }
         vts::uint32 timeMapRender = SDL_GetTicks();
+        prepareMarks();
         renderFrame();
         vts::uint32 timeAppRender = SDL_GetTicks();
 
@@ -393,6 +407,7 @@ void MainWindow::run()
         if (appOptions.closeOnFullRender && map->getMapRenderComplete())
             shouldClose = true;
     }
+
     gui.finalize();
 }
 

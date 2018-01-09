@@ -51,6 +51,8 @@ public:
 };
 
 std::string convertNameToPath(std::string path, bool preserveSlashes);
+std::string convertNameToFolderAndFile(std::string path,
+                    std::string &folder, std::string &file);
 
 } // namespace vts
 

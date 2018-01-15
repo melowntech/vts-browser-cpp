@@ -67,7 +67,10 @@ void decodeObj(const Buffer &in, uint32 &outFaceMode,
         for (uint32 i = 0; i < outFaceMode; i++)
         {
             fs->vertex = vecFromUblas<vec3f>(obj.vertices[of.v[i]]);
-            fs->uvs = vecFromUblas<vec3f>(obj.texcoords[of.t[i]]).head(2);
+            if (of.t[i] >= 0)
+                fs->uvs = vecFromUblas<vec3f>(obj.texcoords[of.t[i]]).head(2);
+            else
+                fs->uvs = vec2f(0, 0);
             fs++;
         }
     }

@@ -65,7 +65,6 @@ int antialiasingPrev;
 mat4 view;
 mat4 proj;
 mat4 viewProj;
-mat4 viewProjInv;
 
 double sqr(double a)
 {
@@ -106,7 +105,6 @@ public:
         view = rawToMat4(draws.camera.view);
         proj = rawToMat4(draws.camera.proj);
         viewProj = proj * view;
-        viewProjInv =  viewProj.inverse();
     }
 
     void drawSurface(const DrawTask &t)
@@ -356,36 +354,45 @@ public:
                 && body.majorRadius > 0 && body.atmosphereThickness > 0)
         {
             // prepare shader uniforms
-            float uniBody[4] = {
-                (float)body.majorRadius,
-                (float)body.minorRadius,
-                (float)body.atmosphereThickness,
-                (float)(body.atmosphereThickness / body.majorRadius)
+            double meanRadius = (body.majorRadius + body.minorRadius) * 0.5;
+
+            // uniParams
+            float uniParams[4] = {
+                (float)draws.camera.mapProjected,
+                (float)options.antialiasingSamples,
+                (float)(body.atmosphereThickness / meanRadius)
             };
-            float uniPlanes[4] = {
-                (float)draws.camera.near,
-                (float)draws.camera.far
+
+            // other
+            vec3 camPos = rawToVec3(draws.camera.eye) / meanRadius;
+            vec3f uniCameraPosition = camPos.cast<float>();
+            vec3f uniCameraDirection = normalize(camPos).cast<float>();
+            mat4 invViewProj = (viewProj * scaleMatrix(meanRadius)).inverse();
+            mat4f uniInvViewProj = invViewProj.cast<float>();
+
+            // corner directions
+            vec4 cornerDirsD[4] = {
+                invViewProj * vec4(-1, -1, 0, 1),
+                invViewProj * vec4(+1, -1, 0, 1),
+                invViewProj * vec4(-1, +1, 0, 1),
+                invViewProj * vec4(+1, +1, 0, 1)
             };
-            int uniParams[4] = {
-                (int)draws.camera.mapProjected,
-                options.antialiasingSamples
-            };
-            mat4 norm = scaleMatrix(1.0 / body.majorRadius);
-            mat4f uniInvView = (norm * viewProjInv).cast<float>();
-            vec3 camPos = vec4to3(viewProjInv * vec4(0, 0, -1, 1), true);
-            vec3f uniCameraPosition = (camPos / body.majorRadius).cast<float>();
-            vec3f uniCameraPosNorm = normalize(camPos).cast<float>();
+            vec3f cornerDirs[4];
+            for (uint32 i = 0; i < 4; i++)
+                cornerDirs[i] = normalize(vec4to3(cornerDirsD[i], true)
+                                 - camPos).cast<float>();
 
             // upload shader uniforms
             shaderAtmosphere->bind();
             shaderAtmosphere->uniformVec4(0, body.atmosphereColorLow);
             shaderAtmosphere->uniformVec4(1, body.atmosphereColorHigh);
-            shaderAtmosphere->uniformVec4(2, uniBody);
-            shaderAtmosphere->uniformVec4(3, uniPlanes);
-            shaderAtmosphere->uniformVec4(4, uniParams);
-            shaderAtmosphere->uniformMat4(5, (float*)uniInvView.data());
-            shaderAtmosphere->uniformVec3(6, (float*)uniCameraPosition.data());
-            shaderAtmosphere->uniformVec3(7, (float*)uniCameraPosNorm.data());
+            shaderAtmosphere->uniformVec4(2, uniParams);
+            shaderAtmosphere->uniformMat4(3, (float*)uniInvViewProj.data());
+            shaderAtmosphere->uniformVec3(4, (float*)uniCameraPosition.data());
+            shaderAtmosphere->uniformVec3(5, (float*)uniCameraDirection.data());
+            for (int i = 0; i < 4; i++)
+                shaderAtmosphere->uniformVec3(6 + i,
+                                              (float*)cornerDirs[i].data());
 
             // dispatch
             meshQuad->bind();
@@ -523,12 +530,14 @@ void initialize()
         GLuint id = shaderAtmosphere->getId();
         uls.push_back(glGetUniformLocation(id, "uniAtmColorLow"));
         uls.push_back(glGetUniformLocation(id, "uniAtmColorHigh"));
-        uls.push_back(glGetUniformLocation(id, "uniBody"));
-        uls.push_back(glGetUniformLocation(id, "uniPlanes"));
         uls.push_back(glGetUniformLocation(id, "uniParams"));
-        uls.push_back(glGetUniformLocation(id, "uniInvView"));
+        uls.push_back(glGetUniformLocation(id, "uniInvViewProj"));
         uls.push_back(glGetUniformLocation(id, "uniCameraPosition"));
-        uls.push_back(glGetUniformLocation(id, "uniCameraPosNorm"));
+        uls.push_back(glGetUniformLocation(id, "uniCameraDirection"));
+        uls.push_back(glGetUniformLocation(id, "uniCornerDirs[0]"));
+        uls.push_back(glGetUniformLocation(id, "uniCornerDirs[1]"));
+        uls.push_back(glGetUniformLocation(id, "uniCornerDirs[2]"));
+        uls.push_back(glGetUniformLocation(id, "uniCornerDirs[3]"));
         glUseProgram(id);
         glUniform1i(glGetUniformLocation(id, "texDepthSingle"), 6);
         glUniform1i(glGetUniformLocation(id, "texDepthMulti"), 5);
@@ -688,7 +697,6 @@ void render(const RenderOptions &options,
 void renderCompass(const double screenPosSize[3],
                    const double mapRotation[3])
 {
-    (void)mapRotation;
     glEnable(GL_BLEND);
     glActiveTexture(GL_TEXTURE0);
     texCompas->bind();
@@ -773,7 +781,7 @@ void getWorldPosition(const double screenPos[2], double worldPos[3])
     depth = depth * 2 - 1;
     x = x / widthPrev * 2 - 1;
     y = y / heightPrev * 2 - 1;
-    vec3 res = vec4to3(viewProjInv * vec4(x, y, depth, 1), true);
+    vec3 res = vec4to3(viewProj.inverse() * vec4(x, y, depth, 1), true);
     for (int i = 0; i < 3; i++)
         worldPos[i] = res[i];
 }

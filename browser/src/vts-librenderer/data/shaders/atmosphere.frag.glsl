@@ -247,7 +247,9 @@ float atmosphere(float t1)
         float a = exp(-10 * h);
         sum += a;
     }
-    return sum * step * 10;
+    sum *= step;
+
+    return 1 - pow(10, -30 * sum);
 
 
 

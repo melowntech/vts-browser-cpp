@@ -61,6 +61,23 @@ void GpuTexture::load()
 {
     LOG(info2) << "Loading (gpu) texture <" << name << ">";
     GpuTextureSpec spec(reply.content);
+
+    if (map->options.debugExtractRawResources)
+    {
+        static const std::string prefix = "extracted/";
+        std::string b, c;
+        std::string path = prefix
+                + convertNameToFolderAndFile(this->name, b, c)
+                + ".png";
+        if (!boost::filesystem::exists(path))
+        {
+            boost::filesystem::create_directories(prefix + b);
+            Buffer out;
+            encodePng(spec.buffer, out, spec.width, spec.height, spec.components);
+            writeLocalFileBuffer(path, out);
+        }
+    }
+
     spec.verticalFlip();
     map->callbacks.loadTexture(info, spec);
     info.ramMemoryCost += sizeof(*this);

@@ -195,15 +195,13 @@ public:
         }
         else
         {
-            std::string a = path;
-            std::string b = boost::filesystem::path(a).parent_path().string();
-            std::string c = a.substr(b.length() + 1);
+            std::string b, c;
+            std::string d = convertNameToFolderAndFile(path, b, c);
             if (b.empty() || c.empty())
                 LOGTHROW(err2, std::runtime_error)
                         << "Cannot convert path '" << path
                         << "' into a cache path";
-            return root + convertNameToPath(b, false)
-                    + "/" + convertNameToPath(c, false);
+            return root + d;
         }
     }
 
@@ -246,6 +244,16 @@ std::string convertNameToPath(std::string path, bool preserveSlashes)
             res += '_';
     }
     return res;
+}
+
+std::string convertNameToFolderAndFile(std::string path,
+                    std::string &folder, std::string &file)
+{
+    std::string b = boost::filesystem::path(path).parent_path().string();
+    std::string c = path.substr(b.length() + 1);
+    folder = convertNameToPath(b, false);
+    file = convertNameToPath(c, false);
+    return folder + "/" + file;
 }
 
 } // namespace vts

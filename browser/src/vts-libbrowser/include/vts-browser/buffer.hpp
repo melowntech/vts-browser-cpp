@@ -58,6 +58,12 @@ public:
     //   the buffer is not zeroed
     void allocate(uint32 size);
 
+    // allocates a new buffer of the specified size
+    //   all previous content (up to the size of the new buffer) is preserved
+    //   any new space is not zeroed
+    // this may invalidate all pointers
+    void resize(uint32 size);
+
     void free();
 
     char *data() const { return data_; }

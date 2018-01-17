@@ -96,6 +96,12 @@ void decodePng(const Buffer &in, Buffer &out,
 	decodeImg(in, out, width, height, components, 0);
 }
 
+void encodePng(const Buffer &in, Buffer &out,
+               uint32 &width, uint32 &height, uint32 &components)
+{
+    LOGTHROW(fatal, std::logic_error) << "encode png not implemented";
+}
+
 void decodeJpeg(const Buffer &in, Buffer &out,
                 uint32 &width, uint32 &height, uint32 &components)
 {

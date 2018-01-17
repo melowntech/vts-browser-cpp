@@ -188,6 +188,41 @@ void MeshAggregate::load()
         part.surfaceReference = m.surfaceReference;
         submeshes.push_back(part);
 
+        if (map->options.debugExtractRawResources)
+        {
+            static const std::string prefix = "extracted/";
+            std::string b, c;
+            std::string path = prefix
+                    + convertNameToFolderAndFile(this->name, b, c)
+                    + "_" + tmp + ".obj";
+            if (!boost::filesystem::exists(path))
+            {
+                boost::filesystem::create_directories(prefix + b);
+                vtslibs::vts::SubMesh msh(m);
+
+                // denormalize vertex positions
+                for (auto &v : msh.vertices)
+                {
+                    v = vecToUblas<math::Point3>(vec4to3(part.normToPhys
+                                    * vec3to4(vecFromUblas<vec3>(v), 1)));
+                }
+
+                // copy external uv if there are no internal uv
+                if (msh.facesTc.empty() && !msh.etc.empty())
+                {
+                    msh.facesTc = msh.faces;
+                    msh.etc.swap(msh.tc);
+                }
+
+                // save to stream (with increased precision)
+                std::ofstream f;
+                f.exceptions(std::ios::badbit | std::ios::failbit);
+                f.open(path, std::ios_base::out | std::ios_base::trunc);
+                f.precision(20);
+                vtslibs::vts::saveSubMeshAsObj(f, msh, mi);
+            }
+        }
+
         map->callbacks.loadMesh(gm->info, spec);
         gm->state = Resource::State::ready;
     }

@@ -33,7 +33,7 @@
 
 namespace vtslibs { namespace vts {
 
-class MapConfig;
+struct MapConfig;
 
 }} // namespace vtslibs::vts
 

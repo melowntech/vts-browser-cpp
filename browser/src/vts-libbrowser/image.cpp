@@ -40,7 +40,7 @@ void decodeImage(const Buffer &in, Buffer &out,
                  uint32 &width, uint32 &height, uint32 &components)
 {
     if (in.size() < 8)
-        LOGTHROW(err1, std::runtime_error) << "invalid image data";
+        LOGTHROW(err1, std::runtime_error) << "insufficient image data";
     static const unsigned char pngSignature[]
             = { 137, 80, 78, 71, 13, 10, 26, 10 };
     if (memcmp(in.data(), pngSignature, 8) == 0)

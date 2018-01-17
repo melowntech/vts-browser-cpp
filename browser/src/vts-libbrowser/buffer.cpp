@@ -97,6 +97,19 @@ void Buffer::allocate(uint32 size)
                 << size << " bytes";
 }
 
+void Buffer::resize(uint32 size)
+{
+    char *tmp = (char*)realloc(data_, size);
+    if (!tmp)
+    {
+        LOGTHROW(err2, std::runtime_error)
+                << "Not enough memory for buffer reallocation, requested "
+                << size << " bytes";
+    }
+    this->size_ = size;
+    data_ = tmp;
+}
+
 void Buffer::free()
 {
     ::free(data_);

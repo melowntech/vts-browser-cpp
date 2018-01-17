@@ -198,6 +198,7 @@ void encodePng(const Buffer &in, Buffer &out,
     default:
         LOGTHROW(err1, std::logic_error)
                 << "png encoder failed (unsupported color type)";
+        throw;
     }
 
     png_set_IHDR(png, info, width, height, 8, colorType,

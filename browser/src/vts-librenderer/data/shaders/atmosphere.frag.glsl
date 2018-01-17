@@ -204,8 +204,17 @@ float atmosphere(float t1)
 {
     float l = length(uniCameraPosition);
     float x = dot(cameraFragmentDirection(), -uniCameraDirection) * l;
-    float y2 = abs(sqr(l) - sqr(x));
+    //float y2 = abs(sqr(l) - sqr(x));
+    float y2 = sqr(l) - sqr(x);
     float y = sqrt(y2);
+
+
+    // fill holes in terrain
+    if (y < 0.999 && x >= 0 && t1 > 99)
+    {
+        float z = sqrt(1 - y2);
+        t1 = x - z;
+    }
 
 
 
@@ -239,17 +248,17 @@ float atmosphere(float t1)
 
 
     float sum = 0;
-    float step = 0.001;
+    float step = 0.0001;
     for (float t = t0; t < t1; t += step)
     {
         float h = sqrt(sqr(t) + y2);
         h = (clamp(h, 1, atmRad) - 1) / atmHeight;
-        float a = exp(-10 * h);
+        float a = exp(-12 * h);
         sum += a;
     }
     sum *= step;
 
-    return 1 - pow(10, -30 * sum);
+    return 1 - pow(10, -50 * sum);
 
 
 

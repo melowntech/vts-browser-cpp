@@ -25,6 +25,9 @@
  */
 
 #include <assert.h>
+#include <atomic>
+#include <thread>
+#include <mutex>
 
 #include <vts-browser/buffer.hpp>
 #include <vts-browser/math.hpp>
@@ -55,6 +58,95 @@ std::shared_ptr<Shader> shaderAtmosphere;
 std::shared_ptr<Shader> shaderCopyDepth;
 std::shared_ptr<Mesh> meshQuad; // positions: -1 .. 1
 std::shared_ptr<Mesh> meshRect; // positions: 0 .. 1
+
+void atmosphereThreadEntry(vts::MapCelestialBody body, int thrIdx);
+
+bool areSame(const vts::MapCelestialBody &a, const vts::MapCelestialBody &b)
+{
+    return a.majorRadius == b.majorRadius
+        && a.minorRadius == b.minorRadius
+        && a.atmosphereThickness == b.atmosphereThickness;
+}
+
+struct AtmosphereProp
+{
+    GpuTextureSpec spec;
+    std::shared_ptr<Texture> tex;
+    vts::MapCelestialBody body;
+    std::mutex mut;
+    std::atomic<int> state; // 0 = uninitialized, 1 = computing, 2 = generated, 3 = done
+    std::atomic<int> thrIdx;
+
+    AtmosphereProp() : state(0), thrIdx(0)
+    {}
+
+    bool validate(const vts::MapCelestialBody &current)
+    {
+        if (!areSame(current, body) || state == 0)
+        {
+            std::lock_guard<std::mutex> lck(mut);
+            thrIdx++;
+            state = 1;
+            body = current;
+            std::thread thr(&atmosphereThreadEntry, body, (int)thrIdx);
+            thr.detach();
+        }
+        if (state == 2)
+        {
+            std::lock_guard<std::mutex> lck(mut);
+            tex = std::make_shared<Texture>();
+            vts::ResourceInfo info;
+            tex->load(info, spec);
+            spec.buffer.free();
+            state = 3;
+        }
+        return state == 3;
+    }
+} atmosphere;
+
+void encodeFloat(float v, unsigned char *target)
+{
+    vec4 enc = vec4(1.0, 255.0, 65025.0, 16581375.0) * v;
+    for (int i = 0; i < 4; i++)
+        enc[i] -= std::floor(enc[i]); // frac
+    vec4 tmp;
+    for (int i = 0; i < 3; i++)
+        tmp[i] = enc[i + 1]; // shift
+    tmp[3] = 0;
+    enc -= tmp; // subtract
+    for (int i = 0; i < 4; i++)
+        target[i] = (unsigned char)enc[i];
+}
+
+void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
+{
+    GpuTextureSpec spec;
+
+    spec.width = spec.height = 1024;
+    spec.components = 4;
+    spec.buffer.allocate(spec.width * spec.height * spec.components);
+    unsigned char *valsArray = (unsigned char *)spec.buffer.data();
+
+    for (uint32 y = 0; y < spec.height; y++)
+    {
+        unsigned char *valsLine = valsArray + y * spec.height * spec.components;
+        for (uint32 x = 0; x < spec.width; x++)
+        {
+            float value = random() / (float)RAND_MAX;
+            (void)body;
+            encodeFloat(value, valsLine + x * spec.components);
+        }
+    }
+
+    {
+        std::lock_guard<std::mutex> lck(atmosphere.mut);
+        if (atmosphere.thrIdx == thrIdx)
+        {
+            atmosphere.spec = std::move(spec);
+            atmosphere.state = 2;
+        }
+    }
+}
 
 RenderVariables vars;
 
@@ -154,6 +246,58 @@ public:
         Mesh *m = (Mesh*)t.mesh.get();
         m->bind();
         m->dispatch();
+    }
+
+    void renderAtmosphere()
+    {
+        if (!atmosphere.validate(body))
+            return;
+
+        // prepare shader uniforms
+        double meanRadius = (body.majorRadius + body.minorRadius) * 0.5;
+
+        // uniParams
+        float uniParams[4] = {
+            (float)draws.camera.mapProjected,
+            (float)options.antialiasingSamples,
+            (float)(body.atmosphereThickness / meanRadius)
+        };
+
+        // other
+        vec3 camPos = rawToVec3(draws.camera.eye) / meanRadius;
+        vec3f uniCameraPosition = camPos.cast<float>();
+        vec3f uniCameraDirection = normalize(camPos).cast<float>();
+        mat4 invViewProj = (viewProj * scaleMatrix(meanRadius)).inverse();
+        mat4f uniInvViewProj = invViewProj.cast<float>();
+
+        // corner directions
+        vec4 cornerDirsD[4] = {
+            invViewProj * vec4(-1, -1, 0, 1),
+            invViewProj * vec4(+1, -1, 0, 1),
+            invViewProj * vec4(-1, +1, 0, 1),
+            invViewProj * vec4(+1, +1, 0, 1)
+        };
+        vec3f cornerDirs[4];
+        for (uint32 i = 0; i < 4; i++)
+            cornerDirs[i] = normalize(vec4to3(cornerDirsD[i], true)
+                             - camPos).cast<float>();
+
+        // upload shader uniforms
+        shaderAtmosphere->bind();
+        shaderAtmosphere->uniformVec4(0, body.atmosphereColorLow);
+        shaderAtmosphere->uniformVec4(1, body.atmosphereColorHigh);
+        shaderAtmosphere->uniformVec4(2, uniParams);
+        shaderAtmosphere->uniformMat4(3, (float*)uniInvViewProj.data());
+        shaderAtmosphere->uniformVec3(4, (float*)uniCameraPosition.data());
+        shaderAtmosphere->uniformVec3(5, (float*)uniCameraDirection.data());
+        for (int i = 0; i < 4; i++)
+            shaderAtmosphere->uniformVec3(6 + i,
+                                          (float*)cornerDirs[i].data());
+
+        // dispatch
+        meshQuad->bind();
+        meshQuad->dispatch();
+        checkGl("rendered atmosphere");
     }
 
     void render()
@@ -352,53 +496,7 @@ public:
         // render atmosphere
         if (options.renderAtmosphere
                 && body.majorRadius > 0 && body.atmosphereThickness > 0)
-        {
-            // prepare shader uniforms
-            double meanRadius = (body.majorRadius + body.minorRadius) * 0.5;
-
-            // uniParams
-            float uniParams[4] = {
-                (float)draws.camera.mapProjected,
-                (float)options.antialiasingSamples,
-                (float)(body.atmosphereThickness / meanRadius)
-            };
-
-            // other
-            vec3 camPos = rawToVec3(draws.camera.eye) / meanRadius;
-            vec3f uniCameraPosition = camPos.cast<float>();
-            vec3f uniCameraDirection = normalize(camPos).cast<float>();
-            mat4 invViewProj = (viewProj * scaleMatrix(meanRadius)).inverse();
-            mat4f uniInvViewProj = invViewProj.cast<float>();
-
-            // corner directions
-            vec4 cornerDirsD[4] = {
-                invViewProj * vec4(-1, -1, 0, 1),
-                invViewProj * vec4(+1, -1, 0, 1),
-                invViewProj * vec4(-1, +1, 0, 1),
-                invViewProj * vec4(+1, +1, 0, 1)
-            };
-            vec3f cornerDirs[4];
-            for (uint32 i = 0; i < 4; i++)
-                cornerDirs[i] = normalize(vec4to3(cornerDirsD[i], true)
-                                 - camPos).cast<float>();
-
-            // upload shader uniforms
-            shaderAtmosphere->bind();
-            shaderAtmosphere->uniformVec4(0, body.atmosphereColorLow);
-            shaderAtmosphere->uniformVec4(1, body.atmosphereColorHigh);
-            shaderAtmosphere->uniformVec4(2, uniParams);
-            shaderAtmosphere->uniformMat4(3, (float*)uniInvViewProj.data());
-            shaderAtmosphere->uniformVec3(4, (float*)uniCameraPosition.data());
-            shaderAtmosphere->uniformVec3(5, (float*)uniCameraDirection.data());
-            for (int i = 0; i < 4; i++)
-                shaderAtmosphere->uniformVec3(6 + i,
-                                              (float*)cornerDirs[i].data());
-
-            // dispatch
-            meshQuad->bind();
-            meshQuad->dispatch();
-            checkGl("rendered atmosphere");
-        }
+            renderAtmosphere();
 
         // render infographics
         for (const DrawTask &t : draws.Infographic)
@@ -613,6 +711,7 @@ void finalize()
     shaderCopyDepth.reset();
     meshQuad.reset();
     meshRect.reset();
+    atmosphere.tex.reset();
 
     if (vars.frameRenderBufferId)
     {

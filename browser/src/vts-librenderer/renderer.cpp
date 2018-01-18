@@ -104,37 +104,70 @@ struct AtmosphereProp
     }
 } atmosphere;
 
-void encodeFloat(float v, unsigned char *target)
+void encodeFloat(double v, unsigned char *target)
 {
     vec4 enc = vec4(1.0, 255.0, 65025.0, 16581375.0) * v;
     for (int i = 0; i < 4; i++)
         enc[i] -= std::floor(enc[i]); // frac
     vec4 tmp;
     for (int i = 0; i < 3; i++)
-        tmp[i] = enc[i + 1]; // shift
+        tmp[i] = enc[i + 1] / 255; // shift
     tmp[3] = 0;
     enc -= tmp; // subtract
     for (int i = 0; i < 4; i++)
-        target[i] = (unsigned char)enc[i];
+        target[i] = enc[i] * 255;
+}
+
+double sqr(double a)
+{
+    return a * a;
 }
 
 void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
 {
     GpuTextureSpec spec;
 
-    spec.width = spec.height = 1024;
+    spec.width = 4096;
+    spec.height = 4096;
     spec.components = 4;
     spec.buffer.allocate(spec.width * spec.height * spec.components);
     unsigned char *valsArray = (unsigned char *)spec.buffer.data();
 
-    for (uint32 y = 0; y < spec.height; y++)
+
+    double meanRadius = (body.majorRadius + body.minorRadius) * 0.5;
+    double atmHeight = body.atmosphereThickness / meanRadius;
+    double atmRad = 1 + atmHeight;
+
+    for (uint32 yy = 0; yy < spec.height; yy++)
     {
-        unsigned char *valsLine = valsArray + y * spec.height * spec.components;
-        for (uint32 x = 0; x < spec.width; x++)
+        unsigned char *valsLine = valsArray + yy * spec.width * spec.components;
+        double v = yy / (double)spec.height;
+        double y = v * atmRad;
+        double y2 = sqr(y);
+        double tAtm = sqrt(sqr(atmRad) - y2);
+
+        double t0 = 0;
+        if (y < 1)
+            t0 = sqrt(1 - y2);
+
+        for (uint32 xx = 0; xx < spec.width; xx++)
         {
-            float value = random() / (float)RAND_MAX;
-            (void)body;
-            encodeFloat(value, valsLine + x * spec.components);
+            double u = xx / (double)spec.width;
+            double t1 = u * tAtm;
+
+            double sum = 0;
+            static const double step = 0.0001;
+            for (double t = t0; t < t1; t += step)
+            {
+                double h = std::sqrt(sqr(t) + y2);
+                h = (clamp(h, 1, atmRad) - 1) / atmHeight;
+                double a = std::exp(-12 * h);
+                sum += a;
+            }
+            sum *= step;
+
+            sum = clamp(sum, 0, 0.99999);
+            encodeFloat(sum, valsLine + xx * spec.components);
         }
     }
 
@@ -157,11 +190,6 @@ int antialiasingPrev;
 mat4 view;
 mat4 proj;
 mat4 viewProj;
-
-double sqr(double a)
-{
-    return a * a;
-}
 
 void clearGlState()
 {
@@ -293,6 +321,11 @@ public:
         for (int i = 0; i < 4; i++)
             shaderAtmosphere->uniformVec3(6 + i,
                                           (float*)cornerDirs[i].data());
+
+        // bind atmosphere density texture
+        glActiveTexture(GL_TEXTURE4);
+        atmosphere.tex->bind();
+        glActiveTexture(GL_TEXTURE0);
 
         // dispatch
         meshQuad->bind();
@@ -639,6 +672,7 @@ void initialize()
         glUseProgram(id);
         glUniform1i(glGetUniformLocation(id, "texDepthSingle"), 6);
         glUniform1i(glGetUniformLocation(id, "texDepthMulti"), 5);
+        glUniform1i(glGetUniformLocation(id, "texDensity"), 4);
         glUseProgram(0);
     }
 

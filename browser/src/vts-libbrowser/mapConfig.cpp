@@ -378,7 +378,7 @@ void MapConfig::initializeCelestialBody() const
     if (isEarth())
     {
         map->body.name = "Earth";
-        map->body.atmosphereThickness = 50000;
+        map->body.atmosphereThickness = map->body.majorRadius * 0.025;
         static auto lowColor = { 216.0/255.0, 232.0/255.0, 243.0/255.0, 1.0 };
         static auto highColor = { 72.0/255.0, 154.0/255.0, 255.0/255.0, 1.0 };
         std::copy(lowColor.begin(), lowColor.end(),

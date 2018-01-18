@@ -3,6 +3,7 @@ uniform sampler2D texDepthSingle;
 #ifndef GL_ES
 uniform sampler2DMS texDepthMulti;
 #endif
+uniform sampler2D texDensity;
 
 uniform vec4 uniAtmColorLow;
 uniform vec4 uniAtmColorHigh;
@@ -46,9 +47,9 @@ float win_erfc(float x)
 */
 float atmosphereThickness(vec3 start, vec3 dir, float tstart, float tend)
 {
-    float halfheight = 0.01; /* height where atmosphere reaches 50% thickness (planetary radius units) */
+    float halfheight = 0.002; /* height where atmosphere reaches 50% thickness (planetary radius units) */
     float k = 1.0 / halfheight; /* atmosphere density = exp(-height*k) */
-    float refHt = 1.01; /* height where density==1 */
+    float refHt = 1.0; /* height where density==1 */
     /* density=exp(-(height-refHt)*k) */
 
     // Step 1: planarize problem from 3D to 2D
@@ -200,6 +201,21 @@ float taylor(float polynom[4], float t)
 }
 
 
+float decodeFloat(vec4 rgba)
+{
+    return dot(rgba, vec4(1.0, 1 / 255.0, 1 / 65025.0, 1 / 16581375.0));
+}
+
+
+float atmSample(float u, float v)
+{
+    return decodeFloat(texture(texDensity, vec2(u, v)));
+}
+
+
+
+
+
 float atmosphere(float t1)
 {
     float l = length(uniCameraPosition);
@@ -237,16 +253,37 @@ float atmosphere(float t1)
 
 
 
+    float tAtm = sqrt(sqr(atmRad) - y2);
+
+
+
+    float v = y / atmRad;
+
+    float d0 = atmSample(abs(t0) / tAtm, v);
+    float d1 = atmSample(abs(t1) / tAtm, v);
+
+    float sum;
+
+    if (t0 * t1 < 0)
+    {
+        // ray crosses the symetry axis
+        sum = d0 + d1;
+    }
+    else
+    {
+        sum = abs(d0 - d1);
+    }
+
+    return 1 - pow(10, -50 * sum);
+    //return sum;
+    //return atmSample(0.5, 0.5);
+
+
+
+
 
 
     /*
-    float h = (clamp(y, 1, atmRad) - 1) / atmHeight;
-    float atm = pow(t1 - t0, 0.8) * exp(-5 * h);
-    return 3 * atm;
-    */
-
-
-
     float sum = 0;
     float step = 0.0001;
     for (float t = t0; t < t1; t += step)
@@ -257,8 +294,32 @@ float atmosphere(float t1)
         sum += a;
     }
     sum *= step;
-
     return 1 - pow(10, -50 * sum);
+    */
+
+
+
+
+
+    /*
+    float h = (clamp(y, 1, atmRad) - 1) / atmHeight;
+    float atm = pow(t1 - t0, 0.8) * exp(-5 * h);
+    return 3 * atm;
+    */
+
+
+
+
+
+    /*
+    vec3 camDir = cameraFragmentDirection();
+    float sum = atmosphereThickness(uniCameraPosition, camDir, t0 + x, t1 + x);
+    return 1 - pow(10, -50 * sum);
+    //return sum;
+    */
+
+
+
 
 
 

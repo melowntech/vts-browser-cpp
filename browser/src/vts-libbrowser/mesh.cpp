@@ -58,7 +58,7 @@ GpuMeshSpec::GpuMeshSpec(const Buffer &buffer) :
 }
 
 GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0),
-    components(0), type(Type::Float), enable(false), normalized(false)
+    components(0), type(GpuTypeEnum::Float), enable(false), normalized(false)
 {}
 
 GpuMesh::GpuMesh(MapImpl *map, const std::string &name) :

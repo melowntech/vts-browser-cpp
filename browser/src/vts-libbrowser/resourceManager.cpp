@@ -94,6 +94,26 @@ bool FetchTask::isResourceTypeMandatory(FetchTask::ResourceType resourceType)
     return !allowDiskCache(resourceType);
 }
 
+uint32 gpuTypeSize(GpuTypeEnum type)
+{
+    switch (type)
+    {
+    case GpuTypeEnum::Byte:
+    case GpuTypeEnum::UnsignedByte:
+        return 1;
+    case GpuTypeEnum::Short:
+    case GpuTypeEnum::UnsignedShort:
+        return 2;
+    case GpuTypeEnum::Int:
+    case GpuTypeEnum::UnsignedInt:
+    case GpuTypeEnum::Float:
+        return 4;
+    default:
+        LOGTHROW(fatal, std::invalid_argument) << "invalid gpu type enum";
+        throw;
+    }
+}
+
 ResourceInfo::ResourceInfo() :
     ramMemoryCost(0), gpuMemoryCost(0)
 {}

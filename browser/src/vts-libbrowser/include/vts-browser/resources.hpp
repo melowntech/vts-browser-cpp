@@ -35,6 +35,20 @@
 namespace vts
 {
 
+enum class GpuTypeEnum
+{
+    // compatible with OpenGL
+    Byte = 0x1400,
+    UnsignedByte = 0x1401,
+    Short = 0x1402, // two bytes
+    UnsignedShort = 0x1403,
+    Int = 0x1404, // four bytes
+    UnsignedInt = 0x1405,
+    Float = 0x1406, // four bytes
+};
+
+VTS_API uint32 gpuTypeSize(GpuTypeEnum type);
+
 // this is passed to the load* callbacks for the application to fill it in
 class VTS_API ResourceInfo
 {
@@ -65,8 +79,15 @@ public:
     // number of color channels per pixel
     uint32 components; // 1, 2, 3 or 4
 
+    // type of each channel per pixel
+    GpuTypeEnum type;
+
+    // enforce texture internal format (leave zero to deduce the format from type and components)
+    // the type must still be set appropriately since it defines size of the buffer
+    uint32 internalFormat;
+
     // raw texture data
-    // it has (width * height * components) bytes
+    // it has (width * height * components * gpuTypeSize) bytes
     // the rows are in no way aligned to multi-byte boundaries
     //   (GL_UNPACK_ALIGNMENT = 1)
     Buffer buffer;
@@ -90,18 +111,11 @@ public:
 
     struct VertexAttribute
     {
-        enum class Type
-        {
-            // compatible with OpenGL
-            Float = 0x1406,
-            UnsignedByte = 0x1401,
-        };
-
         VertexAttribute();
         uint32 offset; // in bytes
         uint32 stride; // in bytes
         uint32 components; // 1, 2, 3 or 4
-        Type type;
+        GpuTypeEnum type;
         bool enable;
         bool normalized;
     };

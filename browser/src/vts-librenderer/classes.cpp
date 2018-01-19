@@ -226,15 +226,54 @@ namespace
 
 GLenum findInternalFormat(const GpuTextureSpec &spec)
 {
-    switch (spec.components)
+    if (spec.internalFormat)
+        return spec.internalFormat;
+    switch (spec.type)
     {
-    case 1: return GL_R8;
-    case 2: return GL_RG8;
-    case 3: return GL_RGB8;
-    case 4: return GL_RGBA8;
-    default:
-        throw std::invalid_argument("invalid texture components count");
+    case GpuTypeEnum::Byte:
+    case GpuTypeEnum::UnsignedByte:
+        switch (spec.components)
+        {
+        case 1: return GL_R8;
+        case 2: return GL_RG8;
+        case 3: return GL_RGB8;
+        case 4: return GL_RGBA8;
+        }
+    case GpuTypeEnum::Short:
+    case GpuTypeEnum::UnsignedShort:
+        switch (spec.components)
+        {
+        case 1: return GL_R16;
+        case 2: return GL_RG16;
+        case 3: return GL_RGB16;
+        case 4: return GL_RGBA16;
+        }
+    case GpuTypeEnum::Int:
+        switch (spec.components)
+        {
+        case 1: return GL_R32I;
+        case 2: return GL_RG32I;
+        case 3: return GL_RGB32I;
+        case 4: return GL_RGBA32I;
+        }
+    case GpuTypeEnum::UnsignedInt:
+        switch (spec.components)
+        {
+        case 1: return GL_R32UI;
+        case 2: return GL_RG32UI;
+        case 3: return GL_RGB32UI;
+        case 4: return GL_RGBA32UI;
+        }
+    case GpuTypeEnum::Float:
+        switch (spec.components)
+        {
+        case 1: return GL_R32F;
+        case 2: return GL_RG32F;
+        case 3: return GL_RGB32F;
+        case 4: return GL_RGBA32F;
+        }
     }
+    throw std::invalid_argument("cannot deduce texture internal format");
 }
 
 GLenum findFormat(const GpuTextureSpec &spec)
@@ -254,12 +293,16 @@ GLenum findFormat(const GpuTextureSpec &spec)
 
 void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec)
 {
+    assert(spec.buffer.size() == spec.width * spec.height
+           * spec.components * gpuTypeSize(spec.type)
+           || spec.buffer.size() == 0);
+
     clear();
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
     glTexImage2D(GL_TEXTURE_2D, 0, findInternalFormat(spec),
                  spec.width, spec.height, 0,
-                 findFormat(spec), GL_UNSIGNED_BYTE, spec.buffer.data());
+                 findFormat(spec), (GLenum)spec.type, spec.buffer.data());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

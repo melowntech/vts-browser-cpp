@@ -125,14 +125,17 @@ double sqr(double a)
 
 void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
 {
+    vts::setLogThreadName("atmosphere");
+    vts::log(vts::LogLevel::info1, "Generating atmosphere density texture");
+
     GpuTextureSpec spec;
 
-    spec.width = 4096;
-    spec.height = 4096;
-    spec.components = 4;
-    spec.buffer.allocate(spec.width * spec.height * spec.components);
-    unsigned char *valsArray = (unsigned char *)spec.buffer.data();
-
+    spec.width = 2048;
+    spec.height = 2048;
+    spec.components = 1;
+    spec.type = GpuTypeEnum::Float;
+    spec.buffer.allocate(spec.width * spec.height * 4);
+    float *valsArray = (float*)spec.buffer.data();
 
     double meanRadius = (body.majorRadius + body.minorRadius) * 0.5;
     double atmHeight = body.atmosphereThickness / meanRadius;
@@ -140,34 +143,36 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
 
     for (uint32 yy = 0; yy < spec.height; yy++)
     {
-        unsigned char *valsLine = valsArray + yy * spec.width * spec.components;
+        float *valsLine = valsArray + yy * spec.width;
         double v = yy / (double)spec.height;
         double y = v * atmRad;
         double y2 = sqr(y);
-        double tAtm = sqrt(sqr(atmRad) - y2);
-
-        double t0 = 0;
+        double a = sqrt(sqr(atmRad) - y2);
+        double g = 0;
         if (y < 1)
-            t0 = sqrt(1 - y2);
+            g = sqrt(1 - y2);
 
         for (uint32 xx = 0; xx < spec.width; xx++)
         {
             double u = xx / (double)spec.width;
-            double t1 = u * tAtm;
+            double t1 = u * a;
 
-            double sum = 0;
+            double density = 0;
             static const double step = 0.0001;
-            for (double t = t0; t < t1; t += step)
+            for (double t = g; t < t1; t += step)
             {
                 double h = std::sqrt(sqr(t) + y2);
                 h = (clamp(h, 1, atmRad) - 1) / atmHeight;
                 double a = std::exp(-12 * h);
-                sum += a;
+                density += a;
             }
-            sum *= step;
+            density *= step;
 
-            sum = clamp(sum, 0, 0.99999);
-            encodeFloat(sum, valsLine + xx * spec.components);
+            //density /= 0.05;
+
+            //assert(density >= 0 && density < 1);
+            //encodeFloat(density, valsLine + xx * spec.components);
+            valsLine[xx] = density;
         }
     }
 
@@ -179,6 +184,8 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
             atmosphere.state = 2;
         }
     }
+
+    vts::log(vts::LogLevel::info2, "Finished atmosphere density texture");
 }
 
 RenderVariables vars;

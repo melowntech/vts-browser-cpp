@@ -30,10 +30,13 @@
 namespace vts
 {
 
-GpuTextureSpec::GpuTextureSpec() : width(0), height(0), components(0)
+GpuTextureSpec::GpuTextureSpec()
+    : width(0), height(0), components(0),
+    type(GpuTypeEnum::UnsignedByte), internalFormat(0)
 {}
 
 GpuTextureSpec::GpuTextureSpec(const Buffer &buffer)
+    : type(GpuTypeEnum::UnsignedByte), internalFormat(0)
 {
     decodeImage(buffer, this->buffer, width, height, components);
 }

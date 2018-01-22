@@ -32,28 +32,9 @@ float linearDepth(float depthSample)
 
 vec3 cameraFragmentDirection()
 {
-
-
     return normalize(mix(
         mix(uniCornerDirs[0], uniCornerDirs[1], varUv.x),
         mix(uniCornerDirs[2], uniCornerDirs[3], varUv.x), varUv.y));
-
-
-    vec4 f4 = vec4(varUv * 2 - 1, 0, 1);
-    f4 = uniInvViewProj * f4;
-    vec3 f = f4.xyz / f4.w;
-    vec3 dir2 = normalize(f - uniCameraPosition);
-
-    //return abs(dir - dir2) * 10;
-
-    /*
-    vec4 n4 = vec4(varUv * 2 - 1, 0, 1);
-    n4 = uniInvViewProj * n4;
-    vec4 f4 = n4 + uniInvViewProj[2];
-    vec3 n = n4.xyz / n4.w;
-    vec3 f = f4.xyz / f4.w;
-    return normalize(f - n);
-    */
 }
 
 float decodeFloat(vec4 rgba)
@@ -67,51 +48,45 @@ float atmosphere(float t1)
     float l = length(uniCameraPosition); // distance of camera center from world origin
     float x = dot(cameraFragmentDirection(), -uniCameraDirection) * l; // distance of point on ray (called "x"), which is closest to world origin, to camera
     float y2 = sqr(l) - sqr(x);
-    float y = sqrt(y2); // distance of ray from world origin
-
-    // fill holes in terrain
-    float g = 0;
-    // if the ray passes through the planet, ...
-    if (y < 0.995 && x >= 0)
-    {
-        g = sqrt(1 - y2);
-        t1 = min(t1, x - g); // ... the t1 is clamped onto the planet surface
-    }
+    float y = sqrt(y2); // distance of the ray from world origin
 
     float atmHeight = uniParams[2]; // atmosphere height (excluding planet radius)
     float atmRad = 1 + atmHeight; // atmosphere height including planet radius
+    float atmRad2 = sqr(atmRad);
 
     if (y > atmRad)
         return 0; // early exit
 
-    float a = sqrt(sqr(atmRad) - y2); // distance of atmosphere boundary from "x"
-    float t0 = max(0.0, x - a) - x;
-    t1 = min(t1, x + a) - x;
-    // t0 and t1 are points on the ray (relative to "x"), that enclose the unobstructed portion of the ray and are inside atmosphere
+    // fill holes in terrain
+    // if the ray passes through the planet, ...
+    //if (y < 0.995 && x >= 0)
+    //{
+    //    float g = sqrt(1 - y2);
+    //    t1 = min(t1, x - g); // ... the t1 is clamped onto the planet surface
+    //}
 
-    // map parameters to uv and sample the atmosphere density texture
+    // distance of atmosphere boundary from "x"
+    float a = sqrt(atmRad2 - y2);
+
+    // clamp t0 and t1 to atmosphere boundaries
+    // t0 and t1 is line segment that encloses the unobstructed portion of the ray and is inside atmosphere
+    float t0 = max(0.0, x - a);
+    t1 = min(t1, x + a);
+
+    // texture uv coordinates
+    float uDiv = 0.5 / a;
+    float u0 = (t0 - x + a) * uDiv;
+    float u1 = (t1 - x + a) * uDiv;
     float v = y / atmRad;
-    float u0 = abs(t0) / a;
-    float u1 = abs(t1) / a;
-    //float d0 = decodeFloat(texture(texDensity, vec2(u0, v)));
-    //float d1 = decodeFloat(texture(texDensity, vec2(u1, v)));
     float d0 = texture(texDensity, vec2(u0, v)).x;
     float d1 = texture(texDensity, vec2(u1, v)).x;
-
-    // compute total atmosphere density along the ray from t0 to t1
-    float density;
-    if (t0 * t1 < 0) // resolve the density samples (whether the ray crosses a symetry axis)
-        density = d0 + d1;
-    else
-        density = abs(d0 - d1);
-
-    // compute optical opacity from the density
+    float density = d0 - d1;
     return 1 - pow(10, -50 * density);
 
 
+    //outColor = vec4(vec3(u0), 1);
+    //return 0;
 
-
-    //outColor = vec4(vec3(decodeFloat(texture(texDensity, varUv))), 1);
     //outColor = vec4(texture(texDensity, varUv).xxx, 1);
     //return 0;
 
@@ -123,7 +98,7 @@ float atmosphere(float t1)
     float step = 0.0001;
     for (float t = t0; t < t1; t += step)
     {
-        float h = sqrt(sqr(t) + y2);
+        float h = sqrt(sqr(t - x) + y2);
         h = (clamp(h, 1, atmRad) - 1) / atmHeight;
         float a = exp(-12 * h);
         sum += a;
@@ -131,6 +106,7 @@ float atmosphere(float t1)
     sum *= step;
     return 1 - pow(10, -50 * sum);
     */
+
 }
 
 

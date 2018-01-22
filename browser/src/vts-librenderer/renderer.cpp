@@ -126,11 +126,11 @@ double sqr(double a)
 void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
 {
     vts::setLogThreadName("atmosphere");
-    vts::log(vts::LogLevel::info1, "Generating atmosphere density texture");
+    vts::log(vts::LogLevel::info2, "Generating atmosphere density texture");
 
     GpuTextureSpec spec;
 
-    spec.width = 2048;
+    spec.width = 1024;
     spec.height = 2048;
     spec.components = 1;
     spec.type = GpuTypeEnum::Float;
@@ -140,6 +140,7 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
     double meanRadius = (body.majorRadius + body.minorRadius) * 0.5;
     double atmHeight = body.atmosphereThickness / meanRadius;
     double atmRad = 1 + atmHeight;
+    double atmRad2 = sqr(atmRad);
 
     for (uint32 yy = 0; yy < spec.height; yy++)
     {
@@ -147,19 +148,17 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
         double v = yy / (double)spec.height;
         double y = v * atmRad;
         double y2 = sqr(y);
-        double a = sqrt(sqr(atmRad) - y2);
-        double g = 0;
-        if (y < 1)
-            g = sqrt(1 - y2);
+        double a = sqrt(atmRad2 - y2);
+        double lastDensity = 0;
+        double lastTu = -a;
 
         for (uint32 xx = 0; xx < spec.width; xx++)
         {
             double u = xx / (double)spec.width;
-            double t1 = u * a;
-
+            double tu = u * 2 * a - a;
             double density = 0;
-            static const double step = 0.0001;
-            for (double t = g; t < t1; t += step)
+            static const double step = 0.00001;
+            for (double t = lastTu; t < tu; t += step)
             {
                 double h = std::sqrt(sqr(t) + y2);
                 h = (clamp(h, 1, atmRad) - 1) / atmHeight;
@@ -167,12 +166,9 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
                 density += a;
             }
             density *= step;
-
-            //density /= 0.05;
-
-            //assert(density >= 0 && density < 1);
-            //encodeFloat(density, valsLine + xx * spec.components);
-            valsLine[xx] = density;
+            lastDensity += density;
+            lastTu = tu;
+            valsLine[spec.width - xx - 1] = lastDensity;
         }
     }
 

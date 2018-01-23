@@ -131,7 +131,7 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
     GpuTextureSpec spec;
 
     spec.width = 1024;
-    spec.height = 2048;
+    spec.height = 512;
     spec.components = 1;
     spec.type = GpuTypeEnum::Float;
     spec.buffer.allocate(spec.width * spec.height * 4);
@@ -142,23 +142,27 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
     double atmRad = 1 + atmHeight;
     double atmRad2 = sqr(atmRad);
 
-    for (uint32 yy = 0; yy < spec.height; yy++)
+    for (uint32 xx = 0; xx < spec.width; xx++)
     {
-        float *valsLine = valsArray + yy * spec.width;
-        double v = yy / (double)spec.height;
-        double y = v * atmRad;
-        double y2 = sqr(y);
-        double a = sqrt(atmRad2 - y2);
-        double lastDensity = 0;
-        double lastTu = -a;
+        std::stringstream ss;
+        ss << "Atmosphere progress: " << xx << " / " << spec.width;
+        vts::log(vts::LogLevel::info1, ss.str());
 
-        for (uint32 xx = 0; xx < spec.width; xx++)
+        double fi = xx / (double)spec.width;
+        fi = fi * M_PI;
+        double cosfi = std::cos(fi);
+        double sinfi = std::sin(fi);
+
+        for (uint32 yy = 0; yy < spec.height; yy++)
         {
-            double u = xx / (double)spec.width;
-            double tu = u * 2 * a - a;
+            double r = std::pow(yy / (double)spec.height, 0.1) * atmRad;
+            double t0 = cosfi * r;
+            double y = sinfi * r;
+            double y2 = sqr(y);
+            double a = sqrt(atmRad2 - y2);
             double density = 0;
-            static const double step = 0.00001;
-            for (double t = lastTu; t < tu; t += step)
+            static const double step = 0.0001;
+            for (double t = t0; t < a; t += step)
             {
                 double h = std::sqrt(sqr(t) + y2);
                 h = (clamp(h, 1, atmRad) - 1) / atmHeight;
@@ -166,9 +170,7 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
                 density += a;
             }
             density *= step;
-            lastDensity += density;
-            lastTu = tu;
-            valsLine[spec.width - xx - 1] = lastDensity;
+            valsArray[yy * spec.width + xx] = density;
         }
     }
 
@@ -291,7 +293,8 @@ public:
         float uniParams[4] = {
             (float)draws.camera.mapProjected,
             (float)options.antialiasingSamples,
-            (float)(body.atmosphereThickness / meanRadius)
+            (float)(body.atmosphereThickness / meanRadius),
+            (float)(body.minorRadius / meanRadius)
         };
 
         // other
@@ -322,8 +325,7 @@ public:
         shaderAtmosphere->uniformVec3(4, (float*)uniCameraPosition.data());
         shaderAtmosphere->uniformVec3(5, (float*)uniCameraDirection.data());
         for (int i = 0; i < 4; i++)
-            shaderAtmosphere->uniformVec3(6 + i,
-                                          (float*)cornerDirs[i].data());
+            shaderAtmosphere->uniformVec3(6 + i, (float*)cornerDirs[i].data());
 
         // bind atmosphere density texture
         glActiveTexture(GL_TEXTURE4);

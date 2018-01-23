@@ -7,7 +7,7 @@ uniform sampler2D texDensity;
 
 uniform vec4 uniAtmColorLow;
 uniform vec4 uniAtmColorHigh;
-uniform vec4 uniParams; // projected, multisampling, atmosphere
+uniform vec4 uniParams; // projected, multisampling, atmosphere, minor
 uniform mat4 uniInvViewProj;
 uniform vec3 uniCameraPosition; // camera position
 uniform vec3 uniCameraDirection; // normalize(uniCameraPosition)
@@ -16,6 +16,8 @@ uniform vec3 uniCornerDirs[4];
 in vec2 varUv;
 
 layout(location = 0) out vec4 outColor;
+
+const float M_PI = 3.14159265358979323846;
 
 float sqr(float x)
 {
@@ -46,7 +48,8 @@ float atmosphere(float t1)
 {
     // ray parameters
     float l = length(uniCameraPosition); // distance of camera center from world origin
-    float x = dot(cameraFragmentDirection(), -uniCameraDirection) * l; // distance of point on ray (called "x"), which is closest to world origin, to camera
+    vec3 cfd = cameraFragmentDirection();
+    float x = dot(cfd, -uniCameraDirection) * l; // distance of point on ray (called "x"), which is closest to world origin, to camera
     float y2 = sqr(l) - sqr(x);
     float y = sqrt(y2); // distance of the ray from world origin
 
@@ -59,11 +62,11 @@ float atmosphere(float t1)
 
     // fill holes in terrain
     // if the ray passes through the planet, ...
-    //if (y < 0.995 && x >= 0)
-    //{
-    //    float g = sqrt(1 - y2);
-    //    t1 = min(t1, x - g); // ... the t1 is clamped onto the planet surface
-    //}
+    if (y < uniParams[3] && x >= 0 && t1 > 99)
+    {
+        float g = sqrt(1 - y2);
+        t1 = x - g; // ... the t1 is moved onto the planet surface
+    }
 
     // distance of atmosphere boundary from "x"
     float a = sqrt(atmRad2 - y2);
@@ -73,25 +76,28 @@ float atmosphere(float t1)
     float t0 = max(0.0, x - a);
     t1 = min(t1, x + a);
 
-    // texture uv coordinates
-    float uDiv = 0.5 / a;
-    float u0 = (t0 - x + a) * uDiv;
-    float u1 = (t1 - x + a) * uDiv;
-    float v = y / atmRad;
-    float d0 = texture(texDensity, vec2(u0, v)).x;
-    float d1 = texture(texDensity, vec2(u1, v)).x;
-    float density = d0 - d1;
+    // sample the density texture
+    float ts[2];
+    ts[0] = t0;
+    ts[1] = t1;
+    float ds[2];
+    for (int i = 0; i < 2; i++)
+    {
+        float t = x - ts[i];
+        float r = sqrt(sqr(t) + y2);
+        float fi = atan(y, t);
+        vec2 uv = vec2(1 - fi / M_PI, pow(r / atmRad, 10));
+        ds[i] = texture(texDensity, uv).x;
+    }
+
+    // final optical transmitance
+    float density = ds[0] - ds[1];
     return 1 - pow(10, -50 * density);
 
 
-    //outColor = vec4(vec3(u0), 1);
-    //return 0;
 
     //outColor = vec4(texture(texDensity, varUv).xxx, 1);
     //return 0;
-
-
-
 
     /*
     float sum = 0;
@@ -106,7 +112,6 @@ float atmosphere(float t1)
     sum *= step;
     return 1 - pow(10, -50 * sum);
     */
-
 }
 
 

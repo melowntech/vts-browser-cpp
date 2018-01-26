@@ -7,7 +7,7 @@ uniform sampler2D texDensity;
 
 uniform vec4 uniAtmColorLow;
 uniform vec4 uniAtmColorHigh;
-uniform vec4 uniParams; // projected, multisampling, atmosphere, minor
+uniform vec4 uniParams; // projected, multisampling, atmosphere, minor-axis
 uniform mat4 uniInvViewProj;
 uniform vec3 uniCameraPosition; // camera position
 uniform vec3 uniCameraDirection; // normalize(uniCameraPosition)
@@ -44,12 +44,27 @@ float decodeFloat(vec4 rgba)
     return dot(rgba, vec4(1.0, 1 / 255.0, 1 / 65025.0, 1 / 16581375.0));
 }
 
+vec3 convert(vec3 a)
+{
+    return a * vec3(1, 1, 1 / uniParams[3]);
+}
+
 float atmosphere(float t1)
 {
+    // convert from ellipsoidal into spherical space
+    vec3 camPos =  convert(uniCameraPosition);
+    vec3 camDir =  normalize(convert(uniCameraDirection));
+    vec3 fragDir = normalize(convert(cameraFragmentDirection()));
+    if (t1 < 99)
+    {
+        vec3 T = uniCameraPosition + t1 * cameraFragmentDirection();
+        T = convert(T);
+        t1 = length(T - camPos);
+    }
+
     // ray parameters
-    float l = length(uniCameraPosition); // distance of camera center from world origin
-    vec3 cfd = cameraFragmentDirection();
-    float x = dot(cfd, -uniCameraDirection) * l; // distance of point on ray (called "x"), which is closest to world origin, to camera
+    float l = length(camPos); // distance of camera center from world origin
+    float x = dot(fragDir, -camDir) * l; // distance of point on ray (called "x"), which is closest to world origin, to camera
     float y2 = sqr(l) - sqr(x);
     float y = sqrt(y2); // distance of the ray from world origin
 
@@ -61,11 +76,12 @@ float atmosphere(float t1)
         return 0; // early exit
 
     // fill holes in terrain
-    // if the ray passes through the planet, ...
-    if (y < uniParams[3] && x >= 0 && t1 > 99)
+    // if the ray passes through the planet,
+    //   or the camera is so far that the earths mesh is too rough ...
+    if ((y < 1 && x >= 0 && t1 > 99) || l > 1.5)
     {
         float g = sqrt(1 - y2);
-        t1 = x - g; // ... the t1 is moved onto the planet surface
+        t1 = x - g; // ... the t1 is moved onto the mathematical model surface
     }
 
     // distance of atmosphere boundary from "x"
@@ -92,29 +108,8 @@ float atmosphere(float t1)
 
     // final optical transmitance
     float density = ds[0] - ds[1];
-    return 1 - pow(10, -50 * density);
-
-
-
-    //outColor = vec4(texture(texDensity, varUv).xxx, 1);
-    //return 0;
-
-    /*
-    float sum = 0;
-    float step = 0.0001;
-    for (float t = t0; t < t1; t += step)
-    {
-        float h = sqrt(sqr(t - x) + y2);
-        h = (clamp(h, 1, atmRad) - 1) / atmHeight;
-        float a = exp(-12 * h);
-        sum += a;
-    }
-    sum *= step;
-    return 1 - pow(10, -50 * sum);
-    */
+    return 1 - pow(10, -100 * density);
 }
-
-
 
 void main()
 {
@@ -149,7 +144,7 @@ void main()
     atm = clamp(atm, 0.0, 1.0);
 
     // compose atmosphere color
-    outColor = mix(uniAtmColorLow, uniAtmColorHigh, 1.0 - atm);
+    outColor = mix(uniAtmColorLow, uniAtmColorHigh, pow(1.0 - atm, 0.2));
     outColor.a *= atm;
 }
 

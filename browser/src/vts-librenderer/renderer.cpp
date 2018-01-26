@@ -137,8 +137,7 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
     spec.buffer.allocate(spec.width * spec.height * 4);
     float *valsArray = (float*)spec.buffer.data();
 
-    double meanRadius = (body.majorRadius + body.minorRadius) * 0.5;
-    double atmHeight = body.atmosphereThickness / meanRadius;
+    double atmHeight = body.atmosphereThickness / body.majorRadius;
     double atmRad = 1 + atmHeight;
     double atmRad2 = sqr(atmRad);
 
@@ -161,7 +160,7 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
             double y2 = sqr(y);
             double a = sqrt(atmRad2 - y2);
             double density = 0;
-            static const double step = 0.0001;
+            static const double step = 0.0003;
             for (double t = t0; t < a; t += step)
             {
                 double h = std::sqrt(sqr(t) + y2);
@@ -286,22 +285,19 @@ public:
         if (!atmosphere.validate(body))
             return;
 
-        // prepare shader uniforms
-        double meanRadius = (body.majorRadius + body.minorRadius) * 0.5;
-
         // uniParams
         float uniParams[4] = {
             (float)draws.camera.mapProjected,
             (float)options.antialiasingSamples,
-            (float)(body.atmosphereThickness / meanRadius),
-            (float)(body.minorRadius / meanRadius)
+            (float)(body.atmosphereThickness / body.majorRadius),
+            (float)(body.minorRadius / body.majorRadius)
         };
 
         // other
-        vec3 camPos = rawToVec3(draws.camera.eye) / meanRadius;
+        vec3 camPos = rawToVec3(draws.camera.eye) / body.majorRadius;
         vec3f uniCameraPosition = camPos.cast<float>();
         vec3f uniCameraDirection = normalize(camPos).cast<float>();
-        mat4 invViewProj = (viewProj * scaleMatrix(meanRadius)).inverse();
+        mat4 invViewProj = (viewProj * scaleMatrix(body.majorRadius)).inverse();
         mat4f uniInvViewProj = invViewProj.cast<float>();
 
         // corner directions

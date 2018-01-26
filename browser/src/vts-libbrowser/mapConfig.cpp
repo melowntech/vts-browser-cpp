@@ -379,23 +379,25 @@ void MapConfig::initializeCelestialBody() const
     {
         map->body.name = "Earth";
         map->body.atmosphereThickness = map->body.majorRadius * 0.025;
-        static auto lowColor = { 216.0/255.0, 232.0/255.0, 243.0/255.0, 1.0 };
-        static auto highColor = { 72.0/255.0, 154.0/255.0, 255.0/255.0, 1.0 };
-        std::copy(lowColor.begin(), lowColor.end(),
-                  map->body.atmosphereColorLow);
-        std::copy(highColor.begin(), highColor.end(),
-                  map->body.atmosphereColorHigh);
+        static vec4 lowColor = vec4(140.0, 200.0, 243.0, 255.0) / 255;
+        static vec4 highColor = vec4(72.0, 154.0, 255.0, 255.0) / 255;
+        for (int i = 0; i < 4; i++)
+        {
+            map->body.atmosphereColorLow[i] = lowColor[i];
+            map->body.atmosphereColorHigh[i] = highColor[i];
+        }
     }
     if (std::abs(map->body.majorRadius - 3396200) < 30000)
     {
         map->body.name = "Mars";
         map->body.atmosphereThickness = 30000;
-        static auto lowColor = { 0.77, 0.48, 0.27, 0.5 };
-        static auto highColor = { 0.58, 0.65, 0.77, 0.5 };
-        std::copy(lowColor.begin(), lowColor.end(),
-                  map->body.atmosphereColorLow);
-        std::copy(highColor.begin(), highColor.end(),
-                  map->body.atmosphereColorHigh);
+        static vec4 lowColor = { 0.77, 0.48, 0.27, 0.5 };
+        static vec4 highColor = { 0.58, 0.65, 0.77, 0.5 };
+        for (int i = 0; i < 4; i++)
+        {
+            map->body.atmosphereColorLow[i] = lowColor[i];
+            map->body.atmosphereColorHigh[i] = highColor[i];
+        }
     }
     else
     {

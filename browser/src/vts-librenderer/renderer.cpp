@@ -140,6 +140,9 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
         double atmRad2 = sqr(atmRad);
 
         GpuTextureSpec spec;
+        spec.width = 1024;
+        spec.height = 512;
+        spec.components = 4;
 
         std::string name;
         {
@@ -150,21 +153,25 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
             name = ss.str();
         }
 
+        // try to load the texture from internal memory
         std::string fullName = std::string("data/textures/atmosphere/") + name;
         if (detail::existsInternalMemoryBuffer(fullName))
         {
-            vts::log(vts::LogLevel::info1, "The texture will be loaded "
-                                           "from internal memory");
-            spec = std::move(GpuTextureSpec(
-                                 readInternalMemoryBuffer(fullName)));
+            vts::log(vts::LogLevel::info2, "The atmosphere texture will "
+                     "be loaded from internal memory");
+            GpuTextureSpec sp(readInternalMemoryBuffer(fullName));
+            if (spec.expectedSize() == sp.buffer.size())
+                std::swap(sp, spec);
+            else
+                vts::log(vts::LogLevel::warn2, "The atmosphere texture in "
+                         "internal memory has wrong size");
         }
-        else
+
+        // generate the texture anew
+        if (spec.buffer.size() == 0)
         {
             vts::log(vts::LogLevel::info3, "The texture will "
                                            "be generated anew");
-            spec.width = 1024;
-            spec.height = 512;
-            spec.components = 4;
             spec.buffer.allocate(spec.width * spec.height * 4);
             unsigned char *valsArray = (unsigned char*)spec.buffer.data();
 

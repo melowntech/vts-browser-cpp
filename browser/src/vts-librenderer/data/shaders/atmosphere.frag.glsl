@@ -46,7 +46,7 @@ float decodeFloat(vec4 rgba)
 
 vec3 convert(vec3 a)
 {
-    return a * vec3(1, 1, 1 / uniParamsF[2]);
+    return a * vec3(1.0, 1.0, 1.0 / uniParamsF[2]);
 }
 
 float atmosphere(float t1)
@@ -56,7 +56,7 @@ float atmosphere(float t1)
     vec3 camPos =  convert(uniCameraPosition);
     vec3 camDir =  normalize(camPos);
     vec3 fragDir = normalize(convert(cfd));
-    if (t1 < 99)
+    if (t1 < 99.0)
     {
         vec3 T = uniCameraPosition + t1 * cfd;
         T = convert(T);
@@ -70,18 +70,18 @@ float atmosphere(float t1)
     float y = sqrt(y2); // distance of the ray from world origin
 
     float atmHeight = uniParamsF[0]; // atmosphere height (excluding planet radius)
-    float atmRad = 1 + atmHeight; // atmosphere height including planet radius
+    float atmRad = 1.0 + atmHeight; // atmosphere height including planet radius
     float atmRad2 = sqr(atmRad);
 
     if (y > atmRad)
-        return 0; // early exit
+        return 0.0; // early exit
 
     // fill holes in terrain
     // if the ray passes through the planet,
     //   or the camera is so far that the earths mesh is too rough ...
-    if ((y < 0.999 && x >= 0 && t1 > 99) || l > 1.5)
+    if ((y < 0.999 && x >= 0.0 && t1 > 99.0) || l > 1.5)
     {
-        float g = sqrt(1 - y2);
+        float g = sqrt(1.0 - y2);
         t1 = x - g; // ... the t1 is moved onto the mathematical model surface
     }
 
@@ -103,13 +103,13 @@ float atmosphere(float t1)
         float t = x - ts[i];
         float r = sqrt(sqr(t) + y2);
         float fi = atan(y, t);
-        vec2 uv = vec2(1 - fi / M_PI, pow(r / atmRad, 10));
+        vec2 uv = vec2(1.0 - fi / M_PI, pow(r / atmRad, 10.0));
         ds[i] = decodeFloat(texture(texDensity, uv)) * 5.0;
     }
 
     // final optical transmitance
     float density = ds[0] - ds[1];
-    return 1 - pow(10, -uniParamsF[1] * density);
+    return 1.0 - pow(10.0, -uniParamsF[1] * density);
 
     //outColor = vec4(vec3(decodeFloat(texture(texDensity, varUv)) * 5), 1);
 }
@@ -137,7 +137,7 @@ void main()
     #endif
 
     // max ray length
-    float t1 = 100; // 100 times the planet radius - should be enough to consider it as infinite
+    float t1 = 100.0; // 100 times the planet radius - should be enough to consider it as infinite
     if (depthSample < 1.0)
         t1 = linearDepth(depthSample);
 

@@ -38,7 +38,9 @@ std::string Shader::preamble = "#version 300 es\n"
         "precision highp float;\n"
         "precision highp int;\n";
 #else
-std::string Shader::preamble = "#version 330\n";
+std::string Shader::preamble = "#version 330\n"
+        "precision highp float;\n"
+        "precision highp int;\n";
 #endif
 
 Shader::Shader() : id(0)

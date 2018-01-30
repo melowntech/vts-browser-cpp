@@ -56,6 +56,23 @@ void GpuTextureSpec::verticalFlip()
     }
 }
 
+uint32 GpuTextureSpec::expectedSize() const
+{
+    return width * height * components * gpuTypeSize(type);
+}
+
+Buffer GpuTextureSpec::encodePng() const
+{
+    if (type != GpuTypeEnum::UnsignedByte)
+    {
+        LOGTHROW(err2, std::runtime_error) << "Unsigned byte is the only "
+                                    "supported image type for png encode.";
+    }
+    Buffer out;
+    vts::encodePng(buffer, out, width, height, components);
+    return out;
+}
+
 GpuTexture::GpuTexture(MapImpl *map, const std::string &name) :
     Resource(map, name, FetchTask::ResourceType::Texture)
 {}

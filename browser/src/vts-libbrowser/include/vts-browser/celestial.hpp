@@ -36,14 +36,19 @@ namespace vts
 class VTS_API MapCelestialBody
 {
 public:
-    MapCelestialBody();
-
     std::string name;
     double majorRadius;
     double minorRadius;
-    double atmosphereThickness;
-    float atmosphereColorLow[4];
-    float atmosphereColorHigh[4];
+    struct Atmosphere
+    {
+        double thickness;
+        double horizontalExponent;
+        double verticalExponent;
+        float colorLow[4];
+        float colorHigh[4];
+        Atmosphere();
+    } atmosphere;
+    MapCelestialBody();
 };
 
 } // namespace vts

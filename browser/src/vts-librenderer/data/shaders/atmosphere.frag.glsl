@@ -7,10 +7,10 @@ uniform sampler2D texDensity;
 
 uniform vec4 uniAtmColorLow;
 uniform vec4 uniAtmColorHigh;
-uniform vec4 uniParams; // projected, multisampling, atmosphere, minor-axis
+uniform ivec4 uniParamsI; // projected, multisampling
+uniform vec4 uniParamsF; // atmosphere thickness, atmosphere horizontal exponent, minor-axis
 uniform mat4 uniInvViewProj;
 uniform vec3 uniCameraPosition; // camera position
-uniform vec3 uniCameraDirection; // normalize(uniCameraPosition)
 uniform vec3 uniCornerDirs[4];
 
 in vec2 varUv;
@@ -41,23 +41,24 @@ vec3 cameraFragmentDirection()
 
 float decodeFloat(vec4 rgba)
 {
-    return dot(rgba, vec4(1.0, 1 / 255.0, 1 / 65025.0, 1 / 16581375.0));
+    return dot(rgba, vec4(1.0, 1.0 / 256.0, 1.0 / (256.0*256.0), 1.0 / (256.0*256.0*256.0)));
 }
 
 vec3 convert(vec3 a)
 {
-    return a * vec3(1, 1, 1 / uniParams[3]);
+    return a * vec3(1, 1, 1 / uniParamsF[2]);
 }
 
 float atmosphere(float t1)
 {
+    vec3 cfd = cameraFragmentDirection();
     // convert from ellipsoidal into spherical space
     vec3 camPos =  convert(uniCameraPosition);
-    vec3 camDir =  normalize(convert(uniCameraDirection));
-    vec3 fragDir = normalize(convert(cameraFragmentDirection()));
+    vec3 camDir =  normalize(camPos);
+    vec3 fragDir = normalize(convert(cfd));
     if (t1 < 99)
     {
-        vec3 T = uniCameraPosition + t1 * cameraFragmentDirection();
+        vec3 T = uniCameraPosition + t1 * cfd;
         T = convert(T);
         t1 = length(T - camPos);
     }
@@ -68,7 +69,7 @@ float atmosphere(float t1)
     float y2 = sqr(l) - sqr(x);
     float y = sqrt(y2); // distance of the ray from world origin
 
-    float atmHeight = uniParams[2]; // atmosphere height (excluding planet radius)
+    float atmHeight = uniParamsF[0]; // atmosphere height (excluding planet radius)
     float atmRad = 1 + atmHeight; // atmosphere height including planet radius
     float atmRad2 = sqr(atmRad);
 
@@ -78,7 +79,7 @@ float atmosphere(float t1)
     // fill holes in terrain
     // if the ray passes through the planet,
     //   or the camera is so far that the earths mesh is too rough ...
-    if ((y < 1 && x >= 0 && t1 > 99) || l > 1.5)
+    if ((y < 0.999 && x >= 0 && t1 > 99) || l > 1.5)
     {
         float g = sqrt(1 - y2);
         t1 = x - g; // ... the t1 is moved onto the mathematical model surface
@@ -103,12 +104,14 @@ float atmosphere(float t1)
         float r = sqrt(sqr(t) + y2);
         float fi = atan(y, t);
         vec2 uv = vec2(1 - fi / M_PI, pow(r / atmRad, 10));
-        ds[i] = texture(texDensity, uv).x;
+        ds[i] = decodeFloat(texture(texDensity, uv)) * 5.0;
     }
 
     // final optical transmitance
     float density = ds[0] - ds[1];
-    return 1 - pow(10, -100 * density);
+    return 1 - pow(10, -uniParamsF[1] * density);
+
+    //outColor = vec4(vec3(decodeFloat(texture(texDensity, varUv)) * 5), 1);
 }
 
 void main()
@@ -116,15 +119,14 @@ void main()
     // find the actual depth (resolve multisampling, if appropiate)
     float depthSample = 0.0;
     #ifndef GL_ES
-    int samples = int(uniParams[1] + 0.1);
-    if (samples > 1)
+    if (uniParamsI[1] > 1)
     {
-        for (int i = 0; i < samples; i++)
+        for (int i = 0; i < uniParamsI[1]; i++)
         {
             float d = texelFetch(texDepthMulti, ivec2(gl_FragCoord.xy), i).x;
             depthSample += d;
         }
-        depthSample /= samples;
+        depthSample /= uniParamsI[1];
     }
     else
     {

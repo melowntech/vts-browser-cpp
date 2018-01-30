@@ -82,8 +82,9 @@ public:
     // type of each channel per pixel
     GpuTypeEnum type;
 
-    // enforce texture internal format (leave zero to deduce the format from type and components)
-    // the type must still be set appropriately since it defines size of the buffer
+    // enforce texture internal format
+    //   leave zero to deduce the format from type and components
+    // the type must still be set appropriately since it defines buffer size
     uint32 internalFormat;
 
     // raw texture data
@@ -91,6 +92,12 @@ public:
     // the rows are in no way aligned to multi-byte boundaries
     //   (GL_UNPACK_ALIGNMENT = 1)
     Buffer buffer;
+
+    // expected size based on width * height * components * gpuTypeSize(type)
+    uint32 expectedSize() const;
+
+    // encode the image into png format
+    Buffer encodePng() const;
 };
 
 // information about mesh passed to loadMesh callback

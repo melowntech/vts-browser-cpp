@@ -34,9 +34,13 @@
 namespace vts
 {
 
-MapCelestialBody::MapCelestialBody() : name("undefined"),
-    majorRadius(0), minorRadius(0), atmosphereThickness(0),
-    atmosphereColorLow{0,0,0,0}, atmosphereColorHigh{0,0,0,0}
+MapCelestialBody::MapCelestialBody() :
+    majorRadius(0), minorRadius(0)
+{}
+
+MapCelestialBody::Atmosphere::Atmosphere() : thickness(0),
+    horizontalExponent(0), verticalExponent(0),
+    colorLow{0,0,0,0}, colorHigh{0,0,0,0}
 {}
 
 MapConfig::SurfaceInfo::SurfaceInfo(const SurfaceCommonConfig &surface,
@@ -375,33 +379,38 @@ void MapConfig::initializeCelestialBody() const
     auto r = n.srsDef.reference();
     map->body.majorRadius = r.GetSemiMajor();
     map->body.minorRadius = r.GetSemiMinor();
+    MapCelestialBody::Atmosphere &a = map->body.atmosphere;
     if (isEarth())
     {
         map->body.name = "Earth";
-        map->body.atmosphereThickness = map->body.majorRadius * 0.025;
-        static vec4 lowColor = vec4(140.0, 200.0, 243.0, 255.0) / 255;
-        static vec4 highColor = vec4(72.0, 154.0, 255.0, 255.0) / 255;
+        a.thickness = map->body.majorRadius * 0.025;
+        a.horizontalExponent = 100;
+        a.verticalExponent = 12;
+        static vec4 lowColor = vec4(158, 206, 255, 255) / 255;
+        static vec4 highColor = vec4(62, 120, 229, 255) / 255;
         for (int i = 0; i < 4; i++)
         {
-            map->body.atmosphereColorLow[i] = lowColor[i];
-            map->body.atmosphereColorHigh[i] = highColor[i];
+            a.colorLow[i] = lowColor[i];
+            a.colorHigh[i] = highColor[i];
         }
     }
     if (std::abs(map->body.majorRadius - 3396200) < 30000)
     {
         map->body.name = "Mars";
-        map->body.atmosphereThickness = 30000;
-        static vec4 lowColor = { 0.77, 0.48, 0.27, 0.5 };
-        static vec4 highColor = { 0.58, 0.65, 0.77, 0.5 };
+        a.thickness = 50000;
+        a.horizontalExponent = 20;
+        a.verticalExponent = 10;
+        static vec4 lowColor = vec4(115, 100, 74, 255) / 255;
+        static vec4 highColor = vec4(115, 100, 74, 255) / 255;
         for (int i = 0; i < 4; i++)
         {
-            map->body.atmosphereColorLow[i] = lowColor[i];
-            map->body.atmosphereColorHigh[i] = highColor[i];
+            a.colorLow[i] = lowColor[i];
+            a.colorHigh[i] = highColor[i];
         }
     }
     else
     {
-        map->body.name = "unknown";
+        map->body.name = "<unknown>";
     }
 }
 

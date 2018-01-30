@@ -97,7 +97,7 @@ void decodePng(const Buffer &in, Buffer &out,
 }
 
 void encodePng(const Buffer &in, Buffer &out,
-               uint32 &width, uint32 &height, uint32 &components)
+               uint32 width, uint32 height, uint32 components)
 {
     LOGTHROW(fatal, std::logic_error) << "encode png not implemented";
 }

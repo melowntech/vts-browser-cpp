@@ -119,8 +119,10 @@ void Buffer::free()
 
 void writeLocalFileBuffer(const std::string &path, const Buffer &buffer)
 {
-    boost::filesystem::create_directories(
-                boost::filesystem::path(path).parent_path());
+    std::string folderPath = boost::filesystem::path(path)
+            .parent_path().c_str();
+    if (!folderPath.empty())
+        boost::filesystem::create_directories(folderPath);
     FILE *f = fopen(path.c_str(), "wb");
     if (!f)
         LOGTHROW(err1, std::runtime_error) << "Failed to write file <"
@@ -188,8 +190,13 @@ uint32 Wrapper::position() const
 void addInternalMemoryData(const std::string name,
                            const unsigned char *data, size_t size)
 {
-    assert(dataMap().find(name) == dataMap().end());
+    assert(!existsInternalMemoryBuffer(name));
     dataMap()[name] = std::make_pair(size, data);
+}
+
+bool existsInternalMemoryBuffer(const std::string &path)
+{
+    return dataMap().find(path) != dataMap().end();
 }
 
 } // namespace detail

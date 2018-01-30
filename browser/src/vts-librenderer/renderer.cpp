@@ -28,6 +28,8 @@
 #include <atomic>
 #include <thread>
 #include <mutex>
+#include <iomanip>
+#include <sstream>
 
 #include <vts-browser/buffer.hpp>
 #include <vts-browser/math.hpp>
@@ -65,7 +67,9 @@ bool areSame(const vts::MapCelestialBody &a, const vts::MapCelestialBody &b)
 {
     return a.majorRadius == b.majorRadius
         && a.minorRadius == b.minorRadius
-        && a.atmosphereThickness == b.atmosphereThickness;
+        && a.atmosphere.thickness == b.atmosphere.thickness
+        && a.atmosphere.horizontalExponent == b.atmosphere.horizontalExponent
+        && a.atmosphere.verticalExponent == b.atmosphere.verticalExponent;
 }
 
 struct AtmosphereProp
@@ -106,16 +110,17 @@ struct AtmosphereProp
 
 void encodeFloat(double v, unsigned char *target)
 {
-    vec4 enc = vec4(1.0, 255.0, 65025.0, 16581375.0) * v;
+    assert(v >= 0 && v < 1);
+    vec4 enc = vec4(1.0, 256.0, 256.0*256.0, 256.0*256.0*256.0) * v;
     for (int i = 0; i < 4; i++)
         enc[i] -= std::floor(enc[i]); // frac
     vec4 tmp;
     for (int i = 0; i < 3; i++)
-        tmp[i] = enc[i + 1] / 255; // shift
+        tmp[i] = enc[i + 1] / 256.0; // shift
     tmp[3] = 0;
     enc -= tmp; // subtract
     for (int i = 0; i < 4; i++)
-        target[i] = enc[i] * 255;
+        target[i] = enc[i] * 256.0;
 }
 
 double sqr(double a)
@@ -125,64 +130,110 @@ double sqr(double a)
 
 void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
 {
-    vts::setLogThreadName("atmosphere");
-    vts::log(vts::LogLevel::info2, "Generating atmosphere density texture");
-
-    GpuTextureSpec spec;
-
-    spec.width = 1024;
-    spec.height = 512;
-    spec.components = 1;
-    spec.type = GpuTypeEnum::Float;
-    spec.buffer.allocate(spec.width * spec.height * 4);
-    float *valsArray = (float*)spec.buffer.data();
-
-    double atmHeight = body.atmosphereThickness / body.majorRadius;
-    double atmRad = 1 + atmHeight;
-    double atmRad2 = sqr(atmRad);
-
-    for (uint32 xx = 0; xx < spec.width; xx++)
+    try
     {
-        std::stringstream ss;
-        ss << "Atmosphere progress: " << xx << " / " << spec.width;
-        vts::log(vts::LogLevel::info1, ss.str());
+        vts::setLogThreadName("atmosphere");
+        vts::log(vts::LogLevel::info2, "Loading atmosphere density texture");
 
-        double fi = xx / (double)spec.width;
-        fi = fi * M_PI;
-        double cosfi = std::cos(fi);
-        double sinfi = std::sin(fi);
+        double atmHeight = body.atmosphere.thickness / body.majorRadius;
+        double atmRad = 1 + atmHeight;
+        double atmRad2 = sqr(atmRad);
 
-        for (uint32 yy = 0; yy < spec.height; yy++)
+        GpuTextureSpec spec;
+
+        std::string name;
         {
-            double r = std::pow(yy / (double)spec.height, 0.1) * atmRad;
-            double t0 = cosfi * r;
-            double y = sinfi * r;
-            double y2 = sqr(y);
-            double a = sqrt(atmRad2 - y2);
-            double density = 0;
-            static const double step = 0.0003;
-            for (double t = t0; t < a; t += step)
+            std::stringstream ss;
+            ss << std::setprecision(10) << std::fixed;
+            ss << "density-" << atmRad
+               << "-" << body.atmosphere.verticalExponent << ".png";
+            name = ss.str();
+        }
+
+        std::string fullName = std::string("data/textures/atmosphere/") + name;
+        if (detail::existsInternalMemoryBuffer(fullName))
+        {
+            vts::log(vts::LogLevel::info1, "The texture will be loaded "
+                                           "from internal memory");
+            spec = std::move(GpuTextureSpec(
+                                 readInternalMemoryBuffer(fullName)));
+        }
+        else
+        {
+            vts::log(vts::LogLevel::info3, "The texture will "
+                                           "be generated anew");
+            spec.width = 1024;
+            spec.height = 512;
+            spec.components = 4;
+            spec.buffer.allocate(spec.width * spec.height * 4);
+            unsigned char *valsArray = (unsigned char*)spec.buffer.data();
+
+            // actually generate the texture content
+            for (uint32 xx = 0; xx < spec.width; xx++)
             {
-                double h = std::sqrt(sqr(t) + y2);
-                h = (clamp(h, 1, atmRad) - 1) / atmHeight;
-                double a = std::exp(-12 * h);
-                density += a;
+                std::stringstream ss;
+                ss << "Atmosphere progress: " << xx << " / " << spec.width;
+                vts::log(vts::LogLevel::info1, ss.str());
+
+                double fi = xx / (double)spec.width;
+                fi = fi * M_PI;
+                double cosfi = std::cos(fi);
+                double sinfi = std::sin(fi);
+
+                for (uint32 yy = 0; yy < spec.height; yy++)
+                {
+                    double r = std::pow(yy / (double)spec.height, 0.1) * atmRad;
+                    double t0 = cosfi * r;
+                    double y = sinfi * r;
+                    double y2 = sqr(y);
+                    double a = sqrt(atmRad2 - y2);
+                    double density = 0;
+                    static const double step = 0.0003;
+                    for (double t = t0; t < a; t += step)
+                    {
+                        double h = std::sqrt(sqr(t) + y2);
+                        h = (clamp(h, 1, atmRad) - 1) / atmHeight;
+                        double a = std::exp(h
+                            * -body.atmosphere.verticalExponent);
+                        density += a;
+                    }
+                    density *= step;
+                    encodeFloat(density * 0.2,
+                                valsArray + ((yy * spec.width + xx) * 4));
+                }
             }
-            density *= step;
-            valsArray[yy * spec.width + xx] = density;
-        }
-    }
 
-    {
-        std::lock_guard<std::mutex> lck(atmosphere.mut);
-        if (atmosphere.thrIdx == thrIdx)
+            // save the texture to file
+            {
+                vts::log(vts::LogLevel::info3,
+                         std::string() + "The atmosphere texture "
+                         "will be saved to file <" + name + ">");
+                Buffer b = spec.encodePng();
+                writeLocalFileBuffer(name, b);
+            }
+        }
+
+        // pass the texture to the main thread
         {
-            atmosphere.spec = std::move(spec);
-            atmosphere.state = 2;
+            std::lock_guard<std::mutex> lck(atmosphere.mut);
+            if (atmosphere.thrIdx == thrIdx)
+            {
+                atmosphere.spec = std::move(spec);
+                atmosphere.state = 2;
+            }
         }
-    }
 
-    vts::log(vts::LogLevel::info2, "Finished atmosphere density texture");
+        vts::log(vts::LogLevel::info2, "Finished atmosphere density texture");
+    }
+    catch (const std::exception &e)
+    {
+        vts::log(LogLevel::err3, e.what());
+    }
+    catch (...)
+    {
+        vts::log(LogLevel::err4, "Unknown exception in atmosphere "
+                                 "density texture thread");
+    }
 }
 
 RenderVariables vars;
@@ -286,17 +337,19 @@ public:
             return;
 
         // uniParams
-        float uniParams[4] = {
-            (float)draws.camera.mapProjected,
-            (float)options.antialiasingSamples,
-            (float)(body.atmosphereThickness / body.majorRadius),
+        sint32 uniParamsI[4] = {
+            draws.camera.mapProjected,
+            options.antialiasingSamples
+        };
+        float uniParamsF[4] = {
+            (float)(body.atmosphere.thickness / body.majorRadius),
+            (float)body.atmosphere.horizontalExponent,
             (float)(body.minorRadius / body.majorRadius)
         };
 
         // other
         vec3 camPos = rawToVec3(draws.camera.eye) / body.majorRadius;
         vec3f uniCameraPosition = camPos.cast<float>();
-        vec3f uniCameraDirection = normalize(camPos).cast<float>();
         mat4 invViewProj = (viewProj * scaleMatrix(body.majorRadius)).inverse();
         mat4f uniInvViewProj = invViewProj.cast<float>();
 
@@ -314,12 +367,12 @@ public:
 
         // upload shader uniforms
         shaderAtmosphere->bind();
-        shaderAtmosphere->uniformVec4(0, body.atmosphereColorLow);
-        shaderAtmosphere->uniformVec4(1, body.atmosphereColorHigh);
-        shaderAtmosphere->uniformVec4(2, uniParams);
-        shaderAtmosphere->uniformMat4(3, (float*)uniInvViewProj.data());
-        shaderAtmosphere->uniformVec3(4, (float*)uniCameraPosition.data());
-        shaderAtmosphere->uniformVec3(5, (float*)uniCameraDirection.data());
+        shaderAtmosphere->uniformVec4(0, body.atmosphere.colorLow);
+        shaderAtmosphere->uniformVec4(1, body.atmosphere.colorHigh);
+        shaderAtmosphere->uniformVec4(2, uniParamsI);
+        shaderAtmosphere->uniformVec4(3, uniParamsF);
+        shaderAtmosphere->uniformMat4(4, (float*)uniInvViewProj.data());
+        shaderAtmosphere->uniformVec3(5, (float*)uniCameraPosition.data());
         for (int i = 0; i < 4; i++)
             shaderAtmosphere->uniformVec3(6 + i, (float*)cornerDirs[i].data());
 
@@ -529,7 +582,7 @@ public:
 
         // render atmosphere
         if (options.renderAtmosphere
-                && body.majorRadius > 0 && body.atmosphereThickness > 0)
+                && body.majorRadius > 0 && body.atmosphere.thickness > 0)
             renderAtmosphere();
 
         // render infographics
@@ -662,10 +715,10 @@ void initialize()
         GLuint id = shaderAtmosphere->getId();
         uls.push_back(glGetUniformLocation(id, "uniAtmColorLow"));
         uls.push_back(glGetUniformLocation(id, "uniAtmColorHigh"));
-        uls.push_back(glGetUniformLocation(id, "uniParams"));
+        uls.push_back(glGetUniformLocation(id, "uniParamsI"));
+        uls.push_back(glGetUniformLocation(id, "uniParamsF"));
         uls.push_back(glGetUniformLocation(id, "uniInvViewProj"));
         uls.push_back(glGetUniformLocation(id, "uniCameraPosition"));
-        uls.push_back(glGetUniformLocation(id, "uniCameraDirection"));
         uls.push_back(glGetUniformLocation(id, "uniCornerDirs[0]"));
         uls.push_back(glGetUniformLocation(id, "uniCornerDirs[1]"));
         uls.push_back(glGetUniformLocation(id, "uniCornerDirs[2]"));

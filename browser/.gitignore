@@ -10,4 +10,5 @@
 /bin
 /lib
 /build*
+/density-*.png
 

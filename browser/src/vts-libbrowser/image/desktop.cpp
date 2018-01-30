@@ -162,8 +162,14 @@ void decodePng(const Buffer &in, Buffer &out,
 }
 
 void encodePng(const Buffer &in, Buffer &out,
-               uint32 &width, uint32 &height, uint32 &components)
+               uint32 width, uint32 height, uint32 components)
 {
+    if (in.size() != width * height * components)
+    {
+        LOGTHROW(err2, std::runtime_error) << "Buffer with data for png "
+                                              "encoding has invalid size";
+    }
+
     pngInfoCtx ctx;
     ctx.writing = true;
     png_structp &png = ctx.png;

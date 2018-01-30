@@ -93,6 +93,7 @@ public:
 
 VTS_API void addInternalMemoryData(const std::string name,
                                    const unsigned char *data, size_t size);
+VTS_API bool existsInternalMemoryBuffer(const std::string &path);
 
 } // detail
 

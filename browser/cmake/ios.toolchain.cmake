@@ -15,18 +15,18 @@ set(IOS TRUE)
 
 # Setup iOS platform unless specified manually with IOS_PLATFORM
 if (NOT DEFINED IOS_PLATFORM)
-  set(IOS_PLATFORM "iphoneos")
+    set(IOS_PLATFORM "iphoneos")
 endif()
 
 # Check the platform selection and setup for developer root
 if (${IOS_PLATFORM} STREQUAL "iphoneos")
-  set(CMAKE_XCODE_EFFECTIVE_PLATFORMS "-iphoneos")
-  set(CMAKE_OSX_ARCHITECTURES arm64)
+    set(CMAKE_XCODE_EFFECTIVE_PLATFORMS "-iphoneos")
+    set(CMAKE_OSX_ARCHITECTURES arm64)
 elseif (${IOS_PLATFORM} STREQUAL "iphonesimulator")
-  set(CMAKE_XCODE_EFFECTIVE_PLATFORMS "-iphonesimulator")
-  set(CMAKE_OSX_ARCHITECTURES x86_64)
+    set(CMAKE_XCODE_EFFECTIVE_PLATFORMS "-iphonesimulator")
+    set(CMAKE_OSX_ARCHITECTURES x86_64)
 else()
-  message(FATAL_ERROR "Unsupported IOS_PLATFORM value selected. Please choose iphoneos or iphonesimulator")
+    message(FATAL_ERROR "Unsupported IOS_PLATFORM value selected. Please choose iphoneos or iphonesimulator")
 endif()
 set(CMAKE_OSX_ARCHITECTURES "${CMAKE_OSX_ARCHITECTURES}" CACHE STRING "osx architectures")
 
@@ -81,7 +81,7 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "" CACHE STRING "Force unset of the deployment t
 # and still cmake didn't fail in CMakeFindBinUtils.cmake (because it isn't rerun)
 # hardcode CMAKE_INSTALL_NAME_TOOL here to install_name_tool, so it behaves as it did before, Alex
 if (NOT DEFINED CMAKE_INSTALL_NAME_TOOL)
-  find_program(CMAKE_INSTALL_NAME_TOOL install_name_tool)
+    find_program(CMAKE_INSTALL_NAME_TOOL install_name_tool)
 endif()
 
 # Set the find root to the iOS developer roots and to user defined paths
@@ -92,9 +92,9 @@ set(CMAKE_FIND_FRAMEWORK FIRST)
 
 # set up the default search directories for frameworks
 set(CMAKE_SYSTEM_FRAMEWORK_PATH
-  ${CMAKE_IOS_SDK_ROOT}/System/Library/Frameworks
-  ${CMAKE_IOS_SDK_ROOT}/System/Library/PrivateFrameworks
-  ${CMAKE_IOS_SDK_ROOT}/Developer/Library/Frameworks
+    ${CMAKE_IOS_SDK_ROOT}/System/Library/Frameworks
+    ${CMAKE_IOS_SDK_ROOT}/System/Library/PrivateFrameworks
+    ${CMAKE_IOS_SDK_ROOT}/Developer/Library/Frameworks
 )
 
 # only search the iOS sdks, not the remainder of the host filesystem

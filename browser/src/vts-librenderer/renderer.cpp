@@ -128,6 +128,15 @@ double sqr(double a)
     return a * a;
 }
 
+double sign(double a)
+{
+    if (a < 0)
+        return -1;
+    if (a > 0)
+        return 1;
+    return 0;
+}
+
 void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
 {
     try
@@ -140,7 +149,7 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
         double atmRad2 = sqr(atmRad);
 
         GpuTextureSpec spec;
-        spec.width = 1024;
+        spec.width = 512;
         spec.height = 512;
         spec.components = 4;
 
@@ -182,9 +191,8 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
                 ss << "Atmosphere progress: " << xx << " / " << spec.width;
                 vts::log(vts::LogLevel::info1, ss.str());
 
-                double fi = xx / (double)spec.width;
-                fi = fi * M_PI;
-                double cosfi = std::cos(fi);
+                double cosfi = 2 * xx / (double)spec.width - 1;
+                double fi = std::acos(cosfi);
                 double sinfi = std::sin(fi);
 
                 for (uint32 yy = 0; yy < spec.height; yy++)

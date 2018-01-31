@@ -102,8 +102,7 @@ float atmosphere(float t1)
     {
         float t = x - ts[i];
         float r = sqrt(sqr(t) + y2);
-        float fi = atan(y, t);
-        vec2 uv = vec2(1.0 - fi / M_PI, pow(r / atmRad, 10.0));
+        vec2 uv = vec2(0.5 - 0.5 * t / r, pow(r / atmRad, 10.0));
         ds[i] = decodeFloat(texture(texDensity, uv)) * 5.0;
     }
 
@@ -112,6 +111,19 @@ float atmosphere(float t1)
     return 1.0 - pow(10.0, -uniParamsF[1] * density);
 
     //outColor = vec4(vec3(decodeFloat(texture(texDensity, varUv)) * 5), 1);
+    /*
+    float sum = 0.0;
+    float step = 0.0001;
+    for (float t = t0; t < t1; t += step)
+    {
+        float h = sqrt(sqr(t - x) + y2);
+        h = (clamp(h, 1.0, atmRad) - 1.0) / atmHeight;
+        float a = exp(-12.0 * h);
+        sum += a;
+    }
+    sum *= step;
+    return 1 - pow(10.0, -uniParamsF[1] * sum);
+    */
 }
 
 void main()

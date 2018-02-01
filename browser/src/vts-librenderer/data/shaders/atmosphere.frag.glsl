@@ -44,22 +44,39 @@ float decodeFloat(vec4 rgba)
     return dot(rgba, vec4(1.0, 1.0 / 256.0, 1.0 / (256.0*256.0), 1.0 / (256.0*256.0*256.0)));
 }
 
-vec3 convert(vec3 a)
+float sampleDensity(vec2 uv)
 {
-    return a * vec3(1.0, 1.0, 1.0 / uniParamsF[2]);
+    ivec2 res = textureSize(texDensity, 0);
+    vec2 uvp = uv * vec2(res - 1);
+    ivec2 iuv = ivec2(uvp);
+    vec4 s;
+    s.x = decodeFloat(texelFetchOffset(texDensity, iuv, 0, ivec2(0,0)));
+    s.y = decodeFloat(texelFetchOffset(texDensity, iuv, 0, ivec2(1,0)));
+    s.z = decodeFloat(texelFetchOffset(texDensity, iuv, 0, ivec2(0,1)));
+    s.w = decodeFloat(texelFetchOffset(texDensity, iuv, 0, ivec2(1,1)));
+    vec2 f = fract(uvp);
+    vec2 a = mix(s.xz, s.yw, f.x);
+    float b = mix(a.x, a.y, f.y);
+    return b * 5.0;
 }
 
-float atmosphere(float t1)
+float atmosphereDensity(float depthSample)
 {
-    vec3 cfd = cameraFragmentDirection();
+    // max ray length
+    float t1 = 100.0; // 100 times the planet radius - should be enough to consider it as infinite
+    if (depthSample < 1.0)
+        t1 = linearDepth(depthSample);
+
     // convert from ellipsoidal into spherical space
-    vec3 camPos =  convert(uniCameraPosition);
+    vec3 cfd = cameraFragmentDirection();
+    vec3 ellipseToSphere = vec3(1.0, 1.0, 1.0 / uniParamsF[2]);
+    vec3 camPos =  uniCameraPosition * ellipseToSphere;
     vec3 camDir =  normalize(camPos);
-    vec3 fragDir = normalize(convert(cfd));
+    vec3 fragDir = normalize(cfd * ellipseToSphere);
     if (t1 < 99.0)
     {
         vec3 T = uniCameraPosition + t1 * cfd;
-        T = convert(T);
+        T *= ellipseToSphere;
         t1 = length(T - camPos);
     }
 
@@ -79,11 +96,16 @@ float atmosphere(float t1)
     // fill holes in terrain
     // if the ray passes through the planet,
     //   or the camera is so far that the earths mesh is too rough ...
-    if ((y < 0.999 && x >= 0.0 && t1 > 99.0) || l > 1.5)
+    if ((y < 0.998 && x >= 0.0 && t1 > 99.0) || l > 1.5)
     {
         float g = sqrt(1.0 - y2);
         t1 = x - g; // ... the t1 is moved onto the mathematical model surface
     }
+
+    // to improve accuracy, swap direction of the ray to point out of the terrain
+    bool swapDirection = false;
+    if (t1 < 99.0 && x >= 0.0)
+        swapDirection = true;
 
     // distance of atmosphere boundary from "x"
     float a = sqrt(atmRad2 - y2);
@@ -102,12 +124,16 @@ float atmosphere(float t1)
     {
         float t = x - ts[i];
         float r = sqrt(sqr(t) + y2);
-        vec2 uv = vec2(0.5 - 0.5 * t / r, pow(r / atmRad, 10.0));
-        ds[i] = decodeFloat(texture(texDensity, uv)) * 5.0;
+        vec2 uv = vec2(0.5 - 0.5 * t / r, 0.5 + 0.5 * (r - 1.0) / atmHeight);
+        if (swapDirection)
+            uv.x = 1.0 - uv.x;
+        ds[i] = sampleDensity(uv);
     }
 
     // final optical transmitance
     float density = ds[0] - ds[1];
+    if (swapDirection)
+        density *= -1.0;
     return 1.0 - pow(10.0, -uniParamsF[1] * density);
 
     //outColor = vec4(vec3(decodeFloat(texture(texDensity, varUv)) * 5), 1);
@@ -128,37 +154,29 @@ float atmosphere(float t1)
 
 void main()
 {
-    // find the actual depth (resolve multisampling, if appropiate)
-    float depthSample = 0.0;
+    float atm = 0.0;
     #ifndef GL_ES
     if (uniParamsI[1] > 1)
     {
         for (int i = 0; i < uniParamsI[1]; i++)
         {
             float d = texelFetch(texDepthMulti, ivec2(gl_FragCoord.xy), i).x;
-            depthSample += d;
+            atm += atmosphereDensity(d);
         }
-        depthSample /= uniParamsI[1];
+        atm /= uniParamsI[1];
     }
     else
     {
     #endif
-        depthSample = texelFetch(texDepthSingle, ivec2(gl_FragCoord.xy), 0).x;
+        float d = texelFetch(texDepthSingle, ivec2(gl_FragCoord.xy), 0).x;
+        atm = atmosphereDensity(d);
     #ifndef GL_ES
     }
     #endif
 
-    // max ray length
-    float t1 = 100.0; // 100 times the planet radius - should be enough to consider it as infinite
-    if (depthSample < 1.0)
-        t1 = linearDepth(depthSample);
-
-    // atmosphere opacity
-    float atm = atmosphere(t1);
-    atm = clamp(atm, 0.0, 1.0);
-
     // compose atmosphere color
-    outColor = mix(uniAtmColorLow, uniAtmColorHigh, pow(1.0 - atm, 0.2));
+    atm = clamp(atm, 0.0, 1.0);
+    outColor = mix(uniAtmColorLow, uniAtmColorHigh, pow(1.0 - atm, 0.3));
     outColor.a *= atm;
 }
 

@@ -383,9 +383,9 @@ void MapConfig::initializeCelestialBody() const
     if (isEarth())
     {
         map->body.name = "Earth";
-        a.thickness = map->body.majorRadius * 0.025;
-        a.horizontalExponent = 100;
-        a.verticalExponent = 12;
+        a.thickness = map->body.majorRadius * 0.01;
+        a.horizontalExponent = 140;
+        a.verticalExponent = 7;
         static vec4 lowColor = vec4(158, 206, 255, 255) / 255;
         static vec4 highColor = vec4(62, 120, 229, 255) / 255;
         for (int i = 0; i < 4; i++)
@@ -397,9 +397,9 @@ void MapConfig::initializeCelestialBody() const
     if (std::abs(map->body.majorRadius - 3396200) < 30000)
     {
         map->body.name = "Mars";
-        a.thickness = 50000;
-        a.horizontalExponent = 20;
-        a.verticalExponent = 10;
+        a.thickness = map->body.majorRadius * 0.01;
+        a.horizontalExponent = 60;
+        a.verticalExponent = 7;
         static vec4 lowColor = vec4(115, 100, 74, 255) / 255;
         static vec4 highColor = vec4(115, 100, 74, 255) / 255;
         for (int i = 0; i < 4; i++)

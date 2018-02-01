@@ -101,6 +101,10 @@ struct AtmosphereProp
             tex = std::make_shared<Texture>();
             vts::ResourceInfo info;
             tex->load(info, spec);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             spec.buffer.free();
             state = 3;
         }
@@ -128,15 +132,6 @@ double sqr(double a)
     return a * a;
 }
 
-double sign(double a)
-{
-    if (a < 0)
-        return -1;
-    if (a > 0)
-        return 1;
-    return 0;
-}
-
 void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
 {
     try
@@ -156,9 +151,9 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
         std::string name;
         {
             std::stringstream ss;
-            ss << std::setprecision(10) << std::fixed;
-            ss << "density-" << atmRad
-               << "-" << body.atmosphere.verticalExponent << ".png";
+            ss << std::setprecision(7) << std::fixed
+               << "density-" << spec.width << "-" << spec.height << "-"
+               << atmRad << "-" << body.atmosphere.verticalExponent << ".png";
             name = ss.str();
         }
 
@@ -168,19 +163,23 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
         {
             vts::log(vts::LogLevel::info2, "The atmosphere texture will "
                      "be loaded from internal memory");
-            GpuTextureSpec sp(readInternalMemoryBuffer(fullName));
-            if (spec.expectedSize() == sp.buffer.size())
-                std::swap(sp, spec);
-            else
-                vts::log(vts::LogLevel::warn2, "The atmosphere texture in "
-                         "internal memory has wrong size");
+            try
+            {
+                GpuTextureSpec sp(readInternalMemoryBuffer(fullName));
+                if (spec.expectedSize() == sp.buffer.size())
+                    std::swap(sp, spec);
+            }
+            catch (...)
+            {
+                // dont care
+            }
         }
 
         // generate the texture anew
         if (spec.buffer.size() == 0)
         {
-            vts::log(vts::LogLevel::info3, "The texture will "
-                                           "be generated anew");
+            vts::log(vts::LogLevel::info3,
+                     "The atmosphere density texture will be generated anew");
             spec.buffer.allocate(spec.width * spec.height * 4);
             unsigned char *valsArray = (unsigned char*)spec.buffer.data();
 
@@ -197,7 +196,8 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
 
                 for (uint32 yy = 0; yy < spec.height; yy++)
                 {
-                    double r = std::pow(yy / (double)spec.height, 0.1) * atmRad;
+                    double yyy = yy / (double)spec.height;
+                    double r = 2 * atmHeight * yyy - atmHeight + 1;
                     double t0 = cosfi * r;
                     double y = sinfi * r;
                     double y2 = sqr(y);
@@ -223,8 +223,15 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
                 vts::log(vts::LogLevel::info3,
                          std::string() + "The atmosphere texture "
                          "will be saved to file <" + name + ">");
-                Buffer b = spec.encodePng();
-                writeLocalFileBuffer(name, b);
+                try
+                {
+                    Buffer b = spec.encodePng();
+                    writeLocalFileBuffer(name, b);
+                }
+                catch (...)
+                {
+                    // dont care
+                }
             }
         }
 

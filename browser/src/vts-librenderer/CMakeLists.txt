@@ -33,8 +33,7 @@ set(DATA_LIST
     data/shaders/copyDepth.vert.glsl
     data/textures/compas.png
     data/textures/helper.jpg
-    data/textures/atmosphere/density-1.0147223801-10.0000000000.png
-    data/textures/atmosphere/density-1.0250000000-12.0000000000.png
+    data/textures/atmosphere/density-512-512-1.0100000-7.0000000.png
 )
 
 pack_data(initializeRenderData)

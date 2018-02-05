@@ -3,24 +3,31 @@ set(EXTRA_SRC_LIST)
 set(EXTRA_LIB_DEPS)
 set(EXTRA_MODULE_DEPS)
 
+# png via libpng
+find_package(ZLIB REQUIRED)
+#include_directories(${ZLIB_INCLUDE_DIRS})
+find_package(PNG REQUIRED)
+include_directories(${PNG_INCLUDE_DIRS})
+#list(APPEND EXTRA_LIB_DEPS ${ZLIB_LIBRARIES})
+list(APPEND EXTRA_MODULE_DEPS PNG ZLIB)
+list(APPEND EXTRA_SRC_LIST image/libPng.cpp)
+
 if(IOS)
 
     # ios
-    find_package(ZLIB REQUIRED)
-    include_directories(${ZLIB_INCLUDE_DIRS})
-    list(APPEND EXTRA_LIB_DEPS ${ZLIB_LIBRARIES} iconv objc "-framework CoreGraphics")
-    list(APPEND EXTRA_SRC_LIST fetcher/ios.mm image/ios.mm)
+    list(APPEND EXTRA_LIB_DEPS iconv objc "-framework CoreGraphics")
+    list(APPEND EXTRA_SRC_LIST fetcher/ios.mm image/iosJpeg.mm)
 
 else()
 
     # desktop
     find_package(JPEG REQUIRED)
-    find_package(PNG REQUIRED)
+    include_directories(BEFORE ${JPEG_INCLUDE_DIRS})
     find_package(CURL REQUIRED)
     add_subdirectory(fetcher/http)
     include_directories(fetcher)
-    list(APPEND EXTRA_MODULE_DEPS http JPEG PNG)
-    list(APPEND EXTRA_SRC_LIST fetcher/curl.cpp image/desktop.cpp)
+    list(APPEND EXTRA_MODULE_DEPS http JPEG)
+    list(APPEND EXTRA_SRC_LIST fetcher/curl.cpp image/libJpeg.cpp)
 
 endif()
 

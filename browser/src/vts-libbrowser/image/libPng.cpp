@@ -25,7 +25,6 @@
  */
 
 #include <png.h>
-#include <jpeglib.h>
 #include <dbglog/dbglog.hpp>
 #include "../include/vts-browser/buffer.hpp"
 
@@ -89,15 +88,6 @@ void pngWriteFunc(png_structp png, png_bytep buf, png_size_t siz)
 void pngFlushFunc(png_structp)
 {
     // do nothing
-}
-
-void jpegErrFunc(j_common_ptr cinfo)
-{
-    char jpegLastErrorMsg[JMSG_LENGTH_MAX];
-    (*(cinfo->err->format_message))(cinfo, jpegLastErrorMsg);
-    LOGTHROW(err1, std::runtime_error)
-            << "failed to decode jpeg image <"
-            << jpegLastErrorMsg << ">";
 }
 
 } // namespace
@@ -220,41 +210,6 @@ void encodePng(const Buffer &in, Buffer &out,
         rows[y] = (png_bytep)in.data() + y * cols;
     png_write_image(png, rows.data());
     png_write_end(png, info);
-}
-
-void decodeJpeg(const Buffer &in, Buffer &out,
-                uint32 &width, uint32 &height, uint32 &components)
-{
-    jpeg_decompress_struct info;
-    jpeg_error_mgr errmgr;
-    info.err = jpeg_std_error(&errmgr);
-    errmgr.error_exit = &jpegErrFunc;
-    try
-    {
-        jpeg_create_decompress(&info);
-        jpeg_mem_src(&info, (unsigned char*)in.data(), in.size());
-        jpeg_read_header(&info, TRUE);
-        jpeg_start_decompress(&info);
-        width = info.output_width;
-        height = info.output_height;
-        components = info.num_components;
-        uint32 lineSize = components * width;
-        out = Buffer(lineSize * height);
-        while (info.output_scanline < info.output_height)
-        {
-            unsigned char *ptr[1];
-            ptr[0] = (unsigned char*)out.data()
-                    + lineSize * info.output_scanline;
-            jpeg_read_scanlines(&info, ptr, 1);
-        }
-        jpeg_finish_decompress(&info);
-        jpeg_destroy_decompress(&info);
-    }
-    catch (...)
-    {
-        jpeg_destroy_decompress(&info);
-        throw;
-    }
 }
 
 } // namespace vts

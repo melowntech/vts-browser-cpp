@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 2.8.11)
 project(vts-browser)
 
-cmake_policy(SET CMP0004 OLD) # because SDL installed on some systems has improperly configured libraries
+cmake_policy(SET CMP0042 NEW) # use rpath
 
 # by default, this is OSS build (can be overriden by customer machinery)
 set(BUILDSYS_DEFAULT_CUSTOMER_NAME oss)
@@ -82,6 +82,7 @@ if(IOS)
 else()
 
     # find SDL
+    cmake_policy(SET CMP0004 OLD) # because SDL installed on some systems has improperly configured libraries
     find_package(SDL2 REQUIRED)
     include_directories(${SDL2_INCLUDE_DIR})
 

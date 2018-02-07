@@ -24,26 +24,30 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import "AboutViewController.h"
+#include <jsoncpp/json.hpp>
 
-
-@interface AboutViewController ()
-
-@end
-
-
-@implementation AboutViewController
-
-- (IBAction)gotoHomepage:(id)sender
+namespace vts
 {
-    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://www.melown.com"] options:@{} completionHandler:nil];
-    
+
+inline Json::Value stringToJson(const std::string &s)
+{
+    Json::CharReaderBuilder builder;
+    auto r = builder.newCharReader();
+    Json::Value val;
+    std::string errs;
+    if (!r->parse(s.data(), s.data() + s.size(), &val, &errs))
+        LOGTHROW(err2, std::runtime_error) << errs;
+    return val;
 }
 
-- (IBAction)gotoGithub:(id)sender
+inline std::string jsonToString(const Json::Value &value)
 {
-    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://github.com/Melown/vts-browser-cpp"] options:@{} completionHandler:nil];
+    Json::StreamWriterBuilder builder;
+    std::ostringstream ss;
+    builder.newStreamWriter()->write(value, &ss);
+    return ss.str();
 }
 
-@end
+} // namespace vts
+
 

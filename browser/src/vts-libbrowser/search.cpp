@@ -24,10 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jsoncpp/json.hpp>
 #include <utility/uri.hpp>
 
 #include "map.hpp"
+#include "json.hpp"
 
 namespace vts
 {
@@ -161,14 +161,16 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
     try
     {
         Json::Value root;
+        try
         {
-            Json::Reader r;
-            detail::Wrapper w(task->impl->data);
-            if (!r.parse(w, root, false))
-                LOGTHROW(err2, std::runtime_error)
-                        << "Failed to parse search result json, url: <"
-                        << task->impl->name << ">, error: <"
-                        << r.getFormattedErrorMessages() << ">";
+            root = stringToJson(std::string(task->impl->data.data(), task->impl->data.size()));
+        }
+        catch(const std::exception &e)
+        {
+            LOGTHROW(err2, std::runtime_error)
+                    << "Failed to parse search result json, url: <"
+                    << task->impl->name << ">, error: <"
+                    << e.what() << ">";
         }
         for (Json::Value &it : root)
         {

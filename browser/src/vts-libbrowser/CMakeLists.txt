@@ -5,14 +5,14 @@ set(EXTRA_MODULE_DEPS)
 
 # png via libpng
 find_package(ZLIB REQUIRED)
-#include_directories(${ZLIB_INCLUDE_DIRS})
 find_package(PNG REQUIRED)
-include_directories(${PNG_INCLUDE_DIRS})
-#list(APPEND EXTRA_LIB_DEPS ${ZLIB_LIBRARIES})
+include_directories(SYSTEM ${ZLIB_INCLUDE_DIRS})
+include_directories(SYSTEM ${PNG_INCLUDE_DIRS})
+list(APPEND EXTRA_LIB_DEPS ${ZLIB_LIBRARIES})
 list(APPEND EXTRA_MODULE_DEPS PNG ZLIB)
 list(APPEND EXTRA_SRC_LIST image/libPng.cpp)
 
-if(IOS)
+if(BUILDSYS_IOS)
 
     # ios
     list(APPEND EXTRA_LIB_DEPS iconv objc "-framework CoreGraphics")
@@ -22,7 +22,7 @@ else()
 
     # desktop
     find_package(JPEG REQUIRED)
-    include_directories(BEFORE ${JPEG_INCLUDE_DIRS})
+    include_directories(SYSTEM ${JPEG_INCLUDE_DIRS})
     find_package(CURL REQUIRED)
     add_subdirectory(fetcher/http)
     include_directories(fetcher)
@@ -63,6 +63,7 @@ set(HDR_LIST
     cache.hpp
     piha.hpp
     threadName.hpp
+    json.hpp
 )
 
 set(SRC_LIST
@@ -112,7 +113,7 @@ buildsys_position_independent(${MODULE_LIBRARIES})
 #######################################################################
 # Install
 
-if(NOT IOS)
+if(NOT BUILDSYS_EMBEDDED)
 
 set(VTSBROWSER_LIBRARIES vts-browser)
 

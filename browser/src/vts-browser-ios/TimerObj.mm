@@ -62,7 +62,11 @@
     {
         // do nothing
     }
-    [object performSelector:selector];
+    
+    // https://stackoverflow.com/questions/7017281/performselector-may-cause-a-leak-because-its-selector-is-unknown
+    IMP imp = [object methodForSelector:selector];
+    void (*func)(id, SEL) = (void (*)(id, SEL))imp;
+    func(object, selector);
 }
 
 - (void)setObject:(id)object Selector:(SEL)selector

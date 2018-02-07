@@ -32,6 +32,7 @@
 #include "include/vts-browser/map.hpp"
 #include "include/vts-browser/view.hpp"
 #include "map.hpp"
+#include "json.hpp"
 
 namespace vts
 {
@@ -433,8 +434,7 @@ std::string Map::getPositionJson() const
 {
     if (!getMapConfigReady())
         return "";
-    return Json::FastWriter().write(
-                vtslibs::registry::asJson(impl->mapConfig->position));
+    return jsonToString(vtslibs::registry::asJson(impl->mapConfig->position));
 }
 
 std::string Map::getPositionUrl() const
@@ -468,9 +468,7 @@ void Map::setPositionJson(const std::string &position)
 {
     if (!getMapConfigReady())
         return;
-    Json::Value val;
-    if (!Json::Reader().parse(position, val))
-        LOGTHROW(err2, std::runtime_error) << "invalid position from json";
+    Json::Value val = stringToJson(position);
     vtslibs::registry::Position pos = vtslibs::registry::positionFromJson(val);
     setPosition(this, pos);
 }
@@ -633,13 +631,13 @@ std::string Map::getViewJson(const std::string &name) const
     if (!getMapConfigReady())
         return "";
     if (name == "")
-        return Json::FastWriter().write(vtslibs::registry::asJson(
+        return jsonToString(vtslibs::registry::asJson(
                 impl->mapConfig->view, impl->mapConfig->boundLayers));
     auto it = impl->mapConfig->namedViews.find(name);
     if (it == impl->mapConfig->namedViews.end())
         LOGTHROW(err2, std::runtime_error)
                 << "specified mapconfig view could not be found";
-    return Json::FastWriter().write(vtslibs::registry::asJson(it->second,
+    return jsonToString(vtslibs::registry::asJson(it->second,
                         impl->mapConfig->boundLayers));
 }
 
@@ -648,11 +646,7 @@ void Map::setViewJson(const std::string &name,
 {
     if (!getMapConfigReady())
         return;
-    Json::Value val;
-    Json::Reader r;
-    if (!r.parse(view, val))
-        LOGTHROW(err2, std::runtime_error) << "invalid view json: "
-                                           << r.getFormattedErrorMessages();
+    Json::Value val = stringToJson(view);
     setViewData(name, getMapView(vtslibs::registry::viewFromJson(val)));
 }
 

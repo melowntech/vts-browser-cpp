@@ -23,13 +23,13 @@ include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 find_package(GDAL 2 REQUIRED)
 include_directories(SYSTEM ${GDAL_INCLUDE_DIR})
 find_package(Proj REQUIRED)
-include_directories(${PROJ_INCLUDE_DIR})
+include_directories(SYSTEM ${PROJ_INCLUDE_DIR})
 find_package(GeographicLib REQUIRED)
-include_directories(${GEOGRAPHICLIB_INCLUDE_DIR})
+include_directories(SYSTEM ${GEOGRAPHICLIB_INCLUDE_DIR})
 find_package(JsonCPP REQUIRED)
-include_directories(${JSONCPP_INCLUDE_DIR})
+include_directories(SYSTEM ${JSONCPP_INCLUDE_DIR})
 find_package(Eigen3 REQUIRED)
-include_directories(${EIGEN3_INCLUDE_DIR})
+include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 add_subdirectory(src/glad)
 
 # vts dependencies
@@ -60,7 +60,7 @@ include(cmake/pack_data.cmake)
 
 # vts browser
 message(STATUS "including vts browser and renderer libraries")
-if(IOS)
+if(BUILDSYS_EMBEDDED)
     set(LIB_TYPE STATIC)
     set(LIB_VIS PUBLIC)
 else()
@@ -73,7 +73,7 @@ add_subdirectory(src/vts-librenderer)
 include_directories(src/vts-librenderer/include)
 
 # application
-if(IOS)
+if(BUILDSYS_IOS)
 
     # ios application
     message(STATUS "including vts-browser-ios")
@@ -84,7 +84,7 @@ else()
     # find SDL
     cmake_policy(SET CMP0004 OLD) # because SDL installed on some systems has improperly configured libraries
     find_package(SDL2 REQUIRED)
-    include_directories(${SDL2_INCLUDE_DIR})
+    include_directories(SYSTEM ${SDL2_INCLUDE_DIR})
 
     # minimal application
     message(STATUS "including vts-browser-minimal")
@@ -93,7 +93,6 @@ else()
     # desktop application
     message(STATUS "including vts-browser-desktop")
     add_subdirectory(src/nuklear)
-    include_directories(src/nuklear)
     add_subdirectory(src/vts-browser-desktop)
 
 endif()

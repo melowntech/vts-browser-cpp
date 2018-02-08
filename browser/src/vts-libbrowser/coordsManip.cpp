@@ -104,7 +104,7 @@ public:
     {
         vtslibs::registry::Srs s;
         s.comment = name;
-        s.srsDef = def;
+        s.srsDef = geo::SrsDefinition::fromString(def);
         mapconfig.srs.replace(name, s);
     }
 

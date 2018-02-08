@@ -854,15 +854,15 @@ void MapImpl::updateCamera()
             ? positionObjectiveDistance() : 1e-5;
     vec3 cameraPosPhys = center - dir * dist;
     if (callbacks.cameraOverrideEye)
-        callbacks.cameraOverrideEye((double*)&cameraPosPhys);
+        callbacks.cameraOverrideEye(cameraPosPhys.data());
     if (callbacks.cameraOverrideTarget)
-        callbacks.cameraOverrideTarget((double*)&center);
+        callbacks.cameraOverrideTarget(center.data());
     if (callbacks.cameraOverrideUp)
-        callbacks.cameraOverrideUp((double*)&up);
+        callbacks.cameraOverrideUp(up.data());
     mat4 view = lookAt(cameraPosPhys, center, up);
     if (callbacks.cameraOverrideView)
     {
-        callbacks.cameraOverrideView((double*)&view);
+        callbacks.cameraOverrideView(view.data());
         // update center, dir and up
         mat4 vi = view.inverse();
         cameraPosPhys = vec4to3(vi * vec4(0, 0, -1, 1), true);
@@ -913,7 +913,7 @@ void MapImpl::updateCamera()
     assert(far > near);
     mat4 proj = perspectiveMatrix(fov, aspect, near, far);
     if (callbacks.cameraOverrideProj)
-        callbacks.cameraOverrideProj((double*)&proj);
+        callbacks.cameraOverrideProj(proj.data());
 
     // few other variables
     renderer.viewProjRender = proj * view;

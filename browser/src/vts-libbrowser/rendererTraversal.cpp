@@ -842,67 +842,75 @@ void MapImpl::traverseClearing(TraverseNode *trav)
         traverseClearing(it.get());
 }
 
+namespace
+{
+
+void computeNearFar(double &near, double &far, double altitude,
+                    const MapCelestialBody &body,
+                    vec3 cameraPos, vec3 cameraForward)
+{
+    (void)cameraForward;
+    double major = body.majorRadius;
+    double flat = major / body.minorRadius;
+    cameraPos[2] *= flat;
+    //cameraForward[2] *= flat;
+    //cameraForward = normalize(cameraForward);
+    double ground = major + (altitude == altitude ? altitude : 0.0);
+    double l = length(cameraPos);
+    double a = std::max(1.0, l - ground);
+    //LOG(info4) << "altitude: " << altitude << ", ground: " << ground
+    //           << ", camera: " << l << ", above: " << a;
+    near = a > 2 * major ? a - major : interpolate(2, major, a / (2 * major));
+    near = std::max(2.0, near);
+    //double l2 = std::max(l, ground) + 5000;
+    //double horizon = std::sqrt(l2*l2 - ground*ground);
+    //far = near + horizon;
+    far = l;
+}
+
+} // namespace
+
 void MapImpl::updateCamera()
 {
-    vec3 center, dir, up;
-    positionToCamera(center, dir, up);
+    vec3 objCenter, cameraForward, cameraUp;
+    positionToCamera(objCenter, cameraForward, cameraUp);
 
     vtslibs::registry::Position &pos = mapConfig->position;
 
     // camera view matrix
-    double dist = pos.type == vtslibs::registry::Position::Type::objective
+    double objDist = pos.type == vtslibs::registry::Position::Type::objective
             ? positionObjectiveDistance() : 1e-5;
-    vec3 cameraPosPhys = center - dir * dist;
+    vec3 cameraPos = objCenter - cameraForward * objDist;
     if (callbacks.cameraOverrideEye)
-        callbacks.cameraOverrideEye(cameraPosPhys.data());
+        callbacks.cameraOverrideEye(cameraPos.data());
     if (callbacks.cameraOverrideTarget)
-        callbacks.cameraOverrideTarget(center.data());
+        callbacks.cameraOverrideTarget(objCenter.data());
+    objDist = length(vec3(objCenter - cameraPos));
     if (callbacks.cameraOverrideUp)
-        callbacks.cameraOverrideUp(up.data());
-    mat4 view = lookAt(cameraPosPhys, center, up);
+        callbacks.cameraOverrideUp(cameraUp.data());
+    assert(length(cameraUp) > 1e-7);
+    mat4 view = lookAt(cameraPos, objCenter, cameraUp);
     if (callbacks.cameraOverrideView)
     {
         callbacks.cameraOverrideView(view.data());
-        // update center, dir and up
+        // update objCenter, cameraForward and cameraUp
         mat4 vi = view.inverse();
-        cameraPosPhys = vec4to3(vi * vec4(0, 0, -1, 1), true);
-        dir = vec4to3(vi * vec4(0, 0, -1, 0), false);
-        up = vec4to3(vi * vec4(0, 1, 0, 0), false);
-        center = cameraPosPhys + dir * dist;
+        cameraPos = vec4to3(vi * vec4(0, 0, -1, 1), true);
+        cameraForward = vec4to3(vi * vec4(0, 0, -1, 0), false);
+        cameraUp = vec4to3(vi * vec4(0, 1, 0, 0), false);
+        objCenter = cameraPos + cameraForward * objDist;
     }
 
     // camera projection matrix
-    double near = std::max(2.0, dist * 0.1);
-    double terrainAboveOrigin = 0;
-    double cameraAboveOrigin = 0;
-    switch (mapConfig->navigationSrsType())
+    double near = 0;
+    double far = 0;
     {
-    case vtslibs::registry::Srs::Type::projected:
-    {
-        const vtslibs::registry::Srs &srs = mapConfig->srs.get(
-                    mapConfig->referenceFrame.model.navigationSrs);
-        if (srs.periodicity)
-            terrainAboveOrigin = srs.periodicity->period / (2 * 3.14159);
-        cameraAboveOrigin = terrainAboveOrigin + dist * 2;
-    } break;
-    case vtslibs::registry::Srs::Type::geographic:
-    {
-        terrainAboveOrigin = length(convertor->navToPhys(vec2to3(vec3to2(
-                                    vecFromUblas<vec3>(pos.position)), 0)));
-        cameraAboveOrigin = length(cameraPosPhys);
-    } break;
-    case vtslibs::registry::Srs::Type::cartesian:
-        LOGTHROW(fatal, std::invalid_argument) << "Invalid navigation srs type";
+        double altitude;
+        vec3 navPos = convertor->physToNav(cameraPos);
+        if (!getPositionAltitude(altitude, navPos, 10))
+            altitude = std::numeric_limits<double>::quiet_NaN();
+        computeNearFar(near, far, altitude, body, cameraPos, cameraForward);
     }
-    double cameraToHorizon = cameraAboveOrigin > terrainAboveOrigin
-            ? std::sqrt(cameraAboveOrigin * cameraAboveOrigin
-                - terrainAboveOrigin * terrainAboveOrigin)
-            : 0;
-    double mountains = 5000 + terrainAboveOrigin;
-    double mountainsBehindHorizon = std::sqrt(mountains * mountains
-                                    - terrainAboveOrigin * terrainAboveOrigin);
-    double far = cameraToHorizon + mountainsBehindHorizon;
-    far = std::max(far, near * 10);
     double fov = pos.verticalFov;
     double aspect = (double)renderer.windowWidth/(double)renderer.windowHeight;
     if (callbacks.cameraOverrideFovAspectNearFar)
@@ -921,11 +929,11 @@ void MapImpl::updateCamera()
     {
         renderer.viewProj = renderer.viewProjRender;
         renderer.perpendicularUnitVector
-                = normalize(cross(cross(up, dir), dir));
-        renderer.forwardUnitVector = dir;
+            = normalize(cross(cross(cameraUp, cameraForward), cameraForward));
+        renderer.forwardUnitVector = cameraForward;
         frustumPlanes(renderer.viewProj, renderer.frustumPlanes);
-        renderer.cameraPosPhys = cameraPosPhys;
-        renderer.focusPosPhys = center;
+        renderer.cameraPosPhys = cameraPos;
+        renderer.focusPosPhys = objCenter;
     }
     else
     {
@@ -995,8 +1003,8 @@ void MapImpl::updateCamera()
         MapDraws::Camera &c = draws.camera;
         matToRaw(view, c.view);
         matToRaw(proj, c.proj);
-        vecToRaw(center, c.target);
-        vecToRaw(cameraPosPhys, c.eye);
+        //vecToRaw(objCenter, c.target);
+        vecToRaw(cameraPos, c.eye);
         c.near = near;
         c.far = far;
     }

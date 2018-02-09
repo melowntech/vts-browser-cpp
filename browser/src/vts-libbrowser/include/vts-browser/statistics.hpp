@@ -67,8 +67,6 @@ public:
     uint32 currentResources;
     uint32 currentResourceDownloads;
     uint32 currentResourcePreparing;
-    uint32 desiredNavigationLod;
-    uint32 usedNavigationlod;
     uint32 currentNodeMetaUpdates;
     uint32 currentNodeDrawsUpdates;
     NavigationMode currentNavigationMode;

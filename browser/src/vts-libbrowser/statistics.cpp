@@ -53,8 +53,6 @@ void MapStatistics::resetAll()
     currentGpuMemUse = 0;
     currentRamMemUse = 0;
     currentResources = 0;
-    desiredNavigationLod = 0;
-    usedNavigationlod = 0;
     currentResourcePreparing = 0;
     currentNavigationMode = (NavigationMode)0;
 }

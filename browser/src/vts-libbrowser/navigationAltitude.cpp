@@ -92,14 +92,14 @@ std::shared_ptr<TraverseNode> findTravSds(
 
 } // namespace
 
-void MapImpl::updatePositionAltitude(double fadeOutFactor)
+
+bool MapImpl::getPositionAltitude(double &result,
+            const vec3 &navPos, double samples)
 {
     assert(convertor);
 
-    statistics.desiredNavigationLod = 0;
-    statistics.usedNavigationlod = 0;
     if (!renderer.traverseRoot || !renderer.traverseRoot->meta)
-        return;
+        return false;
 
     // find surface division coordinates (and appropriate node info)
     vec2 sds;
@@ -112,7 +112,7 @@ void MapImpl::updatePositionAltitude(double fadeOutFactor)
         NodeInfo ni(mapConfig->referenceFrame, it.first, false, *mapConfig);
         try
         {
-            sds = vec3to2(convertor->convert(navigation.targetPoint,
+            sds = vec3to2(convertor->convert(navPos,
                 Srs::Navigation, it.second));
             if (!ni.inside(vecToUblas<math::Point2>(sds)))
                 continue;
@@ -125,13 +125,11 @@ void MapImpl::updatePositionAltitude(double fadeOutFactor)
         }
     }
     if (!info)
-        return;
+        return false;
 
-    // desired navigation lod
+    // desired lod
     uint32 desiredLod = std::max(0.0,
-        -std::log2(mapConfig->position.verticalExtent / info->extents().size()
-        / options.navigationSamplesPerViewExtent));
-    statistics.desiredNavigationLod = desiredLod;
+        -std::log2(samples / info->extents().size()));
 
     // find corner positions
     vec2 points[4];
@@ -167,15 +165,15 @@ void MapImpl::updatePositionAltitude(double fadeOutFactor)
     uint32 minUsedLod = -1;
     auto travRoot = findTravById(renderer.traverseRoot, info->nodeId());
     if (!travRoot || !travRoot->meta)
-        return;
+        return false;
     for (int i = 0; i < 4; i++)
     {
         auto t = findTravSds(travRoot, points[i], desiredLod);
         if (!t)
-            return;
+            return false;
         if (!vtslibs::vts::GeomExtents::validSurrogate(
                     t->meta->geomExtents.surrogate))
-            return;
+            return false;
         math::Extents2 ext = t->nodeInfo.extents();
         points[i] = vecFromUblas<vec2>(ext.ll + ext.ur) * 0.5;
         altitudes[i] = t->meta->geomExtents.surrogate;
@@ -192,10 +190,20 @@ void MapImpl::updatePositionAltitude(double fadeOutFactor)
                 navigation.renders.push_back(task);
         }
     }
-    statistics.usedNavigationlod = minUsedLod;
 
     // interpolate
-    double altitude = generalInterpolation(sds, points, altitudes);
+    result = generalInterpolation(sds, points, altitudes);
+    return true;
+}
+
+void MapImpl::updatePositionAltitude(double fadeOutFactor)
+{
+
+    double altitude;
+    if (!getPositionAltitude(altitude, navigation.targetPoint,
+            mapConfig->position.verticalExtent
+            / options.navigationSamplesPerViewExtent))
+        return;
 
     // set the altitude
     if (navigation.positionAltitudeReset)

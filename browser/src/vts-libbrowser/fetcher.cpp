@@ -50,6 +50,9 @@ FetchTask::Query::Query(const std::string &url,
 FetchTask::Reply::Reply() : expires(-1), code(0)
 {}
 
+FetchTask::FetchTask(const Query &query) : query(query)
+{}
+
 FetchTask::FetchTask(const std::string &url, ResourceType resourceType) :
     query(url, resourceType)
 {}

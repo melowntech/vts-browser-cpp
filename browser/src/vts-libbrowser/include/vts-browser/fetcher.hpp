@@ -79,7 +79,7 @@ public:
     {
         std::string url;
         std::map<std::string, std::string> headers;
-        const ResourceType resourceType;
+        ResourceType resourceType;
 
         Query(const std::string &url, ResourceType resourceType);
     };
@@ -104,6 +104,7 @@ public:
     Query query;
     Reply reply;
 
+    FetchTask(const Query &query);
     FetchTask(const std::string &url, ResourceType resourceType);
     virtual ~FetchTask();
     virtual void fetchDone() = 0;

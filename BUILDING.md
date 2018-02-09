@@ -5,13 +5,13 @@ Install required packages to build the library.
 
 ```bash
 sudo apt-get install \
-	libboost-all-dev \
-	libeigen3-dev \
-	libgdal-dev \
-	libproj-dev \
-	libgeographic-dev \
-	libjsoncpp-dev \
-	libsdl2-dev
+    libboost-all-dev \
+    libeigen3-dev \
+    libgdal-dev \
+    libproj-dev \
+    libgeographic-dev \
+    libjsoncpp-dev \
+    libsdl2-dev
 ```
 
 Clone the git repository with all submodules.
@@ -33,6 +33,17 @@ bin/vts-browser-desktop <mapconfig-url>
 ## Build for Mac OS X
 
 Install all required libraries using eg. brew or ports.
+
+```bash
+sudo port install \
+    cmake \
+    boost \
+    gdal \
+    geographiclib \
+    jsoncpp \
+    eigen3 \
+    libsdl2
+```
 
 Clone the git repository with all submodules.
 Use cmake to generate xcode project.

@@ -682,7 +682,7 @@ void Map::printDebugInfo()
 }
 
 MapImpl::MapImpl(Map *map, const MapCreateOptions &options) :
-    map(map), initialized(false)
+    map(map), createOptions(options), initialized(false)
 {
     resources.cache = Cache::create(options);
 }

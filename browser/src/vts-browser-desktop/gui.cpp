@@ -761,8 +761,6 @@ public:
                             (int)(s.currentGpuMemUse / 1024 / 1024), " MB");
             S("Resources ram mem.:", \
                             (int)(s.currentRamMemUse / 1024 / 1024), " MB");
-            S("Des. Nav. lod:", s.desiredNavigationLod, "");
-            S("Used Nav. lod:", s.usedNavigationlod, "");
             nk_label(&ctx, "Z range:", NK_TEXT_LEFT);
             sprintf(buffer, "%0.0f - %0.0f", window->map->draws().camera.near,
                     window->map->draws().camera.far);

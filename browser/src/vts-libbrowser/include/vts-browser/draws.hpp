@@ -67,7 +67,7 @@ public:
     {
         double view[16];
         double proj[16];
-        double target[3];
+        //double target[3];
         double eye[3];
         double near, far;
         bool mapProjected;

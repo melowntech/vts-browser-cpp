@@ -225,6 +225,8 @@ public:
     void setPoint(const vec3 &point);
     void setRotation(const vec3 &euler);
     void setViewExtent(double viewExtent);
+    bool getPositionAltitude(double &result, const vec3 &navPos,
+                             double samples);
     void updatePositionAltitude(double fadeOutFactor
                 = std::numeric_limits<double>::quiet_NaN());
     void resetNavigationMode();

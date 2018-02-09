@@ -1,6 +1,11 @@
 # bootstrap build system
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.5.1)
 project(vts-browser)
+
+if (APPLE AND (CMAKE_VERSION VERSION_LESS 3.9.1))
+    message(FATAL_ERROR CMake 3.9.1 or newer is required on apple)
+    # earlier versions of CMake on apple had an error that include paths were not considered SYSTEM where they should be
+endif()
 
 cmake_policy(SET CMP0042 NEW) # use rpath
 

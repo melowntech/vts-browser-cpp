@@ -2,7 +2,7 @@ include_directories(nuklear)
 configure_file(nuklear/nuklear.h nuklear.c)
 add_library(nuklear STATIC ${CMAKE_CURRENT_BINARY_DIR}/nuklear.c)
 buildsys_library(nuklear)
-target_include_directories(nuklear PUBLIC SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/nuklear)
+target_include_directories(nuklear SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(nuklear PRIVATE -DNK_IMPLEMENTATION)
 target_compile_options(nuklear PRIVATE -Wno-error)
 

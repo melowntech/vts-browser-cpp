@@ -9,7 +9,7 @@ uniform vec4 uniAtmColorLow;
 uniform vec4 uniAtmColorHigh;
 uniform ivec4 uniParamsI; // projected, multisampling
 uniform vec4 uniParamsF; // atmosphere thickness, atmosphere horizontal exponent, minor-axis
-uniform mat4 uniInvViewProj;
+uniform vec4 uniNearFar;
 uniform vec3 uniCameraPosition; // camera position
 uniform vec3 uniCornerDirs[4];
 
@@ -24,19 +24,25 @@ float sqr(float x)
     return x * x;
 }
 
-float linearDepth(float depthSample)
-{
-    vec4 p4 = uniInvViewProj * vec4(varUv * 2.0 - 1.0, depthSample * 2.0 - 1.0, 1.0);
-    vec3 p = p4.xyz / p4.w;
-    float depthTrue = length(p - uniCameraPosition);
-    return depthTrue;
-}
-
 vec3 cameraFragmentDirection()
 {
     return normalize(mix(
         mix(uniCornerDirs[0], uniCornerDirs[1], varUv.x),
         mix(uniCornerDirs[2], uniCornerDirs[3], varUv.x), varUv.y));
+}
+
+vec3 cameraForwardDirection()
+{
+    vec2 uv = vec2(0.5, 0.5);
+    return normalize(mix(
+        mix(uniCornerDirs[0], uniCornerDirs[1], uv.x),
+        mix(uniCornerDirs[2], uniCornerDirs[3], uv.x), uv.y));
+}
+
+float linearDepth(float depthSample)
+{
+    float z = uniNearFar[3] / (depthSample - uniNearFar[2]);
+    return z / dot(cameraFragmentDirection(), cameraForwardDirection());
 }
 
 float decodeFloat(vec4 rgba)
@@ -46,15 +52,18 @@ float decodeFloat(vec4 rgba)
 
 float sampleDensity(vec2 uv)
 {
+    // since some color channels of the density texture are not continuous
+    //   it is important to first decode the float from rgba and only after
+    //   that to filter the texture
     ivec2 res = textureSize(texDensity, 0);
     vec2 uvp = uv * vec2(res - 1);
-    ivec2 iuv = ivec2(uvp);
+    ivec2 iuv = ivec2(uvp); // upper-left texel fetch coordinates
     vec4 s;
     s.x = decodeFloat(texelFetchOffset(texDensity, iuv, 0, ivec2(0,0)));
     s.y = decodeFloat(texelFetchOffset(texDensity, iuv, 0, ivec2(1,0)));
     s.z = decodeFloat(texelFetchOffset(texDensity, iuv, 0, ivec2(0,1)));
     s.w = decodeFloat(texelFetchOffset(texDensity, iuv, 0, ivec2(1,1)));
-    vec2 f = fract(uvp);
+    vec2 f = fract(uvp); // interpolation factors
     vec2 a = mix(s.xz, s.yw, f.x);
     float b = mix(a.x, a.y, f.y);
     return b * 5.0;
@@ -103,6 +112,7 @@ float atmosphereDensity(float depthSample)
     }
 
     // to improve accuracy, swap direction of the ray to point out of the terrain
+    // bc. later subtracting small numbers is more precise than subtracting large numbers
     bool swapDirection = false;
     if (t1 < 99.0 && x >= 0.0)
         swapDirection = true;
@@ -130,7 +140,7 @@ float atmosphereDensity(float depthSample)
         ds[i] = sampleDensity(uv);
     }
 
-    // final optical transmitance
+    // final optical transmittance
     float density = ds[0] - ds[1];
     if (swapDirection)
         density *= -1.0;

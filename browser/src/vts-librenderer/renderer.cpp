@@ -368,12 +368,19 @@ public:
             (float)body.atmosphere.horizontalExponent,
             (float)(body.minorRadius / body.majorRadius)
         };
+        double n = draws.camera.near / body.majorRadius;
+        double f = draws.camera.far / body.majorRadius;
+        float uniNearFar[4] = {
+            (float)n,
+            (float)f,
+            (float(f / (f - n))),
+            (float(f * n / (n - f)))
+        };
 
         // other
         vec3 camPos = rawToVec3(draws.camera.eye) / body.majorRadius;
         vec3f uniCameraPosition = camPos.cast<float>();
         mat4 invViewProj = (viewProj * scaleMatrix(body.majorRadius)).inverse();
-        mat4f uniInvViewProj = invViewProj.cast<float>();
 
         // corner directions
         vec4 cornerDirsD[4] = {
@@ -393,7 +400,7 @@ public:
         shaderAtmosphere->uniformVec4(1, body.atmosphere.colorHigh);
         shaderAtmosphere->uniformVec4(2, uniParamsI);
         shaderAtmosphere->uniformVec4(3, uniParamsF);
-        shaderAtmosphere->uniformMat4(4, (float*)uniInvViewProj.data());
+        shaderAtmosphere->uniformVec4(4, uniNearFar);
         shaderAtmosphere->uniformVec3(5, (float*)uniCameraPosition.data());
         for (int i = 0; i < 4; i++)
             shaderAtmosphere->uniformVec3(6 + i, (float*)cornerDirs[i].data());
@@ -739,7 +746,7 @@ void initialize()
         uls.push_back(glGetUniformLocation(id, "uniAtmColorHigh"));
         uls.push_back(glGetUniformLocation(id, "uniParamsI"));
         uls.push_back(glGetUniformLocation(id, "uniParamsF"));
-        uls.push_back(glGetUniformLocation(id, "uniInvViewProj"));
+        uls.push_back(glGetUniformLocation(id, "uniNearFar"));
         uls.push_back(glGetUniformLocation(id, "uniCameraPosition"));
         uls.push_back(glGetUniformLocation(id, "uniCornerDirs[0]"));
         uls.push_back(glGetUniformLocation(id, "uniCornerDirs[1]"));

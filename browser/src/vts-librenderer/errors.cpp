@@ -213,7 +213,14 @@ void loadGlFunctions(GLADloadproc functionLoader)
     checkGl("load gl extensions and attributes");
 #endif
 
-    vts::log(vts::LogLevel::info1, "Loaded opengl function pointers");
+    vts::log(vts::LogLevel::info2, std::string("OpenGL vendor: ")
+                                        + (char*)glGetString(GL_VENDOR));
+    vts::log(vts::LogLevel::info2, std::string("OpenGL renderer: ")
+                                        + (char*)glGetString(GL_RENDERER));
+    vts::log(vts::LogLevel::info2, std::string("OpenGL version: ")
+                                        + (char*)glGetString(GL_VERSION));
+    vts::log(vts::LogLevel::info2, std::string("OpenGL glsl: ")
+                        + (char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
 }
 
 } } // namespace

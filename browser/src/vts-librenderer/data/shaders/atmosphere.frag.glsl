@@ -13,7 +13,8 @@ uniform vec4 uniNearFar;
 uniform vec3 uniCameraPosition; // camera position
 uniform vec3 uniCornerDirs[4];
 
-in vec2 varUv;
+in vec3 varCfd; // camera fragment direction
+flat in vec3 varCvd; // camera view direction
 
 layout(location = 0) out vec4 outColor;
 
@@ -24,25 +25,10 @@ float sqr(float x)
     return x * x;
 }
 
-vec3 cameraFragmentDirection()
-{
-    return normalize(mix(
-        mix(uniCornerDirs[0], uniCornerDirs[1], varUv.x),
-        mix(uniCornerDirs[2], uniCornerDirs[3], varUv.x), varUv.y));
-}
-
-vec3 cameraForwardDirection()
-{
-    vec2 uv = vec2(0.5, 0.5);
-    return normalize(mix(
-        mix(uniCornerDirs[0], uniCornerDirs[1], uv.x),
-        mix(uniCornerDirs[2], uniCornerDirs[3], uv.x), uv.y));
-}
-
 float linearDepth(float depthSample)
 {
     float z = uniNearFar[3] / (depthSample - uniNearFar[2]);
-    return z / dot(cameraFragmentDirection(), cameraForwardDirection());
+    return z / dot(normalize(varCfd), varCvd);
 }
 
 float decodeFloat(vec4 rgba)
@@ -77,7 +63,7 @@ float atmosphereDensity(float depthSample)
         t1 = linearDepth(depthSample);
 
     // convert from ellipsoidal into spherical space
-    vec3 cfd = cameraFragmentDirection();
+    vec3 cfd = normalize(varCfd);
     vec3 ellipseToSphere = vec3(1.0, 1.0, 1.0 / uniParamsF[2]);
     vec3 camPos =  uniCameraPosition * ellipseToSphere;
     vec3 camDir =  normalize(camPos);
@@ -102,14 +88,15 @@ float atmosphereDensity(float depthSample)
     if (y > atmRad)
         return 0.0; // early exit
 
-    // fill holes in terrain
-    // if the ray passes through the planet,
-    //   or the camera is so far that the earths mesh is too rough ...
-    if ((y < 0.998 && x >= 0.0 && t1 > 99.0) || l > 1.5)
-    {
-        float g = sqrt(1.0 - y2);
-        t1 = x - g; // ... the t1 is moved onto the mathematical model surface
-    }
+    float t1e = x - sqrt(1.0 - y2); // t1 at ellipse
+    
+    // fill holes in terrain if the ray passes through the planet
+    if (y < 0.998 && x >= 0.0 && t1 > 99.0)
+        t1 = t1e;
+
+    // approximate the planet by the ellipsoid if the the mesh is too rough
+    if (y <= 1.0)
+        t1 = mix(t1, t1e, clamp((l - 1.05) / 0.05, 0.0, 1.0));
 
     // to improve accuracy, swap direction of the ray to point out of the terrain
     // bc. later subtracting small numbers is more precise than subtracting large numbers
@@ -146,8 +133,11 @@ float atmosphereDensity(float depthSample)
         density *= -1.0;
     return 1.0 - pow(10.0, -uniParamsF[1] * density);
 
+    // density texture visualization
     //outColor = vec4(vec3(decodeFloat(texture(texDensity, varUv)) * 5), 1);
+    
     /*
+    // use numeric integration instead of the precomputed texture density
     float sum = 0.0;
     float step = 0.0001;
     for (float t = t0; t < t1; t += step)

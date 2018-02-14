@@ -220,7 +220,7 @@ vts::MapOptions defaultMapOptions()
     vts::MapOptions opt;
     opt.maxTexelToPixelScale = 3.2;
     opt.maxResourceProcessesPerTick = -1; // the resources are processed on a separate thread
-    opt.targetResourcesMemory = 256 * 1024 * 1024;
+    opt.targetResourcesMemory = 200 * 1024 * 1024;
     return opt;
 }
 

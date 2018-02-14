@@ -728,7 +728,7 @@
         <!--Map-->
         <scene sceneID="l2n-IU-62h">
             <objects>
-                <glkViewController title="Map" preferredFramesPerSecond="30" id="1Sk-xd-pa8" customClass="MapViewController" sceneMemberID="viewController">
+                <glkViewController title="Map" preferredFramesPerSecond="60" id="1Sk-xd-pa8" customClass="MapViewController" sceneMemberID="viewController">
                     <glkView key="view" opaque="NO" clipsSubviews="YES" clearsContextBeforeDrawing="NO" multipleTouchEnabled="YES" contentMode="center" enableSetNeedsDisplay="NO" id="Ywz-5S-keG" userLabel="rendering">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>

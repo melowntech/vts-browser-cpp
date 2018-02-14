@@ -1,38 +1,34 @@
 
 set(EXTRA_SRC_LIST)
 set(EXTRA_LIB_DEPS)
-set(EXTRA_MODULE_DEPS)
-
-# png via libpng
-find_package(ZLIB REQUIRED)
-find_package(PNG REQUIRED)
-include_directories(SYSTEM ${ZLIB_INCLUDE_DIRS})
-include_directories(SYSTEM ${PNG_INCLUDE_DIRS})
-list(APPEND EXTRA_LIB_DEPS ${ZLIB_LIBRARIES})
-list(APPEND EXTRA_MODULE_DEPS PNG ZLIB)
-list(APPEND EXTRA_SRC_LIST image/libPng.cpp)
+set(EXTRA_LIB_MODULES)
 
 if(BUILDSYS_IOS)
 
     # ios
     list(APPEND EXTRA_LIB_DEPS iconv objc "-framework CoreGraphics")
-    list(APPEND EXTRA_SRC_LIST fetcher/ios.mm image/iosJpeg.mm)
+    list(APPEND EXTRA_SRC_LIST fetcher/ios.mm)
 
 else()
 
     # desktop
-    find_package(JPEG REQUIRED)
-    include_directories(SYSTEM ${JPEG_INCLUDE_DIRS})
     find_package(CURL REQUIRED)
     add_subdirectory(fetcher/http)
     include_directories(fetcher)
-    list(APPEND EXTRA_MODULE_DEPS http JPEG)
-    list(APPEND EXTRA_SRC_LIST fetcher/curl.cpp image/libJpeg.cpp)
+    list(APPEND EXTRA_LIB_MODULES http)
+    list(APPEND EXTRA_SRC_LIST fetcher/curl.cpp)
 
 endif()
 
-define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus jsoncpp
-    ${EXTRA_MODULE_DEPS})
+find_package(ZLIB REQUIRED)
+find_package(PNG REQUIRED)
+find_package(JPEG REQUIRED)
+include_directories(SYSTEM ${ZLIB_INCLUDE_DIRS})
+include_directories(SYSTEM ${PNG_INCLUDE_DIRS})
+include_directories(SYSTEM ${JPEG_INCLUDE_DIRS})
+
+define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus
+    jsoncpp ZLIB PNG JPEG ${EXTRA_LIB_MODULES})
 
 set(PUB_HDR_LIST
     include/vts-browser/buffer.hpp
@@ -95,8 +91,10 @@ set(SRC_LIST
     log.cpp
     boostProgramOptions.cpp
     sri.cpp
-    image.cpp
     threadName.cpp
+    image.cpp
+    libPng.cpp
+    libJpeg.cpp
     ${EXTRA_SRC_LIST}
 )
 

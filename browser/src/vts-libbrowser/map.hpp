@@ -198,6 +198,7 @@ public:
         std::shared_ptr<TilesetMapping> tilesetMapping;
         mat4 viewProj;
         mat4 viewProjRender;
+        mat4 viewRender;
         vec4 frustumPlanes[6];
         vec3 perpendicularUnitVector;
         vec3 forwardUnitVector;

@@ -27,7 +27,7 @@
 #ifndef RESOURCES_H_jhsegfshg
 #define RESOURCES_H_jhsegfshg
 
-#include <vector>
+#include <array>
 #include <memory>
 
 #include "buffer.hpp"
@@ -138,7 +138,7 @@ public:
     Buffer indices;
 
     // description of memory layout in the vertices buffer
-    std::vector<VertexAttribute> attributes;
+    std::array<VertexAttribute, 4> attributes;
 
     uint32 verticesCount;
     uint32 indicesCount;

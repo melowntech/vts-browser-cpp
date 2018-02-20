@@ -53,6 +53,9 @@ public:
     // explicitly create a copy
     Buffer copy() const;
 
+    // explicitly create string out of the buffer
+    std::string str() const;
+
     // allocates a new buffer of the specified size
     //   any previous content is lost
     //   the buffer is not zeroed

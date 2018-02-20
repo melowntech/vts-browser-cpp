@@ -384,7 +384,7 @@ void MapConfig::initializeCelestialBody() const
     {
         map->body.name = "Earth";
         a.thickness = map->body.majorRadius * 0.01;
-        a.horizontalExponent = 140;
+        a.horizontalExponent = 420;
         a.verticalExponent = 7;
         static vec4 lowColor = vec4(158, 206, 255, 255) / 255;
         static vec4 highColor = vec4(62, 120, 229, 255) / 255;
@@ -398,7 +398,7 @@ void MapConfig::initializeCelestialBody() const
     {
         map->body.name = "Mars";
         a.thickness = map->body.majorRadius * 0.01;
-        a.horizontalExponent = 60;
+        a.horizontalExponent = 180;
         a.verticalExponent = 7;
         static vec4 lowColor = vec4(115, 100, 74, 255) / 255;
         static vec4 highColor = vec4(115, 100, 74, 255) / 255;

@@ -146,6 +146,14 @@ void Shader::load(const std::string &vertexShader,
     checkGl("load shader program");
 }
 
+void Shader::loadInternal(const std::string &vertexName,
+                  const std::string &fragmentName)
+{
+    Buffer vert = readInternalMemoryBuffer(vertexName);
+    Buffer frag = readInternalMemoryBuffer(fragmentName);
+    load(vert.str(), frag.str());
+}
+
 void Shader::uniformMat4(uint32 location, const float *value)
 {
     glUniformMatrix4fv(uniformLocations[location], 1, GL_FALSE, value);
@@ -199,6 +207,23 @@ void Shader::uniform(uint32 location, const int value)
 uint32 Shader::getId() const
 {
     return id;
+}
+
+uint32 Shader::loadUniformLocations(const std::vector<const char *> &names)
+{
+    bind();
+    uint32 res = uniformLocations.size();
+    for (auto &it : names)
+        uniformLocations.push_back(glGetUniformLocation(id, it));
+    return res;
+}
+
+void Shader::bindTextureLocations(
+    const std::vector<std::pair<const char *, uint32>> &binds)
+{
+    bind();
+    for (auto &it : binds)
+        glUniform1i(glGetUniformLocation(id, it.first), it.second);
 }
 
 Texture::Texture() :

@@ -9,14 +9,13 @@ layout(location = 2) in vec2 inUvExternal;
 
 out vec2 varUvInternal;
 out vec2 varUvExternal;
-out vec3 derivativePosition;
+out vec3 varViewPosition;
 
 void main()
 {
     gl_Position = uniMvp * vec4(inPosition, 1.0);
     varUvInternal = vec2(uniUvMat * vec3(inUvInternal, 1.0));
     varUvExternal = vec2(uniUvMat * vec3(inUvExternal, 1.0));
-    vec4 dp = uniMv * vec4(inPosition, 1.0);
-    derivativePosition = dp.xyz / dp.w;
+    varViewPosition = (uniMv * vec4(inPosition, 1.0)).xyz;
 }
 

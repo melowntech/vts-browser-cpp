@@ -148,7 +148,6 @@ void mapInitialize()
                 Buffer buff = readInternalMemoryBuffer("data/meshes/rect.obj");
                 ResourceInfo info;
                 GpuMeshSpec spec(buff);
-                spec.attributes.resize(2);
                 spec.attributes[0].enable = true;
                 spec.attributes[0].stride = sizeof(vec3f) + sizeof(vec2f);
                 spec.attributes[0].components = 3;

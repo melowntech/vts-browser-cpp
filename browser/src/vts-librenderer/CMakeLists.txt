@@ -10,6 +10,7 @@ set(SRC_LIST
     renderer.cpp renderer.hpp
     classes.cpp
     errors.cpp
+    atmosphereDensityTexture.cpp atmosphereDensityTexture.hpp
 )
 
 set(DATA_LIST
@@ -19,8 +20,9 @@ set(DATA_LIST
     data/meshes/quad.obj
     data/meshes/rect.obj
     data/meshes/sphere.obj
-    data/shaders/atmosphere.frag.glsl
-    data/shaders/atmosphere.vert.glsl
+    data/shaders/atmosphere.inc.glsl
+    data/shaders/background.vert.glsl
+    data/shaders/background.frag.glsl
     data/shaders/surface.frag.glsl
     data/shaders/surface.vert.glsl
     data/shaders/infographic.frag.glsl

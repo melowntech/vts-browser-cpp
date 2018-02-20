@@ -86,6 +86,11 @@ Buffer Buffer::copy() const
     return r;
 }
 
+std::string Buffer::str() const
+{
+    return {data_, size_};
+}
+
 void Buffer::allocate(uint32 size)
 {
     this->free();

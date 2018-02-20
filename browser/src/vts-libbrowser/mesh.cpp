@@ -69,7 +69,6 @@ void GpuMesh::load()
 {
     LOG(info1) << "Loading (gpu) mesh '" << name << "'";
     GpuMeshSpec spec(reply.content);
-    spec.attributes.resize(3);
     spec.attributes[0].enable = true;
     spec.attributes[0].stride = sizeof(vec3f) + sizeof(vec2f);
     spec.attributes[0].components = 3;
@@ -134,7 +133,6 @@ void MeshAggregate::load()
             vertexSize += sizeof(vec2f);
 
         GpuMeshSpec spec;
-        spec.attributes.resize(3);
         spec.verticesCount = m.faces.size() * 3;
         spec.vertices.allocate(spec.verticesCount * vertexSize);
         uint32 offset = 0;

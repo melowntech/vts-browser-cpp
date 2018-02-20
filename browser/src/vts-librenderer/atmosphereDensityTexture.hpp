@@ -24,61 +24,36 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DRAWS_H_qwedfzugvsdfh
-#define DRAWS_H_qwedfzugvsdfh
+#ifndef ATMOSPHERE_h_sfegfesgrerg
+#define ATMOSPHERE_h_sfegfesgrerg
 
-#include <vector>
-#include <memory>
+#include <atomic>
 
-#include "foundation.hpp"
+#include "include/vts-renderer/classes.hpp"
+#include "include/vts-renderer/renderer.hpp"
 
-namespace vts
+namespace vts { namespace renderer
 {
 
-class RenderTask;
-class MapImpl;
-
-class VTS_API DrawTask
+namespace priv
 {
-public:
-    std::shared_ptr<void> mesh;
-    std::shared_ptr<void> texColor;
-    std::shared_ptr<void> texMask;
-    float mvp[16];
-    float mv[16];
-    float uvm[9];
-    float color[4];
-    float uvClip[4];
-    bool externalUv;
-    bool flatShading;
 
-    DrawTask();
-    DrawTask(const RenderTask &r, const MapImpl *m);
-    DrawTask(const RenderTask &r, const float *uvClip, const MapImpl *m);
+struct AtmosphereProp
+{
+    GpuTextureSpec spec;
+    std::shared_ptr<Texture> tex;
+    vts::MapCelestialBody body;
+    std::atomic<int> state; // 0 = uninitialized, 1 = computing, 2 = generated, 3 = done
+    std::atomic<int> thrIdx;
+
+    AtmosphereProp();
+    bool validate(const vts::MapCelestialBody &current);
 };
 
-class VTS_API MapDraws
-{
-public:
-    std::vector<DrawTask> opaque;
-    std::vector<DrawTask> transparent;
-    std::vector<DrawTask> Infographic;
+extern AtmosphereProp atmosphere;
 
-    struct Camera
-    {
-        double view[16];
-        double proj[16];
-        double eye[3];
-        double near, far;
-        double aspect;
-        double fov; // vertical, degrees
-        bool mapProjected;
-    } camera;
+} // namespace priv
 
-    MapDraws();
-    void clear();
-};
-
-} // namespace vts
+} } // namespace vts renderer
 
 #endif

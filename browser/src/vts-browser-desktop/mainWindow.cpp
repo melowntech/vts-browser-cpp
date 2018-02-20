@@ -115,7 +115,6 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
                                   "data/meshes/sphere.obj"));
         assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Triangles);
-        spec.attributes.resize(2);
         spec.attributes[0].enable = true;
         spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
         spec.attributes[0].components = 3;
@@ -133,7 +132,6 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
                                   "data/meshes/line.obj"));
         assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Lines);
-        spec.attributes.resize(2);
         spec.attributes[0].enable = true;
         spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
         spec.attributes[0].components = 3;

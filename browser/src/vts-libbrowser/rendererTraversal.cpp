@@ -853,18 +853,22 @@ void computeNearFar(double &near, double &far, double altitude,
     double major = body.majorRadius;
     double flat = major / body.minorRadius;
     cameraPos[2] *= flat;
-    //cameraForward[2] *= flat;
-    //cameraForward = normalize(cameraForward);
     double ground = major + (altitude == altitude ? altitude : 0.0);
     double l = length(cameraPos);
     double a = std::max(1.0, l - ground);
     //LOG(info4) << "altitude: " << altitude << ", ground: " << ground
     //           << ", camera: " << l << ", above: " << a;
-    near = a > 2 * major ? a - major : interpolate(2, major, a / (2 * major));
-    near = std::max(2.0, near);
-    //double l2 = std::max(l, ground) + 5000;
-    //double horizon = std::sqrt(l2*l2 - ground*ground);
-    //far = near + horizon;
+
+    if (a > 2 * major)
+    {
+        near = a - major;
+    }
+    else
+    {
+        double f = std::pow(a / (2 * major), 1.1);
+        near = interpolate(10.0, major, f);
+        near = std::max(10.0, near);
+    }
     far = l;
 }
 
@@ -925,6 +929,7 @@ void MapImpl::updateCamera()
 
     // few other variables
     renderer.viewProjRender = proj * view;
+    renderer.viewRender = view;
     if (!options.debugDetachedCamera)
     {
         renderer.viewProj = renderer.viewProjRender;
@@ -1003,10 +1008,11 @@ void MapImpl::updateCamera()
         MapDraws::Camera &c = draws.camera;
         matToRaw(view, c.view);
         matToRaw(proj, c.proj);
-        //vecToRaw(objCenter, c.target);
         vecToRaw(cameraPos, c.eye);
         c.near = near;
         c.far = far;
+        c.aspect = aspect;
+        c.fov = fov;
     }
 }
 

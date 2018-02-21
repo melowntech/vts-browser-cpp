@@ -151,7 +151,6 @@ void drawSurface(const DrawTask &t)
     Texture *tex = (Texture*)t.texColor.get();
     Mesh *m = (Mesh*)t.mesh.get();
     shaderSurface->bind();
-    shaderSurface->uniformMat4(0, t.mvp);
     shaderSurface->uniformMat4(1, t.mv);
     shaderSurface->uniformMat3(2, t.uvm);
     shaderSurface->uniformVec4(3, t.color);
@@ -177,9 +176,9 @@ void drawSurface(const DrawTask &t)
 void drawInfographic(const DrawTask &t)
 {
     shaderInfographic->bind();
-    shaderInfographic->uniformMat4(0, t.mvp);
-    shaderInfographic->uniformVec4(1, t.color);
-    shaderInfographic->uniform(2, (int)(!!t.texColor));
+    shaderInfographic->uniformMat4(1, t.mv);
+    shaderInfographic->uniformVec4(2, t.color);
+    shaderInfographic->uniform(3, (int)(!!t.texColor));
     if (t.texColor)
     {
         Texture *tex = (Texture*)t.texColor.get();
@@ -344,8 +343,12 @@ void render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     checkGl("initialized opengl");
 
-    // update atmosphere
+    // update shaders
+    mat4f projf = rawToMat4(draws->camera.proj).cast<float>();
+    shaderInfographic->bind();
+    shaderInfographic->uniformMat4(0, projf.data());
     shaderSurface->updateAtmosphere();
+    shaderSurface->uniformMat4(0, projf.data());
 
     // render opaque
     glDisable(GL_BLEND);
@@ -486,7 +489,7 @@ void initialize()
         Buffer frag = readInternalMemoryBuffer(
                     "data/shaders/surface.frag.glsl");
         shaderSurface->load(vert.str(), atm.str() + frag.str());
-        shaderSurface->loadUniformLocations({ "uniMvp", "uniMv", "uniUvMat",
+        shaderSurface->loadUniformLocations({ "uniP", "uniMv", "uniUvMat",
             "uniColor", "uniUvClip", "uniFlags" });
         shaderSurface->bindTextureLocations({{"texColor", 0}, {"texMask", 1}});
         shaderSurface->initializeAtmosphere();
@@ -513,7 +516,7 @@ void initialize()
         shaderInfographic->loadInternal(
                     "data/shaders/infographic.vert.glsl",
                     "data/shaders/infographic.frag.glsl");
-        shaderInfographic->loadUniformLocations({"uniMvp", "uniColor",
+        shaderInfographic->loadUniformLocations({"uniP", "uniMv", "uniColor",
                                                  "uniUseColorTexture"});
         shaderInfographic->bindTextureLocations({{"texColor", 0},
                                                  {"texDepth", 6}});

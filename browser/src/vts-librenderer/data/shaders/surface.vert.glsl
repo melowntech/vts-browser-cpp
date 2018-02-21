@@ -1,5 +1,5 @@
 
-uniform mat4 uniMvp;
+uniform mat4 uniP;
 uniform mat4 uniMv;
 uniform mat3 uniUvMat;
 
@@ -13,9 +13,10 @@ out vec3 varViewPosition;
 
 void main()
 {
-    gl_Position = uniMvp * vec4(inPosition, 1.0);
+    vec4 vp = uniMv * vec4(inPosition, 1.0);
+    gl_Position = uniP * vp;
     varUvInternal = vec2(uniUvMat * vec3(inUvInternal, 1.0));
     varUvExternal = vec2(uniUvMat * vec3(inUvExternal, 1.0));
-    varViewPosition = (uniMv * vec4(inPosition, 1.0)).xyz;
+    varViewPosition = vp.xyz;
 }
 

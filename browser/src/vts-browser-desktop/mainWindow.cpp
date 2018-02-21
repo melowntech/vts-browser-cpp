@@ -176,46 +176,32 @@ void MainWindow::renderFrame()
 
 void MainWindow::prepareMarks()
 {
-    vts::mat4 viewProj = vts::rawToMat4(map->draws().camera.proj)
-            * vts::rawToMat4(map->draws().camera.view);
+    vts::mat4 view = vts::rawToMat4(map->draws().camera.view);
 
     const Mark *prev = nullptr;
     for (const Mark &m : marks)
     {
-        vts::mat4 mvp = viewProj
+        vts::mat4 mv = view
                 * vts::translationMatrix(m.coord)
                 * vts::scaleMatrix(map->getPositionViewExtent() * 0.005);
-        vts::mat4f mvpf = mvp.cast<float>();
+        vts::mat4f mvf = mv.cast<float>();
         vts::DrawTask t;
         vts::vec4f c = vts::vec3to4f(m.color, 1);
         for (int i = 0; i < 4; i++)
             t.color[i] = c(i);
         t.mesh = meshSphere;
-        memcpy(t.mvp, mvpf.data(), sizeof(t.mvp));
+        memcpy(t.mv, mvf.data(), sizeof(t.mv));
         map->draws().Infographic.push_back(t);
         if (prev)
         {
             t.mesh = meshLine;
-            mvp = viewProj * vts::lookAt(m.coord, prev->coord);
-            mvpf = mvp.cast<float>();
-            memcpy(t.mvp, mvpf.data(), sizeof(t.mvp));
+            mv = view * vts::lookAt(m.coord, prev->coord);
+            mvf = mv.cast<float>();
+            memcpy(t.mv, mvf.data(), sizeof(t.mv));
             map->draws().Infographic.push_back(t);
         }
         prev = &m;
     }
-
-    // debug world anchor
-    /*
-    {
-        vts::mat4 mvp = viewProj
-                * vts::scaleMatrix(map->celestialBody().majorRadius);
-        vts::mat4f mvpf = mvp.cast<float>();
-        vts::DrawTask t;
-        t.mesh = meshSphere;
-        memcpy(t.mvp, mvpf.data(), sizeof(t.mvp));
-        map->draws().Infographic.push_back(t);
-    }
-    */
 }
 
 bool MainWindow::processEvents()

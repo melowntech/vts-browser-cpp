@@ -44,7 +44,6 @@ public:
     std::shared_ptr<void> mesh;
     std::shared_ptr<void> texColor;
     std::shared_ptr<void> texMask;
-    float mvp[16];
     float mv[16];
     float uvm[9];
     float color[4];

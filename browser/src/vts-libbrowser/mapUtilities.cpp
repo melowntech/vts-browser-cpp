@@ -129,7 +129,7 @@ DrawTask::DrawTask() :
     externalUv(false), flatShading(false)
 {
     for (int i = 0; i < 16; i++)
-        mvp[i] = mv[i] = i % 4 == i / 4 ? 1 : 0;
+        mv[i] = i % 4 == i / 4 ? 1 : 0;
     for (int i = 0; i < 9; i++)
         uvm[i] = i % 3 == i / 3 ? 1 : 0;
 }
@@ -147,9 +147,6 @@ DrawTask::DrawTask(const RenderTask &r, const MapImpl *m) :
         texMask = r.textureMask->info.userData;
     for (int i = 0; i < 4; i++)
         this->color[i] = r.color[i];
-    mat4f mvp = (m->renderer.viewProjRender * r.model).cast<float>();
-    for (int i = 0; i < 16; i++)
-        this->mvp[i] = mvp(i);
     mat4f mv = (m->renderer.viewRender * r.model).cast<float>();
     for (int i = 0; i < 16; i++)
         this->mv[i] = mv(i);

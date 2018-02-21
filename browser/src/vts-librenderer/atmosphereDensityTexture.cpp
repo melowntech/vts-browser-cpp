@@ -24,26 +24,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <assert.h>
-#include <mutex>
 #include <thread>
-#include <sstream>
-#include <iomanip>
+#include <atomic>
 
-#include <vts-browser/log.hpp>
-#include <vts-browser/math.hpp>
+#include "renderer.hpp"
 
-#include "atmosphereDensityTexture.hpp"
-
-namespace vts { namespace renderer
+namespace vts { namespace renderer { namespace priv
 {
-
-using namespace priv;
 
 namespace
 {
-
-std::mutex mut;
 
 bool areSame(const vts::MapCelestialBody &a, const vts::MapCelestialBody &b)
 {
@@ -74,7 +64,22 @@ double sqr(double a)
     return a * a;
 }
 
-void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
+} // namespace
+
+class AtmosphereImpl
+{
+public:
+    MapCelestialBody body;
+    GpuTextureSpec spec;
+    std::shared_ptr<Texture> tex;
+    std::shared_ptr<std::thread> thr;
+    std::atomic<uint32> state;
+
+    void threadEntry();
+    Texture *validate(const MapCelestialBody &current);
+};
+
+void AtmosphereImpl::threadEntry()
 {
     try
     {
@@ -85,7 +90,7 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
         double atmRad = 1 + atmHeight;
         double atmRad2 = sqr(atmRad);
 
-        GpuTextureSpec spec;
+        spec.buffer.free();
         spec.width = 512;
         spec.height = 512;
         spec.components = 4;
@@ -177,17 +182,9 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
             }
         }
 
-        // pass the texture to the main thread
-        {
-            std::lock_guard<std::mutex> lck(mut);
-            if (atmosphere.thrIdx == thrIdx)
-            {
-                atmosphere.spec = std::move(spec);
-                atmosphere.state = 2;
-            }
-        }
-
         vts::log(vts::LogLevel::info2, "Finished atmosphere density texture");
+        assert(state == 1);
+        state = 2;
     }
     catch (const std::exception &e)
     {
@@ -200,50 +197,67 @@ void atmosphereThreadEntry(MapCelestialBody body, int thrIdx)
     }
 }
 
-} // namespace
 
-namespace priv
+AtmosphereDensity::AtmosphereDensity()
 {
+    impl = std::make_shared<AtmosphereImpl>();
+}
 
-AtmosphereProp::AtmosphereProp() : state(0), thrIdx(0)
+AtmosphereDensity::~AtmosphereDensity()
 {}
 
-bool AtmosphereProp::validate(const vts::MapCelestialBody &current)
+void AtmosphereDensity::initialize()
+{}
+
+void AtmosphereDensity::finalize()
 {
-    if (current.majorRadius == 0 || current.atmosphere.thickness == 0)
+    impl->tex.reset();
+}
+
+Texture *AtmosphereDensity::validate(const MapCelestialBody &current)
+{
+    return impl->validate(current);
+}
+
+Texture *AtmosphereImpl::validate(const MapCelestialBody &current)
+{
+    switch ((uint32)state)
     {
-        state = 0;
-        return false;
-    }
-    if (!areSame(current, body) || state == 0)
-    {
-        std::lock_guard<std::mutex> lck(mut);
-        thrIdx++;
-        state = 1;
-        body = current;
-        std::thread thr(&atmosphereThreadEntry, body, (int)thrIdx);
-        thr.detach();
-    }
-    if (state == 2)
-    {
-        std::lock_guard<std::mutex> lck(mut);
+    case 0: // initializing
+        assert(!thr);
+        tex.reset();
+        if (current.atmosphere.thickness > 0)
+        {
+            body = current;
+            state = 1;
+            thr = std::make_shared<std::thread>(
+                    std::bind(&AtmosphereImpl::threadEntry, this), this);
+        }
+        return nullptr;
+    case 1: // computing
+        return nullptr;
+    case 2: // prepared
+        thr->join();
+        thr.reset();
         tex = std::make_shared<Texture>();
-        vts::ResourceInfo info;
-        tex->load(info, spec);
+        tex->load(spec);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         spec.buffer.free();
         state = 3;
+        return tex.get();
+    case 3: // ready
+        if (areSame(current, body))
+            return tex.get();
+        state = 0;
+        return nullptr;
+    default:
+        assert(false);
+        throw;
     }
-    return state == 3;
 }
 
-AtmosphereProp atmosphere;
-
-} // namespace priv
-
-
-} } // namespace vts renderer
+} } } // namespace vts renderer priv
 

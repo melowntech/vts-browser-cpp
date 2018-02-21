@@ -69,7 +69,7 @@ ExtraConfig::ExtraConfig() :
 void loadAppConfig();
 
 Map *map;
-RenderOptions renderOptions;
+Renderer render;
 ExtraConfig extraConfig; 
 
 namespace
@@ -130,11 +130,9 @@ void mapInitialize()
         [EAGLContext setCurrentContext:renderContext];
 
         loadGlFunctions(&iosGlGetProcAddress);
-        vts::renderer::initialize();
+        render.initialize();
+        render.bindLoadFunctions(map);
         map->renderInitialize();
-
-        map->callbacks().loadTexture = std::bind(&loadTexture, std::placeholders::_1, std::placeholders::_2);
-        map->callbacks().loadMesh = std::bind(&loadMesh, std::placeholders::_1, std::placeholders::_2);
 
         // load data for rendering scales
         {
@@ -413,7 +411,7 @@ void mapRenderControls(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw
         double posSize[3] = { (compas.origin.x + compas.size.width * 0.5) * retinaScale,
             (whole.size.height - (compas.origin.y + compas.size.height * 0.5)) * retinaScale,
             compas.size.width * retinaScale };
-        renderCompass(posSize, rotation);
+        render.renderCompass(posSize, rotation);
     }
 
     checkGl("rendered scale");

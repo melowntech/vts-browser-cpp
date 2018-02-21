@@ -34,14 +34,16 @@
 
 SDL_Window *window;
 SDL_GLContext renderContext;
+vts::renderer::Renderer render;
 std::shared_ptr<vts::Map> map;
-vts::renderer::RenderOptions renderOptions;
 bool shouldClose = false;
 
 void updateResolution()
 {
-    SDL_GL_GetDrawableSize(window, &renderOptions.width, &renderOptions.height);
-    map->setWindowSize(renderOptions.width, renderOptions.height);
+    vts::renderer::RenderOptions &ro = render.options();
+    SDL_GL_GetDrawableSize(window, (int*)&ro.width,
+                                   (int*)&ro.height);
+    map->setWindowSize(ro.width, ro.height);
 }
 
 int main(int, char *[])
@@ -91,19 +93,16 @@ int main(int, char *[])
 
     // notify the vts renderer library on how to load OpenGL function pointers
     vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
+
     // and initialize the renderer library
     // this will load required shaders and other local files
-    vts::renderer::initialize();
+    render.initialize();
 
     // create instance of the vts::Map class
     map = std::make_shared<vts::Map>(vts::MapCreateOptions());
 
     // set required callbacks for creating mesh and texture resources
-    // we use the standard callbacks provided by the rendering library
-    map->callbacks().loadTexture = std::bind(&vts::renderer::loadTexture,
-                std::placeholders::_1, std::placeholders::_2);
-    map->callbacks().loadMesh = std::bind(&vts::renderer::loadMesh,
-                std::placeholders::_1, std::placeholders::_2);
+    render.bindLoadFunctions(map.get());
 
     // initialize the resource processing with default fetcher
     map->dataInitialize(vts::Fetcher::create(vts::FetcherOptions()));
@@ -155,15 +154,14 @@ int main(int, char *[])
         map->renderTickRender(); // prepare the rendering data
 
         // actually render the map
-        vts::renderer::render(renderOptions, map->draws(),
-                              map->celestialBody());
+        render.render(map.get());
 
         // present the rendered image to the screen
         SDL_GL_SwapWindow(window);
     }
 
     // release all rendering related data
-    vts::renderer::finalize();
+    render.finalize();
 
     // release the map
     if (map)

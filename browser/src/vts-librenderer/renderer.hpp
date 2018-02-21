@@ -24,20 +24,50 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef RENDERER_H_qwergfbhjk
-#define RENDERER_H_qwergfbhjk
+#ifndef FOUNDATION_H_qwergfbhjk
+#define FOUNDATION_H_qwergfbhjk
+
+#include <assert.h>
+#include <sstream>
+#include <iomanip>
 
 #include <vts-browser/log.hpp>
+#include <vts-browser/math.hpp>
+#include <vts-browser/buffer.hpp>
+#include <vts-browser/resources.hpp>
+#include <vts-browser/draws.hpp>
+#include <vts-browser/celestial.hpp>
 
 #include "include/vts-renderer/classes.hpp"
 #include "include/vts-renderer/renderer.hpp"
 
-namespace vts { namespace renderer { namespace priv
+namespace vts { namespace renderer
 {
 
-extern int maxAntialiasingSamples;
+namespace priv
+{
+
+extern uint32 maxAntialiasingSamples;
 extern float maxAnisotropySamples;
 
-} } } // namespace
+struct AtmosphereDensity
+{
+    AtmosphereDensity();
+    ~AtmosphereDensity();
+
+    void initialize();
+    void finalize();
+
+    Texture *validate(const MapCelestialBody &current);
+
+private:
+    std::shared_ptr<class AtmosphereImpl> impl;
+};
+
+} // namespace priv
+
+using namespace priv;
+
+} } // namespace vts renderer
 
 #endif

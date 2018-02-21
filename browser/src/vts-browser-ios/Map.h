@@ -45,7 +45,7 @@ struct ExtraConfig
 };
 
 extern vts::Map *map;
-extern vts::renderer::RenderOptions renderOptions;
+extern vts::renderer::Renderer render;
 extern ExtraConfig extraConfig;
 
 void mapInitialize();

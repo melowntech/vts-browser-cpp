@@ -532,19 +532,21 @@ using namespace vts;
 
 - (void)glkView:(nonnull GLKView *)view drawInRect:(CGRect)rect
 {
+    auto &ro = render.options();
+    
     {
         GLint fbo = 0;
         glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
-        renderOptions.targetFrameBuffer = fbo;
+        ro.targetFrameBuffer = fbo;
     }
 
-    vts::renderer::render(renderOptions, map->draws(), map->celestialBody());
-    glBindFramebuffer(GL_FRAMEBUFFER, renderOptions.targetFrameBuffer);
+    render.render(map);
+    glBindFramebuffer(GL_FRAMEBUFFER, ro.targetFrameBuffer);
 
     if (gotoPoint(0) == gotoPoint(0))
     {
         vec3 posWorld;
-        renderer::getWorldPosition(gotoPoint.data(), posWorld.data());
+        render.getWorldPosition(gotoPoint.data(), posWorld.data());
         if (posWorld(0) == posWorld(0))
         {
             double posNav[3];
@@ -554,16 +556,16 @@ using namespace vts;
             map->options().navigationType = vts::NavigationType::Quick;
         }
         gotoPoint(0) = std::numeric_limits<double>::quiet_NaN();
-        glBindFramebuffer(GL_FRAMEBUFFER, renderOptions.targetFrameBuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, ro.targetFrameBuffer);
     }
 
     mapRenderControls(view.contentScaleFactor, rect, _gestureViewLeft.frame, _gestureViewBottom.frame, _gestureViewRight.frame, _gestureViewCompas.frame);
 
-    renderOptions.targetViewportX = rect.origin.x * view.contentScaleFactor;
-    renderOptions.targetViewportY = rect.origin.y * view.contentScaleFactor;
-    renderOptions.width = rect.size.width * view.contentScaleFactor;
-    renderOptions.height = rect.size.height * view.contentScaleFactor;
-    map->setWindowSize(renderOptions.width, renderOptions.height);
+    ro.targetViewportX = rect.origin.x * view.contentScaleFactor;
+    ro.targetViewportY = rect.origin.y * view.contentScaleFactor;
+    ro.width = rect.size.width * view.contentScaleFactor;
+    ro.height = rect.size.height * view.contentScaleFactor;
+    map->setWindowSize(ro.width, ro.height);
 }
 
 @end

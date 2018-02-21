@@ -34,10 +34,7 @@
 
 #include "foundation.hpp"
 
-namespace vts
-{
-
-namespace renderer
+namespace vts { namespace renderer
 {
 
 class VTSR_API Shader
@@ -82,6 +79,7 @@ public:
     void clear();
     void bind();
     void load(ResourceInfo &info, GpuTextureSpec &spec);
+    void load(GpuTextureSpec &spec);
     void generateMipmaps();
     uint32 getId() const;
     bool getGrayscale() const;
@@ -100,6 +98,7 @@ public:
     void bind();
     void dispatch();
     void load(ResourceInfo &info, GpuMeshSpec &spec);
+    void load(GpuMeshSpec &spec);
     void load(uint32 vao, uint32 vbo, uint32 vio);
     uint32 getVao() const;
     uint32 getVbo() const;
@@ -110,6 +109,6 @@ private:
     uint32 vao, vbo, vio;
 };
 
-} } // namespace renderer
+} } // namespace vts::renderer
 
 #endif

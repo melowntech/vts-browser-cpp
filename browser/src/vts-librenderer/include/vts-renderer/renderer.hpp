@@ -27,54 +27,37 @@
 #ifndef RENDERER_H_sghvfwjfn
 #define RENDERER_H_sghvfwjfn
 
-#include <vts-browser/resources.hpp>
-#include <vts-browser/draws.hpp>
-#include <vts-browser/celestial.hpp>
-
 #include "foundation.hpp"
 
-#ifndef VTSR_INCLUDE_GL
-typedef void *(*GLADloadproc)(const char *name);
-#endif
-
-namespace vts { namespace renderer
+namespace vts
 {
 
-// initialize all gl functions
-// should be called once after the gl context has been created
-VTSR_API void loadGlFunctions(GLADloadproc functionLoader);
+class Map;
+class MapDraws;
+class MapCelestialBody;
+class ResourceInfo;
+class GpuTextureSpec;
+class GpuMeshSpec;
 
-// can be directly bound to MapCallbacks
-VTSR_API void loadTexture(vts::ResourceInfo &info,
-                          vts::GpuTextureSpec &spec);
-
-// can be directly bound to MapCallbacks
-VTSR_API void loadMesh(vts::ResourceInfo &info,
-                       vts::GpuMeshSpec &spec);
-
-// load all shaders and initialize all state required for the rendering
-// should be called once after the gl functions were initialized
-VTSR_API void initialize();
-
-// clear the loaded shaders etc.
-// should be called once before the gl context is released
-VTSR_API void finalize();
+namespace renderer
+{
 
 // options provided from the application (you set these)
 struct VTSR_API RenderOptions
 {
     // render resolution in pixels
-    int width;
-    int height;
+    uint32 width;
+    uint32 height;
 
     // when colorToTargetFrameBuffer is true, the render method will blit
     //   the resulting color into this frame buffer
-    int targetFrameBuffer;
-    int targetViewportX;
-    int targetViewportY;
+    // it will overwrite any previous data
+    uint32 targetFrameBuffer;
+    uint32 targetViewportX;
+    uint32 targetViewportY;
 
     // other options
-    int antialiasingSamples; // two or more to enable multisampling
+    uint32 antialiasingSamples; // two or more to enable multisampling
     bool renderAtmosphere;
     bool renderPolygonEdges;
 
@@ -87,35 +70,59 @@ struct VTSR_API RenderOptions
 
 // these variables are controlled by the library
 //   and are provided to you for potential further use
-// do not change any attributes on the objects
+// do not change any attributes on the objects!
 struct VTSR_API RenderVariables
 {
     uint32 frameRenderBufferId;
     uint32 frameReadBufferId; // (may be same as frameRenderBufferId)
-    uint32 depthRenderTexId; // textureTargetType
+    uint32 depthRenderTexId; // has type textureTargetType
     uint32 depthReadTexId; // GL_TEXTURE_2D (may be same as depthRenderTexId)
-    uint32 colorRenderTexId; // textureTargetType
+    uint32 colorRenderTexId; // has type textureTargetType
     uint32 colorReadTexId; // GL_TEXTURE_2D (may be same as colorRenderTexId)
     uint32 textureTargetType; // GL_TEXTURE_2D or GL_TEXTURE_2D_MULTISAMPLE
     RenderVariables();
 };
 
-VTSR_API void render(const RenderOptions &options,
-                     const MapDraws &draws,
-                     const MapCelestialBody &celestialBody);
-VTSR_API void render(const RenderOptions &options,
-                     RenderVariables &variables,
-                     const MapDraws &draws,
-                     const MapCelestialBody &celestialBody);
+class VTSR_API Renderer
+{
+public:
+    Renderer();
+    ~Renderer();
 
-VTSR_API void renderCompass(const double screenPosSize[3],
-                            const double mapRotation[3]);
+    // load all shaders and initialize all state required for the rendering
+    // should be called once after the gl functions were initialized
+    void initialize();
 
-// reconstruct world position for mouse picking
-// uses data from last call to render
-VTSR_API void getWorldPosition(const double screenPosIn[2],
-                               double worldPosOut[3]);
+    // clear the loaded shaders etc.
+    // should be called once before the gl context is released
+    void finalize();
 
-} } // namespace vts::renderer
+    // can be directly bound to MapCallbacks
+    void loadTexture(ResourceInfo &info, GpuTextureSpec &spec);
+    void loadMesh(ResourceInfo &info, GpuMeshSpec &spec);
+    void bindLoadFunctions(Map *map);
+
+    RenderOptions &options();
+    const RenderVariables &variables() const;
+
+    void render(const MapDraws &draws,
+                const MapCelestialBody &celestialBody);
+    void render(Map *map);
+
+    void renderCompass(const double screenPosSize[3],
+                       const double mapRotation[3]);
+
+    // reconstruct world position for mouse picking
+    // uses data from last call to render (requires access to opengl context)
+    // returns NaN if the position cannot be obtained
+    void getWorldPosition(const double screenPosIn[2],
+                          double worldPosOut[3]);
+
+private:
+    std::shared_ptr<class RendererImpl> impl;
+};
+
+} // namespace renderer
+} // namespace vts
 
 #endif

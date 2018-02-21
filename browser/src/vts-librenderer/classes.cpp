@@ -24,14 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <assert.h>
-
 #include "renderer.hpp"
 
 namespace vts { namespace renderer
 {
-
-using namespace priv;
 
 #ifdef VTSR_OPENGLES
 std::string Shader::preamble = "#version 300 es\n"
@@ -335,13 +331,13 @@ void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    #ifndef VTSR_OPENGLES
+    //#ifndef VTSR_OPENGLES
     if (GLAD_GL_EXT_texture_filter_anisotropic)
     {
         glTexParameterf(GL_TEXTURE_2D,
                         GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropySamples);
     }
-    #endif
+    //#endif
 
     grayscale = spec.components == 1;
 
@@ -349,6 +345,12 @@ void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec)
     checkGl("load texture");
     info.ramMemoryCost += sizeof(*this);
     info.gpuMemoryCost += spec.buffer.size();
+}
+
+void Texture::load(vts::GpuTextureSpec &spec)
+{
+    ResourceInfo info;
+    load(info, spec);
 }
 
 void Texture::generateMipmaps()
@@ -456,6 +458,12 @@ void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp)
     info.gpuMemoryCost += spec.vertices.size() + spec.indices.size();
     spec.vertices.free();
     spec.indices.free();
+}
+
+void Mesh::load(GpuMeshSpec &spec)
+{
+    ResourceInfo info;
+    load(info, spec);
 }
 
 void Mesh::load(uint32 vao, uint32 vbo, uint32 vio)

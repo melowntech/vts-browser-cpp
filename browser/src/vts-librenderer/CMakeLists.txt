@@ -9,8 +9,8 @@ set(PUB_HDR_LIST
 set(SRC_LIST
     renderer.cpp renderer.hpp
     classes.cpp
-    errors.cpp
-    atmosphereDensityTexture.cpp atmosphereDensityTexture.hpp
+    foundation.cpp
+    atmosphereDensityTexture.cpp
 )
 
 set(DATA_LIST

@@ -66,7 +66,8 @@ AppOptions::AppOptions() :
     purgeDiskCache(false)
 {}
 
-MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
+MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions,
+                       const vts::renderer::RenderOptions &renderOptions) :
     appOptions(appOptions),
     map(map), window(nullptr),
     dataContext(nullptr), renderContext(nullptr)
@@ -81,7 +82,8 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+                        SDL_GL_CONTEXT_PROFILE_CORE);
 #ifndef NDEBUG
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #endif
@@ -120,7 +122,8 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions) :
         vts::log(vts::LogLevel::info2, s.str());
     }
 
-    vts::renderer::initialize();
+    render.options() = renderOptions;
+    render.initialize();
 
     // load mesh sphere
     {
@@ -162,7 +165,7 @@ MainWindow::~MainWindow()
     if (map)
         map->renderFinalize();
 
-    vts::renderer::finalize();
+    render.finalize();
 
     SDL_GL_DeleteContext(renderContext);
     SDL_DestroyWindow(window);
@@ -170,8 +173,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::renderFrame()
 {
-    vts::renderer::RenderOptions &ro = appOptions.render;
-    vts::renderer::render(ro, map->draws(), map->celestialBody());
+    vts::renderer::RenderOptions &ro = render.options();
+    render.render(map);
 
     // compas
     if (appOptions.renderCompas)
@@ -181,7 +184,7 @@ void MainWindow::renderFrame()
         double posSize[3] = { offset, offset, size };
         double rot[3];
         map->getPositionRotationLimited(rot);
-        vts::renderer::renderCompass(posSize, rot);
+        render.renderCompass(posSize, rot);
     }
 
     gui.render(ro.width, ro.height);
@@ -317,14 +320,10 @@ void MainWindow::run()
     if (appOptions.purgeDiskCache)
         map->purgeDiskCache();
 
-    vts::renderer::RenderOptions &ro = appOptions.render;
-    SDL_GL_GetDrawableSize(window, &ro.width, &ro.height);
+    vts::renderer::RenderOptions &ro = render.options();
+    SDL_GL_GetDrawableSize(window, (int*)&ro.width, (int*)&ro.height);
     map->setWindowSize(ro.width, ro.height);
-
-    map->callbacks().loadTexture = std::bind(&vts::renderer::loadTexture,
-                std::placeholders::_1, std::placeholders::_2);
-    map->callbacks().loadMesh = std::bind(&vts::renderer::loadMesh,
-                std::placeholders::_1, std::placeholders::_2);
+    render.bindLoadFunctions(map);
 
     setMapConfigPath(appOptions.paths[0]);
     map->renderInitialize();
@@ -359,7 +358,7 @@ void MainWindow::run()
         vts::uint32 timeFrameStart = SDL_GetTicks();
         try
         {
-            SDL_GL_GetDrawableSize(window, &ro.width, &ro.height);
+            SDL_GL_GetDrawableSize(window, (int*)&ro.width, (int*)&ro.height);
             map->setWindowSize(ro.width, ro.height);
             map->renderTickPrepare();
             map->renderTickRender();
@@ -424,7 +423,7 @@ vts::vec3 MainWindow::getWorldPositionFromCursor()
     SDL_GetMouseState(&xx, &yy);
     double screenPos[2] = { (double)xx, (double)yy };
     vts::vec3 result;
-    vts::renderer::getWorldPosition(screenPos, result.data());
+    render.getWorldPosition(screenPos, result.data());
     return result;
 }
 

@@ -29,6 +29,8 @@
 
 #ifdef VTSR_INCLUDE_GL
 #include <glad/glad.h>
+#else
+typedef void *(*GLADloadproc)(const char *name);
 #endif
 
 #include <vts-browser/foundation.hpp>
@@ -46,6 +48,10 @@ namespace vts { namespace renderer
 
 VTSR_API void checkGl(const char *name = "");
 VTSR_API void checkGlFramebuffer();
+
+// initialize all gl functions
+// should be called once after the gl context has been created
+VTSR_API void loadGlFunctions(GLADloadproc functionLoader);
 
 } } // namespace vts::renderer
 

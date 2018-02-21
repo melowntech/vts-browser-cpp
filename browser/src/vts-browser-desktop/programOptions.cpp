@@ -55,6 +55,7 @@ MapPaths parseConfigPaths(const std::string &config,
 bool programOptions(vts::MapCreateOptions &createOptions,
                     vts::MapOptions &mapOptions,
                     vts::FetcherOptions &fetcherOptions,
+                    vts::renderer::RenderOptions &renderOptions,
                     AppOptions &appOptions,
                     int argc, char *argv[])
 {
@@ -101,14 +102,14 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 "Purge the disk cache during the initialization."
             )
             ("renderAtmosphere",
-                po::value<bool>(&appOptions.render.renderAtmosphere)
-                ->default_value(appOptions.render.renderAtmosphere)
-                ->implicit_value(!appOptions.render.renderAtmosphere),
+                po::value<bool>(&renderOptions.renderAtmosphere)
+                ->default_value(renderOptions.renderAtmosphere)
+                ->implicit_value(!renderOptions.renderAtmosphere),
                 "Render atmosphere."
             )
             ("antialiasing",
-                po::value<int>(&appOptions.render.antialiasingSamples)
-                ->default_value(appOptions.render.antialiasingSamples)
+                po::value<vts::uint32>(&renderOptions.antialiasingSamples)
+                ->default_value(renderOptions.antialiasingSamples)
                 ->implicit_value(16),
                 "Antialiasing samples."
             )

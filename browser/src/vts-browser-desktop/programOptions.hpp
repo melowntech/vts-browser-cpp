@@ -35,6 +35,7 @@
 bool programOptions(vts::MapCreateOptions &createOptions,
                     vts::MapOptions &mapOptions,
                     vts::FetcherOptions &fetcherOptions,
+                    vts::renderer::RenderOptions &renderOptions,
                     AppOptions &appOptions,
                     int argc, char *argv[]);
 

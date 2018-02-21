@@ -57,7 +57,6 @@ struct MapPaths
 
 struct AppOptions
 {
-    vts::renderer::RenderOptions render;
     std::vector<MapPaths> paths;
     std::string initialPosition;
     int renderCompas;
@@ -71,7 +70,7 @@ struct AppOptions
 class MainWindow
 {
 public:
-    MainWindow(vts::Map *map, const AppOptions &appOptions);
+    MainWindow(vts::Map *map, const AppOptions &appOptions, const vts::renderer::RenderOptions &renderOptions);
     ~MainWindow();
 
     class Gui
@@ -106,7 +105,9 @@ public:
     vts::uint32 timingTotalFrame;
     vts::uint32 timingDataFrame;
     vts::Map *const map;
+    vts::renderer::Renderer render;
     struct SDL_Window *window;
+
     void *dataContext;
     void *renderContext;
 };

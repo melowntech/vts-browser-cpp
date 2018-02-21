@@ -33,6 +33,8 @@
 #include <vts-browser/view.hpp>
 #include <vts-browser/search.hpp>
 #include <vts-browser/log.hpp>
+#include <vts-browser/draws.hpp>
+#include <vts-browser/celestial.hpp>
 
 #include <vts-renderer/classes.hpp>
 
@@ -407,6 +409,7 @@ public:
         {
             MapOptions &o = window->map->options();
             AppOptions &a = window->appOptions;
+            renderer::RenderOptions &r = window->render.options();
             float width = nk_window_get_content_region_size(&ctx).x - 15;
             float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
             nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
@@ -579,11 +582,11 @@ public:
             // antialiasing samples
             {
                 nk_label(&ctx, "Antialiasing:", NK_TEXT_LEFT);
-                a.render.antialiasingSamples = nk_slide_int(&ctx,
-                        1, a.render.antialiasingSamples, 16, 1);
-                if (a.render.antialiasingSamples > 1)
+                r.antialiasingSamples = nk_slide_int(&ctx,
+                        1, r.antialiasingSamples, 16, 1);
+                if (r.antialiasingSamples > 1)
                 {
-                    sprintf(buffer, "%d", a.render.antialiasingSamples);
+                    sprintf(buffer, "%d", r.antialiasingSamples);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 }
                 else
@@ -601,8 +604,8 @@ public:
             {
                 // render atmosphere
                 nk_label(&ctx, "Display:", NK_TEXT_LEFT);
-                a.render.renderAtmosphere = nk_check_label(&ctx, "atmosphere",
-                                                   a.render.renderAtmosphere);
+                r.renderAtmosphere = nk_check_label(&ctx, "atmosphere",
+                                                   r.renderAtmosphere);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
 
                 // render mesh wire boxes
@@ -649,8 +652,8 @@ public:
 
                 // polygon edges
                 nk_label(&ctx, "", NK_TEXT_LEFT);
-                a.render.renderPolygonEdges = nk_check_label(&ctx, "edges",
-                                                a.render.renderPolygonEdges);
+                r.renderPolygonEdges = nk_check_label(&ctx, "edges",
+                                                r.renderPolygonEdges);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
 
                 // render no meshes

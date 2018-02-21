@@ -24,15 +24,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sstream>
-
 #include "renderer.hpp"
 
 void initializeRenderData();
-
 namespace
 {
-
 class RenderDataInitializator
 {
 public:
@@ -41,13 +37,16 @@ public:
         initializeRenderData();
     }
 } renderDataInitializatorInstance;
-
 } // namespace
 
 namespace vts { namespace renderer
 {
 
-using namespace priv;
+namespace priv
+{
+uint32 maxAntialiasingSamples = 1;
+float maxAnisotropySamples = 0.f;
+} // namespace priv
 
 void checkGl(const char *name)
 {
@@ -81,15 +80,15 @@ void checkGlFramebuffer()
     case GL_FRAMEBUFFER_COMPLETE:
         return;
     case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-        throw std::runtime_error("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
-    //case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-    //    throw std::runtime_error("GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
+        throw std::runtime_error("gl_framebuffer_incomplete_attachment");
+    case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+        throw std::runtime_error("gl_framebuffer_incomplete_dimensions");
     case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-        throw std::runtime_error("GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+        throw std::runtime_error("gl_framebuffer_incomplete_missing_attachment");
     case GL_FRAMEBUFFER_UNSUPPORTED:
-        throw std::runtime_error("GL_FRAMEBUFFER_UNSUPPORTED");
+        throw std::runtime_error("gl_framebuffer_unsupported");
     default:
-        throw std::runtime_error("Unknown error with opengl framebuffer");
+        throw std::runtime_error("gl_unknown_framebuffer_error");
     }
 }
 
@@ -176,8 +175,8 @@ void APIENTRY openglErrorCallback(GLenum source,
 
     {
         std::stringstream s;
-        s << "OpenGL: " << id << ", " << src << ", " << tp
-          << ", " << sevr << ", " << message;
+        s << "OpenGL: <" << id << ">, <" << src << ">, <" << tp
+          << ">, <" << sevr << ">, <" << message << ">";
         log(throwing ? LogLevel::err3 : LogLevel::warn3,
                  s.str());
     }
@@ -185,33 +184,39 @@ void APIENTRY openglErrorCallback(GLenum source,
     if (throwing)
     {
         throw std::runtime_error(
-                std::string("OpenGL: ") + message);
+                std::string() + "OpenGL: <" + message + ">");
     }
 }
 
 void loadGlFunctions(GLADloadproc functionLoader)
 {
-    vts::log(vts::LogLevel::info2, "Loading opengl function pointers");
-
 #ifdef VTSR_OPENGLES
+    vts::log(vts::LogLevel::info2,
+             "Loading opengl ES function pointers");
     gladLoadGLES2Loader(functionLoader);
 #else
+    vts::log(vts::LogLevel::info2,
+             "Loading opengl (desktop) function pointers");
     gladLoadGLLoader(functionLoader);
 #endif
     checkGl("loadGlFunctions");
 
-#ifndef VTSR_OPENGLES
+//#ifndef VTSR_OPENGLES
     if (GLAD_GL_KHR_debug)
         glDebugMessageCallback(&openglErrorCallback, nullptr);
 
     if (GLAD_GL_EXT_texture_filter_anisotropic)
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropySamples);
+    else
+        maxAnisotropySamples = 1;
 
     if (GLAD_GL_EXT_texture_filter_anisotropic)
-        glGetIntegerv(GL_MAX_SAMPLES, &maxAntialiasingSamples);
+        glGetIntegerv(GL_MAX_SAMPLES, (GLint*)&maxAntialiasingSamples);
+    else
+        maxAntialiasingSamples = 0.f;
 
     checkGl("load gl extensions and attributes");
-#endif
+//#endif
 
     vts::log(vts::LogLevel::info2, std::string("OpenGL vendor: ")
                                         + (char*)glGetString(GL_VENDOR));
@@ -223,5 +228,5 @@ void loadGlFunctions(GLADloadproc functionLoader)
                         + (char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
 }
 
-} } // namespace
+} } // namespace vts renderer
 

@@ -36,8 +36,6 @@
 #include "dataThread.hpp"
 #include "programOptions.hpp"
 
-void initializeDesktopData();
-
 int main(int argc, char *argv[])
 {
     // release build -> catch exceptions and print them to stderr
@@ -51,8 +49,6 @@ int main(int argc, char *argv[])
         //vts::setLogMask("I2W2E2");
         //vts::setLogMask("D");
         //vts::setLogFile("vts-browser.log");
-
-        initializeDesktopData();
 
         vts::MapCreateOptions createOptions;
         createOptions.clientId = "vts-browser-desktop";

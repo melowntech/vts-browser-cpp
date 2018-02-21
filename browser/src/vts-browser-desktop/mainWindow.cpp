@@ -46,6 +46,19 @@
 
 #include "mainWindow.hpp"
 
+void initializeDesktopData();
+
+namespace
+{
+struct Initializer
+{
+    Initializer()
+    {
+        initializeDesktopData();
+    }
+} initializer;
+} // namespace
+
 AppOptions::AppOptions() :
     renderCompas(false),
     screenshotOnFullRender(false),

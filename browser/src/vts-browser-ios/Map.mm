@@ -41,6 +41,18 @@
 using namespace vts;
 using namespace vts::renderer;
 
+void initializeIosData();
+namespace
+{
+    struct Initializer
+    {
+        Initializer()
+        {
+            initializeIosData();
+        }
+    } initializer;
+} // namespace
+
 ExtraConfig::ExtraConfig() :
     controlType(0), touchSize(45),
     showControlScales(true), showControlAreas(false), showControlCompas(false)

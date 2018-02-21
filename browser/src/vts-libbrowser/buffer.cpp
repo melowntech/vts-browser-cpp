@@ -31,11 +31,36 @@
 
 #include "include/vts-browser/buffer.hpp"
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
 namespace vts
 {
 
 namespace
 {
+
+uint64 getPid()
+{
+#ifdef _WIN32
+    return GetCurrentProcessId();
+#else
+    return getpid();
+#endif
+}
+
+static const uint64 pid = getPid();
+
+std::string uniqueName()
+{
+    static std::atomic<uint32> tmpIndex;
+    std::ostringstream ss;
+    ss << pid << "_" << (tmpIndex++);
+    return ss.str();
+}
 
 typedef std::map<std::string, std::pair<size_t, const unsigned char *>>
     dataMapType;
@@ -128,7 +153,8 @@ void writeLocalFileBuffer(const std::string &path, const Buffer &buffer)
             .parent_path().c_str();
     if (!folderPath.empty())
         boost::filesystem::create_directories(folderPath);
-    FILE *f = fopen(path.c_str(), "wb");
+    std::string tmpPath = path + "_tmp_" + uniqueName();
+    FILE *f = fopen(tmpPath.c_str(), "wb");
     if (!f)
         LOGTHROW(err1, std::runtime_error) << "Failed to write file <"
                                            << path << ">";
@@ -141,6 +167,7 @@ void writeLocalFileBuffer(const std::string &path, const Buffer &buffer)
     if (fclose(f) != 0)
         LOGTHROW(err1, std::runtime_error) << "Failed to write file <"
                                            << path << ">";
+    boost::filesystem::rename(tmpPath, path);
 }
 
 Buffer readLocalFileBuffer(const std::string &path)

@@ -27,9 +27,6 @@
 #import "AppDelegate.h"
 #include "Map.h"
 
-void initializeIosData();
-
-
 @interface AppDelegate ()
 @end
 
@@ -40,7 +37,6 @@ void initializeIosData();
 {
     //vts::setLogMask("I2W2E2");
     //vts::setLogMask("ALL");
-    initializeIosData();
     mapInitialize();
     return YES;
 }

@@ -125,7 +125,7 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
 }
 
 DrawTask::DrawTask() :
-    color{0,0,0,1}, uvClip{-1,-1,2,2},
+    color{0,0,0,1}, uvClip{-1,-1,2,2}, center{0,0,0},
     externalUv(false), flatShading(false)
 {
     for (int i = 0; i < 16; i++)
@@ -152,6 +152,8 @@ DrawTask::DrawTask(const RenderTask &r, const MapImpl *m) :
         this->mv[i] = mv(i);
     for (int i = 0; i < 9; i++)
         this->uvm[i] = r.uvm(i);
+    vec3f c = vec4to3(r.model * vec4(0,0,0,1)).cast<float>();
+    vecToRaw(c, center);
 }
 
 DrawTask::DrawTask(const RenderTask &r, const float *uvClip, const MapImpl *m)
@@ -180,6 +182,17 @@ void MapDraws::clear()
     opaque.clear();
     transparent.clear();
     Infographic.clear();
+}
+
+void MapDraws::sortOpaqueFrontToBack()
+{
+    vec3 e = rawToVec3(camera.eye);
+    std::sort(opaque.begin(), opaque.end(), [e](const DrawTask &a,
+              const DrawTask &b) {
+        vec3 va = rawToVec3(a.center).cast<double>() - e;
+        vec3 vb = rawToVec3(b.center).cast<double>() - e;
+        return dot(va, va) < dot(vb, vb);
+    });
 }
 
 RenderTask::RenderTask() : model(identityMatrix4()),

@@ -48,6 +48,7 @@ public:
     float uvm[9];
     float color[4];
     float uvClip[4];
+    float center[3];
     bool externalUv;
     bool flatShading;
 
@@ -76,6 +77,7 @@ public:
 
     MapDraws();
     void clear();
+    void sortOpaqueFrontToBack();
 };
 
 } // namespace vts

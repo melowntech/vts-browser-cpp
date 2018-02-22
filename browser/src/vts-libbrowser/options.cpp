@@ -61,6 +61,7 @@ MapOptions::MapOptions() :
     navigationPihaViewExtentMult(1.02),
     navigationPihaPositionChange(0.02),
     renderTilesScale(1.001),
+    //renderTilesScale(0.5),
     targetResourcesMemory(0),
     maxConcurrentDownloads(25),
     maxResourceProcessesPerTick(10),

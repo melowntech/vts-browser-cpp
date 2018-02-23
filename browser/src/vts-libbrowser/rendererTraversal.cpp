@@ -630,7 +630,7 @@ bool MapImpl::travDetermineDraws(TraverseNode *trav)
                 task.model = part.normToPhys;
                 task.uvm = b.uvMatrix();
                 task.externalUv = true;
-                if (b.transparent)
+                if (b.transparent || task.textureMask)
                     newTransparent.push_back(task);
                 else
                     newOpaque.push_back(task);

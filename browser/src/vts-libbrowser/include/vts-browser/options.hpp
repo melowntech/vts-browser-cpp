@@ -183,8 +183,12 @@ public:
     bool enableArbitrarySriRequests;
 
     // setting this to false will disable that camera tilt and yaw
-    //   are limited when zoomed out
+    //   are limited
     bool enableCameraNormalization;
+
+    // setting this to false will disable that camera vertical
+    //   objective position converges to ground
+    bool enableCameraAltitudeChanges;
 
     bool debugDetachedCamera;
     bool debugDisableVirtualSurfaces;

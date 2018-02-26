@@ -176,9 +176,11 @@ void MapImpl::updateNavigation()
     vec3 r = vecFromUblas<vec3>(pos.orientation);
 
     // floating position
-    if (pos.heightMode == vtslibs::registry::Position::HeightMode::floating)
-        pos.heightMode = vtslibs::registry::Position::HeightMode::fixed;
-    assert(pos.heightMode == vtslibs::registry::Position::HeightMode::fixed);
+    if (pos.heightMode != vtslibs::registry::Position::HeightMode::fixed)
+    {
+        LOGTHROW(err3, std::runtime_error)
+                << "Position must have fixed height mode.";
+    }
 
     // navigation type has changed
     if (navigation.previousType != options.navigationType)
@@ -396,7 +398,8 @@ void MapImpl::updateNavigation()
 
     // altitude corrections
     {
-        if (pos.type == vtslibs::registry::Position::Type::objective)
+        if (pos.type == vtslibs::registry::Position::Type::objective
+                && options.enableCameraAltitudeChanges)
             updatePositionAltitude(horizontal2 / pos.verticalExtent);
     }
 

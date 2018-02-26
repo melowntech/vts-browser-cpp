@@ -76,6 +76,7 @@ MapOptions::MapOptions() :
     enableRuntimeResourceExpiration(false),
     enableArbitrarySriRequests(true),
     enableCameraNormalization(true),
+    enableCameraAltitudeChanges(true),
     debugDetachedCamera(false),
     debugDisableVirtualSurfaces(false),
     debugDisableSri(true),

@@ -394,7 +394,7 @@ void MapConfig::initializeCelestialBody() const
             a.colorHigh[i] = highColor[i];
         }
     }
-    if (std::abs(map->body.majorRadius - 3396200) < 30000)
+    else if (std::abs(map->body.majorRadius - 3396200) < 30000)
     {
         map->body.name = "Mars";
         a.thickness = map->body.majorRadius * 0.01;

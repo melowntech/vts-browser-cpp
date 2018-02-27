@@ -218,6 +218,7 @@ TraverseNode::MetaInfo::MetaInfo(const MetaNode &node) :
     surrogatePhys(std::numeric_limits<double>::quiet_NaN(),
                   std::numeric_limits<double>::quiet_NaN(),
                   std::numeric_limits<double>::quiet_NaN()),
+    surrogateNav(std::numeric_limits<double>::quiet_NaN()),
     surface(nullptr)
 {
     // initialize corners to NAN

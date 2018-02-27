@@ -475,6 +475,8 @@ bool MapImpl::travDetermineMeta(TraverseNode *trav)
                            node->geomExtents.surrogate);
         trav->meta->surrogatePhys = convertor->convert(sds,
                             trav->nodeInfo.node(), Srs::Physical);
+        trav->meta->surrogateNav = convertor->convert(sds,
+                            trav->nodeInfo.node(), Srs::Navigation)[2];
     }
 
     // surface
@@ -846,7 +848,7 @@ namespace
 {
 
 void computeNearFar(double &near, double &far, double altitude,
-                    const MapCelestialBody &body,
+                    const MapCelestialBody &body, bool projected,
                     vec3 cameraPos, vec3 cameraForward)
 {
     (void)cameraForward;
@@ -854,7 +856,7 @@ void computeNearFar(double &near, double &far, double altitude,
     double flat = major / body.minorRadius;
     cameraPos[2] *= flat;
     double ground = major + (altitude == altitude ? altitude : 0.0);
-    double l = length(cameraPos);
+    double l = projected ? cameraPos[2] + major : length(cameraPos);
     double a = std::max(1.0, l - ground);
     //LOG(info4) << "altitude: " << altitude << ", ground: " << ground
     //           << ", camera: " << l << ", above: " << a;
@@ -876,6 +878,9 @@ void computeNearFar(double &near, double &far, double altitude,
 
 void MapImpl::updateCamera()
 {
+    bool projected = mapConfig->navigationSrsType()
+            == vtslibs::registry::Srs::Type::projected;
+
     vec3 objCenter, cameraForward, cameraUp;
     positionToCamera(objCenter, cameraForward, cameraUp);
 
@@ -913,7 +918,8 @@ void MapImpl::updateCamera()
         vec3 navPos = convertor->physToNav(cameraPos);
         if (!getPositionAltitude(altitude, navPos, 10))
             altitude = std::numeric_limits<double>::quiet_NaN();
-        computeNearFar(near, far, altitude, body, cameraPos, cameraForward);
+        computeNearFar(near, far, altitude, body, projected,
+                       cameraPos, cameraForward);
     }
     double fov = pos.verticalFov;
     double aspect = (double)renderer.windowWidth/(double)renderer.windowHeight;
@@ -1013,6 +1019,7 @@ void MapImpl::updateCamera()
         c.far = far;
         c.aspect = aspect;
         c.fov = fov;
+        c.mapProjected = projected;
     }
 }
 

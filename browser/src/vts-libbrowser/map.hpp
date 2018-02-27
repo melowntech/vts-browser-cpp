@@ -111,6 +111,7 @@ public:
         vec3 cornersPhys[8];
         vec3 aabbPhys[2];
         vec3 surrogatePhys;
+        float surrogateNav;
         const MapConfig::SurfaceStackItem *surface;
         MetaInfo(const vtslibs::vts::MetaNode &node);
     };

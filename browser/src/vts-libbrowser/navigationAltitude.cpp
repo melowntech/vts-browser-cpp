@@ -176,7 +176,7 @@ bool MapImpl::getPositionAltitude(double &result,
             return false;
         math::Extents2 ext = t->nodeInfo.extents();
         points[i] = vecFromUblas<vec2>(ext.ll + ext.ur) * 0.5;
-        altitudes[i] = t->meta->geomExtents.surrogate;
+        altitudes[i] = t->meta->surrogateNav;
         minUsedLod = std::min(minUsedLod, (uint32)t->nodeInfo.nodeId().lod);
         if (options.debugRenderAltitudeShiftCorners)
         {
@@ -198,6 +198,8 @@ bool MapImpl::getPositionAltitude(double &result,
 
 void MapImpl::updatePositionAltitude(double fadeOutFactor)
 {
+    if (!options.enableCameraAltitudeChanges)
+        return;
 
     double altitude;
     if (!getPositionAltitude(altitude, navigation.targetPoint,

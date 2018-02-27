@@ -172,15 +172,16 @@ void MapImpl::updateNavigation()
 
     vtslibs::registry::Position &pos = mapConfig->position;
 
-    vec3 p = vecFromUblas<vec3>(pos.position);
-    vec3 r = vecFromUblas<vec3>(pos.orientation);
-
-    // floating position
+    // convert floating position
     if (pos.heightMode != vtslibs::registry::Position::HeightMode::fixed)
     {
-        LOGTHROW(err3, std::runtime_error)
-                << "Position must have fixed height mode.";
+        pos.heightMode = vtslibs::registry::Position::HeightMode::fixed;
+        navigation.positionAltitudeReset.emplace(pos.position[2]);
+        pos.position[2] = 0;
     }
+
+    vec3 p = vecFromUblas<vec3>(pos.position);
+    vec3 r = vecFromUblas<vec3>(pos.orientation);
 
     // navigation type has changed
     if (navigation.previousType != options.navigationType)

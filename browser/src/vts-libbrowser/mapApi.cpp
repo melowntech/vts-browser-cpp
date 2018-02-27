@@ -404,7 +404,7 @@ void Map::setPositionViewExtent(double viewExtent)
 {
     if (!getMapConfigReady())
         return;
-    assert(viewExtent == viewExtent);
+    assert(viewExtent == viewExtent && viewExtent > 0);
     impl->setViewExtent(viewExtent);
 }
 
@@ -447,11 +447,10 @@ std::string Map::getPositionUrl() const
 namespace
 {
 
-void setPosition(Map *map, const vtslibs::registry::Position &pos)
+void setPosition(Map *map, MapImpl *impl,
+                 const vtslibs::registry::Position &pos)
 {
-    if (pos.heightMode != vtslibs::registry::Position::HeightMode::fixed)
-        LOGTHROW(err2, std::runtime_error) << "position must have fixed height";
-    // todo height mode
+    impl->mapConfig->position.heightMode = pos.heightMode;
     map->setPositionSubjective(
             pos.type == vtslibs::registry::Position::Type::subjective, false);
     map->setPositionFov(pos.verticalFov);
@@ -470,7 +469,7 @@ void Map::setPositionJson(const std::string &position)
         return;
     Json::Value val = stringToJson(position);
     vtslibs::registry::Position pos = vtslibs::registry::positionFromJson(val);
-    setPosition(this, pos);
+    setPosition(this, impl.get(), pos);
 }
 
 void Map::setPositionUrl(const std::string &position)
@@ -486,7 +485,7 @@ void Map::setPositionUrl(const std::string &position)
     {
         LOGTHROW(err2, std::runtime_error) << "invalid position from url";
     }
-    setPosition(this, pos);
+    setPosition(this, impl.get(), pos);
 }
 
 void Map::resetPositionAltitude()

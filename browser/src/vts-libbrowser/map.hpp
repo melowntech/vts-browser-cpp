@@ -220,8 +220,8 @@ public:
     void printDebugInfo();
 
     // navigation
-    void pan(const vec3 &value);
-    void rotate(const vec3 &value);
+    void pan(vec3 value);
+    void rotate(vec3 value);
     void zoom(double value);
     void setPoint(const vec3 &point);
     void setRotation(const vec3 &euler);

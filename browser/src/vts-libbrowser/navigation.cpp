@@ -427,18 +427,23 @@ bool MapImpl::isNavigationModeValid() const
     return true;
 }
 
-void MapImpl::pan(const vec3 &value)
+void MapImpl::pan(vec3 value)
 {
     assert(isNavigationModeValid());
 
     vtslibs::registry::Position &pos = mapConfig->position;
+    vec3 posRot = vecFromUblas<vec3>(pos.orientation);
+    applyCameraRotationNormalization(posRot);
 
+    // camera roll
+    value = mat4to3(rotationMatrix(2, -posRot[2])) * value;
+
+    // slower movement near poles
     double h = 1;
     if (mapConfig->navigationSrsType()
             == vtslibs::registry::Srs::Type::geographic
             && navigation.mode == NavigationMode::Azimuthal)
     {
-        // slower pan near poles
         h = std::cos(pos.position[1] * 3.14159 / 180);
     }
 
@@ -448,9 +453,7 @@ void MapImpl::pan(const vec3 &value)
                                    * options.cameraSensitivityPan);
 
     // compute change of azimuth
-    vec3 posRot = vecFromUblas<vec3>(pos.orientation);
-    applyCameraRotationNormalization(posRot);
-    double azi = posRot(0);
+    double azi = posRot[0];
     if (navigation.mode == NavigationMode::Free)
     {
         assert(mapConfig->navigationSrsType()
@@ -463,8 +466,6 @@ void MapImpl::pan(const vec3 &value)
                     navigation.targetPoint, d, a1, a2);
         azi += a2 - a1;
     }
-
-    // the move is rotated by the camera
     move = mat4to3(rotationMatrix(2, -azi)) * move;
 
     // apply the pan
@@ -498,7 +499,7 @@ void MapImpl::pan(const vec3 &value)
     assert(isNavigationModeValid());
 }
 
-void MapImpl::rotate(const vec3 &value)
+void MapImpl::rotate(vec3 value)
 {
     assert(isNavigationModeValid());
 

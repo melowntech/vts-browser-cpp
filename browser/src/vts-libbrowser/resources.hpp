@@ -42,7 +42,9 @@
 #include "include/vts-browser/fetcher.hpp"
 
 #ifndef NDEBUG
+    // some debuggers are unable to show contents of unordered containers
     #define unordered_map map
+    #define unordered_set set
 #endif
 
 namespace vts
@@ -126,6 +128,14 @@ public:
     void load() override;
 };
 
+class ExternalFreeLayer : public Resource,
+        public vtslibs::registry::FreeLayer
+{
+public:
+    ExternalFreeLayer(MapImpl *map, const std::string &name);
+    void load() override;
+};
+
 class MapConfig : public Resource, public vtslibs::vts::MapConfig
 {
 public:
@@ -141,7 +151,7 @@ public:
         vtslibs::vts::UrlTemplate urlMeta;
         vtslibs::vts::UrlTemplate urlMask;
     };
-    
+
     class SurfaceInfo : public vtslibs::vts::SurfaceCommonConfig
     {
     public:
@@ -210,15 +220,6 @@ public:
 
     uint8 flags[vtslibs::registry::BoundLayer::rasterMetatileWidth
                 * vtslibs::registry::BoundLayer::rasterMetatileHeight];
-};
-
-class BoundMaskTile : public Resource
-{
-public:
-    BoundMaskTile(MapImpl *map, const std::string &name);
-    void load() override;
-
-    std::shared_ptr<GpuTexture> texture;
 };
 
 class MetaTile : public Resource, public vtslibs::vts::MetaTile
@@ -290,6 +291,20 @@ public:
     void update();
 
     std::vector<std::shared_ptr<MetaTile>> metatiles;
+};
+
+class GeodataFeatures : public Resource
+{
+public:
+    GeodataFeatures(MapImpl *map, const std::string &name);
+    void load() override;
+};
+
+class GeodataStylesheet : public Resource
+{
+public:
+    GeodataStylesheet(MapImpl *map, const std::string &name);
+    void load() override;
 };
 
 } // namespace vts

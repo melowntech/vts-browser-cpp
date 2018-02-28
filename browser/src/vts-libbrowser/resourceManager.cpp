@@ -633,12 +633,6 @@ std::shared_ptr<BoundMetaTile> MapImpl::getBoundMetaTile(
     return getMapResource<BoundMetaTile>(this, name);
 }
 
-std::shared_ptr<BoundMaskTile> MapImpl::getBoundMaskTile(
-        const std::string &name)
-{
-    return getMapResource<BoundMaskTile>(this, name);
-}
-
 std::shared_ptr<SearchTaskImpl> MapImpl::getSearchTask(const std::string &name)
 {
     return getMapResource<SearchTaskImpl>(this, name);
@@ -653,6 +647,18 @@ std::shared_ptr<TilesetMapping> MapImpl::getTilesetMapping(
 std::shared_ptr<SriIndex> MapImpl::getSriIndex(const std::string &name)
 {
     return getMapResource<SriIndex>(this, name);
+}
+
+std::shared_ptr<GeodataFeatures> MapImpl::getGeoFeatures(
+        const std::string &name)
+{
+    return getMapResource<GeodataFeatures>(this, name);
+}
+
+std::shared_ptr<GeodataStylesheet> MapImpl::getGeoStyle(
+        const std::string &name)
+{
+    return getMapResource<GeodataStylesheet>(this, name);
 }
 
 Validity MapImpl::getResourceValidity(const std::string &name)

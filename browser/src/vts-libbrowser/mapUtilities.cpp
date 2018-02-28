@@ -299,6 +299,19 @@ void ExternalBoundLayer::load()
             = vtslibs::registry::loadBoundLayer(w, name);
 }
 
+ExternalFreeLayer::ExternalFreeLayer(MapImpl *map, const std::string &name)
+    : Resource(map, name, FetchTask::ResourceType::FreeLayerConfig)
+{
+    priority = std::numeric_limits<float>::infinity();
+}
+
+void ExternalFreeLayer::load()
+{
+    detail::Wrapper w(reply.content);
+    *(vtslibs::registry::FreeLayer*)this
+            = vtslibs::registry::loadFreeLayer(w, name);
+}
+
 TilesetMapping::TilesetMapping(MapImpl *map, const std::string &name) :
     Resource(map, name, FetchTask::ResourceType::TilesetMappingConfig)
 {

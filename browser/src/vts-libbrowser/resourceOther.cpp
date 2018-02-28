@@ -91,27 +91,4 @@ void BoundMetaTile::load()
     info.ramMemoryCost += spec.buffer.size();
 }
 
-BoundMaskTile::BoundMaskTile(MapImpl *map, const std::string &name) :
-    Resource(map, name, FetchTask::ResourceType::BoundMaskTile)
-{}
-
-void BoundMaskTile::load()
-{
-    LOG(info2) << "Loading bound mask tile <" << name << ">";
-    
-    if (!texture)
-    {
-        texture = std::make_shared<GpuTexture>(map, name + "#texture");
-    }
-    
-    Buffer buffer = std::move(reply.content);
-    GpuTextureSpec spec;
-    decodeImage(buffer, spec.buffer,
-                spec.width, spec.height, spec.components);
-    map->callbacks.loadTexture(info, spec);
-    info.gpuMemoryCost += texture->info.gpuMemoryCost;
-    info.ramMemoryCost += texture->info.ramMemoryCost;
-    info.ramMemoryCost += sizeof(*this);
-}
-
 } // namespace vts

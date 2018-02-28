@@ -259,10 +259,11 @@ public:
     std::shared_ptr<ExternalBoundLayer> getExternalBoundLayer(
             const std::string &name);
     std::shared_ptr<BoundMetaTile> getBoundMetaTile(const std::string &name);
-    std::shared_ptr<BoundMaskTile> getBoundMaskTile(const std::string &name);
     std::shared_ptr<SearchTaskImpl> getSearchTask(const std::string &name);
     std::shared_ptr<TilesetMapping> getTilesetMapping(const std::string &name);
     std::shared_ptr<SriIndex> getSriIndex(const std::string &name);
+    std::shared_ptr<GeodataFeatures> getGeoFeatures(const std::string &name);
+    std::shared_ptr<GeodataStylesheet> getGeoStyle(const std::string &name);
     Validity getResourceValidity(const std::string &name);
     Validity getResourceValidity(const std::shared_ptr<Resource> &resource);
     float computeResourcePriority(TraverseNode *trav);

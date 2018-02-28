@@ -46,9 +46,9 @@ public:
         MapConfig,
         AuthConfig,
         BoundLayerConfig,
+        FreeLayerConfig,
         TilesetMappingConfig,
         BoundMetaTile,
-        BoundMaskTile,
         MetaTile,
         Mesh,
         MeshPart,
@@ -56,6 +56,8 @@ public:
         NavTile,
         Search,
         SriIndex,
+        GeodataFeatures,
+        GeodataStylesheet,
     };
 
     static bool isResourceTypeMandatory(ResourceType resourceType);

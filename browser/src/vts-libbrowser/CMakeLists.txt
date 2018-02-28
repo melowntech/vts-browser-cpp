@@ -83,6 +83,7 @@ set(SRC_LIST
     mesh.cpp
     texture.cpp
     resourceOther.cpp
+    resourceGeodata.cpp
     resourceManager.cpp
     statistics.cpp
     search.cpp

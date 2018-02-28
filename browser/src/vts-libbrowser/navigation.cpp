@@ -25,7 +25,7 @@
  */
 
 #include "map.hpp"
-#include "piha.hpp"
+#include "navigationPiha.hpp"
 
 namespace vts
 {

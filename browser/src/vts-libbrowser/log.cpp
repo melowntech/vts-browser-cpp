@@ -26,7 +26,7 @@
 
 #include <dbglog/dbglog.hpp>
 #include "include/vts-browser/log.hpp"
-#include "threadName.hpp"
+#include "utilities/threadName.hpp"
 
 namespace vts
 {

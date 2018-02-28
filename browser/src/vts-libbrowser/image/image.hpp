@@ -24,58 +24,27 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <geometry/parse-obj.hpp>
+#ifndef IMAGE_H_erweubdnu
+#define IMAGE_H_erweubdnu
 
-#include "include/vts-browser/math.hpp"
-#include "obj.hpp"
+#include <string>
+#include "../include/vts-browser/buffer.hpp"
 
 namespace vts
 {
 
-void decodeObj(const Buffer &in, uint32 &outFaceMode,
-               Buffer &outVertices, Buffer &,
-               uint32 &vertices, uint32 &indices)
-{
-    geometry::Obj obj;
-    detail::Wrapper w(in);
-    if (!obj.parse(w))
-    {
-        LOGTHROW(err1, std::runtime_error) << "failed to decode obj file";
-    }
+void decodePng(const Buffer &in, Buffer &out,
+               uint32 &width, uint32 &height, uint32 &components);
 
-    // find face mode
-    outFaceMode = 3;
-    for (geometry::Obj::Facet &of : obj.facets)
-    {
-        int v[3];
-        for (uint32 i = 0; i < 3; i++)
-            v[i] = of.v[i];
-        std::sort(v, v + 3);
-        uint32 j = std::unique(v, v + 3) - v;
-        outFaceMode = std::min(outFaceMode, j);
-    }
+void decodeJpeg(const Buffer &in, Buffer &out,
+                uint32 &width, uint32 &height, uint32 &components);
 
-    struct F
-    {
-        vec3f vertex;
-        vec2f uvs;
-    };
-    outVertices = Buffer(obj.facets.size() * sizeof(F) * outFaceMode);
-    F *fs = (F*)outVertices.data();
-    for (auto &of : obj.facets)
-    {
-        for (uint32 i = 0; i < outFaceMode; i++)
-        {
-            fs->vertex = vecFromUblas<vec3f>(obj.vertices[of.v[i]]);
-            if (of.t[i] >= 0)
-                fs->uvs = vecFromUblas<vec3f>(obj.texcoords[of.t[i]]).head(2);
-            else
-                fs->uvs = vec2f(0, 0);
-            fs++;
-        }
-    }
-    vertices = obj.facets.size() * outFaceMode;
-    indices = 0;
-}
+void decodeImage(const Buffer &in, Buffer &out,
+                 uint32 &width, uint32 &height, uint32 &components);
+
+void encodePng(const Buffer &in, Buffer &out,
+               uint32 width, uint32 height, uint32 components);
 
 } // namespace vts
+
+#endif

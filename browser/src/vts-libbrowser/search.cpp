@@ -27,7 +27,7 @@
 #include <utility/uri.hpp>
 
 #include "map.hpp"
-#include "json.hpp"
+#include "utilities/json.hpp"
 
 namespace vts
 {

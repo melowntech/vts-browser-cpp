@@ -26,7 +26,7 @@
 
 #include <dbglog/dbglog.hpp>
 #include "include/vts-browser/options.hpp"
-#include "piha.hpp"
+#include "navigationPiha.hpp"
 
 namespace vts
 {

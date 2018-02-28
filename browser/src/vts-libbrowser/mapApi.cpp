@@ -32,7 +32,7 @@
 #include "include/vts-browser/map.hpp"
 #include "include/vts-browser/view.hpp"
 #include "map.hpp"
-#include "json.hpp"
+#include "utilities/json.hpp"
 
 namespace vts
 {

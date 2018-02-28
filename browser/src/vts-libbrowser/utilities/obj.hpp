@@ -24,40 +24,20 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "include/vts-browser/fetcher.hpp"
+#ifndef OBJ_H_wrtzeubfnjk
+#define OBJ_H_wrtzeubfnjk
+
+#include <string>
+
+#include "../include/vts-browser/buffer.hpp"
 
 namespace vts
 {
 
-FetcherOptions::FetcherOptions()
-    : threads(1),
-      timeout(30000),
-      extraFileLog(false),
-      maxHostConnections(0),
-      maxTotalConections(10),
-      maxCacheConections(0),
-      pipelining(2)
-{}
-
-Fetcher::~Fetcher()
-{}
-
-FetchTask::Query::Query(const std::string &url,
-                        FetchTask::ResourceType resourceType) :
-    url(url), resourceType(resourceType)
-{}
-
-FetchTask::Reply::Reply() : expires(-1), code(0)
-{}
-
-FetchTask::FetchTask(const Query &query) : query(query)
-{}
-
-FetchTask::FetchTask(const std::string &url, ResourceType resourceType) :
-    query(url, resourceType)
-{}
-
-FetchTask::~FetchTask()
-{}
+void decodeObj(const Buffer &in, uint32 &outFaceMode,
+               Buffer &outVertices, Buffer &outIndices,
+               uint32 &vertices, uint32 &indices);
 
 } // namespace vts
+
+#endif

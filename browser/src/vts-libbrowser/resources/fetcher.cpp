@@ -24,27 +24,40 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef IMAGE_H_erweubdnu
-#define IMAGE_H_erweubdnu
-
-#include <string>
-#include "include/vts-browser/buffer.hpp"
+#include "../include/vts-browser/fetcher.hpp"
 
 namespace vts
 {
 
-void decodePng(const Buffer &in, Buffer &out,
-               uint32 &width, uint32 &height, uint32 &components);
+FetcherOptions::FetcherOptions()
+    : threads(1),
+      timeout(30000),
+      extraFileLog(false),
+      maxHostConnections(0),
+      maxTotalConections(10),
+      maxCacheConections(0),
+      pipelining(2)
+{}
 
-void decodeJpeg(const Buffer &in, Buffer &out,
-                uint32 &width, uint32 &height, uint32 &components);
+Fetcher::~Fetcher()
+{}
 
-void decodeImage(const Buffer &in, Buffer &out,
-                 uint32 &width, uint32 &height, uint32 &components);
+FetchTask::Query::Query(const std::string &url,
+                        FetchTask::ResourceType resourceType) :
+    url(url), resourceType(resourceType)
+{}
 
-void encodePng(const Buffer &in, Buffer &out,
-               uint32 width, uint32 height, uint32 components);
+FetchTask::Reply::Reply() : expires(-1), code(0)
+{}
+
+FetchTask::FetchTask(const Query &query) : query(query)
+{}
+
+FetchTask::FetchTask(const std::string &url, ResourceType resourceType) :
+    query(url, resourceType)
+{}
+
+FetchTask::~FetchTask()
+{}
 
 } // namespace vts
-
-#endif

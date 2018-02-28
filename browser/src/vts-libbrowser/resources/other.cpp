@@ -26,8 +26,8 @@
 
 #include <vts-libs/vts/meshio.hpp>
 
-#include "map.hpp"
-#include "image.hpp"
+#include "../map.hpp"
+#include "../image/image.hpp"
 
 namespace vts
 {
@@ -103,7 +103,7 @@ void BoundMaskTile::load()
     {
         texture = std::make_shared<GpuTexture>(map, name + "#texture");
     }
-    
+
     Buffer buffer = std::move(reply.content);
     GpuTextureSpec spec;
     decodeImage(buffer, spec.buffer,

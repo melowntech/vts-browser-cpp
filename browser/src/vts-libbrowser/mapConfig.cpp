@@ -29,7 +29,7 @@
 #include <vts-libs/vts/mapconfig-json.hpp>
 #include <ogr_spatialref.h>
 
-#include "map.hpp"
+#include "../map.hpp"
 
 namespace vts
 {
@@ -65,7 +65,7 @@ MapConfig::BoundInfo::BoundInfo(const vtslibs::registry::BoundLayer &bl,
     }
     if (bl.availability)
     {
-	    availability = std::make_shared<
+        availability = std::make_shared<
         vtslibs::registry::BoundLayer::Availability>(
             *bl.availability);
     }

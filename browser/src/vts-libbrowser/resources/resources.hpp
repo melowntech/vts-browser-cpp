@@ -37,9 +37,9 @@
 #include <vts-libs/vts/metatile.hpp>
 #include <vts-libs/vts/tsmap.hpp>
 
-#include "include/vts-browser/resources.hpp"
-#include "include/vts-browser/math.hpp"
-#include "include/vts-browser/fetcher.hpp"
+#include "../include/vts-browser/resources.hpp"
+#include "../include/vts-browser/math.hpp"
+#include "../include/vts-browser/fetcher.hpp"
 
 #ifndef NDEBUG
     #define unordered_map map
@@ -159,7 +159,7 @@ public:
     {
     public:
         SurfaceStackItem();
-        
+
         std::shared_ptr<SurfaceInfo> surface;
         vec3f color;
         bool alien;
@@ -169,7 +169,7 @@ public:
     {
     public:
         BrowserOptions();
-        
+
         std::string searchUrl;
         std::string searchSrs;
         double autorotate;

@@ -40,10 +40,10 @@
 #include "include/vts-browser/draws.hpp"
 #include "include/vts-browser/math.hpp"
 
-#include "resources.hpp"
+#include "resources/resources.hpp"
+#include "resources/cache.hpp"
 #include "credits.hpp"
 #include "coordsManip.hpp"
-#include "cache.hpp"
 
 namespace vts
 {

@@ -160,21 +160,6 @@ public:
         return vecFromUblas<vec3>(cs(vecFromUblas<math::Point3>(value)));
     }
 
-    vec3 navToPhys(const vec3 &value) override
-    {
-        return convert(value, Srs::Navigation, Srs::Physical);
-    }
-
-    vec3 physToNav(const vec3 &value) override
-    {
-        return convert(value, Srs::Physical, Srs::Navigation);
-    }
-
-    vec3 searchToNav(const vec3 &value) override
-    {
-        return convert(value, Srs::Search, Srs::Navigation);
-    }
-
     vec3 geoDirect(const vec3 &position, double distance,
                                  double azimuthIn, double &azimuthOut) override
     {
@@ -185,32 +170,11 @@ public:
         return res;
     }
 
-    vec3 geoDirect(const vec3 &position, double distance,
-                                 double azimuthIn) override
-    {
-        double a;
-        return geoDirect(position, distance, azimuthIn, a);
-    }
-
     void geoInverse(const vec3 &a, const vec3 &b,
             double &distance, double &azimuthA, double &azimuthB) override
     {
         geodesic_->Inverse(a(1), a(0), b(1), b(0),
                            distance, azimuthA, azimuthB);
-    }
-
-    double geoAzimuth(const vec3 &a, const vec3 &b) override
-    {
-        double d, a1, a2;
-        geoInverse(a, b, d, a1, a2);
-        return a1;
-    }
-
-    double geoDistance(const vec3 &a, const vec3 &b) override
-    {
-        double d, a1, a2;
-        geoInverse(a, b, d, a1, a2);
-        return d;
     }
 
     double geoArcDist(const vec3 &a, const vec3 &b) override
@@ -221,6 +185,42 @@ public:
 };
 
 } // namespace
+
+vec3 CoordManip::navToPhys(const vec3 &value)
+{
+    return convert(value, Srs::Navigation, Srs::Physical);
+}
+
+vec3 CoordManip::physToNav(const vec3 &value)
+{
+    return convert(value, Srs::Physical, Srs::Navigation);
+}
+
+vec3 CoordManip::searchToNav(const vec3 &value)
+{
+    return convert(value, Srs::Search, Srs::Navigation);
+}
+
+vec3 CoordManip::geoDirect(const vec3 &position, double distance,
+                             double azimuthIn)
+{
+    double a;
+    return geoDirect(position, distance, azimuthIn, a);
+}
+
+double CoordManip::geoAzimuth(const vec3 &a, const vec3 &b)
+{
+    double d, a1, a2;
+    geoInverse(a, b, d, a1, a2);
+    return a1;
+}
+
+double CoordManip::geoDistance(const vec3 &a, const vec3 &b)
+{
+    double d, a1, a2;
+    geoInverse(a, b, d, a1, a2);
+    return d;
+}
 
 std::shared_ptr<CoordManip> CoordManip::create(
         vtslibs::vts::MapConfig &mapconfig,

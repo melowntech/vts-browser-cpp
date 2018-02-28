@@ -48,9 +48,9 @@ public:
 
     virtual ~CoordManip();
 
-    virtual vec3 navToPhys(const vec3 &value) = 0;
-    virtual vec3 physToNav(const vec3 &value) = 0;
-    virtual vec3 searchToNav(const vec3 &value) = 0;
+    vec3 navToPhys(const vec3 &value);
+    vec3 physToNav(const vec3 &value);
+    vec3 searchToNav(const vec3 &value);
 
     virtual vec3 convert(const vec3 &value, Srs from, Srs to) = 0;
     virtual vec3 convert(const vec3 &value,
@@ -61,12 +61,12 @@ public:
 
     virtual vec3 geoDirect(const vec3 &position, double distance,
                               double azimuthIn, double &azimuthOut) = 0;
-    virtual vec3 geoDirect(const vec3 &position, double distance,
-                                    double azimuthIn) = 0;
+    vec3 geoDirect(const vec3 &position, double distance,
+                                    double azimuthIn);
     virtual void geoInverse(const vec3 &posA, const vec3 &posB,
                     double &distance, double &azimuthA, double &azimuthB) = 0;
-    virtual double geoAzimuth(const vec3 &a, const vec3 &b) = 0;
-    virtual double geoDistance(const vec3 &a, const vec3 &b) = 0;
+    double geoAzimuth(const vec3 &a, const vec3 &b);
+    double geoDistance(const vec3 &a, const vec3 &b);
     virtual double geoArcDist(const vec3 &a, const vec3 &b) = 0;
 };
 

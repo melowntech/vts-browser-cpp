@@ -572,7 +572,7 @@ public:
         float p[4] = {0,0,0,0};
         shader->uniformVec4(shader->firstAtmUniLoc + 2, p);
 
-        if (!options.renderAtmosphere)
+        if (!options.renderAtmosphere || draws->camera.mapProjected)
             return;
 
         Texture *tex = atmosphere.validate(*body);
@@ -599,8 +599,8 @@ public:
         shader->uniformVec4(loc + 0, body->atmosphere.colorLow);
         shader->uniformVec4(loc + 1, body->atmosphere.colorHigh);
         shader->uniformVec4(loc + 2, uniAtmParams);
-        shader->uniformVec3(loc + 3, (float*)uniAtmCameraPosition.data());
-        shader->uniformMat4(loc + 4, (float*)uniAtmViewInv.data());
+        shader->uniformVec3(loc + 3, uniAtmCameraPosition.data());
+        shader->uniformMat4(loc + 4, uniAtmViewInv.data());
 
         // bind atmosphere density texture
         glActiveTexture(GL_TEXTURE4);

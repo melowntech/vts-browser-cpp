@@ -77,6 +77,24 @@ public:
     UrlTemplate urlMask;
 };
 
+class BoundParamInfo : public vtslibs::registry::View::BoundLayerParams
+{
+public:
+    typedef std::vector<BoundParamInfo> List;
+
+    BoundParamInfo(const vtslibs::registry::View::BoundLayerParams &params);
+    mat3f uvMatrix() const;
+    Validity prepare(const NodeInfo &nodeInfo, MapImpl *impl,
+                     uint32 subMeshIndex, double priority);
+
+    UrlTemplate::Vars orig;
+    UrlTemplate::Vars vars;
+    BoundInfo *bound;
+    int depth;
+    bool watertight;
+    bool transparent;
+};
+
 class SurfaceInfo
 {
 public:
@@ -120,26 +138,6 @@ public:
 
     std::vector<SurfaceStackItem> surfaces;
 };
-
-/*
-class BoundParamInfo : public vtslibs::registry::View::BoundLayerParams
-{
-public:
-    typedef std::vector<BoundParamInfo> List;
-
-    BoundParamInfo(const vtslibs::registry::View::BoundLayerParams &params);
-    mat3f uvMatrix() const;
-    Validity prepare(const NodeInfo &nodeInfo, class MapImpl *impl,
-                     MapLayer *layer, uint32 subMeshIndex, double priority);
-
-    UrlTemplate::Vars orig;
-    UrlTemplate::Vars vars;
-    BoundInfo *bound;
-    int depth;
-    bool watertight;
-    bool transparent;
-};
-*/
 
 class RenderTask
 {
@@ -392,8 +390,8 @@ public:
     void renderTickPrepare();
     void renderTickRender();
     vtslibs::vts::TileId roundId(TileId nodeId);
-    //Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
-    //                       BoundParamInfo::List &boundList, double priority);
+    Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
+                           BoundParamInfo::List &boundList, double priority);
     void touchDraws(const RenderTask &task);
     void touchDraws(const std::vector<RenderTask> &renders);
     void touchDraws(TraverseNode *trav);

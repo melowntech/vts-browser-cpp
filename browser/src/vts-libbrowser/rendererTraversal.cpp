@@ -333,7 +333,6 @@ bool MapImpl::travDetermineDraws(TraverseNode *trav)
         std::shared_ptr<GpuMesh> mesh = part.renderable;
 
         // external bound textures
-        /*
         if (part.externalUv)
         {
             std::string surfaceName;
@@ -367,7 +366,7 @@ bool MapImpl::travDetermineDraws(TraverseNode *trav)
             {
                 // credits
                 {
-                    MapConfig::BoundInfo *l = b.bound;
+                    BoundInfo *l = b.bound;
                     assert(l);
                     for (auto &it : l->credits)
                     {
@@ -422,7 +421,6 @@ bool MapImpl::travDetermineDraws(TraverseNode *trav)
             if (!allTransparent)
                 continue;
         }
-        */
 
         // internal texture
         if (part.internalUv)

@@ -34,13 +34,30 @@ namespace vts
 using vtslibs::registry::View;
 using vtslibs::registry::BoundLayer;
 
-/*
+BoundInfo::BoundInfo(const vtslibs::registry::BoundLayer &bl,
+                                const std::string &url)
+    : BoundLayer(bl)
+{
+    urlExtTex.parse(convertPath(this->url, url));
+    if (metaUrl)
+    {
+        urlMeta.parse(convertPath(*metaUrl, url));
+        urlMask.parse(convertPath(*maskUrl, url));
+    }
+    if (bl.availability)
+    {
+        availability = std::make_shared<
+        vtslibs::registry::BoundLayer::Availability>(
+            *bl.availability);
+    }
+}
+
 BoundParamInfo::BoundParamInfo(const View::BoundLayerParams &params)
     : View::BoundLayerParams(params), orig(0), vars(0),
       bound(nullptr), depth(0), watertight(true), transparent(false)
 {}
 
-const mat3f BoundParamInfo::uvMatrix() const
+mat3f BoundParamInfo::uvMatrix() const
 {
     int dep = depth;
     if (dep == 0)
@@ -59,9 +76,9 @@ const mat3f BoundParamInfo::uvMatrix() const
 }
 
 Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
-                MapLayer *layer, uint32 subMeshIndex, double priority)
+                uint32 subMeshIndex, double priority)
 {
-    bound = layer->getBoundInfo(id);
+    bound = impl->mapConfig->getBoundInfo(id);
     if (!bound)
         return Validity::Indeterminate;
 
@@ -126,27 +143,7 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
 
     return Validity::Valid;
 }
-*/
 
-BoundInfo::BoundInfo(const vtslibs::registry::BoundLayer &bl,
-                                const std::string &url)
-    : BoundLayer(bl)
-{
-    urlExtTex.parse(convertPath(this->url, url));
-    if (metaUrl)
-    {
-        urlMeta.parse(convertPath(*metaUrl, url));
-        urlMask.parse(convertPath(*maskUrl, url));
-    }
-    if (bl.availability)
-    {
-        availability = std::make_shared<
-        vtslibs::registry::BoundLayer::Availability>(
-            *bl.availability);
-    }
-}
-
-/*
 Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
         uint32 subMeshIndex, BoundParamInfo::List &boundList, double priority)
 {
@@ -183,7 +180,6 @@ Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
 
     return Validity::Valid;
 }
-*/
 
 } // namespace vts
 

@@ -233,7 +233,6 @@ public:
 
     MapConfig(MapImpl *map, const std::string &name);
     void load() override;
-    void clear();
     vtslibs::registry::Srs::Type navigationSrsType() const;
 
     void consolidateView();

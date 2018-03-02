@@ -114,4 +114,29 @@ void BoundMaskTile::load()
     info.ramMemoryCost += sizeof(*this);
 }
 
+ExternalBoundLayer::ExternalBoundLayer(MapImpl *map, const std::string &name)
+    : Resource(map, name, FetchTask::ResourceType::BoundLayerConfig)
+{
+    priority = std::numeric_limits<float>::infinity();
+}
+
+void ExternalBoundLayer::load()
+{
+    detail::Wrapper w(reply.content);
+    *(vtslibs::registry::BoundLayer*)this
+            = vtslibs::registry::loadBoundLayer(w, name);
+}
+
+TilesetMapping::TilesetMapping(MapImpl *map, const std::string &name) :
+    Resource(map, name, FetchTask::ResourceType::TilesetMappingConfig)
+{
+    priority = std::numeric_limits<float>::infinity();
+}
+
+void TilesetMapping::load()
+{
+    LOG(info2) << "Loading tileset mapping <" << name << ">";
+    dataRaw = vtslibs::vts::deserializeTsMap(reply.content.str());
+}
+
 } // namespace vts

@@ -44,11 +44,19 @@ MapConfig::MapConfig(MapImpl *map, const std::string &name)
 void MapConfig::load()
 {
     assert(map->layers.empty());
-    clear();
     LOG(info3) << "Parsing map config <" << name << ">";
-    detail::Wrapper w(reply.content);
-    vtslibs::vts::loadMapConfig(*this, w, name);
 
+    // clear
+    *(vtslibs::vts::MapConfig*)this = vtslibs::vts::MapConfig();
+    browserOptions = BrowserOptions();
+
+    // load
+    {
+        detail::Wrapper w(reply.content);
+        vtslibs::vts::loadMapConfig(*this, w, name);
+    }
+
+    // search url on earth
     if (isEarth() || !map->createOptions.disableSearchUrlFallbackOutsideEarth)
     {
         browserOptions.searchUrl = map->createOptions.searchUrlFallback;
@@ -56,6 +64,7 @@ void MapConfig::load()
         browserOptions.searchFilter = map->options.enableSearchResultsFilter;
     }
 
+    // browser options
     auto bo(vtslibs::vts::browserOptions(*this));
     if (bo.isObject())
     {
@@ -79,16 +88,11 @@ void MapConfig::load()
     if (browserOptions.searchSrs.empty())
         browserOptions.searchUrl = "";
 
+    // store default view
     namedViews[""] = view;
 
     // memory use
     info.ramMemoryCost += sizeof(*this);
-}
-
-void MapConfig::clear()
-{
-    *(vtslibs::vts::MapConfig*)this = vtslibs::vts::MapConfig();
-    browserOptions = BrowserOptions();
 }
 
 vtslibs::registry::Srs::Type MapConfig::navigationSrsType() const
@@ -111,14 +115,8 @@ BoundInfo *MapConfig::getBoundInfo(const std::string &id)
             std::string url = convertPath(bl->url, name);
             std::shared_ptr<ExternalBoundLayer> r
                     = map->getExternalBoundLayer(url);
-            switch (map->getResourceValidity(r))
-            {
-            case Validity::Valid:
-                break;
-            case Validity::Indeterminate:
-            case Validity::Invalid:
-                return nullptr; // todo should behave differently when invalid
-            }
+            if (!testAndThrow(r->state, "External bound layer failure."))
+                return nullptr;
             boundInfos[bl->id] = std::make_shared<BoundInfo>(*r, url);
 
             // merge credits
@@ -131,6 +129,7 @@ BoundInfo *MapConfig::getBoundInfo(const std::string &id)
             boundInfos[bl->id] = std::make_shared<BoundInfo>(*bl, name);
         }
     }
+
     return nullptr;
 }
 

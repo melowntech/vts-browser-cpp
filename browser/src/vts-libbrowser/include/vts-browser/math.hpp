@@ -105,6 +105,8 @@ VTS_API vec3 angularDiff(const vec3 &a, const vec3 &b);
 
 VTS_API double aabbPointDist(const vec3 &point,
                              const vec3 &min, const vec3 &max);
+VTS_API bool aabbTest(const vec3 aabb[2], const vec4 planes[6]);
+VTS_API void frustumPlanes(const mat4 &vp, vec4 planes[6]);
 
 VTS_API vec3f convertRgbToHsv(const vec3f &inColor);
 VTS_API vec3f convertHsvToRgb(const vec3f &inColor);

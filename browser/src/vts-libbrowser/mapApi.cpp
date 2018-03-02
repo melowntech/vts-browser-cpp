@@ -121,7 +121,7 @@ MapView::BoundLayerInfo::BoundLayerInfo(const std::string &id) :
 Map::Map(const MapCreateOptions &options)
 {
     LOG(info3) << "Creating map";
-    impl = std::shared_ptr<MapImpl>(new MapImpl(this, options));
+    impl = std::make_shared<MapImpl>(this, options);
 }
 
 Map::~Map()

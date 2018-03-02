@@ -59,6 +59,7 @@ set(SRC_LIST
     resources/cache.cpp
     resources/fetcher.cpp
     resources/auth.cpp
+    resources/mapConfig.cpp
     image/image.hpp
     image/image.cpp
     image/png.cpp
@@ -78,9 +79,9 @@ set(SRC_LIST
     map.hpp
     mapApi.cpp
     mapUtilities.cpp
-    mapConfig.cpp
     mapLayer.cpp
     mapCelestialBody.cpp
+    mapDraws.cpp
     math.cpp
     mathColor.cpp
     navigation.cpp
@@ -95,6 +96,9 @@ set(SRC_LIST
     log.cpp
     boostProgramOptions.cpp
     sri.cpp
+    surfaceStack.cpp
+    traverseNode.cpp
+    boundLayers.cpp
     ${EXTRA_SRC_LIST}
 )
 

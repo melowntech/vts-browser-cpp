@@ -68,6 +68,7 @@ set(SRC_LIST
     utilities/threadName.hpp
     utilities/threadName.cpp
     utilities/json.hpp
+    utilities/array.hpp
     buffer.cpp
     credits.hpp
     credits.cpp
@@ -78,6 +79,8 @@ set(SRC_LIST
     mapApi.cpp
     mapUtilities.cpp
     mapConfig.cpp
+    mapLayer.cpp
+    mapCelestialBody.cpp
     math.cpp
     mathColor.cpp
     navigation.cpp

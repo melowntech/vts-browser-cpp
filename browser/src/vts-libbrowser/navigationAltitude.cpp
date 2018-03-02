@@ -48,9 +48,7 @@ double generalInterpolation(
     return a / b;
 }
 
-std::shared_ptr<TraverseNode> findTravById(
-        const std::shared_ptr<TraverseNode> &where,
-        const TileId &id)
+TraverseNode *findTravById(TraverseNode *where, const TileId &id)
 {
     assert(where);
     if (where->nodeInfo.nodeId().lod > id.lod)
@@ -59,19 +57,18 @@ std::shared_ptr<TraverseNode> findTravById(
         return where;
     for (auto &it : where->childs)
     {
-        auto r = findTravById(it, id);
+        auto r = findTravById(it.get(), id);
         if (r)
             return r;
     }
     return nullptr;
 }
 
-std::shared_ptr<TraverseNode> findTravSds(
-        const std::shared_ptr<TraverseNode> &where,
+TraverseNode *findTravSds(TraverseNode *where,
         const vec2 &pointSds, uint32 maxLod)
 {
     assert(where && where->meta);
-    std::shared_ptr<TraverseNode> t = where;
+    TraverseNode *t = where;
     while (t->nodeInfo.nodeId().lod < maxLod)
     {
         auto p = t;
@@ -81,7 +78,7 @@ std::shared_ptr<TraverseNode> findTravSds(
                 continue;
             if (!it->nodeInfo.inside(vecToUblas<math::Point2>(pointSds)))
                 continue;
-            t = it;
+            t = it.get();
             break;
         }
         if (t == p)
@@ -97,8 +94,10 @@ bool MapImpl::getPositionAltitude(double &result,
             const vec3 &navPos, double samples)
 {
     assert(convertor);
+    assert(!layers.empty());
 
-    if (!renderer.traverseRoot || !renderer.traverseRoot->meta)
+    TraverseNode *root = layers[0]->traverseRoot.get();
+    if (!root || !root->meta)
         return false;
 
     // find surface division coordinates (and appropriate node info)
@@ -163,7 +162,7 @@ bool MapImpl::getPositionAltitude(double &result,
     // find the actual corners
     double altitudes[4];
     uint32 minUsedLod = -1;
-    auto travRoot = findTravById(renderer.traverseRoot, info->nodeId());
+    auto travRoot = findTravById(root, info->nodeId());
     if (!travRoot || !travRoot->meta)
         return false;
     for (int i = 0; i < 4; i++)

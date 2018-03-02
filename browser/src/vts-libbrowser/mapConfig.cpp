@@ -24,55 +24,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <utility/uri.hpp>
-#include <boost/algorithm/string.hpp>
 #include <vts-libs/vts/mapconfig-json.hpp>
-#include <ogr_spatialref.h>
 
 #include "../map.hpp"
 
 namespace vts
 {
-
-MapCelestialBody::MapCelestialBody() :
-    majorRadius(0), minorRadius(0)
-{}
-
-MapCelestialBody::Atmosphere::Atmosphere() : thickness(0),
-    horizontalExponent(0), verticalExponent(0),
-    colorLow{0,0,0,0}, colorHigh{0,0,0,0}
-{}
-
-MapConfig::SurfaceInfo::SurfaceInfo(const SurfaceCommonConfig &surface,
-                         const std::string &parentPath)
-    : SurfaceCommonConfig(surface)
-{
-    urlMeta.parse(MapConfig::convertPath(urls3d->meta, parentPath));
-    urlMesh.parse(MapConfig::convertPath(urls3d->mesh, parentPath));
-    urlIntTex.parse(MapConfig::convertPath(urls3d->texture, parentPath));
-    urlNav.parse(MapConfig::convertPath(urls3d->nav, parentPath));
-}
-
-MapConfig::BoundInfo::BoundInfo(const vtslibs::registry::BoundLayer &bl,
-                                const std::string &url)
-    : BoundLayer(bl)
-{
-    urlExtTex.parse(MapConfig::convertPath(this->url, url));
-    if (metaUrl)
-    {
-        urlMeta.parse(MapConfig::convertPath(*metaUrl, url));
-        urlMask.parse(MapConfig::convertPath(*maskUrl, url));
-    }
-    if (bl.availability)
-    {
-        availability = std::make_shared<
-        vtslibs::registry::BoundLayer::Availability>(
-            *bl.availability);
-    }
-}
-
-MapConfig::SurfaceStackItem::SurfaceStackItem() : alien(false)
-{}
 
 MapConfig::BrowserOptions::BrowserOptions() :
     autorotate(0), searchFilter(true)
@@ -86,6 +43,7 @@ MapConfig::MapConfig(MapImpl *map, const std::string &name)
 
 void MapConfig::load()
 {
+    assert(map->layers.empty());
     clear();
     LOG(info3) << "Parsing map config <" << name << ">";
     detail::Wrapper w(reply.content);
@@ -130,16 +88,7 @@ void MapConfig::load()
 void MapConfig::clear()
 {
     *(vtslibs::vts::MapConfig*)this = vtslibs::vts::MapConfig();
-    surfaceInfos.clear();
-    boundInfos.clear();
-    surfaceStack.clear();
     browserOptions = BrowserOptions();
-}
-
-const std::string MapConfig::convertPath(const std::string &path,
-                                         const std::string &parent)
-{
-    return utility::Uri(parent).resolve(path).str();
 }
 
 vtslibs::registry::Srs::Type MapConfig::navigationSrsType() const
@@ -147,28 +96,7 @@ vtslibs::registry::Srs::Type MapConfig::navigationSrsType() const
     return srs.get(referenceFrame.model.navigationSrs).type;
 }
 
-vtslibs::vts::SurfaceCommonConfig *MapConfig::findGlue(
-        const vtslibs::vts::Glue::Id &id)
-{
-    for (auto &it : glues)
-    {
-        if (it.id == id)
-            return &it;
-    }
-    return nullptr;
-}
-
-vtslibs::vts::SurfaceCommonConfig *MapConfig::findSurface(const std::string &id)
-{
-    for (auto &it : surfaces)
-    {
-        if (it.id == id)
-            return &it;
-    }
-    return nullptr;
-}
-
-MapConfig::BoundInfo *MapConfig::getBoundInfo(const std::string &id)
+BoundInfo *MapConfig::getBoundInfo(const std::string &id)
 {
     auto it = boundInfos.find(id);
     if (it != boundInfos.end())
@@ -206,118 +134,26 @@ MapConfig::BoundInfo *MapConfig::getBoundInfo(const std::string &id)
     return nullptr;
 }
 
-void MapConfig::printSurfaceStack()
+vtslibs::vts::SurfaceCommonConfig *MapConfig::findGlue(
+        const vtslibs::vts::Glue::Id &id)
 {
-    std::ostringstream ss;
-    ss << "Surface stack: " << std::endl;
-    for (auto &l : surfaceStack)
-        ss << (l.alien ? "* " : "  ")
-           << std::setw(100) << std::left << (std::string()
-           + "[" + boost::algorithm::join(l.surface->name, ",") + "]")
-           << " " << l.color.transpose() << std::endl;
-    LOG(info3) << ss.str();
+    for (auto &it : glues)
+    {
+        if (it.id == id)
+            return &it;
+    }
+    return nullptr;
 }
 
-void MapConfig::generateSurfaceStack(const vtslibs::vts::VirtualSurfaceConfig
-                                     *virtualSurface)
+vtslibs::vts::SurfaceCommonConfig *MapConfig::findSurface(
+        const std::string &id)
 {
-    if (virtualSurface)
-    {
-        LOG(info2) << "Generating (virtual) surface stack for <"
-                   << boost::algorithm::join(virtualSurface->id, ",") << ">";
-        SurfaceStackItem i;
-        i.surface = std::make_shared<SurfaceInfo>(*virtualSurface, name);
-        i.color = vec3f(0,0,0);
-        surfaceStack.push_back(i);
-        return;
-    }
-
-    LOG(info2) << "Generating (real) surface stack";
-
-    // prepare initial surface stack
-    vtslibs::vts::TileSetGlues::list lst;
-    for (auto &s : view.surfaces)
-    {
-        vtslibs::vts::TileSetGlues ts(s.first);
-        for (auto &g : glues)
-        {
-            bool active = g.id.back() == ts.tilesetId;
-            for (auto &it : g.id)
-                if (view.surfaces.find(it) == view.surfaces.end())
-                    active = false;
-            if (active)
-                ts.glues.push_back(vtslibs::vts::Glue(g.id));
-        }
-        lst.push_back(ts);
-    }
-
-    // sort surfaces by their order in mapConfig
-    std::unordered_map<std::string, uint32> order;
-    uint32 i = 0;
     for (auto &it : surfaces)
-        order[it.id] = i++;
-    std::sort(lst.begin(), lst.end(), [order](
-              vtslibs::vts::TileSetGlues &a,
-              vtslibs::vts::TileSetGlues &b) mutable {
-        assert(order.find(a.tilesetId) != order.end());
-        assert(order.find(b.tilesetId) != order.end());
-        return order[a.tilesetId] < order[b.tilesetId];
-    });
-
-    // sort glues on surfaces
-    lst = vtslibs::vts::glueOrder(lst);
-    std::reverse(lst.begin(), lst.end());
-
-    // generate proper surface stack
-    assert(surfaceStack.empty());
-    for (auto &ts : lst)
     {
-        for (auto &g : ts.glues)
-        {
-            SurfaceStackItem i;
-            i.surface = std::shared_ptr<SurfaceInfo> (new SurfaceInfo(
-                    *findGlue(g.id), name));
-            i.surface->name = g.id;
-            surfaceStack.push_back(i);
-        }
-        SurfaceStackItem i;
-        i.surface = std::make_shared<SurfaceInfo>(*findSurface(ts.tilesetId),
-                                                  name);
-        i.surface->name = { ts.tilesetId };
-        surfaceStack.push_back(i);
+        if (it.id == id)
+            return &it;
     }
-
-    // generate alien surface stack positions
-    auto copy(surfaceStack);
-    for (auto &it : copy)
-    {
-        if (it.surface->name.size() > 1)
-        {
-            auto n2 = it.surface->name;
-            n2.pop_back();
-            std::string n = boost::join(n2, "|");
-            auto jt = surfaceStack.begin(), et = surfaceStack.end();
-            while (jt != et && boost::join(jt->surface->name, "|") != n)
-                jt++;
-            if (jt != et)
-            {
-                SurfaceStackItem i(it);
-                i.alien = true;
-                surfaceStack.insert(jt, i);
-            }
-        }
-    }
-
-    colorizeSurfaceStack(surfaceStack);
-}
-
-void MapConfig::colorizeSurfaceStack(std::vector<MapConfig::SurfaceStackItem>
-                                     &ss)
-{
-    for (auto it = ss.begin(),
-         et = ss.end(); it != et; it++)
-        it->color = convertHsvToRgb(vec3f((it - ss.begin())
-                                          / (float)ss.size(), 1, 1));
+    return nullptr;
 }
 
 void MapConfig::consolidateView()
@@ -362,56 +198,6 @@ void MapConfig::consolidateView()
 
     // remove invalid bound layers from free layers in current view
     // todo
-}
-
-bool MapConfig::isEarth() const
-{
-    auto n = srs(referenceFrame.model.physicalSrs);
-    auto r = n.srsDef.reference();
-    auto a = r.GetSemiMajor();
-    return std::abs(a - 6378137) < 50000;
-}
-
-void MapConfig::initializeCelestialBody() const
-{
-    map->body = MapCelestialBody();
-    auto n = srs(referenceFrame.model.physicalSrs);
-    auto r = n.srsDef.reference();
-    map->body.majorRadius = r.GetSemiMajor();
-    map->body.minorRadius = r.GetSemiMinor();
-    MapCelestialBody::Atmosphere &a = map->body.atmosphere;
-    if (isEarth())
-    {
-        map->body.name = "Earth";
-        a.thickness = map->body.majorRadius * 0.01;
-        a.horizontalExponent = 420;
-        a.verticalExponent = 7;
-        static vec4 lowColor = vec4(158, 206, 255, 255) / 255;
-        static vec4 highColor = vec4(62, 120, 229, 255) / 255;
-        for (int i = 0; i < 4; i++)
-        {
-            a.colorLow[i] = lowColor[i];
-            a.colorHigh[i] = highColor[i];
-        }
-    }
-    else if (std::abs(map->body.majorRadius - 3396200) < 30000)
-    {
-        map->body.name = "Mars";
-        a.thickness = map->body.majorRadius * 0.01;
-        a.horizontalExponent = 180;
-        a.verticalExponent = 7;
-        static vec4 lowColor = vec4(115, 100, 74, 255) / 255;
-        static vec4 highColor = vec4(115, 100, 74, 255) / 255;
-        for (int i = 0; i < 4; i++)
-        {
-            a.colorLow[i] = lowColor[i];
-            a.colorHigh[i] = highColor[i];
-        }
-    }
-    else
-    {
-        map->body.name = "<unknown>";
-    }
 }
 
 } // namespace vts

@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <utility/uri.hpp>
+
 #include "map.hpp"
 
 namespace vts
@@ -32,6 +34,7 @@ namespace vts
 using vtslibs::registry::View;
 using vtslibs::registry::BoundLayer;
 
+/*
 BoundParamInfo::BoundParamInfo(const View::BoundLayerParams &params)
     : View::BoundLayerParams(params), orig(0), vars(0),
       bound(nullptr), depth(0), watertight(true), transparent(false)
@@ -56,9 +59,9 @@ const mat3f BoundParamInfo::uvMatrix() const
 }
 
 Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
-                             uint32 subMeshIndex, double priority)
+                MapLayer *layer, uint32 subMeshIndex, double priority)
 {
-    bound = impl->mapConfig->getBoundInfo(id);
+    bound = layer->getBoundInfo(id);
     if (!bound)
         return Validity::Indeterminate;
 
@@ -123,6 +126,36 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
 
     return Validity::Valid;
 }
+*/
+
+SurfaceInfo::SurfaceInfo(const vtslibs::vts::SurfaceCommonConfig &surface,
+                         const std::string &parentPath)
+{
+    urlMeta.parse(convertPath(surface.urls3d->meta, parentPath));
+    urlMesh.parse(convertPath(surface.urls3d->mesh, parentPath));
+    urlIntTex.parse(convertPath(surface.urls3d->texture, parentPath));
+}
+
+BoundInfo::BoundInfo(const vtslibs::registry::BoundLayer &bl,
+                                const std::string &url)
+    : BoundLayer(bl)
+{
+    urlExtTex.parse(convertPath(this->url, url));
+    if (metaUrl)
+    {
+        urlMeta.parse(convertPath(*metaUrl, url));
+        urlMask.parse(convertPath(*maskUrl, url));
+    }
+    if (bl.availability)
+    {
+        availability = std::make_shared<
+        vtslibs::registry::BoundLayer::Availability>(
+            *bl.availability);
+    }
+}
+
+SurfaceStackItem::SurfaceStackItem() : alien(false)
+{}
 
 DrawTask::DrawTask() :
     color{0,0,0,1}, uvClip{-1,-1,2,2}, center{0,0,0},
@@ -218,8 +251,7 @@ TraverseNode::MetaInfo::MetaInfo(const MetaNode &node) :
     surrogatePhys(std::numeric_limits<double>::quiet_NaN(),
                   std::numeric_limits<double>::quiet_NaN(),
                   std::numeric_limits<double>::quiet_NaN()),
-    surrogateNav(std::numeric_limits<double>::quiet_NaN()),
-    surface(nullptr)
+    surrogateNav(std::numeric_limits<double>::quiet_NaN())
 {
     // initialize corners to NAN
     {
@@ -248,10 +280,14 @@ namespace
     }
 }
 
-TraverseNode::TraverseNode(TraverseNode *parent, const NodeInfo &nodeInfo)
-    : nodeInfo(nodeInfo), parent(parent), hash(hashf(nodeInfo)),
+TraverseNode::TraverseNode(vts::MapLayer *layer, TraverseNode *parent,
+                           const NodeInfo &nodeInfo)
+    : layer(layer), parent(parent),
+      nodeInfo(nodeInfo),
+      hash(hashf(nodeInfo)),
       lastAccessTime(0), lastRenderTime(0),
-      priority(std::numeric_limits<double>::quiet_NaN())
+      priority(std::numeric_limits<double>::quiet_NaN()),
+      surface(nullptr)
 {}
 
 TraverseNode::~TraverseNode()
@@ -308,42 +344,7 @@ TilesetMapping::TilesetMapping(MapImpl *map, const std::string &name) :
 void TilesetMapping::load()
 {
     LOG(info2) << "Loading tileset mapping <" << name << ">";
-    dataRaw = vtslibs::vts::deserializeTsMap(std::string(reply.content.data(),
-                                                         reply.content.size()));
-}
-
-void TilesetMapping::update(const std::vector<std::string> &vsId)
-{
-    surfaceStack.clear();
-    surfaceStack.reserve(dataRaw.size() + 1);
-    // the sourceReference in metanodes is one-based
-    surfaceStack.push_back(MapConfig::SurfaceStackItem());
-    for (auto &it : dataRaw)
-    {
-        if (it.size() == 1)
-        { // surface
-            MapConfig::SurfaceStackItem i;
-            i.surface = std::make_shared<MapConfig::SurfaceInfo>(
-                    *map->mapConfig->findSurface(vsId[it[0]]),
-                    map->mapConfig->name);
-            i.surface->name.push_back(vsId[it[0]]);
-            surfaceStack.push_back(i);
-        }
-        else
-        { // glue
-            std::vector<std::string> id;
-            id.reserve(it.size());
-            for (auto &it2 : it)
-                id.push_back(vsId[it2]);
-            MapConfig::SurfaceStackItem i;
-            i.surface = std::make_shared<MapConfig::SurfaceInfo>(
-                    *map->mapConfig->findGlue(id),
-                    map->mapConfig->name);
-            i.surface->name = id;
-            surfaceStack.push_back(i);
-        }
-    }
-    MapConfig::colorizeSurfaceStack(surfaceStack);
+    dataRaw = vtslibs::vts::deserializeTsMap(reply.content.str());
 }
 
 void MapImpl::applyCameraRotationNormalization(vec3 &rot)
@@ -419,6 +420,29 @@ double MapImpl::getMapRenderProgress()
             = std::max(resources.progressEstimationMaxResources, active);
     return double(resources.progressEstimationMaxResources - active)
             / resources.progressEstimationMaxResources;
+}
+
+bool testAndThrow(Resource::State state, const std::string &message)
+{
+    switch (state)
+    {
+    case Resource::State::errorRetry:
+    case Resource::State::downloaded:
+    case Resource::State::downloading:
+    case Resource::State::initializing:
+        return false;
+    case Resource::State::ready:
+        return true;
+    default:
+        LOGTHROW(err4, MapConfigException) << message;
+        throw;
+    }
+}
+
+std::string convertPath(const std::string &path,
+                        const std::string &parent)
+{
+    return utility::Uri(parent).resolve(path).str();
 }
 
 } // namespace vts

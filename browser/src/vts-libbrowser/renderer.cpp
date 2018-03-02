@@ -24,35 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <boost/utility/in_place_factory.hpp>
-
-#include "include/vts-browser/exceptions.hpp"
 #include "map.hpp"
 
 namespace vts
 {
-
-namespace
-{
-
-bool testAndThrow(Resource::State state, const std::string &message)
-{
-    switch (state)
-    {
-    case Resource::State::errorRetry:
-    case Resource::State::downloaded:
-    case Resource::State::downloading:
-    case Resource::State::initializing:
-        return false;
-    case Resource::State::ready:
-        return true;
-    default:
-        LOGTHROW(err4, MapConfigException) << message;
-        throw;
-    }
-}
-
-} // namespace
 
 MapImpl::Renderer::Renderer() :
     windowWidth(0), windowHeight(0), tickIndex(0)
@@ -116,13 +91,9 @@ void MapImpl::purgeViewCache()
     LOG(info2) << "Purge view cache";
 
     if (mapConfig)
-    {
         mapConfig->consolidateView();
-        mapConfig->surfaceStack.clear();
-    }
 
-    renderer.traverseRoot.reset();
-    renderer.tilesetMapping.reset();
+    layers.clear();
     statistics.resetFrame();
     draws = MapDraws();
     credits = MapCredits();
@@ -130,7 +101,7 @@ void MapImpl::purgeViewCache()
     initialized = false;
 }
 
-const TileId MapImpl::roundId(TileId nodeId)
+TileId MapImpl::roundId(TileId nodeId)
 {
     uint32 metaTileBinaryOrder = mapConfig->referenceFrame.metaBinaryOrder;
     return TileId (nodeId.lod,
@@ -165,16 +136,7 @@ void MapImpl::touchDraws(TraverseNode *trav)
 bool MapImpl::prerequisitesCheck()
 {
     if (resources.auth)
-    {
         resources.auth->checkTime();
-        touchResource(resources.auth);
-    }
-
-    if (mapConfig)
-        touchResource(mapConfig);
-
-    if (renderer.tilesetMapping)
-        touchResource(renderer.tilesetMapping);
 
     if (initialized)
         return true;
@@ -193,40 +155,15 @@ bool MapImpl::prerequisitesCheck()
     if (!testAndThrow(mapConfig->state, "Map config failure."))
         return false;
 
-    // check for virtual surface
-    if (!options.debugDisableVirtualSurfaces)
+    if (layers.empty())
+        layers.push_back(std::make_shared<MapLayer>(this));
+
+    for (auto &it : layers)
     {
-        std::vector<std::string> viewSurfaces;
-        viewSurfaces.reserve(mapConfig->view.surfaces.size());
-        for (auto &it : mapConfig->view.surfaces)
-            viewSurfaces.push_back(it.first);
-        std::sort(viewSurfaces.begin(), viewSurfaces.end());
-        for (vtslibs::vts::VirtualSurfaceConfig &it :mapConfig->virtualSurfaces)
-        {
-            std::vector<std::string> virtSurfaces(it.id.begin(), it.id.end());
-            if (virtSurfaces.size() != viewSurfaces.size())
-                continue;
-            std::vector<std::string> virtSurfaces2(virtSurfaces);
-            std::sort(virtSurfaces2.begin(), virtSurfaces2.end());
-            if (!boost::algorithm::equals(viewSurfaces, virtSurfaces2))
-                continue;
-            renderer.tilesetMapping = getTilesetMapping(MapConfig::convertPath(
-                                                it.mapping, mapConfig->name));
-            if (!testAndThrow(renderer.tilesetMapping->state,
-                              "Tileset mapping failure."))
-                return false;
-            mapConfig->generateSurfaceStack(&it);
-            renderer.tilesetMapping->update(virtSurfaces);
-            break;
-        }
+        if (!it->prerequisitesCheck())
+            return false;
     }
 
-    if (mapConfig->surfaceStack.empty())
-        mapConfig->generateSurfaceStack();
-
-    renderer.traverseRoot = std::make_shared<TraverseNode>(nullptr, NodeInfo(
-                    mapConfig->referenceFrame, TileId(), false, *mapConfig));
-    renderer.traverseRoot->priority = std::numeric_limits<double>::infinity();
     renderer.credits.merge(mapConfig.get());
     initializeNavigation();
     mapConfig->initializeCelestialBody();
@@ -234,7 +171,7 @@ bool MapImpl::prerequisitesCheck()
     LOG(info3) << "Map config ready";
     initialized = true;
     if (callbacks.mapconfigReady)
-        callbacks.mapconfigReady();
+        callbacks.mapconfigReady(); // this may change initialized state
     return initialized;
 }
 
@@ -246,24 +183,26 @@ void MapImpl::renderTickPrepare()
     assert(!resources.auth || *resources.auth);
     assert(mapConfig && *mapConfig);
     assert(convertor);
-    assert(renderer.traverseRoot);
+    assert(!layers.empty());
+    assert(layers[0]->traverseRoot);
 
     updateNavigation();
     updateSearch();
     updateSris();
-    traverseClearing(renderer.traverseRoot.get());
+    for (auto &it : layers)
+        traverseClearing(it->traverseRoot.get());
 }
 
 void MapImpl::renderTickRender()
 {
     draws.clear();
 
-    if (!initialized || mapConfig->surfaceStack.empty()
-            || renderer.windowWidth == 0 || renderer.windowHeight == 0)
+    if (!initialized || renderer.windowWidth == 0 || renderer.windowHeight == 0)
         return;
 
     updateCamera();
-    traverseRender(renderer.traverseRoot.get());
+    for (auto &it : layers)
+        traverseRender(it->traverseRoot.get());
     renderer.credits.tick(credits);
     for (const RenderTask &r : navigation.renders)
         draws.Infographic.emplace_back(r, this);

@@ -704,7 +704,14 @@ void MapImpl::printDebugInfo()
     LOG(info3) << "Named views: " << boost::join(map->getViewNames(), ", ");
     LOG(info3) << "Current view name: " << map->getViewCurrent();
     LOG(info3) << "Current view data: " << map->getViewJson("");
-    mapConfig->printSurfaceStack();
+
+    for (auto &it : layers)
+    {
+        if (it->surfaceStack)
+            it->surfaceStack->print();
+        if (it->tilesetStack)
+            it->tilesetStack->print();
+    }
 }
 
 } // namespace vts

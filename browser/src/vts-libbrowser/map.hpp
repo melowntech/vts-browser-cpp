@@ -87,12 +87,16 @@ public:
     Validity prepare(const NodeInfo &nodeInfo, MapImpl *impl,
                      uint32 subMeshIndex, double priority);
 
-    UrlTemplate::Vars orig;
-    UrlTemplate::Vars vars;
+    std::shared_ptr<Resource> textureColor;
+    std::shared_ptr<Resource> textureMask;
     BoundInfo *bound;
-    int depth;
-    bool watertight;
     bool transparent;
+
+private:
+    Validity prepareDepth(MapImpl *impl, double priority);
+
+    UrlTemplate::Vars orig;
+    sint32 depth;
 };
 
 class SurfaceInfo

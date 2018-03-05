@@ -378,34 +378,8 @@ bool MapImpl::travDetermineDraws(TraverseNode *trav)
 
                 // draw task
                 RenderTask task;
-                task.textureColor = getTexture(b.bound->urlExtTex(b.vars));
-                task.textureColor->updatePriority(trav->priority);
-                task.textureColor->availTest = b.bound->availability;
-                switch (getResourceValidity(task.textureColor))
-                {
-                case Validity::Indeterminate:
-                    determined = false;
-                    // no break here
-                case Validity::Invalid:
-                    continue;
-                case Validity::Valid:
-                    break;
-                }
-                if (!b.watertight)
-                {
-                    task.textureMask = getTexture(b.bound->urlMask(b.vars));
-                    task.textureMask->updatePriority(trav->priority);
-                    switch (getResourceValidity(task.textureMask))
-                    {
-                    case Validity::Indeterminate:
-                        determined = false;
-                        // no break here
-                    case Validity::Invalid:
-                        continue;
-                    case Validity::Valid:
-                        break;
-                    }
-                }
+                task.textureColor = b.textureColor;
+                task.textureMask = b.textureMask;
                 task.color(3) = b.alpha ? *b.alpha : 1;
                 task.meshAgg = meshAgg;
                 task.mesh = mesh;

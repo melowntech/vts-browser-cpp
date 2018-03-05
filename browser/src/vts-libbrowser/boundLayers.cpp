@@ -53,20 +53,20 @@ BoundInfo::BoundInfo(const vtslibs::registry::BoundLayer &bl,
 }
 
 BoundParamInfo::BoundParamInfo(const View::BoundLayerParams &params)
-    : View::BoundLayerParams(params), orig(0), vars(0),
-      bound(nullptr), depth(0), watertight(true), transparent(false)
+    : View::BoundLayerParams(params),
+      bound(nullptr), transparent(false),
+      orig(0), depth(0)
 {}
 
 mat3f BoundParamInfo::uvMatrix() const
 {
-    int dep = depth;
-    if (dep == 0)
+    if (depth == 0)
         return identityMatrix3().cast<float>();
-    double scale = 1.0 / (1 << dep);
+    double scale = 1.0 / (1 << depth);
     double tx = scale * (orig.localId.x
-                         - ((orig.localId.x >> dep) << dep));
+                         - ((orig.localId.x >> depth) << depth));
     double ty = scale * (orig.localId.y
-                         - ((orig.localId.y >> dep) << dep));
+                         - ((orig.localId.y >> depth) << depth));
     ty = 1 - scale - ty;
     mat3f m;
     m << scale, 0, tx,
@@ -96,10 +96,34 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
             return Validity::Invalid;
     }
 
-    orig = vars = UrlTemplate::Vars(nodeInfo.nodeId(), local(nodeInfo),
-                                    subMeshIndex);
+    orig = UrlTemplate::Vars(nodeInfo.nodeId(),
+                                local(nodeInfo), subMeshIndex);
 
     depth = std::max(nodeInfo.nodeId().lod - bound->lodRange.max, 0);
+
+    while (true)
+    {
+        assert(nodeInfo.nodeId().lod - depth >= bound->lodRange.min
+            && nodeInfo.nodeId().lod - depth <= bound->lodRange.max);
+        switch (prepareDepth(impl, priority))
+        {
+        case Validity::Indeterminate:
+            return Validity::Indeterminate;
+        case Validity::Invalid:
+            break;
+        case Validity::Valid:
+            return Validity::Valid;
+        }
+        if (nodeInfo.nodeId().lod - depth == bound->lodRange.min)
+            return Validity::Invalid;
+        depth++;
+    }
+}
+
+Validity BoundParamInfo::prepareDepth(MapImpl *impl, double priority)
+{
+    UrlTemplate::Vars vars = orig;
+
     if (depth > 0)
     {
         vars.tileId.lod -= depth;
@@ -111,6 +135,7 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
     }
 
     // bound meta node
+    bool watertight = true;
     if (bound->metaUrl)
     {
         UrlTemplate::Vars v(vars);
@@ -140,6 +165,35 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
     }
 
     transparent = bound->isTransparent || (!!alpha && *alpha < 1);
+
+    textureColor = impl->getTexture(bound->urlExtTex(vars));
+    textureColor->updatePriority(priority);
+    textureColor->availTest = bound->availability;
+    switch (impl->getResourceValidity(textureColor))
+    {
+    case Validity::Indeterminate:
+        return Validity::Indeterminate;
+    case Validity::Invalid:
+        return Validity::Invalid;
+    case Validity::Valid:
+        break;
+    }
+    if (!watertight)
+    {
+        textureMask = impl->getTexture(bound->urlMask(vars));
+        textureMask->updatePriority(priority);
+        switch (impl->getResourceValidity(textureMask))
+        {
+        case Validity::Indeterminate:
+            return Validity::Indeterminate;
+        case Validity::Invalid:
+            return Validity::Invalid;
+        case Validity::Valid:
+            break;
+        }
+    }
+    else
+        textureMask.reset();
 
     return Validity::Valid;
 }
@@ -172,7 +226,7 @@ Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
     // skip overlapping layers
     std::reverse(boundList.begin(), boundList.end());
     auto it = boundList.begin(), et = boundList.end();
-    while (it != et && (!it->watertight || it->transparent))
+    while (it != et && (it->textureMask || it->transparent))
         it++;
     if (it != et)
         boundList.erase(++it, et);

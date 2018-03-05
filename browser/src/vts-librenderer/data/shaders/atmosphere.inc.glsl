@@ -117,7 +117,7 @@ float atmDensity(vec3 fragVect)
 vec4 atmColor(float density, vec4 color)
 {
     density = clamp(density, 0.0, 1.0);
-    vec4 ac = mix(uniAtmColorLow, uniAtmColorHigh, pow(1.0 - density, 0.3));
-    return mix(color, ac, density);
+    vec3 a = mix(uniAtmColorLow.rgb, uniAtmColorHigh.rgb, pow(1.0 - density, 0.3));
+    return vec4(mix(color.rgb, a, density), color.a);
 }
 

@@ -24,68 +24,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dbglog/dbglog.hpp>
-#include "include/vts-browser/log.hpp"
-#include "utilities/threadName.hpp"
+#include "../map.hpp"
 
 namespace vts
 {
 
-void setLogMask(const std::string &mask)
+GeodataFeatures::GeodataFeatures(vts::MapImpl *map, const std::string &name) :
+    Resource(map, name, FetchTask::ResourceType::GeodataFeatures)
+{}
+
+void GeodataFeatures::load()
 {
-    dbglog::set_mask(mask);
+    LOG(info2) << "Loading geodata features <" << name << ">";
+    // todo
 }
 
-void setLogMask(LogLevel mask)
-{
-    dbglog::set_mask((dbglog::level)mask);
-}
+GeodataStylesheet::GeodataStylesheet(MapImpl *map, const std::string &name) :
+    Resource(map, name, FetchTask::ResourceType::GeodataStylesheet)
+{}
 
-void setLogConsole(bool enable)
+void GeodataStylesheet::load()
 {
-    dbglog::log_console(enable);
-}
-
-void setLogFile(const std::string &filename)
-{
-    dbglog::log_file(filename);
-}
-
-void setLogThreadName(const std::string &name)
-{
-    dbglog::thread_id(name);
-    setThreadName((name.c_str()));
-}
-
-namespace
-{
-
-class LogSink : public dbglog::Sink
-{
-public:
-    LogSink(LogLevel mask, std::function<void(const std::string&)> callback)
-        : Sink((dbglog::level)mask, "app log sink"), callback(callback)
-    {}
-    
-    virtual void write(const std::string &line)
-    {
-        callback(line);
-    }
-    
-    std::function<void(const std::string&)> callback;
-};
-
-} // namespace
-
-void addLogSink(LogLevel mask, std::function<void(const std::string&)> callback)
-{
-    auto s = boost::shared_ptr<LogSink>(new LogSink(mask, callback));
-    dbglog::add_sink(s);
-}
-
-void log(LogLevel level, const std::string &message)
-{
-    LOGR((dbglog::level)level) << message;
+    LOG(info2) << "Loading geodata stylesheet <" << name << ">";
+    // todo
 }
 
 } // namespace vts

@@ -482,6 +482,46 @@ double aabbPointDist(const vec3 &point, const vec3 &min, const vec3 &max)
     return sqrt(r);
 }
 
+bool aabbTest(const vec3 aabb[2], const vec4 planes[6])
+{
+    for (uint32 i = 0; i < 6; i++)
+    {
+        const vec4 &p = planes[i]; // current plane
+        vec3 pv = vec3( // current p-vertex
+                aabb[!!(p[0] > 0)](0),
+                aabb[!!(p[1] > 0)](1),
+                aabb[!!(p[2] > 0)](2));
+        double d = dot(vec4to3(p), pv);
+        if (d < -p[3])
+            return false;
+    }
+    return true;
+}
+
+namespace
+{
+
+vec4 column(const mat4 &m, uint32 index)
+{
+    return vec4(m(index, 0), m(index, 1), m(index, 2), m(index, 3));
+}
+
+} // namespace
+
+void frustumPlanes(const mat4 &vp, vec4 planes[6])
+{
+    vec4 c0 = column(vp, 0);
+    vec4 c1 = column(vp, 1);
+    vec4 c2 = column(vp, 2);
+    vec4 c3 = column(vp, 3);
+    planes[0] = c3 + c0;
+    planes[1] = c3 - c0;
+    planes[2] = c3 + c1;
+    planes[3] = c3 - c1;
+    planes[4] = c3 + c2;
+    planes[5] = c3 - c2;
+}
+
 vec3 rawToVec3(const double v[3])
 {
     return vec3(v[0], v[1], v[2]);

@@ -26,8 +26,8 @@
 
 #include <vts-libs/vts/meshio.hpp>
 
-#include "map.hpp"
-#include "image.hpp"
+#include "../map.hpp"
+#include "../image/image.hpp"
 
 namespace vts
 {
@@ -89,6 +89,31 @@ void BoundMetaTile::load()
     memcpy(flags, spec.buffer.data(), spec.buffer.size());
     info.ramMemoryCost += sizeof(*this);
     info.ramMemoryCost += spec.buffer.size();
+}
+
+ExternalBoundLayer::ExternalBoundLayer(MapImpl *map, const std::string &name)
+    : Resource(map, name, FetchTask::ResourceType::BoundLayerConfig)
+{
+    priority = std::numeric_limits<float>::infinity();
+}
+
+void ExternalBoundLayer::load()
+{
+    detail::Wrapper w(reply.content);
+    *(vtslibs::registry::BoundLayer*)this
+            = vtslibs::registry::loadBoundLayer(w, name);
+}
+
+TilesetMapping::TilesetMapping(MapImpl *map, const std::string &name) :
+    Resource(map, name, FetchTask::ResourceType::TilesetMappingConfig)
+{
+    priority = std::numeric_limits<float>::infinity();
+}
+
+void TilesetMapping::load()
+{
+    LOG(info2) << "Loading tileset mapping <" << name << ">";
+    dataRaw = vtslibs::vts::deserializeTsMap(reply.content.str());
 }
 
 } // namespace vts

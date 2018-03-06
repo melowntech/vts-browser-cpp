@@ -27,7 +27,7 @@
 #include <utility/uri.hpp>
 
 #include "map.hpp"
-#include "json.hpp"
+#include "utilities/json.hpp"
 
 namespace vts
 {
@@ -261,7 +261,8 @@ SearchTask::~SearchTask()
 
 void SearchTask::updateDistances(const double point[3])
 {
-    if (impl->map->mapConfig->browserOptions.searchUrl != impl->validityUrl
+    if (!impl->map->mapConfig || !impl->map->initialized
+        || impl->map->mapConfig->browserOptions.searchUrl != impl->validityUrl
         || impl->map->mapConfig->browserOptions.searchSrs != impl->validitySrs)
     {
         LOGTHROW(err1, std::runtime_error) << "Search is no longer valid";
@@ -277,7 +278,7 @@ std::shared_ptr<SearchTask> MapImpl::search(const std::string &query,
 {
     auto t = std::make_shared<SearchTask>(query, point);
     t->impl = getSearchTask(generateSearchUrl(this, query));
-    t->impl->priority = std::numeric_limits<double>::infinity();
+    t->impl->priority = std::numeric_limits<float>::infinity();
     t->impl->query.headers["Accept-Language"] = "en-US,en";
     resources.searchTasks.push_back(t);
     return t;

@@ -24,29 +24,36 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "map.hpp"
+#ifndef CACHE_werfzugsjsef
+#define CACHE_werfzugsjsef
+
+#include <string>
+#include <ctime>
+#include <memory>
+
+#include "../include/vts-browser/buffer.hpp"
 
 namespace vts
 {
 
-GeodataFeatures::GeodataFeatures(vts::MapImpl *map, const std::string &name) :
-    Resource(map, name, FetchTask::ResourceType::GeodataFeatures)
-{}
-
-void GeodataFeatures::load()
+class Cache
 {
-    LOG(info2) << "Loading geodata features <" << name << ">";
-    // todo
-}
+public:
+    virtual ~Cache();
 
-GeodataStylesheet::GeodataStylesheet(MapImpl *map, const std::string &name) :
-    Resource(map, name, FetchTask::ResourceType::GeodataStylesheet)
-{}
+    virtual bool read(std::string name, Buffer &buffer,
+                      sint64 &expires) = 0;
+    virtual void write(std::string name, const Buffer &buffer,
+                       sint64 expires) = 0;
+    virtual void purge() = 0;
 
-void GeodataStylesheet::load()
-{
-    LOG(info2) << "Loading geodata stylesheet <" << name << ">";
-    // todo
-}
+    static std::shared_ptr<Cache> create(const class MapCreateOptions &options);
+};
+
+std::string convertNameToPath(std::string path, bool preserveSlashes);
+std::string convertNameToFolderAndFile(std::string path,
+                    std::string &folder, std::string &file);
 
 } // namespace vts
+
+#endif

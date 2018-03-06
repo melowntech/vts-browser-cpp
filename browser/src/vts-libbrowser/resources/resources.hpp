@@ -37,9 +37,9 @@
 #include <vts-libs/vts/metatile.hpp>
 #include <vts-libs/vts/tsmap.hpp>
 
-#include "include/vts-browser/resources.hpp"
-#include "include/vts-browser/math.hpp"
-#include "include/vts-browser/fetcher.hpp"
+#include "../include/vts-browser/resources.hpp"
+#include "../include/vts-browser/math.hpp"
+#include "../include/vts-browser/fetcher.hpp"
 
 #ifndef NDEBUG
     // some debuggers are unable to show contents of unordered containers
@@ -136,82 +136,6 @@ public:
     void load() override;
 };
 
-class MapConfig : public Resource, public vtslibs::vts::MapConfig
-{
-public:
-    class BoundInfo : public vtslibs::registry::BoundLayer
-    {
-    public:
-        BoundInfo(const vtslibs::registry::BoundLayer &bl,
-                  const std::string &url);
-
-        std::shared_ptr<vtslibs::registry::BoundLayer::Availability>
-                                        availability;
-        vtslibs::vts::UrlTemplate urlExtTex;
-        vtslibs::vts::UrlTemplate urlMeta;
-        vtslibs::vts::UrlTemplate urlMask;
-    };
-
-    class SurfaceInfo : public vtslibs::vts::SurfaceCommonConfig
-    {
-    public:
-        SurfaceInfo(const SurfaceCommonConfig &surface,
-                    const std::string &parentPath);
-
-        vtslibs::vts::UrlTemplate urlMeta;
-        vtslibs::vts::UrlTemplate urlMesh;
-        vtslibs::vts::UrlTemplate urlIntTex;
-        vtslibs::vts::UrlTemplate urlNav;
-        vtslibs::vts::TilesetIdList name;
-    };
-
-    class SurfaceStackItem
-    {
-    public:
-        SurfaceStackItem();
-        
-        std::shared_ptr<SurfaceInfo> surface;
-        vec3f color;
-        bool alien;
-    };
-
-    class BrowserOptions
-    {
-    public:
-        BrowserOptions();
-        
-        std::string searchUrl;
-        std::string searchSrs;
-        double autorotate;
-        bool searchFilter;
-    };
-
-    MapConfig(MapImpl *map, const std::string &name);
-    void load() override;
-    void clear();
-    static const std::string convertPath(const std::string &path,
-                                         const std::string &parent);
-    vtslibs::registry::Srs::Type navigationSrsType() const;
-
-    vtslibs::vts::SurfaceCommonConfig *findGlue(
-            const vtslibs::vts::Glue::Id &id);
-    vtslibs::vts::SurfaceCommonConfig *findSurface(const std::string &id);
-    BoundInfo *getBoundInfo(const std::string &id);
-    void printSurfaceStack();
-    void generateSurfaceStack(const vtslibs::vts::VirtualSurfaceConfig
-                              *virtualSurface = nullptr);
-    static void colorizeSurfaceStack(std::vector<MapConfig::SurfaceStackItem>
-                                     &surfaceStack);
-    void consolidateView();
-    void initializeCelestialBody() const;
-    bool isEarth() const;
-
-    std::unordered_map<std::string, std::shared_ptr<SurfaceInfo>> surfaceInfos;
-    std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
-    std::vector<SurfaceStackItem> surfaceStack;
-    BrowserOptions browserOptions;
-};
-
 class BoundMetaTile : public Resource
 {
 public:
@@ -277,10 +201,8 @@ class TilesetMapping : public Resource
 public:
     TilesetMapping(MapImpl *map, const std::string &name);
     void load() override;
-    void update(const std::vector<std::string> &vsId);
 
     vtslibs::vts::TilesetReferencesList dataRaw;
-    std::vector<MapConfig::SurfaceStackItem> surfaceStack;
 };
 
 class SriIndex : public Resource

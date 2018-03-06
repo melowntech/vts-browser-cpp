@@ -32,9 +32,9 @@
 #include "include/vts-browser/buffer.hpp"
 
 #ifdef _WIN32
-#include <windows.h>
+#include <windows.h> // GetCurrentProcessId
 #else
-#include <unistd.h>
+#include <unistd.h> // getpid
 #endif
 
 namespace vts

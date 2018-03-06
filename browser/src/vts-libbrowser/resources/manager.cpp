@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "include/vts-browser/map.hpp"
-#include "map.hpp"
+#include "../include/vts-browser/map.hpp"
+#include "../map.hpp"
 
 namespace vts
 {

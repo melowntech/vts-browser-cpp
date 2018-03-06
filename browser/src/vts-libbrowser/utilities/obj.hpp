@@ -24,35 +24,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CACHE_werfzugsjsef
-#define CACHE_werfzugsjsef
+#ifndef OBJ_H_wrtzeubfnjk
+#define OBJ_H_wrtzeubfnjk
 
 #include <string>
-#include <ctime>
-#include <memory>
 
-#include "include/vts-browser/buffer.hpp"
+#include "../include/vts-browser/buffer.hpp"
 
 namespace vts
 {
 
-class Cache
-{
-public:
-    virtual ~Cache();
-
-    virtual bool read(std::string name, Buffer &buffer,
-                      sint64 &expires) = 0;
-    virtual void write(std::string name, const Buffer &buffer,
-                       sint64 expires) = 0;
-    virtual void purge() = 0;
-
-    static std::shared_ptr<Cache> create(const class MapCreateOptions &options);
-};
-
-std::string convertNameToPath(std::string path, bool preserveSlashes);
-std::string convertNameToFolderAndFile(std::string path,
-                    std::string &folder, std::string &file);
+void decodeObj(const Buffer &in, uint32 &outFaceMode,
+               Buffer &outVertices, Buffer &outIndices,
+               uint32 &vertices, uint32 &indices);
 
 } // namespace vts
 

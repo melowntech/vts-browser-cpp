@@ -32,7 +32,7 @@
 #include "include/vts-browser/map.hpp"
 #include "include/vts-browser/view.hpp"
 #include "map.hpp"
-#include "json.hpp"
+#include "utilities/json.hpp"
 
 namespace vts
 {
@@ -121,7 +121,7 @@ MapView::BoundLayerInfo::BoundLayerInfo(const std::string &id) :
 Map::Map(const MapCreateOptions &options)
 {
     LOG(info3) << "Creating map";
-    impl = std::shared_ptr<MapImpl>(new MapImpl(this, options));
+    impl = std::make_shared<MapImpl>(this, options);
 }
 
 Map::~Map()
@@ -704,7 +704,14 @@ void MapImpl::printDebugInfo()
     LOG(info3) << "Named views: " << boost::join(map->getViewNames(), ", ");
     LOG(info3) << "Current view name: " << map->getViewCurrent();
     LOG(info3) << "Current view data: " << map->getViewJson("");
-    mapConfig->printSurfaceStack();
+
+    for (auto &it : layers)
+    {
+        if (it->surfaceStack)
+            it->surfaceStack->print();
+        if (it->tilesetStack)
+            it->tilesetStack->print();
+    }
 }
 
 } // namespace vts

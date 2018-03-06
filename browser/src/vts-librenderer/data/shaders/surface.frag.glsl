@@ -6,30 +6,29 @@ uniform vec4 uniColor;
 uniform vec4 uniUvClip;
 uniform ivec4 uniFlags; // mask, monochromatic, flat shading, uv source
 
-in vec2 varUvInternal;
-in vec2 varUvExternal;
+in vec2 varUvTex;
+in vec2 varUvClip;
 in vec3 varViewPosition;
 
 layout(location = 0) out vec4 outColor;
 
 void main()
 {
-    vec2 uv = uniFlags.w > 0 ? varUvExternal : varUvInternal;
-    vec4 color = texture(texColor, uv);
+    vec4 color = texture(texColor, varUvTex);
+
+    // uv clipping
+    if (varUvClip.x < uniUvClip.x
+            || varUvClip.y < uniUvClip.y
+            || varUvClip.x > uniUvClip.z
+            || varUvClip.y > uniUvClip.w)
+        discard;
 
     // mask
     if (uniFlags.x > 0)
     {
-        if (texture(texMask, uv).r < 0.5)
+        if (texture(texMask, varUvTex).r < 0.5)
             discard;
     }
-
-    // uv clipping
-    if (varUvExternal.x < uniUvClip.x
-            || varUvExternal.y < uniUvClip.y
-            || varUvExternal.x > uniUvClip.z
-            || varUvExternal.y > uniUvClip.w)
-        discard;
 
     // base color
     if (uniFlags.z > 0)

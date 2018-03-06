@@ -25,7 +25,7 @@
  */
 
 #include "map.hpp"
-#include "piha.hpp"
+#include "navigationPiha.hpp"
 
 namespace vts
 {
@@ -35,6 +35,39 @@ MapImpl::Navigation::Navigation() :
     targetViewExtent(0), mode(NavigationMode::Azimuthal),
     previousType(NavigationType::Quick)
 {}
+
+void MapImpl::applyCameraRotationNormalization(vec3 &rot)
+{
+    if (!options.enableCameraNormalization
+            || options.navigationType == NavigationType::FlyOver)
+        return;
+
+    // find the interpolation factor
+    double extCur = mapConfig->position.verticalExtent;
+    double extLow = options.viewExtentThresholdScaleLow * body.majorRadius;
+    double extHig = options.viewExtentThresholdScaleHigh * body.majorRadius;
+    extCur = std::log2(extCur);
+    extLow = std::log2(extLow);
+    extHig = std::log2(extHig);
+    double f = (extCur - extLow) / (extHig - extLow);
+    f = clamp(f, 0, 1);
+    f = smootherstep(f);
+
+    // tilt limit
+    rot(1) = interpolate(rot(1), options.tiltLimitAngleLow, f);
+
+    // yaw limit
+    double &yaw = rot(0);
+    if (options.navigationMode == NavigationMode::Azimuthal)
+        yaw = 0;
+    else if (options.navigationMode == NavigationMode::Seamless)
+    {
+        if (yaw > 180)
+            yaw = 360 - interpolate(360 - yaw, 0, f);
+        else
+            yaw = interpolate(yaw, 0, f);
+    }
+}
 
 void MapImpl::resetNavigationMode()
 {

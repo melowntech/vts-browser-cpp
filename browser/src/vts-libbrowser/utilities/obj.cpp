@@ -26,7 +26,7 @@
 
 #include <geometry/parse-obj.hpp>
 
-#include "include/vts-browser/math.hpp"
+#include "../include/vts-browser/math.hpp"
 #include "obj.hpp"
 
 namespace vts

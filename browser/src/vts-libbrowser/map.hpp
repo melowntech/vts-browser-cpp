@@ -29,6 +29,7 @@
 
 #include <queue>
 #include <boost/thread/mutex.hpp>
+#include <boost/utility/in_place_factory.hpp>
 #include <vts-libs/vts/urltemplate.hpp>
 #include <vts-libs/vts/nodeinfo.hpp>
 #include <dbglog/dbglog.hpp>
@@ -39,11 +40,13 @@
 #include "include/vts-browser/search.hpp"
 #include "include/vts-browser/draws.hpp"
 #include "include/vts-browser/math.hpp"
+#include "include/vts-browser/exceptions.hpp"
 
-#include "resources.hpp"
+#include "resources/resources.hpp"
+#include "resources/cache.hpp"
 #include "credits.hpp"
 #include "coordsManip.hpp"
-#include "cache.hpp"
+#include "utilities/array.hpp"
 
 namespace vts
 {
@@ -59,22 +62,85 @@ enum class Validity
     Valid,
 };
 
+class MapLayer;
+
+class BoundInfo : public vtslibs::registry::BoundLayer
+{
+public:
+    BoundInfo(const vtslibs::registry::BoundLayer &bl,
+              const std::string &url);
+
+    std::shared_ptr<vtslibs::registry::BoundLayer::Availability>
+                                    availability;
+    UrlTemplate urlExtTex;
+    UrlTemplate urlMeta;
+    UrlTemplate urlMask;
+};
+
 class BoundParamInfo : public vtslibs::registry::View::BoundLayerParams
 {
 public:
     typedef std::vector<BoundParamInfo> List;
 
     BoundParamInfo(const vtslibs::registry::View::BoundLayerParams &params);
-    const mat3f uvMatrix() const;
-    Validity prepare(const NodeInfo &nodeInfo, class MapImpl *impl,
-                 uint32 subMeshIndex, double priority);
+    mat3f uvMatrix() const;
+    Validity prepare(const NodeInfo &nodeInfo, MapImpl *impl,
+                     uint32 subMeshIndex, double priority);
+
+    std::shared_ptr<Resource> textureColor;
+    std::shared_ptr<Resource> textureMask;
+    BoundInfo *bound;
+    bool transparent;
+
+private:
+    Validity prepareDepth(MapImpl *impl, double priority);
 
     UrlTemplate::Vars orig;
-    UrlTemplate::Vars vars;
-    MapConfig::BoundInfo *bound;
-    int depth;
-    bool watertight;
-    bool transparent;
+    sint32 depth;
+};
+
+class SurfaceInfo
+{
+public:
+    SurfaceInfo(const vtslibs::vts::SurfaceCommonConfig &surface,
+                const std::string &parentPath);
+    SurfaceInfo(const vtslibs::registry::FreeLayer::MeshTiles &surface,
+                const std::string &parentPath);
+
+    vtslibs::storage::LodRange lodRange;
+    vtslibs::registry::TileRange tileRange;
+    UrlTemplate urlMeta;
+    UrlTemplate urlMesh;
+    UrlTemplate urlIntTex;
+    vtslibs::vts::TilesetIdList name;
+};
+
+class SurfaceStackItem
+{
+public:
+    SurfaceStackItem();
+
+    std::shared_ptr<SurfaceInfo> surface;
+    vec3f color;
+    bool alien;
+};
+
+class SurfaceStack
+{
+public:
+    void print();
+    void colorize();
+
+    void generateVirtual(MapImpl *map,
+            const vtslibs::vts::VirtualSurfaceConfig *virtualSurface);
+    void generateTileset(MapImpl *map,
+            const std::vector<std::string> &vsId,
+            const vtslibs::vts::TilesetReferencesList &dataRaw);
+    void generateFree(MapImpl *map,
+            const vtslibs::registry::FreeLayer *freeLayer);
+    void generateReal(MapImpl *map);
+
+    std::vector<SurfaceStackItem> surfaces;
 };
 
 class RenderTask
@@ -107,32 +173,82 @@ public:
     {
         std::vector<std::shared_ptr<MetaTile>> metaTiles;
         std::vector<vtslibs::registry::CreditId> credits;
-        std::shared_ptr<Obb> obb;
+        boost::optional<Obb> obb;
         vec3 cornersPhys[8];
         vec3 aabbPhys[2];
         vec3 surrogatePhys;
         float surrogateNav;
-        const MapConfig::SurfaceStackItem *surface;
         MetaInfo(const vtslibs::vts::MetaNode &node);
     };
 
-    std::shared_ptr<MetaInfo> meta;
-    std::vector<std::shared_ptr<TraverseNode>> childs;
-    std::vector<RenderTask> opaque;
-    std::vector<RenderTask> transparent;
-    NodeInfo nodeInfo;
+    boost::optional<MetaInfo> meta;
+    Array<std::shared_ptr<TraverseNode>, 4> childs;
+    MapLayer *const layer;
     TraverseNode *const parent;
+    NodeInfo nodeInfo;
     const uint32 hash;
     uint32 lastAccessTime;
     uint32 lastRenderTime;
     float priority;
 
-    TraverseNode(TraverseNode *parent, const NodeInfo &nodeInfo);
+    const SurfaceStackItem *surface; // todo move to structure and make boost::variant of it
+    std::vector<RenderTask> opaque;
+    std::vector<RenderTask> transparent;
+
+    TraverseNode(MapLayer *layer, TraverseNode *parent,
+                 const NodeInfo &nodeInfo);
     ~TraverseNode();
     void clearAll();
     void clearRenders();
     bool rendersReady() const;
     bool rendersEmpty() const;
+};
+
+class MapLayer
+{
+public:
+    MapLayer(MapImpl *map);
+
+    bool prerequisitesCheck();
+
+    boost::optional<SurfaceStack> surfaceStack;
+    boost::optional<SurfaceStack> tilesetStack;
+
+    std::shared_ptr<TraverseNode> traverseRoot;
+
+    MapImpl *const map;
+};
+
+class MapConfig : public Resource, public vtslibs::vts::MapConfig
+{
+public:
+    class BrowserOptions
+    {
+    public:
+        BrowserOptions();
+
+        std::string searchUrl;
+        std::string searchSrs;
+        double autorotate;
+        bool searchFilter;
+    };
+
+    MapConfig(MapImpl *map, const std::string &name);
+    void load() override;
+    vtslibs::registry::Srs::Type navigationSrsType() const;
+
+    void consolidateView();
+    void initializeCelestialBody() const;
+    bool isEarth() const;
+
+    BoundInfo *getBoundInfo(const std::string &id);
+    vtslibs::vts::SurfaceCommonConfig *findGlue(
+            const vtslibs::vts::Glue::Id &id);
+    vtslibs::vts::SurfaceCommonConfig *findSurface(
+            const std::string &id);
+
+    BrowserOptions browserOptions;
+    std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
 };
 
 class MapImpl
@@ -151,6 +267,7 @@ public:
     MapCelestialBody body;
     std::shared_ptr<MapConfig> mapConfig;
     std::shared_ptr<CoordManip> convertor;
+    std::vector<std::shared_ptr<MapLayer>> layers;
     std::string mapConfigPath;
     std::string mapConfigView;
     bool initialized;
@@ -195,8 +312,6 @@ public:
     {
     public:
         Credits credits;
-        std::shared_ptr<TraverseNode> traverseRoot;
-        std::shared_ptr<TilesetMapping> tilesetMapping;
         mat4 viewProj;
         mat4 viewProjRender;
         mat4 viewRender;
@@ -279,7 +394,7 @@ public:
     void renderFinalize();
     void renderTickPrepare();
     void renderTickRender();
-    const TileId roundId(TileId nodeId);
+    vtslibs::vts::TileId roundId(TileId nodeId);
     Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
                            BoundParamInfo::List &boundList, double priority);
     void touchDraws(const RenderTask &task);
@@ -307,6 +422,10 @@ public:
     bool prerequisitesCheck();
     void applyCameraRotationNormalization(vec3 &rot);
 };
+
+bool testAndThrow(Resource::State state, const std::string &message);
+std::string convertPath(const std::string &path,
+                        const std::string &parent);
 
 } // namespace vts
 

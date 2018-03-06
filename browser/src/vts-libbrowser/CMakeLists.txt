@@ -49,57 +49,61 @@ set(PUB_HDR_LIST
     include/vts-browser/boostProgramOptions.hpp
 )
 
-set(HDR_LIST
-    coordsManip.hpp
-    image.hpp
-    map.hpp
-    resources.hpp
-    credits.hpp
-    obj.hpp
-    cache.hpp
-    piha.hpp
-    threadName.hpp
-    json.hpp
-)
-
 set(SRC_LIST
+    resources/resources.hpp
+    resources/mesh.cpp
+    resources/texture.cpp
+    resources/other.cpp
+    resources/manager.cpp
+    resources/cache.hpp
+    resources/cache.cpp
+    resources/fetcher.cpp
+    resources/auth.cpp
+    resources/mapConfig.cpp
+    resources/geodata.cpp
+    image/image.hpp
+    image/image.cpp
+    image/png.cpp
+    image/jpeg.cpp
+    utilities/obj.hpp
+    utilities/obj.cpp
+    utilities/threadName.hpp
+    utilities/threadName.cpp
+    utilities/json.hpp
+    utilities/array.hpp
     buffer.cpp
-    color.cpp
+    credits.hpp
     credits.cpp
+    coordsManip.hpp
     coordsManip.cpp
     exceptions.cpp
-    fetcher.cpp
+    map.hpp
     mapApi.cpp
     mapUtilities.cpp
+    mapLayer.cpp
+    mapCelestialBody.cpp
+    mapDraws.cpp
     math.cpp
+    mathColor.cpp
     navigation.cpp
     navigationAltitude.cpp
-    obj.cpp
+    navigationPiha.hpp
+    navigationPiha.cpp
     options.cpp
     renderer.cpp
     rendererTraversal.cpp
-    auth.cpp
-    mapConfig.cpp
-    mesh.cpp
-    texture.cpp
-    resourceOther.cpp
-    resourceGeodata.cpp
-    resourceManager.cpp
     statistics.cpp
     search.cpp
-    cache.cpp
-    piha.cpp
     log.cpp
     boostProgramOptions.cpp
     sri.cpp
-    threadName.cpp
-    image.cpp
-    libPng.cpp
-    libJpeg.cpp
+    surfaceStack.cpp
+    traverseNode.cpp
+    boundLayers.cpp
     ${EXTRA_SRC_LIST}
 )
 
-add_library(vts-browser ${LIB_TYPE} ${SRC_LIST} ${HDR_LIST} ${PUB_HDR_LIST})
+add_library(vts-browser ${LIB_TYPE} ${SRC_LIST} ${PUB_HDR_LIST})
 target_compile_definitions(vts-browser ${LIB_VIS} VTS_BROWSER_BUILD_${LIB_TYPE})
 target_link_libraries(vts-browser ${LIB_VIS} ${MODULE_LIBRARIES} ${EXTRA_LIB_DEPS})
 buildsys_library(vts-browser)

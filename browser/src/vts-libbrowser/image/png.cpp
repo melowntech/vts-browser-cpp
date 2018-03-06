@@ -26,7 +26,7 @@
 
 #include <png.h>
 #include <dbglog/dbglog.hpp>
-#include "include/vts-browser/buffer.hpp"
+#include "../include/vts-browser/buffer.hpp"
 
 namespace vts
 {

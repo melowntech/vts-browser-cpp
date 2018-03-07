@@ -201,37 +201,29 @@ Validity BoundParamInfo::prepareDepth(MapImpl *impl, double priority)
 Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
         uint32 subMeshIndex, BoundParamInfo::List &boundList, double priority)
 {
-    // prepare all layers
+    std::reverse(boundList.begin(), boundList.end());
+    auto it = boundList.begin();
+    while (it != boundList.end())
     {
-        bool determined = true;
-        auto it = boundList.begin();
-        while (it != boundList.end())
+        bool transparent = true;
+        switch (it->prepare(nodeInfo, this, subMeshIndex, priority))
         {
-            switch (it->prepare(nodeInfo, this, subMeshIndex, priority))
-            {
-            case Validity::Invalid:
-                it = boundList.erase(it);
-                break;
-            case Validity::Indeterminate:
-                determined = false;
-                // no break here
-            case Validity::Valid:
-                it++;
-            }
-        }
-        if (!determined)
+        case Validity::Invalid:
+            it = boundList.erase(it);
+            break;
+        case Validity::Indeterminate:
             return Validity::Indeterminate;
+        case Validity::Valid:
+            transparent = !!it->textureMask || it->transparent;
+            it++;
+        }
+        if (!transparent)
+        {
+            boundList.erase(it, boundList.end());
+            break;
+        }
     }
-
-    // skip overlapping layers
     std::reverse(boundList.begin(), boundList.end());
-    auto it = boundList.begin(), et = boundList.end();
-    while (it != et && (it->textureMask || it->transparent))
-        it++;
-    if (it != et)
-        boundList.erase(++it, et);
-    std::reverse(boundList.begin(), boundList.end());
-
     return Validity::Valid;
 }
 

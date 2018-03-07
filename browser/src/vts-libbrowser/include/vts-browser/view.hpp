@@ -42,11 +42,11 @@ public:
     class BoundLayerInfo
     {
     public:
-        typedef std::vector<BoundLayerInfo> Map;
-        
+        typedef std::vector<BoundLayerInfo> List;
+
         std::string id;
         double alpha;
-        
+
         BoundLayerInfo();
         BoundLayerInfo(const std::string &id);
     };
@@ -55,17 +55,17 @@ public:
     {
     public:
         typedef std::map<std::string, SurfaceInfo> Map;
-        
-        BoundLayerInfo::Map boundLayers;
+
+        BoundLayerInfo::List boundLayers;
     };
 
     class FreeLayerInfo
     {
     public:
         typedef std::map<std::string, FreeLayerInfo> Map;
-        
+
         std::string style;
-        BoundLayerInfo::Map boundLayers;
+        BoundLayerInfo::List boundLayers;
     };
 
     std::string description;

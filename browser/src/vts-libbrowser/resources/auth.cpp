@@ -77,7 +77,7 @@ AuthConfig::AuthConfig(MapImpl *map, const std::string &name) :
 
 void AuthConfig::load()
 {
-    LOG(info3) << "Parsing authentication json";
+    LOG(info2) << "Parsing authentication json";
     try
     {
         Json::Value root;

@@ -261,7 +261,7 @@ SearchTask::~SearchTask()
 
 void SearchTask::updateDistances(const double point[3])
 {
-    if (!impl->map->mapConfig || !impl->map->initialized
+    if (!impl->map->mapConfig || !impl->map->mapconfigReady
         || impl->map->mapConfig->browserOptions.searchUrl != impl->validityUrl
         || impl->map->mapConfig->browserOptions.searchSrs != impl->validitySrs)
     {

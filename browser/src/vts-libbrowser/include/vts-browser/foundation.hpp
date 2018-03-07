@@ -76,7 +76,7 @@ enum class NavigationType
 
     // special navigation mode where the camera speed is limited
     // to speed up transitions over large distances,
-    //   it will zoom out first and zomm back in at the end
+    //   it will zoom out first and zoom back in at the end
     FlyOver,
 };
 
@@ -87,12 +87,12 @@ enum class NavigationMode
     // generally, this mode is easier to use
     Azimuthal,
 
-    // the viewer is free to navigato to anywhere, including the poles
+    // the viewer is free to navigate to anywhere, including the poles
     // camera yaw rotation is also unlimited
     Free,
 
     // starts in the azimuthal mode and switches to the free mode
-    //   when the viewer gets too close to any pole,
+    //   when the viewer gets too close to any pole
     //   or when the viewer changes camera orientation
     // it can be reset back to azimuthal with Map::resetNavigationMode()
     Dynamic,
@@ -104,7 +104,7 @@ enum class NavigationMode
 enum class TraverseMode
 {
     // this mode downloads each and every lod from top to the required level,
-    //   which ensures, that it has at least something to show at all times
+    //   this ensures that it has at least something to show at all times
     Hierarchical,
 
     // this mode downloads only the smallest set of data
@@ -112,6 +112,14 @@ enum class TraverseMode
 
     // this mode is a compromise
     Balanced,
+};
+
+enum class FreeLayerType
+{
+    Unknown,
+    TiledMeshes,
+    TiledGeodata,
+    MonolithicGeodata,
 };
 
 #ifdef _MSVC

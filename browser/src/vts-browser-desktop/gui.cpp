@@ -979,7 +979,7 @@ public:
     }
 
     bool prepareViewsBoundLayers(MapView &,
-                                 MapView::BoundLayerInfo::Map &bl)
+                                 MapView::BoundLayerInfo::List &bl)
     {
         const std::vector<std::string> boundLayers
                 = window->map->getResourceBoundLayers();
@@ -1101,6 +1101,10 @@ public:
                 window->map->getViewData(window->map->getViewCurrent(), view);
                 // surfaces
                 {
+                    float ratio[] = { width };
+                    nk_layout_row(&ctx, NK_STATIC, 16, 1, ratio);
+                    nk_label(&ctx, "Surfaces", NK_TEXT_ALIGN_CENTERED);
+
                     const std::vector<std::string> surfaces
                             = window->map->getResourceSurfaces();
                     for (const std::string &sn : surfaces)
@@ -1110,7 +1114,8 @@ public:
                         bool v1 = view.surfaces.find(sn) != view.surfaces.end();
                         bool v2 = nk_check_label(&ctx, sn.c_str(), v1);
                         if (v2)
-                        { // bound layers
+                        {
+                            // bound layers
                             MapView::SurfaceInfo &s = view.surfaces[sn];
                             viewChanged = viewChanged
                                 || prepareViewsBoundLayers(view, s.boundLayers);
@@ -1123,7 +1128,46 @@ public:
                 }
                 // free layers
                 {
-                    // todo
+                    float ratio[] = { width };
+                    nk_layout_row(&ctx, NK_STATIC, 16, 1, ratio);
+                    nk_label(&ctx, "Free layers", NK_TEXT_ALIGN_CENTERED);
+
+                    const std::vector<std::string> layers
+                            = window->map->getResourceFreeLayers();
+                    for (const std::string &ln : layers)
+                    {
+                        float ratio[] = { width };
+                        nk_layout_row(&ctx, NK_STATIC, 16, 1, ratio);
+                        bool v1 = view.freeLayers.find(ln) != view.freeLayers.end();
+                        bool v2 = nk_check_label(&ctx, ln.c_str(), v1);
+                        if (v2)
+                        {
+                            MapView::FreeLayerInfo &s = view.freeLayers[ln];
+                            switch (window->map->getResourceFreeLayerType(ln))
+                            {
+                            case FreeLayerType::TiledMeshes:
+                            {
+                                // bound layers
+                                viewChanged = viewChanged
+                                    || prepareViewsBoundLayers(view, s.boundLayers);
+                            } break;
+                            case FreeLayerType::TiledGeodata:
+                            case FreeLayerType::MonolithicGeodata:
+                            {
+                                // style
+                                float ratio[] = { 10, width - 10 };
+                                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+                                nk_label(&ctx, s.style.c_str(), NK_TEXT_ALIGN_LEFT);
+                            } break;
+                            default:
+                                break;
+                            }
+                        }
+                        else
+                            view.freeLayers.erase(ln);
+                        if (v1 != v2)
+                            viewChanged = true;
+                    }
                 }
                 if (viewChanged)
                 {

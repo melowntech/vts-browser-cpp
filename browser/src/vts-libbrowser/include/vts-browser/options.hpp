@@ -222,8 +222,15 @@ public:
     std::function<void(class ResourceInfo &, class GpuMeshSpec &)>
             loadMesh;
 
-    // function callback when the mapconfig is ready
+    // function callback when the mapconfig is downloaded
     // called from Map::renderTickPrepare()
+    // suitable to change view, position, etc.
+    std::function<void()> mapconfigAvailable;
+
+    // function callback when the mapconfig and all other required
+    //   external definitions are initialized
+    // called from Map::renderTickPrepare()
+    // suitable to start navigation etc.
     std::function<void()> mapconfigReady;
 
     // function callbacks for camera overrides (all in physical srs)

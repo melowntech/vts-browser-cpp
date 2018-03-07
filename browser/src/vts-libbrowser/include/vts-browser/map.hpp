@@ -58,11 +58,16 @@ public:
     void purgeDiskCache();
 
     // returns whether the map config has been downloaded
-    // and parsed successfully
+    //   and parsed successfully
     // most other functions will not work until this is ready
+    bool getMapConfigAvailable() const;
+    // returns whether the map config and all otehr required
+    //   external definitions has been downloaded
+    //   and parsed successfully
+    // some other functions will not work until this is ready
     bool getMapConfigReady() const;
     // returns whether the map has all resources needed for complete
-    // render
+    //   render
     bool getMapRenderComplete() const;
     // returns estimation of progress till complete render
     double getMapRenderProgress() const;
@@ -123,6 +128,7 @@ public:
     std::vector<std::string> getResourceSurfaces() const;
     std::vector<std::string> getResourceBoundLayers() const;
     std::vector<std::string> getResourceFreeLayers() const;
+    FreeLayerType getResourceFreeLayerType(const std::string &name) const;
 
     std::vector<std::string> getViewNames() const;
     std::string getViewCurrent() const;

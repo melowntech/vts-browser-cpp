@@ -219,6 +219,7 @@ public:
 
     vtslibs::registry::View::Surfaces boundLayerParams;
 
+    std::string freeLayerName;
     boost::optional<FreeInfo> freeLayer;
     boost::optional<vtslibs::registry::View::FreeLayerParams> freeLayerParams;
 
@@ -257,6 +258,7 @@ public:
     bool isEarth() const;
 
     BoundInfo *getBoundInfo(const std::string &id);
+    FreeInfo *getFreeInfo(const std::string &id);
     vtslibs::vts::SurfaceCommonConfig *findGlue(
             const vtslibs::vts::Glue::Id &id);
     vtslibs::vts::SurfaceCommonConfig *findSurface(
@@ -264,6 +266,7 @@ public:
 
     BrowserOptions browserOptions;
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
+    std::unordered_map<std::string, std::shared_ptr<FreeInfo>> freeInfos;
 };
 
 class MapImpl
@@ -285,7 +288,8 @@ public:
     std::vector<std::shared_ptr<MapLayer>> layers;
     std::string mapConfigPath;
     std::string mapConfigView;
-    bool initialized;
+    bool mapconfigAvailable;
+    bool mapconfigReady;
 
     class Navigation
     {

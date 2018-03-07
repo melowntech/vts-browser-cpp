@@ -83,6 +83,7 @@ void MapImpl::purgeMapConfig()
     navigation.lastPositionAltitude.reset();
     navigation.positionAltitudeReset.reset();
     body = MapCelestialBody();
+    mapconfigAvailable = false;
     purgeViewCache();
 }
 
@@ -98,7 +99,7 @@ void MapImpl::purgeViewCache()
     draws = MapDraws();
     credits = MapCredits();
     mapConfigView = "";
-    initialized = false;
+    mapconfigReady = false;
 }
 
 void MapImpl::touchDraws(const RenderTask &task)
@@ -304,7 +305,7 @@ bool MapImpl::prerequisitesCheck()
     if (resources.auth)
         resources.auth->checkTime();
 
-    if (initialized)
+    if (mapconfigReady)
         return true;
 
     if (mapConfigPath.empty())
@@ -321,6 +322,17 @@ bool MapImpl::prerequisitesCheck()
     if (!testAndThrow(mapConfig->state, "Map config failure."))
         return false;
 
+    if (!mapconfigAvailable)
+    {
+        LOG(info3) << "Map config is available.";
+        mapconfigAvailable = true;
+        if (callbacks.mapconfigAvailable)
+        {
+            callbacks.mapconfigAvailable();
+            return false;
+        }
+    }
+
     if (layers.empty())
     {
         // main surface stack
@@ -332,9 +344,15 @@ bool MapImpl::prerequisitesCheck()
                                                         it.second));
     }
 
-    for (auto &it : layers)
+    // check all layers
     {
-        if (!it->prerequisitesCheck())
+        bool ok = true;
+        for (auto &it : layers)
+        {
+            if (!it->prerequisitesCheck())
+                ok = false;
+        }
+        if (!ok)
             return false;
     }
 
@@ -342,11 +360,11 @@ bool MapImpl::prerequisitesCheck()
     initializeNavigation();
     mapConfig->initializeCelestialBody();
 
-    LOG(info3) << "Map config ready";
-    initialized = true;
+    LOG(info2) << "Map config is ready.";
+    mapconfigReady = true;
     if (callbacks.mapconfigReady)
         callbacks.mapconfigReady(); // this may change initialized state
-    return initialized;
+    return mapconfigReady;
 }
 
 void MapImpl::renderTickPrepare()
@@ -371,7 +389,7 @@ void MapImpl::renderTickRender()
 {
     draws.clear();
 
-    if (!initialized || renderer.windowWidth == 0 || renderer.windowHeight == 0)
+    if (!mapconfigReady || renderer.windowWidth == 0 || renderer.windowHeight == 0)
         return;
 
     updateCamera();

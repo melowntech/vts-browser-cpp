@@ -41,16 +41,14 @@ MapLayer::MapLayer(MapImpl *map) : map(map)
 
 MapLayer::MapLayer(MapImpl *map, const std::string name,
                    const vtslibs::registry::View::FreeLayerParams &params)
-    : freeLayerParams(params), map(map)
+    : freeLayerName(name), freeLayerParams(params), map(map)
 {
-    freeLayer.emplace(map->mapConfig->freeLayers.get(name),
-                      map->mapConfig->name);
     boundLayerParams[""] = params.boundLayers;
 }
 
 bool MapLayer::prerequisitesCheck()
 {
-    if (freeLayer)
+    if (freeLayerParams)
         return prerequisitesCheckFreeLayer();
     return prerequisitesCheckMainSurfaces();
 }
@@ -124,21 +122,10 @@ bool MapLayer::prerequisitesCheckFreeLayer()
 {
     auto *mapConfig = map->mapConfig.get();
 
-    if (freeLayer->external())
-    {
-        std::string url = convertPath(freeLayer->externalUrl(),
-                                      mapConfig->name);
-        std::shared_ptr<ExternalFreeLayer> r
-                = map->getExternalFreeLayer(url);
-        if (!testAndThrow(r->state, "External free layer failure."))
-            return false;
-        freeLayer.emplace(*r, url);
-
-        // merge credits
-        for (auto &c : r->credits)
-            if (c.second)
-                map->renderer.credits.merge(*c.second);
-    }
+    auto *fl = mapConfig->getFreeInfo(freeLayerName);
+    if (!fl)
+        return false;
+    freeLayer = *fl;
 
     surfaceStack.emplace();
     surfaceStack->generateFree(map, *freeLayer);

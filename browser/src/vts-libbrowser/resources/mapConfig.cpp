@@ -44,11 +44,13 @@ MapConfig::MapConfig(MapImpl *map, const std::string &name)
 void MapConfig::load()
 {
     assert(map->layers.empty());
-    LOG(info3) << "Parsing map config <" << name << ">";
+    LOG(info2) << "Parsing map config <" << name << ">";
 
     // clear
     *(vtslibs::vts::MapConfig*)this = vtslibs::vts::MapConfig();
     browserOptions = BrowserOptions();
+    boundInfos.clear();
+    freeInfos.clear();
 
     // load
     {
@@ -127,6 +129,39 @@ BoundInfo *MapConfig::getBoundInfo(const std::string &id)
         else
         {
             boundInfos[bl->id] = std::make_shared<BoundInfo>(*bl, name);
+        }
+    }
+
+    return nullptr;
+}
+
+FreeInfo *MapConfig::getFreeInfo(const std::string &id)
+{
+    auto it = freeInfos.find(id);
+    if (it != freeInfos.end())
+        return it->second.get();
+
+    const vtslibs::registry::FreeLayer *bl
+            = freeLayers.get(id, std::nothrow);
+    if (bl)
+    {
+        if (bl->external())
+        {
+            std::string url = convertPath(bl->externalUrl(), name);
+            std::shared_ptr<ExternalFreeLayer> r
+                    = map->getExternalFreeLayer(url);
+            if (!testAndThrow(r->state, "External free layer failure."))
+                return nullptr;
+            freeInfos[bl->id] = std::make_shared<FreeInfo>(*r, url);
+
+            // merge credits
+            for (auto &c : r->credits)
+                if (c.second)
+                    map->renderer.credits.merge(*c.second);
+        }
+        else
+        {
+            freeInfos[bl->id] = std::make_shared<FreeInfo>(*bl, name);
         }
     }
 

@@ -77,6 +77,15 @@ public:
     UrlTemplate urlMask;
 };
 
+class FreeInfo : public vtslibs::registry::FreeLayer
+{
+public:
+    FreeInfo(const vtslibs::registry::FreeLayer &fl,
+              const std::string &url);
+
+    std::string url;
+};
+
 class BoundParamInfo : public vtslibs::registry::View::BoundLayerParams
 {
 public:
@@ -102,13 +111,14 @@ private:
 class SurfaceInfo
 {
 public:
+    SurfaceInfo(); // dummy surface
     SurfaceInfo(const vtslibs::vts::SurfaceCommonConfig &surface,
                 const std::string &parentPath);
     SurfaceInfo(const vtslibs::registry::FreeLayer::MeshTiles &surface,
                 const std::string &parentPath);
 
-    vtslibs::storage::LodRange lodRange;
-    vtslibs::registry::TileRange tileRange;
+    //vtslibs::storage::LodRange lodRange;
+    //vtslibs::registry::TileRange tileRange;
     UrlTemplate urlMeta;
     UrlTemplate urlMesh;
     UrlTemplate urlIntTex;
@@ -136,9 +146,8 @@ public:
     void generateTileset(MapImpl *map,
             const std::vector<std::string> &vsId,
             const vtslibs::vts::TilesetReferencesList &dataRaw);
-    void generateFree(MapImpl *map,
-            const vtslibs::registry::FreeLayer *freeLayer);
     void generateReal(MapImpl *map);
+    void generateFree(MapImpl *map, const FreeInfo &freeLayer);
 
     std::vector<SurfaceStackItem> surfaces;
 };
@@ -207,9 +216,21 @@ public:
 class MapLayer
 {
 public:
+    // main surface stack
     MapLayer(MapImpl *map);
+    // free layer
+    MapLayer(MapImpl *map, const std::string name,
+             const vtslibs::registry::View::FreeLayerParams &params);
 
     bool prerequisitesCheck();
+
+    BoundParamInfo::List boundList(
+            const SurfaceStackItem *surface, sint32 surfaceReference);
+
+    vtslibs::registry::View::Surfaces boundLayerParams;
+
+    boost::optional<FreeInfo> freeLayer;
+    boost::optional<vtslibs::registry::View::FreeLayerParams> freeLayerParams;
 
     boost::optional<SurfaceStack> surfaceStack;
     boost::optional<SurfaceStack> tilesetStack;
@@ -217,6 +238,10 @@ public:
     std::shared_ptr<TraverseNode> traverseRoot;
 
     MapImpl *const map;
+
+private:
+    bool prerequisitesCheckMainSurfaces();
+    bool prerequisitesCheckFreeLayer();
 };
 
 class MapConfig : public Resource, public vtslibs::vts::MapConfig
@@ -372,6 +397,8 @@ public:
     std::shared_ptr<NavTile> getNavTile(const std::string &name);
     std::shared_ptr<MeshAggregate> getMeshAggregate(const std::string &name);
     std::shared_ptr<ExternalBoundLayer> getExternalBoundLayer(
+            const std::string &name);
+    std::shared_ptr<ExternalFreeLayer> getExternalFreeLayer(
             const std::string &name);
     std::shared_ptr<BoundMetaTile> getBoundMetaTile(const std::string &name);
     std::shared_ptr<SearchTaskImpl> getSearchTask(const std::string &name);

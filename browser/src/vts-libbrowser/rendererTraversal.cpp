@@ -335,15 +335,8 @@ bool MapImpl::travDetermineDraws(TraverseNode *trav)
         // external bound textures
         if (part.externalUv)
         {
-            std::string surfaceName;
-            if (trav->surface->surface->name.size() > 1)
-                surfaceName = trav->surface->surface
-                        ->name[part.surfaceReference - 1];
-            else
-                surfaceName = trav->surface->surface->name.back();
-            const vtslibs::registry::View::BoundLayerParams::list &boundList
-                    = mapConfig->view.surfaces[surfaceName];
-            BoundParamInfo::List bls(boundList.begin(), boundList.end());
+            BoundParamInfo::List bls = trav->layer->boundList(
+                        trav->surface, part.surfaceReference);
             if (part.textureLayer)
             {
                 bls.push_back(BoundParamInfo(

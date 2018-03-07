@@ -627,6 +627,12 @@ std::shared_ptr<ExternalBoundLayer> MapImpl::getExternalBoundLayer(
     return getMapResource<ExternalBoundLayer>(this, name);
 }
 
+std::shared_ptr<ExternalFreeLayer> MapImpl::getExternalFreeLayer(
+        const std::string &name)
+{
+    return getMapResource<ExternalFreeLayer>(this, name);
+}
+
 std::shared_ptr<BoundMetaTile> MapImpl::getBoundMetaTile(
         const std::string &name)
 {

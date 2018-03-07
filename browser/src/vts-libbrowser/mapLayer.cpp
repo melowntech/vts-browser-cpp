@@ -29,10 +29,48 @@
 namespace vts
 {
 
-MapLayer::MapLayer(MapImpl *map) : map(map)
+FreeInfo::FreeInfo(const vtslibs::registry::FreeLayer &fl,
+          const std::string &url)
+    : FreeLayer(fl), url(url)
 {}
 
+MapLayer::MapLayer(MapImpl *map) : map(map)
+{
+    boundLayerParams = map->mapConfig->view.surfaces;
+}
+
+MapLayer::MapLayer(MapImpl *map, const std::string name,
+                   const vtslibs::registry::View::FreeLayerParams &params)
+    : freeLayerParams(params), map(map)
+{
+    freeLayer.emplace(map->mapConfig->freeLayers.get(name),
+                      map->mapConfig->name);
+    boundLayerParams[""] = params.boundLayers;
+}
+
 bool MapLayer::prerequisitesCheck()
+{
+    if (freeLayer)
+        return prerequisitesCheckFreeLayer();
+    return prerequisitesCheckMainSurfaces();
+}
+
+BoundParamInfo::List MapLayer::boundList(
+            const SurfaceStackItem *surface, sint32 surfaceReference)
+{
+    const auto &n = surface->surface->name;
+    std::string surfaceName;
+    if (n.size() > 1)
+        surfaceName = n[surfaceReference - 1];
+    else if (!n.empty())
+        surfaceName = n.back();
+    const vtslibs::registry::View::BoundLayerParams::list &boundList
+            = boundLayerParams[surfaceName];
+    BoundParamInfo::List bls(boundList.begin(), boundList.end());
+    return bls;
+}
+
+bool MapLayer::prerequisitesCheckMainSurfaces()
 {
     auto *mapConfig = map->mapConfig.get();
 
@@ -74,6 +112,36 @@ bool MapLayer::prerequisitesCheck()
         surfaceStack.emplace();
         surfaceStack->generateReal(map);
     }
+
+    traverseRoot = std::make_shared<TraverseNode>(this, nullptr, NodeInfo(
+                    mapConfig->referenceFrame, TileId(), false, *mapConfig));
+    traverseRoot->priority = std::numeric_limits<double>::infinity();
+
+    return true;
+}
+
+bool MapLayer::prerequisitesCheckFreeLayer()
+{
+    auto *mapConfig = map->mapConfig.get();
+
+    if (freeLayer->external())
+    {
+        std::string url = convertPath(freeLayer->externalUrl(),
+                                      mapConfig->name);
+        std::shared_ptr<ExternalFreeLayer> r
+                = map->getExternalFreeLayer(url);
+        if (!testAndThrow(r->state, "External free layer failure."))
+            return false;
+        freeLayer.emplace(*r, url);
+
+        // merge credits
+        for (auto &c : r->credits)
+            if (c.second)
+                map->renderer.credits.merge(*c.second);
+    }
+
+    surfaceStack.emplace();
+    surfaceStack->generateFree(map, *freeLayer);
 
     traverseRoot = std::make_shared<TraverseNode>(this, nullptr, NodeInfo(
                     mapConfig->referenceFrame, TileId(), false, *mapConfig));

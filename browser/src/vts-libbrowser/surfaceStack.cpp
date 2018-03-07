@@ -191,12 +191,54 @@ void SurfaceStack::generateReal(MapImpl *map)
     colorize();
 }
 
+namespace
+{
+
+
+
+} // namespace
+
+void SurfaceStack::generateFree(MapImpl *map,
+        const FreeInfo &freeLayer)
+{
+    (void)map;
+    switch (freeLayer.type)
+    {
+    case vtslibs::registry::FreeLayer::Type::meshTiles:
+    {
+        SurfaceStackItem item;
+        item.surface = std::make_shared<SurfaceInfo>(
+            boost::get<vtslibs::registry::FreeLayer::MeshTiles>(
+                        freeLayer.definition), freeLayer.url);
+        surfaces.push_back(item);
+    } break;
+    default:
+    {
+        SurfaceStackItem item;
+        item.surface = std::make_shared<SurfaceInfo>(); // dummy surface for now
+        surfaces.push_back(item);
+    } break;
+    }
+}
+
+SurfaceInfo::SurfaceInfo()
+{}
+
 SurfaceInfo::SurfaceInfo(const vtslibs::vts::SurfaceCommonConfig &surface,
                          const std::string &parentPath)
 {
     urlMeta.parse(convertPath(surface.urls3d->meta, parentPath));
     urlMesh.parse(convertPath(surface.urls3d->mesh, parentPath));
     urlIntTex.parse(convertPath(surface.urls3d->texture, parentPath));
+}
+
+SurfaceInfo::SurfaceInfo(
+        const vtslibs::registry::FreeLayer::MeshTiles &surface,
+        const std::string &parentPath)
+{
+    urlMeta.parse(convertPath(surface.metaUrl, parentPath));
+    urlMesh.parse(convertPath(surface.meshUrl, parentPath));
+    urlIntTex.parse(convertPath(surface.textureUrl, parentPath));
 }
 
 } // namespace vts

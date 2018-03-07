@@ -322,7 +322,15 @@ bool MapImpl::prerequisitesCheck()
         return false;
 
     if (layers.empty())
+    {
+        // main surface stack
         layers.push_back(std::make_shared<MapLayer>(this));
+
+        // free layers
+        for (const auto &it : mapConfig->view.freeLayers)
+            layers.push_back(std::make_shared<MapLayer>(this, it.first,
+                                                        it.second));
+    }
 
     for (auto &it : layers)
     {

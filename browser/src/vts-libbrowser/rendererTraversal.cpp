@@ -76,7 +76,7 @@ std::shared_ptr<Resource> MapImpl::travInternalTexture(TraverseNode *trav,
     UrlTemplate::Vars vars(trav->nodeInfo.nodeId(),
             vtslibs::vts::local(trav->nodeInfo), subMeshIndex);
     std::shared_ptr<Resource> res = getTexture(
-                trav->surface->surface->urlIntTex(vars));
+                trav->surface->urlIntTex(vars));
     res->updatePriority(trav->priority);
     return res;
 }
@@ -113,8 +113,8 @@ bool MapImpl::travDetermineMeta(TraverseNode *trav)
                  & (vtslibs::vts::MetaNode::Flag::ulChild << idx)) == 0)
                 continue;
         }
-        auto m = getMetaTile(trav->layer->surfaceStack->surfaces[i].surface
-                             ->urlMeta(tileIdVars));
+        auto m = getMetaTile(trav->layer->surfaceStack->surfaces[i]
+                             .urlMeta(tileIdVars));
         m->updatePriority(trav->priority);
         switch (getResourceValidity(m))
         {
@@ -132,7 +132,7 @@ bool MapImpl::travDetermineMeta(TraverseNode *trav)
         return false;
 
     // find topmost nonempty surface
-    SurfaceStackItem *topmost = nullptr;
+    SurfaceInfo *topmost = nullptr;
     const vtslibs::vts::MetaNode *node = nullptr;
     bool childsAvailable[4] = {false, false, false, false};
     for (uint32 i = 0, e = metaTiles.size(); i != e; i++)
@@ -305,7 +305,7 @@ bool MapImpl::travDetermineDraws(TraverseNode *trav)
     const TileId nodeId = trav->nodeInfo.nodeId();
 
     // aggregate mesh
-    std::string meshAggName = trav->surface->surface->urlMesh(
+    std::string meshAggName = trav->surface->urlMesh(
             UrlTemplate::Vars(nodeId, vtslibs::vts::local(trav->nodeInfo)));
     std::shared_ptr<MeshAggregate> meshAgg = getMeshAggregate(meshAggName);
     meshAgg->updatePriority(trav->priority);

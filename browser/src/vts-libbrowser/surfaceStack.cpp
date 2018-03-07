@@ -31,9 +31,6 @@
 namespace vts
 {
 
-SurfaceStackItem::SurfaceStackItem() : alien(false)
-{}
-
 void SurfaceStack::print()
 {
     std::ostringstream ss;
@@ -41,7 +38,7 @@ void SurfaceStack::print()
     for (auto &l : surfaces)
         ss << (l.alien ? "* " : "  ")
            << std::setw(100) << std::left << (std::string()
-           + "[" + boost::algorithm::join(l.surface->name, ",") + "]")
+           + "[" + boost::algorithm::join(l.name, ",") + "]")
            << " " << l.color.transpose() << std::endl;
     LOG(info3) << ss.str();
 }
@@ -61,11 +58,7 @@ void SurfaceStack::generateVirtual(MapImpl *map,
     assert(surfaces.empty());
     LOG(info2) << "Generating (virtual) surface stack for <"
                << boost::algorithm::join(virtualSurface->id, ",") << ">";
-    SurfaceStackItem i;
-    i.surface = std::make_shared<SurfaceInfo>(*virtualSurface,
-                                              map->mapConfig->name);
-    i.color = vec3f(0,0,0);
-    surfaces.push_back(i);
+    surfaces.emplace_back(*virtualSurface, map->mapConfig->name);
 }
 
 void SurfaceStack::generateTileset(MapImpl *map,
@@ -77,16 +70,15 @@ void SurfaceStack::generateTileset(MapImpl *map,
     assert(surfaces.empty());
     surfaces.reserve(dataRaw.size() + 1);
     // the sourceReference in metanodes is one-based
-    surfaces.push_back(SurfaceStackItem());
+    surfaces.push_back(SurfaceInfo());
     for (auto &it : dataRaw)
     {
         if (it.size() == 1)
         { // surface
-            SurfaceStackItem i;
-            i.surface = std::make_shared<SurfaceInfo>(
+            SurfaceInfo i(
                     *mapConfig->findSurface(vsId[it[0]]),
                     mapConfig->name);
-            i.surface->name.push_back(vsId[it[0]]);
+            i.name.push_back(vsId[it[0]]);
             surfaces.push_back(i);
         }
         else
@@ -95,11 +87,10 @@ void SurfaceStack::generateTileset(MapImpl *map,
             id.reserve(it.size());
             for (auto &it2 : it)
                 id.push_back(vsId[it2]);
-            SurfaceStackItem i;
-            i.surface = std::make_shared<SurfaceInfo>(
+            SurfaceInfo i(
                     *mapConfig->findGlue(id),
                     mapConfig->name);
-            i.surface->name = id;
+            i.name = id;
             surfaces.push_back(i);
         }
     }
@@ -152,18 +143,16 @@ void SurfaceStack::generateReal(MapImpl *map)
     {
         for (auto &g : ts.glues)
         {
-            SurfaceStackItem i;
-            i.surface = std::make_shared<SurfaceInfo>(
+            SurfaceInfo i(
                     *map->mapConfig->findGlue(g.id),
                     map->mapConfig->name);
-            i.surface->name = g.id;
+            i.name = g.id;
             surfaces.push_back(i);
         }
-        SurfaceStackItem i;
-        i.surface = std::make_shared<SurfaceInfo>(
+        SurfaceInfo i(
                     *map->mapConfig->findSurface(ts.tilesetId),
                     map->mapConfig->name);
-        i.surface->name = { ts.tilesetId };
+        i.name = { ts.tilesetId };
         surfaces.push_back(i);
     }
 
@@ -171,17 +160,17 @@ void SurfaceStack::generateReal(MapImpl *map)
     auto copy(surfaces);
     for (auto &it : copy)
     {
-        if (it.surface->name.size() > 1)
+        if (it.name.size() > 1)
         {
-            auto n2 = it.surface->name;
+            auto n2 = it.name;
             n2.pop_back();
             std::string n = boost::join(n2, "|");
             auto jt = surfaces.begin(), et = surfaces.end();
-            while (jt != et && boost::join(jt->surface->name, "|") != n)
+            while (jt != et && boost::join(jt->name, "|") != n)
                 jt++;
             if (jt != et)
             {
-                SurfaceStackItem i(it);
+                SurfaceInfo i(it);
                 i.alien = true;
                 surfaces.insert(jt, i);
             }
@@ -191,13 +180,6 @@ void SurfaceStack::generateReal(MapImpl *map)
     colorize();
 }
 
-namespace
-{
-
-
-
-} // namespace
-
 void SurfaceStack::generateFree(MapImpl *map,
         const FreeInfo &freeLayer)
 {
@@ -206,26 +188,25 @@ void SurfaceStack::generateFree(MapImpl *map,
     {
     case vtslibs::registry::FreeLayer::Type::meshTiles:
     {
-        SurfaceStackItem item;
-        item.surface = std::make_shared<SurfaceInfo>(
+        SurfaceInfo item(
             boost::get<vtslibs::registry::FreeLayer::MeshTiles>(
                         freeLayer.definition), freeLayer.url);
         surfaces.push_back(item);
     } break;
     default:
     {
-        SurfaceStackItem item;
-        item.surface = std::make_shared<SurfaceInfo>(); // dummy surface for now
-        surfaces.push_back(item);
+        surfaces.push_back({}); // dummy surface for now
     } break;
     }
 }
 
 SurfaceInfo::SurfaceInfo()
+    : color(0,0,0), alien(false)
 {}
 
 SurfaceInfo::SurfaceInfo(const vtslibs::vts::SurfaceCommonConfig &surface,
                          const std::string &parentPath)
+    : color(0,0,0), alien(false)
 {
     urlMeta.parse(convertPath(surface.urls3d->meta, parentPath));
     urlMesh.parse(convertPath(surface.urls3d->mesh, parentPath));
@@ -235,6 +216,7 @@ SurfaceInfo::SurfaceInfo(const vtslibs::vts::SurfaceCommonConfig &surface,
 SurfaceInfo::SurfaceInfo(
         const vtslibs::registry::FreeLayer::MeshTiles &surface,
         const std::string &parentPath)
+    : color(0,0,0), alien(false)
 {
     urlMeta.parse(convertPath(surface.metaUrl, parentPath));
     urlMesh.parse(convertPath(surface.meshUrl, parentPath));

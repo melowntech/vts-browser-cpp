@@ -55,10 +55,10 @@ bool MapLayer::prerequisitesCheck()
     return prerequisitesCheckMainSurfaces();
 }
 
-BoundParamInfo::List MapLayer::boundList(
-            const SurfaceStackItem *surface, sint32 surfaceReference)
+BoundParamInfo::List MapLayer::boundList(const SurfaceInfo *surface,
+                                         sint32 surfaceReference)
 {
-    const auto &n = surface->surface->name;
+    const auto &n = surface->name;
     std::string surfaceName;
     if (n.size() > 1)
         surfaceName = n[surfaceReference - 1];

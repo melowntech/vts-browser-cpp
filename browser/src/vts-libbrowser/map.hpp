@@ -111,26 +111,16 @@ private:
 class SurfaceInfo
 {
 public:
-    SurfaceInfo(); // dummy surface
+    SurfaceInfo();
     SurfaceInfo(const vtslibs::vts::SurfaceCommonConfig &surface,
                 const std::string &parentPath);
     SurfaceInfo(const vtslibs::registry::FreeLayer::MeshTiles &surface,
                 const std::string &parentPath);
 
-    //vtslibs::storage::LodRange lodRange;
-    //vtslibs::registry::TileRange tileRange;
     UrlTemplate urlMeta;
     UrlTemplate urlMesh;
     UrlTemplate urlIntTex;
     vtslibs::vts::TilesetIdList name;
-};
-
-class SurfaceStackItem
-{
-public:
-    SurfaceStackItem();
-
-    std::shared_ptr<SurfaceInfo> surface;
     vec3f color;
     bool alien;
 };
@@ -149,7 +139,7 @@ public:
     void generateReal(MapImpl *map);
     void generateFree(MapImpl *map, const FreeInfo &freeLayer);
 
-    std::vector<SurfaceStackItem> surfaces;
+    std::vector<SurfaceInfo> surfaces;
 };
 
 class RenderTask
@@ -200,7 +190,7 @@ public:
     uint32 lastRenderTime;
     float priority;
 
-    const SurfaceStackItem *surface; // todo move to structure and make boost::variant of it
+    const SurfaceInfo *surface;
     std::vector<RenderTask> opaque;
     std::vector<RenderTask> transparent;
 
@@ -225,7 +215,7 @@ public:
     bool prerequisitesCheck();
 
     BoundParamInfo::List boundList(
-            const SurfaceStackItem *surface, sint32 surfaceReference);
+            const SurfaceInfo *surface, sint32 surfaceReference);
 
     vtslibs::registry::View::Surfaces boundLayerParams;
 

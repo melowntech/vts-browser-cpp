@@ -26,7 +26,7 @@
 
 #include <ogr_spatialref.h>
 
-#include "../map.hpp"
+#include "map.hpp"
 
 namespace vts
 {

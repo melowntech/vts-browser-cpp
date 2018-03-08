@@ -26,7 +26,7 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include "../map.hpp"
+#include "map.hpp"
 
 namespace vts
 {

@@ -193,20 +193,20 @@ void Task::done(utility::ResourceFetcher::MultiQuery &&queries)
         }
         catch (std::exception &e)
         {
-            LOG(err1) << "Exception <" << e.what()
+            LOG(err2) << "Exception <" << e.what()
                       << "> in download of <" << task->query.url << ">";
             task->reply.code = FetchTask::ExtraCodes::InternalError;
         }
         catch (...)
         {
-            LOG(err1) << "Unknown exception in download of <"
+            LOG(err2) << "Unknown exception in download of <"
                       << task->query.url << ">";
             task->reply.code = FetchTask::ExtraCodes::InternalError;
         }
     }
     else
     {
-        LOG(err1) << "Invalid result from HTTP fetcher (no value, no status "
+        LOG(err3) << "Invalid result from HTTP fetcher (no value, no status "
             "code, no exception) for <" << task->query.url << ">";
         task->reply.code = FetchTask::ExtraCodes::InternalError;
     }

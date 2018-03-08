@@ -405,6 +405,11 @@ void MainWindow::run()
     }
 
     gui.finalize();
+
+    // closing the whole app may take some time waiting on pending downloads
+    //   therefore we hide the window here so that the user
+    //   does not get disturbed by it
+    SDL_HideWindow(window);
 }
 
 void MainWindow::colorizeMarks()

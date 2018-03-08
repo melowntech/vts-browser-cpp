@@ -39,7 +39,9 @@ MapImpl::Navigation::Navigation() :
 void MapImpl::applyCameraRotationNormalization(vec3 &rot)
 {
     if (!options.enableCameraNormalization
-            || options.navigationType == NavigationType::FlyOver)
+            || options.navigationType == NavigationType::FlyOver
+            || mapConfig->position.type
+                    == vtslibs::registry::Position::Type::subjective)
         return;
 
     // find the interpolation factor
@@ -276,9 +278,11 @@ void MapImpl::updateNavigation()
     navigation.changeRotation(0) += navigation.autoRotation;
 
     // limit rotation for seamless navigation mode
-    if (options.navigationMode == NavigationMode::Seamless
+    if (options.enableCameraNormalization
+            && options.navigationMode == NavigationMode::Seamless
             && navigation.mode == NavigationMode::Azimuthal
-            && options.enableCameraNormalization)
+            && mapConfig->position.type
+                    == vtslibs::registry::Position::Type::objective)
     {
         double yaw = mapConfig->position.orientation[0];
         double &ch = navigation.changeRotation(0);
@@ -406,8 +410,10 @@ void MapImpl::updateNavigation()
     }
 
     // normalize rotation
-    if (pos.type == vtslibs::registry::Position::Type::objective
-            && options.enableCameraNormalization)
+    if (options.enableCameraNormalization
+            && pos.type == vtslibs::registry::Position::Type::objective
+            && mapConfig->position.type
+                    == vtslibs::registry::Position::Type::objective)
     {
         r[1] = clamp(r[1],
             options.tiltLimitAngleLow,

@@ -190,6 +190,7 @@ void MapImpl::updateNavigation()
 {
     {
         const ControlOptions &co = options.controlOptions;
+        (void)co;
         assert(co.inertiaPan >= 0
                && co.inertiaPan < 1);
         assert(co.inertiaRotate >= 0

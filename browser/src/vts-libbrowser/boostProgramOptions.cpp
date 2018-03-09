@@ -277,9 +277,9 @@ void optionsConfigFetcherOptions(
         ->default_value(opts->maxHostConnections),
         "Maximum concurrent connections to same host.")
 
-    ((section + "maxTotalConections").c_str(),
-        po::value<uint32>(&opts->maxTotalConections)
-        ->default_value(opts->maxTotalConections),
+    ((section + "maxTotalConnections").c_str(),
+        po::value<uint32>(&opts->maxTotalConnections)
+        ->default_value(opts->maxTotalConnections),
         "Total limit of concurrent connections.")
 
     ((section + "maxCacheConections").c_str(),

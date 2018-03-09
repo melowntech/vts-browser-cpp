@@ -129,7 +129,7 @@ public:
 
     // curl options
     uint32 maxHostConnections;
-    uint32 maxTotalConections;
+    uint32 maxTotalConnections;
     uint32 maxCacheConections;
 
     // 0 = use http/1

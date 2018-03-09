@@ -83,7 +83,7 @@ public:
             http::ContentFetcher::Options o;
             o.maxCacheConections = options.maxCacheConections;
             o.maxHostConnections = options.maxHostConnections;
-            o.maxTotalConections = options.maxTotalConections;
+            o.maxTotalConections = options.maxTotalConnections;
             o.pipelining = options.pipelining;
             htt.startClient(options.threads, &o);
         }

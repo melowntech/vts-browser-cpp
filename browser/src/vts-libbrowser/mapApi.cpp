@@ -456,7 +456,11 @@ std::string Map::getPositionUrl() const
 {
     if (!getMapConfigAvailable())
         return "";
-    return boost::lexical_cast<std::string>(impl->mapConfig->position);
+    const vtslibs::registry::Position &p = impl->mapConfig->position;
+    std::ostringstream ss;
+    ss << std::fixed << std::setprecision(10);
+    ss << p;
+    return ss.str();
 }
 
 namespace
@@ -745,6 +749,7 @@ void MapImpl::printDebugInfo()
 
     for (auto &it : layers)
     {
+        LOG(info3) << "Layer: " + it->freeLayerName;
         if (it->surfaceStack)
             it->surfaceStack->print();
         if (it->tilesetStack)

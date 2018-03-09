@@ -24,13 +24,35 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <jsoncpp/json.hpp>
+#include <memory>
+#include <sstream>
+
+#include <dbglog/dbglog.hpp>
+
+#include "json.hpp"
 
 namespace vts
 {
 
-Json::Value stringToJson(const std::string &s);
-std::string jsonToString(const Json::Value &value);
+Json::Value stringToJson(const std::string &s)
+{
+    std::shared_ptr<Json::CharReader> r(
+                Json::CharReaderBuilder().newCharReader());
+    Json::Value val;
+    std::string errs;
+    if (!r->parse(s.data(), s.data() + s.size(), &val, &errs))
+        LOGTHROW(err2, std::runtime_error) << errs;
+    return val;
+}
+
+std::string jsonToString(const Json::Value &value)
+{
+    std::shared_ptr<Json::StreamWriter> w(
+                Json::StreamWriterBuilder().newStreamWriter());
+    std::ostringstream ss;
+    w->write(value, &ss);
+    return ss.str();
+}
 
 } // namespace vts
 

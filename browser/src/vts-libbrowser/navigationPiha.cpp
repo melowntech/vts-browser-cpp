@@ -70,16 +70,17 @@ void navigationPiha(
         return;
     }
 
+    const ControlOptions &co = inOptions.controlOptions;
     if (inOptions.navigationType == NavigationType::Quick)
     {
         outHorizontalMove = inHorizontalDistance
-                * (1 - inOptions.cameraInertiaPan);
+                * (1 - co.inertiaPan);
         outVerticalMove = inVerticalChange
-                * (1 - inOptions.cameraInertiaPan);
+                * (1 - co.inertiaPan);
         outRotation = inStartRotation + inRotationChange
-                * (1 - inOptions.cameraInertiaRotate);
+                * (1 - co.inertiaRotate);
         outViewExtent = inStartViewExtent + inViewExtentChange
-                * (1 - inOptions.cameraInertiaZoom);
+                * (1 - co.inertiaZoom);
         return;
     }
 
@@ -118,9 +119,9 @@ void navigationPiha(
     double ch = inHorizontalDistance > 1 ? outHorizontalMove
                                            / inHorizontalDistance : 1;
     outVerticalMove = inVerticalChange * std::min(ch,
-                                    1 - inOptions.cameraInertiaPan);
+                                    1 - co.inertiaPan);
     outRotation = inStartRotation + inRotationChange * std::min(ch,
-                                    1 - inOptions.cameraInertiaRotate);
+                                    1 - co.inertiaRotate);
 
     // todo better camera rotation in fly-over type
 

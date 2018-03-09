@@ -81,6 +81,12 @@ Buffer::Buffer(uint32 size) : data_(nullptr), size_(size)
     allocate(size);
 }
 
+Buffer::Buffer(const std::string &str) : data_(nullptr), size_(0)
+{
+    allocate(str.length());
+    memcpy(data_, str.data(), size_);
+}
+
 Buffer::~Buffer()
 {
     this->free();
@@ -113,7 +119,7 @@ Buffer Buffer::copy() const
 
 std::string Buffer::str() const
 {
-    return {data_, size_};
+    return std::string(data_, size_);
 }
 
 void Buffer::allocate(uint32 size)

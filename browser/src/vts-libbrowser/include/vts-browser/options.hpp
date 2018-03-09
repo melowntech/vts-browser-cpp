@@ -76,6 +76,24 @@ public:
     bool disableBrowserOptionsSearchUrls;
 };
 
+class VTS_API ControlOptions
+{
+public:
+    ControlOptions();
+
+    // multiplier that is applied to mouse input for the respective actions
+    double sensitivityPan;
+    double sensitivityZoom;
+    double sensitivityRotate;
+
+    // innertia coefficients [0 - 1) for smoothing the navigation changes
+    // inertia of zero makes all changes to apply immediately
+    // while inertia of almost one makes the moves very smooth and slow
+    double inertiaPan;
+    double inertiaZoom;
+    double inertiaRotate;
+};
+
 // options of the map which may be changed anytime
 // (although, some of the options may take effect slowly
 //    as some internal caches are beeing rebuild)
@@ -83,6 +101,8 @@ class VTS_API MapOptions
 {
 public:
     MapOptions();
+
+    ControlOptions controlOptions;
 
     // maximum ratio of texture details to the viewport resolution
     // increasing this ratio yealds less detailed map
@@ -106,18 +126,6 @@ public:
     // camera tilt limits (eg. 270 - 360)
     double tiltLimitAngleLow;
     double tiltLimitAngleHigh;
-
-    // multiplier that is applied to mouse input for the respective actions
-    double cameraSensitivityPan;
-    double cameraSensitivityZoom;
-    double cameraSensitivityRotate;
-
-    // innertia coefficients [0 - 1) for smoothing the navigation changes
-    // inertia of zero makes all changes to apply immediately
-    // while inertia of almost one makes the moves very smooth and slow
-    double cameraInertiaPan;
-    double cameraInertiaZoom;
-    double cameraInertiaRotate;
 
     // multiplicative factor at which camera altitude will converge to terrain
     //   when panning or zooming
@@ -213,28 +221,28 @@ class VTS_API MapCallbacks
 {
 public:
     // function callback to upload a texture to gpu
-    // called from Map::dataTick()
+    // invoked from Map::dataTick()
     std::function<void(class ResourceInfo &, class GpuTextureSpec &)>
             loadTexture;
 
     // function callback to upload a mesh to gpu
-    // called from Map::dataTick()
+    // invoked from Map::dataTick()
     std::function<void(class ResourceInfo &, class GpuMeshSpec &)>
             loadMesh;
 
     // function callback when the mapconfig is downloaded
-    // called from Map::renderTickPrepare()
+    // invoked from Map::renderTickPrepare()
     // suitable to change view, position, etc.
     std::function<void()> mapconfigAvailable;
 
     // function callback when the mapconfig and all other required
     //   external definitions are initialized
-    // called from Map::renderTickPrepare()
+    // invoked from Map::renderTickPrepare()
     // suitable to start navigation etc.
     std::function<void()> mapconfigReady;
 
     // function callbacks for camera overrides (all in physical srs)
-    // these callbacks are called from the Map::renderTickRender()
+    // these callbacks are invoked from the Map::renderTickRender()
     std::function<void(double*)> cameraOverrideEye;
     std::function<void(double*)> cameraOverrideTarget;
     std::function<void(double*)> cameraOverrideUp;
@@ -245,6 +253,8 @@ public:
 };
 
 VTS_API extern std::function<const char *(const char *)> projFinder;
+VTS_API void saveControlOptions(const ControlOptions &options);
+VTS_API ControlOptions loadControlOptions();
 
 } // namespace vts
 

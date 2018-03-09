@@ -186,16 +186,11 @@ void MapImpl::resourceLoad(const std::shared_ptr<Resource> &r)
         if (allowDiskCache(r->query.resourceType) && resources.cache->read(
                     r->name, r->reply.content, r->reply.expires))
         {
+            statistics.resourcesDiskLoaded++;
             if (r->reply.content.size() > 0)
-            {
-                statistics.resourcesDiskLoaded++;
                 r->state = Resource::State::downloaded;
-            }
             else
-            {
-                statistics.resourcesIgnored++;
                 r->state = Resource::State::availFail;
-            }
             r->reply.code = 200;
         }
         else if (startsWith(r->name, "file://"))

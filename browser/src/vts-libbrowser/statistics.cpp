@@ -41,7 +41,6 @@ MapStatistics::~MapStatistics()
 void MapStatistics::resetAll()
 {
     resetFrame();
-    resourcesIgnored = 0;
     resourcesDownloaded = 0;
     resourcesDiskLoaded = 0;
     resourcesProcessLoaded = 0;

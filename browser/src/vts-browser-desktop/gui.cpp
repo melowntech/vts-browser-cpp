@@ -224,6 +224,16 @@ public:
             mesh = std::make_shared<Mesh>();
             mesh->load(vao, vbo, vio);
         }
+
+        // load control options
+        try
+        {
+            window->map->options().controlOptions = loadControlOptions();
+        }
+        catch(...)
+        {
+            // do nothing
+        }
     }
 
     ~GuiImpl()
@@ -421,39 +431,40 @@ public:
             nk_label(&ctx, "", NK_TEXT_LEFT);
             if (optSensitivityDetails)
             {
+                ControlOptions &co = o.controlOptions;
                 // sensitivity
                 nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
                 nk_label(&ctx, "Pan speed:", NK_TEXT_LEFT);
-                o.cameraSensitivityPan = nk_slide_float(&ctx,
-                        0.1, o.cameraSensitivityPan, 3, 0.01);
-                sprintf(buffer, "%4.2f", o.cameraSensitivityPan);
+                co.sensitivityPan = nk_slide_float(&ctx,
+                        0.1, co.sensitivityPan, 3, 0.01);
+                sprintf(buffer, "%4.2f", co.sensitivityPan);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Zoom speed:", NK_TEXT_LEFT);
-                o.cameraSensitivityZoom = nk_slide_float(&ctx,
-                        0.1, o.cameraSensitivityZoom, 3, 0.01);
-                sprintf(buffer, "%4.2f", o.cameraSensitivityZoom);
+                co.sensitivityZoom = nk_slide_float(&ctx,
+                        0.1, co.sensitivityZoom, 3, 0.01);
+                sprintf(buffer, "%4.2f", co.sensitivityZoom);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Rotate speed:", NK_TEXT_LEFT);
-                o.cameraSensitivityRotate = nk_slide_float(&ctx,
-                        0.1, o.cameraSensitivityRotate, 3, 0.01);
-                sprintf(buffer, "%4.2f", o.cameraSensitivityRotate);
+                co.sensitivityRotate = nk_slide_float(&ctx,
+                        0.1, co.sensitivityRotate, 3, 0.01);
+                sprintf(buffer, "%4.2f", co.sensitivityRotate);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                 // inertia
                 nk_label(&ctx, "Pan inertia:", NK_TEXT_LEFT);
-                o.cameraInertiaPan = nk_slide_float(&ctx,
-                        0, o.cameraInertiaPan, 0.99, 0.01);
-                sprintf(buffer, "%4.2f", o.cameraInertiaPan);
+                co.inertiaPan = nk_slide_float(&ctx,
+                        0, co.inertiaPan, 0.99, 0.01);
+                sprintf(buffer, "%4.2f", co.inertiaPan);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Zoom inertia:", NK_TEXT_LEFT);
-                o.cameraInertiaZoom = nk_slide_float(&ctx,
-                        0, o.cameraInertiaZoom, 0.99, 0.01);
-                sprintf(buffer, "%4.2f", o.cameraInertiaZoom);
+                co.inertiaZoom = nk_slide_float(&ctx,
+                        0, co.inertiaZoom, 0.99, 0.01);
+                sprintf(buffer, "%4.2f", co.inertiaZoom);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Rotate inertia:", NK_TEXT_LEFT);
-                o.cameraInertiaRotate = nk_slide_float(&ctx,
-                        0, o.cameraInertiaRotate, 0.99, 0.01);
-                sprintf(buffer, "%4.2f", o.cameraInertiaRotate);
+                co.inertiaRotate = nk_slide_float(&ctx,
+                        0, co.inertiaRotate, 0.99, 0.01);
+                sprintf(buffer, "%4.2f", co.inertiaRotate);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                 // altitude fade out
@@ -463,17 +474,47 @@ public:
                 sprintf(buffer, "%4.2f", o.cameraAltitudeFadeOutFactor);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
+                // save
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+                if (nk_button_label(&ctx, "Save"))
+                {
+                    try
+                    {
+                        saveControlOptions(co);
+                    }
+                    catch(...)
+                    {
+                        // do nothing
+                    }
+                }
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+
+                // load
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+                if (nk_button_label(&ctx, "Load"))
+                {
+                    try
+                    {
+                        co = loadControlOptions();
+                    }
+                    catch(...)
+                    {
+                        // do nothing
+                    }
+                }
+                nk_label(&ctx, "", NK_TEXT_LEFT);
+
                 // reset
                 nk_label(&ctx, "", NK_TEXT_LEFT);
-                if (nk_button_label(&ctx, "Reset sensitivity"))
+                if (nk_button_label(&ctx, "Reset"))
                 {
-                    MapOptions d;
-                    o.cameraSensitivityPan       = d.cameraSensitivityPan;
-                    o.cameraSensitivityZoom      = d.cameraSensitivityZoom;
-                    o.cameraSensitivityRotate    = d.cameraSensitivityRotate;
-                    o.cameraInertiaPan           = d.cameraInertiaPan;
-                    o.cameraInertiaZoom          = d.cameraInertiaZoom;
-                    o.cameraInertiaRotate        = d.cameraInertiaRotate;
+                    ControlOptions d;
+                    co.sensitivityPan       = d.sensitivityPan;
+                    co.sensitivityZoom      = d.sensitivityZoom;
+                    co.sensitivityRotate    = d.sensitivityRotate;
+                    co.inertiaPan           = d.inertiaPan;
+                    co.inertiaZoom          = d.inertiaZoom;
+                    co.inertiaRotate        = d.inertiaRotate;
                 }
                 nk_label(&ctx, "", NK_TEXT_LEFT);
             }
@@ -779,7 +820,6 @@ public:
             S("Res. disk loaded:", s.resourcesDiskLoaded, "");
             S("Res. processed:", s.resourcesProcessLoaded, "");
             S("Res. released:", s.resourcesReleased, "");
-            S("Res. ignored:", s.resourcesIgnored, "");
             S("Res. failed:", s.resourcesFailed, "");
 
             // traversed

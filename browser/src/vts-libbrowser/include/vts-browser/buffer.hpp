@@ -40,6 +40,7 @@ class VTS_API Buffer
 public:
     Buffer();
     Buffer(uint32 size); // create preallocated buffer (it is not zeroed)
+    Buffer(const std::string &str); // create buffer from string
     ~Buffer();
 
     // move semantics

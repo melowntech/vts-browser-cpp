@@ -24,6 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <utility/path.hpp> // homeDir
+
+#include "utilities/json.hpp"
+#include "include/vts-browser/buffer.hpp"
 #include "include/vts-browser/options.hpp"
 #include "include/vts-browser/map.hpp"
 
@@ -41,6 +45,15 @@ MapCreateOptions::MapCreateOptions() :
     disableBrowserOptionsSearchUrls(false)
 {}
 
+ControlOptions::ControlOptions() :
+    sensitivityPan(1),
+    sensitivityZoom(1),
+    sensitivityRotate(1),
+    inertiaPan(0.9),
+    inertiaZoom(0.9),
+    inertiaRotate(0.9)
+{}
+
 MapOptions::MapOptions() :
     maxTexelToPixelScale(1.2),
     maxTexelToPixelScaleBalancedAddition(3),
@@ -50,12 +63,6 @@ MapOptions::MapOptions() :
     viewExtentThresholdScaleHigh(0.20382565067), // 1 300 000 metres on earth
     tiltLimitAngleLow(270),
     tiltLimitAngleHigh(350),
-    cameraSensitivityPan(1),
-    cameraSensitivityZoom(1),
-    cameraSensitivityRotate(1),
-    cameraInertiaPan(0.9),
-    cameraInertiaZoom(0.9),
-    cameraInertiaRotate(0.9),
     cameraAltitudeFadeOutFactor(0.5),
     navigationLatitudeThreshold(80),
     navigationPihaViewExtentMult(1.02),
@@ -91,5 +98,40 @@ MapOptions::MapOptions() :
     debugRenderNoMeshes(false),
     debugExtractRawResources(false)
 {}
+
+namespace
+{
+    std::string controlOptionsPath()
+    {
+        std::string h = utility::homeDir().string();
+        return h + "/.config/vts-browser/control-options.json";
+    }
+} // namespace
+
+void saveControlOptions(const ControlOptions &options)
+{
+    Json::Value v;
+    v["sensitivityPan"] = options.sensitivityPan;
+    v["sensitivityZoom"] = options.sensitivityZoom;
+    v["sensitivityRotate"] = options.sensitivityRotate;
+    v["inertiaPan"] = options.inertiaPan;
+    v["inertiaZoom"] = options.inertiaZoom;
+    v["inertiaRotate"] = options.inertiaRotate;
+    writeLocalFileBuffer(controlOptionsPath(), jsonToString(v));
+}
+
+ControlOptions loadControlOptions()
+{
+    Buffer b = readLocalFileBuffer(controlOptionsPath());
+    Json::Value v = stringToJson(b.str());
+    ControlOptions options;
+    options.sensitivityPan = v["sensitivityPan"].asDouble();
+    options.sensitivityZoom = v["sensitivityZoom"].asDouble();
+    options.sensitivityRotate = v["sensitivityRotate"].asDouble();
+    options.inertiaPan = v["inertiaPan"].asDouble();
+    options.inertiaZoom = v["inertiaZoom"].asDouble();
+    options.inertiaRotate = v["inertiaRotate"].asDouble();
+    return options;
+}
 
 } // namespace vts

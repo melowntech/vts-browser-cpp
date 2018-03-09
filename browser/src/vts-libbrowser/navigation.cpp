@@ -477,7 +477,7 @@ void MapImpl::pan(vec3 value)
     // pan speed depends on zoom level
     double v = pos.verticalExtent / 600;
     vec3 move = value.cwiseProduct(vec3(-2 * v * h, 2 * v, 2)
-                                   * options.cameraSensitivityPan);
+                    * options.controlOptions.sensitivityPan);
 
     // compute change of azimuth
     double azi = posRot[0];
@@ -530,7 +530,7 @@ void MapImpl::rotate(vec3 value)
     assert(isNavigationModeValid());
 
     navigation.changeRotation += value.cwiseProduct(vec3(0.2, -0.1, 0.2)
-                                        * options.cameraSensitivityRotate);
+                    * options.controlOptions.sensitivityRotate);
 
     if (mapConfig->navigationSrsType()
             == vtslibs::registry::Srs::Type::geographic
@@ -546,8 +546,8 @@ void MapImpl::zoom(double value)
 {
     assert(isNavigationModeValid());
 
-    double c = value * options.cameraSensitivityZoom * 120;
-    navigation.targetViewExtent *= pow(1.002, -c);
+    double c = value * options.controlOptions.sensitivityZoom * 120;
+    navigation.targetViewExtent *= std::pow(1.002, -c);
     navigation.autoRotation = 0;
 
     assert(isNavigationModeValid());

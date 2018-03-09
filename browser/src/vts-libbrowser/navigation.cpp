@@ -176,12 +176,6 @@ double MapImpl::positionObjectiveDistance()
 
 void MapImpl::initializeNavigation()
 {
-    convertor = CoordManip::create(
-                *mapConfig,
-                mapConfig->browserOptions.searchSrs,
-                createOptions.customSrs1,
-                createOptions.customSrs2);
-
     navigation.targetPoint = vecFromUblas<vec3>(mapConfig->position.position);
     navigation.changeRotation = vec3(0,0,0);
     navigation.targetViewExtent = mapConfig->position.verticalExtent;
@@ -194,12 +188,15 @@ void MapImpl::initializeNavigation()
 
 void MapImpl::updateNavigation()
 {
-    assert(options.cameraInertiaPan >= 0
-           && options.cameraInertiaPan < 1);
-    assert(options.cameraInertiaRotate >= 0
-           && options.cameraInertiaRotate < 1);
-    assert(options.cameraInertiaZoom >= 0
-           && options.cameraInertiaZoom < 1);
+    {
+        const ControlOptions &co = options.controlOptions;
+        assert(co.inertiaPan >= 0
+               && co.inertiaPan < 1);
+        assert(co.inertiaRotate >= 0
+               && co.inertiaRotate < 1);
+        assert(co.inertiaZoom >= 0
+               && co.inertiaZoom < 1);
+    }
     assert(options.navigationLatitudeThreshold > 0
            && options.navigationLatitudeThreshold < 90);
 
@@ -477,7 +474,7 @@ void MapImpl::pan(vec3 value)
     // pan speed depends on zoom level
     double v = pos.verticalExtent / 600;
     vec3 move = value.cwiseProduct(vec3(-2 * v * h, 2 * v, 2)
-                                   * options.cameraSensitivityPan);
+                    * options.controlOptions.sensitivityPan);
 
     // compute change of azimuth
     double azi = posRot[0];
@@ -530,7 +527,7 @@ void MapImpl::rotate(vec3 value)
     assert(isNavigationModeValid());
 
     navigation.changeRotation += value.cwiseProduct(vec3(0.2, -0.1, 0.2)
-                                        * options.cameraSensitivityRotate);
+                    * options.controlOptions.sensitivityRotate);
 
     if (mapConfig->navigationSrsType()
             == vtslibs::registry::Srs::Type::geographic
@@ -546,8 +543,8 @@ void MapImpl::zoom(double value)
 {
     assert(isNavigationModeValid());
 
-    double c = value * options.cameraSensitivityZoom * 120;
-    navigation.targetViewExtent *= pow(1.002, -c);
+    double c = value * options.controlOptions.sensitivityZoom * 120;
+    navigation.targetViewExtent *= std::pow(1.002, -c);
     navigation.autoRotation = 0;
 
     assert(isNavigationModeValid());

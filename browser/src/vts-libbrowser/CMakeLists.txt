@@ -70,6 +70,7 @@ set(SRC_LIST
     utilities/threadName.hpp
     utilities/threadName.cpp
     utilities/json.hpp
+    utilities/json.cpp
     utilities/array.hpp
     buffer.cpp
     credits.hpp

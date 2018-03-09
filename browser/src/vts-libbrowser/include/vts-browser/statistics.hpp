@@ -51,7 +51,6 @@ public:
 
     // global statistics
 
-    uint32 resourcesIgnored;
     uint32 resourcesDownloaded;
     uint32 resourcesDiskLoaded;
     uint32 resourcesProcessLoaded;

@@ -711,7 +711,7 @@ RenderOptions::RenderOptions() : width(0), height(0),
 RenderVariables::RenderVariables() :
     frameRenderBufferId(0), frameReadBufferId(0),
     depthRenderTexId(0), depthReadTexId(0),
-    colorRenderTexId(0),
+    colorRenderTexId(0), colorReadTexId(0),
     textureTargetType(0)
 {}
 

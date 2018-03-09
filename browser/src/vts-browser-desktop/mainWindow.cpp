@@ -88,9 +88,13 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions,
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #endif
 
-    window = SDL_CreateWindow("vts-browser-desktop",
-              SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600,
-              SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+    {
+        SDL_DisplayMode displayMode;
+        SDL_GetDesktopDisplayMode(0, &displayMode);
+        window = SDL_CreateWindow("vts-browser-desktop",
+                  0, 0, displayMode.w, displayMode.h,
+                  SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+    }
 
     if (!window)
     {

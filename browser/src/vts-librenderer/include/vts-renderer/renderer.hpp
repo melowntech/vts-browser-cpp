@@ -80,6 +80,7 @@ struct VTSR_API RenderVariables
     uint32 colorRenderTexId; // has type textureTargetType
     uint32 colorReadTexId; // GL_TEXTURE_2D (may be same as colorRenderTexId)
     uint32 textureTargetType; // GL_TEXTURE_2D or GL_TEXTURE_2D_MULTISAMPLE
+
     RenderVariables();
 };
 

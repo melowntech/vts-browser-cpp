@@ -82,6 +82,7 @@ void MapImpl::purgeMapConfig()
     navigation.autoRotation = 0;
     navigation.lastPositionAltitude.reset();
     navigation.positionAltitudeReset.reset();
+    convertor.reset();
     body = MapCelestialBody();
     mapconfigAvailable = false;
     purgeViewCache();
@@ -321,6 +322,15 @@ bool MapImpl::prerequisitesCheck()
     mapConfig = getMapConfig(mapConfigPath);
     if (!testAndThrow(mapConfig->state, "Map config failure."))
         return false;
+
+    if (!convertor)
+    {
+        convertor = CoordManip::create(
+                    *mapConfig,
+                    mapConfig->browserOptions.searchSrs,
+                    createOptions.customSrs1,
+                    createOptions.customSrs2);
+    }
 
     if (!mapconfigAvailable)
     {

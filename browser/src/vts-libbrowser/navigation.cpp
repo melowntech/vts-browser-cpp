@@ -176,12 +176,6 @@ double MapImpl::positionObjectiveDistance()
 
 void MapImpl::initializeNavigation()
 {
-    convertor = CoordManip::create(
-                *mapConfig,
-                mapConfig->browserOptions.searchSrs,
-                createOptions.customSrs1,
-                createOptions.customSrs2);
-
     navigation.targetPoint = vecFromUblas<vec3>(mapConfig->position.position);
     navigation.changeRotation = vec3(0,0,0);
     navigation.targetViewExtent = mapConfig->position.verticalExtent;
@@ -194,12 +188,15 @@ void MapImpl::initializeNavigation()
 
 void MapImpl::updateNavigation()
 {
-    assert(options.cameraInertiaPan >= 0
-           && options.cameraInertiaPan < 1);
-    assert(options.cameraInertiaRotate >= 0
-           && options.cameraInertiaRotate < 1);
-    assert(options.cameraInertiaZoom >= 0
-           && options.cameraInertiaZoom < 1);
+    {
+        const ControlOptions &co = options.controlOptions;
+        assert(co.inertiaPan >= 0
+               && co.inertiaPan < 1);
+        assert(co.inertiaRotate >= 0
+               && co.inertiaRotate < 1);
+        assert(co.inertiaZoom >= 0
+               && co.inertiaZoom < 1);
+    }
     assert(options.navigationLatitudeThreshold > 0
            && options.navigationLatitudeThreshold < 90);
 

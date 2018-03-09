@@ -422,14 +422,15 @@ void computeNearFar(double &near, double &far, double altitude,
     if (a > 2 * major)
     {
         near = a - major;
+        far = l;
     }
     else
     {
         double f = std::pow(a / (2 * major), 1.1);
         near = interpolate(10.0, major, f);
         near = std::max(10.0, near);
+        far = std::sqrt(std::max(0.0, l * l - major * major)) + 0.1 * major;
     }
-    far = l;
 }
 
 } // namespace

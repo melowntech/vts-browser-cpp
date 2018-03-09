@@ -467,13 +467,6 @@ public:
                 sprintf(buffer, "%4.2f", co.inertiaRotate);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
-                // altitude fade out
-                nk_label(&ctx, "Altitude fade:", NK_TEXT_LEFT);
-                o.cameraAltitudeFadeOutFactor = nk_slide_float(&ctx,
-                        0, o.cameraAltitudeFadeOutFactor, 1, 0.01);
-                sprintf(buffer, "%4.2f", o.cameraAltitudeFadeOutFactor);
-                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-
                 // save
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Save"))
@@ -600,6 +593,13 @@ public:
                 o.navigationSamplesPerViewExtent = nk_slide_int(&ctx,
                         1, o.navigationSamplesPerViewExtent, 16, 1);
                 sprintf(buffer, "%3d", o.navigationSamplesPerViewExtent);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                // altitude fade out
+                nk_label(&ctx, "Altitude fade:", NK_TEXT_LEFT);
+                o.cameraAltitudeFadeOutFactor = nk_slide_float(&ctx,
+                        0, o.cameraAltitudeFadeOutFactor, 1, 0.01);
+                sprintf(buffer, "%4.2f", o.cameraAltitudeFadeOutFactor);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             }
 

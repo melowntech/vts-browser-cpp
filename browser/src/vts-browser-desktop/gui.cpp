@@ -1054,9 +1054,25 @@ public:
         nk_end(&ctx);
     }
 
+    std::string labelWithCounts(const std::string &label,
+                                std::size_t a, std::size_t b)
+    {
+        std::ostringstream ss;
+        if (b == 0)
+            ss << label << " (0)";
+        else
+            ss << label << " (" << a << " / " << b << ")";
+        return ss.str();
+    }
+
     bool prepareViewsBoundLayers(MapView::BoundLayerInfo::List &bl, uint32 &bid)
     {
-        if (nk_tree_push_id(&ctx, NK_TREE_NODE, "Bound layers", NK_MINIMIZED, bid++))
+        const std::vector<std::string> boundLayers
+                = window->map->getResourceBoundLayers();
+        if (nk_tree_push_id(&ctx, NK_TREE_NODE,
+                labelWithCounts("Bound Layers",
+                bl.size(), boundLayers.size()).c_str(),
+                            NK_MINIMIZED, bid++))
         {
             struct Ender
             {
@@ -1065,8 +1081,6 @@ public:
                 ~Ender() { nk_tree_pop(ctx); }
             } ender(&ctx);
 
-            const std::vector<std::string> boundLayers
-                    = window->map->getResourceBoundLayers();
             std::set<std::string> bls(boundLayers.begin(), boundLayers.end());
             float width = nk_window_get_content_region_size(&ctx).x - 70;
 
@@ -1190,10 +1204,13 @@ public:
             MapView view;
             window->map->getViewData(window->map->getViewCurrent(), view);
 
-            if (nk_tree_push(&ctx, NK_TREE_TAB, "Surfaces", NK_MINIMIZED))
+            const std::vector<std::string> surfaces
+                    = window->map->getResourceSurfaces();
+            if (nk_tree_push(&ctx, NK_TREE_TAB, labelWithCounts(
+                    "Surfaces", view.surfaces.size(),
+                    surfaces.size()).c_str(),
+                             NK_MINIMIZED))
             {
-                const std::vector<std::string> surfaces
-                        = window->map->getResourceSurfaces();
                 uint32 bid = 0;
                 for (const std::string &sn : surfaces)
                 {
@@ -1215,12 +1232,15 @@ public:
                 nk_tree_pop(&ctx);
             }
 
-            if (nk_tree_push(&ctx, NK_TREE_TAB, "Free Layers", NK_MINIMIZED))
+            const std::vector<std::string> freeLayers
+                    = window->map->getResourceFreeLayers();
+            if (nk_tree_push(&ctx, NK_TREE_TAB, labelWithCounts(
+                    "Free Layers", view.freeLayers.size(),
+                    freeLayers.size()).c_str(),
+                             NK_MINIMIZED))
             {
-                const std::vector<std::string> layers
-                        = window->map->getResourceFreeLayers();
                 uint32 bid = 2000000000;
-                for (const std::string &ln : layers)
+                for (const std::string &ln : freeLayers)
                 {
                     nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
                     bool v1 = view.freeLayers.find(ln) != view.freeLayers.end();

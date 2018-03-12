@@ -131,12 +131,12 @@ bool MapImpl::visibilityTest(TraverseNode *trav)
 {
     assert(trav->meta);
     // aabb test
-    if (!aabbTest(trav->meta->aabbPhys, renderer.frustumPlanes))
+    if (!aabbTest(trav->aabbPhys, renderer.frustumPlanes))
         return false;
     // additional obb test
-    if (trav->meta->obb)
+    if (trav->obb)
     {
-        TraverseNode::Obb &obb = *trav->meta->obb;
+        TraverseNode::Obb &obb = *trav->obb;
         vec4 planes[6];
         frustumPlanes(renderer.viewProj * obb.rotInv, planes);
         if (!aabbTest(obb.points, planes))
@@ -167,7 +167,7 @@ double MapImpl::coarsenessValue(TraverseNode *trav)
     if (applyTexelSize)
     {
         vec3 up = renderer.perpendicularUnitVector * trav->meta->texelSize;
-        for (const vec3 &c : trav->meta->cornersPhys)
+        for (const vec3 &c : trav->cornersPhys)
         {
             vec3 c1 = c - up * 0.5;
             vec3 c2 = c1 + up;
@@ -208,12 +208,12 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
     }
 
     // surrogate
-    if (options.debugRenderSurrogates)
+    if (options.debugRenderSurrogates && trav->surrogatePhys)
     {
         RenderTask task;
         task.mesh = getMeshRenderable("internal://data/meshes/sphere.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
-        task.model = translationMatrix(trav->meta->surrogatePhys)
+        task.model = translationMatrix(*trav->surrogatePhys)
                 * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
         if (trav->surface)
             task.color = vec3to4f(trav->surface->color, task.color(3));
@@ -253,8 +253,8 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
             };
             for (uint32 i = 0; i < 12; i++)
             {
-                vec3 a = trav->meta->cornersPhys[cora[i]];
-                vec3 b = trav->meta->cornersPhys[corb[i]];
+                vec3 a = trav->cornersPhys[cora[i]];
+                vec3 b = trav->cornersPhys[corb[i]];
                 task.model = lookAt(a, b);
                 draws.Infographic.emplace_back(task, this);
             }
@@ -262,7 +262,7 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
     }
 
     // credits
-    for (auto &it : trav->meta->credits)
+    for (auto &it : trav->credits)
         renderer.credits.hit(Credits::Scope::Imagery, it,
                              trav->nodeInfo.distanceFromRoot());
 

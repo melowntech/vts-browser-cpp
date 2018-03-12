@@ -186,6 +186,9 @@ void SurfaceStack::generateFree(MapImpl *map,
     (void)map;
     switch (freeLayer.type)
     {
+    case vtslibs::registry::FreeLayer::Type::external:
+        assert(false);
+        break;
     case vtslibs::registry::FreeLayer::Type::meshTiles:
     {
         SurfaceInfo item(
@@ -193,10 +196,23 @@ void SurfaceStack::generateFree(MapImpl *map,
                         freeLayer.definition), freeLayer.url);
         surfaces.push_back(item);
     } break;
-    default:
+    case vtslibs::registry::FreeLayer::Type::geodataTiles:
     {
-        surfaces.push_back({}); // dummy surface for now
+        SurfaceInfo item(
+            boost::get<vtslibs::registry::FreeLayer::GeodataTiles>(
+                        freeLayer.definition), freeLayer.url);
+        surfaces.push_back(item);
     } break;
+    case vtslibs::registry::FreeLayer::Type::geodata:
+    {
+        SurfaceInfo item(
+            boost::get<vtslibs::registry::FreeLayer::Geodata>(
+                        freeLayer.definition), freeLayer.url);
+        surfaces.push_back(item);
+    } break;
+    default:
+        LOGTHROW(fatal, std::logic_error) << "Not implemented free layer type";
+        throw;
     }
 }
 
@@ -221,6 +237,23 @@ SurfaceInfo::SurfaceInfo(
     urlMeta.parse(convertPath(surface.metaUrl, parentPath));
     urlMesh.parse(convertPath(surface.meshUrl, parentPath));
     urlIntTex.parse(convertPath(surface.textureUrl, parentPath));
+}
+
+SurfaceInfo::SurfaceInfo(
+        const vtslibs::registry::FreeLayer::GeodataTiles &surface,
+        const std::string &parentPath)
+    : color(0,0,0), alien(false)
+{
+    urlMeta.parse(convertPath(surface.metaUrl, parentPath));
+    urlGeodata.parse(convertPath(surface.geodataUrl, parentPath));
+}
+
+SurfaceInfo::SurfaceInfo(
+        const vtslibs::registry::FreeLayer::Geodata &surface,
+        const std::string &parentPath)
+    : color(0,0,0), alien(false)
+{
+    urlGeodata.parse(convertPath(surface.geodata, parentPath));
 }
 
 } // namespace vts

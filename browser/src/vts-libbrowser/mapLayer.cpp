@@ -39,7 +39,7 @@ MapLayer::MapLayer(MapImpl *map) : map(map)
     boundLayerParams = map->mapConfig->view.surfaces;
 }
 
-MapLayer::MapLayer(MapImpl *map, const std::string name,
+MapLayer::MapLayer(MapImpl *map, const std::string &name,
                    const vtslibs::registry::View::FreeLayerParams &params)
     : freeLayerName(name), freeLayerParams(params), map(map)
 {
@@ -48,6 +48,8 @@ MapLayer::MapLayer(MapImpl *map, const std::string name,
 
 bool MapLayer::prerequisitesCheck()
 {
+    if (traverseRoot)
+        return true;
     if (freeLayerParams)
         return prerequisitesCheckFreeLayer();
     return prerequisitesCheckMainSurfaces();
@@ -95,8 +97,7 @@ bool MapLayer::prerequisitesCheckMainSurfaces()
             if (!testAndThrow(tilesetMapping->state,
                               "Tileset mapping failure."))
                 return false;
-            surfaceStack.emplace();
-            surfaceStack->generateVirtual(map, &it);
+            surfaceStack.generateVirtual(map, &it);
             tilesetStack.emplace();
             tilesetStack->generateTileset(map, virtSurfaces,
                                           tilesetMapping->dataRaw);
@@ -105,11 +106,8 @@ bool MapLayer::prerequisitesCheckMainSurfaces()
     }
 
     // make real surface stack if no virtual was made
-    if (!surfaceStack)
-    {
-        surfaceStack.emplace();
-        surfaceStack->generateReal(map);
-    }
+    if (surfaceStack.surfaces.empty())
+        surfaceStack.generateReal(map);
 
     traverseRoot = std::make_shared<TraverseNode>(this, nullptr, NodeInfo(
                     mapConfig->referenceFrame, TileId(), false, *mapConfig));
@@ -127,8 +125,7 @@ bool MapLayer::prerequisitesCheckFreeLayer()
         return false;
     freeLayer = *fl;
 
-    surfaceStack.emplace();
-    surfaceStack->generateFree(map, *freeLayer);
+    surfaceStack.generateFree(map, *freeLayer);
 
     traverseRoot = std::make_shared<TraverseNode>(this, nullptr, NodeInfo(
                     mapConfig->referenceFrame, TileId(), false, *mapConfig));

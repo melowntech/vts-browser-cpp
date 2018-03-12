@@ -29,12 +29,25 @@
 namespace vts
 {
 
-TraverseNode::MetaInfo::MetaInfo(const MetaNode &node) :
-    MetaNode(node),
-    surrogatePhys(std::numeric_limits<double>::quiet_NaN(),
-                  std::numeric_limits<double>::quiet_NaN(),
-                  std::numeric_limits<double>::quiet_NaN()),
-    surrogateNav(std::numeric_limits<double>::quiet_NaN())
+namespace
+{
+
+uint32 hashf(const NodeInfo &node)
+{
+    auto id = node.nodeId();
+    return std::hash<uint32>()(((uint32)id.x << id.lod) + id.y);
+}
+
+} // namespace
+
+TraverseNode::TraverseNode(vts::MapLayer *layer, TraverseNode *parent,
+                           const NodeInfo &nodeInfo)
+    : layer(layer), parent(parent),
+      nodeInfo(nodeInfo),
+      hash(hashf(nodeInfo)),
+      surface(nullptr),
+      lastAccessTime(0), lastRenderTime(0),
+      priority(std::numeric_limits<double>::quiet_NaN())
 {
     // initialize corners to NAN
     {
@@ -54,34 +67,19 @@ TraverseNode::MetaInfo::MetaInfo(const MetaNode &node) :
     }
 }
 
-namespace
-{
-
-uint32 hashf(const NodeInfo &node)
-{
-    auto id = node.nodeId();
-    return std::hash<uint32>()(((uint32)id.x << id.lod) + id.y);
-}
-
-} // namespace
-
-TraverseNode::TraverseNode(vts::MapLayer *layer, TraverseNode *parent,
-                           const NodeInfo &nodeInfo)
-    : layer(layer), parent(parent),
-      nodeInfo(nodeInfo),
-      hash(hashf(nodeInfo)),
-      lastAccessTime(0), lastRenderTime(0),
-      priority(std::numeric_limits<double>::quiet_NaN()),
-      surface(nullptr)
-{}
-
 TraverseNode::~TraverseNode()
 {}
 
 void TraverseNode::clearAll()
 {
-    meta.reset();
     childs.clear();
+    metaTiles.clear();
+    meta.reset();
+    obb.reset();
+    surrogatePhys.reset();
+    surrogateNav.reset();
+    surface = nullptr;
+    credits.clear();
     clearRenders();
 }
 

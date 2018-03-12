@@ -36,6 +36,7 @@ namespace
 template<class T>
 std::shared_ptr<T> getMapResource(MapImpl *map, const std::string &name)
 {
+    assert(!name.empty());
     auto it = map->resources.resources.find(name);
     if (it == map->resources.resources.end())
     {

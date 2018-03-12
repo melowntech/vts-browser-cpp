@@ -750,8 +750,7 @@ void MapImpl::printDebugInfo()
     for (auto &it : layers)
     {
         LOG(info3) << "Layer: " + it->freeLayerName;
-        if (it->surfaceStack)
-            it->surfaceStack->print();
+        it->surfaceStack.print();
         if (it->tilesetStack)
             it->tilesetStack->print();
     }

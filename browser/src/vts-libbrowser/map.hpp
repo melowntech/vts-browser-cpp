@@ -28,6 +28,7 @@
 #define MAP_H_cvukikljqwdf
 
 #include <queue>
+#include <array>
 #include <boost/thread/mutex.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <vts-libs/vts/urltemplate.hpp>
@@ -116,10 +117,15 @@ public:
                 const std::string &parentPath);
     SurfaceInfo(const vtslibs::registry::FreeLayer::MeshTiles &surface,
                 const std::string &parentPath);
+    SurfaceInfo(const vtslibs::registry::FreeLayer::GeodataTiles &surface,
+                const std::string &parentPath);
+    SurfaceInfo(const vtslibs::registry::FreeLayer::Geodata &surface,
+                const std::string &parentPath);
 
     UrlTemplate urlMeta;
     UrlTemplate urlMesh;
     UrlTemplate urlIntTex;
+    UrlTemplate urlGeodata;
     vtslibs::vts::TilesetIdList name;
     vec3f color;
     bool alien;
@@ -164,33 +170,33 @@ class TraverseNode
 public:
     struct Obb
     {
-        vec3 points[2];
         mat4 rotInv;
+        vec3 points[2];
     };
 
-    struct MetaInfo : public vtslibs::vts::MetaNode
-    {
-        std::vector<std::shared_ptr<MetaTile>> metaTiles;
-        std::vector<vtslibs::registry::CreditId> credits;
-        boost::optional<Obb> obb;
-        vec3 cornersPhys[8];
-        vec3 aabbPhys[2];
-        vec3 surrogatePhys;
-        float surrogateNav;
-        MetaInfo(const vtslibs::vts::MetaNode &node);
-    };
-
-    boost::optional<MetaInfo> meta;
+    // traversal
     Array<std::shared_ptr<TraverseNode>, 4> childs;
     MapLayer *const layer;
     TraverseNode *const parent;
-    NodeInfo nodeInfo;
+    const NodeInfo nodeInfo;
     const uint32 hash;
+
+    // metadata
+    std::vector<std::shared_ptr<MetaTile>> metaTiles;
+    boost::optional<vtslibs::vts::MetaNode> meta;
+    boost::optional<Obb> obb;
+    vec3 cornersPhys[8];
+    vec3 aabbPhys[2];
+    boost::optional<vec3> surrogatePhys;
+    boost::optional<float> surrogateNav;
+    const SurfaceInfo *surface;
+
     uint32 lastAccessTime;
     uint32 lastRenderTime;
     float priority;
 
-    const SurfaceInfo *surface;
+    // renders
+    std::vector<vtslibs::registry::CreditId> credits;
     std::vector<RenderTask> opaque;
     std::vector<RenderTask> transparent;
 
@@ -209,7 +215,7 @@ public:
     // main surface stack
     MapLayer(MapImpl *map);
     // free layer
-    MapLayer(MapImpl *map, const std::string name,
+    MapLayer(MapImpl *map, const std::string &name,
              const vtslibs::registry::View::FreeLayerParams &params);
 
     bool prerequisitesCheck();
@@ -223,7 +229,7 @@ public:
     boost::optional<FreeInfo> freeLayer;
     boost::optional<vtslibs::registry::View::FreeLayerParams> freeLayerParams;
 
-    boost::optional<SurfaceStack> surfaceStack;
+    SurfaceStack surfaceStack;
     boost::optional<SurfaceStack> tilesetStack;
 
     std::shared_ptr<TraverseNode> traverseRoot;
@@ -431,7 +437,10 @@ public:
     std::shared_ptr<Resource> travInternalTexture(TraverseNode *trav,
                                                   uint32 subMeshIndex);
     bool travDetermineMeta(TraverseNode *trav);
+    void travDetermineMetaImpl(TraverseNode *trav);
     bool travDetermineDraws(TraverseNode *trav);
+    bool travDetermineDrawsSurface(TraverseNode *trav);
+    bool travDetermineDrawsGeodata(TraverseNode *trav);
     double travDistance(TraverseNode *trav, const vec3 pointPhys);
     bool travInit(TraverseNode *trav, bool skipStatistics = false);
     void travModeHierarchical(TraverseNode *trav, bool loadOnly);

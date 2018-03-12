@@ -170,19 +170,18 @@ bool MapImpl::getPositionAltitude(double &result,
         auto t = findTravSds(travRoot, points[i], desiredLod);
         if (!t)
             return false;
-        if (!vtslibs::vts::GeomExtents::validSurrogate(
-                    t->meta->geomExtents.surrogate))
+        if (!t->surrogateNav)
             return false;
         math::Extents2 ext = t->nodeInfo.extents();
         points[i] = vecFromUblas<vec2>(ext.ll + ext.ur) * 0.5;
-        altitudes[i] = t->meta->surrogateNav;
+        altitudes[i] = *t->surrogateNav;
         minUsedLod = std::min(minUsedLod, (uint32)t->nodeInfo.nodeId().lod);
         if (options.debugRenderAltitudeShiftCorners)
         {
             RenderTask task;
             task.mesh = getMeshRenderable("internal://data/meshes/sphere.obj");
             task.mesh->priority = std::numeric_limits<float>::infinity();
-            task.model = translationMatrix(t->meta->surrogatePhys)
+            task.model = translationMatrix(*t->surrogatePhys)
                     * scaleMatrix(t->nodeInfo.extents().size() * 0.031);
             task.color = vec4f(1.f, 1.f, 1.f, 1.f);
             if (*task.mesh)

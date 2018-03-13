@@ -109,6 +109,8 @@ public:
     {
         Texture *tex = (Texture*)t.texColor.get();
         Mesh *m = (Mesh*)t.mesh.get();
+        if (!m || !tex)
+            return;
         shaderSurface->bind();
         shaderSurface->uniformMat4(1, t.mv);
         shaderSurface->uniformMat3(2, t.uvm);
@@ -134,6 +136,9 @@ public:
 
     void drawInfographic(const DrawTask &t)
     {
+        Mesh *m = (Mesh*)t.mesh.get();
+        if (!m)
+            return;
         shaderInfographic->bind();
         shaderInfographic->uniformMat4(1, t.mv);
         shaderInfographic->uniformVec4(2, t.color);
@@ -143,7 +148,6 @@ public:
             Texture *tex = (Texture*)t.texColor.get();
             tex->bind();
         }
-        Mesh *m = (Mesh*)t.mesh.get();
         m->bind();
         m->dispatch();
     }

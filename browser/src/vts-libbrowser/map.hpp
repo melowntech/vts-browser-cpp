@@ -436,6 +436,7 @@ public:
                     vec4f uvClip = vec4f(0,0,1,1));
     std::shared_ptr<Resource> travInternalTexture(TraverseNode *trav,
                                                   uint32 subMeshIndex);
+    bool generateMonolithicGeodataTrav(TraverseNode *trav);
     bool travDetermineMeta(TraverseNode *trav);
     void travDetermineMetaImpl(TraverseNode *trav);
     bool travDetermineDraws(TraverseNode *trav);

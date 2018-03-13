@@ -159,30 +159,36 @@ double MapImpl::coarsenessValue(TraverseNode *trav)
     bool applyDisplaySize = trav->meta->flags()
             & vtslibs::vts::MetaNode::Flag::applyDisplaySize;
 
+    // the test fails by default
     if (!applyTexelSize && !applyDisplaySize)
         return std::numeric_limits<double>::infinity();
 
-    double result = 0;
-
+    double texelSize = 0;
     if (applyTexelSize)
     {
-        vec3 up = renderer.perpendicularUnitVector * trav->meta->texelSize;
-        for (const vec3 &c : trav->cornersPhys)
-        {
-            vec3 c1 = c - up * 0.5;
-            vec3 c2 = c1 + up;
-            c1 = vec4to3(renderer.viewProj * vec3to4(c1, 1), true);
-            c2 = vec4to3(renderer.viewProj * vec3to4(c2, 1), true);
-            double len = std::abs(c2[1] - c1[1]) * renderer.windowHeight * 0.5;
-            result = std::max(result, len);
-        }
+        texelSize = trav->meta->texelSize;
     }
-
-    if (applyDisplaySize)
+    else if (applyDisplaySize)
     {
-        // todo
+        vec3 s = trav->aabbPhys[1] - trav->aabbPhys[0];
+        double m = std::max(s[0], std::max(s[1], s[2]));
+        if (m == std::numeric_limits<double>::infinity())
+            return m;
+        texelSize = m / trav->meta->displaySize;
     }
 
+    // test the value on all corners of node bounding box
+    double result = 0;
+    vec3 up = renderer.perpendicularUnitVector * texelSize;
+    for (const vec3 &c : trav->cornersPhys)
+    {
+        vec3 c1 = c - up * 0.5;
+        vec3 c2 = c1 + up;
+        c1 = vec4to3(renderer.viewProj * vec3to4(c1, 1), true);
+        c2 = vec4to3(renderer.viewProj * vec3to4(c2, 1), true);
+        double len = std::abs(c2[1] - c1[1]) * renderer.windowHeight * 0.5;
+        result = std::max(result, len);
+    }
     return result;
 }
 
@@ -192,6 +198,7 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
     assert(!trav->rendersEmpty());
     assert(trav->rendersReady());
     assert(visibilityTest(trav));
+    assert(trav->surface);
 
     // statistics
     statistics.meshesRenderedTotal++;
@@ -215,8 +222,7 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
         task.mesh->priority = std::numeric_limits<float>::infinity();
         task.model = translationMatrix(*trav->surrogatePhys)
                 * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
-        if (trav->surface)
-            task.color = vec3to4f(trav->surface->color, task.color(3));
+        task.color = vec3to4f(trav->surface->color, task.color(3));
         if (task.ready())
             draws.Infographic.emplace_back(task, this);
     }
@@ -230,7 +236,7 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
             task.model = r.model;
             task.mesh = getMeshRenderable("internal://data/meshes/aabb.obj");
             task.mesh->priority = std::numeric_limits<float>::infinity();
-            task.color = vec4f(0, 0, 1, 1);
+            task.color = vec3to4f(trav->surface->color, task.color(3));
             if (task.ready())
                 draws.Infographic.emplace_back(task, this);
         }
@@ -242,7 +248,23 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
         RenderTask task;
         task.mesh = getMeshRenderable("internal://data/meshes/line.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
-        task.color = vec4f(1, 0, 0, 1);
+        if (trav->layer->freeLayer)
+        {
+            switch (trav->layer->freeLayer->type)
+            {
+            case vtslibs::registry::FreeLayer::Type::meshTiles:
+                task.color = vec4f(1, 0, 0, 1);
+                break;
+            case vtslibs::registry::FreeLayer::Type::geodataTiles:
+                task.color = vec4f(0, 1, 0, 1);
+                break;
+            case vtslibs::registry::FreeLayer::Type::geodata:
+                task.color = vec4f(0, 0, 1, 1);
+                break;
+            default:
+                break;
+            }
+        }
         if (task.ready())
         {
             static const uint32 cora[] = {

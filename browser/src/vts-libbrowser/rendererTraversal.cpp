@@ -96,11 +96,7 @@ bool MapImpl::travDetermineMeta(TraverseNode *trav)
     if (trav->layer->freeLayer
             && trav->layer->freeLayer->type
                 == vtslibs::registry::FreeLayer::Type::geodata)
-    {
-        trav->meta.emplace();
-        travDetermineMetaImpl(trav);
-        return true;
-    }
+        return generateMonolithicGeodataTrav(trav);
 
     const TileId nodeId = trav->nodeInfo.nodeId();
 
@@ -454,9 +450,9 @@ bool MapImpl::travDetermineDrawsSurface(TraverseNode *trav)
 
 bool MapImpl::travDetermineDrawsGeodata(TraverseNode *trav)
 {
-    (void)trav;
     // todo
-    return false;
+    trav->transparent.emplace_back();
+    return true;
 }
 
 bool MapImpl::travInit(TraverseNode *trav, bool skipStatistics)

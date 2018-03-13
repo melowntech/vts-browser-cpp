@@ -40,7 +40,7 @@ DrawTask::DrawTask() :
 }
 
 DrawTask::DrawTask(const RenderTask &r, const MapImpl *m) :
-    mesh(r.mesh->info.userData),
+    mesh(r.mesh ? r.mesh->info.userData : nullptr),
     uvClip{0,0,1,1},
     externalUv(r.externalUv),
     flatShading(r.flatShading || m->options.debugFlatShading)
@@ -109,7 +109,7 @@ bool RenderTask::ready() const
 {
     if (meshAgg && !*meshAgg)
         return false;
-    if (!*mesh)
+    if (mesh && !*mesh)
         return false;
     if (textureColor && !*textureColor)
         return false;

@@ -134,4 +134,42 @@ bool MapLayer::prerequisitesCheckFreeLayer()
     return true;
 }
 
+bool MapImpl::generateMonolithicGeodataTrav(TraverseNode *trav)
+{
+    assert(!!trav->layer->freeLayer);
+    assert(!!trav->layer->freeLayerParams);
+
+    const vtslibs::registry::FreeLayer::Geodata &g
+            = boost::get<vtslibs::registry::FreeLayer::Geodata>(
+                trav->layer->freeLayer->definition);
+
+    trav->meta.emplace();
+
+    // extents
+    {
+        vec3 el = vecFromUblas<vec3>
+                (mapConfig->referenceFrame.division.extents.ll);
+        vec3 eu = vecFromUblas<vec3>
+                (mapConfig->referenceFrame.division.extents.ur);
+        vec3 ed = eu - el;
+        ed = vec3(1 / ed[0], 1 / ed[1], 1 / ed[2]);
+        trav->meta->extents.ll = vecToUblas<math::Point3>(
+                    (vecFromUblas<vec3>(g.extents.ll) - el).cwiseProduct(ed));
+        trav->meta->extents.ur = vecToUblas<math::Point3>(
+                    (vecFromUblas<vec3>(g.extents.ur) - el).cwiseProduct(ed));
+    }
+
+    // aabb
+    trav->aabbPhys[0] = vecFromUblas<vec3>(g.extents.ll);
+    trav->aabbPhys[1] = vecFromUblas<vec3>(g.extents.ur);
+
+    // other
+    trav->meta->displaySize = g.displaySize;
+    trav->meta->update(vtslibs::vts::MetaNode::Flag::applyDisplaySize);
+    travDetermineMetaImpl(trav); // update physical corners
+    trav->surface = &trav->layer->surfaceStack.surfaces[0];
+    trav->priority = computeResourcePriority(trav);
+    return true;
+}
+
 } // namespace vts

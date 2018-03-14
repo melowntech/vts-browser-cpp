@@ -517,7 +517,7 @@ using namespace vts;
 
     try
     {
-        map->renderTickPrepare();
+        map->renderTickPrepare([self timeSinceLastUpdate]);
         map->renderTickRender();
     }
     catch (const vts::MapConfigException &)

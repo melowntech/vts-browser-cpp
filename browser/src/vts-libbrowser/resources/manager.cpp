@@ -441,6 +441,14 @@ void Resource::updatePriority(float p)
         priority = p;
 }
 
+void Resource::reset()
+{
+    if (state == Resource::State::downloading)
+        return;
+    retryNumber = 0;
+    state = Resource::State::errorRetry;
+}
+
 void MapImpl::resourceRenderInitialize()
 {}
 

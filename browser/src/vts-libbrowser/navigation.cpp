@@ -186,7 +186,7 @@ void MapImpl::initializeNavigation()
     assert(isNavigationModeValid());
 }
 
-void MapImpl::updateNavigation()
+void MapImpl::updateNavigation(double elapsedTime)
 {
     {
         const ControlOptions &co = options.controlOptions;
@@ -314,7 +314,7 @@ void MapImpl::updateNavigation()
     vec3 r2(vertical2, vertical2, vertical2);
     navigationPiha(
                 options,
-                1.0 / 60.0, // todo
+                elapsedTime,
                 pos.verticalFov,
                 horizontal1,
                 vertical1,

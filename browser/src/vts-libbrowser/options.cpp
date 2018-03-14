@@ -117,7 +117,7 @@ void saveControlOptions(const ControlOptions &options)
     v["inertiaPan"] = options.inertiaPan;
     v["inertiaZoom"] = options.inertiaZoom;
     v["inertiaRotate"] = options.inertiaRotate;
-    writeLocalFileBuffer(controlOptionsPath(), jsonToString(v));
+    writeLocalFileBuffer(controlOptionsPath(), Buffer(jsonToString(v)));
 }
 
 ControlOptions loadControlOptions()

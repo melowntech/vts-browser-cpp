@@ -380,7 +380,7 @@ bool MapImpl::travDetermineDrawsSurface(TraverseNode *trav)
             {
                 // credits
                 {
-                    BoundInfo *l = b.bound;
+                    const BoundInfo *l = b.bound;
                     assert(l);
                     for (auto &it : l->credits)
                     {

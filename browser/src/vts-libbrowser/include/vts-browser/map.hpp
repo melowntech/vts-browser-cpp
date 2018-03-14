@@ -51,20 +51,19 @@ public:
     void setMapConfigPath(const std::string &mapConfigPath,
                           const std::string &authPath = "",
                           const std::string &sriPath = "");
-    std::string &getMapConfigPath() const;
-    bool getMapProjected() const;
+    std::string getMapConfigPath() const;
 
     void purgeViewCache();
     void purgeDiskCache();
 
     // returns whether the map config has been downloaded
     //   and parsed successfully
-    // most other functions will not work until this is ready
+    // most other functions will not work until this returns true
     bool getMapConfigAvailable() const;
-    // returns whether the map config and all otehr required
+    // returns whether the map config and all other required
     //   external definitions has been downloaded
     //   and parsed successfully
-    // some other functions will not work until this is ready
+    // some other functions will not work until this returns true
     bool getMapConfigReady() const;
     // returns whether the map has all resources needed for complete
     //   render
@@ -77,7 +76,7 @@ public:
     void dataFinalize();
 
     void renderInitialize();
-    void renderTickPrepare();
+    void renderTickPrepare(double elapsedTime); // seconds since last call
     void renderTickRender();
     void renderFinalize();
     void setWindowSize(uint32 width, uint32 height);
@@ -124,16 +123,29 @@ public:
 
     void convert(const double pointFrom[3], double pointTo[3],
                 Srs srsFrom, Srs srsTo) const;
+    void convert(const double (&pointFrom)[3], double pointTo[3],
+                Srs srsFrom, Srs srsTo) const;
 
     std::vector<std::string> getResourceSurfaces() const;
     std::vector<std::string> getResourceBoundLayers() const;
     std::vector<std::string> getResourceFreeLayers() const;
     FreeLayerType getResourceFreeLayerType(const std::string &name) const;
 
+    // monolithic geodata free layer accessors
+    void fabricateResourceFreeLayerGeodata(const std::string &name);
+    std::string getResourceFreeLayerGeodata(const std::string &name) const;
+    void setResourceFreeLayerGeodata(const std::string &name,
+                                     const std::string &value);
+
+    // any geodata free layer accessors
+    std::string getResourceFreeLayerStyle(const std::string &name) const;
+    void setResourceFreeLayerStyle(const std::string &name,
+                                   const std::string &value);
+
     std::vector<std::string> getViewNames() const;
     std::string getViewCurrent() const;
     std::string getViewJson(const std::string &name) const;
-    void getViewData(const std::string &name, class MapView &view) const;
+    class MapView getViewData(const std::string &name) const;
     void setViewCurrent(const std::string &name);
     void setViewJson(const std::string &name, const std::string &view);
     void setViewData(const std::string &name, const class MapView &view);

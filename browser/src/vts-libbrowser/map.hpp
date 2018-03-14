@@ -85,6 +85,11 @@ public:
               const std::string &url);
 
     std::string url;
+
+    std::string style() const;
+    std::shared_ptr<GeodataStylesheet> stylesheet;
+    std::string overrideStyle;
+    std::string overrideGeodata; // monolithic only
 };
 
 class BoundParamInfo : public vtslibs::registry::View::BoundLayerParams
@@ -99,7 +104,7 @@ public:
 
     std::shared_ptr<Resource> textureColor;
     std::shared_ptr<Resource> textureMask;
-    BoundInfo *bound;
+    const BoundInfo *bound;
     bool transparent;
 
 private:
@@ -271,6 +276,8 @@ public:
             const std::string &id);
 
     BrowserOptions browserOptions;
+
+private:
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
     std::unordered_map<std::string, std::shared_ptr<FreeInfo>> freeInfos;
 };
@@ -376,7 +383,7 @@ public:
     void positionToCamera(vec3 &center, vec3 &dir, vec3 &up);
     double positionObjectiveDistance();
     void initializeNavigation();
-    void updateNavigation();
+    void updateNavigation(double elapsedTime);
     bool isNavigationModeValid() const;
 
     // resources methods
@@ -419,7 +426,7 @@ public:
     // renderer methods
     void renderInitialize();
     void renderFinalize();
-    void renderTickPrepare();
+    void renderTickPrepare(double elapsedTime);
     void renderTickRender();
     vtslibs::vts::TileId roundId(TileId nodeId);
     Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,

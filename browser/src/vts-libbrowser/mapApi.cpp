@@ -81,7 +81,7 @@ MapView getMapView(const vtslibs::registry::View &view)
     for (auto &it : view.freeLayers)
     {
         MapView::FreeLayerInfo &f = value.freeLayers[it.first];
-        f.style = it.second.style ? *it.second.style : "";
+        f.styleUrl = it.second.style ? *it.second.style : "";
         getMapViewBoundLayers(it.second.boundLayers, f.boundLayers);
     }
     return value;
@@ -102,8 +102,8 @@ vtslibs::registry::View setMapView(const MapView &value)
     {
         vtslibs::registry::View::FreeLayerParams &f
                 = view.freeLayers[it.first];
-        if (!it.second.style.empty())
-            f.style = it.second.style;
+        if (!it.second.styleUrl.empty())
+            f.style = it.second.styleUrl;
         setMapViewBoundLayers(it.second.boundLayers, f.boundLayers);
     }
     return view;
@@ -151,12 +151,12 @@ void Map::renderInitialize()
     impl->renderInitialize();
 }
 
-void Map::renderTickPrepare()
+void Map::renderTickPrepare(double elapsedTime)
 {
     impl->statistics.resetFrame();
     impl->statistics.renderTicks = ++impl->renderer.tickIndex;
     impl->resourceRenderTick();
-    impl->renderTickPrepare();
+    impl->renderTickPrepare(elapsedTime);
 }
 
 void Map::renderTickRender()
@@ -184,7 +184,7 @@ void Map::setMapConfigPath(const std::string &mapConfigPath,
     impl->initiateSri(nullptr);
 }
 
-std::string &Map::getMapConfigPath() const
+std::string Map::getMapConfigPath() const
 {
     return impl->mapConfigPath;
 }
@@ -198,14 +198,6 @@ void Map::purgeDiskCache()
 void Map::purgeViewCache()
 {
     impl->purgeViewCache();
-}
-
-bool Map::getMapProjected() const
-{
-    if (!getMapConfigAvailable())
-        return false;
-    return impl->mapConfig->navigationSrsType()
-            == vtslibs::registry::Srs::Type::projected;
 }
 
 bool Map::getMapConfigAvailable() const
@@ -315,7 +307,12 @@ const MapCelestialBody &Map::celestialBody()
 
 void Map::setPositionSubjective(bool subjective, bool convert)
 {
-    if (!getMapConfigAvailable() || subjective == getPositionSubjective())
+    if (!getMapConfigAvailable())
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
+    if (subjective == getPositionSubjective())
         return;
     if (convert)
         impl->convertPositionSubjObj();
@@ -335,7 +332,10 @@ bool Map::getPositionSubjective() const
 void Map::setPositionPoint(const double point[3])
 {
     if (!getMapConfigAvailable())
-        return;
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
     assert(point[0] == point[0]);
     assert(point[1] == point[1]);
     assert(point[2] == point[2]);
@@ -378,7 +378,10 @@ void Map::getPositionPoint(double point[3]) const
 void Map::setPositionRotation(const double point[3])
 {
     if (!getMapConfigAvailable())
-        return;
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
     assert(point[0] == point[0]);
     assert(point[1] == point[1]);
     assert(point[2] == point[2]);
@@ -418,7 +421,10 @@ void Map::getPositionRotationLimited(double point[3]) const
 void Map::setPositionViewExtent(double viewExtent)
 {
     if (!getMapConfigAvailable())
-        return;
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
     assert(viewExtent == viewExtent && viewExtent > 0);
     impl->setViewExtent(viewExtent);
 }
@@ -433,7 +439,10 @@ double Map::getPositionViewExtent() const
 void Map::setPositionFov(double fov)
 {
     if (!getMapConfigAvailable())
-        return;
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
     assert(fov > 0 && fov < 180);
     impl->mapConfig->position.verticalFov = fov;
 }
@@ -485,7 +494,10 @@ void setPosition(Map *map, MapImpl *impl,
 void Map::setPositionJson(const std::string &position)
 {
     if (!getMapConfigAvailable())
-        return;
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
     Json::Value val = stringToJson(position);
     vtslibs::registry::Position pos = vtslibs::registry::positionFromJson(val);
     setPosition(this, impl.get(), pos);
@@ -494,7 +506,10 @@ void Map::setPositionJson(const std::string &position)
 void Map::setPositionUrl(const std::string &position)
 {
     if (!getMapConfigAvailable())
-        return;
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
     vtslibs::registry::Position pos;
     try
     {
@@ -510,7 +525,10 @@ void Map::setPositionUrl(const std::string &position)
 void Map::resetPositionAltitude()
 {
     if (!getMapConfigAvailable())
-        return;
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
     impl->navigation.positionAltitudeReset = 0;
     impl->updatePositionAltitude();
 }
@@ -518,14 +536,20 @@ void Map::resetPositionAltitude()
 void Map::resetNavigationMode()
 {
     if (!getMapConfigAvailable())
-        return;
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
     impl->resetNavigationMode();
 }
 
 void Map::setAutoRotation(double value)
 {
     if (!getMapConfigAvailable())
-        return;
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
     impl->navigation.autoRotation = value;
 }
 
@@ -540,10 +564,19 @@ void Map::convert(const double pointFrom[3], double pointTo[3],
                   Srs srsFrom, Srs srsTo) const
 {
     if (!getMapConfigAvailable())
-        return;
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
     vec3 a = rawToVec3(pointFrom);
     a = impl->convertor->convert(a, srsFrom, srsTo);
     vecToRaw(a, pointTo);
+}
+
+void Map::convert(const double (&pointFrom)[3], double pointTo[3],
+            Srs srsFrom, Srs srsTo) const
+{
+    convert(&pointFrom[0], pointTo, srsFrom, srsTo);
 }
 
 std::vector<std::string> Map::getResourceSurfaces() const
@@ -599,6 +632,76 @@ FreeLayerType Map::getResourceFreeLayerType(const std::string &name) const
     }
 }
 
+void Map::fabricateResourceFreeLayerGeodata(const std::string &name)
+{
+    if (!getMapConfigAvailable())
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
+    if (impl->mapConfig->freeLayers.has(name))
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Duplicate free layer name.";
+    }
+    vtslibs::registry::FreeLayer fl;
+    fl.id = name;
+    auto &g = fl.createDefinition<vtslibs::registry::FreeLayer::Geodata>();
+    g.displaySize = 0;
+    impl->mapConfig->freeLayers.set(name, fl);
+    impl->mapConfig->getFreeInfo(name);
+}
+
+std::string Map::getResourceFreeLayerGeodata(const std::string &name) const
+{
+    if (getResourceFreeLayerType(name) != FreeLayerType::MonolithicGeodata)
+        return "";
+    // todo
+    return "";
+}
+
+void Map::setResourceFreeLayerGeodata(const std::string &name,
+                                      const std::string &value)
+{
+    if (getResourceFreeLayerType(name) != FreeLayerType::MonolithicGeodata)
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
+    impl->mapConfig->getFreeInfo(name)->overrideGeodata = value;
+    purgeViewCache();
+}
+
+std::string Map::getResourceFreeLayerStyle(const std::string &name) const
+{
+    switch (getResourceFreeLayerType(name))
+    {
+    case FreeLayerType::MonolithicGeodata:
+    case FreeLayerType::TiledGeodata:
+        break;
+    default:
+        return "";
+    }
+    return impl->mapConfig->getFreeInfo(name)->style();
+}
+
+void Map::setResourceFreeLayerStyle(const std::string &name,
+                                    const std::string &value)
+{
+    switch (getResourceFreeLayerType(name))
+    {
+    case FreeLayerType::MonolithicGeodata:
+    case FreeLayerType::TiledGeodata:
+        break;
+    default:
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+        throw;
+    }
+    impl->mapConfig->getFreeInfo(name)->overrideStyle = value;
+    purgeViewCache();
+}
+
 std::vector<std::string> Map::getViewNames() const
 {
     if (!getMapConfigAvailable())
@@ -620,11 +723,16 @@ std::string Map::getViewCurrent() const
 void Map::setViewCurrent(const std::string &name)
 {
     if (!getMapConfigAvailable())
-        return;
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
     auto it = impl->mapConfig->namedViews.find(name);
     if (it == impl->mapConfig->namedViews.end())
+    {
         LOGTHROW(err2, std::runtime_error)
                 << "Specified mapconfig view could not be found.";
+    }
     impl->mapConfig->view = it->second;
     impl->purgeViewCache();
     impl->mapConfigView = name;
@@ -632,21 +740,26 @@ void Map::setViewCurrent(const std::string &name)
         impl->initiateSri(nullptr);
 }
 
-void Map::getViewData(const std::string &name, MapView &view) const
+MapView Map::getViewData(const std::string &name) const
 {
     if (!getMapConfigAvailable())
-        return;
+        return {};
     auto it = impl->mapConfig->namedViews.find(name);
     if (it == impl->mapConfig->namedViews.end())
+    {
         LOGTHROW(err2, std::runtime_error)
                 << "Specified mapconfig view could not be found.";
-    view = getMapView(it->second);
+    }
+    return getMapView(it->second);
 }
 
 void Map::setViewData(const std::string &name, const MapView &view)
 {
     if (!getMapConfigAvailable())
-        return;
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
     impl->mapConfig->namedViews[name] = setMapView(view);
     if (name == getViewCurrent())
     {
@@ -658,11 +771,16 @@ void Map::setViewData(const std::string &name, const MapView &view)
 void Map::removeView(const std::string &name)
 {
     if (!getMapConfigAvailable())
-        return;
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
     if (name == getViewCurrent())
+    {
         LOGTHROW(err2, std::runtime_error)
                 << "Named mapconfig view cannot be erased "
                    "because it is beeing used.";
+    }
     impl->mapConfig->namedViews.erase(name);
 }
 
@@ -675,8 +793,10 @@ std::string Map::getViewJson(const std::string &name) const
                 impl->mapConfig->view, impl->mapConfig->boundLayers));
     auto it = impl->mapConfig->namedViews.find(name);
     if (it == impl->mapConfig->namedViews.end())
+    {
         LOGTHROW(err2, std::runtime_error)
                 << "Specified mapconfig view could not be found.";
+    }
     return jsonToString(vtslibs::registry::asJson(it->second,
                         impl->mapConfig->boundLayers));
 }
@@ -685,7 +805,10 @@ void Map::setViewJson(const std::string &name,
                                 const std::string &view)
 {
     if (!getMapConfigAvailable())
-        return;
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
     Json::Value val = stringToJson(view);
     setViewData(name, getMapView(vtslibs::registry::viewFromJson(val)));
 }
@@ -753,6 +876,11 @@ void MapImpl::printDebugInfo()
         it->surfaceStack.print();
         if (it->tilesetStack)
             it->tilesetStack->print();
+        if (it->freeLayer)
+        {
+            LOG(info3) << "Override Style: " + it->freeLayer->overrideStyle;
+            LOG(info3) << "Override Geodata: " + it->freeLayer->overrideGeodata;
+        }
     }
 }
 

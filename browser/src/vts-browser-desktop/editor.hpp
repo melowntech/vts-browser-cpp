@@ -24,55 +24,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef VIEW_H_wqfzugsahakwejgr
-#define VIEW_H_wqfzugsahakwejgr
+#ifndef EDITOR_H_gfeuwefw
+#define EDITOR_H_gfeuwefw
 
 #include <string>
-#include <vector>
-#include <map>
 
-#include "foundation.hpp"
-
-namespace vts
-{
-
-class VTS_API MapView
-{
-public:
-    class BoundLayerInfo
-    {
-    public:
-        typedef std::vector<BoundLayerInfo> List;
-
-        std::string id;
-        double alpha;
-
-        BoundLayerInfo();
-        BoundLayerInfo(const std::string &id);
-    };
-
-    class SurfaceInfo
-    {
-    public:
-        typedef std::map<std::string, SurfaceInfo> Map;
-
-        BoundLayerInfo::List boundLayers;
-    };
-
-    class FreeLayerInfo
-    {
-    public:
-        typedef std::map<std::string, FreeLayerInfo> Map;
-
-        BoundLayerInfo::List boundLayers;
-        std::string styleUrl;
-    };
-
-    std::string description;
-    SurfaceInfo::Map surfaces;
-    FreeLayerInfo::Map freeLayers;
-};
-
-} // namespace vts
+std::string editor(const std::string &name, const std::string &value);
 
 #endif

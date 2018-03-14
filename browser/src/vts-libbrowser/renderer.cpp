@@ -64,18 +64,12 @@ void MapImpl::purgeMapConfig()
     LOG(info2) << "Purge map config";
 
     if (resources.auth)
-    {
-        resources.auth->state = Resource::State::errorRetry;
-        resources.auth->retryTime = 0;
-    }
-    if (mapConfig)
-    {
-        mapConfig->state = Resource::State::errorRetry;
-        mapConfig->retryTime = 0;
-    }
-
+        resources.auth->reset();
     resources.auth.reset();
+    if (mapConfig)
+        mapConfig->reset();
     mapConfig.reset();
+
     renderer.credits.purge();
     resources.searchTasks.clear();
     resetNavigationMode();
@@ -399,7 +393,7 @@ bool MapImpl::prerequisitesCheck()
     return mapconfigReady;
 }
 
-void MapImpl::renderTickPrepare()
+void MapImpl::renderTickPrepare(double elapsedTime)
 {
     if (!prerequisitesCheck())
         return;
@@ -410,7 +404,7 @@ void MapImpl::renderTickPrepare()
     assert(!layers.empty());
     assert(layers[0]->traverseRoot);
 
-    updateNavigation();
+    updateNavigation(elapsedTime);
     updateSearch();
     updateSris();
     for (auto &it : layers)

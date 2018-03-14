@@ -164,11 +164,14 @@ void writeLocalFileBuffer(const std::string &path, const Buffer &buffer)
     if (!f)
         LOGTHROW(err1, std::runtime_error) << "Failed to write file <"
                                            << path << ">";
-    if (fwrite(buffer.data(), buffer.size(), 1, f) != 1)
+    if (buffer.size() > 0)
     {
-        fclose(f);
-        LOGTHROW(err1, std::runtime_error) << "Failed to write file <"
-                                           << path << ">";
+        if (fwrite(buffer.data(), buffer.size(), 1, f) != 1)
+        {
+            fclose(f);
+            LOGTHROW(err1, std::runtime_error) << "Failed to write file <"
+                                               << path << ">";
+        }
     }
     if (fclose(f) != 0)
         LOGTHROW(err1, std::runtime_error) << "Failed to write file <"

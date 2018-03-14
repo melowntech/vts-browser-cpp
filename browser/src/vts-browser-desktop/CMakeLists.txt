@@ -9,6 +9,7 @@ set(SRC_LIST
     gui.cpp
     mainWindow.cpp mainWindow.hpp
     programOptions.cpp programOptions.hpp
+    editor.cpp editor.hpp
     main.cpp
 )
 

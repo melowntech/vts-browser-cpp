@@ -46,7 +46,7 @@ GeodataStylesheet::GeodataStylesheet(MapImpl *map, const std::string &name) :
 void GeodataStylesheet::load()
 {
     LOG(info2) << "Loading geodata stylesheet <" << name << ">";
-    // todo
+    data = reply.content.str();
 }
 
 } // namespace vts

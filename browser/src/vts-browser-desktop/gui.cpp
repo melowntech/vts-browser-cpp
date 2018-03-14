@@ -42,6 +42,7 @@
 
 #include "mainWindow.hpp"
 #include "guiSkin.hpp"
+#include "editor.hpp"
 
 using namespace vts;
 using namespace renderer;
@@ -894,6 +895,16 @@ public:
         if (nk_begin(&ctx, "Position", nk_rect(890, 10, 250, 400), flags))
         {
             float width = nk_window_get_content_region_size(&ctx).x - 30;
+
+            // loading?
+            if (!window->map->getMapConfigAvailable())
+            {
+                nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
+                nk_label(&ctx, "Loading...", NK_TEXT_LEFT);
+                nk_end(&ctx);
+                return;
+            }
+
             float ratio[] = { width * 0.4f, width * 0.6f };
             nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
             char buffer[256];
@@ -1142,6 +1153,29 @@ public:
         return false;
     }
 
+    uint32 currentMapConfig()
+    {
+        std::string current = window->map->getMapConfigPath();
+        uint32 idx = 0;
+        for (auto it : window->appOptions.paths)
+        {
+            if (it.mapConfig == current)
+                return idx;
+            idx++;
+        }
+        return 0;
+    }
+
+    void selectMapconfig(uint32 index)
+    {
+        window->marks.clear();
+        if (index == (uint32)-1)
+            index = window->appOptions.paths.size() - 1;
+        else
+            index = index % window->appOptions.paths.size();
+        window->setMapConfigPath(window->appOptions.paths[index]);
+    }
+
     void prepareViews()
     {
         int flags = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE
@@ -1156,6 +1190,7 @@ public:
             // mapconfig selector
             if (window->appOptions.paths.size() > 1)
             {
+                // combo selector
                 nk_layout_row(&ctx, NK_STATIC, 20, 1, &width);
                 if (nk_combo_begin_label(&ctx,
                                  window->map->getMapConfigPath().c_str(),
@@ -1169,9 +1204,7 @@ public:
                                 window->appOptions.paths[i].mapConfig.c_str(),
                                                 NK_TEXT_LEFT))
                         {
-                            window->marks.clear();
-                            window->setMapConfigPath(
-                                        window->appOptions.paths[i]);
+                            selectMapconfig(i);
                             nk_combo_end(&ctx);
                             nk_end(&ctx);
                             return;
@@ -1179,6 +1212,33 @@ public:
                     }
                     nk_combo_end(&ctx);
                 }
+
+                // buttons
+                {
+                    float ratio[] = { width * 0.5f, width * 0.5f };
+                    nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+                }
+                if (nk_button_label(&ctx, "< Prev"))
+                {
+                    selectMapconfig(currentMapConfig() - 1);
+                    nk_end(&ctx);
+                    return;
+                }
+                if (nk_button_label(&ctx, "Next >"))
+                {
+                    selectMapconfig(currentMapConfig() + 1);
+                    nk_end(&ctx);
+                    return;
+                }
+            }
+
+            // loading?
+            if (!window->map->getMapConfigAvailable())
+            {
+                nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
+                nk_label(&ctx, "Loading...", NK_TEXT_LEFT);
+                nk_end(&ctx);
+                return;
             }
 
             // named view selector
@@ -1201,9 +1261,10 @@ public:
 
             // current view
             bool viewChanged = false;
-            MapView view;
-            window->map->getViewData(window->map->getViewCurrent(), view);
+            MapView view = window->map->getViewData(
+                        window->map->getViewCurrent());
 
+            // surfaces
             const std::vector<std::string> surfaces
                     = window->map->getResourceSurfaces();
             if (nk_tree_push(&ctx, NK_TREE_TAB, labelWithCounts(
@@ -1232,6 +1293,7 @@ public:
                 nk_tree_pop(&ctx);
             }
 
+            // free layers
             const std::vector<std::string> freeLayers
                     = window->map->getResourceFreeLayers();
             if (nk_tree_push(&ctx, NK_TREE_TAB, labelWithCounts(
@@ -1248,6 +1310,8 @@ public:
                     if (v2)
                     {
                         MapView::FreeLayerInfo &s = view.freeLayers[ln];
+                        bool editableStyle = false;
+                        bool editableGeodata = false;
                         switch (window->map->getResourceFreeLayerType(ln))
                         {
                         case FreeLayerType::TiledMeshes:
@@ -1256,16 +1320,44 @@ public:
                             viewChanged = viewChanged
                                 || prepareViewsBoundLayers(s.boundLayers, bid);
                         } break;
-                        case FreeLayerType::TiledGeodata:
                         case FreeLayerType::MonolithicGeodata:
-                        {
-                            // style
-                            float ratio[] = { 10, width - 10 };
-                            nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
-                            nk_label(&ctx, s.style.c_str(), NK_TEXT_ALIGN_LEFT);
-                        } break;
+                            editableGeodata = true;
+                            // no break here
+                        case FreeLayerType::TiledGeodata:
+                            editableStyle = true;
+                            break;
                         default:
                             break;
+                        }
+                        if (editableGeodata || editableStyle)
+                        {
+                            {
+                                float ratio[] = { 15, (width - 15) * 0.5f, (width - 15) * 0.5f };
+                                nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
+                            }
+                            nk_label(&ctx, "", NK_TEXT_LEFT);
+                            if (editableStyle)
+                            {
+                                if (nk_button_label(&ctx, "Style"))
+                                {
+                                    std::string v = window->map->getResourceFreeLayerStyle(ln);
+                                    v = editor(ln + ".style", v);
+                                    window->map->setResourceFreeLayerStyle(ln, v);
+                                }
+                            }
+                            else
+                                nk_label(&ctx, "", NK_TEXT_LEFT);
+                            if (editableGeodata)
+                            {
+                                if (nk_button_label(&ctx, "Geodata"))
+                                {
+                                    std::string v = window->map->getResourceFreeLayerGeodata(ln);
+                                    v = editor(ln + ".geo", v);
+                                    window->map->setResourceFreeLayerGeodata(ln, v);
+                                }
+                            }
+                            else
+                                nk_label(&ctx, "", NK_TEXT_LEFT);
                         }
                     }
                     else
@@ -1273,6 +1365,26 @@ public:
                     if (v1 != v2)
                         viewChanged = true;
                 }
+
+                // fabricate geodata layer
+                nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
+                if (nk_button_label(&ctx, "Add Geodata Layer"))
+                {
+                    const std::set<std::string> fls(freeLayers.begin(),
+                                                    freeLayers.end());
+                    for (uint32 i = 1; true; i++)
+                    {
+                        std::ostringstream ss;
+                        ss << "Geodata " << i;
+                        std::string n = ss.str();
+                        if (fls.count(n) == 0)
+                        {
+                            window->map->fabricateResourceFreeLayerGeodata(n);
+                            break;
+                        }
+                    }
+                }
+
                 nk_tree_pop(&ctx);
             }
 

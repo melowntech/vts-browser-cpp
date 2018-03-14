@@ -24,55 +24,44 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef VIEW_H_wqfzugsahakwejgr
-#define VIEW_H_wqfzugsahakwejgr
+#include <cstdlib>
+#include <cstdio>
+#include <sstream>
+#include <vts-browser/buffer.hpp>
+#include <vts-browser/log.hpp>
 
-#include <string>
-#include <vector>
-#include <map>
+#include "editor.hpp"
 
-#include "foundation.hpp"
-
-namespace vts
+std::string editor(const std::string &name, const std::string &value)
 {
+    vts::log(vts::LogLevel::info3,
+             std::string() + "Editing file <" + name + ">");
 
-class VTS_API MapView
-{
-public:
-    class BoundLayerInfo
+    std::string tmpName = "vts-browser-editing.json";
+    std::string result = value;
+
+    struct Deleter
     {
-    public:
-        typedef std::vector<BoundLayerInfo> List;
+        std::string name;
+        Deleter(const std::string &name) : name(name) {}
+        ~Deleter() { try { std::remove(name.c_str()); } catch(...) {} }
+    } deleter(tmpName);
 
-        std::string id;
-        double alpha;
-
-        BoundLayerInfo();
-        BoundLayerInfo(const std::string &id);
-    };
-
-    class SurfaceInfo
+    try
     {
-    public:
-        typedef std::map<std::string, SurfaceInfo> Map;
-
-        BoundLayerInfo::List boundLayers;
-    };
-
-    class FreeLayerInfo
+        vts::writeLocalFileBuffer(tmpName, vts::Buffer(value));
+        std::string cmd = "xterm -e $EDITOR " + tmpName;
+        auto res = std::system(cmd.c_str());
+        std::ostringstream ss;
+        ss << "Result of System call: " << res;
+        vts::log(vts::LogLevel::info2, ss.str());
+        result = vts::readLocalFileBuffer(tmpName).str();
+    }
+    catch (...)
     {
-    public:
-        typedef std::map<std::string, FreeLayerInfo> Map;
+        // nothing
+    }
 
-        BoundLayerInfo::List boundLayers;
-        std::string styleUrl;
-    };
+    return result;
+}
 
-    std::string description;
-    SurfaceInfo::Map surfaces;
-    FreeLayerInfo::Map freeLayers;
-};
-
-} // namespace vts
-
-#endif

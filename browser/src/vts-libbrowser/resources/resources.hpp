@@ -74,6 +74,7 @@ public:
     void processLoad(); // calls load
     bool performAvailTest() const;
     void updatePriority(float priority);
+    void reset();
     operator bool () const;
 
     ResourceInfo info;
@@ -227,6 +228,8 @@ class GeodataStylesheet : public Resource
 public:
     GeodataStylesheet(MapImpl *map, const std::string &name);
     void load() override;
+
+    std::string data;
 };
 
 } // namespace vts

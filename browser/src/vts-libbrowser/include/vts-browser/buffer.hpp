@@ -39,15 +39,15 @@ class VTS_API Buffer
 {
 public:
     Buffer();
-    Buffer(uint32 size); // create preallocated buffer (it is not zeroed)
-    Buffer(const std::string &str); // create buffer from string
+    explicit Buffer(uint32 size); // create preallocated buffer (it is not zeroed)
+    explicit Buffer(const std::string &str); // create buffer from string
     ~Buffer();
 
     // move semantics
     Buffer(Buffer &&other) noexcept;
     Buffer &operator = (Buffer &&other) noexcept;
 
-    // implicit copy semantics are disabled for performance reasons
+    // implicit copy semantics are disabled (for performance reasons)
     Buffer(const Buffer &other) = delete;
     Buffer &operator = (const Buffer &other) = delete;
 

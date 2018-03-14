@@ -34,6 +34,15 @@ FreeInfo::FreeInfo(const vtslibs::registry::FreeLayer &fl,
     : FreeLayer(fl), url(url)
 {}
 
+std::string FreeInfo::style() const
+{
+    if (!overrideStyle.empty())
+        return overrideStyle;
+    if (stylesheet && *stylesheet)
+        return stylesheet->data;
+    return "";
+}
+
 MapLayer::MapLayer(MapImpl *map) : map(map)
 {
     boundLayerParams = map->mapConfig->view.surfaces;

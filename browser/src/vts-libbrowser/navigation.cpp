@@ -36,13 +36,13 @@ MapImpl::Navigation::Navigation() :
     previousType(NavigationType::Quick)
 {}
 
-void MapImpl::applyCameraRotationNormalization(vec3 &rot)
+uint32 MapImpl::applyCameraRotationNormalization(vec3 &rot)
 {
     if (!options.enableCameraNormalization
             || options.navigationType == NavigationType::FlyOver
             || mapConfig->position.type
                     == vtslibs::registry::Position::Type::subjective)
-        return;
+        return 0;
 
     // find the interpolation factor
     double extCur = mapConfig->position.verticalExtent;
@@ -63,12 +63,19 @@ void MapImpl::applyCameraRotationNormalization(vec3 &rot)
     if (options.navigationMode == NavigationMode::Azimuthal)
         yaw = 0;
     else if (options.navigationMode == NavigationMode::Seamless)
-    {
-        if (yaw > 180)
-            yaw = 360 - interpolate(360 - yaw, 0, f);
-        else
-            yaw = interpolate(yaw, 0, f);
-    }
+        yaw = interpolate(yaw, 0, f);
+
+    return /*(options.navigationMode == NavigationMode::Seamless
+                || options.navigationMode == NavigationMode::Azimuthal)
+            &&*/ extCur > extHig ? 2 : 1;
+}
+
+uint32 MapImpl::applyCameraRotationNormalization(math::Point3 &rot)
+{
+    vec3 r = vecFromUblas<vec3>(rot);
+    auto res = applyCameraRotationNormalization(r);
+    rot = vecToUblas<math::Point3>(r);
+    return res;
 }
 
 void MapImpl::resetNavigationMode()
@@ -284,10 +291,8 @@ void MapImpl::updateNavigation(double elapsedTime)
     {
         double yaw = mapConfig->position.orientation[0];
         double &ch = navigation.changeRotation(0);
-        if (yaw > 180)
-            ch = std::max(ch, 180 + 1e-7 - yaw);
-        else
-            ch = std::min(ch, 180 - 1e-7 - yaw);
+        ch = clamp(yaw + ch, -180 + 1e-7, 180 - 1e-7) - yaw;
+        assert(yaw + ch >= -180 && yaw + ch <= 180);
     }
 
     // find inputs for perceptually invariant motion
@@ -305,20 +310,21 @@ void MapImpl::updateNavigation(double elapsedTime)
         convertor->geoInverse(p, navigation.targetPoint, horizontal1,
                               azi1, azi2);
         break;
-    case vtslibs::registry::Srs::Type::cartesian:
+    default:
         LOGTHROW(fatal, std::invalid_argument)
                 << "Invalid navigation srs type";
     }
     double vertical1 = navigation.targetPoint(2) - p(2);
     double vertical2 = std::numeric_limits<double>::quiet_NaN();
     vec3 r2(vertical2, vertical2, vertical2);
+    double prevExtent = pos.verticalExtent;
     navigationPiha(
                 options,
                 elapsedTime,
                 pos.verticalFov,
                 horizontal1,
                 vertical1,
-                pos.verticalExtent,
+                prevExtent,
                 navigation.targetViewExtent - pos.verticalExtent,
                 r,
                 navigation.changeRotation,
@@ -422,9 +428,9 @@ void MapImpl::updateNavigation(double elapsedTime)
 
     // asserts
     assert(isNavigationModeValid());
-    assert(r(0) >= 0 && r(0) <= 360);
-    assert(r(1) >= 0 && r(1) <= 360);
-    assert(r(2) >= 0 && r(2) <= 360);
+    assert(r(0) >= -180 && r(0) <= 180);
+    assert(r(1) >= -180 && r(1) <= 180);
+    assert(r(2) >= -180 && r(2) <= 180);
     if (mapConfig->navigationSrsType()
             == vtslibs::registry::Srs::Type::geographic)
     {
@@ -438,7 +444,12 @@ void MapImpl::updateNavigation(double elapsedTime)
 
     // altitude corrections
     if (pos.type == vtslibs::registry::Position::Type::objective)
-        updatePositionAltitude(horizontal2 / pos.verticalExtent);
+    {
+        double f1 = horizontal2 / pos.verticalExtent;
+        double f2  = std::abs(std::log(pos.verticalExtent)
+                              - std::log(prevExtent));
+        updatePositionAltitude(std::max(f1, f2));
+    }
 
     // statistics
     statistics.currentNavigationMode = navigation.mode;
@@ -452,13 +463,25 @@ bool MapImpl::isNavigationModeValid() const
     return true;
 }
 
+vec3 MapImpl::applyCameraRotationNormalizationPermanently()
+{
+    vtslibs::registry::Position &pos = mapConfig->position;
+    vec3 posRot = vecFromUblas<vec3>(pos.orientation);
+    if (applyCameraRotationNormalization(posRot) == 2)
+    {
+        pos.orientation = vecToUblas<math::Point3>(posRot);
+        if (navigation.mode == NavigationMode::Azimuthal)
+            navigation.changeRotation = vec3(0,0,0);
+    }
+    return posRot;
+}
+
 void MapImpl::pan(vec3 value)
 {
     assert(isNavigationModeValid());
 
     vtslibs::registry::Position &pos = mapConfig->position;
-    vec3 posRot = vecFromUblas<vec3>(pos.orientation);
-    applyCameraRotationNormalization(posRot);
+    vec3 posRot = applyCameraRotationNormalizationPermanently();
 
     // camera roll
     value = mat4to3(rotationMatrix(2, -posRot[2])) * value;
@@ -527,14 +550,14 @@ void MapImpl::rotate(vec3 value)
 {
     assert(isNavigationModeValid());
 
-    navigation.changeRotation += value.cwiseProduct(vec3(0.2, -0.1, 0.2)
-                    * options.controlOptions.sensitivityRotate);
-
     if (mapConfig->navigationSrsType()
             == vtslibs::registry::Srs::Type::geographic
             && options.navigationMode == NavigationMode::Dynamic)
         navigation.mode = NavigationMode::Free;
 
+    navigation.changeRotation += value.cwiseProduct(vec3(0.2, -0.1, 0.2)
+                    * options.controlOptions.sensitivityRotate);
+    applyCameraRotationNormalizationPermanently();
     navigation.autoRotation = 0;
 
     assert(isNavigationModeValid());

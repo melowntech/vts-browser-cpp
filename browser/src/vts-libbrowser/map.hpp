@@ -156,7 +156,6 @@ public:
 class RenderTask
 {
 public:
-    std::shared_ptr<MeshAggregate> meshAgg;
     std::shared_ptr<Resource> mesh;
     std::shared_ptr<Resource> textureColor;
     std::shared_ptr<Resource> textureMask;
@@ -458,7 +457,9 @@ public:
     void traverseClearing(TraverseNode *trav);
     void updateCamera();
     bool prerequisitesCheck();
-    void applyCameraRotationNormalization(vec3 &rot);
+    uint32 applyCameraRotationNormalization(vec3 &rot);
+    uint32 applyCameraRotationNormalization(math::Point3 &rot);
+    vec3 applyCameraRotationNormalizationPermanently();
 };
 
 bool testAndThrow(Resource::State state, const std::string &message);

@@ -99,8 +99,6 @@ void MapImpl::purgeViewCache()
 
 void MapImpl::touchDraws(const RenderTask &task)
 {
-    if (task.meshAgg)
-        touchResource(task.meshAgg);
     if (task.textureColor)
         touchResource(task.textureColor);
     if (task.textureMask)

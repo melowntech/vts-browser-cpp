@@ -458,14 +458,17 @@ std::string Map::getPositionJson() const
 {
     if (!getMapConfigAvailable())
         return "";
-    return jsonToString(vtslibs::registry::asJson(impl->mapConfig->position));
+    vtslibs::registry::Position p = impl->mapConfig->position;
+    impl->applyCameraRotationNormalization(p.orientation);
+    return jsonToString(vtslibs::registry::asJson(p));
 }
 
 std::string Map::getPositionUrl() const
 {
     if (!getMapConfigAvailable())
         return "";
-    const vtslibs::registry::Position &p = impl->mapConfig->position;
+    vtslibs::registry::Position p = impl->mapConfig->position;
+    impl->applyCameraRotationNormalization(p.orientation);
     std::ostringstream ss;
     ss << std::fixed << std::setprecision(10);
     ss << p;

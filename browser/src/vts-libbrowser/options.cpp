@@ -61,14 +61,13 @@ MapOptions::MapOptions() :
     viewExtentLimitScaleMax(2.35183443086), // 1.5e7 metres on earth
     viewExtentThresholdScaleLow(0.03135779241), // 200 000 metres on earth
     viewExtentThresholdScaleHigh(0.20382565067), // 1 300 000 metres on earth
-    tiltLimitAngleLow(270),
-    tiltLimitAngleHigh(350),
+    tiltLimitAngleLow(-90),
+    tiltLimitAngleHigh(-10),
     cameraAltitudeFadeOutFactor(0.5),
     navigationLatitudeThreshold(80),
     navigationPihaViewExtentMult(1.02),
     navigationPihaPositionChange(0.02),
     renderTilesScale(1.001),
-    //renderTilesScale(0.5),
     targetResourcesMemory(0),
     maxConcurrentDownloads(25),
     maxResourceProcessesPerTick(10),

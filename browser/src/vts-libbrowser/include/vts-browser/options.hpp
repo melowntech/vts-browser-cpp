@@ -123,7 +123,7 @@ public:
     double viewExtentThresholdScaleLow;
     double viewExtentThresholdScaleHigh;
 
-    // camera tilt limits (eg. 270 - 360)
+    // camera tilt limits (eg. -90 - 0)
     double tiltLimitAngleLow;
     double tiltLimitAngleHigh;
 

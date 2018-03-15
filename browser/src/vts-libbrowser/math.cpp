@@ -439,7 +439,7 @@ double smootherstep(double f)
 
 void normalizeAngle(double &a)
 {
-    a = modulo(a, 360);
+    a = modulo(a + 180, 360) - 180;
 }
 
 double degToRad(double angle)

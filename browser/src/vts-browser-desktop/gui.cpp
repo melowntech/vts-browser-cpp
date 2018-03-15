@@ -957,10 +957,10 @@ public:
                     nk_combo_end(&ctx);
                 }
             }
-            nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
             // position
             {
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 double n[3];
                 window->map->getPositionPoint(n);
                 try
@@ -993,17 +993,33 @@ public:
 
             // rotation
             {
-                double n[3];
+                {
+                    float ratio[] = { width * 0.4f, width * 0.3f, width * 0.3f };
+                    nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
+                }
+                double n[3], c[3];
                 window->map->getPositionRotation(n);
-                nk_label(&ctx, "Rotation:", NK_TEXT_LEFT);
+                window->map->getPositionRotationLimited(c);
+                // yaw
+                nk_label(&ctx, "Yaw:", NK_TEXT_LEFT);
                 sprintf(buffer, "%5.1f", n[0]);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                nk_label(&ctx, "", NK_TEXT_LEFT);
+                sprintf(buffer, "%5.1f", c[0]);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                // pitch/tilt
+                nk_label(&ctx, "Pitch:", NK_TEXT_LEFT);
                 sprintf(buffer, "%5.1f", n[1]);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                nk_label(&ctx, "", NK_TEXT_LEFT);
+                sprintf(buffer, "%5.1f", c[1]);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                // roll
+                nk_label(&ctx, "Roll:", NK_TEXT_LEFT);
                 sprintf(buffer, "%5.1f", n[2]);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                sprintf(buffer, "%5.1f", c[2]);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                // reset
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset rotation"))
                 {
@@ -1016,6 +1032,7 @@ public:
 
             // view extent
             {
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 nk_label(&ctx, "View extent:", NK_TEXT_LEFT);
                 sprintf(buffer, "%10.1f", window->map->getPositionViewExtent());
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
@@ -1023,18 +1040,20 @@ public:
 
             // fov
             {
-                float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
-                nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
+                {
+                    float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
+                    nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
+                }
                 nk_label(&ctx, "Fov:", NK_TEXT_LEFT);
                 window->map->setPositionFov(nk_slide_float(&ctx, 10,
                                     window->map->getPositionFov(), 100, 1));
                 sprintf(buffer, "%5.1f", window->map->getPositionFov());
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             }
-            nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
             // output
             {
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 nk_label(&ctx, "Output:", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Copy to clipboard"))
                     SDL_SetClipboardText(window->map->getPositionUrl().c_str());
@@ -1043,8 +1062,10 @@ public:
             // auto movement
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Auto", NK_MINIMIZED))
             {
-                float ratio[] = { width * 0.4f, width * 0.6f };
-                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+                {
+                    float ratio[] = { width * 0.4f, width * 0.6f };
+                    nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+                }
 
                 for (int i = 0; i < 3; i++)
                 {

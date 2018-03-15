@@ -395,7 +395,6 @@ bool MapImpl::travDetermineDrawsSurface(TraverseNode *trav)
                 task.textureColor = b.textureColor;
                 task.textureMask = b.textureMask;
                 task.color(3) = b.alpha ? *b.alpha : 1;
-                task.meshAgg = meshAgg;
                 task.mesh = mesh;
                 task.model = part.normToPhys;
                 task.uvm = b.uvMatrix();
@@ -425,7 +424,6 @@ bool MapImpl::travDetermineDrawsSurface(TraverseNode *trav)
             case Validity::Valid:
                 break;
             }
-            task.meshAgg = meshAgg;
             task.mesh = mesh;
             task.model = part.normToPhys;
             task.uvm = identityMatrix3().cast<float>();

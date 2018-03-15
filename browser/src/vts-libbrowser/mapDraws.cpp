@@ -107,8 +107,6 @@ RenderTask::RenderTask() : model(identityMatrix4()),
 
 bool RenderTask::ready() const
 {
-    if (meshAgg && !*meshAgg)
-        return false;
     if (mesh && !*mesh)
         return false;
     if (textureColor && !*textureColor)

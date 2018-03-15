@@ -277,7 +277,7 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
 
     // credits
     for (auto &it : trav->credits)
-        renderer.credits.hit(Credits::Scope::Imagery, it,
+        renderer.credits.hit(trav->layer->creditScope, it,
                              trav->nodeInfo.distanceFromRoot());
 
     trav->lastRenderTime = renderer.tickIndex;

@@ -35,7 +35,7 @@ namespace
 {
 
 static const std::string scopeNames[(int)Credits::Scope::Total_]
-    = { "Imagery: ", "Map data: " };
+    = { "Imagery: ", "Geodata: " };
 
 const std::string currentYear()
 {
@@ -92,7 +92,7 @@ void Credits::hit(Scope scope, vtslibs::registry::CreditId id, uint32 lod)
 void Credits::tick(MapCredits &credits)
 {
     MapCredits::Scope *scopes[(int)Scope::Total_] = {
-        &credits.imagery, &credits.data };
+        &credits.imagery, &credits.geodata };
     for (int i = 0; i < (int)Scope::Total_; i++)
     {
         MapCredits::Scope *s = scopes[i];
@@ -144,7 +144,7 @@ std::string MapCredits::textShort() const
 {
     std::string result;
     result.reserve(500);
-    const Scope *scopes[(int)Credits::Scope::Total_] = { &imagery, &data };
+    const Scope *scopes[(int)Credits::Scope::Total_] = { &imagery, &geodata };
     for (int i = 0; i < (int)Credits::Scope::Total_; i++)
     {
         if (scopes[i]->credits.empty())
@@ -163,7 +163,7 @@ std::string MapCredits::textFull() const
 {
     std::string result;
     result.reserve(1000);
-    const Scope *scopes[(int)Credits::Scope::Total_] = { &imagery, &data };
+    const Scope *scopes[(int)Credits::Scope::Total_] = { &imagery, &geodata };
     for (int i = 0; i < (int)Credits::Scope::Total_; i++)
     {
         if (scopes[i]->credits.empty())

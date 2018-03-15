@@ -240,6 +240,8 @@ public:
 
     MapImpl *const map;
 
+    Credits::Scope creditScope;
+
 private:
     bool prerequisitesCheckMainSurfaces();
     bool prerequisitesCheckFreeLayer();

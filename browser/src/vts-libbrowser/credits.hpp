@@ -46,7 +46,7 @@ public:
     enum class Scope
     {
         Imagery,
-        Data,
+        Geodata,
 
         Total_
     };

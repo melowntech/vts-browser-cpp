@@ -52,7 +52,7 @@ public:
     };
 
     Scope imagery;
-    Scope data;
+    Scope geodata;
 
     std::string textShort() const;
     std::string textFull() const;

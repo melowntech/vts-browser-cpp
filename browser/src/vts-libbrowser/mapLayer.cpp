@@ -43,14 +43,16 @@ std::string FreeInfo::style() const
     return "";
 }
 
-MapLayer::MapLayer(MapImpl *map) : map(map)
+MapLayer::MapLayer(MapImpl *map) : map(map),
+    creditScope(Credits::Scope::Imagery)
 {
     boundLayerParams = map->mapConfig->view.surfaces;
 }
 
 MapLayer::MapLayer(MapImpl *map, const std::string &name,
                    const vtslibs::registry::View::FreeLayerParams &params)
-    : freeLayerName(name), freeLayerParams(params), map(map)
+    : freeLayerName(name), freeLayerParams(params), map(map),
+      creditScope(Credits::Scope::Imagery)
 {
     boundLayerParams[""] = params.boundLayers;
 }
@@ -139,6 +141,9 @@ bool MapLayer::prerequisitesCheckFreeLayer()
     traverseRoot = std::make_shared<TraverseNode>(this, nullptr, NodeInfo(
                     mapConfig->referenceFrame, TileId(), false, *mapConfig));
     traverseRoot->priority = std::numeric_limits<double>::infinity();
+
+    if (freeLayer->type != vtslibs::registry::FreeLayer::Type::meshTiles)
+        creditScope = Credits::Scope::Geodata;
 
     return true;
 }

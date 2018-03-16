@@ -68,6 +68,8 @@ public:
 
     Resource(MapImpl *map, const std::string &name,
              FetchTask::ResourceType resourceType);
+    Resource(const Resource &other) = delete;
+    Resource &operator = (const Resource &other) = delete;
     virtual ~Resource();
     virtual void load() = 0;
     void fetchDone() override;
@@ -97,6 +99,8 @@ class GpuMesh : public Resource
 public:
     GpuMesh(MapImpl *map, const std::string &name);
     void load() override;
+
+    std::weak_ptr<class MeshAggregate> aggregate;
 };
 
 class GpuTexture : public Resource
@@ -112,7 +116,7 @@ public:
     AuthConfig(MapImpl *map, const std::string &name);
     void load() override;
     void checkTime();
-    void authorize(Resource *task);
+    void authorize(const std::shared_ptr<Resource> &);
 
 private:
     std::string token;
@@ -166,7 +170,8 @@ public:
     bool externalUv;
 };
 
-class MeshAggregate : public Resource
+class MeshAggregate : public Resource,
+        public std::enable_shared_from_this<MeshAggregate>
 {
 public:
     MeshAggregate(MapImpl *map, const std::string &name);

@@ -53,7 +53,8 @@ public:
 
     uint32 resourcesDownloaded;
     uint32 resourcesDiskLoaded;
-    uint32 resourcesProcessLoaded;
+    uint32 resourcesProcessed;
+    uint32 resourcesCreated;
     uint32 resourcesReleased;
     uint32 resourcesFailed;
     uint32 renderTicks;
@@ -63,9 +64,9 @@ public:
 
     uint64 currentGpuMemUse;
     uint64 currentRamMemUse;
-    uint32 currentResources;
-    uint32 currentResourceDownloads;
-    uint32 currentResourcePreparing;
+    uint32 resourcesActive;
+    uint32 resourcesDownloading;
+    uint32 resourcesPreparing;
     uint32 currentNodeMetaUpdates;
     uint32 currentNodeDrawsUpdates;
     NavigationMode currentNavigationMode;

@@ -112,7 +112,7 @@ public:
     };
 
     GuiImpl(MainWindow *window) :
-        posAutoMotion(0,0,0),
+        posAutoMotion(0,0,0), posAutoRotation(0),
         viewExtentLimitScaleMin(0),
         viewExtentLimitScaleMax(std::numeric_limits<double>::infinity()),
         positionSrs(2), window(window), prepareFirst(true)
@@ -818,18 +818,19 @@ public:
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 }
 
-                S("Downloading:", s.currentResourceDownloads, "");
-                S("Node meta updates:", s.currentNodeMetaUpdates, "");
-                S("Node draw updates:", s.currentNodeDrawsUpdates, "");
                 S("GPU memory:", \
                         (int)(s.currentGpuMemUse / 1024 / 1024), " MB");
                 S("RAM memory:", \
                         (int)(s.currentRamMemUse / 1024 / 1024), " MB");
-                S("Active:", s.currentResources, "");
-                S("Preparing:", s.currentResourcePreparing, "");
+                S("Node meta updates:", s.currentNodeMetaUpdates, "");
+                S("Node draw updates:", s.currentNodeDrawsUpdates, "");
+                S("Preparing:", s.resourcesPreparing, "");
+                S("Downloading:", s.resourcesDownloading, "");
                 S("Downloaded:", s.resourcesDownloaded, "");
                 S("Disk loaded:", s.resourcesDiskLoaded, "");
-                S("Processed:", s.resourcesProcessLoaded, "");
+                S("Active:", s.resourcesActive, "");
+                S("Processed:", s.resourcesProcessed, "");
+                S("Created:", s.resourcesCreated, "");
                 S("Released:", s.resourcesReleased, "");
                 S("Failed:", s.resourcesFailed, "");
 

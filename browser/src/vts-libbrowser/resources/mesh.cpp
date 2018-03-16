@@ -109,7 +109,7 @@ MeshAggregate::MeshAggregate(MapImpl *map, const std::string &name) :
 void MeshAggregate::load()
 {
     LOG(info2) << "Loading (aggregated) mesh <" << name << ">";
-    
+
     detail::Wrapper w(reply.content);
     vtslibs::vts::NormalizedSubMesh::list meshes = vtslibs::vts::
             loadMeshProperNormalized(w, name);
@@ -125,6 +125,8 @@ void MeshAggregate::load()
         sprintf(tmp, "%d", mi);
         std::shared_ptr<GpuMesh> gm = std::make_shared<GpuMesh>(map,
             name + "#" + tmp);
+        gm->state = Resource::State::errorFatal;
+        gm->aggregate = shared_from_this();
 
         uint32 vertexSize = sizeof(vec3f);
         if (m.tc.size())
@@ -225,12 +227,7 @@ void MeshAggregate::load()
         gm->state = Resource::State::ready;
     }
 
-    info.ramMemoryCost += sizeof(*this) + meshes.size() * sizeof(MeshPart);
-    for (auto &it : submeshes)
-    {
-        info.gpuMemoryCost += it.renderable->info.gpuMemoryCost;
-        info.ramMemoryCost += it.renderable->info.ramMemoryCost;
-    }
+    info.ramMemoryCost += sizeof(*this) + submeshes.size() * sizeof(MeshPart);
 }
 
 } // namespace vts

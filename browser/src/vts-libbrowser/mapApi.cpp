@@ -226,7 +226,7 @@ bool Map::getMapRenderComplete() const
         return false;
     return impl->statistics.currentNodeMetaUpdates == 0
         && impl->statistics.currentNodeDrawsUpdates == 0
-        && impl->statistics.currentResourcePreparing == 0;
+        && impl->statistics.resourcesPreparing == 0;
 }
 
 double Map::getMapRenderProgress() const

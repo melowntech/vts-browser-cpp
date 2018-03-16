@@ -43,6 +43,7 @@ std::shared_ptr<T> getMapResource(MapImpl *map, const std::string &name)
         auto r = std::make_shared<T>(map, name);
         map->resources.resources[name] = r;
         it = map->resources.resources.find(name);
+        map->statistics.resourcesCreated++;
     }
     assert(it->second);
     map->touchResource(it->second);
@@ -51,11 +52,14 @@ std::shared_ptr<T> getMapResource(MapImpl *map, const std::string &name)
     return res;
 }
 
-void initializeFetchTask(MapImpl *map, Resource *task)
+void initializeFetchTask(MapImpl *map, const std::shared_ptr<Resource> &task)
 {
+    LOG(debug) << "Resource <" << task->name << "> initializing fetch";
     task->query.headers["X-Vts-Client-Id"] = map->createOptions.clientId;
     if (map->resources.auth)
         map->resources.auth->authorize(task);
+    if (task->query.url.empty())
+        task->query.url = task->name;
 }
 
 bool allowDiskCache(Resource::ResourceType type)
@@ -129,7 +133,6 @@ Resource::Resource(vts::MapImpl *map, const std::string &name,
 {
     LOG(debug) << "Constructing resource <" << name
                << "> at <" << this << ">";
-    initializeFetchTask(map, this);
 }
 
 Resource::~Resource()
@@ -176,12 +179,14 @@ std::ostream &operator << (std::ostream &stream, Resource::State state)
 /// DATA THREAD
 ////////////////////////////
 
-void MapImpl::resourceLoad(const std::shared_ptr<Resource> &r)
+void MapImpl::resourceInitializeDownload(const std::shared_ptr<Resource> &r)
 {
     assert(r->state == Resource::State::initializing);
     r->reply.content.free();
+    std::string().swap(r->reply.contentType);
     r->reply.code = 0;
     r->reply.expires = -1;
+    r->info.gpuMemoryCost = r->info.ramMemoryCost = 0;
     try
     {
         if (allowDiskCache(r->query.resourceType) && resources.cache->read(
@@ -211,7 +216,7 @@ void MapImpl::resourceLoad(const std::shared_ptr<Resource> &r)
             statistics.resourcesDownloaded++;
             resources.downloads++;
             r->state = Resource::State::downloading;
-            LOG(debug) << "Resource <" << r->name << "> initializing fetch";
+            initializeFetchTask(this, r);
             resources.fetcher->fetch(r);
         }
     }
@@ -226,11 +231,13 @@ void MapImpl::resourceLoad(const std::shared_ptr<Resource> &r)
 
 void Resource::processLoad()
 {
+    assert(state == Resource::State::downloaded);
     info.gpuMemoryCost = info.ramMemoryCost = 0;
-    map->statistics.resourcesProcessLoaded++;
+    map->statistics.resourcesProcessed++;
     try
     {
         load();
+        state = Resource::State::ready;
     }
     catch (const std::exception &e)
     {
@@ -255,12 +262,9 @@ void Resource::processLoad()
             }
         }
         map->statistics.resourcesFailed++;
-        reply.content.free();
         state = Resource::State::errorRetry;
-        return;
     }
     reply.content.free();
-    state = Resource::State::ready;
 }
 
 void MapImpl::resourceDataInitialize(const std::shared_ptr<Fetcher> &fetcher)
@@ -285,7 +289,7 @@ void MapImpl::resourceDataFinalize()
 
 bool MapImpl::resourceDataTick()
 {
-    statistics.currentResourceDownloads = resources.downloads;
+    statistics.resourcesDownloading = resources.downloads;
 
     // sync resources
     std::vector<std::shared_ptr<Resource>> res;
@@ -311,7 +315,7 @@ bool MapImpl::resourceDataTick()
 
     // process the resources
     uint32 processed = 0;
-    for (std::shared_ptr<Resource> r : res)
+    for (const std::shared_ptr<Resource> &r : res)
     {
         if (processed++ >= options.maxResourceProcessesPerTick)
             return false; // tasks left
@@ -321,7 +325,7 @@ bool MapImpl::resourceDataTick()
             r->processLoad();
             break;
         case Resource::State::initializing:
-            resourceLoad(r);
+            resourceInitializeDownload(r);
             break;
         default:
             break; // the resource state may have changed in another thread
@@ -362,6 +366,8 @@ void Resource::fetchDone()
     LOG(debug) << "Resource <" << name << "> finished fetching";
     assert(map);
     assert(state == Resource::State::downloading);
+    assert(info.ramMemoryCost == 0);
+    assert(info.gpuMemoryCost == 0);
     map->resources.downloads--;
 
     // handle error or invalid codes
@@ -388,11 +394,12 @@ void Resource::fetchDone()
             && !performAvailTest())
     {
         LOG(info1) << "Resource <" << name
-        		   << "> failed availability test";
+                   << "> failed availability test";
         state = Resource::State::availFail;
         reply.content.free();
         map->resources.cache->write(name, reply.content, reply.expires);
     }
+    std::string().swap(reply.contentType);
 
     // handle redirections
     if (state == Resource::State::downloading
@@ -408,11 +415,12 @@ void Resource::fetchDone()
         else
         {
             query.url.swap(reply.redirectUrl);
-            reply.redirectUrl = "";
+            std::string().swap(reply.redirectUrl);
             LOG(info1) << "Download of <"
                        << name << "> redirected to <"
                        << query.url << ">, http code " << reply.code;
             reply.code = 0;
+            reply.content.free();
             state = Resource::State::initializing;
             return;
         }
@@ -424,7 +432,10 @@ void Resource::fetchDone()
         return;
     }
 
+    std::string().swap(query.url);
+    query.headers.clear();
     map->resources.cache->write(name, reply.content, reply.expires);
+    info.ramMemoryCost = reply.content.size();
     retryNumber = 0; // reset counter
     state = Resource::State::downloaded;
 }
@@ -465,15 +476,15 @@ void MapImpl::resourceRenderTick()
         struct Res
         {
             std::string s;
-            sint32 p;
+            uint32 p;
             bool operator < (const Res &other) const
             {
-                return p > other.p;
+                return p < other.p;
             }
-            Res(const std::string &s, sint32 p) : s(s), p(p)
+            Res(const std::string &s, uint32 p) : s(s), p(p)
             {}
         };
-        std::priority_queue<Res> resToRemove;
+        std::vector<Res> resToRemove;
         uint64 memRamUse = 0;
         uint64 memGpuUse = 0;
         for (auto &it : resources.resources)
@@ -482,15 +493,14 @@ void MapImpl::resourceRenderTick()
             memGpuUse += it.second->info.gpuMemoryCost;
             // consider long time not used resources only
             if (it.second->lastAccessTick + 5 < renderer.tickIndex)
-                resToRemove.emplace(it.first, it.second->lastAccessTick);
+                resToRemove.emplace_back(it.first, it.second->lastAccessTick);
         }
         uint64 memUse = memRamUse + memGpuUse;
         if (memUse > options.targetResourcesMemory)
         {
-            while (!resToRemove.empty())
+            std::sort(resToRemove.begin(), resToRemove.end());
+            for (Res &res : resToRemove)
             {
-                Res res = resToRemove.top();
-                resToRemove.pop();
                 auto &it = resources.resources[res.s];
                 std::string name = it->name;
                 uint64 mem = it->info.gpuMemoryCost + it->info.ramMemoryCost;
@@ -537,7 +547,7 @@ void MapImpl::resourceRenderTick()
                     r->retryTime = (1 << r->retryNumber)
                             * options.fetchFirstRetryTimeOffset + current;
                     LOG(warn2) << "Resource <" << r->name
-                               << "> will retry in "
+                               << "> may retry in "
                                << (r->retryTime - current) << " seconds";
                     break;
                 }
@@ -558,7 +568,7 @@ void MapImpl::resourceRenderTick()
                 if (options.enableRuntimeResourceExpiration
                         && r->reply.expires > 0 && r->reply.expires < current)
                 {
-                    LOG(info1) << "Resource <" << r->name
+                    LOG(info2) << "Resource <" << r->name
                                << "> has expired (expiration: "
                                << r->reply.expires << ", current: "
                                << current << ")";
@@ -572,7 +582,7 @@ void MapImpl::resourceRenderTick()
                 break;
             }
         }
-        statistics.currentResourcePreparing = res.size() + resources.downloads;
+        statistics.resourcesPreparing = res.size() + resources.downloads;
         // sync resources copy
         {
             boost::lock_guard<boost::mutex> l(resources.mutResourcesCopy);
@@ -580,7 +590,7 @@ void MapImpl::resourceRenderTick()
         }
     }
 
-    statistics.currentResources = resources.resources.size();
+    statistics.resourcesActive = resources.resources.size();
 }
 
 void MapImpl::touchResource(const std::shared_ptr<Resource> &resource)

@@ -33,7 +33,7 @@ namespace vts
 
 double MapImpl::getMapRenderProgress()
 {
-    uint32 active = statistics.currentResourcePreparing;
+    uint32 active = statistics.resourcesPreparing;
     if (active == 0)
     {
         resources.progressEstimationMaxResources = 0;

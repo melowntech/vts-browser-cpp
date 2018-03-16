@@ -102,8 +102,8 @@ public:
     Validity prepare(const NodeInfo &nodeInfo, MapImpl *impl,
                      uint32 subMeshIndex, double priority);
 
-    std::shared_ptr<Resource> textureColor;
-    std::shared_ptr<Resource> textureMask;
+    std::shared_ptr<GpuTexture> textureColor;
+    std::shared_ptr<GpuTexture> textureMask;
     const BoundInfo *bound;
     bool transparent;
 
@@ -156,9 +156,9 @@ public:
 class RenderTask
 {
 public:
-    std::shared_ptr<Resource> mesh;
-    std::shared_ptr<Resource> textureColor;
-    std::shared_ptr<Resource> textureMask;
+    std::shared_ptr<GpuMesh> mesh;
+    std::shared_ptr<GpuTexture> textureColor;
+    std::shared_ptr<GpuTexture> textureMask;
     mat4 model;
     mat3f uvm;
     vec4f color;
@@ -395,7 +395,7 @@ public:
     void resourceRenderFinalize();
     void resourceRenderTick();
     void touchResource(const std::shared_ptr<Resource> &resource);
-    void resourceLoad(const std::shared_ptr<Resource> &resource);
+    void resourceInitializeDownload(const std::shared_ptr<Resource> &resource);
     std::shared_ptr<GpuTexture> getTexture(const std::string &name);
     std::shared_ptr<GpuMesh> getMeshRenderable(
             const std::string &name);
@@ -442,7 +442,7 @@ public:
                     const vec4f &uvClip = vec4f(-1,-1,2,2));
     void renderNodePartialRecursive(TraverseNode *trav,
                     vec4f uvClip = vec4f(0,0,1,1));
-    std::shared_ptr<Resource> travInternalTexture(TraverseNode *trav,
+    std::shared_ptr<GpuTexture> travInternalTexture(TraverseNode *trav,
                                                   uint32 subMeshIndex);
     bool generateMonolithicGeodataTrav(TraverseNode *trav);
     bool travDetermineMeta(TraverseNode *trav);

@@ -126,7 +126,7 @@ void AuthConfig::checkTime()
     }
 }
 
-void AuthConfig::authorize(Resource *task)
+void AuthConfig::authorize(const std::shared_ptr<Resource> &task)
 {
     if (!hostnames.empty())
     {

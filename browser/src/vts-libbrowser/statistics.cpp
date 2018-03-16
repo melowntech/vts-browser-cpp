@@ -43,16 +43,17 @@ void MapStatistics::resetAll()
     resetFrame();
     resourcesDownloaded = 0;
     resourcesDiskLoaded = 0;
-    resourcesProcessLoaded = 0;
+    resourcesProcessed = 0;
+    resourcesCreated = 0;
     resourcesReleased = 0;
     resourcesFailed = 0;
     renderTicks = 0;
     dataTicks = 0;
-    currentResourceDownloads = 0;
+    resourcesDownloading = 0;
     currentGpuMemUse = 0;
     currentRamMemUse = 0;
-    currentResources = 0;
-    currentResourcePreparing = 0;
+    resourcesActive = 0;
+    resourcesPreparing = 0;
     currentNavigationMode = (NavigationMode)0;
 }
 

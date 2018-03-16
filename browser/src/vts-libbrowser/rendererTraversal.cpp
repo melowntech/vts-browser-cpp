@@ -70,12 +70,12 @@ float MapImpl::computeResourcePriority(TraverseNode *trav)
     return trav->priority;
 }
 
-std::shared_ptr<Resource> MapImpl::travInternalTexture(TraverseNode *trav,
+std::shared_ptr<GpuTexture> MapImpl::travInternalTexture(TraverseNode *trav,
                                                        uint32 subMeshIndex)
 {
     UrlTemplate::Vars vars(trav->nodeInfo.nodeId(),
             vtslibs::vts::local(trav->nodeInfo), subMeshIndex);
-    std::shared_ptr<Resource> res = getTexture(
+    std::shared_ptr<GpuTexture> res = getTexture(
                 trav->surface->urlIntTex(vars));
     res->updatePriority(trav->priority);
     return res;

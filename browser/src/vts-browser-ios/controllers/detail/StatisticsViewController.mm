@@ -52,9 +52,9 @@
 {
     _statCpuMem.text = [NSString stringWithFormat:@"%llu MB", map->statistics().currentRamMemUse / 1024 / 1024];
     _statGpuMem.text = [NSString stringWithFormat:@"%llu MB", map->statistics().currentGpuMemUse / 1024 / 1024];
-    _statActiveResources.text = [NSString stringWithFormat:@"%u", map->statistics().currentResources];
-    _statPreparingResources.text = [NSString stringWithFormat:@"%u", map->statistics().currentResourcePreparing];
-    _statDownloading.text = [NSString stringWithFormat:@"%u", map->statistics().currentResourceDownloads];
+    _statActiveResources.text = [NSString stringWithFormat:@"%u", map->statistics().resourcesActive];
+    _statPreparingResources.text = [NSString stringWithFormat:@"%u", map->statistics().resourcesPreparing];
+    _statDownloading.text = [NSString stringWithFormat:@"%u", map->statistics().resourcesDownloading];
     _statMetaUpdates.text = [NSString stringWithFormat:@"%u", map->statistics().currentNodeMetaUpdates];
     _statDrawUpdates.text = [NSString stringWithFormat:@"%u", map->statistics().currentNodeDrawsUpdates];
 }

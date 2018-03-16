@@ -285,6 +285,8 @@ void mapRenderControls(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw
 
     double rotation[3];
     map->getPositionRotationLimited(rotation);
+    if (rotation[1] < 0)
+        rotation[1] += 360;
 
     if (extraConfig.showControlScales)
     {

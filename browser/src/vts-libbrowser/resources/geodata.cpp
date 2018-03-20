@@ -83,7 +83,7 @@ void GpuGeodata::load()
 
 void GpuGeodata::update(const std::string &s, const std::string &f)
 {
-    switch (state)
+    switch ((Resource::State)state)
     {
     case Resource::State::initializing:
         state = Resource::State::ready;

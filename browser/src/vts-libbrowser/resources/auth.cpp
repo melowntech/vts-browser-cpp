@@ -28,7 +28,7 @@
 #include <jsoncpp/json.hpp>
 
 #include "../include/vts-browser/exceptions.hpp"
-#include "resources.hpp"
+#include "../map.hpp"
 
 namespace vts
 {

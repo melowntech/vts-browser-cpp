@@ -62,6 +62,7 @@ class VTS_API MapDraws
 public:
     std::vector<DrawTask> opaque;
     std::vector<DrawTask> transparent;
+    std::vector<DrawTask> geodata;
     std::vector<DrawTask> Infographic;
 
     struct Camera

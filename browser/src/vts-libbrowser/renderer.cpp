@@ -100,12 +100,7 @@ void MapImpl::purgeViewCache()
 void MapImpl::touchDraws(const RenderTask &task)
 {
     if (task.mesh)
-    {
         touchResource(task.mesh);
-        auto a = task.mesh->aggregate.lock();
-        if (a)
-            touchResource(a);
-    }
     if (task.textureColor)
         touchResource(task.textureColor);
     if (task.textureMask)
@@ -124,6 +119,8 @@ void MapImpl::touchDraws(TraverseNode *trav)
         touchDraws(it);
     for (auto &it : trav->transparent)
         touchDraws(it);
+    if (trav->touchResource)
+        touchResource(trav->touchResource);
 }
 
 bool MapImpl::visibilityTest(TraverseNode *trav)
@@ -211,13 +208,15 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
             draws.opaque.emplace_back(r, uvClip.data(), this);
         for (const RenderTask &r : trav->transparent)
             draws.transparent.emplace_back(r, uvClip.data(), this);
+        for (const RenderTask &r : trav->geodata)
+            draws.geodata.emplace_back(r, uvClip.data(), this);
     }
 
     // surrogate
     if (options.debugRenderSurrogates && trav->surrogatePhys)
     {
         RenderTask task;
-        task.mesh = getMeshRenderable("internal://data/meshes/sphere.obj");
+        task.mesh = getMesh("internal://data/meshes/sphere.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
         task.model = translationMatrix(*trav->surrogatePhys)
                 * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
@@ -233,7 +232,7 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
         {
             RenderTask task;
             task.model = r.model;
-            task.mesh = getMeshRenderable("internal://data/meshes/aabb.obj");
+            task.mesh = getMesh("internal://data/meshes/aabb.obj");
             task.mesh->priority = std::numeric_limits<float>::infinity();
             task.color = vec3to4f(trav->surface->color, task.color(3));
             if (task.ready())
@@ -245,7 +244,7 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
     if (options.debugRenderTileBoxes)
     {
         RenderTask task;
-        task.mesh = getMeshRenderable("internal://data/meshes/line.obj");
+        task.mesh = getMesh("internal://data/meshes/line.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
         if (trav->layer->freeLayer)
         {
@@ -540,7 +539,7 @@ void MapImpl::updateCamera()
     {
         // render original camera
         RenderTask task;
-        task.mesh = getMeshRenderable("internal://data/meshes/line.obj");
+        task.mesh = getMesh("internal://data/meshes/line.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
         task.color = vec4f(0, 1, 0, 1);
         if (task.ready())
@@ -574,7 +573,7 @@ void MapImpl::updateCamera()
     {
         vec3 phys = convertor->navToPhys(vecFromUblas<vec3>(pos.position));
         RenderTask r;
-        r.mesh = getMeshRenderable("internal://data/meshes/cube.obj");
+        r.mesh = getMesh("internal://data/meshes/cube.obj");
         r.mesh->priority = std::numeric_limits<float>::infinity();
         r.textureColor = getTexture("internal://data/textures/helper.jpg");
         r.textureColor->priority = std::numeric_limits<float>::infinity();
@@ -589,7 +588,7 @@ void MapImpl::updateCamera()
     {
         vec3 phys = convertor->navToPhys(navigation.targetPoint);
         RenderTask r;
-        r.mesh = getMeshRenderable("internal://data/meshes/cube.obj");
+        r.mesh = getMesh("internal://data/meshes/cube.obj");
         r.mesh->priority = std::numeric_limits<float>::infinity();
         r.textureColor = getTexture("internal://data/textures/helper.jpg");
         r.textureColor->priority = std::numeric_limits<float>::infinity();

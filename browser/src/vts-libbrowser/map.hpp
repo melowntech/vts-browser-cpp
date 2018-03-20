@@ -27,12 +27,21 @@
 #ifndef MAP_H_cvukikljqwdf
 #define MAP_H_cvukikljqwdf
 
+#include <memory>
+#include <string>
+#include <atomic>
+#include <unordered_map>
+#include <unordered_set>
 #include <queue>
 #include <array>
 #include <boost/thread/mutex.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <vts-libs/vts/urltemplate.hpp>
 #include <vts-libs/vts/nodeinfo.hpp>
+#include <vts-libs/vts/mapconfig.hpp>
+#include <vts-libs/vts/urltemplate.hpp>
+#include <vts-libs/vts/metatile.hpp>
+#include <vts-libs/vts/tsmap.hpp>
 #include <dbglog/dbglog.hpp>
 
 #include "include/vts-browser/celestial.hpp"
@@ -42,12 +51,19 @@
 #include "include/vts-browser/draws.hpp"
 #include "include/vts-browser/math.hpp"
 #include "include/vts-browser/exceptions.hpp"
+#include "include/vts-browser/resources.hpp"
+#include "include/vts-browser/fetcher.hpp"
 
-#include "resources/resources.hpp"
 #include "resources/cache.hpp"
 #include "credits.hpp"
 #include "coordsManip.hpp"
 #include "utilities/array.hpp"
+
+#ifndef NDEBUG
+    // some debuggers are unable to show contents of unordered containers
+    #define unordered_map map
+    #define unordered_set set
+#endif
 
 namespace vts
 {
@@ -56,6 +72,9 @@ using vtslibs::vts::NodeInfo;
 using vtslibs::vts::TileId;
 using vtslibs::vts::UrlTemplate;
 
+class MapLayer;
+class MapImpl;
+
 enum class Validity
 {
     Indeterminate,
@@ -63,7 +82,203 @@ enum class Validity
     Valid,
 };
 
-class MapLayer;
+class Resource : public FetchTask
+{
+public:
+    enum class State
+    {
+        initializing,
+        downloading,
+        downloaded,
+        ready,
+        errorFatal,
+        errorRetry,
+        availFail,
+    };
+
+    Resource(MapImpl *map, const std::string &name,
+             FetchTask::ResourceType resourceType);
+    Resource(const Resource &other) = delete;
+    Resource &operator = (const Resource &other) = delete;
+    virtual ~Resource();
+    virtual void load() = 0;
+    void fetchDone() override;
+    void processLoad(); // calls load
+    bool performAvailTest() const;
+    void updatePriority(float priority);
+    void reset();
+    operator bool () const;
+
+    ResourceInfo info;
+    const std::string name;
+    std::shared_ptr<vtslibs::registry::BoundLayer::Availability> availTest;
+    MapImpl *const map;
+    std::atomic<State> state;
+    std::time_t retryTime;
+    uint32 retryNumber;
+    uint32 redirectionsCount;
+    uint32 lastAccessTick;
+    float priority;
+    float priorityCopy;
+};
+
+std::ostream &operator << (std::ostream &stream, Resource::State state);
+
+class GpuMesh : public Resource
+{
+public:
+    GpuMesh(MapImpl *map, const std::string &name);
+    void load() override;
+};
+
+class GpuTexture : public Resource
+{
+public:
+    GpuTexture(MapImpl *map, const std::string &name);
+    void load() override;
+};
+
+class AuthConfig : public Resource
+{
+public:
+    AuthConfig(MapImpl *map, const std::string &name);
+    void load() override;
+    void checkTime();
+    void authorize(const std::shared_ptr<Resource> &);
+
+private:
+    std::string token;
+    std::unordered_set<std::string> hostnames;
+    uint64 timeValid;
+    uint64 timeParsed;
+};
+
+class ExternalBoundLayer : public Resource,
+        public vtslibs::registry::BoundLayer
+{
+public:
+    ExternalBoundLayer(MapImpl *map, const std::string &name);
+    void load() override;
+};
+
+class ExternalFreeLayer : public Resource,
+        public vtslibs::registry::FreeLayer
+{
+public:
+    ExternalFreeLayer(MapImpl *map, const std::string &name);
+    void load() override;
+};
+
+class BoundMetaTile : public Resource
+{
+public:
+    BoundMetaTile(MapImpl *map, const std::string &name);
+    void load() override;
+
+    uint8 flags[vtslibs::registry::BoundLayer::rasterMetatileWidth
+                * vtslibs::registry::BoundLayer::rasterMetatileHeight];
+};
+
+class MetaTile : public Resource, public vtslibs::vts::MetaTile
+{
+public:
+    MetaTile(MapImpl *map, const std::string &name);
+    void load() override;
+};
+
+class MeshPart
+{
+public:
+    MeshPart();
+    std::shared_ptr<GpuMesh> renderable;
+    mat4 normToPhys;
+    uint32 textureLayer;
+    uint32 surfaceReference;
+    bool internalUv;
+    bool externalUv;
+};
+
+class MeshAggregate : public Resource
+{
+public:
+    MeshAggregate(MapImpl *map, const std::string &name);
+    void load() override;
+
+    std::vector<MeshPart> submeshes;
+};
+
+class NavTile : public Resource
+{
+public:
+    NavTile(MapImpl *map, const std::string &name);
+    void load() override;
+
+    std::vector<unsigned char> data;
+
+    static vec2 sds2px(const vec2 &point, const math::Extents2 &extents);
+};
+
+class SearchTaskImpl : public Resource
+{
+public:
+    SearchTaskImpl(MapImpl *map, const std::string &name);
+    void load() override;
+
+    Buffer data;
+    const std::string validityUrl;
+    const std::string validitySrs;
+};
+
+class TilesetMapping : public Resource
+{
+public:
+    TilesetMapping(MapImpl *map, const std::string &name);
+    void load() override;
+
+    vtslibs::vts::TilesetReferencesList dataRaw;
+};
+
+class SriIndex : public Resource
+{
+public:
+    SriIndex(MapImpl *map, const std::string &name);
+    void load() override;
+    void update();
+
+    std::vector<std::shared_ptr<MetaTile>> metatiles;
+};
+
+class GeodataFeatures : public Resource
+{
+public:
+    GeodataFeatures(MapImpl *map, const std::string &name);
+    void load() override;
+
+    std::string data;
+};
+
+class GeodataStylesheet : public Resource
+{
+public:
+    GeodataStylesheet(MapImpl *map, const std::string &name);
+    void load() override;
+
+    std::string data;
+};
+
+class GpuGeodata : public Resource
+{
+public:
+    GpuGeodata(MapImpl *map, const std::string &name);
+    void load() override;
+    void update(const std::string &style, const std::string &features);
+
+    std::vector<RenderTask> renders;
+
+private:
+    std::string style;
+    std::string features;
+};
 
 class BoundInfo : public vtslibs::registry::BoundLayer
 {
@@ -84,9 +299,8 @@ public:
     FreeInfo(const vtslibs::registry::FreeLayer &fl,
               const std::string &url);
 
-    std::string url;
+    std::string url; // external free layer url
 
-    std::string style() const;
     std::shared_ptr<GeodataStylesheet> stylesheet;
     std::string overrideStyle;
     std::string overrideGeodata; // monolithic only
@@ -200,9 +414,11 @@ public:
     float priority;
 
     // renders
+    std::shared_ptr<Resource> touchResource;
     std::vector<vtslibs::registry::CreditId> credits;
     std::vector<RenderTask> opaque;
     std::vector<RenderTask> transparent;
+    std::vector<RenderTask> geodata;
 
     TraverseNode(MapLayer *layer, TraverseNode *parent,
                  const NodeInfo &nodeInfo);
@@ -397,8 +613,7 @@ public:
     void touchResource(const std::shared_ptr<Resource> &resource);
     void resourceInitializeDownload(const std::shared_ptr<Resource> &resource);
     std::shared_ptr<GpuTexture> getTexture(const std::string &name);
-    std::shared_ptr<GpuMesh> getMeshRenderable(
-            const std::string &name);
+    std::shared_ptr<GpuMesh> getMesh(const std::string &name);
     std::shared_ptr<AuthConfig> getAuthConfig(const std::string &name);
     std::shared_ptr<MapConfig> getMapConfig(const std::string &name);
     std::shared_ptr<MetaTile> getMetaTile(const std::string &name);
@@ -414,6 +629,7 @@ public:
     std::shared_ptr<SriIndex> getSriIndex(const std::string &name);
     std::shared_ptr<GeodataFeatures> getGeoFeatures(const std::string &name);
     std::shared_ptr<GeodataStylesheet> getGeoStyle(const std::string &name);
+    std::shared_ptr<GpuGeodata> getGeodata(const std::string &name);
     Validity getResourceValidity(const std::string &name);
     Validity getResourceValidity(const std::shared_ptr<Resource> &resource);
     float computeResourcePriority(TraverseNode *trav);
@@ -445,6 +661,13 @@ public:
     std::shared_ptr<GpuTexture> travInternalTexture(TraverseNode *trav,
                                                   uint32 subMeshIndex);
     bool generateMonolithicGeodataTrav(TraverseNode *trav);
+    std::pair<Validity, const std::string &> getActualGeoStyle(
+            const std::string &name);
+    std::pair<Validity, const std::string &> getActualGeoFeatures(
+            const std::string &name, const std::string &geoName,
+            float priority);
+    std::pair<Validity, const std::string &> getActualGeoFeatures(
+            const std::string &name);
     bool travDetermineMeta(TraverseNode *trav);
     void travDetermineMetaImpl(TraverseNode *trav);
     bool travDetermineDraws(TraverseNode *trav);

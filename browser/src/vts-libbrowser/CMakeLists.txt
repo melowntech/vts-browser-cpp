@@ -50,7 +50,6 @@ set(PUB_HDR_LIST
 )
 
 set(SRC_LIST
-    resources/resources.hpp
     resources/mesh.cpp
     resources/texture.cpp
     resources/other.cpp

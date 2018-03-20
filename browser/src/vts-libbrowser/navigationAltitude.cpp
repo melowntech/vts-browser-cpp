@@ -179,7 +179,7 @@ bool MapImpl::getPositionAltitude(double &result,
         if (options.debugRenderAltitudeShiftCorners)
         {
             RenderTask task;
-            task.mesh = getMeshRenderable("internal://data/meshes/sphere.obj");
+            task.mesh = getMesh("internal://data/meshes/sphere.obj");
             task.mesh->priority = std::numeric_limits<float>::infinity();
             task.model = translationMatrix(*t->surrogatePhys)
                     * scaleMatrix(t->nodeInfo.extents().size() * 0.031);

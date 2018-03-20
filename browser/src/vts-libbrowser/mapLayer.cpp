@@ -34,15 +34,6 @@ FreeInfo::FreeInfo(const vtslibs::registry::FreeLayer &fl,
     : FreeLayer(fl), url(url)
 {}
 
-std::string FreeInfo::style() const
-{
-    if (!overrideStyle.empty())
-        return overrideStyle;
-    if (stylesheet && *stylesheet)
-        return stylesheet->data;
-    return "";
-}
-
 MapLayer::MapLayer(MapImpl *map) : map(map),
     creditScope(Credits::Scope::Imagery)
 {
@@ -184,6 +175,92 @@ bool MapImpl::generateMonolithicGeodataTrav(TraverseNode *trav)
     trav->surface = &trav->layer->surfaceStack.surfaces[0];
     trav->priority = computeResourcePriority(trav);
     return true;
+}
+
+namespace
+{
+
+static const std::string empty;
+
+MapLayer *getLayer(MapImpl *map, const std::string &name)
+{
+    for (auto &it : map->layers)
+    {
+        if (it->freeLayerName == name)
+            return it.get();
+    }
+    return nullptr;
+}
+
+} // namespace
+
+std::pair<Validity, const std::string &> MapImpl::getActualGeoStyle(
+        const std::string &name)
+{
+    FreeInfo *f = mapConfig->getFreeInfo(name);
+    if (!f)
+        return { Validity::Indeterminate, empty };
+    if (!f->overrideStyle.empty())
+        return { Validity::Valid, f->overrideStyle };
+    if (!f->stylesheet)
+    {
+        std::string url;
+        MapLayer *layer = getLayer(this, name);
+        if (layer && layer->freeLayerParams->style)
+            url = convertPath(*layer->freeLayerParams->style, mapConfigPath);
+        else
+        {
+            switch (f->type)
+            {
+            case vtslibs::registry::FreeLayer::Type::geodata:
+                url = convertPath(boost::get<vtslibs::registry
+                                  ::FreeLayer::Geodata>(
+                            f->definition).style, f->url);
+                break;
+            case vtslibs::registry::FreeLayer::Type::geodataTiles:
+                url = convertPath(boost::get<vtslibs::registry
+                                  ::FreeLayer::GeodataTiles>(
+                            f->definition).style, f->url);
+                break;
+            default:
+                assert(false);
+                break;
+            }
+        }
+        assert(!url.empty());
+        f->stylesheet = getGeoStyle(url);
+    }
+    touchResource(f->stylesheet);
+    return { getResourceValidity(f->stylesheet), f->stylesheet->data };
+}
+
+std::pair<Validity, const std::string &> MapImpl::getActualGeoFeatures(
+        const std::string &name, const std::string &geoName, float priority)
+{
+    MapLayer *layer = getLayer(this, name);
+    if (!layer)
+        return { Validity::Invalid, empty };
+    assert(layer->freeLayer);
+    if (layer->freeLayer->type == vtslibs::registry::FreeLayer::Type::geodata
+            && !layer->freeLayer->overrideGeodata.empty())
+        return { Validity::Valid, layer->freeLayer->overrideGeodata };
+
+    auto g = getGeoFeatures(geoName);
+    g->updatePriority(priority);
+    return { getResourceValidity(g), g->data };
+}
+
+std::pair<Validity, const std::string &> MapImpl::getActualGeoFeatures(
+        const std::string &name)
+{
+    MapLayer *layer = getLayer(this, name);
+    assert(layer->freeLayer->type
+           == vtslibs::registry::FreeLayer::Type::geodata);
+    NodeInfo node(mapConfig->referenceFrame, *mapConfig);
+    std::string geoName = layer->surfaceStack.surfaces[0].urlGeodata(
+            UrlTemplate::Vars(node.nodeId(), vtslibs::vts::local(node)));
+    return getActualGeoFeatures(name, geoName,
+                                std::numeric_limits<float>::infinity());
 }
 
 } // namespace vts

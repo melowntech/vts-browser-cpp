@@ -87,6 +87,8 @@ void TraverseNode::clearRenders()
 {
     opaque.clear();
     transparent.clear();
+    geodata.clear();
+    touchResource.reset();
 }
 
 bool TraverseNode::rendersReady() const
@@ -97,12 +99,15 @@ bool TraverseNode::rendersReady() const
     for (auto &it : transparent)
         if (!it.ready())
             return false;
+    for (auto &it : geodata)
+        if (!it.ready())
+            return false;
     return true;
 }
 
 bool TraverseNode::rendersEmpty() const
 {
-    return opaque.empty() && transparent.empty();
+    return opaque.empty() && transparent.empty() && geodata.empty();
 }
 
 } // namespace vts

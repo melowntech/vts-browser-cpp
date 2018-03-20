@@ -659,7 +659,9 @@ std::string Map::getResourceFreeLayerGeodata(const std::string &name) const
 {
     if (getResourceFreeLayerType(name) != FreeLayerType::MonolithicGeodata)
         return "";
-    // todo
+    auto r = impl->getActualGeoFeatures(name);
+    if (r.first == Validity::Valid)
+        return r.second;
     return "";
 }
 
@@ -685,7 +687,10 @@ std::string Map::getResourceFreeLayerStyle(const std::string &name) const
     default:
         return "";
     }
-    return impl->mapConfig->getFreeInfo(name)->style();
+    auto r = impl->getActualGeoStyle(name);
+    if (r.first == Validity::Valid)
+        return r.second;
+    return "";
 }
 
 void Map::setResourceFreeLayerStyle(const std::string &name,

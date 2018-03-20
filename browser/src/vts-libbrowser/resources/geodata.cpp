@@ -25,6 +25,7 @@
  */
 
 #include "../map.hpp"
+#include "../utilities/json.hpp"
 
 namespace vts
 {
@@ -36,17 +37,69 @@ GeodataFeatures::GeodataFeatures(vts::MapImpl *map, const std::string &name) :
 void GeodataFeatures::load()
 {
     LOG(info2) << "Loading geodata features <" << name << ">";
-    // todo
+    data = reply.content.str();
 }
 
 GeodataStylesheet::GeodataStylesheet(MapImpl *map, const std::string &name) :
     Resource(map, name, FetchTask::ResourceType::GeodataStylesheet)
-{}
+{
+    priority = std::numeric_limits<float>::infinity();
+}
 
 void GeodataStylesheet::load()
 {
     LOG(info2) << "Loading geodata stylesheet <" << name << ">";
     data = reply.content.str();
+}
+
+GpuGeodata::GpuGeodata(MapImpl *map, const std::string &name)
+    : Resource(map, name, FetchTask::ResourceType::General)
+{
+    state = Resource::State::ready;
+}
+
+void GpuGeodata::load()
+{
+    LOG(info2) << "Loading gpu-geodata <" << name << ">";
+    renders.clear();
+
+    if (style.empty() || features.empty())
+    {
+        renders.emplace_back();
+        return;
+    }
+
+    Json::Value styleRoot = stringToJson(style);
+    Json::Value featuresRoot = stringToJson(features);
+
+    // todo
+    // parse json data
+    // parse json style
+    // apply expression evaluations
+    // generate draw commands
+
+    renders.emplace_back();
+}
+
+void GpuGeodata::update(const std::string &s, const std::string &f)
+{
+    switch (state)
+    {
+    case Resource::State::initializing:
+        state = Resource::State::ready;
+        // no break
+    case Resource::State::ready:
+        if (style != s || features != f)
+        {
+            style = s;
+            features = f;
+            state = Resource::State::downloaded;
+        }
+        break;
+    default:
+        // nothing
+        break;
+    }
 }
 
 } // namespace vts

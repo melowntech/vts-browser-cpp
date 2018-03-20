@@ -51,7 +51,6 @@ public:
         BoundMetaTile,
         MetaTile,
         Mesh,
-        MeshPart,
         Texture,
         NavTile,
         Search,

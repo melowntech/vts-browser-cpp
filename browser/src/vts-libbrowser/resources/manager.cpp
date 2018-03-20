@@ -603,7 +603,7 @@ std::shared_ptr<GpuTexture> MapImpl::getTexture(const std::string &name)
     return getMapResource<GpuTexture>(this, name);
 }
 
-std::shared_ptr<GpuMesh> MapImpl::getMeshRenderable(const std::string &name)
+std::shared_ptr<GpuMesh> MapImpl::getMesh(const std::string &name)
 {
     return getMapResource<GpuMesh>(this, name);
 }
@@ -679,6 +679,11 @@ std::shared_ptr<GeodataStylesheet> MapImpl::getGeoStyle(
         const std::string &name)
 {
     return getMapResource<GeodataStylesheet>(this, name);
+}
+
+std::shared_ptr<GpuGeodata> MapImpl::getGeodata(const std::string &name)
+{
+    return getMapResource<GpuGeodata>(this, name);
 }
 
 Validity MapImpl::getResourceValidity(const std::string &name)

@@ -441,6 +441,8 @@ bool MapImpl::travDetermineDrawsSurface(TraverseNode *trav)
                              newCredits.begin(), newCredits.end());
         if (trav->rendersEmpty())
             trav->surface = nullptr;
+        else
+            trav->touchResource = meshAgg;
     }
 
     return determined;
@@ -448,8 +450,47 @@ bool MapImpl::travDetermineDrawsSurface(TraverseNode *trav)
 
 bool MapImpl::travDetermineDrawsGeodata(TraverseNode *trav)
 {
-    // todo
-    trav->transparent.emplace_back();
+    const TileId nodeId = trav->nodeInfo.nodeId();
+    std::string geoName = trav->surface->urlGeodata(
+            UrlTemplate::Vars(nodeId, vtslibs::vts::local(trav->nodeInfo)));
+
+    auto style = getActualGeoStyle(trav->layer->freeLayerName);
+    auto features = getActualGeoFeatures(
+                trav->layer->freeLayerName, geoName, trav->priority);
+    if (style.first == Validity::Invalid
+            || features.first == Validity::Invalid)
+    {
+        trav->surface = nullptr;
+        return false;
+    }
+    if (style.first == Validity::Indeterminate
+            || features.first == Validity::Indeterminate)
+        return false;
+
+    std::shared_ptr<GpuGeodata> geo = getGeodata(geoName + "#$!gpu");
+    geo->update(style.second, features.second);
+    geo->updatePriority(trav->priority);
+    switch (getResourceValidity(geo))
+    {
+    case Validity::Invalid:
+        trav->surface = nullptr;
+        // no break
+    case Validity::Indeterminate:
+        return false;
+    case Validity::Valid:
+        break;
+    }
+
+    // determined
+    assert(trav->rendersEmpty());
+
+    for (auto it : geo->renders)
+        trav->geodata.push_back(it);
+
+    if (trav->rendersEmpty())
+        trav->surface = nullptr;
+    else
+        trav->touchResource = geo;
     return true;
 }
 

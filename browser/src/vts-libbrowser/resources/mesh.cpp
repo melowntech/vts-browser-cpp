@@ -62,7 +62,7 @@ GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0),
 {}
 
 GpuMesh::GpuMesh(MapImpl *map, const std::string &name) :
-    Resource(map, name, FetchTask::ResourceType::MeshPart)
+    Resource(map, name, FetchTask::ResourceType::General)
 {}
 
 void GpuMesh::load()
@@ -124,9 +124,8 @@ void MeshAggregate::load()
         char tmp[10];
         sprintf(tmp, "%d", mi);
         std::shared_ptr<GpuMesh> gm = std::make_shared<GpuMesh>(map,
-            name + "#" + tmp);
+            name + "#$!" + tmp);
         gm->state = Resource::State::errorFatal;
-        gm->aggregate = shared_from_this();
 
         uint32 vertexSize = sizeof(vec3f);
         if (m.tc.size())

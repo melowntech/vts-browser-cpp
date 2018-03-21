@@ -202,7 +202,7 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
         trav->nodeInfo.nodeId().lod, MapStatistics::MaxLods - 1)]++;
 
     // meshes
-    if (!options.debugRenderNoMeshes)
+    if (options.debugRenderMeshes)
     {
         for (const RenderTask &r : trav->opaque)
             draws.opaque.emplace_back(r, uvClip.data(), this);

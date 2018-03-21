@@ -695,8 +695,8 @@ public:
                                                 r.renderPolygonEdges);
 
                 // render no meshes
-                o.debugRenderNoMeshes = nk_check_label(&ctx,
-                    "no meshes", o.debugRenderNoMeshes);
+                o.debugRenderMeshes = nk_check_label(&ctx,
+                    "meshes", o.debugRenderMeshes);
 
                 // render compas
                 nk_checkbox_label(&ctx,
@@ -716,7 +716,7 @@ public:
                                 "camera normalization",
                                 o.enableCameraNormalization);
 
-                // disable camera zoom limit
+                // camera zoom limit
                 {
                     int e = viewExtentLimitScaleMax
                             == std::numeric_limits<double>::infinity();
@@ -735,13 +735,23 @@ public:
                 o.debugDetachedCamera = nk_check_label(&ctx,
                                 "detached camera", o.debugDetachedCamera);
 
-                // debug disable virtual surfaces
+                // virtual surfaces
                 {
-                    bool old = o.debugDisableVirtualSurfaces;
-                    o.debugDisableVirtualSurfaces = nk_check_label(&ctx,
-                            "disable virtual surfaces",
-                            o.debugDisableVirtualSurfaces);
-                    if (old != o.debugDisableVirtualSurfaces)
+                    bool old = o.debugEnableVirtualSurfaces;
+                    o.debugEnableVirtualSurfaces = nk_check_label(&ctx,
+                            "virtual surfaces",
+                            o.debugEnableVirtualSurfaces);
+                    if (old != o.debugEnableVirtualSurfaces)
+                        window->map->purgeViewCache();
+                }
+
+                // geodata validation
+                {
+                    bool old = o.debugValidateGeodataStyles;
+                    o.debugValidateGeodataStyles = nk_check_label(&ctx,
+                            "validate geodata styles",
+                            o.debugValidateGeodataStyles);
+                    if (old != o.debugValidateGeodataStyles)
                         window->map->purgeViewCache();
                 }
 
@@ -762,6 +772,17 @@ public:
         nk_end(&ctx);
     }
 
+    template<class T>
+    void S(const char *name, T value, const char *unit)
+    {
+        nk_label(&ctx, name, NK_TEXT_LEFT);
+        std::ostringstream ss;
+        ss << value;
+        if (unit && unit[0] != 0)
+            ss << unit;
+        nk_label(&ctx, ss.str().c_str(), NK_TEXT_RIGHT);
+    }
+
     void prepareStatistics()
     {
         int flags = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE
@@ -775,11 +796,6 @@ public:
             float width = nk_window_get_content_region_size(&ctx).x - 30;
 
             char buffer[256];
-#define S(NAME, VAL, UNIT) { \
-                nk_label(&ctx, NAME, NK_TEXT_LEFT); \
-                sprintf(buffer, "%d" UNIT, VAL); \
-                nk_label(&ctx, buffer, NK_TEXT_RIGHT); \
-            }
 
             // general
             if (nk_tree_push(&ctx, NK_TREE_TAB, "General", NK_MAXIMIZED))
@@ -876,10 +892,14 @@ public:
 
                 S("Total:", s.meshesRenderedTotal, "");
 
+                const MapDraws &d = window->map->draws();
+                S("Opaque: ", d.opaque.size(), "");
+                S("Transparent: ", d.transparent.size(), "");
+                S("Geodata: ", d.geodata.size(), "");
+                S("Infographic: ", d.Infographic.size(), "");
+
                 nk_tree_pop(&ctx);
             }
-
-#undef S
         }
 
         // end window

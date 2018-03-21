@@ -201,10 +201,11 @@ public:
     bool enableCameraAltitudeChanges;
 
     bool debugDetachedCamera;
-    bool debugDisableVirtualSurfaces;
-    bool debugDisableSri;
+    bool debugEnableVirtualSurfaces;
+    bool debugEnableSri;
     bool debugSaveCorruptedFiles;
     bool debugFlatShading;
+    bool debugValidateGeodataStyles;
 
     bool debugRenderSurrogates;
     bool debugRenderMeshBoxes;
@@ -212,7 +213,7 @@ public:
     bool debugRenderObjectPosition;
     bool debugRenderTargetPosition;
     bool debugRenderAltitudeShiftCorners;
-    bool debugRenderNoMeshes;
+    bool debugRenderMeshes;
 
     bool debugExtractRawResources;
 };

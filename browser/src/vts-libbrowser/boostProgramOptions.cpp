@@ -191,17 +191,17 @@ void optionsConfigDebugOptions(
         ->implicit_value(!opts->debugDetachedCamera),
         "debugDetachedCamera")
 
-    ((section + "debugDisableVirtualSurfaces").c_str(),
-        po::value<bool>(&opts->debugDisableVirtualSurfaces)
-        ->default_value(opts->debugDisableVirtualSurfaces)
-        ->implicit_value(!opts->debugDisableVirtualSurfaces),
-        "debugDisableVirtualSurfaces")
+    ((section + "debugEnableVirtualSurfaces").c_str(),
+        po::value<bool>(&opts->debugEnableVirtualSurfaces)
+        ->default_value(opts->debugEnableVirtualSurfaces)
+        ->implicit_value(!opts->debugEnableVirtualSurfaces),
+        "debugEnableVirtualSurfaces")
 
-    ((section + "debugDisableSri").c_str(),
-        po::value<bool>(&opts->debugDisableSri)
-        ->default_value(opts->debugDisableSri)
-        ->implicit_value(!opts->debugDisableSri),
-        "debugDisableSri")
+    ((section + "debugEnableSri").c_str(),
+        po::value<bool>(&opts->debugEnableSri)
+        ->default_value(opts->debugEnableSri)
+        ->implicit_value(!opts->debugEnableSri),
+        "debugEnableSri")
 
     ((section + "debugSaveCorruptedFiles").c_str(),
         po::value<bool>(&opts->debugSaveCorruptedFiles)
@@ -251,11 +251,11 @@ void optionsConfigDebugOptions(
         ->implicit_value(!opts->debugRenderAltitudeShiftCorners),
         "debugRenderAltitudeShiftCorners")
 
-    ((section + "debugRenderNoMeshes").c_str(),
-        po::value<bool>(&opts->debugRenderNoMeshes)
-        ->default_value(opts->debugRenderNoMeshes)
-        ->implicit_value(!opts->debugRenderNoMeshes),
-        "debugRenderNoMeshes")
+    ((section + "debugRenderMeshes").c_str(),
+        po::value<bool>(&opts->debugRenderMeshes)
+        ->default_value(opts->debugRenderMeshes)
+        ->implicit_value(!opts->debugRenderMeshes),
+        "debugRenderMeshes")
     ;
 }
 

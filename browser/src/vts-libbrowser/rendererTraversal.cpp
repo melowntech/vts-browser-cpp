@@ -468,7 +468,7 @@ bool MapImpl::travDetermineDrawsGeodata(TraverseNode *trav)
         return false;
 
     std::shared_ptr<GpuGeodata> geo = getGeodata(geoName + "#$!gpu");
-    geo->update(style.second, features.second);
+    geo->update(style.second, features.second, trav->nodeInfo.nodeId().lod);
     geo->updatePriority(trav->priority);
     switch (getResourceValidity(geo))
     {

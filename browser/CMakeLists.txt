@@ -48,6 +48,9 @@ add_subdirectory(src/jsoncpp)
 add_subdirectory(src/geo)
 add_subdirectory(src/half)
 
+# do not bother me during development
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wno-unused-parameter")
+
 # vts libs
 message(STATUS "including vts libs")
 buildsys_nobuild_target(vts-libs-core)

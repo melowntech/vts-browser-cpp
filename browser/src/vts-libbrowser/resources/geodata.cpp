@@ -53,46 +53,336 @@ void GeodataStylesheet::load()
 }
 
 GpuGeodata::GpuGeodata(MapImpl *map, const std::string &name)
-    : Resource(map, name, FetchTask::ResourceType::General)
+    : Resource(map, name, FetchTask::ResourceType::General), lod(0)
 {
     state = Resource::State::ready;
 }
+
+using Json::Value;
+
+namespace
+{
+
+typedef std::map<std::string, Value> Replacements;
+
+template<bool Validating>
+struct geoContext
+{
+    geoContext(GpuGeodata *data, const std::string &style,
+               const std::string &features, uint32 lod)
+        : data(data),
+          style(stringToJson(style)),
+          features(stringToJson(features)),
+          lod(lod)
+    {}
+
+    void process()
+    {
+        if (Validating)
+        {
+            // check version
+            if (features["version"].asInt() != 1)
+            {
+                LOGTHROW(err2, std::runtime_error)
+                        << "Invalid geodata features <"
+                        << data->name << "> version.";
+            }
+        }
+
+        // constant replacements
+        {
+            const Value &cs = style["constants"];
+            for (const std::string &c : cs.getMemberNames())
+                commonReplacements[c] = cs[c];
+        }
+
+        static const std::vector<std::pair<std::string, std::string>> types
+                = { { "point", "points" },
+                    { "line", "lines" },
+                    { "polygon", "polygons"}
+                   };
+
+        // groups
+        for (const Value &group : features["groups"])
+        {
+            // types
+            for (const auto &type : types)
+            {
+                // features
+                for (const Value &feature : group[type.second])
+                {
+                    // layers
+                    for (const std::string &layer
+                         : style["layers"].getMemberNames())
+                    {
+                        processFeature(feature, group, layer, type.first);
+                    }
+                }
+            }
+        }
+    }
+
+    Value evaluate(const Value &expression,
+                   const Replacements &replacements)
+    {
+        if (expression.isObject())
+        {
+            // handle functions
+        }
+        if (expression.isArray() || expression.isObject())
+        {
+            Value r(expression);
+            for (auto &it : r)
+                it = evaluate(it, replacements);
+            return r;
+        }
+        if (expression.isString())
+        {
+            std::string s = expression.asString();
+            // find '{'
+            auto start = s.find("{");
+            if (start != s.npos)
+            {
+                auto last = start, end = start;
+                uint32 cnt = 1;
+                while (cnt > 0)
+                {
+                    end = s.find("}", last + 1);
+                    if (Validating)
+                    {
+                        if (end == s.npos)
+                        {
+                            LOGTHROW(err1, std::runtime_error)
+                                    << "Unmatched <{>";
+                        }
+                    }
+                    auto open = s.find("{", last + 1);
+                    if (end > open)
+                    {
+                        last = open;
+                        cnt++;
+                    }
+                    else
+                    {
+                        last = end;
+                        cnt--;
+                    }
+                }
+                std::string mid = s.substr(start + 1, end - start - 1);
+                std::string res = s.substr(0, start - 1)
+                        + evaluate(Value(mid), replacements).asString()
+                        + s.substr(end + 1);
+                LOG(info4) << "String <" << s
+                           << "> replaced by <" << res << ">";
+                return evaluate(res, replacements);
+            }
+            // find '}'
+            if (Validating)
+            {
+                auto end = s.find("}");
+                if (end != s.npos)
+                {
+                    LOGTHROW(err1, std::runtime_error)
+                            << "Unmatched <}>";
+                }
+            }
+            // apply replacements
+            for (const auto &it : replacements)
+            {
+                if (s == it.first)
+                    return evaluate(it.second, replacements);
+            }
+        }
+        return expression;
+    }
+
+    bool filter(const Value &expression,
+                const Replacements &replacements)
+    {
+        if (!expression.isArray())
+            LOGTHROW(err1, std::runtime_error) << "Filter must be array.";
+
+        std::string cond = expression[0].asString();
+
+        if (cond == "skip")
+            return false;
+
+        // comparison filters
+#define COMP(OP) \
+        if (cond == #OP) \
+        { \
+            if (Validating) \
+            { \
+                if (expression.size() != 3) \
+                    LOGTHROW(err1, std::runtime_error) \
+                            << "Invalid filter (" #OP ") array length."; \
+            } \
+            Value a = evaluate(expression[1], replacements); \
+            Value b = evaluate(expression[2], replacements); \
+            return a OP b; \
+        }
+        COMP(==);
+        COMP(!=);
+        COMP(>=);
+        COMP(<=);
+        COMP(>);
+        COMP(<);
+#undef COMP
+
+        // negative filters
+        if (!cond.empty() && cond[0] == '!')
+        {
+            Value v(expression);
+            v[0] = cond.substr(1);
+            return !filter(v, replacements);
+        }
+
+        // has filters
+        if (cond == "has")
+        {
+            if (Validating)
+            {
+                if (expression.size() != 2)
+                    LOGTHROW(err1, std::runtime_error)
+                            << "Invalid filter (has) array length.";
+            }
+            Value a = evaluate(expression[1], replacements);
+            return replacements.find(a.asString()) != replacements.end();
+        }
+
+        // in filters
+        if (cond == "in")
+        {
+            if (Validating)
+            {
+                if (expression.size() < 2)
+                    LOGTHROW(err1, std::runtime_error)
+                            << "Invalid filter (in) array length.";
+            }
+            std::string v = evaluate(expression[1], replacements).asString();
+            for (uint32 i = 2, e = expression.size(); i < e; i++)
+            {
+                std::string m = evaluate(expression[i], replacements).asString();
+                if (v == m)
+                    return true;
+            }
+            return false;
+        }
+
+        // aggregate filters
+        if (cond == "all")
+        {
+            for (uint32 i = 1, e = expression.size(); i < e; i++)
+                if (!filter(expression[i], replacements))
+                    return false;
+            return true;
+        }
+        if (cond == "any")
+        {
+            for (uint32 i = 1, e = expression.size(); i < e; i++)
+                if (filter(expression[i], replacements))
+                    return true;
+            return false;
+        }
+        if (cond == "none")
+        {
+            for (uint32 i = 1, e = expression.size(); i < e; i++)
+                if (filter(expression[i], replacements))
+                    return false;
+            return true;
+        }
+
+        // unknown filter
+        if (Validating)
+        {
+            LOGTHROW(err1, std::runtime_error)
+                    << "Unknown filter condition type.";
+        }
+        return false;
+    }
+
+    void processFeature(const Value &feature,
+                        const Value &group,
+                        const std::string &layerName,
+                        const std::string &type,
+                        boost::optional<sint32> zOverride
+                                = boost::optional<sint32>())
+    {
+        Replacements replacements(commonReplacements);
+        {
+            // properties
+            const Value &cs = feature["properties"];
+            for (const std::string &c : cs.getMemberNames())
+                replacements[std::string("$") + c] = cs[c];
+        }
+        replacements["#id"] = feature["properties"]["name"];
+        replacements["#group"] = group["id"];
+        replacements["#type"] = type;
+
+        const Value &layer = style["layers"][layerName];
+
+        if (!zOverride)
+        {
+            if (!filter(layer["filter"], replacements))
+                return;
+        }
+
+        //LOG(info4) << "Geodata feature <"
+        //           << feature["properties"]["name"].asString()
+        //           << ">, group <" << group["id"].asString() << ">, layer <"
+        //           << layerName << ">, type <" << type << ">";
+
+        data->renders.emplace_back();
+    }
+
+    GpuGeodata *const data;
+    Value style;
+    Value features;
+    uint32 lod;
+    Replacements commonReplacements;
+};
+
+} // namespace
 
 void GpuGeodata::load()
 {
     LOG(info2) << "Loading gpu-geodata <" << name << ">";
     renders.clear();
 
+    // this resource is not meant to be downloaded
+    assert(reply.content.size() == 0);
+
+    // empty sources
     if (style.empty() || features.empty())
-    {
-        renders.emplace_back();
         return;
+
+    // process
+    if (map->options.debugValidateGeodataStyles)
+    {
+        geoContext<true> ctx(this, style, features, lod);
+        ctx.process();
     }
-
-    Json::Value styleRoot = stringToJson(style);
-    Json::Value featuresRoot = stringToJson(features);
-
-    // todo
-    // parse json data
-    // parse json style
-    // apply expression evaluations
-    // generate draw commands
-
-    renders.emplace_back();
+    else
+    {
+        geoContext<false> ctx(this, style, features, lod);
+        ctx.process();
+    }
 }
 
-void GpuGeodata::update(const std::string &s, const std::string &f)
+void GpuGeodata::update(const std::string &s, const std::string &f, uint32 l)
 {
     switch ((Resource::State)state)
     {
     case Resource::State::initializing:
-        state = Resource::State::ready;
+        state = Resource::State::ready; // if left in initializing, it would attempt to download it
         // no break
+    case Resource::State::errorFatal: // allow reloading when sources change, even if it failed before
     case Resource::State::ready:
-        if (style != s || features != f)
+        if (style != s || features != f || lod != l)
         {
             style = s;
             features = f;
+            lod = l;
             state = Resource::State::downloaded;
         }
         break;

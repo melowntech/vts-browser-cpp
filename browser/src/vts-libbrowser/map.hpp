@@ -271,11 +271,13 @@ class GpuGeodata : public Resource
 public:
     GpuGeodata(MapImpl *map, const std::string &name);
     void load() override;
-    void update(const std::string &style, const std::string &features);
+    void update(const std::string &style, const std::string &features,
+                uint32 lod);
 
     std::vector<RenderTask> renders;
 
 private:
+    uint32 lod;
     std::string style;
     std::string features;
 };

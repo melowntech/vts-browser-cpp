@@ -77,7 +77,7 @@ bool MapLayer::prerequisitesCheckMainSurfaces()
     auto *mapConfig = map->mapConfig.get();
 
     // check for virtual surface
-    if (!map->options.debugDisableVirtualSurfaces)
+    if (map->options.debugEnableVirtualSurfaces)
     {
         std::vector<std::string> viewSurfaces;
         viewSurfaces.reserve(mapConfig->view.surfaces.size());

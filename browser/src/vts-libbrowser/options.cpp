@@ -84,17 +84,18 @@ MapOptions::MapOptions() :
     enableCameraNormalization(true),
     enableCameraAltitudeChanges(true),
     debugDetachedCamera(false),
-    debugDisableVirtualSurfaces(false),
-    debugDisableSri(true),
+    debugEnableVirtualSurfaces(true),
+    debugEnableSri(false),
     debugSaveCorruptedFiles(true),
     debugFlatShading(false),
+    debugValidateGeodataStyles(true),
     debugRenderSurrogates(false),
     debugRenderMeshBoxes(false),
     debugRenderTileBoxes(false),
     debugRenderObjectPosition(false),
     debugRenderTargetPosition(false),
     debugRenderAltitudeShiftCorners(false),
-    debugRenderNoMeshes(false),
+    debugRenderMeshes(true),
     debugExtractRawResources(false)
 {}
 

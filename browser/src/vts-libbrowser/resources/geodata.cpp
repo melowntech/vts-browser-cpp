@@ -63,8 +63,6 @@ using Json::Value;
 namespace
 {
 
-typedef std::map<std::string, Value> Replacements;
-
 template<bool Validating>
 struct geoContext
 {
@@ -89,41 +87,57 @@ struct geoContext
             }
         }
 
-        // constant replacements
-        {
-            const Value &cs = style["constants"];
-            for (const std::string &c : cs.getMemberNames())
-                commonReplacements[c] = cs[c];
-        }
-
-        static const std::vector<std::pair<std::string, std::string>> types
+        static const std::vector<std::pair<std::string, std::string>> allTypes
                 = { { "point", "points" },
                     { "line", "lines" },
                     { "polygon", "polygons"}
                    };
 
-        // groups
-        for (const Value &group : features["groups"])
+        const auto allLayerNames = style["layers"].getMemberNames();
+
+        // types
+        for (const auto &type : allTypes)
         {
-            // types
-            for (const auto &type : types)
+            // groups
+            for (const Value &group : features["groups"])
             {
                 // features
                 for (const Value &feature : group[type.second])
                 {
+                    current.emplace(type.first, group, feature);
                     // layers
-                    for (const std::string &layer
-                         : style["layers"].getMemberNames())
-                    {
-                        processFeature(feature, group, layer, type.first);
-                    }
+                    for (const std::string &layerName : allLayerNames)
+                        processFeature(layerName);
                 }
             }
         }
     }
 
-    Value evaluate(const Value &expression,
-                   const Replacements &replacements)
+    Value replacement(const std::string &name)
+    {
+        assert(current);
+        if (name.empty())
+            return Value();
+        switch (name[0])
+        {
+        case '@': // constant
+            return evaluate(style["constants"][name]);
+        case '$': // property
+            return current->feature["properties"][name.substr(1)];
+        case '#': // identifier
+            if (name == "#id")
+                return current->feature["properties"]["name"];
+            if (name == "#group")
+                return current->group["id"];
+            if (name == "#type")
+                return current->type;
+            return Value();
+        default:
+            return name;
+        }
+    }
+
+    Value evaluate(const Value &expression)
     {
         if (expression.isObject())
         {
@@ -133,7 +147,7 @@ struct geoContext
         {
             Value r(expression);
             for (auto &it : r)
-                it = evaluate(it, replacements);
+                it = evaluate(it);
             return r;
         }
         if (expression.isString())
@@ -170,11 +184,11 @@ struct geoContext
                 }
                 std::string mid = s.substr(start + 1, end - start - 1);
                 std::string res = s.substr(0, start - 1)
-                        + evaluate(Value(mid), replacements).asString()
+                        + evaluate(mid).asString()
                         + s.substr(end + 1);
                 LOG(info4) << "String <" << s
                            << "> replaced by <" << res << ">";
-                return evaluate(res, replacements);
+                return evaluate(res);
             }
             // find '}'
             if (Validating)
@@ -187,17 +201,12 @@ struct geoContext
                 }
             }
             // apply replacements
-            for (const auto &it : replacements)
-            {
-                if (s == it.first)
-                    return evaluate(it.second, replacements);
-            }
+            return replacement(s);
         }
         return expression;
     }
 
-    bool filter(const Value &expression,
-                const Replacements &replacements)
+    bool filter(const Value &expression)
     {
         if (!expression.isArray())
             LOGTHROW(err1, std::runtime_error) << "Filter must be array.";
@@ -217,8 +226,8 @@ struct geoContext
                     LOGTHROW(err1, std::runtime_error) \
                             << "Invalid filter (" #OP ") array length."; \
             } \
-            Value a = evaluate(expression[1], replacements); \
-            Value b = evaluate(expression[2], replacements); \
+            Value a = evaluate(expression[1]); \
+            Value b = evaluate(expression[2]); \
             return a OP b; \
         }
         COMP(==);
@@ -234,7 +243,7 @@ struct geoContext
         {
             Value v(expression);
             v[0] = cond.substr(1);
-            return !filter(v, replacements);
+            return !filter(v);
         }
 
         // has filters
@@ -246,8 +255,8 @@ struct geoContext
                     LOGTHROW(err1, std::runtime_error)
                             << "Invalid filter (has) array length.";
             }
-            Value a = evaluate(expression[1], replacements);
-            return replacements.find(a.asString()) != replacements.end();
+            Value a = expression[1];
+            return a != replacement(a.asString());
         }
 
         // in filters
@@ -259,10 +268,10 @@ struct geoContext
                     LOGTHROW(err1, std::runtime_error)
                             << "Invalid filter (in) array length.";
             }
-            std::string v = evaluate(expression[1], replacements).asString();
+            std::string v = evaluate(expression[1]).asString();
             for (uint32 i = 2, e = expression.size(); i < e; i++)
             {
-                std::string m = evaluate(expression[i], replacements).asString();
+                std::string m = evaluate(expression[i]).asString();
                 if (v == m)
                     return true;
             }
@@ -273,21 +282,21 @@ struct geoContext
         if (cond == "all")
         {
             for (uint32 i = 1, e = expression.size(); i < e; i++)
-                if (!filter(expression[i], replacements))
+                if (!filter(expression[i]))
                     return false;
             return true;
         }
         if (cond == "any")
         {
             for (uint32 i = 1, e = expression.size(); i < e; i++)
-                if (filter(expression[i], replacements))
+                if (filter(expression[i]))
                     return true;
             return false;
         }
         if (cond == "none")
         {
             for (uint32 i = 1, e = expression.size(); i < e; i++)
-                if (filter(expression[i], replacements))
+                if (filter(expression[i]))
                     return false;
             return true;
         }
@@ -301,36 +310,17 @@ struct geoContext
         return false;
     }
 
-    void processFeature(const Value &feature,
-                        const Value &group,
-                        const std::string &layerName,
-                        const std::string &type,
+    void processFeature(const std::string &layerName,
                         boost::optional<sint32> zOverride
                                 = boost::optional<sint32>())
     {
-        Replacements replacements(commonReplacements);
-        {
-            // properties
-            const Value &cs = feature["properties"];
-            for (const std::string &c : cs.getMemberNames())
-                replacements[std::string("$") + c] = cs[c];
-        }
-        replacements["#id"] = feature["properties"]["name"];
-        replacements["#group"] = group["id"];
-        replacements["#type"] = type;
-
         const Value &layer = style["layers"][layerName];
 
         if (!zOverride)
         {
-            if (!filter(layer["filter"], replacements))
+            if (!filter(layer["filter"]))
                 return;
         }
-
-        //LOG(info4) << "Geodata feature <"
-        //           << feature["properties"]["name"].asString()
-        //           << ">, group <" << group["id"].asString() << ">, layer <"
-        //           << layerName << ">, type <" << type << ">";
 
         data->renders.emplace_back();
     }
@@ -339,7 +329,19 @@ struct geoContext
     Value style;
     Value features;
     uint32 lod;
-    Replacements commonReplacements;
+
+    struct Current
+    {
+        std::string type;
+        const Value &group;
+        const Value &feature;
+        Current(const std::string &type,
+                const Value &group, const Value &feature)
+            : type(type), group(group), feature(feature)
+        {}
+    };
+
+    boost::optional<Current> current;
 };
 
 } // namespace

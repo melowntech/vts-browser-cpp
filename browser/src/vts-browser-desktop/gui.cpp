@@ -142,15 +142,11 @@ public:
             spec.buffer.allocate(spec.width * spec.height * spec.components);
             memcpy(spec.buffer.data(), img, spec.buffer.size());
             fontTexture = std::make_shared<Texture>();
-            ResourceInfo info;
-            fontTexture->load(info, spec);
+            fontTexture->load(spec);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             nk_font_atlas_end(&atlas, nk_handle_id(fontTexture->getId()),
                               &null);
-
-            // lodepng_encode32_file("font_atlas.png",
-            //     (unsigned char*)spec.buffer.data(), spec.width, spec.height);
         }
 
         nk_init_default(&ctx, &font->handle);
@@ -513,74 +509,74 @@ public:
                 {
                     float ratio[] = { width * 0.4f, width * 0.6f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
-                }
 
-                // navigation type
-                nk_label(&ctx, "Nav. type:", NK_TEXT_LEFT);
-                if (nk_combo_begin_label(&ctx,
-                             navigationTypeNames[(int)o.navigationType],
-                             nk_vec2(nk_widget_width(&ctx), 200)))
-                {
-                    nk_layout_row_dynamic(&ctx, 16, 1);
-                    for (unsigned i = 0; i < sizeof(navigationTypeNames)
-                         / sizeof(navigationTypeNames[0]); i++)
+                    // navigation type
+                    nk_label(&ctx, "Nav. type:", NK_TEXT_LEFT);
+                    if (nk_combo_begin_label(&ctx,
+                                 navigationTypeNames[(int)o.navigationType],
+                                 nk_vec2(nk_widget_width(&ctx), 200)))
                     {
-                        if (nk_combo_item_label(&ctx,
-                                navigationTypeNames[i], NK_TEXT_LEFT))
-                            o.navigationType = (NavigationType)i;
+                        nk_layout_row_dynamic(&ctx, 16, 1);
+                        for (unsigned i = 0; i < sizeof(navigationTypeNames)
+                             / sizeof(navigationTypeNames[0]); i++)
+                        {
+                            if (nk_combo_item_label(&ctx,
+                                    navigationTypeNames[i], NK_TEXT_LEFT))
+                                o.navigationType = (NavigationType)i;
+                        }
+                        nk_combo_end(&ctx);
                     }
-                    nk_combo_end(&ctx);
-                }
 
-                // navigation mode
-                nk_label(&ctx, "Nav. mode:", NK_TEXT_LEFT);
-                if (nk_combo_begin_label(&ctx,
-                             navigationModeNames[(int)o.navigationMode],
-                             nk_vec2(nk_widget_width(&ctx), 200)))
-                {
-                    nk_layout_row_dynamic(&ctx, 16, 1);
-                    for (unsigned i = 0; i < sizeof(navigationModeNames)
-                         / sizeof(navigationModeNames[0]); i++)
+                    // navigation mode
+                    nk_label(&ctx, "Nav. mode:", NK_TEXT_LEFT);
+                    if (nk_combo_begin_label(&ctx,
+                                 navigationModeNames[(int)o.navigationMode],
+                                 nk_vec2(nk_widget_width(&ctx), 200)))
                     {
-                        if (nk_combo_item_label(&ctx,
-                                    navigationModeNames[i],NK_TEXT_LEFT))
-                            o.navigationMode = (NavigationMode)i;
+                        nk_layout_row_dynamic(&ctx, 16, 1);
+                        for (unsigned i = 0; i < sizeof(navigationModeNames)
+                             / sizeof(navigationModeNames[0]); i++)
+                        {
+                            if (nk_combo_item_label(&ctx,
+                                        navigationModeNames[i],NK_TEXT_LEFT))
+                                o.navigationMode = (NavigationMode)i;
+                        }
+                        nk_combo_end(&ctx);
                     }
-                    nk_combo_end(&ctx);
                 }
 
                 {
                     float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
+
+                    // navigation max view extent multiplier
+                    nk_label(&ctx, "Piha zoom:", NK_TEXT_LEFT);
+                    o.navigationPihaViewExtentMult = nk_slide_float(&ctx,
+                            1.002, o.navigationPihaViewExtentMult, 1.2, 0.002);
+                    sprintf(buffer, "%5.3f", o.navigationPihaViewExtentMult);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                    // navigation max position change
+                    nk_label(&ctx, "Piha move:", NK_TEXT_LEFT);
+                    o.navigationPihaPositionChange = nk_slide_float(&ctx,
+                            0.002, o.navigationPihaPositionChange, 0.2, 0.002);
+                    sprintf(buffer, "%5.3f", o.navigationPihaPositionChange);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                    // navigation samples per view extent
+                    nk_label(&ctx, "Nav. samples:", NK_TEXT_LEFT);
+                    o.navigationSamplesPerViewExtent = nk_slide_int(&ctx,
+                            1, o.navigationSamplesPerViewExtent, 16, 1);
+                    sprintf(buffer, "%3d", o.navigationSamplesPerViewExtent);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                    // altitude fade out
+                    nk_label(&ctx, "Altitude fade:", NK_TEXT_LEFT);
+                    o.cameraAltitudeFadeOutFactor = nk_slide_float(&ctx,
+                            0, o.cameraAltitudeFadeOutFactor, 1, 0.01);
+                    sprintf(buffer, "%4.2f", o.cameraAltitudeFadeOutFactor);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 }
-
-                // navigation max view extent multiplier
-                nk_label(&ctx, "Piha zoom:", NK_TEXT_LEFT);
-                o.navigationPihaViewExtentMult = nk_slide_float(&ctx,
-                        1.002, o.navigationPihaViewExtentMult, 1.2, 0.002);
-                sprintf(buffer, "%5.3f", o.navigationPihaViewExtentMult);
-                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-
-                // navigation max position change
-                nk_label(&ctx, "Piha move:", NK_TEXT_LEFT);
-                o.navigationPihaPositionChange = nk_slide_float(&ctx,
-                        0.002, o.navigationPihaPositionChange, 0.2, 0.002);
-                sprintf(buffer, "%5.3f", o.navigationPihaPositionChange);
-                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-
-                // navigation samples per view extent
-                nk_label(&ctx, "Nav. samples:", NK_TEXT_LEFT);
-                o.navigationSamplesPerViewExtent = nk_slide_int(&ctx,
-                        1, o.navigationSamplesPerViewExtent, 16, 1);
-                sprintf(buffer, "%3d", o.navigationSamplesPerViewExtent);
-                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-
-                // altitude fade out
-                nk_label(&ctx, "Altitude fade:", NK_TEXT_LEFT);
-                o.cameraAltitudeFadeOutFactor = nk_slide_float(&ctx,
-                        0, o.cameraAltitudeFadeOutFactor, 1, 0.01);
-                sprintf(buffer, "%4.2f", o.cameraAltitudeFadeOutFactor);
-                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                 // end group
                 nk_tree_pop(&ctx);
@@ -592,62 +588,62 @@ public:
                 {
                     float ratio[] = { width * 0.4f, width * 0.6f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
-                }
 
-                // traverse mode
-                nk_label(&ctx, "Traverse:", NK_TEXT_LEFT);
-                if (nk_combo_begin_label(&ctx,
-                                 traverseModeNames[(int)o.traverseMode],
-                                 nk_vec2(nk_widget_width(&ctx), 200)))
-                {
-                    nk_layout_row_dynamic(&ctx, 16, 1);
-                    for (unsigned i = 0; i < sizeof(traverseModeNames)
-                         / sizeof(traverseModeNames[0]); i++)
+                    // traverse mode
+                    nk_label(&ctx, "Traverse:", NK_TEXT_LEFT);
+                    if (nk_combo_begin_label(&ctx,
+                                     traverseModeNames[(int)o.traverseMode],
+                                     nk_vec2(nk_widget_width(&ctx), 200)))
                     {
-                        if (nk_combo_item_label(&ctx, traverseModeNames[i],
-                                                NK_TEXT_LEFT))
-                            o.traverseMode = (TraverseMode)i;
+                        nk_layout_row_dynamic(&ctx, 16, 1);
+                        for (unsigned i = 0; i < sizeof(traverseModeNames)
+                             / sizeof(traverseModeNames[0]); i++)
+                        {
+                            if (nk_combo_item_label(&ctx, traverseModeNames[i],
+                                                    NK_TEXT_LEFT))
+                                o.traverseMode = (TraverseMode)i;
+                        }
+                        nk_combo_end(&ctx);
                     }
-                    nk_combo_end(&ctx);
                 }
 
                 {
                     float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
-                }
 
-                // maxTexelToPixelScale
-                nk_label(&ctx, "Texel to pixel:", NK_TEXT_LEFT);
-                o.maxTexelToPixelScale = nk_slide_float(&ctx,
-                        1, o.maxTexelToPixelScale, 5, 0.01);
-                sprintf(buffer, "%3.1f", o.maxTexelToPixelScale);
-                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                    // maxTexelToPixelScale
+                    nk_label(&ctx, "Texel to pixel:", NK_TEXT_LEFT);
+                    o.maxTexelToPixelScale = nk_slide_float(&ctx,
+                            1, o.maxTexelToPixelScale, 5, 0.01);
+                    sprintf(buffer, "%3.1f", o.maxTexelToPixelScale);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
-                // maxTexelToPixelScaleBalancedAddition
-                nk_label(&ctx, "Balanced addition:", NK_TEXT_LEFT);
-                o.maxTexelToPixelScaleBalancedAddition = nk_slide_float(&ctx,
-                        1, o.maxTexelToPixelScaleBalancedAddition, 10, 0.01);
-                sprintf(buffer, "%3.1f",o.maxTexelToPixelScaleBalancedAddition);
-                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                    // maxTexelToPixelScaleBalancedAddition
+                    nk_label(&ctx, "Balanced addition:", NK_TEXT_LEFT);
+                    o.maxTexelToPixelScaleBalancedAddition = nk_slide_float(&ctx,
+                            1, o.maxTexelToPixelScaleBalancedAddition, 10, 0.01);
+                    sprintf(buffer, "%3.1f",o.maxTexelToPixelScaleBalancedAddition);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
-                // antialiasing samples
-                nk_label(&ctx, "Antialiasing:", NK_TEXT_LEFT);
-                r.antialiasingSamples = nk_slide_int(&ctx,
-                        1, r.antialiasingSamples, 16, 1);
-                if (r.antialiasingSamples > 1)
-                {
-                    sprintf(buffer, "%d", r.antialiasingSamples);
+                    // antialiasing samples
+                    nk_label(&ctx, "Antialiasing:", NK_TEXT_LEFT);
+                    r.antialiasingSamples = nk_slide_int(&ctx,
+                            1, r.antialiasingSamples, 16, 1);
+                    if (r.antialiasingSamples > 1)
+                    {
+                        sprintf(buffer, "%d", r.antialiasingSamples);
+                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                    }
+                    else
+                        nk_label(&ctx, "no", NK_TEXT_RIGHT);
+
+                    // maxResourcesMemory
+                    nk_label(&ctx, "Target memory:", NK_TEXT_LEFT);
+                    o.targetResourcesMemory = 1024 * 1024 * (uint64)nk_slide_int(&ctx,
+                            0, o.targetResourcesMemory / 1024 / 1024, 2048, 32);
+                    sprintf(buffer, "%3d", (int)(o.targetResourcesMemory / 1024 / 1024));
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 }
-                else
-                    nk_label(&ctx, "no", NK_TEXT_RIGHT);
-
-                // maxResourcesMemory
-                nk_label(&ctx, "Target memory:", NK_TEXT_LEFT);
-                o.targetResourcesMemory = 1024 * 1024 * (uint64)nk_slide_int(&ctx,
-                        0, o.targetResourcesMemory / 1024 / 1024, 2048, 32);
-                sprintf(buffer, "%3d", (int)(o.targetResourcesMemory / 1024 / 1024));
-                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                 // end group
                 nk_tree_pop(&ctx);
@@ -800,10 +796,8 @@ public:
             // general
             if (nk_tree_push(&ctx, NK_TREE_TAB, "General", NK_MAXIMIZED))
             {
-                {
-                    float ratio[] = { width * 0.5f, width * 0.5f };
-                    nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
-                }
+                float ratio[] = { width * 0.5f, width * 0.5f };
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                 nk_label(&ctx, "Loading:", NK_TEXT_LEFT);
                 nk_prog(&ctx, (int)(1000 * window->map->getMapRenderProgress()),
@@ -829,10 +823,8 @@ public:
             // resources
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Resources", NK_MAXIMIZED))
             {
-                {
-                    float ratio[] = { width * 0.5f, width * 0.5f };
-                    nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
-                }
+                float ratio[] = { width * 0.5f, width * 0.5f };
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                 S("GPU memory:", \
                         (int)(s.currentGpuMemUse / 1024 / 1024), " MB");
@@ -856,10 +848,8 @@ public:
             // traversed
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Traversed nodes", NK_MINIMIZED))
             {
-                {
-                    float ratio[] = { width * 0.5f, width * 0.5f };
-                    nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
-                }
+                float ratio[] = { width * 0.5f, width * 0.5f };
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                 for (unsigned i = 0; i < MapStatistics::MaxLods; i++)
                 {
@@ -877,10 +867,8 @@ public:
             // rendered
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Rendered nodes", NK_MINIMIZED))
             {
-                {
-                    float ratio[] = { width * 0.5f, width * 0.5f };
-                    nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
-                }
+                float ratio[] = { width * 0.5f, width * 0.5f };
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                 for (unsigned i = 0; i < MapStatistics::MaxLods; i++)
                 {
@@ -1014,10 +1002,8 @@ public:
 
             // rotation
             {
-                {
-                    float ratio[] = { width * 0.4f, width * 0.3f, width * 0.3f };
-                    nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
-                }
+                float ratio[] = { width * 0.4f, width * 0.3f, width * 0.3f };
+                nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
                 double n[3], c[3];
                 window->map->getPositionRotation(n);
                 window->map->getPositionRotationLimited(c);
@@ -1061,10 +1047,8 @@ public:
 
             // fov
             {
-                {
-                    float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
-                    nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
-                }
+                float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
+                nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
                 nk_label(&ctx, "Fov:", NK_TEXT_LEFT);
                 window->map->setPositionFov(nk_slide_float(&ctx, 10,
                                     window->map->getPositionFov(), 100, 1));
@@ -1083,10 +1067,8 @@ public:
             // auto movement
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Auto", NK_MINIMIZED))
             {
-                {
-                    float ratio[] = { width * 0.4f, width * 0.6f };
-                    nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
-                }
+                float ratio[] = { width * 0.4f, width * 0.6f };
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                 for (int i = 0; i < 3; i++)
                 {
@@ -1259,18 +1241,18 @@ public:
                 {
                     float ratio[] = { width * 0.5f, width * 0.5f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
-                }
-                if (nk_button_label(&ctx, "< Prev"))
-                {
-                    selectMapconfig(currentMapConfig() - 1);
-                    nk_end(&ctx);
-                    return;
-                }
-                if (nk_button_label(&ctx, "Next >"))
-                {
-                    selectMapconfig(currentMapConfig() + 1);
-                    nk_end(&ctx);
-                    return;
+                    if (nk_button_label(&ctx, "< Prev"))
+                    {
+                        selectMapconfig(currentMapConfig() - 1);
+                        nk_end(&ctx);
+                        return;
+                    }
+                    if (nk_button_label(&ctx, "Next >"))
+                    {
+                        selectMapconfig(currentMapConfig() + 1);
+                        nk_end(&ctx);
+                        return;
+                    }
                 }
             }
 

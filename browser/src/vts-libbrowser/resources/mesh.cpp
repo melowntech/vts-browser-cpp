@@ -226,7 +226,13 @@ void MeshAggregate::load()
         gm->state = Resource::State::ready;
     }
 
+    // memory consumption
     info.ramMemoryCost += sizeof(*this) + submeshes.size() * sizeof(MeshPart);
+    for (auto &it : submeshes)
+    {
+        info.gpuMemoryCost += it.renderable->info.gpuMemoryCost;
+        info.ramMemoryCost += it.renderable->info.ramMemoryCost;
+    }
 }
 
 } // namespace vts

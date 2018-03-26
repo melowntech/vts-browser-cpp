@@ -197,8 +197,8 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
     assert(trav->surface);
 
     // statistics
-    statistics.meshesRenderedTotal++;
-    statistics.meshesRenderedPerLod[std::min<uint32>(
+    statistics.nodesRenderedTotal++;
+    statistics.nodesRenderedPerLod[std::min<uint32>(
         trav->nodeInfo.nodeId().lod, MapStatistics::MaxLods - 1)]++;
 
     // meshes
@@ -208,6 +208,11 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
             draws.opaque.emplace_back(r, uvClip.data(), this);
         for (const RenderTask &r : trav->transparent)
             draws.transparent.emplace_back(r, uvClip.data(), this);
+    }
+
+    // geodata
+    if (options.debugRenderGeodata)
+    {
         for (const RenderTask &r : trav->geodata)
             draws.geodata.emplace_back(r, uvClip.data(), this);
     }

@@ -214,6 +214,7 @@ public:
     bool debugRenderTargetPosition;
     bool debugRenderAltitudeShiftCorners;
     bool debugRenderMeshes;
+    bool debugRenderGeodata;
 
     bool debugExtractRawResources;
 };

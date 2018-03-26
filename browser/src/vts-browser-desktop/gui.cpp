@@ -690,9 +690,13 @@ public:
                 r.renderPolygonEdges = nk_check_label(&ctx, "edges",
                                                 r.renderPolygonEdges);
 
-                // render no meshes
+                // render meshes
                 o.debugRenderMeshes = nk_check_label(&ctx,
                     "meshes", o.debugRenderMeshes);
+
+                // render geodata
+                o.debugRenderGeodata = nk_check_label(&ctx,
+                    "geodata", o.debugRenderGeodata);
 
                 // render compas
                 nk_checkbox_label(&ctx,
@@ -864,7 +868,7 @@ public:
                 nk_tree_pop(&ctx);
             }
 
-            // rendered
+            // rendered nodes
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Rendered nodes", NK_MINIMIZED))
             {
                 float ratio[] = { width * 0.5f, width * 0.5f };
@@ -872,13 +876,21 @@ public:
 
                 for (unsigned i = 0; i < MapStatistics::MaxLods; i++)
                 {
-                    if (s.meshesRenderedPerLod[i] == 0)
+                    if (s.nodesRenderedPerLod[i] == 0)
                         continue;
                     sprintf(buffer, "[%d]:", i);
-                    S(buffer, s.meshesRenderedPerLod[i], "");
+                    S(buffer, s.nodesRenderedPerLod[i], "");
                 }
+                S("Total:", s.nodesRenderedTotal, "");
 
-                S("Total:", s.meshesRenderedTotal, "");
+                nk_tree_pop(&ctx);
+            }
+
+            // draw calls
+            if (nk_tree_push(&ctx, NK_TREE_TAB, "Draw calls", NK_MINIMIZED))
+            {
+                float ratio[] = { width * 0.5f, width * 0.5f };
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                 const MapDraws &d = window->map->draws();
                 S("Opaque: ", d.opaque.size(), "");

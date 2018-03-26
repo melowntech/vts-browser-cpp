@@ -134,6 +134,24 @@ public:
         m->dispatch();
     }
 
+    void drawGeodata(const DrawTask &t)
+    {
+        Mesh *m = (Mesh*)t.mesh.get();
+        if (!m)
+            return;
+        shaderInfographic->bind();
+        shaderInfographic->uniformMat4(1, t.mv);
+        shaderInfographic->uniformVec4(2, t.color);
+        shaderInfographic->uniform(3, (int)(!!t.texColor));
+        if (t.texColor)
+        {
+            Texture *tex = (Texture*)t.texColor.get();
+            tex->bind();
+        }
+        m->bind();
+        m->dispatch();
+    }
+
     void drawInfographic(const DrawTask &t)
     {
         Mesh *m = (Mesh*)t.mesh.get();
@@ -379,6 +397,11 @@ public:
             checkGl("copied the depth (resolved multisampling)");
         }
         glDisable(GL_DEPTH_TEST);
+
+        // render geodata
+        for (const auto &t : draws->geodata)
+            drawGeodata(t);
+        checkGl("rendered geodata");
 
         // render infographics
         for (const DrawTask &t : draws->Infographic)

@@ -44,8 +44,8 @@ public:
 
     // frame statistics
 
-    uint32 meshesRenderedTotal;
-    uint32 meshesRenderedPerLod[MaxLods];
+    uint32 nodesRenderedTotal;
+    uint32 nodesRenderedPerLod[MaxLods];
     uint32 metaNodesTraversedTotal;
     uint32 metaNodesTraversedPerLod[MaxLods];
 

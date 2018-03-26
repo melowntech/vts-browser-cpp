@@ -96,6 +96,7 @@ MapOptions::MapOptions() :
     debugRenderTargetPosition(false),
     debugRenderAltitudeShiftCorners(false),
     debugRenderMeshes(true),
+    debugRenderGeodata(true),
     debugExtractRawResources(false)
 {}
 

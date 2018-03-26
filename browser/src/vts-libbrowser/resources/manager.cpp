@@ -262,7 +262,7 @@ void Resource::processLoad()
             }
         }
         map->statistics.resourcesFailed++;
-        state = Resource::State::errorRetry;
+        state = Resource::State::errorFatal;
     }
     reply.content.free();
 }

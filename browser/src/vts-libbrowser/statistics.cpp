@@ -61,11 +61,11 @@ void MapStatistics::resetFrame()
 {
     currentNodeMetaUpdates = 0;
     currentNodeDrawsUpdates = 0;
-    meshesRenderedTotal = 0;
+    nodesRenderedTotal = 0;
     metaNodesTraversedTotal = 0;
     for (uint32 i = 0; i < MaxLods; i++)
     {
-        meshesRenderedPerLod[i] = 0;
+        nodesRenderedPerLod[i] = 0;
         metaNodesTraversedPerLod[i] = 0;
     }
 }

@@ -260,6 +260,11 @@ mat4 rotationMatrix(int axis, double degrees)
     throw; // shut up compiler warning
 }
 
+mat4 scaleMatrix(double s)
+{
+    return scaleMatrix(s, s, s);
+}
+
 mat4 scaleMatrix(double sx, double sy, double sz)
 {
     return (mat4() <<
@@ -269,9 +274,9 @@ mat4 scaleMatrix(double sx, double sy, double sz)
             0,  0,  0, 1).finished();
 }
 
-mat4 scaleMatrix(double s)
+mat4 scaleMatrix(const vec3 &vec)
 {
-    return scaleMatrix(s, s, s);
+    return scaleMatrix(vec[0], vec[1], vec[2]);
 }
 
 mat4 translationMatrix(double tx, double ty, double tz)

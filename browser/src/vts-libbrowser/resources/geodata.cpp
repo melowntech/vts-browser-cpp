@@ -63,22 +63,42 @@ using Json::Value;
 namespace
 {
 
-enum class Type
-{
-    Point,
-    Line,
-    Polygon,
-};
-
-vec4f convertColor(const Value &v)
-{
-    return vec4f(v[0].asInt(), v[1].asInt(), v[2].asInt(), v[3].asInt())
-            / 255.f;
-}
-
 template<bool Validating>
 struct geoContext
 {
+    enum class Type
+    {
+        Point,
+        Line,
+        Polygon,
+    };
+
+    typedef std::array<uint16, 3> Point;
+
+    Point convertPoint(const Value &v)
+    {
+        if (Validating)
+        {
+            for (uint32 i = 0; i < 3; i++)
+            {
+                if (v[i].asUInt() > 65535)
+                {
+                    LOGTHROW(err1, std::runtime_error)
+                            << "Point index outside range.";
+                }
+            }
+        }
+        return { (uint16)v[0].asUInt(),
+                 (uint16)v[1].asUInt(),
+                 (uint16)v[2].asUInt() };
+    }
+
+    vec4f convertColor(const Value &v)
+    {
+        return vec4f(v[0].asInt(), v[1].asInt(), v[2].asInt(), v[3].asInt())
+                / 255.f;
+    }
+
     geoContext(GpuGeodata *data, const std::string &style,
                const std::string &features, uint32 lod)
         : data(data),
@@ -111,10 +131,11 @@ struct geoContext
         // groups
         for (const Value &group : features["groups"])
         {
+            this->group.emplace(group);
             // types
             for (const auto &type : allTypes)
             {
-                this->group.emplace(type.first, group);
+                this->type.emplace(type.first);
                 // features
                 for (const Value &feature : group[type.second])
                 {
@@ -124,13 +145,17 @@ struct geoContext
                         processFeature(layerName);
                 }
             }
+            this->type.reset();
+            this->feature.reset();
+            finishGroup();
         }
     }
 
     Value replacement(const std::string &name)
     {
-        assert(feature);
         assert(group);
+        assert(type);
+        assert(feature);
         if (name.empty())
             return Value();
         switch (name[0])
@@ -146,7 +171,7 @@ struct geoContext
                 return group->group["id"];
             if (name == "#type")
             {
-                switch (group->type)
+                switch (*type)
                 {
                 case Type::Point:
                     return "point";
@@ -368,8 +393,8 @@ struct geoContext
         // line
         if (evaluate(layer["line"]).asBool())
         {
-            std::vector<std::pair<vec3, vec3>> lines;
-            switch (group->type)
+            vec4f color = convertColor(layer["line-color"]);
+            switch (*type)
             {
             case Type::Point:
                 break;
@@ -378,13 +403,20 @@ struct geoContext
                 const Value &la = feature->feature["lines"];
                 for (const Value &l : la)
                 {
-                    vec3 last;
+                    Point last = {};
                     bool second = false;
                     for (const Value &pv : l)
                     {
-                        vec3 p = group->point(pv);
+                        Point p = convertPoint(pv);
                         if (second)
-                            lines.push_back({last, p});
+                        {
+                            LineMutable lm;
+                            lm.p[0] = last;
+                            lm.p[1] = p;
+                            LineImmutable li;
+                            li.color = color;
+                            cacheLines[li].push_back(lm);
+                        }
                         else
                             second = true;
                         last = p;
@@ -396,7 +428,6 @@ struct geoContext
                 // todo
             } break;
             }
-            generateLines(layerName, lines);
         }
 
         // line-label
@@ -412,53 +443,69 @@ struct geoContext
         // next-pass
     }
 
-    void generateLines(const std::string &layerName,
-                       const std::vector<std::pair<vec3, vec3>> &lines)
+    void finishGroup()
     {
-        if (lines.empty())
-            return;
+        // this function takes all the cached values,
+        //   merges them as much as possible
+        //   and generates actual gpu meshes and render tasks
 
-        const Value &layer = style["layers"][layerName];
-
-        GpuMeshSpec spec;
-        spec.verticesCount = lines.size() * 2;
-        spec.vertices.allocate(lines.size() * sizeof(vec3f) * 2);
-        vec3f *out = (vec3f*)spec.vertices.data();
-        for (const auto &it : lines)
-        {
-            *out++ = it.first.cast<float>();
-            *out++ = it.second.cast<float>();
-        }
-        spec.attributes[0].enable = true;
-        spec.attributes[0].components = 3;
-        spec.faceMode = GpuMeshSpec::FaceMode::Lines;
-
-        std::shared_ptr<GpuMesh> gm = std::make_shared<GpuMesh>(data->map,
-            data->name + "#$!lines-" + layerName);
-        data->map->callbacks.loadMesh(gm->info, spec);
-        gm->state = Resource::State::ready;
-
-        RenderTask task;
-        task.mesh = gm;
-        task.model = identityMatrix4();
-        task.color = convertColor(layer["line-color"]);
-        data->renders.push_back(task);
-
-        //LOG(info4) << "lines: " << lines.size();
+        finishGroupLines();
+        // todo
     }
+
+    void finishGroupLines()
+    {
+        for (const std::pair<const LineImmutable,
+                std::vector<LineMutable>> &lines : cacheLines)
+        {
+            GpuMeshSpec spec;
+            spec.verticesCount = lines.second.size() * 2;
+            spec.vertices.allocate(lines.second.size() * sizeof(Point) * 2);
+            uint16 *out = (uint16*)spec.vertices.data();
+            for (const auto &it : lines.second)
+            {
+                for (uint32 pi = 0; pi < 2; pi++)
+                    for (uint32 vi = 0; vi < 3; vi++)
+                        *out++ = it.p[pi][vi];
+            }
+            spec.attributes[0].enable = true;
+            spec.attributes[0].components = 3;
+            spec.attributes[0].type = GpuTypeEnum::UnsignedShort;
+            spec.faceMode = GpuMeshSpec::FaceMode::Lines;
+
+            std::shared_ptr<GpuMesh> gm = std::make_shared<GpuMesh>(data->map,
+                data->name + "#$!lines");
+            data->map->callbacks.loadMesh(gm->info, spec);
+            gm->state = Resource::State::ready;
+
+            RenderTask task;
+            task.mesh = gm;
+            task.model = group->model();
+            task.color = lines.first.color;
+            data->renders.push_back(task);
+        }
+
+        cacheLines.clear();
+    }
+
+    // immutable data
+    //   data given from the outside world
 
     GpuGeodata *const data;
     Value style;
     Value features;
     const uint32 lod;
 
+    // processing data
+    //   fast accessors to currently processed feature
+    //   and the attached group, type and layer
+
     struct Group
     {
-        Type type;
         const Value &group;
 
-        Group(Type type, const Value &group)
-            : type(type), group(group)
+        Group(const Value &group)
+            : group(group)
         {
             const Value &a = group["bbox"][0];
             vec3 aa = vec3(a[0].asDouble(), a[1].asDouble(), a[2].asDouble());
@@ -468,19 +515,24 @@ struct geoContext
             bboxScale = (bb - aa) / group["resolution"].asDouble();
         }
 
-        vec3 point(sint32 a, sint32 b, sint32 c)
+        vec3 point(sint32 a, sint32 b, sint32 c) const
         {
             return vec3(a, b, c).cwiseProduct(bboxScale) + bboxOffset;
         }
 
-        vec3 point(uint32 a[3])
+        vec3 point(uint32 a[3]) const
         {
             return point(a[0], a[1], a[2]);
         }
 
-        vec3 point(const Value &v)
+        vec3 point(const Value &v) const
         {
-            return point(v[0].asInt(), v[1].asInt(), v[2].asInt());
+            return point(v[0].asUInt(), v[1].asUInt(), v[2].asUInt());
+        }
+
+        mat4 model() const
+        {
+            return translationMatrix(bboxOffset) * scaleMatrix(bboxScale);
         }
 
     private:
@@ -489,6 +541,7 @@ struct geoContext
 
     };
     boost::optional<Group> group;
+    boost::optional<Type> type;
 
     struct Feature
     {
@@ -500,6 +553,27 @@ struct geoContext
         {}
     };
     boost::optional<Feature> feature;
+
+    // cache data
+    //   temporary data generated while processing features
+    //   these will be consumed in finishGroup
+    //   which will generate the actual render tasks
+
+    struct LineMutable
+    {
+        Point p[2];
+    };
+    struct LineImmutable
+    {
+        vec4f color;
+
+        bool operator < (const LineImmutable &other) const
+        {
+            return memcmp(&color, &other.color, sizeof(color)) < 0;
+            // todo consider all parameters
+        }
+    };
+    std::map<LineImmutable, std::vector<LineMutable>> cacheLines;
 };
 
 } // namespace
@@ -527,8 +601,6 @@ void GpuGeodata::load()
         geoContext<false> ctx(this, style, features, lod);
         ctx.process();
     }
-
-    //LOG(info4) << "renders: " << renders.size();
 }
 
 void GpuGeodata::update(const std::string &s, const std::string &f, uint32 l)

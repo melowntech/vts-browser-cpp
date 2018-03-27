@@ -107,6 +107,54 @@ struct geoContext
           lod(lod)
     {}
 
+    void solveInheritance()
+    {
+        // todo
+    }
+
+    bool isLayerStyleRequired(const Value &v)
+    {
+        if (v.isNull())
+            return false;
+        if (v.isConvertibleTo(Json::ValueType::booleanValue))
+            return v.asBool();
+        return true;
+    }
+
+    std::vector<std::string> filterLayersByType(Type t)
+    {
+        std::vector<std::string> result;
+        const auto allLayerNames = style["layers"].getMemberNames();
+        for (const std::string &layerName : allLayerNames)
+        {
+            Value layer = style["layers"][layerName];
+            if (layer.isMember("filter") && layer["filter"].isArray()
+                    && layer["filter"][0] == "skip")
+                continue;
+            bool line = isLayerStyleRequired(layer["line"]);
+            bool point = isLayerStyleRequired(layer["point"]);
+            bool icon = isLayerStyleRequired(layer["icon"]);
+            bool label = isLayerStyleRequired(layer["label"]);
+            bool polygon = isLayerStyleRequired(layer["polygon"]);
+            bool ok = false;
+            switch (t)
+            {
+            case Type::Point:
+                ok = point || icon || label;
+                break;
+            case Type::Line:
+                ok = point || line;
+                break;
+            case Type::Polygon:
+                ok = point || line || polygon;
+                break;
+            }
+            if (ok)
+                result.push_back(layerName);
+        }
+        return result;
+    }
+
     void process()
     {
         if (Validating)
@@ -120,13 +168,18 @@ struct geoContext
             }
         }
 
+        solveInheritance();
+
         static const std::vector<std::pair<Type, std::string>> allTypes
                 = { { Type::Point, "points" },
                     { Type::Line, "lines" },
                     { Type::Polygon, "polygons"}
                    };
 
-        const auto allLayerNames = style["layers"].getMemberNames();
+        // style layers filtered by valid feature types
+        std::map<Type, std::vector<std::string>> typedLayerNames;
+        for (Type t : { Type::Point, Type::Line, Type::Polygon })
+            typedLayerNames[t] = filterLayersByType(t);
 
         // groups
         for (const Value &group : features["groups"])
@@ -136,12 +189,15 @@ struct geoContext
             for (const auto &type : allTypes)
             {
                 this->type.emplace(type.first);
+                const auto &layers = typedLayerNames[type.first];
+                if (layers.empty())
+                    continue;
                 // features
                 for (const Value &feature : group[type.second])
                 {
                     this->feature.emplace(feature);
                     // layers
-                    for (const std::string &layerName : allLayerNames)
+                    for (const std::string &layerName : layers)
                         processFeature(layerName);
                 }
             }
@@ -267,7 +323,15 @@ struct geoContext
         std::string cond = expression[0].asString();
 
         if (cond == "skip")
+        {
+            if (Validating)
+            {
+                if (expression.size() != 1)
+                    LOGTHROW(err1, std::runtime_error)
+                            << "Invalid filter (skip) array length.";
+            }
             return false;
+        }
 
         // comparison filters
 #define COMP(OP) \

@@ -58,7 +58,7 @@ namespace
         NSKeyedUnarchiver *coder = [[NSKeyedUnarchiver alloc] initForReadingWithData:data];
 
         if ([coder containsValueForKey:@"traverseMode"])
-            map->options().traverseMode = (vts::TraverseMode)[coder decodeIntForKey:@"traverseMode"];
+            map->options().traverseModeSurfaces = (vts::TraverseMode)[coder decodeIntForKey:@"traverseMode"];
         if ([coder containsValueForKey:@"maxTexelToPixelScale"])
             map->options().maxTexelToPixelScale = [coder decodeDoubleForKey:@"maxTexelToPixelScale"];
         if ([coder containsValueForKey:@"controlType"])
@@ -80,7 +80,7 @@ namespace
         NSMutableData *data = [NSMutableData data];
         NSKeyedArchiver *coder = [[NSKeyedArchiver alloc] initForWritingWithMutableData:data];
 
-        [coder encodeInt:(int)map->options().traverseMode forKey:@"traverseMode"];
+        [coder encodeInt:(int)map->options().traverseModeSurfaces forKey:@"traverseMode"];
         [coder encodeDouble:map->options().maxTexelToPixelScale forKey:@"maxTexelToPixelScale"];
         [coder encodeInt:extraConfig.controlType forKey:@"controlType"];
         [coder encodeFloat:extraConfig.touchSize forKey:@"touchSize"];
@@ -111,7 +111,7 @@ void loadAppConfig()
 - (void)updateViewControls
 {
     // rendering
-    _optTraversal.selectedSegmentIndex = (int)map->options().traverseMode;
+    _optTraversal.selectedSegmentIndex = (int)map->options().traverseModeSurfaces;
     _optQualityDegrad.value = map->options().maxTexelToPixelScale;
     // controls
     _optTouchSize.enabled = extraConfig.controlType == 0;
@@ -133,7 +133,7 @@ void loadAppConfig()
 
 - (IBAction)optTraversalChanged:(UISegmentedControl *)sender
 {
-    map->options().traverseMode = (vts::TraverseMode)sender.selectedSegmentIndex;
+    map->options().traverseModeSurfaces = (vts::TraverseMode)sender.selectedSegmentIndex;
     saveConfig();
 }
 

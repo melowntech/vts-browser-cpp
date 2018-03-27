@@ -589,11 +589,11 @@ public:
                     float ratio[] = { width * 0.4f, width * 0.6f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
-                    // traverse mode
-                    nk_label(&ctx, "Traverse:", NK_TEXT_LEFT);
+                    // traverse mode (surfaces)
+                    nk_label(&ctx, "Surfaces:", NK_TEXT_LEFT);
                     if (nk_combo_begin_label(&ctx,
-                                     traverseModeNames[(int)o.traverseMode],
-                                     nk_vec2(nk_widget_width(&ctx), 200)))
+                             traverseModeNames[(int)o.traverseModeSurfaces],
+                             nk_vec2(nk_widget_width(&ctx), 200)))
                     {
                         nk_layout_row_dynamic(&ctx, 16, 1);
                         for (unsigned i = 0; i < sizeof(traverseModeNames)
@@ -601,7 +601,24 @@ public:
                         {
                             if (nk_combo_item_label(&ctx, traverseModeNames[i],
                                                     NK_TEXT_LEFT))
-                                o.traverseMode = (TraverseMode)i;
+                                o.traverseModeSurfaces = (TraverseMode)i;
+                        }
+                        nk_combo_end(&ctx);
+                    }
+
+                    // traverse mode (geodata)
+                    nk_label(&ctx, "Geodata:", NK_TEXT_LEFT);
+                    if (nk_combo_begin_label(&ctx,
+                             traverseModeNames[(int)o.traverseModeGeodata],
+                             nk_vec2(nk_widget_width(&ctx), 200)))
+                    {
+                        nk_layout_row_dynamic(&ctx, 16, 1);
+                        for (unsigned i = 0; i < sizeof(traverseModeNames)
+                             / sizeof(traverseModeNames[0]); i++)
+                        {
+                            if (nk_combo_item_label(&ctx, traverseModeNames[i],
+                                                    NK_TEXT_LEFT))
+                                o.traverseModeGeodata = (TraverseMode)i;
                         }
                         nk_combo_end(&ctx);
                     }

@@ -167,10 +167,18 @@ void optionsConfigMapOptions(
         ->default_value(opts->fetchFirstRetryTimeOffset),
         "Delay in seconds for first resource download retry.")
 
-    ((section + "traverseMode").c_str(),
-        po::value<TraverseMode>(&opts->traverseMode)
-        ->default_value(opts->traverseMode),
-        "Render traversal mode:\n"
+    ((section + "traverseModeSurfaces").c_str(),
+        po::value<TraverseMode>(&opts->traverseModeSurfaces)
+        ->default_value(opts->traverseModeSurfaces),
+        "Render traversal mode for surfaces:\n"
+        "hierarchical\n"
+        "flat\n"
+        "balanced")
+
+    ((section + "traverseModeGeodata").c_str(),
+        po::value<TraverseMode>(&opts->traverseModeGeodata)
+        ->default_value(opts->traverseModeGeodata),
+        "Render traversal mode for geodata:\n"
         "hierarchical\n"
         "flat\n"
         "balanced")

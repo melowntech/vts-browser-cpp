@@ -99,6 +99,18 @@ struct geoContext
                 / 255.f;
     }
 
+    void validateArrayLength(const Value &value,
+                             uint32 minimum, uint32 maximum, // inclusive range
+                             const std::string &message)
+    {
+        if (Validating)
+        {
+            if (!value.isArray() || value.size() < minimum
+                    || value.size() > maximum)
+                LOGTHROW(err1, std::runtime_error) << message;
+        }
+    }
+
     geoContext(GpuGeodata *data, const std::string &style,
                const std::string &features, uint32 lod)
         : data(data),
@@ -106,11 +118,6 @@ struct geoContext
           features(stringToJson(features)),
           lod(lod)
     {}
-
-    void solveInheritance()
-    {
-        // todo
-    }
 
     bool isLayerStyleRequired(const Value &v)
     {
@@ -121,6 +128,7 @@ struct geoContext
         return true;
     }
 
+    // defines which style layers are candidates for a specific feature type
     std::vector<std::string> filterLayersByType(Type t)
     {
         std::vector<std::string> result;
@@ -155,6 +163,8 @@ struct geoContext
         return result;
     }
 
+    // entry point
+    //   processes all features with all style layers
     void process()
     {
         if (Validating)
@@ -207,6 +217,13 @@ struct geoContext
         }
     }
 
+    // update style layers with inherit property
+    void solveInheritance()
+    {
+        // todo
+    }
+
+    // solves @constants, $properties and #identifiers
     Value replacement(const std::string &name)
     {
         assert(group);
@@ -237,12 +254,21 @@ struct geoContext
                     return "polygon";
                 }
             }
+            if (name == "#lod")
+                return lod;
+            if (name == "#tileSize")
+            {
+                // todo
+                LOGTHROW(fatal, std::logic_error)
+                        << "#tileSize is not yet implemented";
+            }
             return Value();
         default:
             return name;
         }
     }
 
+    // solves functions and string expansion
     Value evaluate(const Value &expression)
     {
         if (expression.isObject())
@@ -252,7 +278,7 @@ struct geoContext
         if (expression.isArray() || expression.isObject())
         {
             Value r(expression);
-            for (auto &it : r)
+            for (Value &it : r)
                 it = evaluate(it);
             return r;
         }
@@ -290,10 +316,10 @@ struct geoContext
                 }
                 std::string mid = s.substr(start + 1, end - start - 1);
                 std::string res = s.substr(0, start - 1)
-                        + evaluate(mid).asString()
+                        + evaluate(stringToJson(mid)).asString()
                         + s.substr(end + 1);
-                LOG(info4) << "String <" << s
-                           << "> replaced by <" << res << ">";
+                //LOG(info4) << "String <" << s
+                //           << "> replaced by <" << res << ">";
                 return evaluate(res);
             }
             // find '}'
@@ -312,6 +338,7 @@ struct geoContext
         return expression;
     }
 
+    // evaluation of expressions whose result is boolean
     bool filter(const Value &expression)
     {
         if (Validating)
@@ -324,12 +351,8 @@ struct geoContext
 
         if (cond == "skip")
         {
-            if (Validating)
-            {
-                if (expression.size() != 1)
-                    LOGTHROW(err1, std::runtime_error)
-                            << "Invalid filter (skip) array length.";
-            }
+            validateArrayLength(expression, 1, 1,
+                    "Invalid filter (skip) array length.");
             return false;
         }
 
@@ -337,12 +360,8 @@ struct geoContext
 #define COMP(OP) \
         if (cond == #OP) \
         { \
-            if (Validating) \
-            { \
-                if (expression.size() != 3) \
-                    LOGTHROW(err1, std::runtime_error) \
-                            << "Invalid filter (" #OP ") array length."; \
-            } \
+            validateArrayLength(expression, 3, 3, \
+                    "Invalid filter (" #OP ") array length."); \
             Value a = evaluate(expression[1]); \
             Value b = evaluate(expression[2]); \
             return a OP b; \
@@ -366,12 +385,8 @@ struct geoContext
         // has filters
         if (cond == "has")
         {
-            if (Validating)
-            {
-                if (expression.size() != 2)
-                    LOGTHROW(err1, std::runtime_error)
-                            << "Invalid filter (has) array length.";
-            }
+            validateArrayLength(expression, 2, -1,
+                    "Invalid filter (has) array length.");
             Value a = expression[1];
             return a != replacement(a.asString());
         }
@@ -379,12 +394,8 @@ struct geoContext
         // in filters
         if (cond == "in")
         {
-            if (Validating)
-            {
-                if (expression.size() < 2)
-                    LOGTHROW(err1, std::runtime_error)
-                            << "Invalid filter (in) array length.";
-            }
+            validateArrayLength(expression, 2, -1,
+                    "Invalid filter (in) array length.");
             std::string v = evaluate(expression[1]).asString();
             for (uint32 i = 2, e = expression.size(); i < e; i++)
             {
@@ -427,6 +438,7 @@ struct geoContext
         return false;
     }
 
+    // process single feature with specific style layer
     void processFeature(const std::string &layerName,
                         boost::optional<sint32> zOverride
                                 = boost::optional<sint32>())
@@ -474,10 +486,10 @@ struct geoContext
                         Point p = convertPoint(pv);
                         if (second)
                         {
-                            LineMutable lm;
+                            LineData lm;
                             lm.p[0] = last;
                             lm.p[1] = p;
-                            LineImmutable li;
+                            LineKey li;
                             li.color = color;
                             cacheLines[li].push_back(lm);
                         }
@@ -507,20 +519,19 @@ struct geoContext
         // next-pass
     }
 
+    // this function takes all the cached values,
+    //   merges them as much as possible
+    //   and generates actual gpu meshes and render tasks
     void finishGroup()
     {
-        // this function takes all the cached values,
-        //   merges them as much as possible
-        //   and generates actual gpu meshes and render tasks
-
         finishGroupLines();
         // todo
     }
 
     void finishGroupLines()
     {
-        for (const std::pair<const LineImmutable,
-                std::vector<LineMutable>> &lines : cacheLines)
+        for (const std::pair<const LineKey,
+                std::vector<LineData>> &lines : cacheLines)
         {
             GpuMeshSpec spec;
             spec.verticesCount = lines.second.size() * 2;
@@ -623,21 +634,21 @@ struct geoContext
     //   these will be consumed in finishGroup
     //   which will generate the actual render tasks
 
-    struct LineMutable
+    struct LineData
     {
         Point p[2];
     };
-    struct LineImmutable
+    struct LineKey
     {
         vec4f color;
 
-        bool operator < (const LineImmutable &other) const
+        bool operator < (const LineKey &other) const
         {
             return memcmp(&color, &other.color, sizeof(color)) < 0;
             // todo consider all parameters
         }
     };
-    std::map<LineImmutable, std::vector<LineMutable>> cacheLines;
+    std::map<LineKey, std::vector<LineData>> cacheLines;
 };
 
 } // namespace
@@ -664,6 +675,14 @@ void GpuGeodata::load()
     {
         geoContext<false> ctx(this, style, features, lod);
         ctx.process();
+    }
+
+    // memory consumption
+    info.ramMemoryCost += sizeof(*this) + renders.size() * sizeof(RenderTask);
+    for (auto &it : renders)
+    {
+        info.gpuMemoryCost += it.mesh->info.gpuMemoryCost;
+        info.ramMemoryCost += it.mesh->info.ramMemoryCost;
     }
 }
 

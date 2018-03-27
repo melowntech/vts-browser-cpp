@@ -63,7 +63,7 @@ double MapImpl::travDistance(TraverseNode *trav, const vec3 pointPhys)
 
 float MapImpl::computeResourcePriority(TraverseNode *trav)
 {
-    if (options.traverseMode == TraverseMode::Hierarchical)
+    if (trav->layer->traverseMode == TraverseMode::Hierarchical)
         return 1.f / trav->nodeInfo.distanceFromRoot();
     if ((trav->hash + renderer.tickIndex) % 4 == 0) // skip expensive function
         return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1));
@@ -315,7 +315,7 @@ bool MapImpl::travDetermineDraws(TraverseNode *trav)
     // update priority
     trav->priority = computeResourcePriority(trav);
 
-    if (!trav->surface->urlGeodata.empty())
+    if (trav->layer->isGeodata())
         return travDetermineDrawsGeodata(trav);
 
     return travDetermineDrawsSurface(trav);
@@ -539,7 +539,8 @@ void MapImpl::travModeHierarchical(TraverseNode *trav, bool loadOnly)
 
     if (coarsenessTest(trav) || trav->childs.empty())
     {
-        renderNode(trav);
+        if (!trav->rendersEmpty())
+            renderNode(trav);
         return;
     }
 
@@ -632,7 +633,8 @@ void MapImpl::travModeBalanced(TraverseNode *trav)
 
 void MapImpl::traverseRender(TraverseNode *trav)
 {
-    switch (options.traverseMode)
+    trav->layer->updateTravelMode();
+    switch (trav->layer->traverseMode)
     {
     case TraverseMode::Hierarchical:
         travModeHierarchical(trav, false);

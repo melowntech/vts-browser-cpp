@@ -191,6 +191,7 @@ double MapImpl::coarsenessValue(TraverseNode *trav)
 void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
 {
     assert(trav->meta);
+    assert(trav->surface);
     assert(!trav->rendersEmpty());
     assert(trav->rendersReady());
     assert(visibilityTest(trav));

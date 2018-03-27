@@ -171,7 +171,8 @@ public:
 
     NavigationType navigationType;
     NavigationMode navigationMode;
-    TraverseMode traverseMode;
+    TraverseMode traverseModeSurfaces;
+    TraverseMode traverseModeGeodata;
 
     // to improve search results relevance, the results are further
     //   filtered and reordered

@@ -441,6 +441,8 @@ public:
              const vtslibs::registry::View::FreeLayerParams &params);
 
     bool prerequisitesCheck();
+    void updateTravelMode();
+    bool isGeodata();
 
     BoundParamInfo::List boundList(
             const SurfaceInfo *surface, sint32 surfaceReference);
@@ -457,7 +459,7 @@ public:
     std::shared_ptr<TraverseNode> traverseRoot;
 
     MapImpl *const map;
-
+    TraverseMode traverseMode;
     Credits::Scope creditScope;
 
 private:

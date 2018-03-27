@@ -74,6 +74,9 @@ bool testAndThrow(Resource::State state, const std::string &message)
 std::string convertPath(const std::string &path,
                         const std::string &parent)
 {
+    if (path.empty())
+        return "";
+    assert(!parent.empty());
     return utility::Uri(parent).resolve(path).str();
 }
 

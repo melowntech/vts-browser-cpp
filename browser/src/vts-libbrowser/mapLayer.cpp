@@ -35,6 +35,7 @@ FreeInfo::FreeInfo(const vtslibs::registry::FreeLayer &fl,
 {}
 
 MapLayer::MapLayer(MapImpl *map) : map(map),
+    traverseMode(TraverseMode::Flat),
     creditScope(Credits::Scope::Imagery)
 {
     boundLayerParams = map->mapConfig->view.surfaces;
@@ -43,6 +44,7 @@ MapLayer::MapLayer(MapImpl *map) : map(map),
 MapLayer::MapLayer(MapImpl *map, const std::string &name,
                    const vtslibs::registry::View::FreeLayerParams &params)
     : freeLayerName(name), freeLayerParams(params), map(map),
+      traverseMode(TraverseMode::Flat),
       creditScope(Credits::Scope::Imagery)
 {
     boundLayerParams[""] = params.boundLayers;
@@ -55,6 +57,30 @@ bool MapLayer::prerequisitesCheck()
     if (freeLayerParams)
         return prerequisitesCheckFreeLayer();
     return prerequisitesCheckMainSurfaces();
+}
+
+void MapLayer::updateTravelMode()
+{
+    if (isGeodata())
+        traverseMode = map->options.traverseModeGeodata;
+    else
+        traverseMode = map->options.traverseModeSurfaces;
+}
+
+bool MapLayer::isGeodata()
+{
+    if (freeLayer)
+    {
+        switch (freeLayer->type)
+        {
+        case vtslibs::registry::FreeLayer::Type::geodata:
+        case vtslibs::registry::FreeLayer::Type::geodataTiles:
+            return true;
+        default:
+            break;
+        }
+    }
+    return false;
 }
 
 BoundParamInfo::List MapLayer::boundList(const SurfaceInfo *surface,
@@ -213,19 +239,20 @@ std::pair<Validity, const std::string &> MapImpl::getActualGeoStyle(
             switch (f->type)
             {
             case vtslibs::registry::FreeLayer::Type::geodata:
-                url = convertPath(boost::get<vtslibs::registry
-                                  ::FreeLayer::Geodata>(
-                            f->definition).style, f->url);
+                url = boost::get<vtslibs::registry::FreeLayer::Geodata>(
+                            f->definition).style;
                 break;
             case vtslibs::registry::FreeLayer::Type::geodataTiles:
-                url = convertPath(boost::get<vtslibs::registry
-                                  ::FreeLayer::GeodataTiles>(
-                            f->definition).style, f->url);
+                url = boost::get<vtslibs::registry::FreeLayer::GeodataTiles>(
+                            f->definition).style;
                 break;
             default:
                 assert(false);
                 break;
             }
+            if (url.empty())
+                return { Validity::Invalid, empty };
+            url = convertPath(url, f->url);
         }
         assert(!url.empty());
         f->stylesheet = getGeoStyle(url);
@@ -240,10 +267,14 @@ std::pair<Validity, const std::string &> MapImpl::getActualGeoFeatures(
     MapLayer *layer = getLayer(this, name);
     if (!layer)
         return { Validity::Invalid, empty };
+
     assert(layer->freeLayer);
     if (layer->freeLayer->type == vtslibs::registry::FreeLayer::Type::geodata
             && !layer->freeLayer->overrideGeodata.empty())
         return { Validity::Valid, layer->freeLayer->overrideGeodata };
+
+    if (geoName.empty())
+        return { Validity::Invalid, empty };
 
     auto g = getGeoFeatures(geoName);
     g->updatePriority(priority);

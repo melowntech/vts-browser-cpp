@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOG_eubgfruebhjgfnm
-#define LOG_eubgfruebhjgfnm
+#ifndef LOG_HPP_eubgfruebhjgfnm
+#define LOG_HPP_eubgfruebhjgfnm
 
 #include <string>
 #include <functional>

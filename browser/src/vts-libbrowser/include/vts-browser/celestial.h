@@ -24,54 +24,22 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STATISTICS_HPP_wqieufhbvgjh
-#define STATISTICS_HPP_wqieufhbvgjh
+#ifndef CELESTIAL_H_wegsfhnmo
+#define CELESTIAL_H_wegsfhnmo
 
-#include "foundation.hpp"
+#include "foundation.h"
 
-namespace vts
-{
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-class VTS_API MapStatistics
-{
-public:
-    MapStatistics();
-    ~MapStatistics();
-    void resetAll();
-    void resetFrame();
+VTS_API const char *vtsCelestialName(vtsHMap map);
+VTS_API double vtsCelestialMajorRadius(vtsHMap map);
+VTS_API double vtsCelestialMinorRadius(vtsHMap map);
+VTS_API double vtsCelestialAtmosphereThickness(vtsHMap map);
 
-    static const uint32 MaxLods = 25;
-
-    // frame statistics
-
-    uint32 nodesRenderedTotal;
-    uint32 nodesRenderedPerLod[MaxLods];
-    uint32 metaNodesTraversedTotal;
-    uint32 metaNodesTraversedPerLod[MaxLods];
-
-    // global statistics
-
-    uint32 resourcesDownloaded;
-    uint32 resourcesDiskLoaded;
-    uint32 resourcesProcessed;
-    uint32 resourcesCreated;
-    uint32 resourcesReleased;
-    uint32 resourcesFailed;
-    uint32 renderTicks;
-    uint32 dataTicks;
-
-    // current statistics
-
-    uint64 currentGpuMemUse;
-    uint64 currentRamMemUse;
-    uint32 resourcesActive;
-    uint32 resourcesDownloading;
-    uint32 resourcesPreparing;
-    uint32 currentNodeMetaUpdates;
-    uint32 currentNodeDrawsUpdates;
-    NavigationMode currentNavigationMode;
-};
-
-} // namespace vts
+#ifdef __cplusplus
+} // extern C
+#endif
 
 #endif

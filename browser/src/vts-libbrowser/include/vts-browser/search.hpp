@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SEARCH_H_gtvuigshefh
-#define SEARCH_H_gtvuigshefh
+#ifndef SEARCH_HPP_gtvuigshefh
+#define SEARCH_HPP_gtvuigshefh
 
 #include <string>
 #include <vector>

@@ -24,54 +24,22 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STATISTICS_HPP_wqieufhbvgjh
-#define STATISTICS_HPP_wqieufhbvgjh
+#include <boost/algorithm/string.hpp>
 
-#include "foundation.hpp"
+#include "include/vts-browser/callbacks.h"
+#include "include/vts-browser/celestial.h"
+#include "include/vts-browser/draws.h"
+#include "include/vts-browser/fetcher.h"
+#include "include/vts-browser/log.h"
+#include "include/vts-browser/map.h"
+#include "include/vts-browser/resources.h"
+#include "include/vts-browser/search.h"
 
-namespace vts
-{
+//#include "include/vts-browser/map.hpp"
 
-class VTS_API MapStatistics
-{
-public:
-    MapStatistics();
-    ~MapStatistics();
-    void resetAll();
-    void resetFrame();
+#include "utilities/json.hpp"
 
-    static const uint32 MaxLods = 25;
 
-    // frame statistics
+// big fu**ing TODO
 
-    uint32 nodesRenderedTotal;
-    uint32 nodesRenderedPerLod[MaxLods];
-    uint32 metaNodesTraversedTotal;
-    uint32 metaNodesTraversedPerLod[MaxLods];
 
-    // global statistics
-
-    uint32 resourcesDownloaded;
-    uint32 resourcesDiskLoaded;
-    uint32 resourcesProcessed;
-    uint32 resourcesCreated;
-    uint32 resourcesReleased;
-    uint32 resourcesFailed;
-    uint32 renderTicks;
-    uint32 dataTicks;
-
-    // current statistics
-
-    uint64 currentGpuMemUse;
-    uint64 currentRamMemUse;
-    uint32 resourcesActive;
-    uint32 resourcesDownloading;
-    uint32 resourcesPreparing;
-    uint32 currentNodeMetaUpdates;
-    uint32 currentNodeDrawsUpdates;
-    NavigationMode currentNavigationMode;
-};
-
-} // namespace vts
-
-#endif

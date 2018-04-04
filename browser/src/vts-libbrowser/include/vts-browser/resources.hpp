@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef RESOURCES_H_jhsegfshg
-#define RESOURCES_H_jhsegfshg
+#ifndef RESOURCES_HPP_jhsegfshg
+#define RESOURCES_HPP_jhsegfshg
 
 #include <array>
 #include <memory>

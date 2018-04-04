@@ -24,54 +24,26 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STATISTICS_HPP_wqieufhbvgjh
-#define STATISTICS_HPP_wqieufhbvgjh
+#ifndef FOUNDATION_COMMON_H_wbhdfh
+#define FOUNDATION_COMMON_H_wbhdfh
 
-#include "foundation.hpp"
+#ifdef _MSVC
+#define VTS_API_EXPORT _declspec(dllexport)
+#define VTS_API_IMPORT _declspec(dllimport)
+#define VTS_THREAD_LOCAL_STORAGE __declspec(thread)
+#else
+#define VTS_API_EXPORT __attribute__((visibility ("default")))
+#define VTS_API_IMPORT __attribute__((visibility ("default")))
+#define VTS_THREAD_LOCAL_STORAGE __thread
+#endif
 
-namespace vts
-{
-
-class VTS_API MapStatistics
-{
-public:
-    MapStatistics();
-    ~MapStatistics();
-    void resetAll();
-    void resetFrame();
-
-    static const uint32 MaxLods = 25;
-
-    // frame statistics
-
-    uint32 nodesRenderedTotal;
-    uint32 nodesRenderedPerLod[MaxLods];
-    uint32 metaNodesTraversedTotal;
-    uint32 metaNodesTraversedPerLod[MaxLods];
-
-    // global statistics
-
-    uint32 resourcesDownloaded;
-    uint32 resourcesDiskLoaded;
-    uint32 resourcesProcessed;
-    uint32 resourcesCreated;
-    uint32 resourcesReleased;
-    uint32 resourcesFailed;
-    uint32 renderTicks;
-    uint32 dataTicks;
-
-    // current statistics
-
-    uint64 currentGpuMemUse;
-    uint64 currentRamMemUse;
-    uint32 resourcesActive;
-    uint32 resourcesDownloading;
-    uint32 resourcesPreparing;
-    uint32 currentNodeMetaUpdates;
-    uint32 currentNodeDrawsUpdates;
-    NavigationMode currentNavigationMode;
-};
-
-} // namespace vts
+#ifdef VTS_BROWSER_BUILD_STATIC
+#define VTS_API
+#elif VTS_BROWSER_BUILD_SHARED
+#define VTS_API VTS_API_EXPORT
+#else
+#define VTS_API VTS_API_IMPORT
+#endif
 
 #endif
+

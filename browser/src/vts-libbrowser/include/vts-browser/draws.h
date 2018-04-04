@@ -24,54 +24,66 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STATISTICS_HPP_wqieufhbvgjh
-#define STATISTICS_HPP_wqieufhbvgjh
+#ifndef DRAWS_H_sdjigsauzf
+#define DRAWS_H_sdjigsauzf
 
-#include "foundation.hpp"
+#include "draws_common.h"
 
-namespace vts
-{
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-class VTS_API MapStatistics
+// todo
+
+#ifdef __cplusplus
+} // extern C
+#endif
+
+/*
+class VTS_API DrawTask
 {
 public:
-    MapStatistics();
-    ~MapStatistics();
-    void resetAll();
-    void resetFrame();
+    std::shared_ptr<void> mesh;
+    std::shared_ptr<void> texColor;
+    std::shared_ptr<void> texMask;
+    float mv[16];
+    float uvm[9];
+    float color[4];
+    float uvClip[4];
+    float center[3];
+    bool externalUv;
+    bool flatShading;
 
-    static const uint32 MaxLods = 25;
+    DrawTask();
+    DrawTask(const RenderTask &r, const MapImpl *m);
+    DrawTask(const RenderTask &r, const float *uvClip, const MapImpl *m);
+};
 
-    // frame statistics
+class VTS_API MapDraws
+{
+public:
+    std::vector<DrawTask> opaque;
+    std::vector<DrawTask> transparent;
+    std::vector<DrawTask> geodata;
+    std::vector<DrawTask> Infographic;
 
-    uint32 nodesRenderedTotal;
-    uint32 nodesRenderedPerLod[MaxLods];
-    uint32 metaNodesTraversedTotal;
-    uint32 metaNodesTraversedPerLod[MaxLods];
+    struct Camera
+    {
+        double view[16];
+        double proj[16];
+        double eye[3];
+        double near, far;
+        double aspect;
+        double fov; // vertical, degrees
+        bool mapProjected;
+    } camera;
 
-    // global statistics
-
-    uint32 resourcesDownloaded;
-    uint32 resourcesDiskLoaded;
-    uint32 resourcesProcessed;
-    uint32 resourcesCreated;
-    uint32 resourcesReleased;
-    uint32 resourcesFailed;
-    uint32 renderTicks;
-    uint32 dataTicks;
-
-    // current statistics
-
-    uint64 currentGpuMemUse;
-    uint64 currentRamMemUse;
-    uint32 resourcesActive;
-    uint32 resourcesDownloading;
-    uint32 resourcesPreparing;
-    uint32 currentNodeMetaUpdates;
-    uint32 currentNodeDrawsUpdates;
-    NavigationMode currentNavigationMode;
+    MapDraws();
+    void clear();
+    void sortOpaqueFrontToBack();
 };
 
 } // namespace vts
+*/
 
 #endif

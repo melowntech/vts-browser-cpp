@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CELESTIAL_eruiehowwedw
-#define CELESTIAL_eruiehowwedw
+#ifndef CELESTIAL_HPP_eruiehowwedw
+#define CELESTIAL_HPP_eruiehowwedw
 
 #include <string>
 #include "foundation.hpp"

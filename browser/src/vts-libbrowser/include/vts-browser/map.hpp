@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAP_H_jihsefk
-#define MAP_H_jihsefk
+#ifndef MAP_HPP_jihsefk
+#define MAP_HPP_jihsefk
 
 #include <string>
 #include <memory>
@@ -103,8 +103,8 @@ public:
     void setPositionSubjective(bool subjective, bool convert);
     void setPositionPoint(const double point[3]);
     void setPositionPoint(const double (&point)[3]);
-    void setPositionRotation(const double point[3]);
-    void setPositionRotation(const double (&point)[3]);
+    void setPositionRotation(const double rot[3]);
+    void setPositionRotation(const double (&rot)[3]);
     void setPositionViewExtent(double viewExtent);
     void setPositionFov(double fov);
     void setPositionJson(const std::string &position);

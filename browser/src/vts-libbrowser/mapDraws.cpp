@@ -29,40 +29,45 @@
 namespace vts
 {
 
-DrawTask::DrawTask() :
-    color{0,0,0,1}, uvClip{-1,-1,2,2}, center{0,0,0},
-    externalUv(false), flatShading(false)
+DrawTask::DrawTask()
 {
     for (int i = 0; i < 16; i++)
         mv[i] = i % 4 == i / 4 ? 1 : 0;
     for (int i = 0; i < 9; i++)
         uvm[i] = i % 3 == i / 3 ? 1 : 0;
+    vecToRaw(vec4f(0,0,0,1), color);
+    vecToRaw(vec4f(-1,-1,2,2), uvClip);
+    vecToRaw(vec3f(0,0,0), center);
+    externalUv = false;
+    flatShading = false;
 }
 
-DrawTask::DrawTask(const RenderTask &r, const MapImpl *m) :
-    mesh(r.mesh ? r.mesh->info.userData : nullptr),
-    uvClip{0,0,1,1},
-    externalUv(r.externalUv),
-    flatShading(r.flatShading || m->options.debugFlatShading)
+DrawTask::DrawTask(const RenderTask &r, const MapImpl *m)
+    : DrawTask()
 {
     assert(r.ready());
+    if (r.mesh)
+        mesh = r.mesh->info.userData;
     if (r.textureColor)
         texColor = r.textureColor->info.userData;
     if (r.textureMask)
         texMask = r.textureMask->info.userData;
-    for (int i = 0; i < 4; i++)
-        this->color[i] = r.color[i];
     mat4f mv = (m->renderer.viewRender * r.model).cast<float>();
     for (int i = 0; i < 16; i++)
         this->mv[i] = mv(i);
     for (int i = 0; i < 9; i++)
         this->uvm[i] = r.uvm(i);
+    for (int i = 0; i < 4; i++)
+        this->color[i] = r.color[i];
+    vecToRaw(vec4f(0,0,1,1), uvClip);
     vec3f c = vec4to3(r.model * vec4(0,0,0,1)).cast<float>();
     vecToRaw(c, center);
+    flatShading = r.flatShading || m->options.debugFlatShading;
+    externalUv = r.externalUv;
 }
 
 DrawTask::DrawTask(const RenderTask &r, const float *uvClip, const MapImpl *m)
- : DrawTask(r, m)
+    : DrawTask(r, m)
 {
     for (int i = 0; i < 4; i++)
         this->uvClip[i] = uvClip[i];

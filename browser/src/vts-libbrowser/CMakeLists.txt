@@ -31,22 +31,37 @@ define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus
     jsoncpp ZLIB PNG JPEG ${EXTRA_LIB_MODULES})
 
 set(PUB_HDR_LIST
+    # C/C++ API
+    include/vts-browser/foundation_common.h
+    include/vts-browser/draws_common.h
+    # C++ API
+    include/vts-browser/boostProgramOptions.hpp
     include/vts-browser/buffer.hpp
+    include/vts-browser/callbacks.hpp
+    include/vts-browser/celestial.hpp
+    include/vts-browser/credits.hpp
+    include/vts-browser/draws.hpp
+    include/vts-browser/exceptions.hpp
+    include/vts-browser/fetcher.hpp
     include/vts-browser/foundation.hpp
+    include/vts-browser/log.hpp
+    include/vts-browser/map.hpp
+    include/vts-browser/math.hpp
     include/vts-browser/options.hpp
     include/vts-browser/resources.hpp
-    include/vts-browser/fetcher.hpp
-    include/vts-browser/map.hpp
-    include/vts-browser/draws.hpp
+    include/vts-browser/search.hpp
     include/vts-browser/statistics.hpp
     include/vts-browser/view.hpp
-    include/vts-browser/math.hpp
-    include/vts-browser/exceptions.hpp
-    include/vts-browser/credits.hpp
-    include/vts-browser/search.hpp
-    include/vts-browser/log.hpp
-    include/vts-browser/celestial.hpp
-    include/vts-browser/boostProgramOptions.hpp
+    # C API
+    include/vts-browser/callbacks.h
+    include/vts-browser/celestial.h
+    include/vts-browser/draws.h
+    include/vts-browser/fetcher.h
+    include/vts-browser/foundation.h
+    include/vts-browser/log.h
+    include/vts-browser/map.h
+    include/vts-browser/resources.h
+    include/vts-browser/search.h
 )
 
 set(SRC_LIST
@@ -78,7 +93,8 @@ set(SRC_LIST
     coordsManip.cpp
     exceptions.cpp
     map.hpp
-    mapApi.cpp
+    mapApiCpp.cpp
+    mapApiC.cpp
     mapUtilities.cpp
     mapLayer.cpp
     mapCelestialBody.cpp

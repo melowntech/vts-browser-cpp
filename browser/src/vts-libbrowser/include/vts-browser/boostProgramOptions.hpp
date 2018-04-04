@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef BOOSTPROGRAMOPTIONS_H_qwsdfgzuweuiw4
-#define BOOSTPROGRAMOPTIONS_H_qwsdfgzuweuiw4
+#ifndef BOOSTPROGRAMOPTIONS_HPP_qwsdfgzuweuiw4
+#define BOOSTPROGRAMOPTIONS_HPP_qwsdfgzuweuiw4
 
 #include <boost/program_options.hpp>
 #include "foundation.hpp"

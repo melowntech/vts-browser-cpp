@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef BUFFER_H_xwsertzui
-#define BUFFER_H_xwsertzui
+#ifndef BUFFER_HPP_xwsertzui
+#define BUFFER_HPP_xwsertzui
 
 #include <iostream>
 #include <string>

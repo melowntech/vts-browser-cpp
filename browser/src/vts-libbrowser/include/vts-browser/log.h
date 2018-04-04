@@ -24,54 +24,26 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STATISTICS_HPP_wqieufhbvgjh
-#define STATISTICS_HPP_wqieufhbvgjh
+#ifndef LOG_H_sdghf
+#define LOG_H_sdghf
 
-#include "foundation.hpp"
+#include "foundation.h"
 
-namespace vts
-{
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-class VTS_API MapStatistics
-{
-public:
-    MapStatistics();
-    ~MapStatistics();
-    void resetAll();
-    void resetFrame();
+typedef void (*vtsLogCallbackType)(const char *);
 
-    static const uint32 MaxLods = 25;
+VTS_API void vtsLogSetMask(const char *mask);
+VTS_API void vtsLogSetConsole(bool enable);
+VTS_API void vtsLogSetFile(const char *filename);
+VTS_API void vtsLogSetThreadName(const char *name);
+VTS_API void vtsLogAddSink(const char *mask, vtsLogCallbackType callback);
+VTS_API void vtsLog(uint32 level, const char *message);
 
-    // frame statistics
-
-    uint32 nodesRenderedTotal;
-    uint32 nodesRenderedPerLod[MaxLods];
-    uint32 metaNodesTraversedTotal;
-    uint32 metaNodesTraversedPerLod[MaxLods];
-
-    // global statistics
-
-    uint32 resourcesDownloaded;
-    uint32 resourcesDiskLoaded;
-    uint32 resourcesProcessed;
-    uint32 resourcesCreated;
-    uint32 resourcesReleased;
-    uint32 resourcesFailed;
-    uint32 renderTicks;
-    uint32 dataTicks;
-
-    // current statistics
-
-    uint64 currentGpuMemUse;
-    uint64 currentRamMemUse;
-    uint32 resourcesActive;
-    uint32 resourcesDownloading;
-    uint32 resourcesPreparing;
-    uint32 currentNodeMetaUpdates;
-    uint32 currentNodeDrawsUpdates;
-    NavigationMode currentNavigationMode;
-};
-
-} // namespace vts
+#ifdef __cplusplus
+} // extern C
+#endif
 
 #endif

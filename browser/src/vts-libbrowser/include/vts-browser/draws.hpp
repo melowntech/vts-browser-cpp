@@ -24,13 +24,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DRAWS_H_qwedfzugvsdfh
-#define DRAWS_H_qwedfzugvsdfh
+#ifndef DRAWS_HPP_qwedfzugvsdfh
+#define DRAWS_HPP_qwedfzugvsdfh
 
 #include <vector>
 #include <memory>
 
-#include "foundation.hpp"
+#include "draws_common.h"
 
 namespace vts
 {
@@ -38,19 +38,12 @@ namespace vts
 class RenderTask;
 class MapImpl;
 
-class VTS_API DrawTask
+class VTS_API DrawTask : public vtsCDrawBase
 {
 public:
     std::shared_ptr<void> mesh;
     std::shared_ptr<void> texColor;
     std::shared_ptr<void> texMask;
-    float mv[16];
-    float uvm[9];
-    float color[4];
-    float uvClip[4];
-    float center[3];
-    bool externalUv;
-    bool flatShading;
 
     DrawTask();
     DrawTask(const RenderTask &r, const MapImpl *m);
@@ -65,16 +58,8 @@ public:
     std::vector<DrawTask> geodata;
     std::vector<DrawTask> Infographic;
 
-    struct Camera
-    {
-        double view[16];
-        double proj[16];
-        double eye[3];
-        double near, far;
-        double aspect;
-        double fov; // vertical, degrees
-        bool mapProjected;
-    } camera;
+    struct Camera : public vtsCCameraBase
+    {} camera;
 
     MapDraws();
     void clear();

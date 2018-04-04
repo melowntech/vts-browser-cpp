@@ -24,11 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OPTIONS_H_kwegfdzvgsdfj
-#define OPTIONS_H_kwegfdzvgsdfj
+#ifndef OPTIONS_HPP_kwegfdzvgsdfj
+#define OPTIONS_HPP_kwegfdzvgsdfj
 
 #include <string>
-#include <functional>
 
 #include "foundation.hpp"
 
@@ -220,42 +219,6 @@ public:
     bool debugExtractRawResources;
 };
 
-class VTS_API MapCallbacks
-{
-public:
-    // function callback to upload a texture to gpu
-    // invoked from Map::dataTick()
-    std::function<void(class ResourceInfo &, class GpuTextureSpec &)>
-            loadTexture;
-
-    // function callback to upload a mesh to gpu
-    // invoked from Map::dataTick()
-    std::function<void(class ResourceInfo &, class GpuMeshSpec &)>
-            loadMesh;
-
-    // function callback when the mapconfig is downloaded
-    // invoked from Map::renderTickPrepare()
-    // suitable to change view, position, etc.
-    std::function<void()> mapconfigAvailable;
-
-    // function callback when the mapconfig and all other required
-    //   external definitions are initialized
-    // invoked from Map::renderTickPrepare()
-    // suitable to start navigation etc.
-    std::function<void()> mapconfigReady;
-
-    // function callbacks for camera overrides (all in physical srs)
-    // these callbacks are invoked from the Map::renderTickRender()
-    std::function<void(double*)> cameraOverrideEye;
-    std::function<void(double*)> cameraOverrideTarget;
-    std::function<void(double*)> cameraOverrideUp;
-    std::function<void(double&, double&, double&, double&)>
-                                        cameraOverrideFovAspectNearFar;
-    std::function<void(double*)> cameraOverrideView;
-    std::function<void(double*)> cameraOverrideProj;
-};
-
-VTS_API extern std::function<const char *(const char *)> projFinder;
 VTS_API void saveControlOptions(const ControlOptions &options);
 VTS_API ControlOptions loadControlOptions();
 

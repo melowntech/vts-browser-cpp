@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FETCHER_H_wjehfduj
-#define FETCHER_H_wjehfduj
+#ifndef FETCHER_HPP_wjehfduj
+#define FETCHER_HPP_wjehfduj
 
 #include <string>
 #include <memory>

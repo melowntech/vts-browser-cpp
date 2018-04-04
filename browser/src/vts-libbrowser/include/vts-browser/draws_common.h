@@ -24,54 +24,39 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STATISTICS_HPP_wqieufhbvgjh
-#define STATISTICS_HPP_wqieufhbvgjh
+#ifndef DRAWS_COMMON_H_desgjjgf
+#define DRAWS_COMMON_H_desgjjgf
 
-#include "foundation.hpp"
+#include "foundation.h"
 
-namespace vts
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct vtsCDrawBase
 {
+    float mv[16];
+    float uvm[9];
+    float color[4];
+    float uvClip[4];
+    float center[3];
+    bool externalUv;
+    bool flatShading;
+} vtsCDrawBase;
 
-class VTS_API MapStatistics
+typedef struct vtsCCameraBase
 {
-public:
-    MapStatistics();
-    ~MapStatistics();
-    void resetAll();
-    void resetFrame();
+    double view[16];
+    double proj[16];
+    double eye[3];
+    double near, far;
+    double aspect;
+    double fov; // vertical, degrees
+    bool mapProjected;
+} vtsCCameraBase;
 
-    static const uint32 MaxLods = 25;
-
-    // frame statistics
-
-    uint32 nodesRenderedTotal;
-    uint32 nodesRenderedPerLod[MaxLods];
-    uint32 metaNodesTraversedTotal;
-    uint32 metaNodesTraversedPerLod[MaxLods];
-
-    // global statistics
-
-    uint32 resourcesDownloaded;
-    uint32 resourcesDiskLoaded;
-    uint32 resourcesProcessed;
-    uint32 resourcesCreated;
-    uint32 resourcesReleased;
-    uint32 resourcesFailed;
-    uint32 renderTicks;
-    uint32 dataTicks;
-
-    // current statistics
-
-    uint64 currentGpuMemUse;
-    uint64 currentRamMemUse;
-    uint32 resourcesActive;
-    uint32 resourcesDownloading;
-    uint32 resourcesPreparing;
-    uint32 currentNodeMetaUpdates;
-    uint32 currentNodeDrawsUpdates;
-    NavigationMode currentNavigationMode;
-};
-
-} // namespace vts
+#ifdef __cplusplus
+} // extern C
+#endif
 
 #endif

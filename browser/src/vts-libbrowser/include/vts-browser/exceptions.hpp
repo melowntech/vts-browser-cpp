@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXCEPTIONS_H_wgfrferg
-#define EXCEPTIONS_H_wgfrferg
+#ifndef EXCEPTIONS_HPP_wgfrferg
+#define EXCEPTIONS_HPP_wgfrferg
 
 #include <string>
 #include <stdexcept>

@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef VIEW_H_wqfzugsahakwejgr
-#define VIEW_H_wqfzugsahakwejgr
+#ifndef VIEW_HPP_wqfzugsahakwejgr
+#define VIEW_HPP_wqfzugsahakwejgr
 
 #include <string>
 #include <vector>

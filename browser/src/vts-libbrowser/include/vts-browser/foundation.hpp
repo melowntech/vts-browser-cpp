@@ -24,9 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FOUNDATION_H_kjebnj
-#define FOUNDATION_H_kjebnj
+#ifndef FOUNDATION_HPP_kjebnj
+#define FOUNDATION_HPP_kjebnj
 
+#include "foundation_common.h"
 #include <cstdint>
 
 namespace vts
@@ -121,24 +122,6 @@ enum class FreeLayerType
     TiledGeodata,
     MonolithicGeodata,
 };
-
-#ifdef _MSVC
-#define VTS_API_EXPORT _declspec(dllexport)
-#define VTS_API_IMPORT _declspec(dllimport)
-#define VTS_THREAD_LOCAL_STORAGE __declspec(thread)
-#else
-#define VTS_API_EXPORT __attribute__((visibility ("default")))
-#define VTS_API_IMPORT __attribute__((visibility ("default")))
-#define VTS_THREAD_LOCAL_STORAGE __thread
-#endif
-
-#ifdef VTS_BROWSER_BUILD_STATIC
-#define VTS_API
-#elif VTS_BROWSER_BUILD_SHARED
-#define VTS_API VTS_API_EXPORT
-#else
-#define VTS_API VTS_API_IMPORT
-#endif
 
 } // namespace vts
 

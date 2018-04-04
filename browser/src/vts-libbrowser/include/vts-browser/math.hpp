@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MATH_H_wegfzebvgfhjusd
-#define MATH_H_wegfzebvgfhjusd
+#ifndef MATH_HPP_wegfzebvgfhjusd
+#define MATH_HPP_wegfzebvgfhjusd
 
 #include <Eigen/Dense>
 

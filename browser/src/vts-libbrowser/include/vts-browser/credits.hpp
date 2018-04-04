@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CREDITS_H_wefherjkgf
-#define CREDITS_H_wefherjkgf
+#ifndef CREDITS_HPP_wefherjkgf
+#define CREDITS_HPP_wefherjkgf
 
 #include <string>
 #include <vector>

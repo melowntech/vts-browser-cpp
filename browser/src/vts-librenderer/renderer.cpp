@@ -27,7 +27,7 @@
 #include "renderer.hpp"
 
 #include <vts-browser/map.hpp>
-#include <vts-browser/options.hpp>
+#include <vts-browser/callbacks.hpp>
 
 namespace vts { namespace renderer
 {

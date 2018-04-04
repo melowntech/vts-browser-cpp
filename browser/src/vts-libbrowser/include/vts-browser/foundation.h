@@ -24,54 +24,50 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STATISTICS_HPP_wqieufhbvgjh
-#define STATISTICS_HPP_wqieufhbvgjh
+#ifndef FOUNDATION_H_dehgjdgn
+#define FOUNDATION_H_dehgjdgn
 
-#include "foundation.hpp"
+#include "foundation_common.h"
+#include <stdint.h>
+#include <stdbool.h>
 
-namespace vts
-{
+typedef uint8_t uint8;
+typedef int8_t sint8;
+typedef uint16_t uint16;
+typedef int16_t sint16;
+typedef uint32_t uint32;
+typedef int32_t sint32;
+typedef uint64_t uint64;
+typedef int64_t sint64;
 
-class VTS_API MapStatistics
-{
-public:
-    MapStatistics();
-    ~MapStatistics();
-    void resetAll();
-    void resetFrame();
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-    static const uint32 MaxLods = 25;
+// every call to the C API functions may set an error
+// the error is stored in a thread-local storage accessible through
+//   vtsErrCode() and vtsErrMsg()
 
-    // frame statistics
+// 0 = no error
+VTS_API sint32 vtsErrCode();
 
-    uint32 nodesRenderedTotal;
-    uint32 nodesRenderedPerLod[MaxLods];
-    uint32 metaNodesTraversedTotal;
-    uint32 metaNodesTraversedPerLod[MaxLods];
+// some error states may have associated an additional description of the error
+VTS_API const char *vtsErrMsg();
 
-    // global statistics
+// helper for translating an error code into human readable message
+VTS_API const char *vtsErrCodeToName(sint32 code);
 
-    uint32 resourcesDownloaded;
-    uint32 resourcesDiskLoaded;
-    uint32 resourcesProcessed;
-    uint32 resourcesCreated;
-    uint32 resourcesReleased;
-    uint32 resourcesFailed;
-    uint32 renderTicks;
-    uint32 dataTicks;
+// reset internal error state to ok
+VTS_API void vtsErrClear();
 
-    // current statistics
+// opaque structures and handles
+typedef struct vtsCMap *vtsHMap;
+typedef struct vtsCFetcher *vtsHFetcher;
+typedef struct vtsCResource *vtsHResource;
 
-    uint64 currentGpuMemUse;
-    uint64 currentRamMemUse;
-    uint32 resourcesActive;
-    uint32 resourcesDownloading;
-    uint32 resourcesPreparing;
-    uint32 currentNodeMetaUpdates;
-    uint32 currentNodeDrawsUpdates;
-    NavigationMode currentNavigationMode;
-};
-
-} // namespace vts
+#ifdef __cplusplus
+} // extern C
+#endif
 
 #endif
+

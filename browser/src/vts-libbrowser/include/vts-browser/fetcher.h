@@ -24,54 +24,22 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STATISTICS_HPP_wqieufhbvgjh
-#define STATISTICS_HPP_wqieufhbvgjh
+#ifndef FETCHER_H_opiguf
+#define FETCHER_H_opiguf
 
-#include "foundation.hpp"
+#include "foundation.h"
 
-namespace vts
-{
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-class VTS_API MapStatistics
-{
-public:
-    MapStatistics();
-    ~MapStatistics();
-    void resetAll();
-    void resetFrame();
+VTS_API vtsHFetcher vtsFetcherCreateDefault(const char *createOptions);
+VTS_API void vtsFetcherDestroy(vtsHFetcher fetcher);
 
-    static const uint32 MaxLods = 25;
+// custom fetcher is not yet available in the C API
 
-    // frame statistics
-
-    uint32 nodesRenderedTotal;
-    uint32 nodesRenderedPerLod[MaxLods];
-    uint32 metaNodesTraversedTotal;
-    uint32 metaNodesTraversedPerLod[MaxLods];
-
-    // global statistics
-
-    uint32 resourcesDownloaded;
-    uint32 resourcesDiskLoaded;
-    uint32 resourcesProcessed;
-    uint32 resourcesCreated;
-    uint32 resourcesReleased;
-    uint32 resourcesFailed;
-    uint32 renderTicks;
-    uint32 dataTicks;
-
-    // current statistics
-
-    uint64 currentGpuMemUse;
-    uint64 currentRamMemUse;
-    uint32 resourcesActive;
-    uint32 resourcesDownloading;
-    uint32 resourcesPreparing;
-    uint32 currentNodeMetaUpdates;
-    uint32 currentNodeDrawsUpdates;
-    NavigationMode currentNavigationMode;
-};
-
-} // namespace vts
+#ifdef __cplusplus
+} // extern C
+#endif
 
 #endif

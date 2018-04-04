@@ -47,6 +47,7 @@
 #include "include/vts-browser/celestial.hpp"
 #include "include/vts-browser/statistics.hpp"
 #include "include/vts-browser/options.hpp"
+#include "include/vts-browser/callbacks.hpp"
 #include "include/vts-browser/search.hpp"
 #include "include/vts-browser/draws.hpp"
 #include "include/vts-browser/math.hpp"

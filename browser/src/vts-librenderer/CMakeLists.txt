@@ -1,13 +1,18 @@
 define_module(LIBRARY vts-renderer DEPENDS vts-browser glad)
 
 set(PUB_HDR_LIST
+    include/vts-renderer/foundation_common.h
+    include/vts-renderer/foundation.h
     include/vts-renderer/foundation.hpp
+    include/vts-renderer/renderer_common.h
+    include/vts-renderer/renderer.h
     include/vts-renderer/renderer.hpp
     include/vts-renderer/classes.hpp
 )
 
 set(SRC_LIST
     renderer.cpp renderer.hpp
+    renderer_c.cpp
     classes.cpp
     foundation.cpp
     atmosphereDensityTexture.cpp

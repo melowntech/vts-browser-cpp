@@ -24,26 +24,38 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FOUNDATION_HPP_wefwghefi
-#define FOUNDATION_HPP_wefwghefi
+#include "include/vts-browser/foundation.h"
 
-#include "foundation_common.h"
-#include <vts-browser/foundation.hpp>
+#include <string>
+#include <memory>
 
-#ifndef VTSR_INCLUDE_GL
-typedef void *(*GLADloadproc)(const char *name);
-#endif
+#define C_BEGIN try {
+#define C_END } catch(...) { vts::handleExceptions(); }
 
-namespace vts { namespace renderer
+namespace vts
 {
 
-VTSR_API void checkGl(const char *name = "");
-VTSR_API void checkGlFramebuffer();
+VTS_API void handleExceptions();
+VTS_API void setError(sint32 code, const std::string &msg);
+VTS_API const char *retStr(const std::string &str);
 
-// initialize all gl functions
-// should be called once after the gl context has been created
-VTSR_API void loadGlFunctions(GLADloadproc functionLoader);
+class Map;
 
-} } // namespace vts::renderer
+} // namespace
 
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+typedef struct vtsCMap
+{
+    std::shared_ptr<vts::Map> p;
+    void *userData;
+
+    vtsCMap() : userData(nullptr) {}
+} vtsCMap;
+
+#ifdef __cplusplus
+} // extern C
+#endif
+

@@ -25,6 +25,7 @@
  */
 
 #include <utility/path.hpp> // homeDir
+#include <dbglog/dbglog.hpp>
 
 #include "utilities/json.hpp"
 #include "include/vts-browser/buffer.hpp"
@@ -45,6 +46,21 @@ MapCreateOptions::MapCreateOptions() :
     disableBrowserOptionsSearchUrls(false)
 {}
 
+MapCreateOptions::MapCreateOptions(const std::string &json)
+    : MapCreateOptions()
+{
+    (void)json;
+    LOG(warn3) << "<MapCreateOptions(const std::string &json)>"
+               << " is not yet implemented";
+}
+
+std::string MapCreateOptions::toJson() const
+{
+    LOG(warn3) << "<MapCreateOptions::toJson()>"
+               << " is not yet implemented";
+    return "";
+}
+
 ControlOptions::ControlOptions() :
     sensitivityPan(1),
     sensitivityZoom(1),
@@ -53,6 +69,21 @@ ControlOptions::ControlOptions() :
     inertiaZoom(0.9),
     inertiaRotate(0.9)
 {}
+
+ControlOptions::ControlOptions(const std::string &json)
+    : ControlOptions()
+{
+    (void)json;
+    LOG(warn3) << "<ControlOptions(const std::string &json)>"
+               << " is not yet implemented";
+}
+
+std::string ControlOptions::toJson() const
+{
+    LOG(warn3) << "<ControlOptions::toJson()>"
+               << " is not yet implemented";
+    return "";
+}
 
 MapOptions::MapOptions() :
     maxTexelToPixelScale(1.2),
@@ -100,6 +131,21 @@ MapOptions::MapOptions() :
     debugRenderGeodata(true),
     debugExtractRawResources(false)
 {}
+
+MapOptions::MapOptions(const std::string &json)
+    : MapOptions()
+{
+    (void)json;
+    LOG(warn3) << "<MapOptions(const std::string &json)>"
+               << " is not yet implemented";
+}
+
+std::string MapOptions::toJson() const
+{
+    LOG(warn3) << "<MapOptions::toJson()>"
+               << " is not yet implemented";
+    return "";
+}
 
 namespace
 {

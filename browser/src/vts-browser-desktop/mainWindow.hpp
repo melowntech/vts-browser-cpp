@@ -100,10 +100,10 @@ public:
     std::shared_ptr<vts::renderer::Mesh> meshSphere;
     std::shared_ptr<vts::renderer::Mesh> meshLine;
     std::vector<Mark> marks;
-    vts::uint32 timingMapProcess;
-    vts::uint32 timingAppProcess;
-    vts::uint32 timingTotalFrame;
-    vts::uint32 timingDataFrame;
+    uint32 timingMapProcess;
+    uint32 timingAppProcess;
+    uint32 timingTotalFrame;
+    uint32 timingDataFrame;
     vts::Map *const map;
     vts::renderer::Renderer render;
     struct SDL_Window *window;

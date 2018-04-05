@@ -24,8 +24,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dbglog/dbglog.hpp>
+
 #include "include/vts-browser/statistics.hpp"
-#include "include/vts-browser/options.hpp"
 
 namespace vts
 {
@@ -35,8 +36,20 @@ MapStatistics::MapStatistics()
     resetAll();
 }
 
-MapStatistics::~MapStatistics()
-{}
+MapStatistics::MapStatistics(const std::string &json)
+    : MapStatistics()
+{
+    (void)json;
+    LOG(warn3) << "<MapStatistics(const std::string &json)>"
+               << " is not yet implemented";
+}
+
+std::string MapStatistics::toJson() const
+{
+    LOG(warn3) << "<MapStatistics::toJson()>"
+               << " is not yet implemented";
+    return "";
+}
 
 void MapStatistics::resetAll()
 {

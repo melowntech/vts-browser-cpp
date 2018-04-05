@@ -96,7 +96,8 @@ else()
 
     # minimal application
     message(STATUS "including vts-browser-minimal")
-    add_subdirectory(src/vts-browser-minimal)
+    add_subdirectory(src/vts-browser-minimal-c)
+    add_subdirectory(src/vts-browser-minimal-cpp)
 
     # desktop application
     message(STATUS "including vts-browser-desktop")

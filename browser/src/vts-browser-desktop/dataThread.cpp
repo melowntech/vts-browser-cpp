@@ -39,7 +39,7 @@ namespace
     }
 }
 
-DataThread::DataThread(vts::Map *map, vts::uint32 &timing,
+DataThread::DataThread(vts::Map *map, uint32 &timing,
                        SDL_Window *window, void *context,
                        const vts::FetcherOptions &fetcherOptions) :
     map(map), timing(timing),
@@ -67,9 +67,9 @@ void DataThread::run()
         usleep(10000);
     while (!stop)
     {
-        vts::uint32 timeFrameStart = SDL_GetTicks();
+        uint32 timeFrameStart = SDL_GetTicks();
         map->dataTick();
-        vts::uint32 timeFrameEnd = SDL_GetTicks();
+        uint32 timeFrameEnd = SDL_GetTicks();
         timing = timeFrameEnd - timeFrameStart;
         usleep(100000);
     }

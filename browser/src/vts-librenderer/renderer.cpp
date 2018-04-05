@@ -728,19 +728,18 @@ public:
     }
 };
 
-RenderOptions::RenderOptions() : width(0), height(0),
-    targetFrameBuffer(0), targetViewportX(0), targetViewportY(0),
-    antialiasingSamples(1),
-    renderAtmosphere(true), renderPolygonEdges(false),
-    colorToTargetFrameBuffer(true), colorToTexture(false)
-{}
+RenderOptions::RenderOptions()
+{
+    memset(this, 0, sizeof(*this));
+    antialiasingSamples = 1;
+    renderAtmosphere = true;
+    colorToTargetFrameBuffer = true;
+}
 
-RenderVariables::RenderVariables() :
-    frameRenderBufferId(0), frameReadBufferId(0),
-    depthRenderTexId(0), depthReadTexId(0),
-    colorRenderTexId(0), colorReadTexId(0),
-    textureTargetType(0)
-{}
+RenderVariables::RenderVariables()
+{
+    memset(this, 0, sizeof(*this));
+}
 
 Renderer::Renderer()
 {

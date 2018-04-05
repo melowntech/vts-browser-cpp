@@ -38,6 +38,13 @@ namespace vts
 class VTS_API MapCredits
 {
 public:
+    MapCredits();
+    MapCredits(const std::string &json);
+    std::string toJson() const;
+
+    std::string textShort() const;
+    std::string textFull() const;
+
     struct Credit
     {
         std::string notice;
@@ -53,9 +60,6 @@ public:
 
     Scope imagery;
     Scope geodata;
-
-    std::string textShort() const;
-    std::string textFull() const;
 };
 
 } // namespace vts

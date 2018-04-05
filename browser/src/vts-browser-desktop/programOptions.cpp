@@ -108,7 +108,7 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 "Render atmosphere."
             )
             ("antialiasing",
-                po::value<vts::uint32>(&renderOptions.antialiasingSamples)
+                po::value<uint32>(&renderOptions.antialiasingSamples)
                 ->default_value(renderOptions.antialiasingSamples)
                 ->implicit_value(16),
                 "Antialiasing samples."

@@ -336,7 +336,7 @@ void MainWindow::run()
     bool initialPositionSet = false;
     bool shouldClose = false;
 
-    vts::uint32 lastFrameTime = SDL_GetTicks();
+    uint32 lastFrameTime = SDL_GetTicks();
 
     while (!shouldClose)
     {
@@ -361,7 +361,7 @@ void MainWindow::run()
 
         shouldClose = processEvents();
 
-        vts::uint32 timeFrameStart = SDL_GetTicks();
+        uint32 timeFrameStart = SDL_GetTicks();
         try
         {
             SDL_GL_GetDrawableSize(window, (int*)&ro.width, (int*)&ro.height);
@@ -380,10 +380,10 @@ void MainWindow::run()
             else
                 throw;
         }
-        vts::uint32 timeMapRender = SDL_GetTicks();
+        uint32 timeMapRender = SDL_GetTicks();
         prepareMarks();
         renderFrame();
-        vts::uint32 timeAppRender = SDL_GetTicks();
+        uint32 timeAppRender = SDL_GetTicks();
 
         if (map->statistics().renderTicks % 120 == 0)
         {
@@ -393,10 +393,10 @@ void MainWindow::run()
         }
 
         SDL_GL_SwapWindow(window);
-        vts::uint32 timeFrameFinish = SDL_GetTicks();
+        uint32 timeFrameFinish = SDL_GetTicks();
 
         // temporary workaround for when v-sync is missing
-        vts::uint32 duration = timeFrameFinish - timeFrameStart;
+        uint32 duration = timeFrameFinish - timeFrameStart;
         if (duration < 16)
         {
             usleep(16 - duration);

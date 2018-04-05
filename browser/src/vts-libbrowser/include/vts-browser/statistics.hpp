@@ -27,6 +27,8 @@
 #ifndef STATISTICS_HPP_wqieufhbvgjh
 #define STATISTICS_HPP_wqieufhbvgjh
 
+#include <string>
+
 #include "foundation.hpp"
 
 namespace vts
@@ -36,7 +38,9 @@ class VTS_API MapStatistics
 {
 public:
     MapStatistics();
-    ~MapStatistics();
+    MapStatistics(const std::string &json);
+    std::string toJson() const;
+
     void resetAll();
     void resetFrame();
 

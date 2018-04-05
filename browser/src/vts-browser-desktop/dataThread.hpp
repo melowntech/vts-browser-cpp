@@ -45,7 +45,7 @@ class DataThread
 {
 public:
     DataThread(vts::Map *map,
-               vts::uint32 &timing,
+               uint32 &timing,
                struct SDL_Window *window,
                void *context,
                const vts::FetcherOptions &fetcherOptions);
@@ -57,7 +57,7 @@ private:
     std::shared_ptr<vts::Fetcher> fetcher;
     std::thread thr;
     vts::Map *const map;
-    vts::uint32 &timing;
+    uint32 &timing;
     struct SDL_Window *window;
     void *context;
     std::atomic<bool> stop;

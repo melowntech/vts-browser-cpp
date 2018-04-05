@@ -25,7 +25,6 @@
  */
 
 #include <vts-browser/map.hpp>
-#include <vts-browser/draws.hpp>
 #include <vts-browser/options.hpp>
 #include <vts-browser/log.hpp>
 #include <vts-browser/fetcher.hpp>
@@ -74,7 +73,7 @@ int main(int, char *[])
         // the created window should fill the whole screen
         SDL_DisplayMode displayMode;
         SDL_GetDesktopDisplayMode(0, &displayMode);
-        window = SDL_CreateWindow("vts-browser-minimal",
+        window = SDL_CreateWindow("vts-browser-minimal-cpp",
                   0, 0, displayMode.w, displayMode.h,
                   SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
     }
@@ -116,7 +115,7 @@ int main(int, char *[])
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
 
     // acquire current time to measure how long each frame takes
-    vts::uint32 lastRenderTime = SDL_GetTicks();
+    uint32 lastRenderTime = SDL_GetTicks();
 
     // keep processing window events
     while (!shouldClose)
@@ -154,7 +153,7 @@ int main(int, char *[])
         map->dataTick();
 
         // update navigation etc.
-        vts::uint32 currentRenderTime = SDL_GetTicks();
+        uint32 currentRenderTime = SDL_GetTicks();
         map->renderTickPrepare((currentRenderTime - lastRenderTime) * 1e-3);
         lastRenderTime = currentRenderTime;
 

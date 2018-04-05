@@ -24,26 +24,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FOUNDATION_HPP_wefwghefi
-#define FOUNDATION_HPP_wefwghefi
+#ifndef FOUNDATION_H_wxqsezu
+#define FOUNDATION_H_wxqsezu
 
 #include "foundation_common.h"
-#include <vts-browser/foundation.hpp>
+#include <vts-browser/foundation.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifndef VTSR_INCLUDE_GL
 typedef void *(*GLADloadproc)(const char *name);
 #endif
 
-namespace vts { namespace renderer
-{
-
-VTSR_API void checkGl(const char *name = "");
-VTSR_API void checkGlFramebuffer();
+VTSR_API void vtsCheckGl(const char *name);
+VTSR_API void vtsCheckGlFramebuffer();
 
 // initialize all gl functions
 // should be called once after the gl context has been created
-VTSR_API void loadGlFunctions(GLADloadproc functionLoader);
+VTSR_API void vtsLoadGlFunctions(GLADloadproc functionLoader);
 
-} } // namespace vts::renderer
+#ifdef __cplusplus
+} // extern C
+#endif
 
 #endif

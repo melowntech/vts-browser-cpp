@@ -94,6 +94,7 @@ set(SRC_LIST
     exceptions.cpp
     map.hpp
     mapApiCpp.cpp
+    mapApiC.hpp
     mapApiC.cpp
     mapUtilities.cpp
     mapLayer.cpp

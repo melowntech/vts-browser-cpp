@@ -28,62 +28,55 @@
 #define DRAWS_H_sdjigsauzf
 
 #include "draws_common.h"
+#include "foundation.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// todo
+VTS_API const vtsCCameraBase *vtsDrawsCamera(vtsHMap map);
+
+typedef struct vtsCDrawIterator *vtsHDrawIterator;
+
+VTS_API vtsHDrawIterator vtsDrawsOpaque(vtsHMap map);
+VTS_API vtsHDrawIterator vtsDrawsTransparent(vtsHMap map);
+VTS_API vtsHDrawIterator vtsDrawsGeodata(vtsHMap map);
+VTS_API vtsHDrawIterator vtsDrawsInfographic(vtsHMap map);
+VTS_API bool vtsDrawsNext(vtsHDrawIterator iterator);
+VTS_API void vtsDrawsDestroy(vtsHDrawIterator iterator);
+
+VTS_API void *vtsDrawsMesh(vtsHDrawIterator iterator);
+VTS_API void *vtsDrawsTexColor(vtsHDrawIterator iterator);
+VTS_API void *vtsDrawsTexMask(vtsHDrawIterator iterator);
+VTS_API const vtsCDrawBase *vtsDrawsDetail(vtsHDrawIterator iterator);
 
 #ifdef __cplusplus
 } // extern C
 #endif
 
-/*
-class VTS_API DrawTask
+/* EXAMPLE:
+
+vtsHDrawIterator it = vtsDrawsOpaque(map);
+while (it)
 {
-public:
-    std::shared_ptr<void> mesh;
-    std::shared_ptr<void> texColor;
-    std::shared_ptr<void> texMask;
-    float mv[16];
-    float uvm[9];
-    float color[4];
-    float uvClip[4];
-    float center[3];
-    bool externalUv;
-    bool flatShading;
+    // access data asociated with the draw task
+    void *mesh = vtsDrawsMesh(it);
+    void *texColor = vtsDrawsTexColor(it);
+    void *texMask = vtsDrawsTexMask(it);
+    const vtsCDrawBase *details = vtsDrawsDetail(it);
 
-    DrawTask();
-    DrawTask(const RenderTask &r, const MapImpl *m);
-    DrawTask(const RenderTask &r, const float *uvClip, const MapImpl *m);
-};
+    // dispatch the draw task
+    ...
 
-class VTS_API MapDraws
-{
-public:
-    std::vector<DrawTask> opaque;
-    std::vector<DrawTask> transparent;
-    std::vector<DrawTask> geodata;
-    std::vector<DrawTask> Infographic;
-
-    struct Camera
+    // fetch next draw task
+    if (!vtsDrawsNext(it))
     {
-        double view[16];
-        double proj[16];
-        double eye[3];
-        double near, far;
-        double aspect;
-        double fov; // vertical, degrees
-        bool mapProjected;
-    } camera;
+        vtsDrawsDestroy(it);
+        break;
+    }
+}
 
-    MapDraws();
-    void clear();
-    void sortOpaqueFrontToBack();
-};
-
-} // namespace vts
 */
 
 #endif
+

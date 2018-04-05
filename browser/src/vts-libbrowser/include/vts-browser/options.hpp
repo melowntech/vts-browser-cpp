@@ -40,6 +40,8 @@ class VTS_API MapCreateOptions
 {
 public:
     MapCreateOptions();
+    MapCreateOptions(const std::string &json);
+    std::string toJson() const;
 
     // application id that is sent with all resources
     // to be used by authentication servers
@@ -79,6 +81,8 @@ class VTS_API ControlOptions
 {
 public:
     ControlOptions();
+    ControlOptions(const std::string &json);
+    std::string toJson() const;
 
     // multiplier that is applied to mouse input for the respective actions
     double sensitivityPan;
@@ -100,6 +104,8 @@ class VTS_API MapOptions
 {
 public:
     MapOptions();
+    MapOptions(const std::string &json);
+    std::string toJson() const;
 
     ControlOptions controlOptions;
 

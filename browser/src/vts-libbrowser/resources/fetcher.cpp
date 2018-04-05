@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dbglog/dbglog.hpp>
+
 #include "../include/vts-browser/fetcher.hpp"
 
 namespace vts
@@ -38,6 +40,21 @@ FetcherOptions::FetcherOptions()
       maxCacheConections(0),
       pipelining(2)
 {}
+
+FetcherOptions::FetcherOptions(const std::string &json)
+    : FetcherOptions()
+{
+    (void)json;
+    LOG(warn3) << "<FetcherOptions(const std::string &json)>"
+               << " is not yet implemented";
+}
+
+std::string FetcherOptions::toJson() const
+{
+    LOG(warn3) << "<FetcherOptions::toJson()>"
+               << " is not yet implemented";
+    return "";
+}
 
 Fetcher::~Fetcher()
 {}

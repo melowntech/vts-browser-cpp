@@ -27,7 +27,7 @@
 #ifndef DRAWS_COMMON_H_desgjjgf
 #define DRAWS_COMMON_H_desgjjgf
 
-#include "foundation.h"
+#include "foundation_common.h"
 
 #ifdef __cplusplus
 extern "C" {

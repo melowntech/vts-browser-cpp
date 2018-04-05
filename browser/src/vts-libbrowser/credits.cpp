@@ -140,6 +140,24 @@ Credits::Hit::Hit(vtslibs::registry::CreditId id)
     : id(id), hits(0), maxLod(0)
 {}
 
+MapCredits::MapCredits()
+{}
+
+MapCredits::MapCredits(const std::string &json)
+    : MapCredits()
+{
+    (void)json;
+    LOG(warn3) << "<MapCredits(const std::string &json)>"
+               << " is not yet implemented";
+}
+
+std::string MapCredits::toJson() const
+{
+    LOG(warn3) << "<MapCredits::toJson()>"
+               << " is not yet implemented";
+    return "";
+}
+
 std::string MapCredits::textShort() const
 {
     std::string result;

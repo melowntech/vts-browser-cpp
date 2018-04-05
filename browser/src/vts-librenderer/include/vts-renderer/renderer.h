@@ -24,26 +24,38 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FOUNDATION_HPP_wefwghefi
-#define FOUNDATION_HPP_wefwghefi
+#ifndef RENDERER_H_crfweifh
+#define RENDERER_H_crfweifh
 
-#include "foundation_common.h"
-#include <vts-browser/foundation.hpp>
+#include "renderer_common.h"
+#include "foundation.h"
 
-#ifndef VTSR_INCLUDE_GL
-typedef void *(*GLADloadproc)(const char *name);
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-namespace vts { namespace renderer
-{
+typedef struct vtsCRenderer *vtsHRenderer;
 
-VTSR_API void checkGl(const char *name = "");
-VTSR_API void checkGlFramebuffer();
+VTSR_API vtsHRenderer vtsRendererCreate();
+VTSR_API void vtsRendererDestroy(vtsHRenderer renderer);
+VTSR_API void vtsRendererInitialize(vtsHRenderer renderer);
+VTSR_API void vtsRendererFinalize(vtsHRenderer renderer);
+VTSR_API void vtsRendererBindLoadFunctions(vtsHRenderer renderer,
+                                            vtsHMap map);
+VTSR_API vtsCRenderOptionsBase *vtsRendererOptions(
+                                            vtsHRenderer renderer);
+VTSR_API const vtsCRenderVariablesBase *vtsRendererVariables(
+                                            vtsHRenderer renderer);
+VTSR_API void vtsRendererRender(vtsHRenderer renderer, vtsHMap map);
+VTSR_API void vtsRendererRenderCompas(vtsHRenderer renderer,
+                                const double screenPosSize[3],
+                                const double mapRotation[3]);
+VTSR_API void vtsRendererGetWorldPosition(vtsHRenderer renderer,
+                                const double screenPosIn[2],
+                                double worldPosOut[3]);
 
-// initialize all gl functions
-// should be called once after the gl context has been created
-VTSR_API void loadGlFunctions(GLADloadproc functionLoader);
-
-} } // namespace vts::renderer
+#ifdef __cplusplus
+} // extern C
+#endif
 
 #endif

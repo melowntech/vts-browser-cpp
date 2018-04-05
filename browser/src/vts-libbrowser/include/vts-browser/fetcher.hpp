@@ -115,6 +115,8 @@ class VTS_API FetcherOptions
 {
 public:
     FetcherOptions();
+    FetcherOptions(const std::string &json);
+    std::string toJson() const;
 
     // the curl options are applied to each thread individually
     uint32 threads;

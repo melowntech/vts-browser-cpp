@@ -24,9 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef RENDERER_H_sghvfwjfn
-#define RENDERER_H_sghvfwjfn
+#ifndef RENDERER_HPP_sghvfwjfn
+#define RENDERER_HPP_sghvfwjfn
 
+#include "renderer_common.h"
 #include "foundation.hpp"
 
 namespace vts
@@ -42,45 +43,13 @@ class GpuMeshSpec;
 namespace renderer
 {
 
-// options provided from the application (you set these)
-struct VTSR_API RenderOptions
+struct VTSR_API RenderOptions : public vtsCRenderOptionsBase
 {
-    // render resolution in pixels
-    uint32 width;
-    uint32 height;
-
-    // when colorToTargetFrameBuffer is true, the render method will blit
-    //   the resulting color into this frame buffer
-    // it will overwrite any previous data
-    uint32 targetFrameBuffer;
-    uint32 targetViewportX;
-    uint32 targetViewportY;
-
-    // other options
-    uint32 antialiasingSamples; // two or more to enable multisampling
-    bool renderAtmosphere;
-    bool renderPolygonEdges;
-
-    // where to copy the result (and resolve multisampling)
-    bool colorToTargetFrameBuffer;
-    bool colorToTexture; // accessible as RenderVariables::colorReadTexId
-
     RenderOptions();
 };
 
-// these variables are controlled by the library
-//   and are provided to you for potential further use
-// do not change any attributes on the objects!
-struct VTSR_API RenderVariables
+struct VTSR_API RenderVariables : public vtsCRenderVariablesBase
 {
-    uint32 frameRenderBufferId;
-    uint32 frameReadBufferId; // (may be same as frameRenderBufferId)
-    uint32 depthRenderTexId; // has type textureTargetType
-    uint32 depthReadTexId; // GL_TEXTURE_2D (may be same as depthRenderTexId)
-    uint32 colorRenderTexId; // has type textureTargetType
-    uint32 colorReadTexId; // GL_TEXTURE_2D (may be same as colorRenderTexId)
-    uint32 textureTargetType; // GL_TEXTURE_2D or GL_TEXTURE_2D_MULTISAMPLE
-
     RenderVariables();
 };
 

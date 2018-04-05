@@ -35,12 +35,34 @@ extern "C" {
 
 typedef void (*vtsLogCallbackType)(const char *);
 
-VTS_API void vtsLogSetMask(const char *mask);
+VTS_API void vtsLogSetMaskStr(const char *mask);
+VTS_API void vtsLogSetMaskCode(uint32 mask);
 VTS_API void vtsLogSetConsole(bool enable);
 VTS_API void vtsLogSetFile(const char *filename);
 VTS_API void vtsLogSetThreadName(const char *name);
-VTS_API void vtsLogAddSink(const char *mask, vtsLogCallbackType callback);
+VTS_API void vtsLogAddSink(uint32 mask, vtsLogCallbackType callback);
+
+// this function will never set an error
+// if anything happens during the logging, it is silently ignored
 VTS_API void vtsLog(uint32 level, const char *message);
+
+enum
+{
+    vtsLogLevelDebug =    0x0000fu,
+    vtsLogLevelInfo1 =    0x000f0u,
+    vtsLogLevelInfo2 =    0x00070u,
+    vtsLogLevelInfo3 =    0x00030u,
+    vtsLogLevelInfo4 =    0x00010u,
+    vtsLogLevelWarn1 =    0x00f00u,
+    vtsLogLevelWarn2 =    0x00700u,
+    vtsLogLevelWarn3 =    0x00300u,
+    vtsLogLevelWarn4 =    0x00100u,
+    vtsLogLevelErr1 =     0x0f000u,
+    vtsLogLevelErr2 =     0x07000u,
+    vtsLogLevelErr3 =     0x03000u,
+    vtsLogLevelErr4 =     0x01000u,
+    vtsLogLevelFatal =    0xf0000u,
+};
 
 #ifdef __cplusplus
 } // extern C

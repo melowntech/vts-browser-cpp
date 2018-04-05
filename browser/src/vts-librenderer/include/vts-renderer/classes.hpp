@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CLASSES_H_wefegfuhf
-#define CLASSES_H_wefegfuhf
+#ifndef CLASSES_HPP_wefegfuhf
+#define CLASSES_HPP_wefegfuhf
 
 #include <string>
 #include <vector>

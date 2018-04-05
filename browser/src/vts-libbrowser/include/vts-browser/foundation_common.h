@@ -30,11 +30,9 @@
 #ifdef _MSVC
 #define VTS_API_EXPORT _declspec(dllexport)
 #define VTS_API_IMPORT _declspec(dllimport)
-#define VTS_THREAD_LOCAL_STORAGE __declspec(thread)
 #else
 #define VTS_API_EXPORT __attribute__((visibility ("default")))
 #define VTS_API_IMPORT __attribute__((visibility ("default")))
-#define VTS_THREAD_LOCAL_STORAGE __thread
 #endif
 
 #ifdef VTS_BROWSER_BUILD_STATIC
@@ -44,6 +42,17 @@
 #else
 #define VTS_API VTS_API_IMPORT
 #endif
+
+#include <stdint.h>
+
+typedef uint8_t uint8;
+typedef int8_t sint8;
+typedef uint16_t uint16;
+typedef int16_t sint16;
+typedef uint32_t uint32;
+typedef int32_t sint32;
+typedef uint64_t uint64;
+typedef int64_t sint64;
 
 #endif
 

@@ -193,6 +193,19 @@ void MapImpl::initializeNavigation()
     assert(isNavigationModeValid());
 }
 
+void MapImpl::navigationTypeChanged()
+{
+    if (navigation.previousType != options.navigationType)
+    {
+        // fly over must first apply the old camera limits
+        std::swap(navigation.previousType, options.navigationType);
+        applyCameraRotationNormalization(mapConfig->position.orientation);
+
+        // store the new value
+        options.navigationType = navigation.previousType;
+    }
+}
+
 void MapImpl::updateNavigation(double elapsedTime)
 {
     {
@@ -220,19 +233,11 @@ void MapImpl::updateNavigation(double elapsedTime)
         pos.position[2] = 0;
     }
 
+    // check if navigation type has changed
+    navigationTypeChanged();
+
     vec3 p = vecFromUblas<vec3>(pos.position);
     vec3 r = vecFromUblas<vec3>(pos.orientation);
-
-    // navigation type has changed
-    if (navigation.previousType != options.navigationType)
-    {
-        // fly over must first apply the old camera limits
-        std::swap(navigation.previousType, options.navigationType);
-        applyCameraRotationNormalization(r);
-
-        // store the new value
-        options.navigationType = navigation.previousType;
-    }
 
     // limit zoom
     navigation.targetViewExtent = clamp(navigation.targetViewExtent,

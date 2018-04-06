@@ -481,6 +481,7 @@ namespace
 void setPosition(Map *map, MapImpl *impl,
                  const vtslibs::registry::Position &pos)
 {
+    impl->navigationTypeChanged();
     impl->mapConfig->position.heightMode = pos.heightMode;
     map->setPositionSubjective(
             pos.type == vtslibs::registry::Position::Type::subjective, false);

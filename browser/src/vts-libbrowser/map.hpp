@@ -605,6 +605,7 @@ public:
     void positionToCamera(vec3 &center, vec3 &dir, vec3 &up);
     double positionObjectiveDistance();
     void initializeNavigation();
+    void navigationTypeChanged();
     void updateNavigation(double elapsedTime);
     bool isNavigationModeValid() const;
 

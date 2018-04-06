@@ -955,9 +955,9 @@ public:
                     try
                     {
                         const char *text = SDL_GetClipboardText();
-                        window->map->setPositionUrl(text);
                         window->map->options().navigationType
                                 = vts::NavigationType::FlyOver;
+                        window->map->setPositionUrl(text);
                     }
                     catch(...)
                     {
@@ -1031,8 +1031,8 @@ public:
 
             // rotation
             {
-                float ratio[] = { width * 0.4f, width * 0.3f, width * 0.3f };
-                nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
+                float ratio2[] = { width * 0.4f, width * 0.3f, width * 0.3f };
+                nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio2);
                 double n[3], c[3];
                 window->map->getPositionRotation(n);
                 window->map->getPositionRotationLimited(c);

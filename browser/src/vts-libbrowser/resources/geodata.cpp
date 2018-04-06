@@ -88,9 +88,9 @@ struct geoContext
                 }
             }
         }
-        return { (uint16)v[0].asUInt(),
-                 (uint16)v[1].asUInt(),
-                 (uint16)v[2].asUInt() };
+        return {{ (uint16)v[0].asUInt(),
+                  (uint16)v[1].asUInt(),
+                  (uint16)v[2].asUInt() }};
     }
 
     vec4f convertColor(const Value &v)

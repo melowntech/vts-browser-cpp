@@ -1056,6 +1056,23 @@ const vtsCDrawBase *vtsDrawsDetail(vtsHDrawIterator iterator)
     return nullptr;
 }
 
+bool vtsDrawsAllInOne(vtsHDrawIterator iterator,
+                      const vtsCDrawBase **details,
+                      void **mesh, void **texColor, void **texMask)
+{
+    assert(iterator->it != iterator->et);
+    C_BEGIN
+    const vts::DrawTask &t = *iterator->it;
+    *details = &t;
+    *mesh = t.mesh.get();
+    *texColor = t.texColor.get();
+    *texMask = t.texMask.get();
+    iterator->it++;
+    return iterator->it != iterator->et;
+    C_END
+    return false;
+}
+
 vtsHFetcher vtsFetcherCreateDefault(const char *createOptions)
 {
     C_BEGIN

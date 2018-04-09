@@ -38,6 +38,7 @@ VTS_API const vtsCCameraBase *vtsDrawsCamera(vtsHMap map);
 
 typedef struct vtsCDrawIterator *vtsHDrawIterator;
 
+// acquire iterator for the draw tasks
 VTS_API vtsHDrawIterator vtsDrawsOpaque(vtsHMap map);
 VTS_API vtsHDrawIterator vtsDrawsTransparent(vtsHMap map);
 VTS_API vtsHDrawIterator vtsDrawsGeodata(vtsHMap map);
@@ -45,10 +46,17 @@ VTS_API vtsHDrawIterator vtsDrawsInfographic(vtsHMap map);
 VTS_API bool vtsDrawsNext(vtsHDrawIterator iterator);
 VTS_API void vtsDrawsDestroy(vtsHDrawIterator iterator);
 
+// accesors for individual data pointed to by the iterator
 VTS_API void *vtsDrawsMesh(vtsHDrawIterator iterator);
 VTS_API void *vtsDrawsTexColor(vtsHDrawIterator iterator);
 VTS_API void *vtsDrawsTexMask(vtsHDrawIterator iterator);
 VTS_API const vtsCDrawBase *vtsDrawsDetail(vtsHDrawIterator iterator);
+
+// accesor for all data pointed to by the iterator
+// (this function is subject to more frequent changes)
+VTS_API bool vtsDrawsAllInOne(vtsHDrawIterator iterator,
+                              const vtsCDrawBase **details,
+                              void **mesh, void **texColor, void **texMask);
 
 #ifdef __cplusplus
 } // extern C
@@ -70,6 +78,31 @@ while (it)
 
     // fetch next draw task
     if (!vtsDrawsNext(it))
+    {
+        vtsDrawsDestroy(it);
+        break;
+    }
+}
+
+*/
+
+/* ALTERNATIVE EXAMPLE:
+
+vtsHDrawIterator it = vtsDrawsOpaque(map);
+while (it)
+{
+    // access data asociated with the draw task
+    void *mesh;
+    void *texColor;
+    void *texMask;
+    const vtsCDrawBase *details;
+    bool next = vtsDrawsAllInOne(it, details, mesh, texColor, texMask);
+
+    // dispatch the draw task
+    ...
+
+    // fetch next draw task
+    if (!next)
     {
         vtsDrawsDestroy(it);
         break;

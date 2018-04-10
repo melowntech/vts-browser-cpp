@@ -31,11 +31,10 @@ find_package(Proj REQUIRED)
 include_directories(SYSTEM ${PROJ_INCLUDE_DIR})
 find_package(GeographicLib REQUIRED)
 include_directories(SYSTEM ${GEOGRAPHICLIB_INCLUDE_DIR})
+find_package(JsonCPP REQUIRED)
+include_directories(SYSTEM ${JSONCPP_INCLUDE_DIR})
 find_package(Eigen3 REQUIRED)
 include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
-find_package(jsoncpp REQUIRED)
-
-# add 3rd party dependencies
 add_subdirectory(src/glad)
 
 # vts dependencies

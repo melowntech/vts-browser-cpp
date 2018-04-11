@@ -55,8 +55,11 @@ public:
 class VTS_API SearchTask
 {
 public:
+    SearchTask(const std::string &json);
     SearchTask(const std::string &query, const double point[3]);
     virtual ~SearchTask();
+
+    std::string toJson() const;
 
     void updateDistances(const double point[3]); // navigation srs
 

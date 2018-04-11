@@ -163,7 +163,7 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
         Json::Value root;
         try
         {
-            root = stringToJson(std::string(task->impl->data.data(), task->impl->data.size()));
+            root = stringToJson(task->impl->data.str());
         }
         catch(const std::exception &e)
         {
@@ -244,13 +244,27 @@ void SearchTaskImpl::load()
 }
 
 SearchItem::SearchItem() :
-    position{ std::numeric_limits<double>::quiet_NaN(),
-              std::numeric_limits<double>::quiet_NaN(),
-              std::numeric_limits<double>::quiet_NaN()},
+    position{
+        std::numeric_limits<double>::quiet_NaN(),
+        std::numeric_limits<double>::quiet_NaN(),
+        std::numeric_limits<double>::quiet_NaN()
+    },
     radius(std::numeric_limits<double>::quiet_NaN()),
     distance(std::numeric_limits<double>::quiet_NaN()),
     importance(-1)
 {}
+
+SearchTask::SearchTask(const std::string &json) :
+    position{
+        std::numeric_limits<double>::quiet_NaN(),
+        std::numeric_limits<double>::quiet_NaN(),
+        std::numeric_limits<double>::quiet_NaN()
+    }, done(true)
+{
+    (void)json;
+    LOG(warn3) << "<SearchTask(const std::string &json)>"
+               << " is not yet implemented";
+}
 
 SearchTask::SearchTask(const std::string &query, const double point[3]) :
     query(query), position{point[0], point[1], point[2]}, done(false)
@@ -259,9 +273,16 @@ SearchTask::SearchTask(const std::string &query, const double point[3]) :
 SearchTask::~SearchTask()
 {}
 
+std::string SearchTask::toJson() const
+{
+    LOG(warn3) << "<SearchTask::toJson()>"
+               << " is not yet implemented";
+    return "";
+}
+
 void SearchTask::updateDistances(const double point[3])
 {
-    if (!impl->map->mapConfig || !impl->map->mapconfigReady
+    if (!impl || !impl->map->mapConfig || !impl->map->mapconfigReady
         || impl->map->mapConfig->browserOptions.searchUrl != impl->validityUrl
         || impl->map->mapConfig->browserOptions.searchSrs != impl->validitySrs)
     {

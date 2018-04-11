@@ -135,9 +135,9 @@ typedef struct vtsCFetcher
     std::shared_ptr<vts::Fetcher> p;
 } vtsCFetcher;
 
-typedef struct vtsCDrawIterator
+typedef struct vtsCDrawsGroup
 {
-    std::vector<vts::DrawTask>::iterator it, et;
+    const std::vector<vts::DrawTask> *draws;
 } vtsCDrawIterator;
 
 typedef struct vtsCResource
@@ -630,7 +630,7 @@ uint32 vtsGpuTypeSize(uint32 type)
 }
 
 void vtsSetResourceUserData(vtsHResource resource, void *data,
-                            vtsResourceUserDeleterType deleter)
+                            vtsResourceDeleterCallbackType deleter)
 {
     struct Callback
     {
@@ -638,7 +638,7 @@ void vtsSetResourceUserData(vtsHResource resource, void *data,
         {
             (*callback)(data);
         }
-        vtsResourceUserDeleterType callback;
+        vtsResourceDeleterCallbackType callback;
     };
     C_BEGIN
     Callback c;
@@ -962,19 +962,18 @@ const vtsCCameraBase *vtsDrawsCamera(vtsHMap map)
 namespace
 {
 
-vtsHDrawIterator createDrawIterator(std::vector<vts::DrawTask> &vec)
+vtsHDrawsGroup createDrawIterator(std::vector<vts::DrawTask> &vec)
 {
     if (vec.empty())
         return nullptr;
-    vtsHDrawIterator r = new vtsCDrawIterator;
-    r->it = vec.begin();
-    r->et = vec.end();
+    vtsHDrawsGroup r = new vtsCDrawsGroup;
+    r->draws = &vec;
     return r;
 }
 
 } // namespace
 
-vtsHDrawIterator vtsDrawsOpaque(vtsHMap map)
+vtsHDrawsGroup vtsDrawsOpaque(vtsHMap map)
 {
     C_BEGIN
     return createDrawIterator(map->p->draws().opaque);
@@ -982,7 +981,7 @@ vtsHDrawIterator vtsDrawsOpaque(vtsHMap map)
     return nullptr;
 }
 
-vtsHDrawIterator vtsDrawsTransparent(vtsHMap map)
+vtsHDrawsGroup vtsDrawsTransparent(vtsHMap map)
 {
     C_BEGIN
     return createDrawIterator(map->p->draws().transparent);
@@ -990,7 +989,7 @@ vtsHDrawIterator vtsDrawsTransparent(vtsHMap map)
     return nullptr;
 }
 
-vtsHDrawIterator vtsDrawsGeodata(vtsHMap map)
+vtsHDrawsGroup vtsDrawsGeodata(vtsHMap map)
 {
     C_BEGIN
     return createDrawIterator(map->p->draws().geodata);
@@ -998,7 +997,7 @@ vtsHDrawIterator vtsDrawsGeodata(vtsHMap map)
     return nullptr;
 }
 
-vtsHDrawIterator vtsDrawsInfographic(vtsHMap map)
+vtsHDrawsGroup vtsDrawsInfographic(vtsHMap map)
 {
     C_BEGIN
     return createDrawIterator(map->p->draws().Infographic);
@@ -1006,71 +1005,64 @@ vtsHDrawIterator vtsDrawsInfographic(vtsHMap map)
     return nullptr;
 }
 
-bool vtsDrawsNext(vtsHDrawIterator iterator)
+uint32 vtsDrawsCount(vtsHDrawsGroup group)
 {
     C_BEGIN
-    if (iterator->it == iterator->et)
-        return false;
-    iterator->it++;
-    return iterator->it != iterator->et;
+    return group->draws->size();
     C_END
-    return false;
+    return 0;
 }
 
-void vtsDrawsDestroy(vtsHDrawIterator iterator)
+void vtsDrawsDestroy(vtsHDrawsGroup group)
 {
     C_BEGIN
-    delete iterator;
+    delete group;
     C_END
 }
 
-void *vtsDrawsMesh(vtsHDrawIterator iterator)
+void *vtsDrawsMesh(vtsHDrawsGroup group, uint32 index)
 {
     C_BEGIN
-    return iterator->it->mesh.get();
+    return (*group->draws)[index].mesh.get();
     C_END
     return nullptr;
 }
 
-void *vtsDrawsTexColor(vtsHDrawIterator iterator)
+void *vtsDrawsTexColor(vtsHDrawsGroup group, uint32 index)
 {
     C_BEGIN
-    return iterator->it->texColor.get();
+    return (*group->draws)[index].texColor.get();
     C_END
     return nullptr;
 }
 
-void *vtsDrawsTexMask(vtsHDrawIterator iterator)
+void *vtsDrawsTexMask(vtsHDrawsGroup group, uint32 index)
 {
     C_BEGIN
-    return iterator->it->texMask.get();
+    return (*group->draws)[index].texMask.get();
     C_END
     return nullptr;
 }
 
-const vtsCDrawBase *vtsDrawsDetail(vtsHDrawIterator iterator)
+const vtsCDrawBase *vtsDrawsDetail(vtsHDrawsGroup group, uint32 index)
 {
     C_BEGIN
-    return &*iterator->it;
+    return &(*group->draws)[index];
     C_END
     return nullptr;
 }
 
-bool vtsDrawsAllInOne(vtsHDrawIterator iterator,
-                      const vtsCDrawBase **details,
-                      void **mesh, void **texColor, void **texMask)
+const vtsCDrawBase *vtsDrawsAllInOne(vtsHDrawsGroup group, uint32 index,
+                              void **mesh, void **texColor, void **texMask)
 {
-    assert(iterator->it != iterator->et);
     C_BEGIN
-    const vts::DrawTask &t = *iterator->it;
-    *details = &t;
+    const vts::DrawTask &t = (*group->draws)[index];
     *mesh = t.mesh.get();
     *texColor = t.texColor.get();
     *texMask = t.texMask.get();
-    iterator->it++;
-    return iterator->it != iterator->et;
+    return &t;
     C_END
-    return false;
+    return nullptr;
 }
 
 vtsHFetcher vtsFetcherCreateDefault(const char *createOptions)
@@ -1143,158 +1135,21 @@ uint32 vtsSearchResultsCount(vtsHSearch search)
     return 0;
 }
 
+const char *vtsSearchResultData(vtsHSearch search, uint32 index)
+{
+    assert((bool)search->p->done);
+    C_BEGIN
+    return vts::retStr(search->p->toJson());
+    C_END
+    return nullptr;
+}
+
 void vtsSearchUpdateDistances(vtsHSearch search,
                 const double point[3])
 {
     C_BEGIN
     search->p->updateDistances(point);
     C_END
-}
-
-const char *vtsSearchDisplayName(vtsHSearch search, uint32 index)
-{
-    assert((bool)search->p->done);
-    C_BEGIN
-    return vts::retStr(search->p->results[index].displayName);
-    C_END
-    return nullptr;
-}
-
-const char *vtsSearchTitle(vtsHSearch search, uint32 index)
-{
-    assert((bool)search->p->done);
-    C_BEGIN
-    return vts::retStr(search->p->results[index].title);
-    C_END
-    return nullptr;
-}
-
-const char *vtsSearchType(vtsHSearch search, uint32 index)
-{
-    assert((bool)search->p->done);
-    C_BEGIN
-    return vts::retStr(search->p->results[index].type);
-    C_END
-    return nullptr;
-}
-
-const char *vtsSearchRegion(vtsHSearch search, uint32 index)
-{
-    assert((bool)search->p->done);
-    C_BEGIN
-    return vts::retStr(search->p->results[index].region);
-    C_END
-    return nullptr;
-}
-
-const char *vtsSearchRoad(vtsHSearch search, uint32 index)
-{
-    assert((bool)search->p->done);
-    C_BEGIN
-    return vts::retStr(search->p->results[index].road);
-    C_END
-    return nullptr;
-}
-
-const char *vtsSearchCity(vtsHSearch search, uint32 index)
-{
-    assert((bool)search->p->done);
-    C_BEGIN
-    return vts::retStr(search->p->results[index].city);
-    C_END
-    return nullptr;
-}
-
-const char *vtsSearchCounty(vtsHSearch search, uint32 index)
-{
-    assert((bool)search->p->done);
-    C_BEGIN
-    return vts::retStr(search->p->results[index].county);
-    C_END
-    return nullptr;
-}
-
-const char *vtsSearchState(vtsHSearch search, uint32 index)
-{
-    assert((bool)search->p->done);
-    C_BEGIN
-    return vts::retStr(search->p->results[index].state);
-    C_END
-    return nullptr;
-}
-
-const char *vtsSearchHouseNumber(vtsHSearch search, uint32 index)
-{
-    assert((bool)search->p->done);
-    C_BEGIN
-    return vts::retStr(search->p->results[index].houseNumber);
-    C_END
-    return nullptr;
-}
-
-const char *vtsSearchStateDistrict(vtsHSearch search, uint32 index)
-{
-    assert((bool)search->p->done);
-    C_BEGIN
-    return vts::retStr(search->p->results[index].stateDistrict);
-    C_END
-    return nullptr;
-}
-
-const char *vtsSearchCountry(vtsHSearch search, uint32 index)
-{
-    assert((bool)search->p->done);
-    C_BEGIN
-    return vts::retStr(search->p->results[index].country);
-    C_END
-    return nullptr;
-}
-
-const char *vtsSearchCountryCode(vtsHSearch search, uint32 index)
-{
-    assert((bool)search->p->done);
-    C_BEGIN
-    return vts::retStr(search->p->results[index].countryCode);
-    C_END
-    return nullptr;
-}
-
-void vtsSearchPosition(vtsHSearch search, uint32 index,
-                double point[3])
-{
-    assert((bool)search->p->done);
-    C_BEGIN
-    auto &r = search->p->results[index].position;
-    for (int i = 0; i < 3; i++)
-        point[i] = r[i];
-    C_END
-}
-
-double vtsSearchRadius(vtsHSearch search, uint32 index)
-{
-    assert((bool)search->p->done);
-    C_BEGIN
-    return search->p->results[index].radius;
-    C_END
-    return 0.0;
-}
-
-double vtsSearchDistance(vtsHSearch search, uint32 index)
-{
-    assert((bool)search->p->done);
-    C_BEGIN
-    return search->p->results[index].distance;
-    C_END
-    return 0.0;
-}
-
-double vtsSearchImportance(vtsHSearch search, uint32 index)
-{
-    assert((bool)search->p->done);
-    C_BEGIN
-    return search->p->results[index].importance;
-    C_END
-    return 0.0;
 }
 
 #ifdef __cplusplus

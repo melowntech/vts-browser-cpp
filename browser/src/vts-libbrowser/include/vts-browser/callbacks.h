@@ -33,10 +33,10 @@
 extern "C" {
 #endif
 
-typedef void (*vtsResourceCallbackType)(vtsHMap, vtsHResource);
-typedef void (*vtsStateCallbackType)(vtsHMap);
-typedef void (*vtsCameraOverrideCallbackType)(vtsHMap, double*);
-typedef const char *(*vtsProjFinderCallbackType)(const char *);
+typedef void (*vtsResourceCallbackType)(vtsHMap map, vtsHResource resource);
+typedef void (*vtsStateCallbackType)(vtsHMap map);
+typedef void (*vtsCameraOverrideCallbackType)(vtsHMap map, double *values);
+typedef const char *(*vtsProjFinderCallbackType)(const char *name);
 
 VTS_API void vtsCallbacksLoadTexture(vtsHMap map,
                         vtsResourceCallbackType callback);

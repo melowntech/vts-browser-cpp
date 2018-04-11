@@ -43,27 +43,10 @@ VTS_API void vtsSearchDestroy(vtsHSearch search);
 
 VTS_API bool vtsSearchDone(vtsHSearch search);
 VTS_API uint32 vtsSearchResultsCount(vtsHSearch search);
+VTS_API const char *vtsSearchResultData(vtsHSearch search,
+                                        uint32 index);
 VTS_API void vtsSearchUpdateDistances(vtsHSearch search,
                         const double point[3]);
-
-// inidvidual results
-VTS_API const char *vtsSearchDisplayName(vtsHSearch search, uint32 index);
-VTS_API const char *vtsSearchTitle(vtsHSearch search, uint32 index);
-VTS_API const char *vtsSearchType(vtsHSearch search, uint32 index);
-VTS_API const char *vtsSearchRegion(vtsHSearch search, uint32 index);
-VTS_API const char *vtsSearchRoad(vtsHSearch search, uint32 index);
-VTS_API const char *vtsSearchCity(vtsHSearch search, uint32 index);
-VTS_API const char *vtsSearchCounty(vtsHSearch search, uint32 index);
-VTS_API const char *vtsSearchState(vtsHSearch search, uint32 index);
-VTS_API const char *vtsSearchHouseNumber(vtsHSearch search, uint32 index);
-VTS_API const char *vtsSearchStateDistrict(vtsHSearch search, uint32 index);
-VTS_API const char *vtsSearchCountry(vtsHSearch search, uint32 index);
-VTS_API const char *vtsSearchCountryCode(vtsHSearch search, uint32 index);
-VTS_API void vtsSearchPosition(vtsHSearch search, uint32 index,
-                        double point[3]);
-VTS_API double vtsSearchRadius(vtsHSearch search, uint32 index);
-VTS_API double vtsSearchDistance(vtsHSearch search, uint32 index);
-VTS_API double vtsSearchImportance(vtsHSearch search, uint32 index);
 
 #ifdef __cplusplus
 } // extern C

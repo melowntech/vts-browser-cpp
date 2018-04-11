@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-typedef void (*vtsLogCallbackType)(const char *);
+typedef void (*vtsLogCallbackType)(const char *msg);
 
 VTS_API void vtsLogSetMaskStr(const char *mask);
 VTS_API void vtsLogSetMaskCode(uint32 mask);

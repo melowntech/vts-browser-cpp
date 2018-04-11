@@ -38,11 +38,11 @@ VTS_API uint32 vtsGpuTypeSize(uint32 type);
 // the vtsHResource handle is only valid inside the load* callbacks,
 //   you may not use it from outside the corresponding call
 
-typedef void (*vtsResourceUserDeleterType)(void *);
+typedef void (*vtsResourceDeleterCallbackType)(void *ptr);
 
 // resource
 VTS_API void vtsSetResourceUserData(vtsHResource resource, void *data,
-                                    vtsResourceUserDeleterType deleter);
+                                    vtsResourceDeleterCallbackType deleter);
 VTS_API void vtsSetResourceMemoryCost(vtsHResource resource,
                                       uint32 ramMem, uint32 gpuMem);
 

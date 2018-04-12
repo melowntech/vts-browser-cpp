@@ -12,9 +12,6 @@ if(BUILDSYS_IOS)
 else()
 
     # desktop
-    find_package(CURL REQUIRED)
-    add_subdirectory(fetcher/http)
-    include_directories(fetcher)
     list(APPEND EXTRA_LIB_MODULES http)
     list(APPEND EXTRA_SRC_LIST fetcher/curl.cpp)
 

@@ -48,9 +48,6 @@ add_subdirectory(src/jsoncpp)
 add_subdirectory(src/geo)
 add_subdirectory(src/half)
 
-# do not bother me during development
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wno-unused-parameter")
-
 # vts libs
 message(STATUS "including vts libs")
 buildsys_nobuild_target(vts-libs-core)
@@ -66,15 +63,29 @@ set(SHARE_INSTALL_DIR share)
 # cmake functions
 include(cmake/pack_data.cmake)
 
+# do not bother me during development
+if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wno-unused-parameter")
+endif()
+
 # vts browser
 message(STATUS "including vts browser and renderer libraries")
 if(BUILDSYS_EMBEDDED)
+
     set(LIB_TYPE STATIC)
     set(LIB_VIS PUBLIC)
+
 else()
+
     set(LIB_TYPE SHARED)
     set(LIB_VIS PRIVATE)
+    
+    # find http (curl)
+    find_package(CURL REQUIRED)
+    add_subdirectory(src/http)
+
 endif()
+
 add_subdirectory(src/vts-libbrowser)
 include_directories(src/vts-libbrowser/include)
 add_subdirectory(src/vts-librenderer)

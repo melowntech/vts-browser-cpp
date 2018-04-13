@@ -30,6 +30,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <array>
 
 #include "foundation.hpp"
 
@@ -89,9 +90,9 @@ public:
     const class MapCelestialBody &celestialBody();
 
     void pan(const double value[3]);
-    void pan(const double (&value)[3]);
+    void pan(const std::array<double, 3> &lst);
     void rotate(const double value[3]);
-    void rotate(const double (&value)[3]);
+    void rotate(const std::array<double, 3> &lst);
     void zoom(double value);
 
     // corrects current position altitude to match the surface
@@ -102,9 +103,9 @@ public:
 
     void setPositionSubjective(bool subjective, bool convert);
     void setPositionPoint(const double point[3]);
-    void setPositionPoint(const double (&point)[3]);
+    void setPositionPoint(const std::array<double, 3> &lst);
     void setPositionRotation(const double rot[3]);
-    void setPositionRotation(const double (&rot)[3]);
+    void setPositionRotation(const std::array<double, 3> &lst);
     void setPositionViewExtent(double viewExtent);
     void setPositionFov(double fov);
     void setPositionJson(const std::string &position);
@@ -123,7 +124,7 @@ public:
 
     void convert(const double pointFrom[3], double pointTo[3],
                 Srs srsFrom, Srs srsTo) const;
-    void convert(const double (&pointFrom)[3], double pointTo[3],
+    void convert(const std::array<double, 3> &pointFrom, double pointTo[3],
                 Srs srsFrom, Srs srsTo) const;
 
     std::vector<std::string> getResourceSurfaces() const;
@@ -156,7 +157,7 @@ public:
     std::shared_ptr<class SearchTask> search(const std::string &query,
                                 const double point[3]); // navigation srs
     std::shared_ptr<class SearchTask> search(const std::string &query,
-                                const double (&point)[3]); // navigation srs
+                     const std::array<double, 3> &lst); // navigation srs
 
     void printDebugInfo();
 

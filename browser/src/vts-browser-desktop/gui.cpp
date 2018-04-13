@@ -831,8 +831,8 @@ public:
                 S("Render tick:", s.renderTicks, "");
                 S("Data tick:", s.dataTicks, "");
                 nk_label(&ctx, "Z range:", NK_TEXT_LEFT);
-                sprintf(buffer, "%0.0f - %0.0f", window->map->draws().camera.near,
-                        window->map->draws().camera.far);
+                sprintf(buffer, "%0.0f - %0.0f", window->map->draws().camera.near_,
+                        window->map->draws().camera.far_);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Nav. mode:", NK_TEXT_LEFT);
                 nk_label(&ctx, navigationModeNames[(int)s.currentNavigationMode],
@@ -1131,6 +1131,7 @@ public:
 
     bool prepareViewsBoundLayers(MapView::BoundLayerInfo::List &bl, uint32 &bid)
     {
+        /*
         const std::vector<std::string> boundLayers
                 = window->map->getResourceBoundLayers();
         if (nk_tree_push_id(&ctx, NK_TREE_NODE,
@@ -1203,6 +1204,7 @@ public:
             }
             return changed;
         }
+        */
         return false;
     }
 

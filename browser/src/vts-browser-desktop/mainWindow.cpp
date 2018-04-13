@@ -24,10 +24,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <thread>
+#include <chrono>
 #include <limits>
 #include <cmath>
 #include <cstdio>
-#include <unistd.h>
 
 #include <vts-browser/map.hpp>
 #include <vts-browser/statistics.hpp>
@@ -50,6 +51,7 @@ void initializeDesktopData();
 
 namespace
 {
+
 struct Initializer
 {
     Initializer()
@@ -57,6 +59,12 @@ struct Initializer
         initializeDesktopData();
     }
 } initializer;
+
+void microSleep(uint64 micros)
+{
+    std::this_thread::sleep_for(std::chrono::microseconds(micros));
+}
+
 } // namespace
 
 AppOptions::AppOptions() :
@@ -89,11 +97,11 @@ MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions,
 #endif
 
     {
-        SDL_DisplayMode displayMode;
-        SDL_GetDesktopDisplayMode(0, &displayMode);
         window = SDL_CreateWindow("vts-browser-desktop",
-                  0, 0, displayMode.w, displayMode.h,
-                  SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+            SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+            800, 600,
+            SDL_WINDOW_MAXIMIZED | SDL_WINDOW_OPENGL
+            | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
     }
 
     if (!window)
@@ -399,7 +407,7 @@ void MainWindow::run()
         uint32 duration = timeFrameFinish - timeFrameStart;
         if (duration < 16)
         {
-            usleep(16 - duration);
+            microSleep(16 - duration);
             timeFrameFinish = SDL_GetTicks();
         }
 

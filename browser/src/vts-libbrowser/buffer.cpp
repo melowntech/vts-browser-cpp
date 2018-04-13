@@ -156,7 +156,7 @@ void Buffer::free()
 void writeLocalFileBuffer(const std::string &path, const Buffer &buffer)
 {
     std::string folderPath = boost::filesystem::path(path)
-            .parent_path().c_str();
+            .parent_path().string();
     if (!folderPath.empty())
         boost::filesystem::create_directories(folderPath);
     std::string tmpPath = path + "_tmp_" + uniqueName();

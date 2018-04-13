@@ -25,7 +25,6 @@
  */
 
 #include <fstream>
-#include <unistd.h> // usleep
 #include <http/http.hpp>
 #include <http/resourcefetcher.hpp>
 #include "../include/vts-browser/fetcher.hpp"
@@ -58,7 +57,7 @@ class FetcherImpl : public Fetcher
 {
 public:
     FetcherImpl(const FetcherOptions &options) : options(options),
-        fetcher(htt.fetcher()), initCount(0), taskId(0), extraLog(nullptr)
+        fetcher(htt.fetcher()), initCount(0), taskId(0)
     {
         begin = std::chrono::high_resolution_clock::now();
         if (options.extraFileLog)

@@ -60,12 +60,12 @@ VTS_API vec3 max(const vec3 &a, const vec3 &b);
 
 VTS_API mat4 frustumMatrix(double left, double right,
                            double bottom, double top,
-                           double near, double far);
+                           double near_, double far_);
 VTS_API mat4 perspectiveMatrix(double fovyDegs, double aspect,
-                               double near, double far);
+                               double near_, double far_);
 VTS_API mat4 orthographicMatrix(double left, double right,
                                 double bottom, double top,
-                                double near, double far);
+                                double near_, double far_);
 VTS_API mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up);
 VTS_API mat4 lookAt(const vec3 &eye, const vec3 &target);
 

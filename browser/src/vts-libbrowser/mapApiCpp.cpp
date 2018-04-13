@@ -249,9 +249,9 @@ void Map::pan(const double value[3])
         impl->rotate(-rawToVec3(value));
 }
 
-void Map::pan(const double (&value)[3])
+void Map::pan(const std::array<double, 3> &lst)
 {
-    pan(&value[0]);
+    pan(lst.data());
 }
 
 void Map::rotate(const double value[3])
@@ -261,9 +261,9 @@ void Map::rotate(const double value[3])
     impl->rotate(rawToVec3(value));
 }
 
-void Map::rotate(const double (&value)[3])
+void Map::rotate(const std::array<double, 3> &lst)
 {
-    rotate(&value[0]);
+    rotate(lst.data());
 }
 
 void Map::zoom(double value)
@@ -358,9 +358,9 @@ void Map::setPositionPoint(const double point[3])
     }
 }
 
-void Map::setPositionPoint(const double (&point)[3])
+void Map::setPositionPoint(const std::array<double, 3> &lst)
 {
-    setPositionPoint(&point[0]);
+    setPositionPoint(lst.data());
 }
 
 void Map::getPositionPoint(double point[3]) const
@@ -388,9 +388,9 @@ void Map::setPositionRotation(const double point[3])
     impl->setRotation(rawToVec3(point));
 }
 
-void Map::setPositionRotation(const double (&point)[3])
+void Map::setPositionRotation(const std::array<double, 3> &lst)
 {
-    setPositionRotation(&point[0]);
+    setPositionRotation(lst.data());
 }
 
 void Map::getPositionRotation(double point[3]) const
@@ -577,10 +577,10 @@ void Map::convert(const double pointFrom[3], double pointTo[3],
     vecToRaw(a, pointTo);
 }
 
-void Map::convert(const double (&pointFrom)[3], double pointTo[3],
+void Map::convert(const std::array<double, 3> &pointFrom, double pointTo[3],
             Srs srsFrom, Srs srsTo) const
 {
-    convert(&pointFrom[0], pointTo, srsFrom, srsTo);
+    convert(pointFrom.data(), pointTo, srsFrom, srsTo);
 }
 
 std::vector<std::string> Map::getResourceSurfaces() const
@@ -843,9 +843,9 @@ std::shared_ptr<SearchTask> Map::search(const std::string &query,
 }
 
 std::shared_ptr<SearchTask> Map::search(const std::string &query,
-                                        const double (&point)[3])
+                                const std::array<double, 3> &point)
 {
-    return search(query, &point[0]);
+    return search(query, point.data());
 }
 
 void Map::printDebugInfo()

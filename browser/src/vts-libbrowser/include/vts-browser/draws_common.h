@@ -49,7 +49,7 @@ typedef struct vtsCCameraBase
     double view[16];
     double proj[16];
     double eye[3];
-    double near, far;
+    double near_, far_;
     double aspect;
     double fov; // vertical, degrees
     bool mapProjected;

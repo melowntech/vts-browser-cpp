@@ -28,6 +28,8 @@
 #include <vts-browser/log.h>
 #include <vts-browser/fetcher.h>
 #include <vts-renderer/renderer.h>
+
+#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
 SDL_Window *window;
@@ -80,12 +82,11 @@ int main()
     // create window
     vtsLog(vtsLogLevelInfo3, "Creating window");
     {
-        // the created window should fill the whole screen
-        SDL_DisplayMode displayMode;
-        SDL_GetDesktopDisplayMode(0, &displayMode);
         window = SDL_CreateWindow("vts-browser-minimal-c",
-                  0, 0, displayMode.w, displayMode.h,
-                  SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+            SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+            800, 600,
+            SDL_WINDOW_MAXIMIZED | SDL_WINDOW_OPENGL
+            | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
     }
     if (!window)
     {

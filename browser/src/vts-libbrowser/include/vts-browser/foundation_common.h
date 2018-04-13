@@ -27,7 +27,7 @@
 #ifndef FOUNDATION_COMMON_H_wbhdfh
 #define FOUNDATION_COMMON_H_wbhdfh
 
-#ifdef _MSVC
+#ifdef _WIN32
 #define VTS_API_EXPORT _declspec(dllexport)
 #define VTS_API_IMPORT _declspec(dllimport)
 #else

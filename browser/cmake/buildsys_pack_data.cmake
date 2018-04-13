@@ -1,5 +1,5 @@
 
-function(pack_data NAME)
+function(buildsys_pack_data NAME)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(SRC_LIST)
 set(GEN_CODE)
@@ -21,7 +21,9 @@ set(GEN_CODE "${GEN_CODE}}\n\n")
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/data_map.cpp ${GEN_CODE})
 list(APPEND SRC_LIST ${CMAKE_CURRENT_BINARY_DIR}/data_map.cpp)
 add_custom_target(${NAME}_data SOURCES ${DATA_LIST})
+buildsys_ide_groups(${NAME}_data data)
 add_library(${NAME} STATIC ${SRC_LIST})
+buildsys_ide_groups(${NAME} data)
 add_dependencies(${NAME} ${NAME}_data)
-endfunction(pack_data)
+endfunction(buildsys_pack_data)
 

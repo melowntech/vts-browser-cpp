@@ -24,7 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <unistd.h> // usleep
+#include <chrono>
 #include <vts-browser/map.hpp>
 #include <vts-browser/log.hpp>
 #include <vts-browser/fetcher.hpp>
@@ -36,6 +36,11 @@ namespace
     void run(DataThread *data)
     {
         data->run();
+    }
+
+    void microSleep(uint64 micros)
+    {
+        std::this_thread::sleep_for(std::chrono::microseconds(micros));
     }
 }
 
@@ -64,14 +69,14 @@ void DataThread::run()
     vts::setLogThreadName("data");
     SDL_GL_MakeCurrent(window, context);
     while (!stop && !map)
-        usleep(10000);
+        microSleep(10000);
     while (!stop)
     {
         uint32 timeFrameStart = SDL_GetTicks();
         map->dataTick();
         uint32 timeFrameEnd = SDL_GetTicks();
         timing = timeFrameEnd - timeFrameStart;
-        usleep(100000);
+        microSleep(100000);
     }
     map->dataFinalize();
     SDL_GL_DeleteContext(context);

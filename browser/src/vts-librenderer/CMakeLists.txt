@@ -43,7 +43,7 @@ set(DATA_LIST
     data/textures/atmosphere/density-512-512-1.0100000-7.0000000.png
 )
 
-pack_data(initializeRenderData)
+buildsys_pack_data(initializeRenderData)
 add_library(vts-renderer ${LIB_TYPE} ${SRC_LIST} ${PUB_HDR_LIST})
 target_compile_definitions(vts-renderer ${LIB_VIS} VTSR_BUILD_${LIB_TYPE})
 target_compile_definitions(vts-renderer PRIVATE VTSR_INCLUDE_GL)
@@ -53,6 +53,7 @@ buildsys_library(vts-renderer)
 buildsys_soversion(vts-renderer ${vts-browser_SO_VERSION})
 buildsys_target_compile_definitions(vts-renderer ${MODULE_DEFINITIONS})
 buildsys_position_independent(${MODULE_LIBRARIES})
+buildsys_ide_groups(vts-renderer libs)
 
 if(BUILDSYS_IOS)
     target_compile_definitions(vts-renderer PRIVATE VTSR_OPENGLES)

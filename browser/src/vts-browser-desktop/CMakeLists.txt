@@ -20,12 +20,13 @@ set(DATA_LIST
     data/textures/gwen.png
 )
 
-pack_data(initializeDesktopData)
+buildsys_pack_data(initializeDesktopData)
 add_executable(vts-browser-desktop ${SRC_LIST} ${DATA_LIST})
 target_compile_definitions(vts-browser-desktop PUBLIC ${NUKLEAR_COMPONENTS})
 target_link_libraries(vts-browser-desktop initializeDesktopData ${MODULE_LIBRARIES})
 buildsys_binary(vts-browser-desktop)
 buildsys_target_compile_definitions(vts-browser-desktop ${MODULE_DEFINITIONS})
+buildsys_ide_groups(vts-browser-desktop apps)
 
 
 

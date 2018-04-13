@@ -443,7 +443,7 @@ void MapImpl::renderTickRender()
 namespace
 {
 
-void computeNearFar(double &near, double &far, double altitude,
+void computenear_far_(double &near_, double &far_, double altitude,
                     const MapCelestialBody &body, bool projected,
                     vec3 cameraPos, vec3 cameraForward)
 {
@@ -459,15 +459,15 @@ void computeNearFar(double &near, double &far, double altitude,
 
     if (a > 2 * major)
     {
-        near = a - major;
-        far = l;
+        near_ = a - major;
+        far_ = l;
     }
     else
     {
         double f = std::pow(a / (2 * major), 1.1);
-        near = interpolate(10.0, major, f);
-        near = std::max(10.0, near);
-        far = std::sqrt(std::max(0.0, l * l - major * major)) + 0.1 * major;
+        near_ = interpolate(10.0, major, f);
+        near_ = std::max(10.0, near_);
+        far_ = std::sqrt(std::max(0.0, l * l - major * major)) + 0.1 * major;
     }
 }
 
@@ -508,25 +508,25 @@ void MapImpl::updateCamera()
     }
 
     // camera projection matrix
-    double near = 0;
-    double far = 0;
+    double near_ = 0;
+    double far_ = 0;
     {
         double altitude;
         vec3 navPos = convertor->physToNav(cameraPos);
         if (!getPositionAltitude(altitude, navPos, 10))
             altitude = std::numeric_limits<double>::quiet_NaN();
-        computeNearFar(near, far, altitude, body, projected,
+        computenear_far_(near_, far_, altitude, body, projected,
                        cameraPos, cameraForward);
     }
     double fov = pos.verticalFov;
     double aspect = (double)renderer.windowWidth/(double)renderer.windowHeight;
     if (callbacks.cameraOverrideFovAspectNearFar)
-        callbacks.cameraOverrideFovAspectNearFar(fov, aspect, near, far);
+        callbacks.cameraOverrideFovAspectNearFar(fov, aspect, near_, far_);
     assert(fov > 1e-3 && fov < 180 - 1e-3);
     assert(aspect > 0);
-    assert(near > 0);
-    assert(far > near);
-    mat4 proj = perspectiveMatrix(fov, aspect, near, far);
+    assert(near_ > 0);
+    assert(far_ > near_);
+    mat4 proj = perspectiveMatrix(fov, aspect, near_, far_);
     if (callbacks.cameraOverrideProj)
         callbacks.cameraOverrideProj(proj.data());
 
@@ -612,8 +612,8 @@ void MapImpl::updateCamera()
         matToRaw(view, c.view);
         matToRaw(proj, c.proj);
         vecToRaw(cameraPos, c.eye);
-        c.near = near;
-        c.far = far;
+        c.near_ = near_;
+        c.far_ = far_;
         c.aspect = aspect;
         c.fov = fov;
         c.mapProjected = projected;

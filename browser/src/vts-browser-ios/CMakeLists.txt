@@ -33,7 +33,7 @@ set(DATA_LIST
     data/textures/scale-zoom.png
 )
 
-pack_data(initializeIosData)
+buildsys_pack_data(initializeIosData)
 add_executable(vts-browser-ios MACOSX_BUNDLE ${SRC_LIST} ${DATA_LIST} ${RES_LIST})
 target_link_libraries(vts-browser-ios initializeIosData ${MODULE_LIBRARIES}
     objc "-framework CoreData" "-framework UIKit" "-framework GLKit" "-framework OpenGLES")
@@ -48,4 +48,5 @@ set_target_properties(vts-browser-ios PROPERTIES
     XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME AppIcon
     RESOURCE "${RES_LIST}"
 )
+buildsys_ide_groups(vts-browser-ios apps)
 

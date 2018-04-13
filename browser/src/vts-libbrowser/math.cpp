@@ -135,24 +135,24 @@ vec3 max(const vec3 &a, const vec3 &b)
 
 mat4 frustumMatrix(double left, double right,
                    double bottom, double top,
-                   double near, double far)
+                   double near_, double far_)
 {
     double w(right - left);
     double h(top - bottom);
-    double d(far - near);
+    double d(far_ - near_);
 
     return (mat4() <<
-            2*near/w, 0, (right+left)/w, 0,
-            0, 2*near/h, (top+bottom)/h, 0,
-            0, 0, -(far+near)/d, -2*far*near/d,
+            2*near_/w, 0, (right+left)/w, 0,
+            0, 2*near_/h, (top+bottom)/h, 0,
+            0, 0, -(far_+near_)/d, -2*far_*near_/d,
             0, 0, -1, 0).finished();
 }
 
 mat4 perspectiveMatrix(double fovyDegs, double aspect,
-                             double near, double far)
+                             double near_, double far_)
 {
     double ymax, xmax;
-    double nf = near * tanf(fovyDegs * M_PI / 360.0);
+    double nf = near_ * std::tanf(fovyDegs * M_PI / 360.0);
     if (aspect > 1)
     {
         ymax = nf;
@@ -163,17 +163,17 @@ mat4 perspectiveMatrix(double fovyDegs, double aspect,
         xmax = nf;
         ymax = nf / aspect;
     }
-    return frustumMatrix(-xmax, xmax, -ymax, ymax, near, far);
+    return frustumMatrix(-xmax, xmax, -ymax, ymax, near_, far_);
 }
 
 mat4 orthographicMatrix(double left, double right,
                         double bottom, double top,
-                        double near, double far)
+                        double near_, double far_)
 {
     mat4 m = (mat4() <<
             2 / (right - left), 0, 0, -(right + left) / (right - left),
             0, 2 / (top - bottom), 0, -(top + bottom) / (top - bottom),
-            0, 0, -2 / (far - near), -(far + near) / (far - near),
+            0, 0, -2 / (far_ - near_), -(far_ + near_) / (far_ - near_),
             0, 0, 0, 1).finished();
     return m;
 }

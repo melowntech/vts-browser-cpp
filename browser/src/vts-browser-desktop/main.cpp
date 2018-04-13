@@ -30,6 +30,7 @@
 #include <vts-browser/options.hpp>
 #include <vts-browser/log.hpp>
 
+#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
 #include "mainWindow.hpp"

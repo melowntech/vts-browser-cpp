@@ -41,6 +41,8 @@ class VTS_API SearchItem
 {
 public:
     SearchItem();
+    SearchItem(const std::string &json);
+    std::string toJson() const;
 
     std::string displayName, title, type, region;
     std::string road, city, county, state, houseNumber,
@@ -55,11 +57,8 @@ public:
 class VTS_API SearchTask
 {
 public:
-    SearchTask(const std::string &json);
     SearchTask(const std::string &query, const double point[3]);
     virtual ~SearchTask();
-
-    std::string toJson() const;
 
     void updateDistances(const double point[3]); // navigation srs
 

@@ -152,7 +152,7 @@ mat4 perspectiveMatrix(double fovyDegs, double aspect,
                              double near_, double far_)
 {
     double ymax, xmax;
-    double nf = near_ * std::tanf(fovyDegs * M_PI / 360.0);
+    double nf = near_ * std::tan(fovyDegs * M_PI / 360.0);
     if (aspect > 1)
     {
         ymax = nf;

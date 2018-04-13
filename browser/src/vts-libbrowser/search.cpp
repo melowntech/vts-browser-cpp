@@ -254,16 +254,19 @@ SearchItem::SearchItem() :
     importance(-1)
 {}
 
-SearchTask::SearchTask(const std::string &json) :
-    position{
-        std::numeric_limits<double>::quiet_NaN(),
-        std::numeric_limits<double>::quiet_NaN(),
-        std::numeric_limits<double>::quiet_NaN()
-    }, done(true)
+SearchItem::SearchItem(const std::string &json) :
+    SearchItem()
 {
     (void)json;
-    LOG(warn3) << "<SearchTask(const std::string &json)>"
+    LOG(warn3) << "<SearchItem(const std::string &json)>"
                << " is not yet implemented";
+}
+
+std::string SearchItem::toJson() const
+{
+    LOG(warn3) << "<SearchItem::toJson()>"
+               << " is not yet implemented";
+    return "";
 }
 
 SearchTask::SearchTask(const std::string &query, const double point[3]) :
@@ -272,13 +275,6 @@ SearchTask::SearchTask(const std::string &query, const double point[3]) :
 
 SearchTask::~SearchTask()
 {}
-
-std::string SearchTask::toJson() const
-{
-    LOG(warn3) << "<SearchTask::toJson()>"
-               << " is not yet implemented";
-    return "";
-}
 
 void SearchTask::updateDistances(const double point[3])
 {

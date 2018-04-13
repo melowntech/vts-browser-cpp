@@ -1131,7 +1131,6 @@ public:
 
     bool prepareViewsBoundLayers(MapView::BoundLayerInfo::List &bl, uint32 &bid)
     {
-        /*
         const std::vector<std::string> boundLayers
                 = window->map->getResourceBoundLayers();
         if (nk_tree_push_id(&ctx, NK_TREE_NODE,
@@ -1204,7 +1203,6 @@ public:
             }
             return changed;
         }
-        */
         return false;
     }
 

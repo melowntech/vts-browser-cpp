@@ -22,15 +22,6 @@ include(cmake/buildsys_pack_data.cmake)
 
 # compiler options
 enable_hidden_visibility()
-if(WIN32)
-    # disable warning: class 'type' needs to have dll-interface to be used by clients of class 'type2'
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4251 /wd4275")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251 /wd4275")
-    # enable multi process compilation
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
-    # disable iterator range checks for all builds to allow compatibility with release libraries
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D_ITERATOR_DEBUG_LEVEL=0")
-endif()
 
 # find 3rd party dependencies
 message(STATUS "looking for 3rd-party dependencies")
@@ -39,10 +30,6 @@ find_package(Boost 1.46 REQUIRED
     date_time serialization regex chrono iostreams)
 link_directories(${Boost_LIBRARY_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-if(WIN32)
-    add_definitions(-DBOOST_ALL_NO_LIB -DBOOST_ALL_DYN_LINK)
-    add_definitions(-DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
-endif()
 find_package(GDAL 2 REQUIRED)
 include_directories(SYSTEM ${GDAL_INCLUDE_DIR})
 find_package(Proj REQUIRED)

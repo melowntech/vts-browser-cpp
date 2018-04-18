@@ -162,6 +162,7 @@ void Shader::uniformMat3(uint32 location, const float *value)
 
 void Shader::uniformVec4(uint32 location, const float *value)
 {
+	static_assert(sizeof(float) == sizeof(GLfloat), "incompatible types");
     glUniform4fv(uniformLocations[location], 1, value);
 }
 
@@ -177,6 +178,7 @@ void Shader::uniformVec2(uint32 location, const float *value)
     
 void Shader::uniformVec4(uint32 location, const int *value)
 {
+	static_assert(sizeof(int) == sizeof(GLint), "incompatible types");
     glUniform4iv(uniformLocations[location], 1, value);
 }
 

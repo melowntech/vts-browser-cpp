@@ -14,7 +14,10 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
+    // texture color
     vec4 color = texture(texColor, varUvTex);
+    if (uniFlags.y > 0)
+        color = color.rrra; // monochromatic texture
 
     // uv clipping
     if (varUvClip.x < uniUvClip.x
@@ -39,12 +42,7 @@ void main()
         outColor = vec4(vec3(max(n.z * 0.8, 0.0) + 0.125), 1.0);
     }
     else
-    {
-        // texture color
-        if (uniFlags.y > 0)
-            color = color.rrra; // monochromatic texture
         outColor = color;
-    }
     outColor *= uniColor;
 
     // atmosphere

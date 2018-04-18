@@ -39,7 +39,7 @@ public:
     std::string name;
     double majorRadius;
     double minorRadius;
-    struct Atmosphere
+    struct VTS_API Atmosphere
     {
         double thickness;
         double horizontalExponent;

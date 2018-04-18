@@ -39,7 +39,7 @@ namespace vts
 class VTS_API MapView
 {
 public:
-    class BoundLayerInfo
+    class VTS_API BoundLayerInfo
     {
     public:
         typedef std::vector<BoundLayerInfo> List;
@@ -51,7 +51,7 @@ public:
         BoundLayerInfo(const std::string &id);
     };
 
-    class SurfaceInfo
+    class VTS_API SurfaceInfo
     {
     public:
         typedef std::map<std::string, SurfaceInfo> Map;
@@ -59,7 +59,7 @@ public:
         BoundLayerInfo::List boundLayers;
     };
 
-    class FreeLayerInfo
+    class VTS_API FreeLayerInfo
     {
     public:
         typedef std::map<std::string, FreeLayerInfo> Map;

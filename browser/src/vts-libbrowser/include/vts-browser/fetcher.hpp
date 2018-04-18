@@ -61,7 +61,7 @@ public:
 
     static bool isResourceTypeMandatory(ResourceType resourceType);
 
-    struct ExtraCodes
+    struct VTS_API ExtraCodes
     {
         enum
         {
@@ -76,7 +76,7 @@ public:
         };
     };
 
-    struct Query
+    struct VTS_API Query
     {
         std::string url;
         std::map<std::string, std::string> headers;
@@ -85,7 +85,7 @@ public:
         Query(const std::string &url, ResourceType resourceType);
     };
 
-    struct Reply
+    struct VTS_API Reply
     {
         Buffer content;
         std::string contentType;

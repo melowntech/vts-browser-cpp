@@ -116,7 +116,7 @@ public:
         TriangleFan = 0x0006,
     };
 
-    struct VertexAttribute
+    struct VTS_API VertexAttribute
     {
         VertexAttribute();
         uint32 offset; // in bytes

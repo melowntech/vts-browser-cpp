@@ -58,7 +58,7 @@ public:
     std::vector<DrawTask> geodata;
     std::vector<DrawTask> Infographic;
 
-    struct Camera : public vtsCCameraBase
+    struct VTS_API Camera : public vtsCCameraBase
     {} camera;
 
     MapDraws();

@@ -45,7 +45,7 @@ public:
     std::string textShort() const;
     std::string textFull() const;
 
-    struct Credit
+    struct VTS_API Credit
     {
         std::string notice;
         std::string url;
@@ -53,7 +53,7 @@ public:
         uint32 maxLod;
     };
 
-    struct Scope
+    struct VTS_API Scope
     {
         std::vector<Credit> credits;
     };

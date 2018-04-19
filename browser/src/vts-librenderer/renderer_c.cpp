@@ -36,7 +36,7 @@ extern "C" {
 void vtsCheckGl(const char *name)
 {
     C_BEGIN
-    vts::renderer::checkGl(name);
+    vts::renderer::checkGlImpl(name);
     C_END
 }
 

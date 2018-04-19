@@ -44,11 +44,13 @@ namespace vts { namespace renderer
 
 namespace priv
 {
+
 uint32 maxAntialiasingSamples = 1;
 float maxAnisotropySamples = 0.f;
+
 } // namespace priv
 
-void checkGl(const char *name)
+void checkGlImpl(const char *name)
 {
     GLint err = glGetError();
     if (err != GL_NO_ERROR)
@@ -199,7 +201,7 @@ void loadGlFunctions(GLADloadproc functionLoader)
              "Loading opengl (desktop) function pointers");
     gladLoadGLLoader(functionLoader);
 #endif
-    checkGl("loadGlFunctions");
+    checkGlImpl("loadGlFunctions");
 
 //#ifndef VTSR_OPENGLES
     if (GLAD_GL_KHR_debug)
@@ -215,7 +217,7 @@ void loadGlFunctions(GLADloadproc functionLoader)
     else
         maxAntialiasingSamples = 0.f;
 
-    checkGl("load gl extensions and attributes");
+    checkGlImpl("load gl extensions and attributes");
 //#endif
 
     vts::log(vts::LogLevel::info2, std::string("OpenGL vendor: ")

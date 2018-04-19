@@ -37,8 +37,14 @@ typedef void *(*GLADloadproc)(const char *name);
 namespace vts { namespace renderer
 {
 
-VTSR_API void checkGl(const char *name = "");
+VTSR_API void checkGlImpl(const char *name = "");
 VTSR_API void checkGlFramebuffer();
+
+#ifdef NDEBUG
+#define CHECK_GL(NAME)
+#else
+#define CHECK_GL(NAME) checkGlImpl(NAME)
+#endif
 
 // initialize all gl functions
 // should be called once after the gl context has been created

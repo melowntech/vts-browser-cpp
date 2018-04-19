@@ -96,7 +96,7 @@ int loadShader(const std::string &source, int stage)
                  std::string("shader source: \n") + source);
         throw;
     }
-    checkGl("load shader source");
+    checkGlImpl("load shader source");
     return s;
 }
 
@@ -139,7 +139,7 @@ void Shader::load(const std::string &vertexShader,
         throw;
     }
     glFinish();
-    checkGl("load shader program");
+    checkGlImpl("load shader program");
 }
 
 void Shader::loadInternal(const std::string &vertexName,
@@ -344,7 +344,7 @@ void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec)
     grayscale = spec.components == 1;
 
     glFinish();
-    checkGl("load texture");
+    CHECK_GL("load texture");
     info.ramMemoryCost += sizeof(*this);
     info.gpuMemoryCost += spec.buffer.size();
 }
@@ -421,7 +421,7 @@ void Mesh::bind()
                 glDisableVertexAttribArray(i);
         }
     }
-    checkGl("bind mesh");
+    CHECK_GL("bind mesh");
 }
 
 void Mesh::dispatch()
@@ -431,7 +431,7 @@ void Mesh::dispatch()
                        GL_UNSIGNED_SHORT, nullptr);
     else
         glDrawArrays((GLenum)spec.faceMode, 0, spec.verticesCount);
-    checkGl("dispatch mesh");
+    CHECK_GL("dispatch mesh");
 }
 
 void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp)
@@ -455,7 +455,7 @@ void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp)
     glBindVertexArray(0);
     glDeleteVertexArrays(1, &vao);
     glFinish();
-    checkGl("load mesh");
+    CHECK_GL("load mesh");
     info.ramMemoryCost += sizeof(*this);
     info.gpuMemoryCost += spec.vertices.size() + spec.indices.size();
     spec.vertices.free();

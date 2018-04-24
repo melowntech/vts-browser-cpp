@@ -18,7 +18,7 @@ that brings VTS capabilities to your native C++ applications.
 - Rendering API independent -> the library, on its own, does not render anything.
   Instead, it just tells the application what to render.
   However, a convenient OpenGL-based rendering library is also provided.
-- Currently works on Linux, Mac OS and iOS.
+- Currently works on Windows, Linux, macOS and iOS.
 
 ### WIP
 

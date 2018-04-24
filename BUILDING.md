@@ -1,7 +1,15 @@
 
-## Build for Linux Desktop
+# Build for Windows Desktop
 
-Install required packages to build the library.
+You have multiple options.
+
+ - Download (or build) and install all required dependencies yourself.
+ - (Recommended) Use [Windows Wrapper](https://github.com/Melown/vts-browser-cpp-win) instead.
+   The wrapper has integrated build scripts for all dependencies making building the browser a peace of cake :D
+
+# Build for Linux Desktop
+
+Install packages that are required to build the library.
 
 ```bash
 sudo apt-get install \
@@ -30,7 +38,7 @@ And run the example application.
 bin/vts-browser-desktop <mapconfig-url>
 ```
 
-## Build for Mac OS X
+# Build for macOS
 
 Install all required libraries using eg. brew or ports.
 
@@ -58,7 +66,7 @@ cmake -GXcode ..
 
 Use the generated xcode project as usual.
 
-## Build for iOS
+# Build for iOS
 
 Build all required library dependencies and prepare cmake find package modules for them.
 
@@ -79,7 +87,7 @@ cmake -DCMAKE_MODULE_PATH="absolute path to the prepared cmake modules directory
 
 Use the generated xcode project as usual.
 
-## Recommended Folder Structure
+# Recommended Folder Structure
 
 ```
 ├── vts-browser-cpp

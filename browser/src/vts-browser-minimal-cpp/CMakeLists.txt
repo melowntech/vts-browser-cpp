@@ -1,9 +1,9 @@
 
 define_module(BINARY vts-browser-minimal-cpp DEPENDS
-  vts-browser vts-renderer SDL2)
+    vts-browser vts-renderer SDL2)
 
 set(SRC_LIST
-  main.cpp
+    main.cpp
 )
 
 add_executable(vts-browser-minimal-cpp ${SRC_LIST})

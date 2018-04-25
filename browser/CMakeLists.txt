@@ -73,7 +73,7 @@ set(LIB_INSTALL_DIR lib)
 set(BIN_INSTALL_DIR bin)
 set(SHARE_INSTALL_DIR share)
 
-# vts browser
+# vts browser & renderer libraries
 message(STATUS "including vts browser and renderer libraries")
 if(BUILDSYS_EMBEDDED)
     set(LIB_TYPE STATIC)
@@ -116,5 +116,12 @@ else()
     add_subdirectory(src/vts-browser-desktop)
 endif()
 
-
+# vts csharp libraries
+option(VTS_ENABLE_CSHARP "generate csharp libraries")
+if (VTS_ENABLE_CSHARP)
+    message(STATUS "including csharp libraries")
+    add_subdirectory(src/vts-libbrowser-cs)
+    add_subdirectory(src/vts-librenderer-cs)
+    add_subdirectory(src/vts-browser-minimal-cs)
+endif()
 

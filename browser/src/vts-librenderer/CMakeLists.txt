@@ -55,6 +55,10 @@ buildsys_target_compile_definitions(vts-renderer ${MODULE_DEFINITIONS})
 buildsys_position_independent(${MODULE_LIBRARIES})
 buildsys_ide_groups(vts-renderer libs)
 
+if(VTS_ENABLE_CSHARP)
+    set_target_properties(vts-renderer PROPERTIES DEBUG_POSTFIX "")
+endif()
+
 if(BUILDSYS_IOS)
     target_compile_definitions(vts-renderer PRIVATE VTSR_OPENGLES)
 endif()

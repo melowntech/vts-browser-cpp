@@ -131,10 +131,6 @@ if(VTS_ENABLE_FREE_LAYERS)
     target_compile_definitions(vts-browser PRIVATE VTS_ENABLE_FREE_LAYERS)
 endif()
 
-if(VTS_ENABLE_CSHARP)
-    set_target_properties(vts-browser PROPERTIES DEBUG_POSTFIX "")
-endif()
-
 #######################################################################
 # Install
 

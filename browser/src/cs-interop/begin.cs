@@ -32,3 +32,9 @@ namespace vts
 	public class CLASSNAME
 	{
 
+#if DEBUG
+	const string LibName = "LIBNAME-d";
+#else
+	const string LibName = "LIBNAME";
+#endif
+

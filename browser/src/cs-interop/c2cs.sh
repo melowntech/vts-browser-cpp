@@ -1,7 +1,5 @@
 #!/bin/bash
 
-LIB=$1
-
 # read input
 cat /dev/stdin | \
 
@@ -49,7 +47,7 @@ awk '{gsub(/uint32/,"int")} 1' - | \
 awk '{gsub(/sint32/,"uint")} 1' - | \
 
 # DllImport
-awk -vLIB="$LIB" '{sub(/VTS_API/,"[DllImport(\""LIB"\", CallingConvention = CallingConvention.Cdecl)]\nVTS_API")} 1' - | \
+awk '{sub(/VTS_API/,"[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]\nVTS_API")} 1' - | \
 
 # return string
 awk '{sub(/VTS_API const char \*/,"VTS_API IntPtr ")} 1' - | \

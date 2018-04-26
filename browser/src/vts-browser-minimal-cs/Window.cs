@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Copyright (c) 2017 Melown Technologies SE
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,31 +25,15 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Windows.Forms;
-using vts;
 
 namespace vtsBrowserMinimalCs
 {
-    static class Program
+    public partial class Window : Form
     {
-        [STAThread]
-        static void Main()
+        public Window()
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Window());
+            InitializeComponent();
         }
-
-        public static void Draw(object sender, EventArgs args)
-        {
-            VtsGL.glClearColor((float)random.NextDouble(), (float)random.NextDouble(), (float)random.NextDouble(), 1);
-            VtsGL.glClear(0x00004000); // GL_COLOR_BUFFER_BIT
-            var c = sender as VtsGLControl;
-            string s = "width: " + c.Width + ", height: " + c.Height;
-            BrowserInterop.vtsLog(4096, s);
-        }
-
-        private static Random random = new Random();
     }
 }

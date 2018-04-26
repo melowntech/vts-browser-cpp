@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Copyright (c) 2017 Melown Technologies SE
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,32 +24,35 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Windows.Forms;
-using vts;
-
 namespace vtsBrowserMinimalCs
 {
-    static class Program
+    partial class VtsGLControl
     {
-        [STAThread]
-        static void Main()
+        private System.ComponentModel.IContainer components = null;
+
+        protected override void Dispose(bool disposing)
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Window());
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
         }
 
-        public static void Draw(object sender, EventArgs args)
+        #region Component Designer generated code
+
+        private void InitializeComponent()
         {
-            VtsGL.glClearColor((float)random.NextDouble(), (float)random.NextDouble(), (float)random.NextDouble(), 1);
-            VtsGL.glClear(0x00004000); // GL_COLOR_BUFFER_BIT
-            var c = sender as VtsGLControl;
-            string s = "width: " + c.Width + ", height: " + c.Height;
-            BrowserInterop.vtsLog(4096, s);
+            this.SuspendLayout();
+            // 
+            // VtsGLControl
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Name = "VtsGLControl";
+            this.ResumeLayout(false);
         }
 
-        private static Random random = new Random();
+        #endregion
     }
 }

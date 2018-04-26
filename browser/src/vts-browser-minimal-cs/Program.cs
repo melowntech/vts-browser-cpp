@@ -27,12 +27,15 @@
 
 using vts;
 
-class Browser
+namespace vtsBrowserMinimalCs
 {
-    public static int Main()
+    class Program
     {
-        BrowserInterop.vtsLogSetFile("vts-browser-minimal-cs.log");
-        BrowserInterop.vtsLog(4096, "welcome, in the world of csharp");
-        return 0;
+        public static int Main()
+        {
+            BrowserInterop.vtsLogSetFile("vts-browser-minimal-cs.log");
+            BrowserInterop.vtsLog(4096, "welcome, in the world of csharp");
+            return 0;
+        }
     }
 }

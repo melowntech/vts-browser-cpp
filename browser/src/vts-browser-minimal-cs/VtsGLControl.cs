@@ -42,7 +42,12 @@ namespace vtsBrowserMinimalCs
             SetStyle(ControlStyles.UserPaint, true);
             SetStyle(ControlStyles.OptimizedDoubleBuffer, false);
         }
-        
+
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            // nothing
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             VtsGL.wglMakeCurrent(hDC, hRC);
@@ -95,11 +100,14 @@ namespace vtsBrowserMinimalCs
                 0x9126, 0x00000001, // core profile
                 0
             };
-            var hrc = VtsGL.CreateContextAttribsARB(hDC, IntPtr.Zero, attributes);
+            var hRC2 = VtsGL.CreateContextAttribsARB(hDC, IntPtr.Zero, attributes);
             VtsGL.wglMakeCurrent(IntPtr.Zero, IntPtr.Zero);
             VtsGL.wglDeleteContext(hRC);
-            VtsGL.wglMakeCurrent(hDC, hrc);
-            hRC = hrc;
+            VtsGL.wglMakeCurrent(hDC, hRC2);
+            hRC = hRC2;
+
+            // event
+            Init?.Invoke(this, new EventArgs());
 
             // update size
             OnSizeChanged(null);
@@ -112,6 +120,10 @@ namespace vtsBrowserMinimalCs
 
         void IDisposable.Dispose()
         {
+            VtsGL.wglMakeCurrent(hDC, hRC);
+            Fin?.Invoke(this, new EventArgs());
+            VtsGL.wglMakeCurrent(IntPtr.Zero, IntPtr.Zero);
+
             VtsGL.ReleaseDC(Handle, hDC);
             if (hRC != IntPtr.Zero)
             {
@@ -126,8 +138,10 @@ namespace vtsBrowserMinimalCs
 
         [Category("VtsGL")]
         public event DrawHandler Draw;
+        public event DrawHandler Init;
+        public event DrawHandler Fin;
     }
-    
+
     public delegate void DrawHandler(object sender, EventArgs args);
 
     public static class VtsGL
@@ -137,10 +151,7 @@ namespace vtsBrowserMinimalCs
         private const string User32 = "user32.dll";
         private const string OpenGL32 = "opengl32.dll";
 
-        static VtsGL()
-        {
-            LoadLibrary(OpenGL32);
-        }
+        private static IntPtr OpenGL32Module = LoadLibrary(OpenGL32);
 
         private static T GetDelegateFor<T>() where T : class
         {
@@ -161,7 +172,16 @@ namespace vtsBrowserMinimalCs
 
         private delegate IntPtr wglCreateContextAttribsARB(IntPtr hDC, IntPtr hShareContext, int[] attribList);
 
+        public static IntPtr AnyGlFnc(string name)
+        {
+            IntPtr p = wglGetProcAddress(name);
+            if (p == IntPtr.Zero)
+                p = GetProcAddress(OpenGL32Module, name);
+            return p;
+        }
+
         [DllImport(Kernel32, SetLastError = true)] public static extern IntPtr LoadLibrary(string lpFileName);
+        [DllImport(Kernel32, SetLastError = true)] public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
         [DllImport(OpenGL32, SetLastError = true)] public static extern void glClear(uint mask);
         [DllImport(OpenGL32, SetLastError = true)] public static extern void glClearColor(float red, float green, float blue, float alpha);
         [DllImport(OpenGL32, SetLastError = true)] public static extern void glViewport(int x, int y, int width, int height);
@@ -169,6 +189,7 @@ namespace vtsBrowserMinimalCs
         [DllImport(OpenGL32, SetLastError = true)] public static extern IntPtr wglCreateContext(IntPtr hdc);
         [DllImport(OpenGL32, SetLastError = true)] public static extern int wglDeleteContext(IntPtr hrc);
         [DllImport(OpenGL32, SetLastError = true)] public static extern IntPtr wglGetProcAddress(string name);
+        [DllImport(OpenGL32, SetLastError = true)] public static extern IntPtr wglGetCurrentContext();
         [DllImport(Gdi32, SetLastError = true)] public unsafe static extern int ChoosePixelFormat(IntPtr hDC, [In, MarshalAs(UnmanagedType.LPStruct)] PIXELFORMATDESCRIPTOR ppfd);
         [DllImport(Gdi32, SetLastError = true)] public unsafe static extern int SetPixelFormat(IntPtr hDC, int iPixelFormat, [In, MarshalAs(UnmanagedType.LPStruct)] PIXELFORMATDESCRIPTOR ppfd);
         [DllImport(Gdi32, SetLastError = true)] public static extern int SwapBuffers(IntPtr hDC);

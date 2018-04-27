@@ -54,7 +54,9 @@ namespace vtsBrowserMinimalCs
             this.vtsGLControl1.Name = "openGLControl1";
             this.vtsGLControl1.Size = new System.Drawing.Size(792, 467);
             this.vtsGLControl1.TabIndex = 0;
-            this.vtsGLControl1.Draw += new DrawHandler(Program.Draw);
+            this.vtsGLControl1.Init += new DrawHandler(Init);
+            this.vtsGLControl1.Draw += new DrawHandler(Draw);
+            this.vtsGLControl1.Fin += new DrawHandler(Fin);
             // 
             // FormSimpleDrawingSample
             // 

@@ -6,6 +6,8 @@ set(SRC_LIST
     DrawBase.cs
     Interop.cs
     Map.cs
+    Exception.cs
+    Utilities.cs
 )
 
 add_library(vts-browser-cs ${SRC_LIST})

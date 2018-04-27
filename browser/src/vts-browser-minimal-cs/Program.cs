@@ -27,7 +27,6 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
-using vts;
 
 namespace vtsBrowserMinimalCs
 {
@@ -40,16 +39,5 @@ namespace vtsBrowserMinimalCs
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Window());
         }
-
-        public static void Draw(object sender, EventArgs args)
-        {
-            VtsGL.glClearColor((float)random.NextDouble(), (float)random.NextDouble(), (float)random.NextDouble(), 1);
-            VtsGL.glClear(0x00004000); // GL_COLOR_BUFFER_BIT
-            var c = sender as VtsGLControl;
-            string s = "width: " + c.Width + ", height: " + c.Height;
-            BrowserInterop.vtsLog(4096, s);
-        }
-
-        private static Random random = new Random();
     }
 }

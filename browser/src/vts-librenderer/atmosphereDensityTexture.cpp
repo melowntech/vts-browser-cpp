@@ -197,7 +197,6 @@ void AtmosphereImpl::threadEntry()
     }
 }
 
-
 AtmosphereDensity::AtmosphereDensity()
 {
     impl = std::make_shared<AtmosphereImpl>();

@@ -26,6 +26,7 @@
 
 using System;
 using System.Windows.Forms;
+using vts;
 
 namespace vtsBrowserMinimalCs
 {
@@ -35,5 +36,47 @@ namespace vtsBrowserMinimalCs
         {
             InitializeComponent();
         }
+        
+        public void Init(object sender, EventArgs args)
+        {
+            Renderer.LoadGlFunctions(VtsGL.AnyGlFnc);
+            map = new Map("");
+            renderer = new Renderer();
+            map.DataInitialize();
+            map.RenderInitialize();
+            map.SetMapConfigPath("https://cdn.melown.com/mario/store/melown2015/map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
+            renderer.Initialize();
+            renderer.BindLoadFunctions(map);
+        }
+
+        public void Fin(object sender, EventArgs args)
+        {
+            renderer.Deinitialize();
+            map.RenderDeinitialize();
+            map.DataDeinitialize();
+            renderer = null;
+            map = null;
+        }
+
+        public void Draw(object sender, EventArgs args)
+        {
+            var c = sender as VtsGLControl;
+            if (c.Width <= 0 || c.Height <= 0)
+                return;
+
+            map.SetWindowSize((uint)c.Width, (uint)c.Height);
+            map.DataTick();
+            map.RenderTickPrepare(0);
+            map.RenderTickRender();
+
+            RenderOptions ro = renderer.Options;
+            ro.width = (uint)c.Width;
+            ro.height = (uint)c.Height;
+            renderer.Options = ro;
+            renderer.Render(map);
+        }
+
+        public Map map;
+        public Renderer renderer;
     }
 }

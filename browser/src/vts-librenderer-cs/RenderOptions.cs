@@ -32,15 +32,15 @@ namespace vts
     [StructLayout(LayoutKind.Sequential)]
     public struct RenderOptions
     {
-        uint width;
-        uint height;
-        uint targetFrameBuffer;
-        uint targetViewportX;
-        uint targetViewportY;
-        uint antialiasingSamples;
-        bool renderAtmosphere;
-        bool renderPolygonEdges;
-        bool colorToTargetFrameBuffer;
-        bool colorToTexture;
+        public uint width;
+        public uint height;
+        public uint targetFrameBuffer;
+        public uint targetViewportX;
+        public uint targetViewportY;
+        public uint antialiasingSamples;
+        [MarshalAs(UnmanagedType.I1)] public bool renderAtmosphere;
+        [MarshalAs(UnmanagedType.I1)] public bool renderPolygonEdges;
+        [MarshalAs(UnmanagedType.I1)] public bool colorToTargetFrameBuffer;
+        [MarshalAs(UnmanagedType.I1)] public bool colorToTexture;
     }
 }

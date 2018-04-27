@@ -32,15 +32,12 @@ namespace vts
     [StructLayout(LayoutKind.Sequential)]
     public struct CameraBase
     {
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-        double[] view;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-        double[] proj;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)]
-        double[] eye;
-        double near, far;
-        double aspect;
-        double fov;
-        bool mapProjected;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)] public double[] view;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)] public double[] proj;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)] public double[] eye;
+        public double near, far;
+        public double aspect;
+        public double fov;
+        public bool mapProjected;
     }
 }

@@ -29,15 +29,56 @@ using System.Runtime.InteropServices;
 
 namespace vts
 {
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DrawBase
+    public enum LogLevel : uint
     {
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)] public float[] mv;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 9)] public float[] uvm;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)] public float[] color;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)] public float[] uvClip;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)] public float[] center;
-        [MarshalAs(UnmanagedType.I1)] public bool externalUv;
-        [MarshalAs(UnmanagedType.I1)] public bool flatShading;
+        all =      0xfffffu,
+        none =     0x00000u,
+        debug =    0x0000fu,
+        info1 =    0x000f0u,
+        info2 =    0x00070u,
+        info3 =    0x00030u,
+        info4 =    0x00010u,
+        warn1 =    0x00f00u,
+        warn2 =    0x00700u,
+        warn3 =    0x00300u,
+        warn4 =    0x00100u,
+        err1 =     0x0f000u,
+        err2 =     0x07000u,
+        err3 =     0x03000u,
+        err4 =     0x01000u,
+        fatal =    0xf0000u,
+        default_ = info3 | warn2 | err2,
+        verbose =  info2 | warn2 | err2,
+        noDebug =  info1 | warn1 | err1,
+    }
+
+    public static class Util
+    {
+        public static void Log(LogLevel level, string message)
+        {
+            BrowserInterop.vtsLog((uint)level, message);
+        }
+
+        public static string CStringToSharp(IntPtr cstr)
+        {
+            return Marshal.PtrToStringAuto(cstr);
+        }
+
+        public static void CheckArray(double[] arr, uint expected)
+        {
+            if (arr.Rank != 1 || arr.Length != expected)
+            {
+                throw new VtsException(-10000, "Array length check failed.");
+            }
+        }
+
+        public static void CheckError()
+        {
+            int code = BrowserInterop.vtsErrCode();
+            if (code != 0)
+            {
+                throw new VtsException(code, CStringToSharp(BrowserInterop.vtsErrMsg()));
+            }
+        }
     }
 }

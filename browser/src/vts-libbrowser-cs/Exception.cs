@@ -25,19 +25,16 @@
  */
 
 using System;
-using System.Runtime.InteropServices;
 
 namespace vts
 {
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DrawBase
+    public class VtsException : Exception
     {
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)] public float[] mv;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 9)] public float[] uvm;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)] public float[] color;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)] public float[] uvClip;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)] public float[] center;
-        [MarshalAs(UnmanagedType.I1)] public bool externalUv;
-        [MarshalAs(UnmanagedType.I1)] public bool flatShading;
+        public VtsException(int code, string message) : base(message)
+        {
+            Code = code;
+        }
+
+        public int Code;
     }
 }

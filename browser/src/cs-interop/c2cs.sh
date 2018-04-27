@@ -43,8 +43,8 @@ grep -v '^ *$' | \
 awk '{gsub(/vtsH[^ ]*/,"IntPtr")} 1' - | \
 
 # replace ints
-awk '{gsub(/uint32/,"int")} 1' - | \
-awk '{gsub(/sint32/,"uint")} 1' - | \
+awk '{gsub(/uint32/,"uint")} 1' - | \
+awk '{gsub(/sint32/,"int")} 1' - | \
 
 # DllImport
 awk '{sub(/VTS_API/,"[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]\nVTS_API")} 1' - | \
@@ -60,6 +60,9 @@ awk '{sub(/VTS_API void \*/,"VTS_API IntPtr ")} 1' - | \
 sed 's/VTS_API const \([[:alnum:]]\+\) \*/VTS_API IntPtr /g' - | \
 sed 's/VTS_API \([[:alnum:]]\+\) \*/VTS_API IntPtr /g' - | \
 
+# return bool
+awk '{sub(/VTS_API bool /,"[return: MarshalAs(UnmanagedType.I1)]\nVTS_API boolret ")} 1' - | \
+
 # parameter string
 awk '{gsub(/const char \*/,"[MarshalAs(UnmanagedType.LPStr)] string ")} 1' - | \
 
@@ -70,6 +73,12 @@ sed 's/INOUTMARK/\[Out\]/g' - | \
 
 # parameter void*
 awk '{gsub(/void \*/,"IntPtr ")} 1' - | \
+
+# parameter bool
+awk '{gsub(/bool /,"[MarshalAs(UnmanagedType.I1)] bool ")} 1' - | \
+
+# boolret
+awk '{gsub(/boolret /,"bool ")} 1' - | \
 
 # out parameter
 sed 's/\([[:alnum:]]\+\) \*\([[:alnum:]]\+\)/out \1 \2/g' - | \

@@ -13,12 +13,13 @@ that brings VTS capabilities to your native C++ applications.
 
 - Simple -> minimal application using this library has about 200 LOC.
   See [vts-browser-minimal](https://github.com/Melown/vts-browser-cpp/wiki/examples-minimal).
-- Clean C++11 class-full API.
 - Highly flexible -> almost all aspects can be changed through configuration or callbacks.
 - Rendering API independent -> the library, on its own, does not render anything.
   Instead, it just tells the application what to render.
-  However, a convenient OpenGL-based rendering library is also provided.
-- Currently works on Windows, Linux, macOS and iOS.
+  - A convenient OpenGL-based rendering library is also provided.
+- Clean C++ API.
+  - C and C# binding are available too.
+- Works on Windows, Linux, macOS and iOS.
 
 ### WIP
 

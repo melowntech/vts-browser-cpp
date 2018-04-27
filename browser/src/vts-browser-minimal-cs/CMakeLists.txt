@@ -6,7 +6,6 @@ set(SRC_LIST
     VtsGLControl.Designer.cs
     Window.cs
     Window.Designer.cs
-    Program.cs
 )
 
 add_executable(vts-browser-minimal-cs ${SRC_LIST})

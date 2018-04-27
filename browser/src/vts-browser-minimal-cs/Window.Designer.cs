@@ -57,6 +57,9 @@ namespace vtsBrowserMinimalCs
             this.vtsGLControl1.Init += new DrawHandler(Init);
             this.vtsGLControl1.Draw += new DrawHandler(Draw);
             this.vtsGLControl1.Fin += new DrawHandler(Fin);
+            this.vtsGLControl1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.MapMousePress);
+            this.vtsGLControl1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.MapMouseMove);
+            this.vtsGLControl1.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.MapMouseWheel);
             // 
             // FormSimpleDrawingSample
             // 

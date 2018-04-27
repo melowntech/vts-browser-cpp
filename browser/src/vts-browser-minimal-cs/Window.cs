@@ -32,6 +32,14 @@ namespace vtsBrowserMinimalCs
 {
     public partial class Window : Form
     {
+        [STAThread]
+        static void Main()
+        {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new Window());
+        }
+
         public Window()
         {
             InitializeComponent();
@@ -76,6 +84,35 @@ namespace vtsBrowserMinimalCs
             renderer.Render(map);
         }
 
+        public void MapMousePress(object sender, MouseEventArgs e)
+        {
+            LastMouseX = e.X;
+            LastMouseY = e.Y;
+        }
+
+        public void MapMouseMove(object sender, MouseEventArgs e)
+        {
+            int xrel = e.X - LastMouseX;
+            int yrel = e.Y - LastMouseY;
+            LastMouseX = e.X;
+            LastMouseY = e.Y;
+            if (Math.Abs(xrel) > 100 || Math.Abs(yrel) > 100)
+                return; // ignore the move event if it was too far away
+            double[] p = new double[3];
+            p[0] = xrel;
+            p[1] = yrel;
+            if (e.Button == MouseButtons.Left)
+                map.Pan(p);
+            if (e.Button == MouseButtons.Right)
+                map.Rotate(p);
+        }
+        
+        public void MapMouseWheel(object sender, MouseEventArgs e)
+        {
+            map.Zoom(e.Delta / 120);
+        }
+
+        public int LastMouseX, LastMouseY;
         public Map map;
         public Renderer renderer;
     }

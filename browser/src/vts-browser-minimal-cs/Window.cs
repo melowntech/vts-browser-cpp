@@ -44,7 +44,7 @@ namespace vtsBrowserMinimalCs
         {
             InitializeComponent();
         }
-        
+
         public void Init(object sender, EventArgs args)
         {
             Renderer.LoadGlFunctions(VtsGL.AnyGlFnc);
@@ -106,7 +106,7 @@ namespace vtsBrowserMinimalCs
             if (e.Button == MouseButtons.Right)
                 map.Rotate(p);
         }
-        
+
         public void MapMouseWheel(object sender, MouseEventArgs e)
         {
             map.Zoom(e.Delta / 120);

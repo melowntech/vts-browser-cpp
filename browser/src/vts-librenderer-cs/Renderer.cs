@@ -69,15 +69,15 @@ namespace vts
         
         public void RenderCompass(double[] screenPosSize, double[] mapRotation)
         {
-            Util.CheckArray(screenPosSize, 3);
-            Util.CheckArray(mapRotation, 3);
+            Util.CheckArray(ref screenPosSize, 3);
+            Util.CheckArray(ref mapRotation, 3);
             RendererInterop.vtsRendererRenderCompas(Handle, screenPosSize, mapRotation);
             Util.CheckError();
         }
 
         public double[] GetWorldPosition(double[] screenPos)
         {
-            Util.CheckArray(screenPos, 2);
+            Util.CheckArray(ref screenPos, 2);
             double[] res = new double[3];
             RendererInterop.vtsRendererGetWorldPosition(Handle, screenPos, res);
             Util.CheckError();

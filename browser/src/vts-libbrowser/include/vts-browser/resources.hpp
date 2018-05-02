@@ -88,7 +88,7 @@ public:
     uint32 internalFormat;
 
     // raw texture data
-    // it has (width * height * components * gpuTypeSize) bytes
+    // it has (width * height * components * gpuTypeSize(type)) bytes
     // the rows are in no way aligned to multi-byte boundaries
     //   (GL_UNPACK_ALIGNMENT = 1)
     Buffer buffer;

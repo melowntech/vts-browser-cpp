@@ -38,12 +38,13 @@ namespace vts
         Custom2,
     }
 
-    public class Map : IDisposable
+    public partial class Map : IDisposable
     {
         public Map(string createOptions)
         {
             Handle = BrowserInterop.vtsMapCreate(createOptions);
             Util.CheckError();
+            AssignInternalCallbacks();
         }
 
         public void SetMapConfigPath(string mapConfigPath, string authPath = "", string sriPath = "")
@@ -137,14 +138,14 @@ namespace vts
 
         public void Pan(double[] value)
         {
-            Util.CheckArray(value, 3);
+            Util.CheckArray(ref value, 3);
             BrowserInterop.vtsMapPan(Handle, value);
             Util.CheckError();
         }
 
         public void Rotate(double[] value)
         {
-            Util.CheckArray(value, 3);
+            Util.CheckArray(ref value, 3);
             BrowserInterop.vtsMapRotate(Handle, value);
             Util.CheckError();
         }
@@ -176,14 +177,14 @@ namespace vts
 
         public void SetPositionPoint(double[] point)
         {
-            Util.CheckArray(point, 3);
+            Util.CheckArray(ref point, 3);
             BrowserInterop.vtsMapSetPositionPoint(Handle, point);
             Util.CheckError();
         }
 
         public void SetPositionRotation(double[] rot)
         {
-            Util.CheckArray(rot, 3);
+            Util.CheckArray(ref rot, 3);
             BrowserInterop.vtsMapSetPositionRotation(Handle, rot);
             Util.CheckError();
         }
@@ -273,7 +274,7 @@ namespace vts
 
         public double[] Convert(double[] point, Srs srsFrom, Srs srsTo)
         {
-            Util.CheckArray(point, 3);
+            Util.CheckArray(ref point, 3);
             double[] res = new double[3];
             BrowserInterop.vtsMapConvert(Handle, point, res, (uint)srsFrom, (uint)srsTo);
             Util.CheckError();

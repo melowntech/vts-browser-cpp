@@ -35,7 +35,7 @@ extern "C" {
 
 typedef void (*vtsResourceCallbackType)(vtsHMap map, vtsHResource resource);
 typedef void (*vtsStateCallbackType)(vtsHMap map);
-typedef void (*vtsCameraOverrideCallbackType)(vtsHMap map, double *values);
+typedef void (*vtsCameraOverrideCallbackType)(vtsHMap map, double values[]);
 typedef const char *(*vtsProjFinderCallbackType)(const char *name);
 
 VTS_API void vtsCallbacksLoadTexture(vtsHMap map,

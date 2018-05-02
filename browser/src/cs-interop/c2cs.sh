@@ -66,10 +66,13 @@ awk '{sub(/VTS_API bool /,"[return: MarshalAs(UnmanagedType.I1)]\nVTS_API boolre
 # parameter string
 awk '{gsub(/const char \*/,"[MarshalAs(UnmanagedType.LPStr)] string ")} 1' - | \
 
-# parameter array
+# sized parameter array
 sed 's/\(const \)\?\([[:alnum:]]\+\) \([[:alnum:]]\+\)\[\([[:digit:]]\+\)\]/INOUTMARK\1 \2\[\] \3/g' - | \
 sed 's/INOUTMARKconst /\[In\]/g' - | \
 sed 's/INOUTMARK/\[Out\]/g' - | \
+
+# any length parameter array
+sed 's/\(const \)\?\([[:alnum:]]\+\) \([[:alnum:]]\+\)\[\]/IntPtr \3/g' - | \
 
 # parameter void*
 awk '{gsub(/void \*/,"IntPtr ")} 1' - | \

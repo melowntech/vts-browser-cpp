@@ -724,14 +724,26 @@ void vtsGetMeshAttribute(vtsHResource resource, uint32 index,
         uint32 *type, bool *enable, bool *normalized)
 {
     C_BEGIN
-    const vts::GpuMeshSpec::VertexAttribute &a
+    if (index >= resource->m->attributes.size())
+    {
+        *offset = 0;
+        *stride = 0;
+        *components = 0;
+        *type = 0;
+        *enable = false;
+        *normalized = false;
+    }
+    else
+    {
+        const vts::GpuMeshSpec::VertexAttribute &a
             = resource->m->attributes[index];
-    *offset = a.offset;
-    *stride = a.stride;
-    *components = a.components;
-    *type = (uint32)a.type;
-    *enable = a.enable;
-    *normalized = a.normalized;
+        *offset = a.offset;
+        *stride = a.stride;
+        *components = a.components;
+        *type = (uint32)a.type;
+        *enable = a.enable;
+        *normalized = a.normalized;
+    }
     C_END
 }
 

@@ -25,6 +25,7 @@
  */
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace vts
@@ -64,12 +65,9 @@ namespace vts
             return Marshal.PtrToStringAuto(cstr);
         }
 
-        public static void CheckArray(double[] arr, uint expected)
+        public static void CheckArray(ref double[] arr, uint expected)
         {
-            if (arr.Rank != 1 || arr.Length != expected)
-            {
-                throw new VtsException(-10000, "Array length check failed.");
-            }
+            Debug.Assert(arr.Rank == 1 && arr.Length == expected);
         }
 
         public static void CheckError()

@@ -1,3 +1,10 @@
+vts-browser (0.14) melown-xenial; urgency=medium
+
+  * persistent mouse sensitivity setting
+  * improved culling
+
+ -- Tomas Maly <tomas.maly@melown.com>  Thu, 03 May 2018 15:43:44 +0200
+
 vts-browser (0.13) melown-xenial; urgency=medium
 
   * atmosphere

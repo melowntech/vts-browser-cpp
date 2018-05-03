@@ -65,7 +65,7 @@ namespace vts
             return Marshal.PtrToStringAuto(cstr);
         }
 
-        public static void CheckArray(ref double[] arr, uint expected)
+        public static void CheckArray(double[] arr, uint expected)
         {
             Debug.Assert(arr.Rank == 1 && arr.Length == expected);
         }

@@ -3,8 +3,7 @@ project(vts-browser-cs CSharp)
 
 set(SRC_LIST
     Callbacks.cs
-    CameraBase.cs
-    DrawBase.cs
+    Draws.cs
     Exception.cs
     Interop.cs
     Map.cs

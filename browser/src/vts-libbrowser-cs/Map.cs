@@ -138,14 +138,14 @@ namespace vts
 
         public void Pan(double[] value)
         {
-            Util.CheckArray(ref value, 3);
+            Util.CheckArray(value, 3);
             BrowserInterop.vtsMapPan(Handle, value);
             Util.CheckError();
         }
 
         public void Rotate(double[] value)
         {
-            Util.CheckArray(ref value, 3);
+            Util.CheckArray(value, 3);
             BrowserInterop.vtsMapRotate(Handle, value);
             Util.CheckError();
         }
@@ -177,14 +177,14 @@ namespace vts
 
         public void SetPositionPoint(double[] point)
         {
-            Util.CheckArray(ref point, 3);
+            Util.CheckArray(point, 3);
             BrowserInterop.vtsMapSetPositionPoint(Handle, point);
             Util.CheckError();
         }
 
         public void SetPositionRotation(double[] rot)
         {
-            Util.CheckArray(ref rot, 3);
+            Util.CheckArray(rot, 3);
             BrowserInterop.vtsMapSetPositionRotation(Handle, rot);
             Util.CheckError();
         }
@@ -274,11 +274,16 @@ namespace vts
 
         public double[] Convert(double[] point, Srs srsFrom, Srs srsTo)
         {
-            Util.CheckArray(ref point, 3);
+            Util.CheckArray(point, 3);
             double[] res = new double[3];
             BrowserInterop.vtsMapConvert(Handle, point, res, (uint)srsFrom, (uint)srsTo);
             Util.CheckError();
             return res;
+        }
+
+        public Draws Draws()
+        {
+            return new Draws(this);
         }
 
         public void Dispose()

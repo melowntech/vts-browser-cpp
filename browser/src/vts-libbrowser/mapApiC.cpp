@@ -1020,7 +1020,10 @@ vtsHDrawsGroup vtsDrawsInfographic(vtsHMap map)
 uint32 vtsDrawsCount(vtsHDrawsGroup group)
 {
     C_BEGIN
-    return group->draws->size();
+    if (group)
+        return group->draws->size();
+    else
+        return 0;
     C_END
     return 0;
 }

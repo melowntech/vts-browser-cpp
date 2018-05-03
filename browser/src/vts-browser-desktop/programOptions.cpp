@@ -139,16 +139,23 @@ bool programOptions(vts::MapCreateOptions &createOptions,
     if (vm.count("help"))
     {
         std::cout << "Usage: " << argv[0] << " [options] [--]"
-                  << " <urls> [urls ...]"
+                  << " [urls ...]"
                   << std::endl << desc << std::endl;
         return false;
     }
 
     if (configs.empty())
-        throw std::runtime_error("At least one mapconfig url is required.");
-
-    for (auto &it : configs)
-        appOptions.paths.push_back(parseConfigPaths(it, auth, sri));
+    {
+        MapPaths p;
+        p.mapConfig = "https://cdn.melown.com/mario/store/melown2015/"
+            "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json";
+        appOptions.paths.push_back(p);
+    }
+    else
+    {
+        for (auto &it : configs)
+            appOptions.paths.push_back(parseConfigPaths(it, auth, sri));
+    }
 
     return true;
 }

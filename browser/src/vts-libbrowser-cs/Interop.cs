@@ -32,7 +32,7 @@ using System.Runtime.InteropServices;
 
 namespace vts
 {
-	public class BrowserInterop
+	public static class BrowserInterop
 	{
 
 #if DEBUG

@@ -32,7 +32,7 @@ using System.Runtime.InteropServices;
 
 namespace vts
 {
-	public class CLASSNAME
+	public static class CLASSNAME
 	{
 
 #if DEBUG

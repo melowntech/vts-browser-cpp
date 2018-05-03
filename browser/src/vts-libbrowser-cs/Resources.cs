@@ -53,12 +53,7 @@ namespace vts
         TriangleFan = 0x0006,
     };
 
-    public interface IResourceBase
-    {
-        void Load(IntPtr handle);
-    }
-
-    public class Texture : IResourceBase
+    public class Texture
     {
         public uint width;
         public uint height;
@@ -91,7 +86,7 @@ namespace vts
         public bool normalized;
     };
 
-    public class Mesh : IResourceBase
+    public class Mesh
     {
         public FaceMode faceMode;
         public List<VertexAttribute> attributes;

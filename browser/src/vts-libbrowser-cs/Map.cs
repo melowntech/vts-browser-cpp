@@ -42,7 +42,7 @@ namespace vts
     {
         public Map(string createOptions)
         {
-            Handle = BrowserInterop.vtsMapCreate(createOptions);
+            handle = BrowserInterop.vtsMapCreate(createOptions);
             Util.CheckError();
             AssignInternalCallbacks();
         }
@@ -284,9 +284,11 @@ namespace vts
         public void Dispose()
         {
             BrowserInterop.vtsMapDestroy(Handle);
+            handle = (IntPtr)0;
             Util.CheckError();
         }
 
-        public IntPtr Handle { get; }
+        protected IntPtr handle;
+        public IntPtr Handle { get { return handle; } }
     }
 }

@@ -34,33 +34,75 @@ namespace vts
     {
         public void AssignInternalCallbacks()
         {
-            BrowserInterop.vtsCallbacksMapconfigAvailable(Handle, MapconfigAvailableCallback);
-            BrowserInterop.vtsCallbacksMapconfigReady(Handle, MapconfigReadyCallback);
+            if (MapconfigAvailableDelegate == null)
+                MapconfigAvailableDelegate = new BrowserInterop.vtsStateCallbackType(MapconfigAvailableCallback);
+            BrowserInterop.vtsCallbacksMapconfigAvailable(Handle, MapconfigAvailableDelegate);
             Util.CheckError();
-            BrowserInterop.vtsCallbacksCameraEye(Handle, CameraEyeCallback);
-            BrowserInterop.vtsCallbacksCameraTarget(Handle, CameraTargetCallback);
-            BrowserInterop.vtsCallbacksCameraUp(Handle, CameraUpCallback);
-            BrowserInterop.vtsCallbacksCameraFovAspectNearFar(Handle, CameraFovAspectNearFarCallback);
-            BrowserInterop.vtsCallbacksCameraView(Handle, CameraViewCallback);
-            BrowserInterop.vtsCallbacksCameraProj(Handle, CameraProjCallback);
+
+            if (MapconfigReadyDelegate == null)
+                MapconfigReadyDelegate = new BrowserInterop.vtsStateCallbackType(MapconfigReadyCallback);
+            BrowserInterop.vtsCallbacksMapconfigReady(Handle, MapconfigReadyDelegate);
             Util.CheckError();
-            BrowserInterop.vtsCallbacksLoadTexture(Handle, LoadTextureCallback);
-            BrowserInterop.vtsCallbacksLoadMesh(Handle, LoadMeshCallback);
+
+            if (CameraEyeDelegate == null)
+                CameraEyeDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraEyeCallback);
+            BrowserInterop.vtsCallbacksCameraEye(Handle, CameraEyeDelegate);
             Util.CheckError();
+
+            if (CameraTargetDelegate == null)
+                CameraTargetDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraTargetCallback);
+            BrowserInterop.vtsCallbacksCameraTarget(Handle, CameraTargetDelegate);
+            Util.CheckError();
+
+            if (CameraUpDelegate == null)
+                CameraUpDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraUpCallback);
+            BrowserInterop.vtsCallbacksCameraUp(Handle, CameraUpDelegate);
+            Util.CheckError();
+
+            if (CameraFovAspectNearFarDelegate == null)
+                CameraFovAspectNearFarDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraFovAspectNearFarCallback);
+            BrowserInterop.vtsCallbacksCameraFovAspectNearFar(Handle, CameraFovAspectNearFarDelegate);
+            Util.CheckError();
+
+            if (CameraViewDelegate == null)
+                CameraViewDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraViewCallback);
+            BrowserInterop.vtsCallbacksCameraView(Handle, CameraViewDelegate);
+            Util.CheckError();
+
+            if (CameraProjDelegate == null)
+                CameraProjDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraProjCallback);
+            BrowserInterop.vtsCallbacksCameraProj(Handle, CameraProjDelegate);
+            Util.CheckError();
+
+            if (LoadTextureDelegate == null)
+                LoadTextureDelegate = new BrowserInterop.vtsResourceCallbackType(LoadTextureCallback);
+            BrowserInterop.vtsCallbacksLoadTexture(Handle, LoadTextureDelegate);
+            Util.CheckError();
+
+            if (LoadMeshDelegate == null)
+                LoadMeshDelegate = new BrowserInterop.vtsResourceCallbackType(LoadMeshCallback);
+            BrowserInterop.vtsCallbacksLoadMesh(Handle, LoadMeshDelegate);
+            Util.CheckError();
+
+            if (UnloadResourceDelegate == null)
+                UnloadResourceDelegate = new BrowserInterop.vtsResourceDeleterCallbackType(UnloadResourceCallback);
         }
 
+        private BrowserInterop.vtsStateCallbackType MapconfigAvailableDelegate;
         private void MapconfigAvailableCallback(IntPtr h)
         {
             Debug.Assert(h == Handle);
             EventMapconfigAvailable?.Invoke();
         }
 
+        private BrowserInterop.vtsStateCallbackType MapconfigReadyDelegate;
         private void MapconfigReadyCallback(IntPtr h)
         {
             Debug.Assert(h == Handle);
             EventMapconfigReady?.Invoke();
         }
 
+        private BrowserInterop.vtsCameraOverrideCallbackType CameraEyeDelegate;
         private void CameraEyeCallback(IntPtr h, IntPtr values)
         {
             Debug.Assert(h == Handle);
@@ -73,6 +115,7 @@ namespace vts
             }
         }
 
+        private BrowserInterop.vtsCameraOverrideCallbackType CameraTargetDelegate;
         private void CameraTargetCallback(IntPtr h, IntPtr values)
         {
             Debug.Assert(h == Handle);
@@ -85,6 +128,7 @@ namespace vts
             }
         }
 
+        private BrowserInterop.vtsCameraOverrideCallbackType CameraUpDelegate;
         private void CameraUpCallback(IntPtr h, IntPtr values)
         {
             Debug.Assert(h == Handle);
@@ -97,6 +141,7 @@ namespace vts
             }
         }
 
+        private BrowserInterop.vtsCameraOverrideCallbackType CameraFovAspectNearFarDelegate;
         private void CameraFovAspectNearFarCallback(IntPtr h, IntPtr values)
         {
             Debug.Assert(h == Handle);
@@ -109,6 +154,7 @@ namespace vts
             }
         }
 
+        private BrowserInterop.vtsCameraOverrideCallbackType CameraViewDelegate;
         private void CameraViewCallback(IntPtr h, IntPtr values)
         {
             Debug.Assert(h == Handle);
@@ -121,6 +167,7 @@ namespace vts
             }
         }
 
+        private BrowserInterop.vtsCameraOverrideCallbackType CameraProjDelegate;
         private void CameraProjCallback(IntPtr h, IntPtr values)
         {
             Debug.Assert(h == Handle);
@@ -133,6 +180,7 @@ namespace vts
             }
         }
 
+        private BrowserInterop.vtsResourceCallbackType LoadTextureDelegate;
         private void LoadTextureCallback(IntPtr h, IntPtr r)
         {
             Debug.Assert(h == Handle);
@@ -142,12 +190,13 @@ namespace vts
                 t.Load(r);
                 BrowserInterop.vtsSetResourceMemoryCost(r, 0, (uint)t.data.Length);
                 Util.CheckError();
-                IntPtr n = EventLoadTexture.Invoke(t);
-                BrowserInterop.vtsSetResourceUserData(r, n, UnloadResourceCallback);
+                GCHandle hnd = GCHandle.Alloc(EventLoadTexture.Invoke(t));
+                BrowserInterop.vtsSetResourceUserData(r, GCHandle.ToIntPtr(hnd), UnloadResourceDelegate);
                 Util.CheckError();
             }
         }
 
+        private BrowserInterop.vtsResourceCallbackType LoadMeshDelegate;
         private void LoadMeshCallback(IntPtr h, IntPtr r)
         {
             Debug.Assert(h == Handle);
@@ -157,15 +206,17 @@ namespace vts
                 m.Load(r);
                 BrowserInterop.vtsSetResourceMemoryCost(r, 0, (uint)(m.vertices == null ? 0 : m.vertices.Length) + (uint)(m.indices == null ? 0 : m.indices.Length) * 2);
                 Util.CheckError();
-                IntPtr n = EventLoadMesh.Invoke(m);
-                BrowserInterop.vtsSetResourceUserData(r, n, UnloadResourceCallback);
+                GCHandle hnd = GCHandle.Alloc(EventLoadMesh.Invoke(m));
+                BrowserInterop.vtsSetResourceUserData(r, GCHandle.ToIntPtr(hnd), UnloadResourceDelegate);
                 Util.CheckError();
             }
         }
 
-        private void UnloadResourceCallback(IntPtr n)
+        private BrowserInterop.vtsResourceDeleterCallbackType UnloadResourceDelegate;
+        private void UnloadResourceCallback(IntPtr ptr)
         {
-            EventUnloadResource?.Invoke(n);
+            GCHandle hnd = GCHandle.FromIntPtr(ptr);
+            hnd.Free();
         }
 
         public delegate void MapStateHandler();
@@ -181,13 +232,9 @@ namespace vts
         public event CameraOverrideHandler EventCameraView;
         public event CameraOverrideHandler EventCameraProj;
 
-        public delegate IntPtr LoadTextureHandler(Texture texture);
+        public delegate Object LoadTextureHandler(Texture texture);
         public event LoadTextureHandler EventLoadTexture;
-
-        public delegate IntPtr LoadMeshHandler(Mesh mesh);
+        public delegate Object LoadMeshHandler(Mesh mesh);
         public event LoadMeshHandler EventLoadMesh;
-
-        public delegate void UnloadResourceHandler(IntPtr resource);
-        public event UnloadResourceHandler EventUnloadResource;
     }
 }

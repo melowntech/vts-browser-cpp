@@ -32,7 +32,7 @@ using System.Runtime.InteropServices;
 
 namespace vts
 {
-	public class RendererInterop
+	public static class RendererInterop
 	{
 
 #if DEBUG

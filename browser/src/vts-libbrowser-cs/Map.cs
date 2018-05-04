@@ -44,6 +44,7 @@ namespace vts
         {
             handle = BrowserInterop.vtsMapCreate(createOptions);
             Util.CheckError();
+            AssignInternalDelegates();
             AssignInternalCallbacks();
         }
 

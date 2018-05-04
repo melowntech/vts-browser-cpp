@@ -62,10 +62,15 @@ namespace vts
 
         public static string CStringToSharp(IntPtr cstr)
         {
-            return Marshal.PtrToStringAuto(cstr);
+            return Marshal.PtrToStringAnsi(cstr);
         }
 
         public static void CheckArray(double[] arr, uint expected)
+        {
+            Debug.Assert(arr.Rank == 1 && arr.Length == expected);
+        }
+
+        public static void CheckArray(float[] arr, uint expected)
         {
             Debug.Assert(arr.Rank == 1 && arr.Length == expected);
         }
@@ -75,7 +80,9 @@ namespace vts
             int code = BrowserInterop.vtsErrCode();
             if (code != 0)
             {
-                throw new VtsException(code, CStringToSharp(BrowserInterop.vtsErrMsg()));
+                string msg = CStringToSharp(BrowserInterop.vtsErrMsg());
+                BrowserInterop.vtsErrClear();
+                throw new VtsException(code, msg);
             }
         }
     }

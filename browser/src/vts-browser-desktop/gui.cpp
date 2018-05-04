@@ -913,7 +913,7 @@ public:
                 S("Opaque: ", d.opaque.size(), "");
                 S("Transparent: ", d.transparent.size(), "");
                 S("Geodata: ", d.geodata.size(), "");
-                S("Infographic: ", d.Infographic.size(), "");
+                S("Infographics: ", d.Infographics.size(), "");
 
                 nk_tree_pop(&ctx);
             }

@@ -111,7 +111,7 @@ public static extern IntPtr vtsDrawsTransparent(IntPtr map);
 public static extern IntPtr vtsDrawsGeodata(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsDrawsInfographic(IntPtr map);
+public static extern IntPtr vtsDrawsInfographics(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern uint vtsDrawsCount(IntPtr group);

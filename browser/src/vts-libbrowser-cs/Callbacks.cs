@@ -32,60 +32,43 @@ namespace vts
 {
     public partial class Map
     {
+        private void AssignInternalDelegates()
+        {
+            MapconfigAvailableDelegate = new BrowserInterop.vtsStateCallbackType(MapconfigAvailableCallback);
+            MapconfigReadyDelegate = new BrowserInterop.vtsStateCallbackType(MapconfigReadyCallback);
+            CameraEyeDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraEyeCallback);
+            CameraTargetDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraTargetCallback);
+            CameraUpDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraUpCallback);
+            CameraFovAspectNearFarDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraFovAspectNearFarCallback);
+            CameraViewDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraViewCallback);
+            CameraProjDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraProjCallback);
+            LoadTextureDelegate = new BrowserInterop.vtsResourceCallbackType(LoadTextureCallback);
+            LoadMeshDelegate = new BrowserInterop.vtsResourceCallbackType(LoadMeshCallback);
+            UnloadResourceDelegate = new BrowserInterop.vtsResourceDeleterCallbackType(UnloadResourceCallback);
+        }
+
         public void AssignInternalCallbacks()
         {
-            if (MapconfigAvailableDelegate == null)
-                MapconfigAvailableDelegate = new BrowserInterop.vtsStateCallbackType(MapconfigAvailableCallback);
             BrowserInterop.vtsCallbacksMapconfigAvailable(Handle, MapconfigAvailableDelegate);
             Util.CheckError();
-
-            if (MapconfigReadyDelegate == null)
-                MapconfigReadyDelegate = new BrowserInterop.vtsStateCallbackType(MapconfigReadyCallback);
             BrowserInterop.vtsCallbacksMapconfigReady(Handle, MapconfigReadyDelegate);
             Util.CheckError();
-
-            if (CameraEyeDelegate == null)
-                CameraEyeDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraEyeCallback);
             BrowserInterop.vtsCallbacksCameraEye(Handle, CameraEyeDelegate);
             Util.CheckError();
-
-            if (CameraTargetDelegate == null)
-                CameraTargetDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraTargetCallback);
             BrowserInterop.vtsCallbacksCameraTarget(Handle, CameraTargetDelegate);
             Util.CheckError();
-
-            if (CameraUpDelegate == null)
-                CameraUpDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraUpCallback);
             BrowserInterop.vtsCallbacksCameraUp(Handle, CameraUpDelegate);
             Util.CheckError();
-
-            if (CameraFovAspectNearFarDelegate == null)
-                CameraFovAspectNearFarDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraFovAspectNearFarCallback);
             BrowserInterop.vtsCallbacksCameraFovAspectNearFar(Handle, CameraFovAspectNearFarDelegate);
             Util.CheckError();
-
-            if (CameraViewDelegate == null)
-                CameraViewDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraViewCallback);
             BrowserInterop.vtsCallbacksCameraView(Handle, CameraViewDelegate);
             Util.CheckError();
-
-            if (CameraProjDelegate == null)
-                CameraProjDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraProjCallback);
             BrowserInterop.vtsCallbacksCameraProj(Handle, CameraProjDelegate);
             Util.CheckError();
-
-            if (LoadTextureDelegate == null)
-                LoadTextureDelegate = new BrowserInterop.vtsResourceCallbackType(LoadTextureCallback);
             BrowserInterop.vtsCallbacksLoadTexture(Handle, LoadTextureDelegate);
             Util.CheckError();
-
-            if (LoadMeshDelegate == null)
-                LoadMeshDelegate = new BrowserInterop.vtsResourceCallbackType(LoadMeshCallback);
             BrowserInterop.vtsCallbacksLoadMesh(Handle, LoadMeshDelegate);
             Util.CheckError();
-
-            if (UnloadResourceDelegate == null)
-                UnloadResourceDelegate = new BrowserInterop.vtsResourceDeleterCallbackType(UnloadResourceCallback);
         }
 
         private BrowserInterop.vtsStateCallbackType MapconfigAvailableDelegate;
@@ -111,6 +94,7 @@ namespace vts
                 double[] tmp = new double[3];
                 Marshal.Copy(values, tmp, 0, 3);
                 EventCameraEye.Invoke(ref tmp);
+                Util.CheckArray(tmp, 3);
                 Marshal.Copy(tmp, 0, values, 3);
             }
         }
@@ -124,6 +108,7 @@ namespace vts
                 double[] tmp = new double[3];
                 Marshal.Copy(values, tmp, 0, 3);
                 EventCameraTarget.Invoke(ref tmp);
+                Util.CheckArray(tmp, 3);
                 Marshal.Copy(tmp, 0, values, 3);
             }
         }
@@ -137,6 +122,7 @@ namespace vts
                 double[] tmp = new double[3];
                 Marshal.Copy(values, tmp, 0, 3);
                 EventCameraUp.Invoke(ref tmp);
+                Util.CheckArray(tmp, 3);
                 Marshal.Copy(tmp, 0, values, 3);
             }
         }
@@ -163,6 +149,7 @@ namespace vts
                 double[] tmp = new double[16];
                 Marshal.Copy(values, tmp, 0, 16);
                 EventCameraView.Invoke(ref tmp);
+                Util.CheckArray(tmp, 16);
                 Marshal.Copy(tmp, 0, values, 16);
             }
         }
@@ -176,6 +163,7 @@ namespace vts
                 double[] tmp = new double[16];
                 Marshal.Copy(values, tmp, 0, 16);
                 EventCameraProj.Invoke(ref tmp);
+                Util.CheckArray(tmp, 16);
                 Marshal.Copy(tmp, 0, values, 16);
             }
         }

@@ -1009,10 +1009,10 @@ vtsHDrawsGroup vtsDrawsGeodata(vtsHMap map)
     return nullptr;
 }
 
-vtsHDrawsGroup vtsDrawsInfographic(vtsHMap map)
+vtsHDrawsGroup vtsDrawsInfographics(vtsHMap map)
 {
     C_BEGIN
-    return createDrawIterator(map->p->draws().Infographic);
+    return createDrawIterator(map->p->draws().Infographics);
     C_END
     return nullptr;
 }

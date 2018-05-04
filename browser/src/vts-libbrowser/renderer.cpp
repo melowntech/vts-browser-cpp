@@ -228,7 +228,7 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
                 * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
         task.color = vec3to4f(trav->surface->color, task.color(3));
         if (task.ready())
-            draws.Infographic.emplace_back(task, this);
+            draws.Infographics.emplace_back(task, this);
     }
 
     // mesh box
@@ -242,7 +242,7 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
             task.mesh->priority = std::numeric_limits<float>::infinity();
             task.color = vec3to4f(trav->surface->color, task.color(3));
             if (task.ready())
-                draws.Infographic.emplace_back(task, this);
+                draws.Infographics.emplace_back(task, this);
         }
     }
 
@@ -282,7 +282,7 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
                 vec3 a = trav->cornersPhys[cora[i]];
                 vec3 b = trav->cornersPhys[corb[i]];
                 task.model = lookAt(a, b);
-                draws.Infographic.emplace_back(task, this);
+                draws.Infographics.emplace_back(task, this);
             }
         }
     }
@@ -435,7 +435,7 @@ void MapImpl::renderTickRender()
         traverseRender(it->traverseRoot.get());
     renderer.credits.tick(credits);
     for (const RenderTask &r : navigation.renders)
-        draws.Infographic.emplace_back(r, this);
+        draws.Infographics.emplace_back(r, this);
 
     draws.sortOpaqueFrontToBack();
 }
@@ -571,7 +571,7 @@ void MapImpl::updateCamera()
                 vec3 a = corners[cora[i]];
                 vec3 b = corners[corb[i]];
                 task.model = lookAt(a, b);
-                draws.Infographic.emplace_back(task, this);
+                draws.Infographics.emplace_back(task, this);
             }
         }
     }
@@ -588,7 +588,7 @@ void MapImpl::updateCamera()
         r.model = translationMatrix(phys)
                 * scaleMatrix(pos.verticalExtent * 0.015);
         if (r.ready())
-            draws.Infographic.emplace_back(r, this);
+            draws.Infographics.emplace_back(r, this);
     }
 
     // render target position
@@ -603,7 +603,7 @@ void MapImpl::updateCamera()
         r.model = translationMatrix(phys)
                 * scaleMatrix(navigation.targetViewExtent * 0.015);
         if (r.ready())
-            draws.Infographic.emplace_back(r, this);
+            draws.Infographics.emplace_back(r, this);
     }
 
     // update draws camera

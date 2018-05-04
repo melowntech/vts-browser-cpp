@@ -404,7 +404,7 @@ public:
 		CHECK_GL("rendered geodata");
 
         // render infographics
-        for (const DrawTask &t : draws->Infographic)
+        for (const DrawTask &t : draws->Infographics)
             drawInfographic(t);
 		CHECK_GL("rendered infographics");
 

@@ -68,7 +68,7 @@ namespace vts
         public List<DrawTask> opaque;
         public List<DrawTask> transparent;
         public List<DrawTask> geodata;
-        public List<DrawTask> infographic;
+        public List<DrawTask> infographics;
 
         private Object Load(IntPtr ptr)
         {
@@ -108,7 +108,7 @@ namespace vts
             Load(out opaque, BrowserInterop.vtsDrawsOpaque(map.Handle));
             Load(out transparent, BrowserInterop.vtsDrawsTransparent(map.Handle));
             Load(out geodata, BrowserInterop.vtsDrawsGeodata(map.Handle));
-            Load(out infographic, BrowserInterop.vtsDrawsInfographic(map.Handle));
+            Load(out infographics, BrowserInterop.vtsDrawsInfographics(map.Handle));
         }
     }
 }

@@ -72,7 +72,6 @@ namespace vts
 
         private Object Load(IntPtr ptr)
         {
-            Util.CheckError();
             if (ptr == IntPtr.Zero)
                 return null;
             GCHandle hnd = GCHandle.FromIntPtr(ptr);
@@ -88,12 +87,13 @@ namespace vts
             for (uint i = 0; i < cnt; i++)
             {
                 DrawTask t;
-                t.mesh = Load(BrowserInterop.vtsDrawsMesh(group, i));
-                t.texColor = Load(BrowserInterop.vtsDrawsTexColor(group, i));
-                t.texMask = Load(BrowserInterop.vtsDrawsTexMask(group, i));
-                IntPtr dataPtr = BrowserInterop.vtsDrawsDetail(group, i);
+                IntPtr pm, ptc, ptm;
+                IntPtr dataPtr = BrowserInterop.vtsDrawsAllInOne(group, i, out pm, out ptc, out ptm);
                 Util.CheckError();
                 t.data = (DrawBase)Marshal.PtrToStructure(dataPtr, typeof(DrawBase));
+                t.mesh = Load(pm);
+                t.texColor = Load(ptc);
+                t.texMask = Load(ptm);
                 tasks.Add(t);
             }
             BrowserInterop.vtsDrawsDestroy(group);

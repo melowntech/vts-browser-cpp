@@ -78,37 +78,46 @@ namespace vts
             return hnd.Target;
         }
 
-        private void Load(out List<DrawTask> tasks, IntPtr group)
+        private void Load(ref List<DrawTask> tasks, IntPtr group)
         {
             Util.CheckError();
-            uint cnt = BrowserInterop.vtsDrawsCount(group);
-            Util.CheckError();
-            tasks = new List<DrawTask>((int)cnt);
-            for (uint i = 0; i < cnt; i++)
+            try
             {
-                DrawTask t;
-                IntPtr pm, ptc, ptm;
-                IntPtr dataPtr = BrowserInterop.vtsDrawsAllInOne(group, i, out pm, out ptc, out ptm);
+                uint cnt = BrowserInterop.vtsDrawsCount(group);
                 Util.CheckError();
-                t.data = (DrawBase)Marshal.PtrToStructure(dataPtr, typeof(DrawBase));
-                t.mesh = Load(pm);
-                t.texColor = Load(ptc);
-                t.texMask = Load(ptm);
-                tasks.Add(t);
+                if (tasks == null)
+                    tasks = new List<DrawTask>((int)cnt);
+                else
+                    tasks.Clear();
+                for (uint i = 0; i < cnt; i++)
+                {
+                    DrawTask t;
+                    IntPtr pm, ptc, ptm;
+                    IntPtr dataPtr = BrowserInterop.vtsDrawsAllInOne(group, i, out pm, out ptc, out ptm);
+                    Util.CheckError();
+                    t.data = (DrawBase)Marshal.PtrToStructure(dataPtr, typeof(DrawBase));
+                    t.mesh = Load(pm);
+                    t.texColor = Load(ptc);
+                    t.texMask = Load(ptm);
+                    tasks.Add(t);
+                }
             }
-            BrowserInterop.vtsDrawsDestroy(group);
-            Util.CheckError();
+            finally
+            {
+                BrowserInterop.vtsDrawsDestroy(group);
+                Util.CheckError();
+            }
         }
 
-        public Draws(Map map)
+        public void Load(Map map)
         {
             IntPtr camPtr = BrowserInterop.vtsDrawsCamera(map.Handle);
             Util.CheckError();
             camera = (CameraBase)Marshal.PtrToStructure(camPtr, typeof(CameraBase));
-            Load(out opaque, BrowserInterop.vtsDrawsOpaque(map.Handle));
-            Load(out transparent, BrowserInterop.vtsDrawsTransparent(map.Handle));
-            Load(out geodata, BrowserInterop.vtsDrawsGeodata(map.Handle));
-            Load(out infographics, BrowserInterop.vtsDrawsInfographics(map.Handle));
+            Load(ref opaque, BrowserInterop.vtsDrawsOpaque(map.Handle));
+            Load(ref transparent, BrowserInterop.vtsDrawsTransparent(map.Handle));
+            Load(ref geodata, BrowserInterop.vtsDrawsGeodata(map.Handle));
+            Load(ref infographics, BrowserInterop.vtsDrawsInfographics(map.Handle));
         }
     }
 }

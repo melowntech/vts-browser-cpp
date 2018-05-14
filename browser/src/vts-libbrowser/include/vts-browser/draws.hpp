@@ -56,7 +56,7 @@ public:
     std::vector<DrawTask> opaque;
     std::vector<DrawTask> transparent;
     std::vector<DrawTask> geodata;
-    std::vector<DrawTask> Infographics;
+    std::vector<DrawTask> infographics;
 
     struct VTS_API Camera : public vtsCCameraBase
     {} camera;

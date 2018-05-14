@@ -143,9 +143,13 @@ typedef struct vtsCDrawsGroup
 typedef struct vtsCResource
 {
     vts::ResourceInfo *r;
-    vts::GpuMeshSpec *m;
-    vts::GpuTextureSpec *t;
-    vtsCResource() : r(nullptr), m(nullptr), t(nullptr) {}
+    union Ptr
+    {
+        vts::GpuMeshSpec *m;
+        vts::GpuTextureSpec *t;
+        Ptr() : m(nullptr) {}
+    } ptr;
+    vtsCResource() : r(nullptr) {}
 } vtsCResource;
 
 sint32 vtsErrCode()
@@ -660,16 +664,16 @@ void vtsGetTextureResolution(vtsHResource resource,
         uint32 *width, uint32 *height, uint32 *components)
 {
     C_BEGIN
-    *width = resource->t->width;
-    *height = resource->t->height;
-    *components = resource->t->components;
+    *width = resource->ptr.t->width;
+    *height = resource->ptr.t->height;
+    *components = resource->ptr.t->components;
     C_END
 }
 
 uint32 vtsGetTextureType(vtsHResource resource)
 {
     C_BEGIN
-    return (uint32)resource->t->type;
+    return (uint32)resource->ptr.t->type;
     C_END
     return 0;
 }
@@ -677,7 +681,7 @@ uint32 vtsGetTextureType(vtsHResource resource)
 uint32 vtsGetTextureInternalFormat(vtsHResource resource)
 {
     C_BEGIN
-    return resource->t->internalFormat;
+    return resource->ptr.t->internalFormat;
     C_END
     return 0;
 }
@@ -686,15 +690,15 @@ void vtsGetTextureBuffer(vtsHResource resource,
         void **data, uint32 *size)
 {
     C_BEGIN
-    *data = resource->t->buffer.data();
-    *size = resource->t->buffer.size();
+    *data = resource->ptr.t->buffer.data();
+    *size = resource->ptr.t->buffer.size();
     C_END
 }
 
 uint32 vtsGetMeshFaceMode(vtsHResource resource)
 {
     C_BEGIN
-    return (uint32)resource->m->faceMode;
+    return (uint32)resource->ptr.m->faceMode;
     C_END
     return 0;
 }
@@ -703,9 +707,9 @@ void vtsGetMeshVertices(vtsHResource resource,
         void **data, uint32 *size, uint32 *count)
 {
     C_BEGIN
-    *data = resource->m->vertices.data();
-    *size = resource->m->vertices.size();
-    *count = resource->m->verticesCount;
+    *data = resource->ptr.m->vertices.data();
+    *size = resource->ptr.m->vertices.size();
+    *count = resource->ptr.m->verticesCount;
     C_END
 }
 
@@ -713,9 +717,9 @@ void vtsGetMeshIndices(vtsHResource resource,
         void **data, uint32 *size, uint32 *count)
 {
     C_BEGIN
-    *data = resource->m->indices.data();
-    *size = resource->m->indices.size();
-    *count = resource->m->indicesCount;
+    *data = resource->ptr.m->indices.data();
+    *size = resource->ptr.m->indices.size();
+    *count = resource->ptr.m->indicesCount;
     C_END
 }
 
@@ -724,7 +728,7 @@ void vtsGetMeshAttribute(vtsHResource resource, uint32 index,
         uint32 *type, bool *enable, bool *normalized)
 {
     C_BEGIN
-    if (index >= resource->m->attributes.size())
+    if (index >= resource->ptr.m->attributes.size())
     {
         *offset = 0;
         *stride = 0;
@@ -736,7 +740,7 @@ void vtsGetMeshAttribute(vtsHResource resource, uint32 index,
     else
     {
         const vts::GpuMeshSpec::VertexAttribute &a
-            = resource->m->attributes[index];
+            = resource->ptr.m->attributes[index];
         *offset = a.offset;
         *stride = a.stride;
         *components = a.components;
@@ -756,7 +760,7 @@ void vtsCallbacksLoadTexture(vtsHMap map,
         {
             vtsCResource rc;
             rc.r = &r;
-            rc.t = &t;
+            rc.ptr.t = &t;
             (*callback)(map, &rc);
         }
         vtsHMap map;
@@ -779,7 +783,7 @@ void vtsCallbacksLoadMesh(vtsHMap map,
         {
             vtsCResource rc;
             rc.r = &r;
-            rc.m = &m;
+            rc.ptr.m = &m;
             (*callback)(map, &rc);
         }
         vtsHMap map;
@@ -792,7 +796,6 @@ void vtsCallbacksLoadMesh(vtsHMap map,
     map->p->callbacks().loadMesh = c;
     C_END
 }
-
 
 namespace
 {
@@ -1012,7 +1015,7 @@ vtsHDrawsGroup vtsDrawsGeodata(vtsHMap map)
 vtsHDrawsGroup vtsDrawsInfographics(vtsHMap map)
 {
     C_BEGIN
-    return createDrawIterator(map->p->draws().Infographics);
+    return createDrawIterator(map->p->draws().infographics);
     C_END
     return nullptr;
 }

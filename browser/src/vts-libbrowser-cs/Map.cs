@@ -169,7 +169,6 @@ namespace vts
             Util.CheckError();
         }
 
-
         public void SetPositionSubjective(bool subjective, bool convert)
         {
             BrowserInterop.vtsMapSetPositionSubjective(Handle, subjective, convert);
@@ -282,16 +281,14 @@ namespace vts
             return res;
         }
 
-        public Draws Draws()
-        {
-            return new Draws(this);
-        }
-
         public void Dispose()
         {
-            BrowserInterop.vtsMapDestroy(Handle);
-            handle = (IntPtr)0;
-            Util.CheckError();
+            if (Handle != null)
+            {
+                BrowserInterop.vtsMapDestroy(Handle);
+                Util.CheckError();
+                handle = (IntPtr)0;
+            }
         }
 
         protected IntPtr handle;

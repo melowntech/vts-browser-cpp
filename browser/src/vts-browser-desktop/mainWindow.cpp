@@ -219,14 +219,14 @@ void MainWindow::prepareMarks()
             t.color[i] = c(i);
         t.mesh = meshSphere;
         memcpy(t.mv, mvf.data(), sizeof(t.mv));
-        map->draws().Infographics.push_back(t);
+        map->draws().infographics.push_back(t);
         if (prev)
         {
             t.mesh = meshLine;
             mv = view * vts::lookAt(m.coord, prev->coord);
             mvf = mv.cast<float>();
             memcpy(t.mv, mvf.data(), sizeof(t.mv));
-            map->draws().Infographics.push_back(t);
+            map->draws().infographics.push_back(t);
         }
         prev = &m;
     }

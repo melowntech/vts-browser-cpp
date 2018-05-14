@@ -92,7 +92,7 @@ void MapDraws::clear()
     opaque.clear();
     transparent.clear();
     geodata.clear();
-    Infographics.clear();
+    infographics.clear();
 }
 
 void MapDraws::sortOpaqueFrontToBack()

@@ -1375,7 +1375,8 @@ public:
                         } break;
                         case FreeLayerType::MonolithicGeodata:
                             editableGeodata = true;
-                            // no break here
+                            editableStyle = true;
+                            break;
                         case FreeLayerType::TiledGeodata:
                             editableStyle = true;
                             break;

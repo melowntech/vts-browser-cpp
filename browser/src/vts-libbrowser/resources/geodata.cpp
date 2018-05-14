@@ -692,7 +692,7 @@ void GpuGeodata::update(const std::string &s, const std::string &f, uint32 l)
     {
     case Resource::State::initializing:
         state = Resource::State::ready; // if left in initializing, it would attempt to download it
-        // no break
+        UTILITY_FALLTHROUGH;
     case Resource::State::errorFatal: // allow reloading when sources change, even if it failed before
     case Resource::State::ready:
         if (style != s || features != f || lod != l)

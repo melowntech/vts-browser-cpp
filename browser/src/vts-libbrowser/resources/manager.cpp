@@ -559,7 +559,7 @@ void MapImpl::resourceRenderTick()
                            << r->retryNumber << ")";
                 r->retryTime = -1;
                 r->state = Resource::State::initializing;
-                // no break here
+                UTILITY_FALLTHROUGH;
             case Resource::State::initializing:
             case Resource::State::downloaded:
                 res.push_back(r);

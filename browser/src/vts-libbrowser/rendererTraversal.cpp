@@ -127,7 +127,7 @@ bool MapImpl::travDetermineMeta(TraverseNode *trav)
         {
         case Validity::Indeterminate:
             determined = false;
-            // no break here
+            UTILITY_FALLTHROUGH;
         case Validity::Invalid:
             continue;
         case Validity::Valid:
@@ -334,7 +334,7 @@ bool MapImpl::travDetermineDrawsSurface(TraverseNode *trav)
     {
     case Validity::Invalid:
         trav->surface = nullptr;
-        // no break here
+        UTILITY_FALLTHROUGH;
     case Validity::Indeterminate:
         return false;
     case Validity::Valid:
@@ -369,7 +369,7 @@ bool MapImpl::travDetermineDrawsSurface(TraverseNode *trav)
             {
             case Validity::Indeterminate:
                 determined = false;
-                // no break here
+                UTILITY_FALLTHROUGH;
             case Validity::Invalid:
                 continue;
             case Validity::Valid:
@@ -418,7 +418,7 @@ bool MapImpl::travDetermineDrawsSurface(TraverseNode *trav)
             {
             case Validity::Indeterminate:
                 determined = false;
-                // no break here
+                UTILITY_FALLTHROUGH;
             case Validity::Invalid:
                 continue;
             case Validity::Valid:
@@ -474,7 +474,7 @@ bool MapImpl::travDetermineDrawsGeodata(TraverseNode *trav)
     {
     case Validity::Invalid:
         trav->surface = nullptr;
-        // no break
+        UTILITY_FALLTHROUGH;
     case Validity::Indeterminate:
         return false;
     case Validity::Valid:

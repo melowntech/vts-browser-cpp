@@ -64,7 +64,7 @@ double MapImpl::travDistance(TraverseNode *trav, const vec3 pointPhys)
 float MapImpl::computeResourcePriority(TraverseNode *trav)
 {
     if (trav->layer->traverseMode == TraverseMode::Hierarchical)
-        return 1.f / trav->nodeInfo.distanceFromRoot();
+        return 1.f / (trav->nodeInfo.distanceFromRoot() + 1);
     if ((trav->hash + renderer.tickIndex) % 4 == 0) // skip expensive function
         return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1));
     return trav->priority;

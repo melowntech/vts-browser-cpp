@@ -443,7 +443,7 @@ void MapImpl::renderTickRender()
 namespace
 {
 
-void computenear_far_(double &near_, double &far_, double altitude,
+void computeNearFar(double &near_, double &far_, double altitude,
                     const MapCelestialBody &body, bool projected,
                     vec3 cameraPos, vec3 cameraForward)
 {
@@ -492,19 +492,25 @@ void MapImpl::updateCamera()
     if (callbacks.cameraOverrideTarget)
         callbacks.cameraOverrideTarget(objCenter.data());
     objDist = length(vec3(objCenter - cameraPos));
+    assert(objDist > 1e-7);
     if (callbacks.cameraOverrideUp)
         callbacks.cameraOverrideUp(cameraUp.data());
     assert(length(cameraUp) > 1e-7);
     mat4 view = lookAt(cameraPos, objCenter, cameraUp);
     if (callbacks.cameraOverrideView)
     {
+        mat4 viewOrig = view;
         callbacks.cameraOverrideView(view.data());
-        // update objCenter, cameraForward and cameraUp
-        mat4 vi = view.inverse();
-        cameraPos = vec4to3(vi * vec4(0, 0, -1, 1), true);
-        cameraForward = vec4to3(vi * vec4(0, 0, -1, 0), false);
-        cameraUp = vec4to3(vi * vec4(0, 1, 0, 0), false);
-        objCenter = cameraPos + cameraForward * objDist;
+        if (viewOrig != view)
+        {
+            // update objCenter, cameraForward and cameraUp
+            mat4 vi = view.inverse();
+            cameraPos = vec4to3(vi * vec4(0, 0, -1, 1), true);
+            cameraForward = vec4to3(vi * vec4(0, 0, -1, 0), false);
+            cameraUp = vec4to3(vi * vec4(0, 1, 0, 0), false);
+            objDist = 0;
+            objCenter = cameraPos;
+        }
     }
 
     // camera projection matrix
@@ -515,11 +521,12 @@ void MapImpl::updateCamera()
         vec3 navPos = convertor->physToNav(cameraPos);
         if (!getPositionAltitude(altitude, navPos, 10))
             altitude = std::numeric_limits<double>::quiet_NaN();
-        computenear_far_(near_, far_, altitude, body, projected,
+        computeNearFar(near_, far_, altitude, body, projected,
                        cameraPos, cameraForward);
     }
     double fov = pos.verticalFov;
-    double aspect = (double)renderer.windowWidth/(double)renderer.windowHeight;
+    double aspect = (double)renderer.windowWidth
+                  / (double)renderer.windowHeight;
     if (callbacks.cameraOverrideFovAspectNearFar)
         callbacks.cameraOverrideFovAspectNearFar(fov, aspect, near_, far_);
     assert(fov > 1e-3 && fov < 180 - 1e-3);

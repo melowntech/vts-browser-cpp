@@ -32,6 +32,7 @@
 #include "include/vts-browser/fetcher.h"
 #include "include/vts-browser/log.h"
 #include "include/vts-browser/map.h"
+#include "include/vts-browser/math.h"
 #include "include/vts-browser/resources.h"
 #include "include/vts-browser/search.h"
 
@@ -47,6 +48,7 @@
 #include "include/vts-browser/resources.hpp"
 #include "include/vts-browser/fetcher.hpp"
 #include "include/vts-browser/draws.hpp"
+#include "include/vts-browser/math.hpp"
 
 #include "utilities/json.hpp"
 #include "mapApiC.hpp"
@@ -1167,6 +1169,44 @@ void vtsSearchUpdateDistances(vtsHSearch search,
 {
     C_BEGIN
     search->p->updateDistances(point);
+    C_END
+}
+
+void vtsMathMul44x44(double result[16], const double l[16],
+    const double r[16])
+{
+    C_BEGIN
+    vts::matToRaw(vts::mat4(vts::rawToMat4(l) * vts::rawToMat4(r)), result);
+    C_END
+}
+
+void vtsMathMul33x33(double result[9], const double l[9],
+    const double r[9])
+{
+    C_BEGIN
+    vts::matToRaw(vts::mat3(vts::rawToMat3(l) * vts::rawToMat3(r)), result);
+    C_END
+}
+
+void vtsMathMul44x4(double result[4], const double l[16],
+    const double r[4])
+{
+    C_BEGIN
+    vts::vecToRaw(vts::vec4(vts::rawToMat4(l) * vts::rawToVec4(r)), result);
+    C_END
+}
+
+void vtsMathInverse44(double result[16], const double r[16])
+{
+    C_BEGIN
+    vts::matToRaw(vts::mat4(vts::rawToMat4(r).inverse()), result);
+    C_END
+}
+
+void vtsMathInverse33(double result[9], const double r[9])
+{
+    C_BEGIN
+    vts::matToRaw(vts::mat3(vts::rawToMat3(r).inverse()), result);
     C_END
 }
 

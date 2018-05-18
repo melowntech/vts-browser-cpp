@@ -57,6 +57,7 @@ set(PUB_HDR_LIST
     include/vts-browser/foundation.h
     include/vts-browser/log.h
     include/vts-browser/map.h
+    include/vts-browser/math.h
     include/vts-browser/resources.h
     include/vts-browser/search.h
 )

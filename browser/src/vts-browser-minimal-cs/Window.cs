@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Copyright (c) 2017 Melown Technologies SE
  *
  * Redistribution and use in source and binary forms, with or without
@@ -96,7 +96,7 @@ namespace vtsBrowserMinimalCs
             int yrel = e.Y - LastMouseY;
             LastMouseX = e.X;
             LastMouseY = e.Y;
-            if (Math.Abs(xrel) > 100 || Math.Abs(yrel) > 100)
+            if (System.Math.Abs(xrel) > 100 || System.Math.Abs(yrel) > 100)
                 return; // ignore the move event if it was too far away
             double[] p = new double[3];
             p[0] = xrel;

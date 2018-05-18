@@ -322,6 +322,21 @@ public static extern double vtsMapGetAutoRotation(IntPtr map);
 public static extern void vtsMapConvert(IntPtr map, [In] double[] pointFrom, [Out] double[] pointTo, uint srsFrom, uint SrsTo);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsMathMul44x44([Out] double[] result, [In] double[] l, [In] double[] r);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsMathMul33x33([Out] double[] result, [In] double[] l, [In] double[] r);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsMathMul44x4([Out] double[] result, [In] double[] l, [In] double[] r);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsMathInverse44([Out] double[] result, [In] double[] r);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsMathInverse33([Out] double[] result, [In] double[] r);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern uint vtsGpuTypeSize(uint type);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

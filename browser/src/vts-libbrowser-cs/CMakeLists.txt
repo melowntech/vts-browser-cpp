@@ -7,6 +7,7 @@ set(SRC_LIST
     Exception.cs
     Interop.cs
     Map.cs
+    Math.cs
     Resources.cs
     Utilities.cs
 )

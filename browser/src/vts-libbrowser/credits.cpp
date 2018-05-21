@@ -27,6 +27,7 @@
 #include <vts-libs/vts/mapconfig.hpp>
 
 #include "credits.hpp"
+#include "utilities/json.hpp"
 
 namespace vts
 {
@@ -143,19 +144,27 @@ Credits::Hit::Hit(vtslibs::registry::CreditId id)
 MapCredits::MapCredits()
 {}
 
-MapCredits::MapCredits(const std::string &json)
-    : MapCredits()
+namespace
 {
-    (void)json;
-    LOG(warn3) << "<MapCredits(const std::string &json)>"
-               << " is not yet implemented";
+    Json::Value credit(const MapCredits::Credit &c)
+    {
+        Json::Value v;
+        v["notice"] = c.notice;
+        v["url"] = c.url;
+        v["hits"] = c.hits;
+        v["maxLod"] = c.maxLod;
+        return v;
+    }
 }
 
 std::string MapCredits::toJson() const
 {
-    LOG(warn3) << "<MapCredits::toJson()>"
-               << " is not yet implemented";
-    return "";
+    Json::Value v;
+    for (const auto &it : imagery.credits)
+        v["imagery"].append(credit(it));
+    for (const auto &it : geodata.credits)
+        v["geodata"].append(credit(it));
+    return jsonToString(v);
 }
 
 std::string MapCredits::textShort() const

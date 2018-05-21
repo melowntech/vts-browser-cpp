@@ -50,6 +50,11 @@ using namespace renderer;
 namespace
 {
 
+std::string controlOptionsPath()
+{
+    return "vts-browser-desktop.control-options.json";
+}
+
 const nk_rune FontUnicodeRanges[] = {
     // 0x0020, 0x007F, // Basic Latin
     // 0x00A0, 0x00FF, // Latin-1 Supplement
@@ -223,7 +228,7 @@ public:
         // load control options
         try
         {
-            window->map->options().controlOptions = loadControlOptions();
+            window->map->options().controlOptions.applyJson(readLocalFileBuffer(controlOptionsPath()).str());
         }
         catch(...)
         {
@@ -466,7 +471,7 @@ public:
                 {
                     try
                     {
-                        saveControlOptions(co);
+                        writeLocalFileBuffer(controlOptionsPath(), Buffer(co.toJson()));
                     }
                     catch(...)
                     {
@@ -479,7 +484,7 @@ public:
                 {
                     try
                     {
-                        co = loadControlOptions();
+                        co.applyJson(readLocalFileBuffer(controlOptionsPath()).str());
                     }
                     catch(...)
                     {

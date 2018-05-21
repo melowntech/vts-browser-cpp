@@ -41,6 +41,7 @@ class VTS_API MapCreateOptions
 public:
     MapCreateOptions();
     MapCreateOptions(const std::string &json);
+    void applyJson(const std::string &json);
     std::string toJson() const;
 
     // application id that is sent with all resources
@@ -82,6 +83,7 @@ class VTS_API ControlOptions
 public:
     ControlOptions();
     ControlOptions(const std::string &json);
+    void applyJson(const std::string &json);
     std::string toJson() const;
 
     // multiplier that is applied to mouse input for the respective actions
@@ -105,6 +107,7 @@ class VTS_API MapOptions
 public:
     MapOptions();
     MapOptions(const std::string &json);
+    void applyJson(const std::string &json);
     std::string toJson() const;
 
     ControlOptions controlOptions;
@@ -224,9 +227,6 @@ public:
 
     bool debugExtractRawResources;
 };
-
-VTS_API void saveControlOptions(const ControlOptions &options);
-VTS_API ControlOptions loadControlOptions();
 
 } // namespace vts
 

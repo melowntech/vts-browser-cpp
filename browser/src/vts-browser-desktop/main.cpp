@@ -47,9 +47,9 @@ int main(int argc, char *argv[])
 #endif
 
         vts::setLogThreadName("main");
+        vts::setLogFile("vts-browser-desktop.log");
         //vts::setLogMask("I2W2E2");
         //vts::setLogMask("D");
-        //vts::setLogFile("vts-browser.log");
 
         vts::MapCreateOptions createOptions;
         createOptions.clientId = "vts-browser-desktop";

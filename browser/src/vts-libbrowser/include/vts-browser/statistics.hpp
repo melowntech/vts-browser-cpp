@@ -38,7 +38,6 @@ class VTS_API MapStatistics
 {
 public:
     MapStatistics();
-    MapStatistics(const std::string &json);
     std::string toJson() const;
 
     void resetAll();

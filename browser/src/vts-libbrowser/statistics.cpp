@@ -27,6 +27,7 @@
 #include <dbglog/dbglog.hpp>
 
 #include "include/vts-browser/statistics.hpp"
+#include "utilities/json.hpp"
 
 namespace vts
 {
@@ -36,19 +37,32 @@ MapStatistics::MapStatistics()
     resetAll();
 }
 
-MapStatistics::MapStatistics(const std::string &json)
-    : MapStatistics()
-{
-    (void)json;
-    LOG(warn3) << "<MapStatistics(const std::string &json)>"
-               << " is not yet implemented";
-}
-
 std::string MapStatistics::toJson() const
 {
-    LOG(warn3) << "<MapStatistics::toJson()>"
-               << " is not yet implemented";
-    return "";
+    Json::Value v;
+    for (auto it : nodesRenderedPerLod)
+        v["nodesRenderedPerLod"].append(it);
+    for (auto it : metaNodesTraversedPerLod)
+        v["metaNodesTraversedPerLod"].append(it);
+    TJ(nodesRenderedTotal, asUInt);
+    TJ(metaNodesTraversedTotal, asUInt);
+    TJ(resourcesDownloaded, asUInt);
+    TJ(resourcesDiskLoaded, asUInt);
+    TJ(resourcesProcessed, asUInt);
+    TJ(resourcesCreated, asUInt);
+    TJ(resourcesReleased, asUInt);
+    TJ(resourcesFailed, asUInt);
+    TJ(renderTicks, asUInt);
+    TJ(dataTicks, asUInt);
+    TJ(currentGpuMemUse, asUInt64);
+    TJ(currentRamMemUse, asUInt64);
+    TJ(resourcesActive, asUInt);
+    TJ(resourcesDownloading, asUInt);
+    TJ(resourcesPreparing, asUInt);
+    TJ(currentNodeMetaUpdates, asUInt);
+    TJ(currentNodeDrawsUpdates, asUInt);
+    TJE(currentNavigationMode, NavigationMode);
+    return jsonToString(v);
 }
 
 void MapStatistics::resetAll()

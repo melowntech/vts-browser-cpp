@@ -891,6 +891,10 @@ void MapImpl::printDebugInfo()
             LOG(info3) << "Override Geodata: " + it->freeLayer->overrideGeodata;
         }
     }
+
+    LOG(info3) << "Options: " << options.toJson();
+    LOG(info3) << "Statistics: " << statistics.toJson();
+    LOG(info3) << "Credits: " << credits.toJson();
 }
 
 } // namespace vts

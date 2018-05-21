@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Copyright (c) 2017 Melown Technologies SE
  *
  * Redistribution and use in source and binary forms, with or without
@@ -134,6 +134,47 @@ namespace vts
         public void SetWindowSize(uint width, uint height)
         {
             BrowserInterop.vtsMapSetWindowSize(Handle, width, height);
+            Util.CheckError();
+        }
+
+        public string GetOptions()
+        {
+            string res = Util.CStringToSharp(BrowserInterop.vtsMapGetOptions(Handle));
+            Util.CheckError();
+            return res;
+        }
+
+        public string GetStatistics()
+        {
+            string res = Util.CStringToSharp(BrowserInterop.vtsMapGetStatistics(Handle));
+            Util.CheckError();
+            return res;
+        }
+
+        public string GetCredits()
+        {
+            string res = Util.CStringToSharp(BrowserInterop.vtsMapGetCredits(Handle));
+            Util.CheckError();
+            return res;
+        }
+
+        public string GetCreditsShort()
+        {
+            string res = Util.CStringToSharp(BrowserInterop.vtsMapGetCreditsShort(Handle));
+            Util.CheckError();
+            return res;
+        }
+
+        public string GetCreditsFull()
+        {
+            string res = Util.CStringToSharp(BrowserInterop.vtsMapGetCreditsFull(Handle));
+            Util.CheckError();
+            return res;
+        }
+
+        public void SetOptions(string json)
+        {
+            BrowserInterop.vtsMapSetOptions(Handle, json);
             Util.CheckError();
         }
 

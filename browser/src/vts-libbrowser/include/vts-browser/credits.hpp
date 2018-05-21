@@ -39,7 +39,6 @@ class VTS_API MapCredits
 {
 public:
     MapCredits();
-    MapCredits(const std::string &json);
     std::string toJson() const;
 
     std::string textShort() const;

@@ -453,7 +453,9 @@ const char *vtsMapGetCreditsFull(vtsHMap map)
 void vtsMapSetOptions(vtsHMap map, const char *options)
 {
     C_BEGIN
-    map->p->options() = vts::MapOptions(options);
+    vts::MapOptions mo = map->p->options();
+    mo.applyJson(options);
+    map->p->options() = mo; // all or nothing
     C_END
 }
 

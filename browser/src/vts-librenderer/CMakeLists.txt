@@ -19,12 +19,6 @@ set(SRC_LIST
 )
 
 set(DATA_LIST
-    data/meshes/aabb.obj
-    data/meshes/cube.obj
-    data/meshes/line.obj
-    data/meshes/quad.obj
-    data/meshes/rect.obj
-    data/meshes/sphere.obj
     data/shaders/atmosphere.inc.glsl
     data/shaders/background.vert.glsl
     data/shaders/background.frag.glsl
@@ -39,7 +33,6 @@ set(DATA_LIST
     data/shaders/copyDepth.frag.glsl
     data/shaders/copyDepth.vert.glsl
     data/textures/compas.png
-    data/textures/helper.jpg
     data/textures/atmosphere/density-512-512-1.0100000-7.0000000.png
 )
 

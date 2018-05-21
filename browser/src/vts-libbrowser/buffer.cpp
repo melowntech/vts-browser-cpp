@@ -37,6 +37,19 @@
 #include <unistd.h> // getpid
 #endif
 
+void initializeBrowserData();
+namespace
+{
+    class BrowserDataInitializator
+    {
+    public:
+        BrowserDataInitializator()
+        {
+            initializeBrowserData();
+        }
+    } browserDataInitializatorInstance;
+} // namespace
+
 namespace vts
 {
 

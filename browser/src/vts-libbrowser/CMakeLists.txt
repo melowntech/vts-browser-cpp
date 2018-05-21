@@ -118,9 +118,21 @@ set(SRC_LIST
     ${EXTRA_SRC_LIST}
 )
 
+set(DATA_LIST
+    data/meshes/aabb.obj
+    data/meshes/cube.obj
+    data/meshes/line.obj
+    data/meshes/quad.obj
+    data/meshes/rect.obj
+    data/meshes/sphere.obj
+    data/textures/helper.jpg
+)
+
+buildsys_pack_data(initializeBrowserData)
 add_library(vts-browser ${LIB_TYPE} ${SRC_LIST} ${PUB_HDR_LIST})
 target_compile_definitions(vts-browser ${LIB_VIS} VTS_BROWSER_BUILD_${LIB_TYPE})
 target_link_libraries(vts-browser ${LIB_VIS} ${MODULE_LIBRARIES} ${EXTRA_LIB_DEPS})
+target_link_libraries(vts-browser PRIVATE initializeBrowserData)
 buildsys_library(vts-browser)
 buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})
 buildsys_target_compile_definitions(vts-browser ${MODULE_DEFINITIONS})

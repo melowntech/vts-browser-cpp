@@ -65,8 +65,8 @@ public:
 
     // current statistics
 
-    uint64 currentGpuMemUse;
-    uint64 currentRamMemUse;
+    uint32 currentGpuMemUseKB;
+    uint32 currentRamMemUseKB;
     uint32 resourcesActive;
     uint32 resourcesDownloading;
     uint32 resourcesPreparing;

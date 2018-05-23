@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
         createOptions.clientId = "vts-browser-desktop";
         //createOptions.disableCache = true;
         vts::MapOptions mapOptions;
-        mapOptions.targetResourcesMemory = 512 * 1024 * 1024;
+        mapOptions.targetResourcesMemoryKB = 512 * 1024;
         //mapOptions.debugExtractRawResources = true;
         vts::FetcherOptions fetcherOptions;
         AppOptions appOptions;

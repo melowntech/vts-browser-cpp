@@ -54,8 +54,8 @@ std::string MapStatistics::toJson() const
     TJ(resourcesFailed, asUInt);
     TJ(renderTicks, asUInt);
     TJ(dataTicks, asUInt);
-    TJ(currentGpuMemUse, asUInt64);
-    TJ(currentRamMemUse, asUInt64);
+    TJ(currentGpuMemUseKB, asUInt);
+    TJ(currentRamMemUseKB, asUInt);
     TJ(resourcesActive, asUInt);
     TJ(resourcesDownloading, asUInt);
     TJ(resourcesPreparing, asUInt);
@@ -77,8 +77,8 @@ void MapStatistics::resetAll()
     renderTicks = 0;
     dataTicks = 0;
     resourcesDownloading = 0;
-    currentGpuMemUse = 0;
-    currentRamMemUse = 0;
+    currentGpuMemUseKB = 0;
+    currentRamMemUseKB = 0;
     resourcesActive = 0;
     resourcesPreparing = 0;
     currentNavigationMode = (NavigationMode)0;

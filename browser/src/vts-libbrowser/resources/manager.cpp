@@ -496,7 +496,8 @@ void MapImpl::resourceRenderTick()
                 resToRemove.emplace_back(it.first, it.second->lastAccessTick);
         }
         uint64 memUse = memRamUse + memGpuUse;
-        if (memUse > options.targetResourcesMemory)
+        uint64 trs = (uint64)options.targetResourcesMemoryKB * 1024;
+        if (memUse > trs)
         {
             std::sort(resToRemove.begin(), resToRemove.end());
             for (Res &res : resToRemove)
@@ -511,13 +512,13 @@ void MapImpl::resourceRenderTick()
                     resources.resources.erase(name);
                     statistics.resourcesReleased++;
                     memUse -= mem;
-                    if (memUse <= options.targetResourcesMemory)
+                    if (memUse <= trs)
                         break;
                 }
             }
         }
-        statistics.currentGpuMemUse = memGpuUse;
-        statistics.currentRamMemUse = memRamUse;
+        statistics.currentGpuMemUseKB = memGpuUse / 1024;
+        statistics.currentRamMemUseKB = memRamUse / 1024;
     }
 
     if (renderer.tickIndex % 4 == 2)

@@ -34,9 +34,9 @@ std::string jsonToString(const Json::Value &value);
 
 } // namespace vts
 
-#define TJ(NAME, AS) v[#NAME] = NAME;
-#define AJ(NAME, AS) if (v[#NAME]) NAME = v[#NAME].AS();
-#define TJE(NAME, TYPE) v[#NAME] = (uint32)NAME;
-#define AJE(NAME, TYPE) if (v[#NAME]) NAME = (TYPE)v[#NAME].asUInt();
+#define TJ(NAME, AS) v[ #NAME ] = NAME ;
+#define AJ(NAME, AS) if (v.isMember( #NAME )) NAME = v[ #NAME ]. AS ();
+#define TJE(NAME, TYPE) v[ #NAME ] = (uint32) NAME ;
+#define AJE(NAME, TYPE) if (v.isMember( #NAME )) NAME = ( TYPE ) v[ #NAME ].asUInt();
 
 

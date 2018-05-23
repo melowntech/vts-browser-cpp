@@ -153,7 +153,7 @@ public:
     double renderTilesScale;
 
     // memory threshold at which resources start to be released
-    uint64 targetResourcesMemory; // bytes
+    uint32 targetResourcesMemoryKB;
 
     // maximum size of the queue for the resources to be downloaded
     uint32 maxConcurrentDownloads;

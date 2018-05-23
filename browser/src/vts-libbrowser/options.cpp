@@ -136,7 +136,7 @@ MapOptions::MapOptions() :
     navigationPihaViewExtentMult(1.02),
     navigationPihaPositionChange(0.02),
     renderTilesScale(1.001),
-    targetResourcesMemory(0),
+    targetResourcesMemoryKB(0),
     maxConcurrentDownloads(25),
     maxResourceProcessesPerTick(10),
     navigationSamplesPerViewExtent(8),
@@ -179,7 +179,7 @@ MapOptions::MapOptions(const std::string &json)
 void MapOptions::applyJson(const std::string &json)
 {
     Json::Value v = stringToJson(json);
-    if (v["controlOptions"])
+    if (v.isMember("controlOptions"))
         controlOptions.applyJson(jsonToString(v["controlOptions"]));
     AJ(maxTexelToPixelScale, asDouble);
     AJ(maxTexelToPixelScaleBalancedAddition, asDouble);
@@ -194,7 +194,7 @@ void MapOptions::applyJson(const std::string &json)
     AJ(navigationPihaViewExtentMult, asDouble);
     AJ(navigationPihaPositionChange, asDouble);
     AJ(renderTilesScale, asDouble);
-    AJ(targetResourcesMemory, asUInt64);
+    AJ(targetResourcesMemoryKB, asUInt);
     AJ(maxConcurrentDownloads, asUInt);
     AJ(maxResourceProcessesPerTick, asUInt);
     AJ(navigationSamplesPerViewExtent, asUInt);
@@ -244,7 +244,7 @@ std::string MapOptions::toJson() const
     TJ(navigationPihaViewExtentMult, asDouble);
     TJ(navigationPihaPositionChange, asDouble);
     TJ(renderTilesScale, asDouble);
-    TJ(targetResourcesMemory, asUInt64);
+    TJ(targetResourcesMemoryKB, asUInt);
     TJ(maxConcurrentDownloads, asUInt);
     TJ(maxResourceProcessesPerTick, asUInt);
     TJ(navigationSamplesPerViewExtent, asUInt);

@@ -19,3 +19,4 @@ if(NOT WIN32)
     target_compile_options(nuklear PRIVATE -Wno-error -Wno-unused-variable)
 endif()
 
+buildsys_fix_symlinks(${CMAKE_CURRENT_SOURCE_DIR})

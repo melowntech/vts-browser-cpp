@@ -12,6 +12,7 @@ cmake_policy(SET CMP0042 NEW) # use rpath
 # by default, this is OSS build (can be overriden by customer machinery)
 set(BUILDSYS_DEFAULT_CUSTOMER_NAME oss)
 include(buildsys/cmake/buildsys.cmake)
+buildsys_fix_symlinks(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Bump shared libraries version here
 set(vts-browser_SO_VERSION 0.0.0)

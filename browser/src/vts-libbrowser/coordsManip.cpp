@@ -87,12 +87,14 @@ public:
             const std::string &customSrs2) :
         mapconfig(mapconfig)
     {
+        LOG(info1) << "Creating coordinate systems manipulator";
         // create geodesic
         {
             auto r = mapconfig.srs(mapconfig.referenceFrame.model.navigationSrs)
                         .srsDef.reference();
             auto a = r.GetSemiMajor();
             auto b = r.GetSemiMinor();
+            LOG(info1) << "Creating geodesic manipulator: a=<" << a << ">, b=<" << b << ">";
             geodesic_ = boost::in_place(a, (a - b) / a);
         }
         addSrsDef("$search$", searchSrs);
@@ -108,8 +110,11 @@ public:
         mapconfig.srs.replace(name, s);
     }
 
-    std::string srsToProj(Srs srs)
+    const std::string &srsToProj(Srs srs)
     {
+        static const std::string search = "$search$";
+        static const std::string custom1 = "$custom1$";
+        static const std::string custom2 = "$custom2$";
         switch(srs)
         {
         case Srs::Physical:
@@ -119,11 +124,11 @@ public:
         case Srs::Public:
             return mapconfig.referenceFrame.model.publicSrs;
         case Srs::Search:
-            return "$search$";
+            return search;
         case Srs::Custom1:
-            return "$custom1$";
+            return custom1;
         case Srs::Custom2:
-            return "$custom2$";
+            return custom2;
         default:
             LOGTHROW(fatal, std::invalid_argument) << "Invalid srs enum";
             throw;
@@ -136,28 +141,36 @@ public:
         std::string key = a + " >>> " + b;
         auto it = convertors.find(key);
         if (it == convertors.end())
-            return *(convertors[key]
-                    = std::make_shared<vtslibs::vts::CsConvertor>(
-                        a, b, mapconfig));
+        {
+            auto c = std::make_shared<vtslibs::vts::CsConvertor>(
+                a, b, mapconfig);
+            convertors[key] = c;
+            return *c;
+        }
         return *it->second;
+    }
+
+    vec3 convert(const vec3 &value, const std::string &f, const std::string &t)
+    {
+        auto cs = convertor(f, t);
+        vec3 res = vecFromUblas<vec3>(cs(vecFromUblas<math::Point3>(value)));
+        LOG(debug) << "Converted <" << value.transpose() << "><" << f << "> to <" << res.transpose() << "><" << t << ">";
+        return res;
     }
 
     vec3 convert(const vec3 &value, Srs from, Srs to) override
     {
-        auto cs = convertor(srsToProj(from), srsToProj(to));
-        return vecFromUblas<vec3>(cs(vecFromUblas<math::Point3>(value)));
+        return convert(value, srsToProj(from), srsToProj(to));
     }
 
     vec3 convert(const vec3 &value, const Node &from, Srs to) override
     {
-        auto cs = convertor(from.srs, srsToProj(to));
-        return vecFromUblas<vec3>(cs(vecFromUblas<math::Point3>(value)));
+        return convert(value, from.srs, srsToProj(to));
     }
 
     vec3 convert(const vec3 &value, Srs from, const Node &to) override
     {
-        auto cs = convertor(srsToProj(from), to.srs);
-        return vecFromUblas<vec3>(cs(vecFromUblas<math::Point3>(value)));
+        return convert(value, srsToProj(from), to.srs);
     }
 
     vec3 geoDirect(const vec3 &position, double distance,

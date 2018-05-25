@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Copyright (c) 2017 Melown Technologies SE
  *
  * Redistribution and use in source and binary forms, with or without
@@ -204,7 +204,11 @@ namespace vts
         private void UnloadResourceCallback(IntPtr ptr)
         {
             GCHandle hnd = GCHandle.FromIntPtr(ptr);
+            object obj = hnd.Target;
             hnd.Free();
+            IDisposable d = obj as IDisposable;
+            if (d != null)
+                d.Dispose();
         }
 
         public delegate void MapStateHandler();

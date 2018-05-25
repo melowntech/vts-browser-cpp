@@ -324,14 +324,30 @@ namespace vts
 
         public void Dispose()
         {
-            if (Handle != null)
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        ~Map()
+        {
+            Dispose(false);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposed)
             {
-                BrowserInterop.vtsMapDestroy(Handle);
-                Util.CheckError();
-                handle = (IntPtr)0;
+                if (Handle != null)
+                {
+                    BrowserInterop.vtsMapDestroy(Handle);
+                    Util.CheckError();
+                    handle = IntPtr.Zero;
+                }
+                disposed = true;
             }
         }
 
+        private bool disposed = false;
         protected IntPtr handle;
         public IntPtr Handle { get { return handle; } }
     }

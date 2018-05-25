@@ -373,6 +373,20 @@ vec2f vec3to2f(vec3f v, bool division)
     return res;
 }
 
+vec2ui16 vec2to2ui16(vec2 v, bool normalized)
+{
+    if (normalized)
+        v *= 65535.0;
+    return v.cast<uint16>();
+}
+
+vec2ui16 vec2to2ui16(vec2f v, bool normalized)
+{
+    if (normalized)
+        v *= 65535.0f;
+    return v.cast<uint16>();
+}
+
 mat3 mat4to3(const mat4 &mat)
 {
     mat3 res;

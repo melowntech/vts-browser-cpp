@@ -64,6 +64,8 @@ public:
     uint32 loadUniformLocations(const std::vector<const char *> &names);
     void bindTextureLocations(
         const std::vector<std::pair<const char *, uint32>> &binds);
+    void bindUniformBlockLocations(
+        const std::vector<std::pair<const char *, uint32>> &binds);
 
     static std::string preamble;
 
@@ -107,6 +109,29 @@ public:
 private:
     GpuMeshSpec spec;
     uint32 vao, vbo, vio;
+};
+
+class VTSR_API UniformBuffer
+{
+public:
+    UniformBuffer();
+    ~UniformBuffer();
+    void clear();
+    void bind();
+    void bindToIndex(uint32 index);
+    void load(size_t size, const void *data);
+    void load(const Buffer &buffer);
+
+    template <typename T>
+    void load(const T &structure)
+    {
+        load(sizeof(T), &structure);
+    }
+
+    uint32 getUbo() const;
+
+private:
+    uint32 ubo;
 };
 
 } } // namespace vts::renderer

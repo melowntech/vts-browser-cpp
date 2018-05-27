@@ -55,18 +55,20 @@ void clearGlState()
 class ShaderAtm : public Shader
 {
 public:
-    ShaderAtm() : firstAtmUniLoc(-1)
-    {}
+    struct AtmBlock
+    {
+        mat4f viewInv;
+        vec4f colorLow;
+        vec4f colorHigh;
+        vec4f params;
+        vec3f cameraPosition;
+    };
 
     void initializeAtmosphere()
     {
-        firstAtmUniLoc = loadUniformLocations({
-            "uniAtmColorLow", "uniAtmColorHigh", "uniAtmParams",
-            "uniAtmCameraPosition", "uniAtmViewInv"});
+        bindUniformBlockLocations({{"uboAtm", 0}});
         bindTextureLocations({{"texAtmDensity", 4}});
     }
-
-    uint32 firstAtmUniLoc;
 };
 
 } // namespace
@@ -86,6 +88,7 @@ public:
     std::shared_ptr<Shader> shaderCopyDepth;
     std::shared_ptr<Mesh> meshQuad; // positions: -1 .. 1
     std::shared_ptr<Mesh> meshRect; // positions: 0 .. 1
+    std::shared_ptr<UniformBuffer> uboAtm;
 
     const MapDraws *draws;
     const MapCelestialBody *body;
@@ -324,11 +327,14 @@ public:
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		CHECK_GL("initialized opengl");
 
+        // update atmosphere
+        updateAtmosphereBuffer();
+
         // update shaders
         mat4f projf = rawToMat4(draws->camera.proj).cast<float>();
         shaderInfographic->bind();
         shaderInfographic->uniformMat4(0, projf.data());
-        shaderUpdateAtmosphere(shaderSurface.get());
+        shaderSurface->bind();
         shaderSurface->uniformMat4(0, projf.data());
 
         // render opaque
@@ -355,7 +361,7 @@ public:
                 cornerDirs[i] = normalize(vec4to3(cornerDirsD[i], true)
                                  - camPos).cast<float>();
 
-            shaderUpdateAtmosphere(shaderBackground.get());
+            shaderBackground->bind();
             for (uint32 i = 0; i < 4; i++)
                 shaderBackground->uniformVec3(i, cornerDirs[i].data());
             meshQuad->bind();
@@ -544,6 +550,11 @@ public:
             meshRect->load(spec);
         }
 
+        // create atmosphere ubo
+        {
+            uboAtm = std::make_shared<UniformBuffer>();
+        }
+
         atmosphere.initialize();
     }
 
@@ -593,46 +604,52 @@ public:
         widthPrev = heightPrev = antialiasingPrev = 0;
     }
 
-    void shaderUpdateAtmosphere(ShaderAtm *shader)
+    void updateAtmosphereBuffer()
     {
-        shader->bind();
-        float p[4] = {0,0,0,0};
-        shader->uniformVec4(shader->firstAtmUniLoc + 2, p);
+        ShaderAtm::AtmBlock atmBlock;
 
-        if (!options.renderAtmosphere || draws->camera.mapProjected)
-            return;
+        if (options.renderAtmosphere && !draws->camera.mapProjected)
+        {
+            // uniParams
+            atmBlock.params =
+            {
+                (float)(body->atmosphere.thickness / body->majorRadius),
+                (float)body->atmosphere.horizontalExponent,
+                (float)(body->minorRadius / body->majorRadius),
+                (float)body->majorRadius
+            };
 
-        Texture *tex = atmosphere.validate(*body);
-        if (!tex)
-            return;
+            // camera position
+            vec3 camPos = rawToVec3(draws->camera.eye) / body->majorRadius;
+            atmBlock.cameraPosition = camPos.cast<float>();
 
-        // uniParams
-        float uniAtmParams[4] = {
-            (float)(body->atmosphere.thickness / body->majorRadius),
-            (float)body->atmosphere.horizontalExponent,
-            (float)(body->minorRadius / body->majorRadius),
-            (float)body->majorRadius        };
+            // view inv
+            mat4 vi = rawToMat4(draws->camera.view).inverse();
+            atmBlock.viewInv = vi.cast<float>();
 
-        // camera position
-        vec3 camPos = rawToVec3(draws->camera.eye) / body->majorRadius;
-        vec3f uniAtmCameraPosition = camPos.cast<float>();
+            // colors
+            atmBlock.colorLow = rawToVec4(body->atmosphere.colorLow);
+            atmBlock.colorHigh = rawToVec4(body->atmosphere.colorHigh);
+        }
+        else
+        {
+            atmBlock.params = { 0, 0, 0, 0 };
+        }
 
-        // view inv
-        mat4 vi = rawToMat4(draws->camera.view).inverse();
-        mat4f uniAtmViewInv = vi.cast<float>();
+        // Load it in
+        uboAtm->load(atmBlock);
 
-        // upload shader uniforms
-        uint32 loc = shader->firstAtmUniLoc;
-        shader->uniformVec4(loc + 0, body->atmosphere.colorLow);
-        shader->uniformVec4(loc + 1, body->atmosphere.colorHigh);
-        shader->uniformVec4(loc + 2, uniAtmParams);
-        shader->uniformVec3(loc + 3, uniAtmCameraPosition.data());
-        shader->uniformMat4(loc + 4, uniAtmViewInv.data());
+        // Bind atmosphere uniform buffer to index 0
+        uboAtm->bindToIndex(0);
 
         // bind atmosphere density texture
-        glActiveTexture(GL_TEXTURE4);
-        tex->bind();
-        glActiveTexture(GL_TEXTURE0);
+        Texture *tex = atmosphere.validate(*body);
+        if (tex)
+        {
+            glActiveTexture(GL_TEXTURE4);
+            tex->bind();
+            glActiveTexture(GL_TEXTURE0);
+        }
     }
 
     void renderCompass(const double screenPosSize[3],

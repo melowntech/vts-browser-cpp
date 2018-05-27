@@ -1,11 +1,14 @@
 
 uniform sampler2D texAtmDensity;
 
-uniform vec4 uniAtmColorLow;
-uniform vec4 uniAtmColorHigh;
-uniform vec4 uniAtmParams; // atmosphere thickness, horizontal exponent, minor-axis (divided by major axis), major-axis
-uniform vec3 uniAtmCameraPosition; // world position of camera (divided by major semi-axis)
-uniform mat4 uniAtmViewInv;
+layout(std140) uniform uboAtm
+{
+    mat4 uniAtmViewInv;
+    vec4 uniAtmColorLow;
+    vec4 uniAtmColorHigh;
+    vec4 uniAtmParams; // atmosphere thickness, horizontal exponent, minor-axis (divided by major axis), major-axis
+    vec3 uniAtmCameraPosition; // world position of camera (divided by major semi-axis)
+};
 
 float atmDecodeFloat(vec4 rgba)
 {

@@ -150,7 +150,7 @@ void mapInitialize()
                 uls.push_back(glGetUniformLocation(id, "uniUvm"));
                 glUseProgram(id);
                 glUniform1i(glGetUniformLocation(id, "uniTexture"), 0);
-                checkGl();
+                CHECK_GL();
             }
 
             // load mesh
@@ -229,7 +229,7 @@ vts::MapOptions defaultMapOptions()
     vts::MapOptions opt;
     opt.maxTexelToPixelScale = 3.2;
     opt.maxResourceProcessesPerTick = -1; // the resources are processed on a separate thread
-    opt.targetResourcesMemory = 200 * 1024 * 1024;
+    opt.targetResourcesMemoryKB = 200 * 1024;
     return opt;
 }
 
@@ -273,7 +273,7 @@ void mapRenderControls(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw
     scalesShader->bind();
     scalesMeshQuad->bind();
     mat4 proj = orthographicMatrix(0, whole.size.width, whole.size.height, 0, 0, 1);
-    checkGl("prepare render scale");
+    CHECK_GL("prepare render scale");
 
     if (extraConfig.showControlAreas)
     {
@@ -416,7 +416,7 @@ void mapRenderControls(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw
         render.renderCompass(posSize, rotation);
     }
 
-    checkGl("rendered scale");
+    CHECK_GL("rendered scale");
 }
 
 void mapTimerStart(id object, SEL selector)

@@ -50,8 +50,8 @@
 
 - (void)updateView
 {
-    _statCpuMem.text = [NSString stringWithFormat:@"%llu MB", map->statistics().currentRamMemUse / 1024 / 1024];
-    _statGpuMem.text = [NSString stringWithFormat:@"%llu MB", map->statistics().currentGpuMemUse / 1024 / 1024];
+    _statCpuMem.text = [NSString stringWithFormat:@"%u MB", map->statistics().currentRamMemUseKB / 1024];
+    _statGpuMem.text = [NSString stringWithFormat:@"%u MB", map->statistics().currentGpuMemUseKB / 1024];
     _statActiveResources.text = [NSString stringWithFormat:@"%u", map->statistics().resourcesActive];
     _statPreparingResources.text = [NSString stringWithFormat:@"%u", map->statistics().resourcesPreparing];
     _statDownloading.text = [NSString stringWithFormat:@"%u", map->statistics().resourcesDownloading];

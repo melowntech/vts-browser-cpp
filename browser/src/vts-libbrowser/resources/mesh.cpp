@@ -129,9 +129,9 @@ void MeshAggregate::load()
 
         uint32 vertexSize = sizeof(vec3f);
         if (m.tc.size())
-            vertexSize += sizeof(vec2f);
+            vertexSize += sizeof(vec2ui16);
         if (m.etc.size())
-            vertexSize += sizeof(vec2f);
+            vertexSize += sizeof(vec2ui16);
 
         GpuMeshSpec spec;
         spec.verticesCount = m.faces.size() * 3;
@@ -141,40 +141,59 @@ void MeshAggregate::load()
         { // vertices
             spec.attributes[0].enable = true;
             spec.attributes[0].components = 3;
+            spec.attributes[0].offset = 0;
+            spec.attributes[0].stride = vertexSize;
             vec3f *b = (vec3f*)spec.vertices.data();
             for (vtslibs::vts::Point3u32 f : m.faces)
             {
                 for (uint32 j = 0; j < 3; j++)
                 {
                     vec3 p3 = vecFromUblas<vec3>(m.vertices[f[j]]);
-                    *b++ = p3.cast<float>();
+                    *b = p3.cast<float>();
+                    b = (vec3f*)((char*)b + vertexSize);
                 }
             }
-            offset += m.faces.size() * sizeof(vec3f) * 3;
+            offset += sizeof(vec3f);
         }
 
         if (!m.tc.empty())
         { // internal, separated
             spec.attributes[1].enable = true;
+            spec.attributes[1].type = GpuTypeEnum::UnsignedShort;
             spec.attributes[1].components = 2;
+            spec.attributes[1].normalized = true;
             spec.attributes[1].offset = offset;
-            vec2f *b = (vec2f*)(spec.vertices.data() + offset);
+            spec.attributes[1].stride = vertexSize;
+            vec2ui16 *b = (vec2ui16*)(spec.vertices.data() + offset);
             for (vtslibs::vts::Point3u32 f : m.facesTc)
+            {
                 for (uint32 j = 0; j < 3; j++)
-                    *b++ = vecFromUblas<vec2f>(m.tc[f[j]]);
-            offset += m.faces.size() * sizeof(vec2f) * 3;
+                {
+                    *b = vec2to2ui16(vecFromUblas<vec2f>(m.tc[f[j]]));
+                    b = (vec2ui16*)((char*)b + vertexSize);
+                }
+            }
+            offset += sizeof(vec2ui16);
         }
 
         if (!m.etc.empty())
         { // external, interleaved
             spec.attributes[2].enable = true;
+            spec.attributes[2].type = GpuTypeEnum::UnsignedShort;
             spec.attributes[2].components = 2;
+            spec.attributes[2].normalized = true;
             spec.attributes[2].offset = offset;
-            vec2f *b = (vec2f*)(spec.vertices.data() + offset);
+            spec.attributes[2].stride = vertexSize;
+            vec2ui16 *b = (vec2ui16*)(spec.vertices.data() + offset);
             for (vtslibs::vts::Point3u32 f : m.faces)
+            {
                 for (uint32 j = 0; j < 3; j++)
-                    *b++ = vecFromUblas<vec2f>(m.etc[f[j]]);
-            offset += m.faces.size() * sizeof(vec2f) * 3;
+                {
+                    *b = vec2to2ui16(vecFromUblas<vec2f>(m.etc[f[j]]));
+                    b = (vec2ui16*)((char*)b + vertexSize);
+                }
+            }
+            offset += sizeof(vec2ui16);
         }
 
         MeshPart part;

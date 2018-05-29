@@ -48,6 +48,8 @@ typedef Eigen::Matrix2d mat2;
 typedef Eigen::Matrix3d mat3;
 typedef Eigen::Matrix4d mat4;
 
+typedef Eigen::Matrix<uint16, 2, 1> vec2ui16;
+
 VTS_API vec3 cross(const vec3 &a, const vec3 &b);
 VTS_API double dot(const vec3 &a, const vec3 &b);
 VTS_API double dot(const vec2 &a, const vec2 &b);
@@ -87,6 +89,9 @@ VTS_API vec4f vec3to4f(vec3f v, float w);
 VTS_API vec3f vec4to3f(vec4f v, bool division = false);
 VTS_API vec3f vec2to3f(vec2f v, float w);
 VTS_API vec2f vec3to2f(vec3f v, bool division = false);
+
+VTS_API vec2ui16 vec2to2ui16(vec2 v, bool normalized = true);
+VTS_API vec2ui16 vec2to2ui16(vec2f v, bool normalized = true);
 
 VTS_API mat3 mat4to3(const mat4 &mat);
 VTS_API mat4 mat3to4(const mat3 &mat);

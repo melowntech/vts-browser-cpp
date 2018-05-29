@@ -224,6 +224,13 @@ void Shader::bindTextureLocations(
         glUniform1i(glGetUniformLocation(id, it.first), it.second);
 }
 
+void Shader::bindUniformBlockLocations(
+    const std::vector<std::pair<const char *, uint32>> &binds)
+{
+    for (auto &it : binds)
+        glUniformBlockBinding(id, glGetUniformBlockIndex(id, it.first), it.second);
+}
+
 Texture::Texture() :
     id(0), grayscale(false)
 {}
@@ -490,6 +497,53 @@ uint32 Mesh::getVio() const
 {
     return vio;
 }
+
+UniformBuffer::UniformBuffer() :
+    ubo(0)
+{}
+
+UniformBuffer::~UniformBuffer()
+{
+    clear();
+}
+
+void UniformBuffer::clear()
+{
+    if (ubo)
+        glDeleteBuffers(1, &ubo);
+    ubo = 0;
+}
+
+void UniformBuffer::bind()
+{
+    if (ubo == 0)
+        glGenBuffers(1, &ubo);
+    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+}
+
+void UniformBuffer::bindToIndex(uint32 index)
+{
+    if (ubo == 0)
+        glGenBuffers(1, &ubo);
+    glBindBufferBase(GL_UNIFORM_BUFFER, index, ubo);
+}
+
+void UniformBuffer::load(size_t size, const void *data)
+{
+    bind();
+    glBufferData(GL_UNIFORM_BUFFER, size, data, GL_DYNAMIC_DRAW);
+}
+
+void UniformBuffer::load(const Buffer &buffer)
+{
+    load(buffer.size(), buffer.data());
+}
+
+uint32 UniformBuffer::getUbo() const
+{
+    return ubo;
+}
+
 
 } } // namespace vts renderer
 

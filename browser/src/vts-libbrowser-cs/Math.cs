@@ -36,7 +36,7 @@ namespace vts
             Util.CheckArray(r, 16);
             double[] res = new double[16];
             BrowserInterop.vtsMathMul44x44(res, l, r);
-            Util.CheckError();
+            Util.CheckInterop();
             return res;
         }
 
@@ -46,7 +46,7 @@ namespace vts
             Util.CheckArray(r, 9);
             double[] res = new double[9];
             BrowserInterop.vtsMathMul33x33(res, l, r);
-            Util.CheckError();
+            Util.CheckInterop();
             return res;
         }
 
@@ -56,7 +56,7 @@ namespace vts
             Util.CheckArray(r, 4);
             double[] res = new double[4];
             BrowserInterop.vtsMathMul44x4(res, l, r);
-            Util.CheckError();
+            Util.CheckInterop();
             return res;
         }
 
@@ -65,7 +65,7 @@ namespace vts
             Util.CheckArray(r, 16);
             double[] res = new double[16];
             BrowserInterop.vtsMathInverse44(res, r);
-            Util.CheckError();
+            Util.CheckInterop();
             return res;
         }
 
@@ -74,8 +74,22 @@ namespace vts
             Util.CheckArray(r, 9);
             double[] res = new double[9];
             BrowserInterop.vtsMathInverse33(res, r);
-            Util.CheckError();
+            Util.CheckInterop();
             return res;
+        }
+
+        public static double[] Normalize4(double[] r)
+        {
+            Util.CheckArray(r, 4);
+            double len = System.Math.Sqrt(r[0] * r[0] + r[1] * r[1] + r[2] * r[2] + r[3] * r[3]);
+            return new double[4] { r[0] / len, r[1] / len, r[2] / len, r[3] / len };
+        }
+
+        public static double[] Normalize3(double[] r)
+        {
+            Util.CheckArray(r, 3);
+            double len = System.Math.Sqrt(r[0] * r[0] + r[1] * r[1] + r[2] * r[2]);
+            return new double[3] { r[0] / len, r[1] / len, r[2] / len };
         }
     }
 }

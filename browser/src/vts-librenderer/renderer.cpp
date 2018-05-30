@@ -175,7 +175,7 @@ public:
 
     void render()
     {
-		CHECK_GL("pre-frame check");
+        CHECK_GL("pre-frame check");
 
         assert(shaderSurface);
         view = rawToMat4(draws->camera.view);
@@ -228,7 +228,7 @@ public:
                 glTexParameteri(vars.textureTargetType,
                                 GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             }
-			CHECK_GL("update depth texture for rendering");
+            CHECK_GL("update depth texture for rendering");
 
             // depth texture for sampling
             glActiveTexture(GL_TEXTURE0 + 6);
@@ -249,7 +249,7 @@ public:
                 vars.depthReadTexId = vars.depthRenderTexId;
                 glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
             }
-			CHECK_GL("update depth texture for sampling");
+            CHECK_GL("update depth texture for sampling");
 
             // color texture for rendering
             glActiveTexture(GL_TEXTURE0 + 7);
@@ -269,7 +269,7 @@ public:
                 glTexParameteri(vars.textureTargetType,
                                 GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             }
-			CHECK_GL("update color texture for rendering");
+            CHECK_GL("update color texture for rendering");
 
             // color texture for sampling
             glActiveTexture(GL_TEXTURE0 + 8);
@@ -290,7 +290,7 @@ public:
                 vars.colorReadTexId = vars.colorRenderTexId;
                 glBindTexture(GL_TEXTURE_2D, vars.colorReadTexId);
             }
-			CHECK_GL("update color texture for sampling");
+            CHECK_GL("update color texture for sampling");
 
             // render frame buffer
             glDeleteFramebuffers(1, &vars.frameRenderBufferId);
@@ -310,7 +310,7 @@ public:
                                    GL_TEXTURE_2D, vars.depthReadTexId, 0);
             checkGlFramebuffer();
 
-			CHECK_GL("update frame buffer");
+            CHECK_GL("update frame buffer");
         }
 
         // initialize opengl
@@ -325,7 +325,7 @@ public:
         #endif
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		CHECK_GL("initialized opengl");
+        CHECK_GL("initialized opengl");
 
         // update atmosphere
         updateAtmosphereBuffer();
@@ -343,7 +343,7 @@ public:
         glDepthFunc(GL_LEQUAL);
         for (const DrawTask &t : draws->opaque)
             drawSurface(t);
-		CHECK_GL("rendered opaque");
+        CHECK_GL("rendered opaque");
 
         // render background (atmosphere)
         {
@@ -372,7 +372,7 @@ public:
         glEnable(GL_BLEND);
         for (const DrawTask &t : draws->transparent)
             drawSurface(t);
-		CHECK_GL("rendered transparent");
+        CHECK_GL("rendered transparent");
 
         // render polygon edges
         if (options.renderPolygonEdges)
@@ -388,7 +388,7 @@ public:
             }
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             glEnable(GL_BLEND);
-			CHECK_GL("rendered polygon edges");
+            CHECK_GL("rendered polygon edges");
         }
 
         // copy the depth (resolve multisampling)
@@ -400,19 +400,19 @@ public:
                               0, 0, options.width, options.height,
                               GL_DEPTH_BUFFER_BIT, GL_NEAREST);
             glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
-			CHECK_GL("copied the depth (resolved multisampling)");
+            CHECK_GL("copied the depth (resolved multisampling)");
         }
         glDisable(GL_DEPTH_TEST);
 
         // render geodata
         for (const auto &t : draws->geodata)
             drawGeodata(t);
-		CHECK_GL("rendered geodata");
+        CHECK_GL("rendered geodata");
 
         // render infographics
         for (const DrawTask &t : draws->infographics)
             drawInfographic(t);
-		CHECK_GL("rendered infographics");
+        CHECK_GL("rendered infographics");
 
         // copy the color (resolve multisampling)
         if (options.colorToTexture
@@ -424,7 +424,7 @@ public:
                               0, 0, options.width, options.height,
                               GL_COLOR_BUFFER_BIT, GL_NEAREST);
             glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
-			CHECK_GL("copied the color to texture (resolving multisampling)");
+            CHECK_GL("copied the color to texture (resolving multisampling)");
         }
 
         // copy the color to screen
@@ -436,7 +436,7 @@ public:
                               options.targetViewportX, options.targetViewportY,
                               options.width, options.height,
                               GL_COLOR_BUFFER_BIT, GL_NEAREST);
-			CHECK_GL("copied the color to screen (resolving multisampling)");
+            CHECK_GL("copied the color to screen (resolving multisampling)");
         }
 
         // clear the state
@@ -731,7 +731,7 @@ public:
                      GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
         }
         #endif
-		CHECK_GL("read depth");
+        CHECK_GL("read depth");
         clearGlState();
 
         if (depth > 1 - 1e-7)

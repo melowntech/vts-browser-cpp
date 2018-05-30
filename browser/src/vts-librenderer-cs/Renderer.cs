@@ -34,37 +34,37 @@ namespace vts
         public static void LoadGlFunctions(RendererInterop.GLADloadproc proc)
         {
             RendererInterop.vtsLoadGlFunctions(proc);
-            Util.CheckError();
+            Util.CheckInterop();
         }
 
         public Renderer()
         {
             Handle = RendererInterop.vtsRendererCreate();
-            Util.CheckError();
+            Util.CheckInterop();
         }
         
         public void Initialize()
         {
             RendererInterop.vtsRendererInitialize(Handle);
-            Util.CheckError();
+            Util.CheckInterop();
         }
 
         public void Deinitialize()
         {
             RendererInterop.vtsRendererFinalize(Handle);
-            Util.CheckError();
+            Util.CheckInterop();
         }
 
         public void BindLoadFunctions(Map map)
         {
             RendererInterop.vtsRendererBindLoadFunctions(Handle, map.Handle);
-            Util.CheckError();
+            Util.CheckInterop();
         }
 
         public void Render(Map map)
         {
             RendererInterop.vtsRendererRender(Handle, map.Handle);
-            Util.CheckError();
+            Util.CheckInterop();
         }
         
         public void RenderCompass(double[] screenPosSize, double[] mapRotation)
@@ -72,7 +72,7 @@ namespace vts
             Util.CheckArray(screenPosSize, 3);
             Util.CheckArray(mapRotation, 3);
             RendererInterop.vtsRendererRenderCompas(Handle, screenPosSize, mapRotation);
-            Util.CheckError();
+            Util.CheckInterop();
         }
 
         public double[] GetWorldPosition(double[] screenPos)
@@ -80,7 +80,7 @@ namespace vts
             Util.CheckArray(screenPos, 2);
             double[] res = new double[3];
             RendererInterop.vtsRendererGetWorldPosition(Handle, screenPos, res);
-            Util.CheckError();
+            Util.CheckInterop();
             return res;
         }
 
@@ -89,13 +89,13 @@ namespace vts
             get
             {
                 IntPtr p = RendererInterop.vtsRendererOptions(Handle);
-                Util.CheckError();
+                Util.CheckInterop();
                 return (RenderOptions)Marshal.PtrToStructure(p, typeof(RenderOptions));
             }
             set
             {
                 IntPtr p = RendererInterop.vtsRendererOptions(Handle);
-                Util.CheckError();
+                Util.CheckInterop();
                 Marshal.StructureToPtr(value, p, false);
             }
         }
@@ -105,7 +105,7 @@ namespace vts
             get
             {
                 IntPtr p = RendererInterop.vtsRendererVariables(Handle);
-                Util.CheckError();
+                Util.CheckInterop();
                 return (RenderVariables)Marshal.PtrToStructure(p, typeof(RenderVariables));
             }
         }
@@ -113,7 +113,7 @@ namespace vts
         public void Dispose()
         {
             RendererInterop.vtsRendererDestroy(Handle);
-            Util.CheckError();
+            Util.CheckInterop();
         }
 
         public IntPtr Handle { get; }

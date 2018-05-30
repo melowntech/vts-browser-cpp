@@ -75,7 +75,7 @@ namespace vts
             Debug.Assert(arr.Rank == 1 && arr.Length == expected);
         }
 
-        public static void CheckError()
+        public static void CheckInterop()
         {
             int code = BrowserInterop.vtsErrCode();
             if (code != 0)
@@ -86,10 +86,16 @@ namespace vts
             }
         }
 
+        public static string CheckString(IntPtr cstr)
+        {
+            CheckInterop();
+            return CStringToSharp(cstr);
+        }
+
         public static uint GpuTypeSize(GpuType type)
         {
             uint s = BrowserInterop.vtsGpuTypeSize((uint)type);
-            CheckError();
+            CheckInterop();
             return s;
         }
     }

@@ -64,13 +64,13 @@ namespace vts
         public void Load(IntPtr handle)
         {
             BrowserInterop.vtsGetTextureResolution(handle, out width, out height, out components);
-            Util.CheckError();
+            Util.CheckInterop();
             type = (GpuType)BrowserInterop.vtsGetTextureType(handle);
-            Util.CheckError();
+            Util.CheckInterop();
             IntPtr bufPtr;
             uint bufSize;
             BrowserInterop.vtsGetTextureBuffer(handle, out bufPtr, out bufSize);
-            Util.CheckError();
+            Util.CheckInterop();
             data = new byte[bufSize];
             Marshal.Copy(bufPtr, data, 0, (int)bufSize);
         }
@@ -98,11 +98,11 @@ namespace vts
         public void Load(IntPtr handle)
         {
             faceMode = (FaceMode)BrowserInterop.vtsGetMeshFaceMode(handle);
-            Util.CheckError();
+            Util.CheckInterop();
             IntPtr bufPtr;
             uint bufSize;
             BrowserInterop.vtsGetMeshIndices(handle, out bufPtr, out bufSize, out indicesCount);
-            Util.CheckError();
+            Util.CheckInterop();
             if (indicesCount > 0)
             {
                 short[] tmp = new short[indicesCount];
@@ -111,7 +111,7 @@ namespace vts
                 Buffer.BlockCopy(tmp, 0, indices, 0, (int)indicesCount * 2);
             }
             BrowserInterop.vtsGetMeshVertices(handle, out bufPtr, out bufSize, out verticesCount);
-            Util.CheckError();
+            Util.CheckInterop();
             vertices = new byte[bufSize];
             Marshal.Copy(bufPtr, vertices, 0, (int)bufSize);
             attributes = new List<VertexAttribute>(4);
@@ -120,7 +120,7 @@ namespace vts
                 VertexAttribute a;
                 uint type;
                 BrowserInterop.vtsGetMeshAttribute(handle, i, out a.offset, out a.stride, out a.components, out type, out a.enable, out a.normalized);
-                Util.CheckError();
+                Util.CheckInterop();
                 a.type = (GpuType)type;
                 attributes.Add(a);
             }

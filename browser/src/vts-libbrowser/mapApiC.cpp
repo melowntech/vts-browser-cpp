@@ -962,12 +962,27 @@ double vtsCelestialMinorRadius(vtsHMap map)
     return 0.0;
 }
 
-double vtsCelestialAtmosphereThickness(vtsHMap map)
+void vtsCelestialAtmosphere(vtsHMap map, double *thickness, double *horizontalExponent, double *verticalExponent, float colorLow[4], float colorHigh[4])
 {
     C_BEGIN
-    return map->p->celestialBody().atmosphere.thickness;
+        const auto &a = map->p->celestialBody().atmosphere;
+    if (thickness)
+        *thickness = a.thickness;
+    if (horizontalExponent)
+        *horizontalExponent = a.horizontalExponent;
+    if (verticalExponent)
+        *verticalExponent = a.verticalExponent;
+    if (colorLow)
+    {
+        for (int i = 0; i < 4; i++)
+            colorLow[i] = a.colorLow[i];
+    }
+    if (colorHigh)
+    {
+        for (int i = 0; i < 4; i++)
+            colorHigh[i] = a.colorHigh[i];
+    }
     C_END
-    return 0.0;
 }
 
 const vtsCCameraBase *vtsDrawsCamera(vtsHMap map)

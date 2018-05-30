@@ -6,8 +6,8 @@ layout(std140) uniform uboAtm
     mat4 uniAtmViewInv;
     vec4 uniAtmColorLow;
     vec4 uniAtmColorHigh;
-    vec4 uniAtmParams; // atmosphere thickness, horizontal exponent, minor-axis (divided by major axis), major-axis
-    vec3 uniAtmCameraPosition; // world position of camera (divided by major semi-axis)
+    vec4 uniAtmParams; // atmosphere thickness (divided by major axis), horizontal exponent, minor axis (divided by major axis), major axis
+    vec3 uniAtmCameraPosition; // world position of camera (divided by major axis)
 };
 
 float atmDecodeFloat(vec4 rgba)
@@ -34,7 +34,7 @@ float atmSampleDensity(vec2 uv)
     return b * 5.0;
 }
 
-// fragVect is in world space (divided by major axis)
+// fragDir is in model space
 float atmDensityDir(vec3 fragDir, float fragDist)
 {
     if (uniAtmParams[0] == 0.0) // no atmosphere

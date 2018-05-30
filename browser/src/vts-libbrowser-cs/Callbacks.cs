@@ -50,25 +50,25 @@ namespace vts
         public void AssignInternalCallbacks()
         {
             BrowserInterop.vtsCallbacksMapconfigAvailable(Handle, MapconfigAvailableDelegate);
-            Util.CheckError();
+            Util.CheckInterop();
             BrowserInterop.vtsCallbacksMapconfigReady(Handle, MapconfigReadyDelegate);
-            Util.CheckError();
+            Util.CheckInterop();
             BrowserInterop.vtsCallbacksCameraEye(Handle, CameraEyeDelegate);
-            Util.CheckError();
+            Util.CheckInterop();
             BrowserInterop.vtsCallbacksCameraTarget(Handle, CameraTargetDelegate);
-            Util.CheckError();
+            Util.CheckInterop();
             BrowserInterop.vtsCallbacksCameraUp(Handle, CameraUpDelegate);
-            Util.CheckError();
+            Util.CheckInterop();
             BrowserInterop.vtsCallbacksCameraFovAspectNearFar(Handle, CameraFovAspectNearFarDelegate);
-            Util.CheckError();
+            Util.CheckInterop();
             BrowserInterop.vtsCallbacksCameraView(Handle, CameraViewDelegate);
-            Util.CheckError();
+            Util.CheckInterop();
             BrowserInterop.vtsCallbacksCameraProj(Handle, CameraProjDelegate);
-            Util.CheckError();
+            Util.CheckInterop();
             BrowserInterop.vtsCallbacksLoadTexture(Handle, LoadTextureDelegate);
-            Util.CheckError();
+            Util.CheckInterop();
             BrowserInterop.vtsCallbacksLoadMesh(Handle, LoadMeshDelegate);
-            Util.CheckError();
+            Util.CheckInterop();
         }
 
         private BrowserInterop.vtsStateCallbackType MapconfigAvailableDelegate;
@@ -177,10 +177,10 @@ namespace vts
                 Texture t = new Texture();
                 t.Load(r);
                 BrowserInterop.vtsSetResourceMemoryCost(r, 0, (uint)t.data.Length);
-                Util.CheckError();
+                Util.CheckInterop();
                 GCHandle hnd = GCHandle.Alloc(EventLoadTexture.Invoke(t));
                 BrowserInterop.vtsSetResourceUserData(r, GCHandle.ToIntPtr(hnd), UnloadResourceDelegate);
-                Util.CheckError();
+                Util.CheckInterop();
             }
         }
 
@@ -193,10 +193,10 @@ namespace vts
                 Mesh m = new Mesh();
                 m.Load(r);
                 BrowserInterop.vtsSetResourceMemoryCost(r, 0, (uint)(m.vertices == null ? 0 : m.vertices.Length) + (uint)(m.indices == null ? 0 : m.indices.Length) * 2);
-                Util.CheckError();
+                Util.CheckInterop();
                 GCHandle hnd = GCHandle.Alloc(EventLoadMesh.Invoke(m));
                 BrowserInterop.vtsSetResourceUserData(r, GCHandle.ToIntPtr(hnd), UnloadResourceDelegate);
-                Util.CheckError();
+                Util.CheckInterop();
             }
         }
 

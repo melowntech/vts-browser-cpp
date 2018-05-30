@@ -36,7 +36,7 @@ extern "C" {
 VTS_API const char *vtsCelestialName(vtsHMap map);
 VTS_API double vtsCelestialMajorRadius(vtsHMap map);
 VTS_API double vtsCelestialMinorRadius(vtsHMap map);
-VTS_API double vtsCelestialAtmosphereThickness(vtsHMap map);
+VTS_API void vtsCelestialAtmosphere(vtsHMap map, double *thickness, double *horizontalExponent, double *verticalExponent, float colorLow[4], float colorHigh[4]);
 
 #ifdef __cplusplus
 } // extern C

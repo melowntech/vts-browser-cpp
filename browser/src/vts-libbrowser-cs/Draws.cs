@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Copyright (c) 2017 Melown Technologies SE
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,9 +62,48 @@ namespace vts
         public Object texMask;
     }
 
+    public struct Atmosphere
+    {
+        public double thickness;
+        public double horizontalExponent;
+        public double verticalExponent;
+        public float[] colorLow;
+        public float[] colorHigh;
+
+        public void Load(Map map)
+        {
+            if (colorLow == null)
+            {
+                colorLow = new float[4];
+                colorHigh = new float[4];
+            }
+            BrowserInterop.vtsCelestialAtmosphere(map.Handle, out thickness, out horizontalExponent, out verticalExponent, colorLow, colorHigh);
+            Util.CheckInterop();
+        }
+    }
+
+    public struct Celestial
+    {
+        public Atmosphere atmosphere;
+        public string name;
+        public double majorRadius;
+        public double minorRadius;
+
+        public void Load(Map map)
+        {
+            atmosphere.Load(map);
+            name = Util.CheckString(BrowserInterop.vtsCelestialName(map.Handle));
+            majorRadius = BrowserInterop.vtsCelestialMajorRadius(map.Handle);
+            Util.CheckInterop();
+            minorRadius = BrowserInterop.vtsCelestialMinorRadius(map.Handle);
+            Util.CheckInterop();
+        }
+    }
+
     public class Draws
     {
         public CameraBase camera;
+        public Celestial celestial;
         public List<DrawTask> opaque;
         public List<DrawTask> transparent;
         public List<DrawTask> geodata;
@@ -80,11 +119,11 @@ namespace vts
 
         private void Load(ref List<DrawTask> tasks, IntPtr group)
         {
-            Util.CheckError();
+            Util.CheckInterop();
             try
             {
                 uint cnt = BrowserInterop.vtsDrawsCount(group);
-                Util.CheckError();
+                Util.CheckInterop();
                 if (tasks == null)
                     tasks = new List<DrawTask>((int)cnt);
                 else
@@ -94,7 +133,7 @@ namespace vts
                     DrawTask t;
                     IntPtr pm, ptc, ptm;
                     IntPtr dataPtr = BrowserInterop.vtsDrawsAllInOne(group, i, out pm, out ptc, out ptm);
-                    Util.CheckError();
+                    Util.CheckInterop();
                     t.data = (DrawBase)Marshal.PtrToStructure(dataPtr, typeof(DrawBase));
                     t.mesh = Load(pm);
                     t.texColor = Load(ptc);
@@ -105,15 +144,16 @@ namespace vts
             finally
             {
                 BrowserInterop.vtsDrawsDestroy(group);
-                Util.CheckError();
+                Util.CheckInterop();
             }
         }
 
         public void Load(Map map)
         {
             IntPtr camPtr = BrowserInterop.vtsDrawsCamera(map.Handle);
-            Util.CheckError();
+            Util.CheckInterop();
             camera = (CameraBase)Marshal.PtrToStructure(camPtr, typeof(CameraBase));
+            celestial.Load(map);
             Load(ref opaque, BrowserInterop.vtsDrawsOpaque(map.Handle));
             Load(ref transparent, BrowserInterop.vtsDrawsTransparent(map.Handle));
             Load(ref geodata, BrowserInterop.vtsDrawsGeodata(map.Handle));

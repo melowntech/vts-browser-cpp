@@ -53,23 +53,14 @@ std::shared_ptr<T> getMapResource(MapImpl *map, const std::string &name)
 
 } // namespace
 
-MapImpl::Resources::Resources(const std::shared_ptr<Fetcher> &fetcher) :
-    fetcher(fetcher),
+MapImpl::Resources::Resources() :
     downloads(0), tickIndex(0),
     progressEstimationMaxResources(0)
-{
-    assert(fetcher);
-    fetcher->initialize();
-}
+{}
 
-MapImpl::Resources::~Resources()
-{
-    if (fetcher)
-    {
-        fetcher->finalize();
-        fetcher.reset();
-    }
-}
+MapImpl::Resources::Fetching::Fetching() :
+    stop(false)
+{}
 
 void MapImpl::touchResource(const std::shared_ptr<Resource> &resource)
 {

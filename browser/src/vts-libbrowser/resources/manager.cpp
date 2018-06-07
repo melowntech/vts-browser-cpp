@@ -137,8 +137,9 @@ void MapImpl::cacheReadEntry()
     setLogThreadName("cache reader");
     while (!resources.queCacheRead.stopped())
     {
-        std::shared_ptr<Resource> r;
-        resources.queCacheRead.waitPop(r);
+        std::weak_ptr<Resource> w;
+        resources.queCacheRead.waitPop(w);
+        std::shared_ptr<Resource> r = w.lock();
         if (!r)
             continue;
         try
@@ -201,6 +202,57 @@ void MapImpl::cacheReadProcess(const std::shared_ptr<Resource> &r)
 
     if (r->state == Resource::State::downloaded)
         resources.queUpload.push(r);
+}
+
+////////////////////////////
+// FETCHER THREAD
+////////////////////////////
+
+void MapImpl::resourcesDownloadsEntry()
+{
+    resources.fetcher->initialize();
+    while (!resources.fetching.stop)
+    {
+        std::vector<std::weak_ptr<Resource>> res1;
+        {
+            boost::mutex::scoped_lock lock(resources.fetching.mut);
+            resources.fetching.con.wait(lock);
+            res1.swap(resources.fetching.resources);
+        }
+        if (resources.downloads >= options.maxConcurrentDownloads)
+            continue; // skip processing if no download slots are awailable
+        typedef std::pair<float, std::shared_ptr<Resource>> PR;
+        std::vector<PR> res;
+        for (auto &w : res1)
+        {
+            std::shared_ptr<Resource> r = w.lock();
+            if (r)
+            {
+                res.emplace_back(r->priority, r);
+                if (r->priority < std::numeric_limits<float>::infinity())
+                    r->priority = 0;
+            }
+        }
+        std::sort(res.begin(), res.end(), [](PR &a, PR &b) {
+            return a.first > b.first;
+        });
+        for (auto &pr : res)
+        {
+            if (resources.downloads >= options.maxConcurrentDownloads)
+                break;
+            std::shared_ptr<Resource> r = pr.second;
+            r->state = Resource::State::downloading;
+            resources.downloads++;
+            LOG(debug) << "Initializing fetch of <" << r->name << ">";
+            r->fetch->query.headers["X-Vts-Client-Id"] = createOptions.clientId;
+            if (resources.auth)
+                resources.auth->authorize(r);
+            resources.fetcher->fetch(r->fetch);
+            statistics.resourcesDownloaded++;
+        }
+    }
+    resources.fetcher->finalize();
+    resources.fetcher.reset();
 }
 
 ////////////////////////////
@@ -304,6 +356,8 @@ void MapImpl::resourcesCheckInitialized()
             r->state = Resource::State::checkCache;
             resources.queCacheRead.push(r);
             break;
+        default:
+            break;
         }
     }
 }
@@ -312,7 +366,7 @@ void MapImpl::resourcesStartDownloads()
 {
     if (resources.downloads >= options.maxConcurrentDownloads)
         return; // early exit
-    std::vector<std::shared_ptr<Resource>> res;
+    std::vector<std::weak_ptr<Resource>> res;
     for (auto it : resources.resources)
     {
         const std::shared_ptr<Resource> &r = it.second;
@@ -321,29 +375,11 @@ void MapImpl::resourcesStartDownloads()
         if (r->state == Resource::State::startDownload)
             res.push_back(r);
     }
-    // sort candidates by priority
-    std::sort(res.begin(), res.end(), [](auto &a, auto &b) {
-        return a->priority > b->priority;
-    });
-    // reset the priority
-    for (auto &r : res)
-        if (r->priority < std::numeric_limits<float>::infinity())
-            r->priority = 0;
-    for (auto &r : res)
     {
-        if (resources.downloads >= options.maxConcurrentDownloads)
-            break;
-        resources.downloads++;
-        LOG(debug) << "Initializing fetch of <" << r->name << ">";
-        r->fetch->query.headers["X-Vts-Client-Id"] = createOptions.clientId;
-        if (resources.auth)
-            resources.auth->authorize(r);
-        //if (r->fetch->query.url.empty())
-        //    r->fetch->query.url = r->name;
-        r->state = Resource::State::downloading;
-        resources.fetcher->fetch(r->fetch);
-        statistics.resourcesDownloaded++;
+        boost::mutex::scoped_lock lock(resources.fetching.mut);
+        res.swap(resources.fetching.resources);
     }
+    resources.fetching.con.notify_one();
 }
 
 void MapImpl::resourceRenderInitialize()

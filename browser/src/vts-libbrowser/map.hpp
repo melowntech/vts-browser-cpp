@@ -598,14 +598,24 @@ public:
         uint32 tickIndex;
         uint32 progressEstimationMaxResources;
 
-        ThreadQueue<std::shared_ptr<Resource>> queCacheRead;
+        ThreadQueue<std::weak_ptr<Resource>> queCacheRead;
         ThreadQueue<std::weak_ptr<Resource>> queUpload;
         ThreadQueue<CacheWriteData> queCacheWrite;
         std::thread thrCacheReader;
         std::thread thrCacheWriter;
 
-        Resources(const std::shared_ptr<Fetcher> &fetcher);
-        ~Resources();
+        class Fetching
+        {
+        public:
+            std::vector<std::weak_ptr<Resource>> resources;
+            std::thread thr;
+            boost::mutex mut;
+            boost::condition_variable con;
+            std::atomic<bool> stop;
+            Fetching();
+        } fetching;
+
+        Resources();
     } resources;
 
     class Renderer
@@ -667,6 +677,7 @@ public:
     void resourcesRemoveOld();
     void resourcesCheckInitialized();
     void resourcesStartDownloads();
+    void resourcesDownloadsEntry();
     void resourceUploadProcess(const std::shared_ptr<Resource> &r);
 
     void cacheWriteEntry();

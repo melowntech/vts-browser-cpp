@@ -862,12 +862,15 @@ void Map::printDebugInfo()
 MapImpl::MapImpl(Map *map, const MapCreateOptions &options,
                     const std::shared_ptr<Fetcher> &fetcher) :
     map(map), createOptions(options),
-    mapconfigAvailable(false), mapconfigReady(false),
-    resources(fetcher)
+    mapconfigAvailable(false), mapconfigReady(false)
 {
+    assert(fetcher);
+    resources.fetcher = fetcher;
     resources.cache = Cache::create(options);
     resources.thrCacheReader = std::thread(&MapImpl::cacheReadEntry, this);
     resources.thrCacheWriter = std::thread(&MapImpl::cacheWriteEntry, this);
+    resources.fetching.thr
+            = std::thread(&MapImpl::resourcesDownloadsEntry, this);
 }
 
 MapImpl::~MapImpl()
@@ -877,6 +880,9 @@ MapImpl::~MapImpl()
     resources.queUpload.terminate();
     resources.thrCacheReader.join();
     resources.thrCacheWriter.join();
+    resources.fetching.stop = true;
+    resources.fetching.con.notify_all();
+    resources.fetching.thr.join();
 }
 
 void MapImpl::printDebugInfo()

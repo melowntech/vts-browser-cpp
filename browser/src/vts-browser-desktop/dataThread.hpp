@@ -44,10 +44,8 @@ class FetcherOptions;
 class DataThread
 {
 public:
-    DataThread(vts::Map *map,
-               uint32 &timing,
-               struct SDL_Window *window,
-               void *context);
+    DataThread(struct SDL_Window *window, void *dataContext,
+        vts::Map *map);
     ~DataThread();
 
     void run();
@@ -55,10 +53,8 @@ public:
 private:
     std::thread thr;
     vts::Map *const map;
-    uint32 &timing;
     struct SDL_Window *window;
     void *context;
-    std::atomic<bool> stop;
 };
 
 #endif

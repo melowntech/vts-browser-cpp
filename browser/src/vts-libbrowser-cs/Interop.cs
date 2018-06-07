@@ -35,11 +35,7 @@ namespace vts
 	public static class BrowserInterop
 	{
 
-#if DEBUG
-	const string LibName = "vts-browser-d";
-#else
 	const string LibName = "vts-browser";
-#endif
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void vtsResourceCallbackType(IntPtr map, IntPtr resource);
@@ -177,7 +173,7 @@ public static extern void vtsLogAddSink(uint mask, vtsLogCallbackType callback);
 public static extern void vtsLog(uint level, [MarshalAs(UnmanagedType.LPStr)] string message);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsMapCreate([MarshalAs(UnmanagedType.LPStr)] string createOptions);
+public static extern IntPtr vtsMapCreate([MarshalAs(UnmanagedType.LPStr)] string createOptions, IntPtr fetcher);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsMapDestroy(IntPtr map);
@@ -210,13 +206,16 @@ public static extern bool vtsMapGetRenderComplete(IntPtr map);
 public static extern double vtsMapGetRenderProgress(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsMapDataInitialize(IntPtr map, IntPtr fetcher);
+public static extern void vtsMapDataInitialize(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsMapDataTick(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsMapDataFinalize(IntPtr map);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsMapDataAllRun(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsMapRenderInitialize(IntPtr map);

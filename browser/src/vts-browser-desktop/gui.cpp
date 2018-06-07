@@ -832,9 +832,7 @@ public:
                 S("Time map:", window->timingMapProcess, " ms");
                 S("Time app:", window->timingAppProcess, " ms");
                 S("Time frame:", window->timingTotalFrame, " ms");
-                S("Time data:", window->timingDataFrame, " ms");
                 S("Render tick:", s.renderTicks, "");
-                S("Data tick:", s.dataTicks, "");
                 nk_label(&ctx, "Z range:", NK_TEXT_LEFT);
                 sprintf(buffer, "%0.0f - %0.0f", window->map->draws().camera.near_,
                         window->map->draws().camera.far_);

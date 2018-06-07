@@ -101,7 +101,15 @@ void MapImpl::resourceDataTick()
 
 void MapImpl::resourceDataRun()
 {
-    LOGTHROW(fatal, std::runtime_error) << "Map::DataRun() not yet implemented";
+    while (!resources.queUpload.stopped())
+    {
+        std::weak_ptr<Resource> w;
+        resources.queUpload.waitPop(w);
+        std::shared_ptr<Resource> r = w.lock();
+        if (!r)
+            continue;
+        resourceUploadProcess(r);
+    }
 }
 
 ////////////////////////////

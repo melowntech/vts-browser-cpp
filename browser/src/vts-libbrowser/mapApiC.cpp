@@ -368,17 +368,17 @@ void vtsMapDataTick(vtsHMap map)
     C_END
 }
 
-void vtsMapDataRun(vtsHMap map)
-{
-    C_BEGIN
-    map->p->dataRun();
-    C_END
-}
-
 void vtsMapDataFinalize(vtsHMap map)
 {
     C_BEGIN
     map->p->dataFinalize();
+    C_END
+}
+
+void vtsMapDataAllRun(vtsHMap map)
+{
+    C_BEGIN
+    map->p->dataAllRun();
     C_END
 }
 

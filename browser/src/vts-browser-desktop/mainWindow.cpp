@@ -74,55 +74,12 @@ AppOptions::AppOptions() :
     purgeDiskCache(false)
 {}
 
-MainWindow::MainWindow(vts::Map *map, const AppOptions &appOptions,
-                       const vts::renderer::RenderOptions &renderOptions) :
+MainWindow::MainWindow(struct SDL_Window *window, void *renderContext,
+            vts::Map *map, const AppOptions &appOptions,
+            const vts::renderer::RenderOptions &renderOptions) :
     appOptions(appOptions),
-    map(map), window(nullptr),
-    dataContext(nullptr), renderContext(nullptr)
+    map(map), window(window), renderContext(renderContext)
 {
-    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
-    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
-                        SDL_GL_CONTEXT_PROFILE_CORE);
-#ifndef NDEBUG
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
-#endif
-
-    {
-        window = SDL_CreateWindow("vts-browser-desktop",
-            SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-            800, 600,
-            SDL_WINDOW_MAXIMIZED | SDL_WINDOW_OPENGL
-            | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
-    }
-
-    if (!window)
-    {
-        vts::log(vts::LogLevel::err4, SDL_GetError());
-        throw std::runtime_error("Failed to create window");
-    }
-
-    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
-    dataContext = SDL_GL_CreateContext(window);
-    renderContext = SDL_GL_CreateContext(window);
-
-    if (!dataContext || !renderContext)
-    {
-        vts::log(vts::LogLevel::err4, SDL_GetError());
-        throw std::runtime_error("Failed to create opengl context");
-    }
-
-    SDL_GL_MakeCurrent(window, renderContext);
-    SDL_GL_SetSwapInterval(1);
-
     vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
 
     {
@@ -178,9 +135,6 @@ MainWindow::~MainWindow()
         map->renderFinalize();
 
     render.finalize();
-
-    SDL_GL_DeleteContext(renderContext);
-    SDL_DestroyWindow(window);
 }
 
 void MainWindow::renderFrame()

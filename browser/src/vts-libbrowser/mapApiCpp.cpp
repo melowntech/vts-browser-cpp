@@ -139,13 +139,15 @@ void Map::dataTick()
     impl->resourceDataTick();
 }
 
-void Map::dataRun()
-{
-    impl->resourceDataRun();
-}
-
 void Map::dataFinalize()
 {
+    impl->resourceDataFinalize();
+}
+
+void Map::dataAllRun()
+{
+    impl->resourceDataInitialize();
+    impl->resourceDataRun();
     impl->resourceDataFinalize();
 }
 

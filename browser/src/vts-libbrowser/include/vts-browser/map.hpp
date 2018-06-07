@@ -73,14 +73,20 @@ public:
     double getMapRenderProgress() const;
 
     void dataInitialize();
-    // does at most MapOptions.maxResourceProcessesPerTick operations and returns
+    // dataTick does at most MapOptions.maxResourceProcessesPerTick
+    //   operations and returns
     // you should call it periodically
     void dataTick();
-    // blocking alternative to dataTick
-    // it will only return after renderFinalize has been called in the main thread
-    // the dataRun must be called on a separate thread, but is more efficient
-    void dataRun();
     void dataFinalize();
+
+    // blocking alternative to:
+    //   { dataInitialize();
+    //     while (someCondition) dataTick();
+    //     dataFinalize(); }
+    // dataAllRun will return after renderFinalize has been called
+    // the dataAllRun must be called on a separate thread,
+    //   but is more cpu efficient than active waiting
+    void dataAllRun();
 
     void renderInitialize();
     void renderTickPrepare(double elapsedTime); // seconds since last call

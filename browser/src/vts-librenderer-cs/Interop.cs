@@ -35,11 +35,7 @@ namespace vts
 	public static class RendererInterop
 	{
 
-#if DEBUG
-	const string LibName = "vts-renderer-d";
-#else
 	const string LibName = "vts-renderer";
-#endif
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate IntPtr  GLADloadproc([MarshalAs(UnmanagedType.LPStr)] string name);

@@ -37,6 +37,68 @@
 #include "dataThread.hpp"
 #include "programOptions.hpp"
 
+void initializeSdl(struct SDL_Window *&window,
+    void *&renderContext, void *&dataContext)
+{
+    if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
+    {
+        vts::log(vts::LogLevel::err4, SDL_GetError());
+        throw std::runtime_error("Failed to initialize SDL");
+    }
+
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+        SDL_GL_CONTEXT_PROFILE_CORE);
+#ifndef NDEBUG
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#endif
+
+    {
+        window = SDL_CreateWindow("vts-browser-desktop",
+            SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+            800, 600,
+            SDL_WINDOW_MAXIMIZED | SDL_WINDOW_OPENGL
+            | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+    }
+
+    if (!window)
+    {
+        vts::log(vts::LogLevel::err4, SDL_GetError());
+        throw std::runtime_error("Failed to create window");
+    }
+
+    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+    dataContext = SDL_GL_CreateContext(window);
+    renderContext = SDL_GL_CreateContext(window);
+
+    if (!dataContext || !renderContext)
+    {
+        vts::log(vts::LogLevel::err4, SDL_GetError());
+        throw std::runtime_error("Failed to create opengl context");
+    }
+
+    SDL_GL_MakeCurrent(window, renderContext);
+    SDL_GL_SetSwapInterval(1);
+}
+
+void finalizeSdl(struct SDL_Window *window,
+    void *renderContext, void *dataContext)
+{
+    SDL_GL_DeleteContext(dataContext);
+    SDL_GL_DeleteContext(renderContext);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+}
+
 int main(int argc, char *argv[])
 {
     // release build -> catch exceptions and print them to stderr
@@ -53,10 +115,8 @@ int main(int argc, char *argv[])
 
         vts::MapCreateOptions createOptions;
         createOptions.clientId = "vts-browser-desktop";
-        //createOptions.disableCache = true;
         vts::MapOptions mapOptions;
         mapOptions.targetResourcesMemoryKB = 512 * 1024;
-        //mapOptions.debugExtractRawResources = true;
         vts::FetcherOptions fetcherOptions;
         AppOptions appOptions;
         vts::renderer::RenderOptions renderOptions;
@@ -64,28 +124,22 @@ int main(int argc, char *argv[])
                             renderOptions, appOptions, argc, argv))
             return 0;
 
-        // this application uses separate thread for resource processing,
-        //   therefore it is safe to process as many resources as possible
-        //   in single dataTick without causing any lag spikes
-        mapOptions.maxResourceProcessesPerTick = -1;
-
-        if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
-        {
-            vts::log(vts::LogLevel::err4, SDL_GetError());
-            throw std::runtime_error("Failed to initialize SDL");
-        }
+        struct SDL_Window *window = nullptr;
+        void *renderContext = nullptr;
+        void *dataContext = nullptr;
+        initializeSdl(window, renderContext, dataContext);
 
         {
             vts::Map map(createOptions,
                 vts::Fetcher::create(fetcherOptions));
             map.options() = mapOptions;
-            MainWindow main(&map, appOptions, renderOptions);
-            DataThread data(&map, main.timingDataFrame,
-                            main.window, main.dataContext);
+            DataThread data(window, dataContext, &map);
+            MainWindow main(window, renderContext,
+                &map, appOptions, renderOptions);
             main.run();
         }
 
-        SDL_Quit();
+        finalizeSdl(window, renderContext, dataContext);
         return 0;
 
 #ifdef NDEBUG

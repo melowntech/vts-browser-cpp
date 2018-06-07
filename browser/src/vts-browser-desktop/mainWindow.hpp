@@ -70,7 +70,9 @@ struct AppOptions
 class MainWindow
 {
 public:
-    MainWindow(vts::Map *map, const AppOptions &appOptions, const vts::renderer::RenderOptions &renderOptions);
+    MainWindow(struct SDL_Window *window, void *renderContext,
+        vts::Map *map, const AppOptions &appOptions,
+        const vts::renderer::RenderOptions &renderOptions);
     ~MainWindow();
 
     class Gui
@@ -103,12 +105,9 @@ public:
     uint32 timingMapProcess;
     uint32 timingAppProcess;
     uint32 timingTotalFrame;
-    uint32 timingDataFrame;
     vts::Map *const map;
     vts::renderer::Renderer render;
     struct SDL_Window *window;
-
-    void *dataContext;
     void *renderContext;
 };
 

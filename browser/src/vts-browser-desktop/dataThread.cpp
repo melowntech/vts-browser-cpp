@@ -31,49 +31,23 @@
 #include <SDL2/SDL.h>
 #include "dataThread.hpp"
 
-namespace
+DataThread::DataThread(struct SDL_Window *window, void *dataContext,
+            vts::Map *map) :
+    map(map), window(window), context(dataContext)
 {
-    void run(DataThread *data)
-    {
-        data->run();
-    }
-
-    void microSleep(uint64 micros)
-    {
-        std::this_thread::sleep_for(std::chrono::microseconds(micros));
-    }
-}
-
-DataThread::DataThread(vts::Map *map, uint32 &timing,
-                       SDL_Window *window, void *context) :
-    map(map), timing(timing),
-    window(window), context(context),
-    stop(false)
-{
-    thr = std::thread(&::run, this);
+    thr = std::thread(&DataThread::run, this);
 }
 
 DataThread::~DataThread()
 {
-    stop = true;
     thr.join();
 }
 
 void DataThread::run()
 {
     vts::setLogThreadName("data");
-    map->dataInitialize();
     SDL_GL_MakeCurrent(window, context);
-    while (!stop && !map)
-        microSleep(1000);
-    while (!stop)
-    {
-        uint32 timeFrameStart = SDL_GetTicks();
-        map->dataTick();
-        uint32 timeFrameEnd = SDL_GetTicks();
-        timing = timeFrameEnd - timeFrameStart;
-        microSleep(20000);
-    }
+    map->dataInitialize();
+    map->dataAllRun();
     map->dataFinalize();
-    SDL_GL_DeleteContext(context);
 }

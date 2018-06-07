@@ -42,7 +42,7 @@ namespace vts
     {
         public Map(string createOptions)
         {
-            handle = BrowserInterop.vtsMapCreate(createOptions);
+            handle = BrowserInterop.vtsMapCreate(createOptions, IntPtr.Zero);
             Util.CheckInterop();
             AssignInternalDelegates();
             AssignInternalCallbacks();
@@ -89,7 +89,7 @@ namespace vts
         
         public void DataInitialize()
         {
-            BrowserInterop.vtsMapDataInitialize(Handle, IntPtr.Zero);
+            BrowserInterop.vtsMapDataInitialize(Handle);
             Util.CheckInterop();
         }
 
@@ -102,6 +102,12 @@ namespace vts
         public void DataDeinitialize()
         {
             BrowserInterop.vtsMapDataFinalize(Handle);
+            Util.CheckInterop();
+        }
+
+        public void DataAllRun()
+        {
+            BrowserInterop.vtsMapDataAllRun(Handle);
             Util.CheckInterop();
         }
 
@@ -317,21 +323,16 @@ namespace vts
             Dispose(false);
         }
 
-        protected virtual void Dispose(bool disposing)
+        protected void Dispose(bool disposing)
         {
-            if (!disposed)
+            if (Handle != null)
             {
-                if (Handle != null)
-                {
-                    BrowserInterop.vtsMapDestroy(Handle);
-                    Util.CheckInterop();
-                    handle = IntPtr.Zero;
-                }
-                disposed = true;
+                BrowserInterop.vtsMapDestroy(Handle);
+                Util.CheckInterop();
+                handle = IntPtr.Zero;
             }
         }
 
-        private bool disposed = false;
         protected IntPtr handle;
         public IntPtr Handle { get { return handle; } }
     }

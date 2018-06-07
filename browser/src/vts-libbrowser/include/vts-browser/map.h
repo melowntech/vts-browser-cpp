@@ -55,8 +55,8 @@ VTS_API double vtsMapGetRenderProgress(vtsHMap map);
 // data processing (may be run on a dedicated thread)
 VTS_API void vtsMapDataInitialize(vtsHMap map);
 VTS_API void vtsMapDataTick(vtsHMap map);
-VTS_API void vtsMapDataRun(vtsHMap map);
 VTS_API void vtsMapDataFinalize(vtsHMap map);
+VTS_API void vtsMapDataAllRun(vtsHMap map);
 
 // rendering
 VTS_API void vtsMapRenderInitialize(vtsHMap map);

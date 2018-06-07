@@ -118,10 +118,10 @@ MapView::BoundLayerInfo::BoundLayerInfo(const std::string &id) :
     id(id), alpha(1)
 {}
 
-Map::Map(const MapCreateOptions &options)
+Map::Map(const MapCreateOptions &options, const std::shared_ptr<Fetcher> &fetcher)
 {
     LOG(info3) << "Creating map";
-    impl = std::make_shared<MapImpl>(this, options);
+    impl = std::make_shared<MapImpl>(this, options, fetcher);
 }
 
 Map::~Map()
@@ -129,15 +129,19 @@ Map::~Map()
     LOG(info3) << "Destroying map";
 }
 
-void Map::dataInitialize(const std::shared_ptr<Fetcher> &fetcher)
+void Map::dataInitialize()
 {
-    impl->resourceDataInitialize(fetcher);
+    impl->resourceDataInitialize();
 }
 
 void Map::dataTick()
 {
-    impl->statistics.dataTicks = ++impl->resources.tickIndex;
     impl->resourceDataTick();
+}
+
+void Map::dataRun()
+{
+    impl->resourceDataRun();
 }
 
 void Map::dataFinalize()
@@ -853,11 +857,24 @@ void Map::printDebugInfo()
     impl->printDebugInfo();
 }
 
-MapImpl::MapImpl(Map *map, const MapCreateOptions &options) :
+MapImpl::MapImpl(Map *map, const MapCreateOptions &options,
+                    const std::shared_ptr<Fetcher> &fetcher) :
     map(map), createOptions(options),
-    mapconfigAvailable(false), mapconfigReady(false)
+    mapconfigAvailable(false), mapconfigReady(false),
+    resources(fetcher)
 {
     resources.cache = Cache::create(options);
+    resources.thrCacheReader = std::thread(&MapImpl::cacheReadEntry, this);
+    resources.thrCacheWriter = std::thread(&MapImpl::cacheWriteEntry, this);
+}
+
+MapImpl::~MapImpl()
+{
+    resources.queCacheRead.terminate();
+    resources.queCacheWrite.terminate();
+    resources.queUpload.terminate();
+    resources.thrCacheReader.join();
+    resources.thrCacheWriter.join();
 }
 
 void MapImpl::printDebugInfo()

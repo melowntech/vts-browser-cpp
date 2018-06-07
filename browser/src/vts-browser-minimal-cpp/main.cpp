@@ -99,17 +99,16 @@ int main(int, char *[])
     render.initialize();
 
     // create instance of the vts::Map class
-    map = std::make_shared<vts::Map>(vts::MapCreateOptions());
+    map = std::make_shared<vts::Map>(vts::MapCreateOptions(),
+                vts::Fetcher::create(vts::FetcherOptions()));
 
     // set required callbacks for creating mesh and texture resources
     render.bindLoadFunctions(map.get());
 
-    // initialize the resource processing with default fetcher
-    map->dataInitialize(vts::Fetcher::create(vts::FetcherOptions()));
-
     // initialize the render preparation component of the map
     updateResolution();
     map->renderInitialize();
+    map->dataInitialize();
 
     // configure an url to the map that should be displayed
     map->setMapConfigPath("https://cdn.melown.com/mario/store/melown2015/"

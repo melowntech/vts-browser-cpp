@@ -42,7 +42,7 @@ class VTS_API FetchTask
 public:
     enum class ResourceType
     {
-        General,
+        Undefined,
         MapConfig,
         AuthConfig,
         BoundLayerConfig,
@@ -58,8 +58,6 @@ public:
         GeodataFeatures,
         GeodataStylesheet,
     };
-
-    static bool isResourceTypeMandatory(ResourceType resourceType);
 
     struct VTS_API ExtraCodes
     {

@@ -45,13 +45,11 @@ namespace
 }
 
 DataThread::DataThread(vts::Map *map, uint32 &timing,
-                       SDL_Window *window, void *context,
-                       const vts::FetcherOptions &fetcherOptions) :
+                       SDL_Window *window, void *context) :
     map(map), timing(timing),
     window(window), context(context),
     stop(false)
 {
-    fetcher = vts::Fetcher::create(fetcherOptions);
     thr = std::thread(&::run, this);
 }
 
@@ -63,20 +61,18 @@ DataThread::~DataThread()
 
 void DataThread::run()
 {
-    vts::setLogThreadName("fetcher");
-    map->dataInitialize(fetcher);
-
     vts::setLogThreadName("data");
+    map->dataInitialize();
     SDL_GL_MakeCurrent(window, context);
     while (!stop && !map)
-        microSleep(10000);
+        microSleep(1000);
     while (!stop)
     {
         uint32 timeFrameStart = SDL_GetTicks();
         map->dataTick();
         uint32 timeFrameEnd = SDL_GetTicks();
         timing = timeFrameEnd - timeFrameStart;
-        microSleep(100000);
+        microSleep(20000);
     }
     map->dataFinalize();
     SDL_GL_DeleteContext(context);

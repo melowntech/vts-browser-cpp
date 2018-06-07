@@ -148,7 +148,6 @@ MapOptions::MapOptions() :
     traverseModeSurfaces(TraverseMode::Balanced),
     traverseModeGeodata(TraverseMode::Hierarchical),
     enableSearchResultsFilter(true),
-    enableRuntimeResourceExpiration(false),
     enableArbitrarySriRequests(true),
     enableCameraNormalization(true),
     enableCameraAltitudeChanges(true),
@@ -206,7 +205,6 @@ void MapOptions::applyJson(const std::string &json)
     AJE(traverseModeSurfaces, TraverseMode);
     AJE(traverseModeGeodata, TraverseMode);
     AJ(enableSearchResultsFilter, asBool);
-    AJ(enableRuntimeResourceExpiration, asBool);
     AJ(enableArbitrarySriRequests, asBool);
     AJ(enableCameraNormalization, asBool);
     AJ(enableCameraAltitudeChanges, asBool);
@@ -256,7 +254,6 @@ std::string MapOptions::toJson() const
     TJE(traverseModeSurfaces, TraverseMode);
     TJE(traverseModeGeodata, TraverseMode);
     TJ(enableSearchResultsFilter, asBool);
-    TJ(enableRuntimeResourceExpiration, asBool);
     TJ(enableArbitrarySriRequests, asBool);
     TJ(enableCameraNormalization, asBool);
     TJ(enableCameraAltitudeChanges, asBool);

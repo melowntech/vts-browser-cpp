@@ -63,41 +63,47 @@ set(PUB_HDR_LIST
 )
 
 set(SRC_LIST
-    resources/mesh.cpp
-    resources/texture.cpp
-    resources/other.cpp
-    resources/manager.cpp
+    resources/auth.cpp
     resources/cache.hpp
     resources/cache.cpp
     resources/fetcher.cpp
-    resources/auth.cpp
-    resources/mapConfig.cpp
     resources/geodata.cpp
+    resources/manager.cpp
+    resources/mapConfig.cpp
+    resources/mesh.cpp
+    resources/other.cpp
+    resources/resource.cpp
+    resources/resources.cpp
+    resources/texture.cpp
     image/image.hpp
     image/image.cpp
-    image/png.cpp
     image/jpeg.cpp
+    image/png.cpp
+    utilities/array.hpp
+    utilities/json.hpp
+    utilities/json.cpp
     utilities/obj.hpp
     utilities/obj.cpp
     utilities/threadName.hpp
     utilities/threadName.cpp
-    utilities/json.hpp
-    utilities/json.cpp
-    utilities/array.hpp
+    utilities/threadQueue.hpp
+    boostProgramOptions.cpp
+    boundLayers.cpp
     buffer.cpp
-    credits.hpp
-    credits.cpp
     coordsManip.hpp
     coordsManip.cpp
+    credits.hpp
+    credits.cpp
     exceptions.cpp
+    log.cpp
     map.hpp
-    mapApiCpp.cpp
     mapApiC.hpp
     mapApiC.cpp
-    mapUtilities.cpp
-    mapLayer.cpp
+    mapApiCpp.cpp
     mapCelestialBody.cpp
     mapDraws.cpp
+    mapLayer.cpp
+    mapUtilities.cpp
     math.cpp
     mathColor.cpp
     navigation.cpp
@@ -107,14 +113,11 @@ set(SRC_LIST
     options.cpp
     renderer.cpp
     rendererTraversal.cpp
-    statistics.cpp
     search.cpp
-    log.cpp
-    boostProgramOptions.cpp
     sri.cpp
+    statistics.cpp
     surfaceStack.cpp
     traverseNode.cpp
-    boundLayers.cpp
     ${EXTRA_SRC_LIST}
 )
 

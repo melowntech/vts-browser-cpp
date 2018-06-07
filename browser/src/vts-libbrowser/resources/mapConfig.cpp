@@ -36,7 +36,7 @@ MapConfig::BrowserOptions::BrowserOptions() :
 {}
 
 MapConfig::MapConfig(MapImpl *map, const std::string &name)
-    : Resource(map, name, FetchTask::ResourceType::MapConfig)
+    : Resource(map, name)
 {
     priority = std::numeric_limits<float>::infinity();
 }
@@ -54,7 +54,7 @@ void MapConfig::load()
 
     // load
     {
-        detail::Wrapper w(reply.content);
+        detail::Wrapper w(fetch->reply.content);
         vtslibs::vts::loadMapConfig(*this, w, name);
     }
 
@@ -95,6 +95,11 @@ void MapConfig::load()
 
     // memory use
     info.ramMemoryCost += sizeof(*this);
+}
+
+FetchTask::ResourceType MapConfig::resourceType() const
+{
+    return FetchTask::ResourceType::MapConfig;
 }
 
 vtslibs::registry::Srs::Type MapConfig::navigationSrsType() const

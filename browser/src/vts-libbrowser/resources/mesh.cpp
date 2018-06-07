@@ -62,13 +62,13 @@ GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0),
 {}
 
 GpuMesh::GpuMesh(MapImpl *map, const std::string &name) :
-    Resource(map, name, FetchTask::ResourceType::General)
+    Resource(map, name)
 {}
 
 void GpuMesh::load()
 {
     LOG(info1) << "Loading (gpu) mesh '" << name << "'";
-    GpuMeshSpec spec(reply.content);
+    GpuMeshSpec spec(fetch->reply.content);
     spec.attributes[0].enable = true;
     spec.attributes[0].stride = sizeof(vec3f) + sizeof(vec2f);
     spec.attributes[0].components = 3;
@@ -79,6 +79,11 @@ void GpuMesh::load()
     spec.attributes[2] = spec.attributes[1];
     map->callbacks.loadMesh(info, spec);
     info.ramMemoryCost += sizeof(*this);
+}
+
+FetchTask::ResourceType GpuMesh::resourceType() const
+{
+    return FetchTask::ResourceType::Undefined;
 }
 
 MeshPart::MeshPart() :
@@ -103,14 +108,14 @@ const mat4 findNormToPhys(const math::Extents3 &extents)
 } // namespace
 
 MeshAggregate::MeshAggregate(MapImpl *map, const std::string &name) :
-    Resource(map, name, FetchTask::ResourceType::Mesh)
+    Resource(map, name)
 {}
 
 void MeshAggregate::load()
 {
     LOG(info2) << "Loading (aggregated) mesh <" << name << ">";
 
-    detail::Wrapper w(reply.content);
+    detail::Wrapper w(fetch->reply.content);
     vtslibs::vts::NormalizedSubMesh::list meshes = vtslibs::vts::
             loadMeshProperNormalized(w, name);
 
@@ -252,6 +257,11 @@ void MeshAggregate::load()
         info.gpuMemoryCost += it.renderable->info.gpuMemoryCost;
         info.ramMemoryCost += it.renderable->info.ramMemoryCost;
     }
+}
+
+FetchTask::ResourceType MeshAggregate::resourceType() const
+{
+    return FetchTask::ResourceType::Mesh;
 }
 
 } // namespace vts

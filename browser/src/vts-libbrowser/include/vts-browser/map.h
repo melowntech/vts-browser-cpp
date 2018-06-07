@@ -34,7 +34,7 @@ extern "C" {
 #endif
 
 // map creation and destruction
-VTS_API vtsHMap vtsMapCreate(const char *createOptions);
+VTS_API vtsHMap vtsMapCreate(const char *createOptions, vtsHFetcher fetcher);
 VTS_API void vtsMapDestroy(vtsHMap map);
 
 // custom data
@@ -53,8 +53,9 @@ VTS_API bool vtsMapGetRenderComplete(vtsHMap map);
 VTS_API double vtsMapGetRenderProgress(vtsHMap map);
 
 // data processing (may be run on a dedicated thread)
-VTS_API void vtsMapDataInitialize(vtsHMap map, vtsHFetcher fetcher);
+VTS_API void vtsMapDataInitialize(vtsHMap map);
 VTS_API void vtsMapDataTick(vtsHMap map);
+VTS_API void vtsMapDataRun(vtsHMap map);
 VTS_API void vtsMapDataFinalize(vtsHMap map);
 
 // rendering

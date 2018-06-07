@@ -76,12 +76,12 @@ int main(int argc, char *argv[])
         }
 
         {
-            vts::Map map(createOptions);
+            vts::Map map(createOptions,
+                vts::Fetcher::create(fetcherOptions));
             map.options() = mapOptions;
             MainWindow main(&map, appOptions, renderOptions);
             DataThread data(&map, main.timingDataFrame,
-                            main.window, main.dataContext,
-                            fetcherOptions);
+                            main.window, main.dataContext);
             main.run();
         }
 

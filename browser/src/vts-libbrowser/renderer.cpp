@@ -64,10 +64,10 @@ void MapImpl::purgeMapConfig()
     LOG(info2) << "Purge map config";
 
     if (resources.auth)
-        resources.auth->reset();
+        resources.auth->forceRedownload();
     resources.auth.reset();
     if (mapConfig)
-        mapConfig->reset();
+        mapConfig->forceRedownload();
     mapConfig.reset();
 
     renderer.credits.purge();

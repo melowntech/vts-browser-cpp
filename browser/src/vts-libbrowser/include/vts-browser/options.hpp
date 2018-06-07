@@ -187,12 +187,6 @@ public:
     // set this to false to prevent such filtering
     bool enableSearchResultsFilter;
 
-    // some resources may intentionally change over time,
-    //   thus they need to be reloaded when they expire
-    // enable this *experimental* feature to allow resource expiration
-    //   even after they were successfully loaded into gpu memory
-    bool enableRuntimeResourceExpiration;
-
     // some applications may be changing viewer locations too rapidly
     //   and it may make the SRI optimizations inefficient
     // setting this option to false will allow the use of SRI

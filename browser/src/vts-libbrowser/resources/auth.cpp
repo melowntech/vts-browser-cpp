@@ -60,7 +60,7 @@ uint64 currentTime()
 } // namespace
 
 AuthConfig::AuthConfig(MapImpl *map, const std::string &name) :
-    Resource(map, name, FetchTask::ResourceType::AuthConfig),
+    Resource(map, name),
     timeValid(0), timeParsed(0)
 {
     priority = std::numeric_limits<float>::infinity();
@@ -82,7 +82,7 @@ void AuthConfig::load()
     {
         Json::Value root;
         {
-            detail::Wrapper w(reply.content);
+            detail::Wrapper w(fetch->reply.content);
             w >> root;
         }
         int status = root["status"].asInt();
@@ -113,6 +113,11 @@ void AuthConfig::load()
     }
 }
 
+FetchTask::ResourceType AuthConfig::resourceType() const
+{
+    return FetchTask::ResourceType::AuthConfig;
+}
+
 void AuthConfig::checkTime()
 {
     if (state == Resource::State::ready)
@@ -134,7 +139,7 @@ void AuthConfig::authorize(const std::shared_ptr<Resource> &task)
         if (hostnames.find(h) == hostnames.end())
             return;
     }
-    task->query.headers["Accept"] = std::string()
+    task->fetch->query.headers["Accept"] = std::string()
             + "token/" + token + ", */*";
 }
 

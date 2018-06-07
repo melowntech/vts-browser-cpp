@@ -113,7 +113,7 @@ int main()
     check();
 
     // create instance of the vts::Map class
-    map = vtsMapCreate("");
+    map = vtsMapCreate("", NULL);
     check();
 
     // set required callbacks for creating mesh and texture resources
@@ -121,7 +121,7 @@ int main()
     check();
 
     // initialize the resource processing with default fetcher
-    vtsMapDataInitialize(map, NULL);
+    vtsMapDataInitialize(map);
     check();
 
     // initialize the render preparation component of the map

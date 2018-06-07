@@ -47,14 +47,12 @@ public:
     DataThread(vts::Map *map,
                uint32 &timing,
                struct SDL_Window *window,
-               void *context,
-               const vts::FetcherOptions &fetcherOptions);
+               void *context);
     ~DataThread();
 
     void run();
 
 private:
-    std::shared_ptr<vts::Fetcher> fetcher;
     std::thread thr;
     vts::Map *const map;
     uint32 &timing;

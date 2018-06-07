@@ -38,7 +38,7 @@ namespace vts
 {
 
 SriIndex::SriIndex(MapImpl *map, const std::string &name)
- : Resource(map, name, FetchTask::ResourceType::SriIndex)
+ : Resource(map, name)
 {
     priority = std::numeric_limits<float>::infinity();
     retryNumber = -1; // never try to download sri index again
@@ -46,7 +46,7 @@ SriIndex::SriIndex(MapImpl *map, const std::string &name)
 
 void SriIndex::load()
 {
-    detail::Wrapper is(reply.content);
+    detail::Wrapper is(fetch->reply.content);
 
     // load header
     {
@@ -81,7 +81,7 @@ void SriIndex::load()
             std::shared_ptr<MetaTile> m = std::make_shared<MetaTile>(map,
                 std::string(urlBuf.data(), urlBuf.size()));
             map->touchResource(m);
-            bin::read(is, m->reply.expires);
+            bin::read(is, m->fetch->reply.expires);
             auto contentStart = is.position();
             *std::dynamic_pointer_cast<vtslibs::vts::MetaTile>(m)
                     = vtslibs::vts::loadMetaTile(is,
@@ -91,14 +91,19 @@ void SriIndex::load()
             // cache the metatile
             {
                 Buffer buffer(contentEnd - contentStart);
-                memcpy(buffer.data(), reply.content.data() + contentStart,
+                memcpy(buffer.data(), fetch->reply.content.data() + contentStart,
                        buffer.size());
-                map->resources.cache->write(m->name, buffer, m->reply.expires);
+                map->resources.cache->write(m->name, buffer, m->fetch->reply.expires);
             }
             m->state = Resource::State::ready;
             metatiles.push_back(m);
         }
     }
+}
+
+FetchTask::ResourceType SriIndex::resourceType() const
+{
+    return FetchTask::ResourceType::SriIndex;
 }
 
 void SriIndex::update()

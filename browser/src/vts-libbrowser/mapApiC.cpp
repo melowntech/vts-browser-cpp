@@ -273,11 +273,12 @@ void vtsLog(uint32 level, const char *message)
     }
 }
 
-vtsHMap vtsMapCreate(const char *createOptions)
+vtsHMap vtsMapCreate(const char *createOptions, vtsHFetcher fetcher)
 {
     C_BEGIN
     vtsHMap r = new vtsCMap();
-    r->p = std::make_shared<vts::Map>(vts::MapCreateOptions(createOptions));
+    r->p = std::make_shared<vts::Map>(vts::MapCreateOptions(createOptions),
+                           fetcher ? fetcher->p : vts::Fetcher::create({}));
     return r;
     C_END
     return nullptr;
@@ -353,11 +354,10 @@ double vtsMapGetRenderProgress(vtsHMap map)
     return 0.0;
 }
 
-void vtsMapDataInitialize(vtsHMap map, vtsHFetcher fetcher)
+void vtsMapDataInitialize(vtsHMap map)
 {
     C_BEGIN
-    map->p->dataInitialize(fetcher ? fetcher->p
-                                   : vts::Fetcher::create({}));
+    map->p->dataInitialize();
     C_END
 }
 
@@ -365,6 +365,13 @@ void vtsMapDataTick(vtsHMap map)
 {
     C_BEGIN
     map->p->dataTick();
+    C_END
+}
+
+void vtsMapDataRun(vtsHMap map)
+{
+    C_BEGIN
+    map->p->dataRun();
     C_END
 }
 

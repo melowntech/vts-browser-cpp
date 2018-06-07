@@ -34,7 +34,7 @@
 #include <unordered_set>
 #include <queue>
 #include <array>
-#include <boost/thread/mutex.hpp>
+#include <thread>
 #include <boost/utility/in_place_factory.hpp>
 #include <vts-libs/vts/urltemplate.hpp>
 #include <vts-libs/vts/nodeinfo.hpp>
@@ -59,6 +59,7 @@
 #include "credits.hpp"
 #include "coordsManip.hpp"
 #include "utilities/array.hpp"
+#include "utilities/threadQueue.hpp"
 
 #ifndef NDEBUG
     // some debuggers are unable to show contents of unordered containers
@@ -83,44 +84,66 @@ enum class Validity
     Valid,
 };
 
-class Resource : public FetchTask
+class CacheWriteData
+{
+public:
+    std::string name;
+    Buffer buffer;
+    sint64 expires;
+};
+
+class FetchTaskImpl : public FetchTask
+{
+public:
+    FetchTaskImpl(const std::shared_ptr<class Resource> &resource);
+    void fetchDone() override;
+
+    const std::string name;
+    MapImpl *const map;
+    std::weak_ptr<class Resource> resource;
+    uint32 redirectionsCount;
+};
+
+class Resource
 {
 public:
     enum class State
     {
         initializing,
+        checkCache,
+        startDownload,
         downloading,
         downloaded,
+        uploading, // to gpu memory
         ready,
         errorFatal,
         errorRetry,
         availFail,
     };
 
-    Resource(MapImpl *map, const std::string &name,
-             FetchTask::ResourceType resourceType);
+    Resource(MapImpl *map, const std::string &name);
     Resource(const Resource &other) = delete;
     Resource &operator = (const Resource &other) = delete;
     virtual ~Resource();
     virtual void load() = 0;
-    void fetchDone() override;
-    void processLoad(); // calls load
+    virtual FetchTask::ResourceType resourceType() const = 0;
+    bool allowDiskCache() const;
+    static bool allowDiskCache(FetchTask::ResourceType type);
     bool performAvailTest() const;
     void updatePriority(float priority);
-    void reset();
-    operator bool () const;
+    void forceRedownload();
+    operator bool () const; // return state == ready
 
-    ResourceInfo info;
     const std::string name;
-    std::shared_ptr<vtslibs::registry::BoundLayer::Availability> availTest;
     MapImpl *const map;
     std::atomic<State> state;
+    ResourceInfo info;
+    std::shared_ptr<FetchTaskImpl> fetch;
+    std::shared_ptr<vtslibs::registry::BoundLayer::Availability> availTest;
     std::time_t retryTime;
     uint32 retryNumber;
-    uint32 redirectionsCount;
     uint32 lastAccessTick;
     float priority;
-    float priorityCopy;
 };
 
 std::ostream &operator << (std::ostream &stream, Resource::State state);
@@ -130,6 +153,7 @@ class GpuMesh : public Resource
 public:
     GpuMesh(MapImpl *map, const std::string &name);
     void load() override;
+    FetchTask::ResourceType resourceType() const override;
 };
 
 class GpuTexture : public Resource
@@ -137,6 +161,7 @@ class GpuTexture : public Resource
 public:
     GpuTexture(MapImpl *map, const std::string &name);
     void load() override;
+    FetchTask::ResourceType resourceType() const override;
 };
 
 class AuthConfig : public Resource
@@ -144,6 +169,7 @@ class AuthConfig : public Resource
 public:
     AuthConfig(MapImpl *map, const std::string &name);
     void load() override;
+    FetchTask::ResourceType resourceType() const override;
     void checkTime();
     void authorize(const std::shared_ptr<Resource> &);
 
@@ -160,6 +186,7 @@ class ExternalBoundLayer : public Resource,
 public:
     ExternalBoundLayer(MapImpl *map, const std::string &name);
     void load() override;
+    FetchTask::ResourceType resourceType() const override;
 };
 
 class ExternalFreeLayer : public Resource,
@@ -168,6 +195,7 @@ class ExternalFreeLayer : public Resource,
 public:
     ExternalFreeLayer(MapImpl *map, const std::string &name);
     void load() override;
+    FetchTask::ResourceType resourceType() const override;
 };
 
 class BoundMetaTile : public Resource
@@ -175,6 +203,7 @@ class BoundMetaTile : public Resource
 public:
     BoundMetaTile(MapImpl *map, const std::string &name);
     void load() override;
+    FetchTask::ResourceType resourceType() const override;
 
     uint8 flags[vtslibs::registry::BoundLayer::rasterMetatileWidth
                 * vtslibs::registry::BoundLayer::rasterMetatileHeight];
@@ -185,6 +214,7 @@ class MetaTile : public Resource, public vtslibs::vts::MetaTile
 public:
     MetaTile(MapImpl *map, const std::string &name);
     void load() override;
+    FetchTask::ResourceType resourceType() const override;
 };
 
 class MeshPart
@@ -204,6 +234,7 @@ class MeshAggregate : public Resource
 public:
     MeshAggregate(MapImpl *map, const std::string &name);
     void load() override;
+    FetchTask::ResourceType resourceType() const override;
 
     std::vector<MeshPart> submeshes;
 };
@@ -213,6 +244,7 @@ class NavTile : public Resource
 public:
     NavTile(MapImpl *map, const std::string &name);
     void load() override;
+    FetchTask::ResourceType resourceType() const override;
 
     std::vector<unsigned char> data;
 
@@ -224,6 +256,7 @@ class SearchTaskImpl : public Resource
 public:
     SearchTaskImpl(MapImpl *map, const std::string &name);
     void load() override;
+    FetchTask::ResourceType resourceType() const override;
 
     Buffer data;
     const std::string validityUrl;
@@ -235,6 +268,7 @@ class TilesetMapping : public Resource
 public:
     TilesetMapping(MapImpl *map, const std::string &name);
     void load() override;
+    FetchTask::ResourceType resourceType() const override;
 
     vtslibs::vts::TilesetReferencesList dataRaw;
 };
@@ -244,6 +278,7 @@ class SriIndex : public Resource
 public:
     SriIndex(MapImpl *map, const std::string &name);
     void load() override;
+    FetchTask::ResourceType resourceType() const override;
     void update();
 
     std::vector<std::shared_ptr<MetaTile>> metatiles;
@@ -254,6 +289,7 @@ class GeodataFeatures : public Resource
 public:
     GeodataFeatures(MapImpl *map, const std::string &name);
     void load() override;
+    FetchTask::ResourceType resourceType() const override;
 
     std::string data;
 };
@@ -263,6 +299,7 @@ class GeodataStylesheet : public Resource
 public:
     GeodataStylesheet(MapImpl *map, const std::string &name);
     void load() override;
+    FetchTask::ResourceType resourceType() const override;
 
     std::string data;
 };
@@ -272,6 +309,7 @@ class GpuGeodata : public Resource
 public:
     GpuGeodata(MapImpl *map, const std::string &name);
     void load() override;
+    FetchTask::ResourceType resourceType() const override;
     void update(const std::string &style, const std::string &features,
                 uint32 lod);
 
@@ -484,6 +522,7 @@ public:
 
     MapConfig(MapImpl *map, const std::string &name);
     void load() override;
+    FetchTask::ResourceType resourceType() const override;
     vtslibs::registry::Srs::Type navigationSrsType() const;
 
     void consolidateView();
@@ -508,7 +547,9 @@ class MapImpl
 {
 public:
     MapImpl(class Map *map,
-            const MapCreateOptions &options);
+            const MapCreateOptions &options,
+            const std::shared_ptr<Fetcher> &fetcher);
+    ~MapImpl();
 
     class Map *const map;
     const MapCreateOptions createOptions;
@@ -545,21 +586,26 @@ public:
     class Resources
     {
     public:
+        std::shared_ptr<Fetcher> fetcher;
         std::shared_ptr<Cache> cache;
         std::shared_ptr<AuthConfig> auth;
-        std::shared_ptr<Fetcher> fetcher;
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
-        std::vector<std::shared_ptr<Resource>> resourcesCopy;
         std::deque<std::weak_ptr<SearchTask>> searchTasks;
         std::deque<std::shared_ptr<SriIndex>> sriTasks;
-        boost::mutex mutResourcesCopy;
         std::string authPath;
         std::string sriPath;
         std::atomic<uint32> downloads;
         uint32 tickIndex;
         uint32 progressEstimationMaxResources;
 
-        Resources();
+        ThreadQueue<std::shared_ptr<Resource>> queCacheRead;
+        ThreadQueue<std::weak_ptr<Resource>> queUpload;
+        ThreadQueue<CacheWriteData> queCacheWrite;
+        std::thread thrCacheReader;
+        std::thread thrCacheWriter;
+
+        Resources(const std::shared_ptr<Fetcher> &fetcher);
+        ~Resources();
     } resources;
 
     class Renderer
@@ -610,14 +656,27 @@ public:
     bool isNavigationModeValid() const;
 
     // resources methods
-    void resourceDataInitialize(const std::shared_ptr<Fetcher> &fetcher);
+    void resourceDataInitialize();
     void resourceDataFinalize();
-    bool resourceDataTick();
+    void resourceDataTick();
+    void resourceDataRun();
     void resourceRenderInitialize();
     void resourceRenderFinalize();
     void resourceRenderTick();
+
+    void resourcesRemoveOld();
+    void resourcesCheckInitialized();
+    void resourcesStartDownloads();
+    void resourceUploadProcess(const std::shared_ptr<Resource> &r);
+
+    void cacheWriteEntry();
+    void cacheReadEntry();
+    void cacheReadProcess(const std::shared_ptr<Resource> &r);
+
     void touchResource(const std::shared_ptr<Resource> &resource);
-    void resourceInitializeDownload(const std::shared_ptr<Resource> &resource);
+    Validity getResourceValidity(const std::string &name);
+    Validity getResourceValidity(const std::shared_ptr<Resource> &resource);
+
     std::shared_ptr<GpuTexture> getTexture(const std::string &name);
     std::shared_ptr<GpuMesh> getMesh(const std::string &name);
     std::shared_ptr<AuthConfig> getAuthConfig(const std::string &name);
@@ -636,9 +695,7 @@ public:
     std::shared_ptr<GeodataFeatures> getGeoFeatures(const std::string &name);
     std::shared_ptr<GeodataStylesheet> getGeoStyle(const std::string &name);
     std::shared_ptr<GpuGeodata> getGeodata(const std::string &name);
-    Validity getResourceValidity(const std::string &name);
-    Validity getResourceValidity(const std::shared_ptr<Resource> &resource);
-    float computeResourcePriority(TraverseNode *trav);
+
     std::shared_ptr<SearchTask> search(const std::string &query,
                                        const double point[3]);
     void updateSearch();
@@ -680,6 +737,7 @@ public:
     bool travDetermineDrawsSurface(TraverseNode *trav);
     bool travDetermineDrawsGeodata(TraverseNode *trav);
     double travDistance(TraverseNode *trav, const vec3 pointPhys);
+    float computeResourcePriority(TraverseNode *trav);
     bool travInit(TraverseNode *trav, bool skipStatistics = false);
     void travModeHierarchical(TraverseNode *trav, bool loadOnly);
     void travModeFlat(TraverseNode *trav);

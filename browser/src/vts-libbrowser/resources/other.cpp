@@ -33,14 +33,14 @@ namespace vts
 {
 
 MetaTile::MetaTile(vts::MapImpl *map, const std::string &name) :
-    Resource(map, name, FetchTask::ResourceType::MetaTile),
+    Resource(map, name),
     vtslibs::vts::MetaTile(vtslibs::vts::TileId(), 0)
 {}
 
 void MetaTile::load()
 {
     LOG(info2) << "Loading meta tile <" << name << ">";
-    detail::Wrapper w(reply.content);
+    detail::Wrapper w(fetch->reply.content);
     *(vtslibs::vts::MetaTile*)this
             = vtslibs::vts::loadMetaTile(w, 5, name);
     info.ramMemoryCost += sizeof(*this);
@@ -48,15 +48,20 @@ void MetaTile::load()
     info.ramMemoryCost += side * side * sizeof(vtslibs::vts::MetaNode);
 }
 
+FetchTask::ResourceType MetaTile::resourceType() const
+{
+    return FetchTask::ResourceType::MetaTile;
+}
+
 NavTile::NavTile(MapImpl *map, const std::string &name) :
-    Resource(map, name, FetchTask::ResourceType::NavTile)
+    Resource(map, name)
 {}
 
 void NavTile::load()
 {
     LOG(info2) << "Loading navigation tile <" << name << ">";
     GpuTextureSpec spec;
-    decodeImage(reply.content, spec.buffer,
+    decodeImage(fetch->reply.content, spec.buffer,
                 spec.width, spec.height, spec.components);
     if (spec.width != 256 || spec.height != 256 || spec.components != 1)
         LOGTHROW(err1, std::runtime_error) << "invalid navtile image";
@@ -66,6 +71,11 @@ void NavTile::load()
     info.ramMemoryCost += data.size();
 }
 
+FetchTask::ResourceType NavTile::resourceType() const
+{
+    return FetchTask::ResourceType::NavTile;
+}
+
 vec2 NavTile::sds2px(const vec2 &point, const math::Extents2 &extents)
 {
     return vecFromUblas<vec2>(vtslibs::vts::NavTile::sds2px(
@@ -73,13 +83,13 @@ vec2 NavTile::sds2px(const vec2 &point, const math::Extents2 &extents)
 }
 
 BoundMetaTile::BoundMetaTile(MapImpl *map, const std::string &name) :
-    Resource(map, name, FetchTask::ResourceType::BoundMetaTile)
+    Resource(map, name)
 {}
 
 void BoundMetaTile::load()
 {
     LOG(info2) << "Loading bound meta tile <" << name << ">";
-    Buffer buffer = std::move(reply.content);
+    Buffer buffer = std::move(fetch->reply.content);
     GpuTextureSpec spec;
     decodeImage(buffer, spec.buffer,
                 spec.width, spec.height, spec.components);
@@ -91,34 +101,49 @@ void BoundMetaTile::load()
     info.ramMemoryCost += spec.buffer.size();
 }
 
+FetchTask::ResourceType BoundMetaTile::resourceType() const
+{
+    return FetchTask::ResourceType::BoundMetaTile;
+}
+
 ExternalBoundLayer::ExternalBoundLayer(MapImpl *map, const std::string &name)
-    : Resource(map, name, FetchTask::ResourceType::BoundLayerConfig)
+    : Resource(map, name)
 {
     priority = std::numeric_limits<float>::infinity();
 }
 
 void ExternalBoundLayer::load()
 {
-    detail::Wrapper w(reply.content);
+    detail::Wrapper w(fetch->reply.content);
     *(vtslibs::registry::BoundLayer*)this
             = vtslibs::registry::loadBoundLayer(w, name);
 }
 
+FetchTask::ResourceType ExternalBoundLayer::resourceType() const
+{
+    return FetchTask::ResourceType::BoundLayerConfig;
+}
+
 ExternalFreeLayer::ExternalFreeLayer(MapImpl *map, const std::string &name)
-    : Resource(map, name, FetchTask::ResourceType::FreeLayerConfig)
+    : Resource(map, name)
 {
     priority = std::numeric_limits<float>::infinity();
 }
 
 void ExternalFreeLayer::load()
 {
-    detail::Wrapper w(reply.content);
+    detail::Wrapper w(fetch->reply.content);
     *(vtslibs::registry::FreeLayer*)this
             = vtslibs::registry::loadFreeLayer(w, name);
 }
 
+FetchTask::ResourceType ExternalFreeLayer::resourceType() const
+{
+    return FetchTask::ResourceType::FreeLayerConfig;
+}
+
 TilesetMapping::TilesetMapping(MapImpl *map, const std::string &name) :
-    Resource(map, name, FetchTask::ResourceType::TilesetMappingConfig)
+    Resource(map, name)
 {
     priority = std::numeric_limits<float>::infinity();
 }
@@ -126,7 +151,12 @@ TilesetMapping::TilesetMapping(MapImpl *map, const std::string &name) :
 void TilesetMapping::load()
 {
     LOG(info2) << "Loading tileset mapping <" << name << ">";
-    dataRaw = vtslibs::vts::deserializeTsMap(reply.content.str());
+    dataRaw = vtslibs::vts::deserializeTsMap(fetch->reply.content.str());
+}
+
+FetchTask::ResourceType TilesetMapping::resourceType() const
+{
+    return FetchTask::ResourceType::TilesetMappingConfig;
 }
 
 } // namespace vts

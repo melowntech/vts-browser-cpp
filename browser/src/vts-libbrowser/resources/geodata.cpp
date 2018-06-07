@@ -31,17 +31,22 @@ namespace vts
 {
 
 GeodataFeatures::GeodataFeatures(vts::MapImpl *map, const std::string &name) :
-    Resource(map, name, FetchTask::ResourceType::GeodataFeatures)
+    Resource(map, name)
 {}
 
 void GeodataFeatures::load()
 {
     LOG(info2) << "Loading geodata features <" << name << ">";
-    data = reply.content.str();
+    data = fetch->reply.content.str();
+}
+
+FetchTask::ResourceType GeodataFeatures::resourceType() const
+{
+    return FetchTask::ResourceType::GeodataFeatures;
 }
 
 GeodataStylesheet::GeodataStylesheet(MapImpl *map, const std::string &name) :
-    Resource(map, name, FetchTask::ResourceType::GeodataStylesheet)
+    Resource(map, name)
 {
     priority = std::numeric_limits<float>::infinity();
 }
@@ -49,11 +54,16 @@ GeodataStylesheet::GeodataStylesheet(MapImpl *map, const std::string &name) :
 void GeodataStylesheet::load()
 {
     LOG(info2) << "Loading geodata stylesheet <" << name << ">";
-    data = reply.content.str();
+    data = fetch->reply.content.str();
+}
+
+FetchTask::ResourceType GeodataStylesheet::resourceType() const
+{
+    return FetchTask::ResourceType::GeodataStylesheet;
 }
 
 GpuGeodata::GpuGeodata(MapImpl *map, const std::string &name)
-    : Resource(map, name, FetchTask::ResourceType::General), lod(0)
+    : Resource(map, name), lod(0)
 {
     state = Resource::State::ready;
 }
@@ -659,7 +669,7 @@ void GpuGeodata::load()
     renders.clear();
 
     // this resource is not meant to be downloaded
-    assert(reply.content.size() == 0);
+    assert(fetch->reply.content.size() == 0);
 
     // empty sources
     if (style.empty() || features.empty())
@@ -684,6 +694,11 @@ void GpuGeodata::load()
         info.gpuMemoryCost += it.mesh->info.gpuMemoryCost;
         info.ramMemoryCost += it.mesh->info.ramMemoryCost;
     }
+}
+
+FetchTask::ResourceType GpuGeodata::resourceType() const
+{
+    return FetchTask::ResourceType::Undefined;
 }
 
 void GpuGeodata::update(const std::string &s, const std::string &f, uint32 l)

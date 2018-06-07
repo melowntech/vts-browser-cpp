@@ -41,7 +41,7 @@ namespace vts
 class VTS_API Map
 {
 public:
-    Map(const class MapCreateOptions &options);
+    Map(const class MapCreateOptions &options, const std::shared_ptr<class Fetcher> &fetcher);
     virtual ~Map();
 
     // mapConfigPath: url to map config
@@ -72,8 +72,14 @@ public:
     // returns estimation of progress till complete render
     double getMapRenderProgress() const;
 
-    void dataInitialize(const std::shared_ptr<class Fetcher> &fetcher);
+    void dataInitialize();
+    // does at most MapOptions.maxResourceProcessesPerTick operations and returns
+    // you should call it periodically
     void dataTick();
+    // blocking alternative to dataTick
+    // it will only return after renderFinalize has been called in the main thread
+    // the dataRun must be called on a separate thread, but is more efficient
+    void dataRun();
     void dataFinalize();
 
     void renderInitialize();

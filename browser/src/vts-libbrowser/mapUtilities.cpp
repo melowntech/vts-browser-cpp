@@ -58,10 +58,12 @@ bool testAndThrow(Resource::State state, const std::string &message)
 {
     switch (state)
     {
-    case Resource::State::errorRetry:
+    case Resource::State::initializing:
+    case Resource::State::checkCache:
+    case Resource::State::startDownload:
     case Resource::State::downloaded:
     case Resource::State::downloading:
-    case Resource::State::initializing:
+    case Resource::State::errorRetry:
         return false;
     case Resource::State::ready:
         return true;

@@ -74,13 +74,13 @@ Buffer GpuTextureSpec::encodePng() const
 }
 
 GpuTexture::GpuTexture(MapImpl *map, const std::string &name) :
-    Resource(map, name, FetchTask::ResourceType::Texture)
+    Resource(map, name)
 {}
 
 void GpuTexture::load()
 {
     LOG(info2) << "Loading (gpu) texture <" << name << ">";
-    GpuTextureSpec spec(reply.content);
+    GpuTextureSpec spec(fetch->reply.content);
 
     if (map->options.debugExtractRawResources)
     {
@@ -101,6 +101,11 @@ void GpuTexture::load()
     spec.verticalFlip();
     map->callbacks.loadTexture(info, spec);
     info.ramMemoryCost += sizeof(*this);
+}
+
+FetchTask::ResourceType GpuTexture::resourceType() const
+{
+    return FetchTask::ResourceType::Texture;
 }
 
 } // namespace vts

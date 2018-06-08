@@ -116,7 +116,7 @@ void mapInitialize()
         createOptions.clientId = "vts-browser-ios";
         createOptions.disableCache = true;
         assert(!map);
-        map = new Map(createOptions);
+        map = new Map(createOptions, vts::Fetcher::create(vts::FetcherOptions()));
     }
 
     // configure the map for mobile use
@@ -216,7 +216,7 @@ void mapInitialize()
     dataQueue = dispatch_queue_create("com.melown.vts.map.data", NULL);
     dispatch_async(dataQueue,
     ^{    
-        map->dataInitialize(vts::Fetcher::create(vts::FetcherOptions()));
+        map->dataInitialize();
         dataUpdate();
     });
 

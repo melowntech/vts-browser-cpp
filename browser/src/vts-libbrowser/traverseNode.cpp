@@ -85,6 +85,8 @@ void TraverseNode::clearAll()
 
 void TraverseNode::clearRenders()
 {
+    if (lastRenderTime + 5 > layer->map->renderer.tickIndex)
+        return;
     opaque.clear();
     transparent.clear();
     geodata.clear();

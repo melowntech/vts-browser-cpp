@@ -117,10 +117,6 @@ public:
     //   but reduces memory usage and memory bandwith
     double maxTexelToPixelScale;
 
-    // addition to ratio of kept textures res. in the balanced traverse mode
-    // increasing this ratio will store more lods above the optimal one
-    double maxTexelToPixelScaleBalancedAddition;
-
     // lower and upper limit for view-extent
     // expressed as multiplicative factor of planet major radius
     double viewExtentLimitScaleMin;

@@ -301,6 +301,8 @@ std::shared_ptr<SearchTask> MapImpl::search(const std::string &query,
     auto t = std::make_shared<SearchTask>(query, point);
     t->impl = getSearchTask(generateSearchUrl(this, query));
     t->impl->priority = std::numeric_limits<float>::infinity();
+    if (!t->impl->fetch)
+        t->impl->fetch = std::make_shared<FetchTaskImpl>(t->impl);
     t->impl->fetch->query.headers["Accept-Language"] = "en-US,en";
     resources.searchTasks.push_back(t);
     return t;

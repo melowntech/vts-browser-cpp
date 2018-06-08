@@ -640,13 +640,6 @@ public:
                     sprintf(buffer, "%3.1f", o.maxTexelToPixelScale);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
-                    // maxTexelToPixelScaleBalancedAddition
-                    nk_label(&ctx, "Balanced addition:", NK_TEXT_LEFT);
-                    o.maxTexelToPixelScaleBalancedAddition = nk_slide_float(&ctx,
-                            1, o.maxTexelToPixelScaleBalancedAddition, 10, 0.01);
-                    sprintf(buffer, "%3.1f",o.maxTexelToPixelScaleBalancedAddition);
-                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-
                     // antialiasing samples
                     nk_label(&ctx, "Antialiasing:", NK_TEXT_LEFT);
                     r.antialiasingSamples = nk_slide_int(&ctx,

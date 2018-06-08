@@ -124,7 +124,6 @@ std::string ControlOptions::toJson() const
 
 MapOptions::MapOptions() :
     maxTexelToPixelScale(1.2),
-    maxTexelToPixelScaleBalancedAddition(3),
     viewExtentLimitScaleMin(0.00001175917), // 75 metres on earth
     viewExtentLimitScaleMax(2.35183443086), // 1.5e7 metres on earth
     viewExtentThresholdScaleLow(0.03135779241), // 200 000 metres on earth
@@ -181,7 +180,6 @@ void MapOptions::applyJson(const std::string &json)
     if (v.isMember("controlOptions"))
         controlOptions.applyJson(jsonToString(v["controlOptions"]));
     AJ(maxTexelToPixelScale, asDouble);
-    AJ(maxTexelToPixelScaleBalancedAddition, asDouble);
     AJ(viewExtentLimitScaleMin, asDouble);
     AJ(viewExtentLimitScaleMax, asDouble);
     AJ(viewExtentThresholdScaleLow, asDouble);
@@ -230,7 +228,6 @@ std::string MapOptions::toJson() const
     Json::Value v;
     v["controlOptions"] = stringToJson(controlOptions.toJson());
     TJ(maxTexelToPixelScale, asDouble);
-    TJ(maxTexelToPixelScaleBalancedAddition, asDouble);
     TJ(viewExtentLimitScaleMin, asDouble);
     TJ(viewExtentLimitScaleMax, asDouble);
     TJ(viewExtentThresholdScaleLow, asDouble);

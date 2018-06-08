@@ -494,10 +494,9 @@ bool MapImpl::travDetermineDrawsGeodata(TraverseNode *trav)
     return true;
 }
 
-bool MapImpl::travInit(TraverseNode *trav, bool skipStatistics)
+bool MapImpl::travInit(TraverseNode *trav)
 {
     // statistics
-    if (!skipStatistics)
     {
         statistics.metaNodesTraversedTotal++;
         statistics.metaNodesTraversedPerLod[
@@ -584,16 +583,28 @@ void MapImpl::travModeFlat(TraverseNode *trav)
         return;
     }
 
-    trav->clearRenders();
-
     for (auto &t : trav->childs)
         travModeFlat(t.get());
+
+    trav->clearRenders();
 }
 
-void MapImpl::travModeBalanced(TraverseNode *trav)
+void MapImpl::travModeBalanced(TraverseNode *trav, bool renderOnly)
 {
-    if (!travInit(trav))
+    if (renderOnly)
+    {
+        trav->lastAccessTime = renderer.tickIndex;
+        if (!trav->meta)
+        {
+            renderNodeCoarserRecursive(trav);
+            return;
+        }
+    }
+    else if (!travInit(trav))
+    {
+        renderNodeCoarserRecursive(trav);
         return;
+    }
 
     if (!visibilityTest(trav))
     {
@@ -601,34 +612,26 @@ void MapImpl::travModeBalanced(TraverseNode *trav)
         return;
     }
 
-    double coar = coarsenessValue(trav);
-
-    if (coar < options.maxTexelToPixelScale
-            + options.maxTexelToPixelScaleBalancedAddition)
+    if (!renderOnly && (coarsenessTest(trav) || trav->childs.empty()))
     {
         touchDraws(trav);
         if (trav->surface && trav->rendersEmpty())
             travDetermineDraws(trav);
+        renderOnly = true;
     }
-    else if (trav->lastRenderTime + 5 < renderer.tickIndex)
-        trav->clearRenders();
 
-    bool childsHaveMeta = true;
-    for (auto &it : trav->childs)
-        childsHaveMeta = childsHaveMeta && travInit(it.get(), true);
-
-    if (coar < options.maxTexelToPixelScale || trav->childs.empty()
-            || !childsHaveMeta)
+    if (renderOnly && !trav->rendersEmpty())
     {
-        if (!trav->rendersEmpty() && trav->rendersReady())
-            renderNode(trav);
-        else
-            renderNodePartialRecursive(trav);
+        renderNode(trav);
         return;
     }
 
-    for (auto &t : trav->childs)
-        travModeBalanced(t.get());
+    if (trav->childs.empty())
+        renderNodeCoarserRecursive(trav);
+    else for (auto &t : trav->childs)
+        travModeBalanced(t.get(), renderOnly);
+
+    trav->clearRenders();
 }
 
 void MapImpl::traverseRender(TraverseNode *trav)
@@ -643,7 +646,7 @@ void MapImpl::traverseRender(TraverseNode *trav)
         travModeFlat(trav);
         break;
     case TraverseMode::Balanced:
-        travModeBalanced(trav);
+        travModeBalanced(trav, false);
         break;
     }
 }

@@ -311,9 +311,9 @@ void updateRangeToHalf(float &a, float &b, int which)
 
 } // namespace
 
-void MapImpl::renderNodePartialRecursive(TraverseNode *trav, vec4f uvClip)
+void MapImpl::renderNodeCoarserRecursive(TraverseNode *trav, vec4f uvClip)
 {
-    if (!trav->parent || !trav->parent->surface)
+    if (!trav->parent)
         return;
 
     auto id = trav->nodeInfo.nodeId();
@@ -324,7 +324,7 @@ void MapImpl::renderNodePartialRecursive(TraverseNode *trav, vec4f uvClip)
     if (!trav->parent->rendersEmpty() && trav->parent->rendersReady())
         renderNode(trav->parent, uvClip);
     else
-        renderNodePartialRecursive(trav->parent, uvClip);
+        renderNodeCoarserRecursive(trav->parent, uvClip);
 }
 
 bool MapImpl::prerequisitesCheck()

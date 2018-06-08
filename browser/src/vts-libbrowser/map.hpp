@@ -730,7 +730,7 @@ public:
     double coarsenessValue(TraverseNode *trav);
     void renderNode(TraverseNode *trav,
                     const vec4f &uvClip = vec4f(-1,-1,2,2));
-    void renderNodePartialRecursive(TraverseNode *trav,
+    void renderNodeCoarserRecursive(TraverseNode *trav,
                     vec4f uvClip = vec4f(0,0,1,1));
     std::shared_ptr<GpuTexture> travInternalTexture(TraverseNode *trav,
                                                   uint32 subMeshIndex);
@@ -749,10 +749,10 @@ public:
     bool travDetermineDrawsGeodata(TraverseNode *trav);
     double travDistance(TraverseNode *trav, const vec3 pointPhys);
     float computeResourcePriority(TraverseNode *trav);
-    bool travInit(TraverseNode *trav, bool skipStatistics = false);
+    bool travInit(TraverseNode *trav);
     void travModeHierarchical(TraverseNode *trav, bool loadOnly);
     void travModeFlat(TraverseNode *trav);
-    void travModeBalanced(TraverseNode *trav);
+    void travModeBalanced(TraverseNode *trav, bool renderOnly);
     void traverseRender(TraverseNode *trav);
     void traverseClearing(TraverseNode *trav);
     void updateCamera();

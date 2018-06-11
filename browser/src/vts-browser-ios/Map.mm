@@ -85,23 +85,6 @@ namespace
     std::shared_ptr<Texture> scalesTextureZoom;
     TimerObj *timer;
 
-    void dataUpdate()
-    {
-        // queue next iteration
-        dispatch_async(dataQueue,
-        ^{
-            dataUpdate();
-        });
-
-        // process some resources (which may require opengl context)
-        [EAGLContext setCurrentContext:dataContext];
-        map->dataTick();
-        [EAGLContext setCurrentContext:nullptr];
-        
-        // save some cpu cycles
-        usleep(150000);
-    }
-
     void *iosGlGetProcAddress(const char *name)
     {
         return dlsym(RTLD_DEFAULT, name);
@@ -215,9 +198,10 @@ void mapInitialize()
     // create data thread
     dataQueue = dispatch_queue_create("com.melown.vts.map.data", NULL);
     dispatch_async(dataQueue,
-    ^{    
-        map->dataInitialize();
-        dataUpdate();
+    ^{
+        [EAGLContext setCurrentContext:dataContext];
+        map->dataAllRun();
+        [EAGLContext setCurrentContext:nullptr];
     });
 
     // prepare timer

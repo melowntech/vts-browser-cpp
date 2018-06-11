@@ -31,6 +31,100 @@ namespace vts
 {
 
 ////////////////////////////
+// A FETCH THREAD
+////////////////////////////
+
+void FetchTaskImpl::fetchDone()
+{
+    LOG(debug) << "Resource <" << name << "> finished downloading";
+    assert(map);
+    map->resources.downloads--;
+    Resource::State state = Resource::State::downloading;
+
+    // handle error or invalid codes
+    if (reply.code >= 400 || reply.code < 200)
+    {
+        if (reply.code == FetchTask::ExtraCodes::ProhibitedContent)
+        {
+            state = Resource::State::errorFatal;
+        }
+        else
+        {
+            LOG(err2) << "Error downloading <" << name
+                << ">, http code " << reply.code;
+            state = Resource::State::errorRetry;
+        }
+    }
+
+    // some resources must always revalidate
+    if (!Resource::allowDiskCache(query.resourceType))
+        reply.expires = -2;
+
+    // availability tests
+    if (state == Resource::State::downloading)
+    {
+        std::shared_ptr<Resource> rs = resource.lock();
+        if (rs && !rs->performAvailTest())
+        {
+            LOG(info1) << "Resource <" << name
+                << "> failed availability test";
+            state = Resource::State::availFail;
+        }
+    }
+
+    // handle redirections
+    if (state == Resource::State::downloading
+        && reply.code >= 300 && reply.code < 400)
+    {
+        if (redirectionsCount++ > map->options.maxFetchRedirections)
+        {
+            LOG(err2) << "Too many redirections in <"
+                << name << ">, last url <"
+                << query.url << ">, http code " << reply.code;
+            state = Resource::State::errorRetry;
+        }
+        else
+        {
+            query.url.swap(reply.redirectUrl);
+            std::string().swap(reply.redirectUrl);
+            LOG(info1) << "Download of <"
+                << name << "> redirected to <"
+                << query.url << ">, http code " << reply.code;
+            reply = Reply();
+            state = Resource::State::initializing;
+        }
+    }
+
+    // update the actual resource
+    if (state == Resource::State::downloading)
+        state = Resource::State::downloaded;
+    else
+        reply.content.free();
+    {
+        std::shared_ptr<Resource> rs = resource.lock();
+        if (rs)
+        {
+            assert(&*rs->fetch == this);
+            assert(rs->state == Resource::State::downloading);
+            rs->info.ramMemoryCost = reply.content.size();
+            rs->state = state;
+            map->resources.queUpload.push(rs);
+        }
+    }
+
+    // (deferred) write to cache
+    if (state == Resource::State::availFail
+        || state == Resource::State::downloaded)
+    {
+        CacheWriteData c;
+        c.name = name;
+        c.buffer = reply.content.copy();
+        c.expires = reply.expires;
+        map->resources.queCacheWrite.push(std::move(c));
+    }
+}
+
+////////////////////////////
 // DATA THREAD
 ////////////////////////////
 
@@ -220,7 +314,7 @@ void MapImpl::resourcesDownloadsEntry()
             res1.swap(resources.fetching.resources);
         }
         if (resources.downloads >= options.maxConcurrentDownloads)
-            continue; // skip processing if no download slots are awailable
+            continue; // skip processing if no download slots are available
         typedef std::pair<float, std::shared_ptr<Resource>> PR;
         std::vector<PR> res;
         for (auto &w : res1)
@@ -244,7 +338,8 @@ void MapImpl::resourcesDownloadsEntry()
             r->state = Resource::State::downloading;
             resources.downloads++;
             LOG(debug) << "Initializing fetch of <" << r->name << ">";
-            r->fetch->query.headers["X-Vts-Client-Id"] = createOptions.clientId;
+            r->fetch->query.headers["X-Vts-Client-Id"]
+                    = createOptions.clientId;
             if (resources.auth)
                 resources.auth->authorize(r);
             resources.fetcher->fetch(r->fetch);
@@ -259,61 +354,96 @@ void MapImpl::resourcesDownloadsEntry()
 // MAIN THREAD
 ////////////////////////////
 
+bool MapImpl::resourcesTryRemove(std::shared_ptr<Resource> &r)
+{
+    std::string name = r->name;
+    assert(resources.resources.count(name) == 1);
+    {
+        // release the pointer if we are the last one holding it
+        std::weak_ptr<Resource> w = r;
+        try
+        {
+            r.reset();
+        }
+        catch (...)
+        {
+            LOGTHROW(fatal, std::runtime_error)
+                    << "Exception in destructor";
+        }
+        r = w.lock();
+    }
+    if (!r)
+    {
+        LOG(info1) << "Released resource <" << name << ">";
+        resources.resources.erase(name);
+        statistics.resourcesReleased++;
+        return true;
+    }
+    return false;
+}
+
 void MapImpl::resourcesRemoveOld()
 {
     struct Res
     {
-        std::string s; // name
-        uint32 p; // lastAccessTick
-        bool operator < (const Res &other) const
-        {
-            return p < other.p;
-        }
-        Res(const std::string &s, uint32 p) : s(s), p(p)
+        std::string n; // name
+        uint32 m; // mem used
+        uint32 a; // lastAccessTick
+        Res(const std::string &n, uint32 m, uint32 a) : n(n), m(m), a(a)
         {}
     };
-    std::vector<Res> resToRemove;
+    // successfully loaded resources are removed
+    //   only when we are tight on memory
+    std::vector<Res> loadedToRemove;
+    // resources that errored or are still being loaded
+    //   are removed immediately if not used recently
+    std::vector<Res> loadingToRemove;
     uint64 memRamUse = 0;
     uint64 memGpuUse = 0;
+    // find resource candidates for removal
     for (auto &it : resources.resources)
     {
         memRamUse += it.second->info.ramMemoryCost;
         memGpuUse += it.second->info.gpuMemoryCost;
         // consider long time not used resources only
         if (it.second->lastAccessTick + 5 < renderer.tickIndex)
-            resToRemove.emplace_back(it.first, it.second->lastAccessTick);
+        {
+            Res r(it.first,
+                it.second->info.ramMemoryCost + it.second->info.gpuMemoryCost,
+                it.second->lastAccessTick);
+            if (it.second->state == Resource::State::ready)
+                loadedToRemove.push_back(std::move(r));
+            else
+                loadingToRemove.push_back(std::move(r));
+        }
     }
     uint64 memUse = memRamUse + memGpuUse;
+    // remove loadingToRemove
+    for (Res &res : loadingToRemove)
+    {
+        if (resourcesTryRemove(resources.resources[res.n]))
+            memUse -= res.m;
+    }
+    // remove loadedToRemove
     uint64 trs = (uint64)options.targetResourcesMemoryKB * 1024;
     if (memUse > trs)
     {
-        std::sort(resToRemove.begin(), resToRemove.end());
-        for (Res &res : resToRemove)
+        std::sort(loadedToRemove.begin(), loadedToRemove.end(),
+                  [](const Res &a, const Res &b){
+            return a.a < b.a;
+        });
+        for (Res &res : loadedToRemove)
         {
-            auto &it = resources.resources[res.s];
-            std::string name = it->name;
-            uint64 mem = it->info.gpuMemoryCost + it->info.ramMemoryCost;
+            if (resourcesTryRemove(resources.resources[res.n]))
             {
-                // release the pointer if we are last holding it
-                std::weak_ptr<Resource> w = it;
-                it.reset();
-                it = w.lock();
-            }
-            if (!it)
-            {
-                LOG(info1) << "Released resource <" << name << ">";
-                resources.resources.erase(name);
-                statistics.resourcesReleased++;
-                memUse -= mem;
-                if (memUse <= trs)
+                memUse -= res.m;
+                if (memUse < trs)
                     break;
             }
         }
     }
     statistics.currentGpuMemUseKB = memGpuUse / 1024;
     statistics.currentRamMemUseKB = memRamUse / 1024;
-    statistics.resourcesActive = resources.resources.size();
-    statistics.resourcesDownloading = resources.downloads;
 }
 
 void MapImpl::resourcesCheckInitialized()
@@ -382,6 +512,33 @@ void MapImpl::resourcesStartDownloads()
     resources.fetching.con.notify_one();
 }
 
+void MapImpl::resourcesUpdateStatistics()
+{
+    statistics.resourcesPreparing = 0;
+    for (auto &rp : resources.resources)
+    {
+        std::shared_ptr<Resource> &r = rp.second;
+        switch ((Resource::State)r->state)
+        {
+        case Resource::State::initializing:
+        case Resource::State::checkCache:
+        case Resource::State::startDownload:
+        case Resource::State::downloading:
+        case Resource::State::downloaded:
+        case Resource::State::uploading:
+            statistics.resourcesPreparing++;
+            break;
+        case Resource::State::ready:
+        case Resource::State::errorFatal:
+        case Resource::State::errorRetry:
+        case Resource::State::availFail:
+            break;
+        }
+    }
+    statistics.resourcesActive = resources.resources.size();
+    statistics.resourcesDownloading = resources.downloads;
+}
+
 void MapImpl::resourceRenderInitialize()
 {}
 
@@ -393,11 +550,13 @@ void MapImpl::resourceRenderFinalize()
 
 void MapImpl::resourceRenderTick()
 {
-    switch (renderer.tickIndex % 3)
+    // split workload into multiple render frames
+    switch (renderer.tickIndex % 4)
     {
     case 0: return resourcesRemoveOld();
     case 1: return resourcesCheckInitialized();
     case 2: return resourcesStartDownloads();
+    case 3: return resourcesUpdateStatistics();
     }
 }
 

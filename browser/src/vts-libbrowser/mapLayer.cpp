@@ -199,7 +199,7 @@ bool MapImpl::generateMonolithicGeodataTrav(TraverseNode *trav)
     trav->meta->update(vtslibs::vts::MetaNode::Flag::applyDisplaySize);
     travDetermineMetaImpl(trav); // update physical corners
     trav->surface = &trav->layer->surfaceStack.surfaces[0];
-    trav->priority = computeResourcePriority(trav);
+    updateNodePriority(trav);
     return true;
 }
 

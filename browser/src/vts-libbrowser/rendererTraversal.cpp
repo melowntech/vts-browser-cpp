@@ -61,13 +61,21 @@ double MapImpl::travDistance(TraverseNode *trav, const vec3 pointPhys)
             trav->aabbPhys[1]);
 }
 
-float MapImpl::computeResourcePriority(TraverseNode *trav)
+void MapImpl::updateNodePriority(TraverseNode *trav)
 {
-    if (trav->layer->traverseMode == TraverseMode::Hierarchical)
-        return 1.f / (trav->nodeInfo.distanceFromRoot() + 1);
-    if ((trav->hash + renderer.tickIndex) % 4 == 0) // skip expensive function
-        return (float)(1e6 / (travDistance(trav, renderer.focusPosPhys) + 1));
-    return trav->priority;
+    if (trav->meta)
+    {
+        // only update every 4th render frame
+        if ((trav->hash + renderer.tickIndex) % 4 == 0)
+        {
+            trav->priority = (float)(1e6
+                / (travDistance(trav, renderer.focusPosPhys) + 1));
+        }
+    }
+    else if (trav->parent)
+        trav->priority = trav->parent->priority;
+    else
+        trav->priority = 0;
 }
 
 std::shared_ptr<GpuTexture> MapImpl::travInternalTexture(TraverseNode *trav,
@@ -77,6 +85,7 @@ std::shared_ptr<GpuTexture> MapImpl::travInternalTexture(TraverseNode *trav,
             vtslibs::vts::local(trav->nodeInfo), subMeshIndex);
     std::shared_ptr<GpuTexture> res = getTexture(
                 trav->surface->urlIntTex(vars));
+    touchResource(res);
     res->updatePriority(trav->priority);
     return res;
 }
@@ -122,7 +131,8 @@ bool MapImpl::travDetermineMeta(TraverseNode *trav)
         }
         auto m = getMetaTile(trav->layer->surfaceStack.surfaces[i]
                              .urlMeta(tileIdVars));
-        m->updatePriority(trav->priority);
+        // metatiles have higher priority than other resources
+        m->updatePriority(trav->priority * 2);
         switch (getResourceValidity(m))
         {
         case Validity::Indeterminate:
@@ -196,14 +206,7 @@ bool MapImpl::travDetermineMeta(TraverseNode *trav)
     }
 
     // update priority
-    trav->priority = computeResourcePriority(trav);
-
-    // prefetch internal textures
-    if (node->geometry())
-    {
-        for (uint32 i = 0; i < node->internalTextureCount(); i++)
-            travInternalTexture(trav, i);
-    }
+    updateNodePriority(trav);
 
     return true;
 }
@@ -313,7 +316,7 @@ bool MapImpl::travDetermineDraws(TraverseNode *trav)
     statistics.currentNodeDrawsUpdates++;
 
     // update priority
-    trav->priority = computeResourcePriority(trav);
+    updateNodePriority(trav);
 
     if (trav->layer->isGeodata())
         return travDetermineDrawsGeodata(trav);
@@ -324,6 +327,14 @@ bool MapImpl::travDetermineDraws(TraverseNode *trav)
 bool MapImpl::travDetermineDrawsSurface(TraverseNode *trav)
 {
     const TileId nodeId = trav->nodeInfo.nodeId();
+
+    // prefetch internal textures
+    if (trav->meta->geometry())
+    {
+        auto cnt = trav->meta->internalTextureCount();
+        for (uint32 i = 0; i < cnt; i++)
+            travInternalTexture(trav, i);
+    }
 
     // aggregate mesh
     std::string meshAggName = trav->surface->urlMesh(
@@ -508,11 +519,7 @@ bool MapImpl::travInit(TraverseNode *trav)
     trav->lastAccessTime = renderer.tickIndex;
 
     // priority
-    trav->priority = trav->meta
-            ? computeResourcePriority(trav)
-            : trav->parent
-              ? trav->parent->priority
-              : 0;
+    updateNodePriority(trav);
 
     // prepare meta data
     if (!trav->meta)

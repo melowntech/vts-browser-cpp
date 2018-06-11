@@ -47,7 +47,5 @@ void DataThread::run()
 {
     vts::setLogThreadName("data");
     SDL_GL_MakeCurrent(window, context);
-    map->dataInitialize();
     map->dataAllRun();
-    map->dataFinalize();
 }

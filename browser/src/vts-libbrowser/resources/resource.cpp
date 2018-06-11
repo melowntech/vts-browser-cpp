@@ -36,100 +36,6 @@ FetchTaskImpl::FetchTaskImpl(const std::shared_ptr<Resource> &resource) :
     reply.expires = -1;
 }
 
-void FetchTaskImpl::fetchDone()
-{
-    ////////////////////////////
-    // SOME FETCH THREAD
-    ////////////////////////////
-
-    LOG(debug) << "Resource <" << name << "> finished downloading";
-    assert(map);
-    map->resources.downloads--;
-    Resource::State state = Resource::State::downloading;
-
-    // handle error or invalid codes
-    if (reply.code >= 400 || reply.code < 200)
-    {
-        if (reply.code == FetchTask::ExtraCodes::ProhibitedContent)
-        {
-            state = Resource::State::errorFatal;
-        }
-        else
-        {
-            LOG(err2) << "Error downloading <" << name
-                << ">, http code " << reply.code;
-            state = Resource::State::errorRetry;
-        }
-    }
-
-    // some resources must always revalidate
-    if (!Resource::allowDiskCache(query.resourceType))
-        reply.expires = -2;
-
-    // availability tests
-    if (state == Resource::State::downloading)
-    {
-        std::shared_ptr<Resource> rs = resource.lock();
-        if (rs && !rs->performAvailTest())
-        {
-            LOG(info1) << "Resource <" << name
-                << "> failed availability test";
-            state = Resource::State::availFail;
-        }
-    }
-
-    // handle redirections
-    if (state == Resource::State::downloading
-        && reply.code >= 300 && reply.code < 400)
-    {
-        if (redirectionsCount++ > map->options.maxFetchRedirections)
-        {
-            LOG(err2) << "Too many redirections in <"
-                << name << ">, last url <"
-                << query.url << ">, http code " << reply.code;
-            state = Resource::State::errorRetry;
-        }
-        else
-        {
-            query.url.swap(reply.redirectUrl);
-            std::string().swap(reply.redirectUrl);
-            LOG(info1) << "Download of <"
-                << name << "> redirected to <"
-                << query.url << ">, http code " << reply.code;
-            reply = Reply();
-            state = Resource::State::initializing;
-        }
-    }
-
-    // update the actual resource
-    if (state == Resource::State::downloading)
-        state = Resource::State::downloaded;
-    else
-        reply.content.free();
-    {
-        std::shared_ptr<Resource> rs = resource.lock();
-        if (rs)
-        {
-            assert(&*rs->fetch == this);
-            assert(rs->state == Resource::State::downloading);
-            rs->info.ramMemoryCost = reply.content.size();
-            rs->state = state;
-            map->resources.queUpload.push(rs);
-        }
-    }
-
-    // (deferred) write to cache
-    if (state == Resource::State::availFail 
-        || state == Resource::State::downloaded)
-    {
-        CacheWriteData c;
-        c.name = name;
-        c.buffer = reply.content.copy();
-        c.expires = reply.expires;
-        map->resources.queCacheWrite.push(std::move(c));
-    }
-}
-
 ResourceInfo::ResourceInfo() :
     ramMemoryCost(0), gpuMemoryCost(0)
 {}
@@ -163,6 +69,7 @@ bool Resource::allowDiskCache(FetchTask::ResourceType type)
     case FetchTask::ResourceType::AuthConfig:
     case FetchTask::ResourceType::MapConfig:
     case FetchTask::ResourceType::BoundLayerConfig:
+    case FetchTask::ResourceType::FreeLayerConfig:
     case FetchTask::ResourceType::TilesetMappingConfig:
         return false;
     default:

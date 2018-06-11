@@ -674,9 +674,11 @@ public:
     void resourceRenderFinalize();
     void resourceRenderTick();
 
+    bool resourcesTryRemove(std::shared_ptr<Resource> &r);
     void resourcesRemoveOld();
     void resourcesCheckInitialized();
     void resourcesStartDownloads();
+    void resourcesUpdateStatistics();
     void resourcesDownloadsEntry();
     void resourceUploadProcess(const std::shared_ptr<Resource> &r);
 
@@ -748,7 +750,7 @@ public:
     bool travDetermineDrawsSurface(TraverseNode *trav);
     bool travDetermineDrawsGeodata(TraverseNode *trav);
     double travDistance(TraverseNode *trav, const vec3 pointPhys);
-    float computeResourcePriority(TraverseNode *trav);
+    void updateNodePriority(TraverseNode *trav);
     bool travInit(TraverseNode *trav);
     void travModeHierarchical(TraverseNode *trav, bool loadOnly);
     void travModeFlat(TraverseNode *trav);

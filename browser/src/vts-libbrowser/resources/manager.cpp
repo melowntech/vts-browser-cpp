@@ -61,15 +61,12 @@ void FetchTaskImpl::fetchDone()
         reply.expires = -2;
 
     // availability tests
-    if (state == Resource::State::downloading)
+    if (state == Resource::State::downloading
+        && !performAvailTest())
     {
-        std::shared_ptr<Resource> rs = resource.lock();
-        if (rs && !rs->performAvailTest())
-        {
-            LOG(info1) << "Resource <" << name
-                << "> failed availability test";
-            state = Resource::State::availFail;
-        }
+        LOG(info1) << "Resource <" << name
+            << "> failed availability test";
+        state = Resource::State::availFail;
     }
 
     // handle redirections
@@ -108,7 +105,8 @@ void FetchTaskImpl::fetchDone()
             assert(rs->state == Resource::State::downloading);
             rs->info.ramMemoryCost = reply.content.size();
             rs->state = state;
-            map->resources.queUpload.push(rs);
+            if (state == Resource::State::downloaded)
+                map->resources.queUpload.push(rs);
         }
     }
 
@@ -263,7 +261,8 @@ bool startsWith(const std::string &text, const std::string &start)
 void MapImpl::cacheReadProcess(const std::shared_ptr<Resource> &r)
 {
     assert(r->state == Resource::State::checkCache);
-    r->fetch = std::make_shared<FetchTaskImpl>(r);
+    if (!r->fetch)
+        r->fetch = std::make_shared<FetchTaskImpl>(r);
     r->info.gpuMemoryCost = r->info.ramMemoryCost = 0;
     if (r->allowDiskCache() && resources.cache->read(
         r->name, r->fetch->reply.content,

@@ -36,6 +36,28 @@ FetchTaskImpl::FetchTaskImpl(const std::shared_ptr<Resource> &resource) :
     reply.expires = -1;
 }
 
+bool FetchTaskImpl::performAvailTest() const
+{
+    if (!availTest)
+        return true;
+    switch (availTest->type)
+    {
+    case vtslibs::registry::BoundLayer::Availability::Type::negativeCode:
+        if (availTest->codes.find(reply.code) == availTest->codes.end())
+            return false;
+        break;
+    case vtslibs::registry::BoundLayer::Availability::Type::negativeType:
+        if (availTest->mime == reply.contentType)
+            return false;
+        break;
+    case vtslibs::registry::BoundLayer::Availability::Type::negativeSize:
+        if (reply.content.size() <= (unsigned)availTest->size)
+            return false;
+        break;
+    }
+    return true;
+}
+
 ResourceInfo::ResourceInfo() :
     ramMemoryCost(0), gpuMemoryCost(0)
 {}
@@ -77,34 +99,21 @@ bool Resource::allowDiskCache(FetchTask::ResourceType type)
     }
 }
 
-bool Resource::performAvailTest() const
-{
-    if (!availTest)
-        return true;
-    switch (availTest->type)
-    {
-    case vtslibs::registry::BoundLayer::Availability::Type::negativeCode:
-        if (availTest->codes.find(fetch->reply.code) == availTest->codes.end())
-            return false;
-        break;
-    case vtslibs::registry::BoundLayer::Availability::Type::negativeType:
-        if (availTest->mime == fetch->reply.contentType)
-            return false;
-        break;
-    case vtslibs::registry::BoundLayer::Availability::Type::negativeSize:
-        if (fetch->reply.content.size() <= (unsigned)availTest->size)
-            return false;
-        break;
-    }
-    return true;
-}
-
 void Resource::updatePriority(float p)
 {
     if (priority == priority)
         priority = std::max(priority, p);
     else
         priority = p;
+}
+
+void Resource::updateAvailability(const std::shared_ptr<vtslibs::registry
+    ::BoundLayer::Availability> &availTest)
+{
+    if (!fetch)
+        fetch = std::make_shared<FetchTaskImpl>(map->resources.resources[name]);
+    if (!fetch->availTest)
+        fetch->availTest = availTest;
 }
 
 void Resource::forceRedownload()

@@ -98,8 +98,11 @@ public:
     FetchTaskImpl(const std::shared_ptr<class Resource> &resource);
     void fetchDone() override;
 
+    bool performAvailTest() const;
+
     const std::string name;
     MapImpl *const map;
+    std::shared_ptr<vtslibs::registry::BoundLayer::Availability> availTest;
     std::weak_ptr<class Resource> resource;
     uint32 redirectionsCount;
 };
@@ -129,8 +132,9 @@ public:
     virtual FetchTask::ResourceType resourceType() const = 0;
     bool allowDiskCache() const;
     static bool allowDiskCache(FetchTask::ResourceType type);
-    bool performAvailTest() const;
     void updatePriority(float priority);
+    void updateAvailability(const std::shared_ptr<vtslibs::registry
+        ::BoundLayer::Availability> &availTest);
     void forceRedownload();
     operator bool () const; // return state == ready
 
@@ -139,7 +143,6 @@ public:
     std::atomic<State> state;
     ResourceInfo info;
     std::shared_ptr<FetchTaskImpl> fetch;
-    std::shared_ptr<vtslibs::registry::BoundLayer::Availability> availTest;
     std::time_t retryTime;
     uint32 retryNumber;
     uint32 lastAccessTick;

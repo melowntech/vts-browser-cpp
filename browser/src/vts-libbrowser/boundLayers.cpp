@@ -168,7 +168,7 @@ Validity BoundParamInfo::prepareDepth(MapImpl *impl, double priority)
 
     textureColor = impl->getTexture(bound->urlExtTex(vars));
     textureColor->updatePriority(priority);
-    textureColor->availTest = bound->availability; // todo this may cause problems (it is not thread safe)
+    textureColor->updateAvailability(bound->availability);
     switch (impl->getResourceValidity(textureColor))
     {
     case Validity::Indeterminate:

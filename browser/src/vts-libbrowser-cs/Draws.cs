@@ -134,6 +134,8 @@ namespace vts
                     IntPtr pm, ptc, ptm;
                     IntPtr dataPtr = BrowserInterop.vtsDrawsAllInOne(group, i, out pm, out ptc, out ptm);
                     Util.CheckInterop();
+                    if (pm == null)
+                        continue;
                     t.data = (DrawBase)Marshal.PtrToStructure(dataPtr, typeof(DrawBase));
                     t.mesh = Load(pm);
                     t.texColor = Load(ptc);

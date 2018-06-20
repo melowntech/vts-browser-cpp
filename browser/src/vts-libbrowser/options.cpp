@@ -135,6 +135,7 @@ MapOptions::MapOptions() :
     navigationPihaViewExtentMult(1.02),
     navigationPihaPositionChange(0.02),
     renderTilesScale(1.001),
+    fixedTraversalDistance(10000),
     targetResourcesMemoryKB(0),
     maxConcurrentDownloads(25),
     maxResourceProcessesPerTick(10),
@@ -142,6 +143,7 @@ MapOptions::MapOptions() :
     maxFetchRedirections(5),
     maxFetchRetries(5),
     fetchFirstRetryTimeOffset(1),
+    fixedTraversalLod(15),
     navigationType(NavigationType::Quick),
     navigationMode(NavigationMode::Seamless),
     traverseModeSurfaces(TraverseMode::Balanced),
@@ -162,8 +164,6 @@ MapOptions::MapOptions() :
     debugRenderObjectPosition(false),
     debugRenderTargetPosition(false),
     debugRenderAltitudeShiftCorners(false),
-    debugRenderMeshes(true),
-    debugRenderGeodata(true),
     debugExtractRawResources(false)
 {}
 
@@ -191,6 +191,7 @@ void MapOptions::applyJson(const std::string &json)
     AJ(navigationPihaViewExtentMult, asDouble);
     AJ(navigationPihaPositionChange, asDouble);
     AJ(renderTilesScale, asDouble);
+    AJ(fixedTraversalDistance, asDouble);
     AJ(targetResourcesMemoryKB, asUInt);
     AJ(maxConcurrentDownloads, asUInt);
     AJ(maxResourceProcessesPerTick, asUInt);
@@ -198,6 +199,7 @@ void MapOptions::applyJson(const std::string &json)
     AJ(maxFetchRedirections, asUInt);
     AJ(maxFetchRetries, asUInt);
     AJ(fetchFirstRetryTimeOffset, asUInt);
+    AJ(fixedTraversalLod, asUInt);
     AJE(navigationType, NavigationType);
     AJE(navigationMode, NavigationMode);
     AJE(traverseModeSurfaces, TraverseMode);
@@ -218,8 +220,6 @@ void MapOptions::applyJson(const std::string &json)
     AJ(debugRenderObjectPosition, asBool);
     AJ(debugRenderTargetPosition, asBool);
     AJ(debugRenderAltitudeShiftCorners, asBool);
-    AJ(debugRenderMeshes, asBool);
-    AJ(debugRenderGeodata, asBool);
     AJ(debugExtractRawResources, asBool);
 }
 
@@ -239,6 +239,7 @@ std::string MapOptions::toJson() const
     TJ(navigationPihaViewExtentMult, asDouble);
     TJ(navigationPihaPositionChange, asDouble);
     TJ(renderTilesScale, asDouble);
+    TJ(fixedTraversalDistance, asDouble);
     TJ(targetResourcesMemoryKB, asUInt);
     TJ(maxConcurrentDownloads, asUInt);
     TJ(maxResourceProcessesPerTick, asUInt);
@@ -246,6 +247,7 @@ std::string MapOptions::toJson() const
     TJ(maxFetchRedirections, asUInt);
     TJ(maxFetchRetries, asUInt);
     TJ(fetchFirstRetryTimeOffset, asUInt);
+    TJ(fixedTraversalLod, asUInt);
     TJE(navigationType, NavigationType);
     TJE(navigationMode, NavigationMode);
     TJE(traverseModeSurfaces, TraverseMode);
@@ -266,8 +268,6 @@ std::string MapOptions::toJson() const
     TJ(debugRenderObjectPosition, asBool);
     TJ(debugRenderTargetPosition, asBool);
     TJ(debugRenderAltitudeShiftCorners, asBool);
-    TJ(debugRenderMeshes, asBool);
-    TJ(debugRenderGeodata, asBool);
     TJ(debugExtractRawResources, asBool);
     return jsonToString(v);
 }

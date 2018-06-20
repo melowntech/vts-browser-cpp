@@ -41,13 +41,22 @@ namespace vts
 public delegate void vtsResourceCallbackType(IntPtr map, IntPtr resource);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate void vtsStateCallbackType(IntPtr map);
+public delegate void vtsEmptyCallbackType(IntPtr map);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate void vtsCameraOverrideCallbackType(IntPtr map, IntPtr values);
+public delegate void vtsDoubleArrayCallbackType(IntPtr map, IntPtr values);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate IntPtr  vtsProjFinderCallbackType([MarshalAs(UnmanagedType.LPStr)] string name);
+public delegate void vtsDoubleCallbackType(IntPtr map, ref double value);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void vtsUint32ArrayCallbackType(IntPtr map, IntPtr values);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void vtsUint32CallbackType(IntPtr map, ref uint value);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr vtsProjFinderCallbackType([MarshalAs(UnmanagedType.LPStr)] string name);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsCallbacksLoadTexture(IntPtr map, vtsResourceCallbackType callback);
@@ -56,28 +65,37 @@ public static extern void vtsCallbacksLoadTexture(IntPtr map, vtsResourceCallbac
 public static extern void vtsCallbacksLoadMesh(IntPtr map, vtsResourceCallbackType callback);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsCallbacksMapconfigAvailable(IntPtr map, vtsStateCallbackType callback);
+public static extern void vtsCallbacksMapconfigAvailable(IntPtr map, vtsEmptyCallbackType callback);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsCallbacksMapconfigReady(IntPtr map, vtsStateCallbackType callback);
+public static extern void vtsCallbacksMapconfigReady(IntPtr map, vtsEmptyCallbackType callback);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsCallbacksCameraEye(IntPtr map, vtsCameraOverrideCallbackType callback);
+public static extern void vtsCallbacksCameraEye(IntPtr map, vtsDoubleArrayCallbackType callback);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsCallbacksCameraTarget(IntPtr map, vtsCameraOverrideCallbackType callback);
+public static extern void vtsCallbacksCameraTarget(IntPtr map, vtsDoubleArrayCallbackType callback);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsCallbacksCameraUp(IntPtr map, vtsCameraOverrideCallbackType callback);
+public static extern void vtsCallbacksCameraUp(IntPtr map, vtsDoubleArrayCallbackType callback);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsCallbacksCameraFovAspectNearFar(IntPtr map, vtsCameraOverrideCallbackType callback);
+public static extern void vtsCallbacksCameraFovAspectNearFar(IntPtr map, vtsDoubleArrayCallbackType callback);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsCallbacksCameraView(IntPtr map, vtsCameraOverrideCallbackType callback);
+public static extern void vtsCallbacksCameraView(IntPtr map, vtsDoubleArrayCallbackType callback);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsCallbacksCameraProj(IntPtr map, vtsCameraOverrideCallbackType callback);
+public static extern void vtsCallbacksCameraProj(IntPtr map, vtsDoubleArrayCallbackType callback);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsCallbacksCollidersCenter(IntPtr map, vtsDoubleArrayCallbackType callback);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsCallbacksCollidersDistance(IntPtr map, vtsDoubleCallbackType callback);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsCallbacksCollidersLod(IntPtr map, vtsUint32CallbackType callback);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsProjFinder(vtsProjFinderCallbackType callback);
@@ -92,7 +110,7 @@ public static extern double vtsCelestialMajorRadius(IntPtr map);
 public static extern double vtsCelestialMinorRadius(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsCelestialAtmosphere(IntPtr map, out double thickness, out double horizontalExponent, out double verticalExponent, [Out] float[] colorLow, [Out] float[] colorHigh);
+public static extern void vtsCelestialAtmosphere(IntPtr map, ref double thickness, ref double horizontalExponent, ref double verticalExponent, [Out] float[] colorLow, [Out] float[] colorHigh);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern IntPtr vtsDrawsCamera(IntPtr map);
@@ -128,7 +146,7 @@ public static extern IntPtr vtsDrawsTexMask(IntPtr group, uint index);
 public static extern IntPtr vtsDrawsDetail(IntPtr group, uint index);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsDrawsAllInOne(IntPtr group, uint index, out IntPtr mesh, out IntPtr texColor, out IntPtr texMask);
+public static extern IntPtr vtsDrawsAllInOne(IntPtr group, uint index, ref IntPtr mesh, ref IntPtr texColor, ref IntPtr texMask);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern IntPtr vtsFetcherCreateDefault([MarshalAs(UnmanagedType.LPStr)] string createOptions);
@@ -225,6 +243,9 @@ public static extern void vtsMapRenderTickPrepare(IntPtr map, double elapsedTime
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsMapRenderTickRender(IntPtr map);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsMapRenderTickColliders(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsMapRenderFinalize(IntPtr map);
@@ -348,7 +369,7 @@ public static extern void vtsSetResourceUserData(IntPtr resource, IntPtr data, v
 public static extern void vtsSetResourceMemoryCost(IntPtr resource, uint ramMem, uint gpuMem);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsGetTextureResolution(IntPtr resource, out uint width, out uint height, out uint components);
+public static extern void vtsGetTextureResolution(IntPtr resource, ref uint width, ref uint height, ref uint components);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern uint vtsGetTextureType(IntPtr resource);
@@ -357,19 +378,19 @@ public static extern uint vtsGetTextureType(IntPtr resource);
 public static extern uint vtsGetTextureInternalFormat(IntPtr resource);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsGetTextureBuffer(IntPtr resource, out IntPtr data, out uint size);
+public static extern void vtsGetTextureBuffer(IntPtr resource, ref IntPtr data, ref uint size);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern uint vtsGetMeshFaceMode(IntPtr resource);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsGetMeshVertices(IntPtr resource, out IntPtr data, out uint size, out uint count);
+public static extern void vtsGetMeshVertices(IntPtr resource, ref IntPtr data, ref uint size, ref uint count);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsGetMeshIndices(IntPtr resource, out IntPtr data, out uint size, out uint count);
+public static extern void vtsGetMeshIndices(IntPtr resource, ref IntPtr data, ref uint size, ref uint count);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsGetMeshAttribute(IntPtr resource, uint index, out uint offset, out uint stride, out uint components, out uint type, [MarshalAs(UnmanagedType.I1)] out bool enable, [MarshalAs(UnmanagedType.I1)] out bool normalized);
+public static extern void vtsGetMeshAttribute(IntPtr resource, uint index, ref uint offset, ref uint stride, ref uint components, ref uint type, [MarshalAs(UnmanagedType.I1)] ref bool enable, [MarshalAs(UnmanagedType.I1)] ref bool normalized);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 [return: MarshalAs(UnmanagedType.I1)]

@@ -85,12 +85,13 @@ public:
     //     dataFinalize(); }
     // dataAllRun will return after renderFinalize has been called
     // the dataAllRun must be called on a separate thread,
-    //   but is more cpu efficient than active waiting
+    //   but is more cpu efficient than dataTick
     void dataAllRun();
 
     void renderInitialize();
     void renderTickPrepare(double elapsedTime); // seconds since last call
     void renderTickRender();
+    void renderTickColliders();
     void renderFinalize();
     void setWindowSize(uint32 width, uint32 height);
 

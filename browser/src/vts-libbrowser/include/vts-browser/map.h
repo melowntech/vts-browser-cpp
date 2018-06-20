@@ -62,6 +62,7 @@ VTS_API void vtsMapDataAllRun(vtsHMap map);
 VTS_API void vtsMapRenderInitialize(vtsHMap map);
 VTS_API void vtsMapRenderTickPrepare(vtsHMap map, double elapsedTime); // seconds since last call
 VTS_API void vtsMapRenderTickRender(vtsHMap map);
+VTS_API void vtsMapRenderTickColliders(vtsHMap map);
 VTS_API void vtsMapRenderFinalize(vtsHMap map);
 VTS_API void vtsMapSetWindowSize(vtsHMap map, uint32 width, uint32 height);
 

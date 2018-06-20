@@ -497,7 +497,10 @@ double aabbPointDist(const vec3 &point, const vec3 &min, const vec3 &max)
 {
     double r = 0;
     for (int i = 0; i < 3; i++)
-        r += std::max(std::max(min[i] - point[i], point[i] - max[i]), 0.0);
+    {
+        double d = std::max(std::max(min[i] - point[i], point[i] - max[i]), 0.0);
+        r += d * d;
+    }
     return sqrt(r);
 }
 

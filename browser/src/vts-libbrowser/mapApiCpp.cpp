@@ -170,6 +170,11 @@ void Map::renderTickRender()
     impl->renderTickRender();
 }
 
+void Map::renderTickColliders()
+{
+    impl->renderTickColliders();
+}
+
 void Map::renderFinalize()
 {
     impl->resourceRenderFinalize();

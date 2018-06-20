@@ -45,6 +45,9 @@ vec3 lowerUpperCombine(uint32 i)
 
 double MapImpl::travDistance(TraverseNode *trav, const vec3 pointPhys)
 {
+    // checking the distance in node srs may be more accurate,
+    //   but the resulting distance is in different units
+    /*
     if (!vtslibs::vts::empty(trav->meta->geomExtents)
             && !trav->nodeInfo.srs().empty())
     {
@@ -57,6 +60,7 @@ double MapImpl::travDistance(TraverseNode *trav, const vec3 pointPhys)
             Srs::Physical, trav->nodeInfo.node());
         return aabbPointDist(p, el, eu);
     }
+    */
     return aabbPointDist(pointPhys, trav->aabbPhys[0],
             trav->aabbPhys[1]);
 }
@@ -641,11 +645,41 @@ void MapImpl::travModeBalanced(TraverseNode *trav, bool renderOnly)
     trav->clearRenders();
 }
 
+void MapImpl::travModeFixed(TraverseNode *trav)
+{
+    if (!travInit(trav))
+        return;
+
+    if (travDistance(trav, renderer.focusPosPhys)
+        > renderer.fixedModeDistance)
+    {
+        trav->clearRenders();
+        return;
+    }
+
+    if (trav->nodeInfo.nodeId().lod >= renderer.fixedModeLod
+        || trav->childs.empty())
+    {
+        touchDraws(trav);
+        if (trav->surface && trav->rendersEmpty())
+            travDetermineDraws(trav);
+        if (!trav->rendersEmpty())
+            renderNode(trav);
+        return;
+    }
+
+    for (auto &t : trav->childs)
+        travModeFixed(t.get());
+
+    trav->clearRenders();
+}
+
 void MapImpl::traverseRender(TraverseNode *trav)
 {
-    trav->layer->updateTravelMode();
-    switch (trav->layer->traverseMode)
+    switch (renderer.currentTraverseMode)
     {
+    case TraverseMode::None:
+        break;
     case TraverseMode::Hierarchical:
         travModeHierarchical(trav, false);
         break;
@@ -654,6 +688,9 @@ void MapImpl::traverseRender(TraverseNode *trav)
         break;
     case TraverseMode::Balanced:
         travModeBalanced(trav, false);
+        break;
+    case TraverseMode::Fixed:
+        travModeFixed(trav);
         break;
     }
 }

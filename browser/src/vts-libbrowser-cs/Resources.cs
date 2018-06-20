@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Copyright (c) 2017 Melown Technologies SE
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,13 +63,13 @@ namespace vts
 
         public void Load(IntPtr handle)
         {
-            BrowserInterop.vtsGetTextureResolution(handle, out width, out height, out components);
+            BrowserInterop.vtsGetTextureResolution(handle, ref width, ref height, ref components);
             Util.CheckInterop();
             type = (GpuType)BrowserInterop.vtsGetTextureType(handle);
             Util.CheckInterop();
-            IntPtr bufPtr;
-            uint bufSize;
-            BrowserInterop.vtsGetTextureBuffer(handle, out bufPtr, out bufSize);
+            IntPtr bufPtr = IntPtr.Zero;
+            uint bufSize = 0;
+            BrowserInterop.vtsGetTextureBuffer(handle, ref bufPtr, ref bufSize);
             Util.CheckInterop();
             data = new byte[bufSize];
             Marshal.Copy(bufPtr, data, 0, (int)bufSize);
@@ -99,9 +99,9 @@ namespace vts
         {
             faceMode = (FaceMode)BrowserInterop.vtsGetMeshFaceMode(handle);
             Util.CheckInterop();
-            IntPtr bufPtr;
-            uint bufSize;
-            BrowserInterop.vtsGetMeshIndices(handle, out bufPtr, out bufSize, out indicesCount);
+            IntPtr bufPtr = IntPtr.Zero;
+            uint bufSize = 0;
+            BrowserInterop.vtsGetMeshIndices(handle, ref bufPtr, ref bufSize, ref indicesCount);
             Util.CheckInterop();
             if (indicesCount > 0)
             {
@@ -110,7 +110,7 @@ namespace vts
                 indices = new ushort[indicesCount];
                 Buffer.BlockCopy(tmp, 0, indices, 0, (int)indicesCount * 2);
             }
-            BrowserInterop.vtsGetMeshVertices(handle, out bufPtr, out bufSize, out verticesCount);
+            BrowserInterop.vtsGetMeshVertices(handle, ref bufPtr, ref bufSize, ref verticesCount);
             Util.CheckInterop();
             vertices = new byte[bufSize];
             Marshal.Copy(bufPtr, vertices, 0, (int)bufSize);
@@ -118,8 +118,13 @@ namespace vts
             for (uint i = 0; i < 4; i++)
             {
                 VertexAttribute a;
-                uint type;
-                BrowserInterop.vtsGetMeshAttribute(handle, i, out a.offset, out a.stride, out a.components, out type, out a.enable, out a.normalized);
+                a.offset = 0;
+                a.stride = 0;
+                a.components = 0;
+                a.enable = false;
+                a.normalized = false;
+                uint type = 0;
+                BrowserInterop.vtsGetMeshAttribute(handle, i, ref a.offset, ref a.stride, ref a.components, ref type, ref a.enable, ref a.normalized);
                 Util.CheckInterop();
                 a.type = (GpuType)type;
                 attributes.Add(a);

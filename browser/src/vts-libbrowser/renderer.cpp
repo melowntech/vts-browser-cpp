@@ -30,6 +30,7 @@ namespace vts
 {
 
 MapImpl::Renderer::Renderer() :
+    fixedModeDistance(0), fixedModeLod(0),
     windowWidth(0), windowHeight(0), tickIndex(0)
 {}
 
@@ -194,7 +195,8 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
     assert(trav->surface);
     assert(!trav->rendersEmpty());
     assert(trav->rendersReady());
-    assert(visibilityTest(trav));
+    assert(renderer.currentTraverseMode == TraverseMode::Fixed
+        || visibilityTest(trav));
     assert(trav->surface);
 
     // statistics
@@ -203,20 +205,14 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
         trav->nodeInfo.nodeId().lod, MapStatistics::MaxLods - 1)]++;
 
     // meshes
-    if (options.debugRenderMeshes)
-    {
-        for (const RenderTask &r : trav->opaque)
-            draws.opaque.emplace_back(r, uvClip.data(), this);
-        for (const RenderTask &r : trav->transparent)
-            draws.transparent.emplace_back(r, uvClip.data(), this);
-    }
+    for (const RenderTask &r : trav->opaque)
+        draws.opaque.emplace_back(r, uvClip.data(), this);
+    for (const RenderTask &r : trav->transparent)
+        draws.transparent.emplace_back(r, uvClip.data(), this);
 
     // geodata
-    if (options.debugRenderGeodata)
-    {
-        for (const RenderTask &r : trav->geodata)
-            draws.geodata.emplace_back(r, uvClip.data(), this);
-    }
+    for (const RenderTask &r : trav->geodata)
+        draws.geodata.emplace_back(r, uvClip.data(), this);
 
     // surrogate
     if (options.debugRenderSurrogates && trav->surrogatePhys)
@@ -421,6 +417,8 @@ void MapImpl::renderTickPrepare(double elapsedTime)
     updateSris();
     for (auto &it : layers)
         traverseClearing(it->traverseRoot.get());
+
+    renderer.credits.tick(credits);
 }
 
 void MapImpl::renderTickRender()
@@ -432,12 +430,61 @@ void MapImpl::renderTickRender()
 
     updateCamera();
     for (auto &it : layers)
+    {
+        setCurrentTraversalMode(it->getTraverseMode());
         traverseRender(it->traverseRoot.get());
-    renderer.credits.tick(credits);
+    }
     for (const RenderTask &r : navigation.renders)
         draws.infographics.emplace_back(r, this);
+    sortOpaqueFrontToBack();
+}
 
-    draws.sortOpaqueFrontToBack();
+void MapImpl::renderTickColliders()
+{
+    draws.clear();
+
+    if (!mapconfigReady)
+        return;
+
+    setCurrentTraversalMode(TraverseMode::Fixed);
+
+    if (callbacks.collidersOverrideCenter)
+        callbacks.collidersOverrideCenter(renderer.focusPosPhys.data());
+    if (callbacks.collidersOverrideDistance)
+        callbacks.collidersOverrideDistance(renderer.fixedModeDistance);
+    if (callbacks.collidersOverrideLod)
+        callbacks.collidersOverrideLod(renderer.fixedModeLod);
+
+    renderer.cameraPosPhys = renderer.focusPosPhys;
+    renderer.viewRender = translationMatrix(-renderer.focusPosPhys);
+    renderer.viewProjRender = renderer.viewRender;
+
+    // update draws camera
+    {
+        MapDraws::Camera &c = draws.camera;
+        matToRaw(renderer.viewRender, c.view);
+        matToRaw(identityMatrix4(), c.proj);
+        vecToRaw(renderer.focusPosPhys, c.eye);
+        c.near_ = 0;
+        c.far_ = renderer.fixedModeDistance;
+        c.aspect = 0;
+        c.fov = 0;
+        c.mapProjected = mapConfig->navigationSrsType()
+            == vtslibs::registry::Srs::Type::projected;
+    }
+
+    for (auto &it : layers)
+        traverseRender(it->traverseRoot.get());
+}
+
+void MapImpl::setCurrentTraversalMode(TraverseMode mode)
+{
+    renderer.currentTraverseMode = mode;
+    if (mode == TraverseMode::Fixed)
+    {
+        renderer.fixedModeDistance = options.fixedTraversalDistance;
+        renderer.fixedModeLod = options.fixedTraversalLod;
+    }
 }
 
 namespace
@@ -503,9 +550,9 @@ void MapImpl::updateCamera()
         callbacks.cameraOverrideView(view.data());
         if (viewOrig != view)
         {
-            // update objCenter, cameraForward and cameraUp
+            // update cameraPos, cameraForward and cameraUp
             mat4 vi = view.inverse();
-            cameraPos = vec4to3(vi * vec4(0, 0, -1, 1), true);
+            cameraPos = vec4to3(vi * vec4(0, 0, 0, 1), false);
             cameraForward = vec4to3(vi * vec4(0, 0, -1, 0), false);
             cameraUp = vec4to3(vi * vec4(0, 1, 0, 0), false);
             objDist = 0;
@@ -625,6 +672,17 @@ void MapImpl::updateCamera()
         c.fov = fov;
         c.mapProjected = projected;
     }
+}
+
+void MapImpl::sortOpaqueFrontToBack()
+{
+    vec3 e = rawToVec3(draws.camera.eye);
+    std::sort(draws.opaque.begin(), draws.opaque.end(), [e](const DrawTask &a,
+        const DrawTask &b) {
+        vec3 va = rawToVec3(a.center).cast<double>() - e;
+        vec3 vb = rawToVec3(b.center).cast<double>() - e;
+        return dot(va, va) < dot(vb, vb);
+    });
 }
 
 } // namespace vts

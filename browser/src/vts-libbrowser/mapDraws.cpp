@@ -82,28 +82,21 @@ DrawTask::DrawTask(const RenderTask &r, const float *uvClip, const MapImpl *m)
     */
 }
 
-MapDraws::MapDraws()
+MapDraws::Camera::Camera()
 {
-    memset(&camera, 0, sizeof(camera));
+    memset(this, 0, sizeof(*this));
 }
+
+MapDraws::MapDraws()
+{}
 
 void MapDraws::clear()
 {
+    camera = Camera();
     opaque.clear();
     transparent.clear();
     geodata.clear();
     infographics.clear();
-}
-
-void MapDraws::sortOpaqueFrontToBack()
-{
-    vec3 e = rawToVec3(camera.eye);
-    std::sort(opaque.begin(), opaque.end(), [e](const DrawTask &a,
-              const DrawTask &b) {
-        vec3 va = rawToVec3(a.center).cast<double>() - e;
-        vec3 vb = rawToVec3(b.center).cast<double>() - e;
-        return dot(va, va) < dot(vb, vb);
-    });
 }
 
 RenderTask::RenderTask() : model(identityMatrix4()),

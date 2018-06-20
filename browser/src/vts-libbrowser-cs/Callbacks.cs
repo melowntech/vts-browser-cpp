@@ -34,14 +34,17 @@ namespace vts
     {
         private void AssignInternalDelegates()
         {
-            MapconfigAvailableDelegate = new BrowserInterop.vtsStateCallbackType(MapconfigAvailableCallback);
-            MapconfigReadyDelegate = new BrowserInterop.vtsStateCallbackType(MapconfigReadyCallback);
-            CameraEyeDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraEyeCallback);
-            CameraTargetDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraTargetCallback);
-            CameraUpDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraUpCallback);
-            CameraFovAspectNearFarDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraFovAspectNearFarCallback);
-            CameraViewDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraViewCallback);
-            CameraProjDelegate = new BrowserInterop.vtsCameraOverrideCallbackType(CameraProjCallback);
+            MapconfigAvailableDelegate = new BrowserInterop.vtsEmptyCallbackType(MapconfigAvailableCallback);
+            MapconfigReadyDelegate = new BrowserInterop.vtsEmptyCallbackType(MapconfigReadyCallback);
+            CameraEyeDelegate = new BrowserInterop.vtsDoubleArrayCallbackType(CameraEyeCallback);
+            CameraTargetDelegate = new BrowserInterop.vtsDoubleArrayCallbackType(CameraTargetCallback);
+            CameraUpDelegate = new BrowserInterop.vtsDoubleArrayCallbackType(CameraUpCallback);
+            CameraFovAspectNearFarDelegate = new BrowserInterop.vtsDoubleArrayCallbackType(CameraFovAspectNearFarCallback);
+            CameraViewDelegate = new BrowserInterop.vtsDoubleArrayCallbackType(CameraViewCallback);
+            CameraProjDelegate = new BrowserInterop.vtsDoubleArrayCallbackType(CameraProjCallback);
+            CollidersCenterDelegate = new BrowserInterop.vtsDoubleArrayCallbackType(CollidersCenterCallback);
+            CollidersDistanceDelegate = new BrowserInterop.vtsDoubleCallbackType(CollidersDistanceCallback);
+            CollidersLodDelegate = new BrowserInterop.vtsUint32CallbackType(CollidersLodCallback);
             LoadTextureDelegate = new BrowserInterop.vtsResourceCallbackType(LoadTextureCallback);
             LoadMeshDelegate = new BrowserInterop.vtsResourceCallbackType(LoadMeshCallback);
             UnloadResourceDelegate = new BrowserInterop.vtsResourceDeleterCallbackType(UnloadResourceCallback);
@@ -65,27 +68,33 @@ namespace vts
             Util.CheckInterop();
             BrowserInterop.vtsCallbacksCameraProj(Handle, CameraProjDelegate);
             Util.CheckInterop();
+            BrowserInterop.vtsCallbacksCollidersCenter(Handle, CollidersCenterDelegate);
+            Util.CheckInterop();
+            BrowserInterop.vtsCallbacksCollidersDistance(Handle, CollidersDistanceDelegate);
+            Util.CheckInterop();
+            BrowserInterop.vtsCallbacksCollidersLod(Handle, CollidersLodDelegate);
+            Util.CheckInterop();
             BrowserInterop.vtsCallbacksLoadTexture(Handle, LoadTextureDelegate);
             Util.CheckInterop();
             BrowserInterop.vtsCallbacksLoadMesh(Handle, LoadMeshDelegate);
             Util.CheckInterop();
         }
 
-        private BrowserInterop.vtsStateCallbackType MapconfigAvailableDelegate;
+        private BrowserInterop.vtsEmptyCallbackType MapconfigAvailableDelegate;
         private void MapconfigAvailableCallback(IntPtr h)
         {
             Debug.Assert(h == Handle);
             EventMapconfigAvailable?.Invoke();
         }
 
-        private BrowserInterop.vtsStateCallbackType MapconfigReadyDelegate;
+        private BrowserInterop.vtsEmptyCallbackType MapconfigReadyDelegate;
         private void MapconfigReadyCallback(IntPtr h)
         {
             Debug.Assert(h == Handle);
             EventMapconfigReady?.Invoke();
         }
 
-        private BrowserInterop.vtsCameraOverrideCallbackType CameraEyeDelegate;
+        private BrowserInterop.vtsDoubleArrayCallbackType CameraEyeDelegate;
         private void CameraEyeCallback(IntPtr h, IntPtr values)
         {
             Debug.Assert(h == Handle);
@@ -99,7 +108,7 @@ namespace vts
             }
         }
 
-        private BrowserInterop.vtsCameraOverrideCallbackType CameraTargetDelegate;
+        private BrowserInterop.vtsDoubleArrayCallbackType CameraTargetDelegate;
         private void CameraTargetCallback(IntPtr h, IntPtr values)
         {
             Debug.Assert(h == Handle);
@@ -113,7 +122,7 @@ namespace vts
             }
         }
 
-        private BrowserInterop.vtsCameraOverrideCallbackType CameraUpDelegate;
+        private BrowserInterop.vtsDoubleArrayCallbackType CameraUpDelegate;
         private void CameraUpCallback(IntPtr h, IntPtr values)
         {
             Debug.Assert(h == Handle);
@@ -127,7 +136,7 @@ namespace vts
             }
         }
 
-        private BrowserInterop.vtsCameraOverrideCallbackType CameraFovAspectNearFarDelegate;
+        private BrowserInterop.vtsDoubleArrayCallbackType CameraFovAspectNearFarDelegate;
         private void CameraFovAspectNearFarCallback(IntPtr h, IntPtr values)
         {
             Debug.Assert(h == Handle);
@@ -140,7 +149,7 @@ namespace vts
             }
         }
 
-        private BrowserInterop.vtsCameraOverrideCallbackType CameraViewDelegate;
+        private BrowserInterop.vtsDoubleArrayCallbackType CameraViewDelegate;
         private void CameraViewCallback(IntPtr h, IntPtr values)
         {
             Debug.Assert(h == Handle);
@@ -154,7 +163,7 @@ namespace vts
             }
         }
 
-        private BrowserInterop.vtsCameraOverrideCallbackType CameraProjDelegate;
+        private BrowserInterop.vtsDoubleArrayCallbackType CameraProjDelegate;
         private void CameraProjCallback(IntPtr h, IntPtr values)
         {
             Debug.Assert(h == Handle);
@@ -166,6 +175,38 @@ namespace vts
                 Util.CheckArray(tmp, 16);
                 Marshal.Copy(tmp, 0, values, 16);
             }
+        }
+
+        private BrowserInterop.vtsDoubleArrayCallbackType CollidersCenterDelegate;
+        private void CollidersCenterCallback(IntPtr h, IntPtr values)
+        {
+            Debug.Assert(h == Handle);
+            if (EventCollidersCenter != null)
+            {
+                double[] tmp = new double[3];
+                Marshal.Copy(values, tmp, 0, 3);
+                EventCollidersCenter.Invoke(ref tmp);
+                Util.CheckArray(tmp, 3);
+                Marshal.Copy(tmp, 0, values, 3);
+            }
+        }
+
+        private BrowserInterop.vtsDoubleCallbackType CollidersDistanceDelegate;
+        private void CollidersDistanceCallback(IntPtr h, ref double value)
+        {
+            Debug.Assert(h == Handle);
+            if (EventCollidersDistance != null)
+                EventCollidersDistance.Invoke(ref value);
+        }
+
+        private BrowserInterop.vtsUint32CallbackType CollidersLodDelegate;
+        private void CollidersLodCallback(IntPtr h, ref uint value)
+        {
+            Debug.Assert(h == Handle);
+            if (EventCollidersLod != null)
+                EventCollidersLod.Invoke(ref value);
+            else
+                value = 0; // this is wrong, the parameter must be ref, not out
         }
 
         private BrowserInterop.vtsResourceCallbackType LoadTextureDelegate;
@@ -211,22 +252,29 @@ namespace vts
                 d.Dispose();
         }
 
-        public delegate void MapStateHandler();
-        public event MapStateHandler EventMapconfigAvailable;
-        public event MapStateHandler EventMapconfigReady;
-
-        public delegate void CameraOverrideHandler(ref double[] values);
-        public delegate void CameraOverrideParamsHandler(ref double fov, ref double aspect, ref double near, ref double far);
-        public event CameraOverrideHandler EventCameraEye;
-        public event CameraOverrideHandler EventCameraTarget;
-        public event CameraOverrideHandler EventCameraUp;
-        public event CameraOverrideParamsHandler EventCameraFovAspectNearFar;
-        public event CameraOverrideHandler EventCameraView;
-        public event CameraOverrideHandler EventCameraProj;
-
+        public delegate void MapEmptyHandler();
+        public delegate void DoubleArrayHandler(ref double[] values);
+        public delegate void DoubleHandler(ref double value);
+        public delegate void Uint32Handler(ref uint value);
+        public delegate void CameraParamsHandler(ref double fov, ref double aspect, ref double near, ref double far);
         public delegate Object LoadTextureHandler(Texture texture);
-        public event LoadTextureHandler EventLoadTexture;
         public delegate Object LoadMeshHandler(Mesh mesh);
+
+        public event MapEmptyHandler EventMapconfigAvailable;
+        public event MapEmptyHandler EventMapconfigReady;
+
+        public event DoubleArrayHandler EventCameraEye;
+        public event DoubleArrayHandler EventCameraTarget;
+        public event DoubleArrayHandler EventCameraUp;
+        public event CameraParamsHandler EventCameraFovAspectNearFar;
+        public event DoubleArrayHandler EventCameraView;
+        public event DoubleArrayHandler EventCameraProj;
+
+        public event DoubleArrayHandler EventCollidersCenter;
+        public event DoubleHandler EventCollidersDistance;
+        public event Uint32Handler EventCollidersLod;
+
+        public event LoadTextureHandler EventLoadTexture;
         public event LoadMeshHandler EventLoadMesh;
     }
 }

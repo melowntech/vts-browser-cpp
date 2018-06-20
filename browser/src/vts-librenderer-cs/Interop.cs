@@ -38,7 +38,7 @@ namespace vts
 	const string LibName = "vts-renderer";
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate IntPtr  GLADloadproc([MarshalAs(UnmanagedType.LPStr)] string name);
+public delegate IntPtr GLADloadproc([MarshalAs(UnmanagedType.LPStr)] string name);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsCheckGl([MarshalAs(UnmanagedType.LPStr)] string name);

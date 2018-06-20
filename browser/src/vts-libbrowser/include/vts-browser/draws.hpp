@@ -59,11 +59,12 @@ public:
     std::vector<DrawTask> infographics;
 
     struct VTS_API Camera : public vtsCCameraBase
-    {} camera;
+    {
+        Camera();
+    } camera;
 
     MapDraws();
     void clear();
-    void sortOpaqueFrontToBack();
 };
 
 } // namespace vts

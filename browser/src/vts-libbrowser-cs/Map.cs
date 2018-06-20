@@ -129,6 +129,12 @@ namespace vts
             Util.CheckInterop();
         }
 
+        public void RenderTickColliders()
+        {
+            BrowserInterop.vtsMapRenderTickColliders(Handle);
+            Util.CheckInterop();
+        }
+
         public void RenderDeinitialize()
         {
             BrowserInterop.vtsMapRenderFinalize(Handle);

@@ -77,7 +77,7 @@ namespace vts
                 colorLow = new float[4];
                 colorHigh = new float[4];
             }
-            BrowserInterop.vtsCelestialAtmosphere(map.Handle, out thickness, out horizontalExponent, out verticalExponent, colorLow, colorHigh);
+            BrowserInterop.vtsCelestialAtmosphere(map.Handle, ref thickness, ref horizontalExponent, ref verticalExponent, colorLow, colorHigh);
             Util.CheckInterop();
         }
     }
@@ -131,8 +131,8 @@ namespace vts
                 for (uint i = 0; i < cnt; i++)
                 {
                     DrawTask t;
-                    IntPtr pm, ptc, ptm;
-                    IntPtr dataPtr = BrowserInterop.vtsDrawsAllInOne(group, i, out pm, out ptc, out ptm);
+                    IntPtr pm = IntPtr.Zero, ptc = IntPtr.Zero, ptm = IntPtr.Zero;
+                    IntPtr dataPtr = BrowserInterop.vtsDrawsAllInOne(group, i, ref pm, ref ptc, ref ptm);
                     Util.CheckInterop();
                     if (pm == null)
                         continue;

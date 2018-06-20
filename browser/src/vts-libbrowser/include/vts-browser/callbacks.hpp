@@ -67,6 +67,12 @@ public:
                                         cameraOverrideFovAspectNearFar;
     std::function<void(double*)> cameraOverrideView;
     std::function<void(double*)> cameraOverrideProj;
+
+    // function callbacks for colliders overrides (all in physical srs)
+    // these callbacks are invoked from the Map::renderTickColliders()
+    std::function<void(double*)> collidersOverrideCenter;
+    std::function<void(double&)> collidersOverrideDistance;
+    std::function<void(uint32&)> collidersOverrideLod;
 };
 
 VTS_API extern std::function<const char *(const char *)> projFinder;

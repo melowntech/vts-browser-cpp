@@ -171,17 +171,21 @@ void optionsConfigMapOptions(
         po::value<TraverseMode>(&opts->traverseModeSurfaces)
         ->default_value(opts->traverseModeSurfaces),
         "Render traversal mode for surfaces:\n"
-        "hierarchical\n"
+        "none\n"
         "flat\n"
-        "balanced")
+        "hierarchical\n"
+        "balanced\n"
+        "fixed")
 
     ((section + "traverseModeGeodata").c_str(),
         po::value<TraverseMode>(&opts->traverseModeGeodata)
         ->default_value(opts->traverseModeGeodata),
         "Render traversal mode for geodata:\n"
-        "hierarchical\n"
+        "none\n"
         "flat\n"
-        "balanced")
+        "hierarchical\n"
+        "balanced\n"
+        "fixed")
     ;
 }
 
@@ -258,12 +262,6 @@ void optionsConfigDebugOptions(
         ->default_value(opts->debugRenderAltitudeShiftCorners)
         ->implicit_value(!opts->debugRenderAltitudeShiftCorners),
         "debugRenderAltitudeShiftCorners")
-
-    ((section + "debugRenderMeshes").c_str(),
-        po::value<bool>(&opts->debugRenderMeshes)
-        ->default_value(opts->debugRenderMeshes)
-        ->implicit_value(!opts->debugRenderMeshes),
-        "debugRenderMeshes")
     ;
 }
 
@@ -303,9 +301,11 @@ void optionsConfigFetcherOptions(
 }
 
 UTILITY_GENERATE_ENUM_IO(TraverseMode,
-                         ((Hierarchical)("hierarchical"))
+                         ((None)("none"))
                          ((Flat)("flat"))
+                         ((Hierarchical)("hierarchical"))
                          ((Balanced)("balanced"))
+                         ((Fixed)("fixed"))
                          )
 
 } // namespace vts

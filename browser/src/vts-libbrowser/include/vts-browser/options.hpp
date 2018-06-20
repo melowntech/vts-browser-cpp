@@ -148,6 +148,11 @@ public:
     // small up-scale may reduce occasional holes on tile borders.
     double renderTilesScale;
 
+    // maximum distance of meshes emited for fixed traversal mode
+    // defined in physical length units (metres)
+    // for colliders, it may be overriden from callback
+    double fixedTraversalDistance;
+
     // memory threshold at which resources start to be released
     uint32 targetResourcesMemoryKB;
 
@@ -172,6 +177,10 @@ public:
     // delay in seconds for first resource download retry
     // each subsequent retry is delayed twice as long as before
     uint32 fetchFirstRetryTimeOffset;
+
+    // desired lod used with fixed traversal mode
+    // for colliders, it may be overriden from callback
+    uint32 fixedTraversalLod;
 
     NavigationType navigationType;
     NavigationMode navigationMode;
@@ -212,8 +221,6 @@ public:
     bool debugRenderObjectPosition;
     bool debugRenderTargetPosition;
     bool debugRenderAltitudeShiftCorners;
-    bool debugRenderMeshes;
-    bool debugRenderGeodata;
 
     bool debugExtractRawResources;
 };

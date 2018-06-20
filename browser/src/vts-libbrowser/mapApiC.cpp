@@ -403,6 +403,13 @@ void vtsMapRenderTickRender(vtsHMap map)
     C_END
 }
 
+void vtsMapRenderTickColliders(vtsHMap map)
+{
+    C_BEGIN
+    map->p->renderTickColliders();
+    C_END
+}
+
 void vtsMapRenderFinalize(vtsHMap map)
 {
     C_BEGIN
@@ -818,13 +825,13 @@ struct StateCallback
         (*callback)(map);
     }
     vtsHMap map;
-    vtsStateCallbackType callback;
+    vtsEmptyCallbackType callback;
 };
 
 } // namespace
 
 void vtsCallbacksMapconfigAvailable(vtsHMap map,
-                vtsStateCallbackType callback)
+                vtsEmptyCallbackType callback)
 {
     C_BEGIN
     StateCallback c;
@@ -835,7 +842,7 @@ void vtsCallbacksMapconfigAvailable(vtsHMap map,
 }
 
 void vtsCallbacksMapconfigReady(vtsHMap map,
-                vtsStateCallbackType callback)
+                vtsEmptyCallbackType callback)
 {
     C_BEGIN
     StateCallback c;
@@ -848,47 +855,47 @@ void vtsCallbacksMapconfigReady(vtsHMap map,
 namespace
 {
 
-struct CameraCallback
+struct DoubleCallback
 {
     void operator()(double *ds)
     {
         (*callback)(map, ds);
     }
     vtsHMap map;
-    vtsCameraOverrideCallbackType callback;
-    CameraCallback(vtsHMap map,
-                vtsCameraOverrideCallbackType callback)
+    vtsDoubleArrayCallbackType callback;
+    DoubleCallback(vtsHMap map,
+                vtsDoubleArrayCallbackType callback)
         : map(map), callback(callback) {}
 };
 
 } // namespace
 
 void vtsCallbacksCameraEye(vtsHMap map,
-                vtsCameraOverrideCallbackType callback)
+                vtsDoubleArrayCallbackType callback)
 {
     C_BEGIN
-    map->p->callbacks().cameraOverrideEye = CameraCallback (map, callback);
+    map->p->callbacks().cameraOverrideEye = DoubleCallback(map, callback);
     C_END
 }
 
 void vtsCallbacksCameraTarget(vtsHMap map,
-                vtsCameraOverrideCallbackType callback)
+                vtsDoubleArrayCallbackType callback)
 {
     C_BEGIN
-    map->p->callbacks().cameraOverrideTarget = CameraCallback (map, callback);
+    map->p->callbacks().cameraOverrideTarget = DoubleCallback(map, callback);
     C_END
 }
 
 void vtsCallbacksCameraUp(vtsHMap map,
-                vtsCameraOverrideCallbackType callback)
+                vtsDoubleArrayCallbackType callback)
 {
     C_BEGIN
-    map->p->callbacks().cameraOverrideUp = CameraCallback (map, callback);
+    map->p->callbacks().cameraOverrideUp = DoubleCallback(map, callback);
     C_END
 }
 
 void vtsCallbacksCameraFovAspectNearFar(vtsHMap map,
-                vtsCameraOverrideCallbackType callback)
+                vtsDoubleArrayCallbackType callback)
 {
     struct Callback
     {
@@ -902,7 +909,7 @@ void vtsCallbacksCameraFovAspectNearFar(vtsHMap map,
             d = tmp[3];
         }
         vtsHMap map;
-        vtsCameraOverrideCallbackType callback;
+        vtsDoubleArrayCallbackType callback;
     };
     C_BEGIN
     Callback c;
@@ -913,18 +920,66 @@ void vtsCallbacksCameraFovAspectNearFar(vtsHMap map,
 }
 
 void vtsCallbacksCameraView(vtsHMap map,
-                vtsCameraOverrideCallbackType callback)
+                vtsDoubleArrayCallbackType callback)
 {
     C_BEGIN
-    map->p->callbacks().cameraOverrideView = CameraCallback (map, callback);
+    map->p->callbacks().cameraOverrideView = DoubleCallback(map, callback);
     C_END
 }
 
 void vtsCallbacksCameraProj(vtsHMap map,
-                vtsCameraOverrideCallbackType callback)
+                vtsDoubleArrayCallbackType callback)
 {
     C_BEGIN
-    map->p->callbacks().cameraOverrideProj = CameraCallback (map, callback);
+    map->p->callbacks().cameraOverrideProj = DoubleCallback(map, callback);
+    C_END
+}
+
+void vtsCallbacksCollidersCenter(vtsHMap map,
+    vtsDoubleArrayCallbackType callback)
+{
+    C_BEGIN
+    map->p->callbacks().collidersOverrideCenter = DoubleCallback(map, callback);
+    C_END
+}
+
+void vtsCallbacksCollidersDistance(vtsHMap map,
+    vtsDoubleArrayCallbackType callback)
+{
+    struct Callback
+    {
+        void operator()(double &a)
+        {
+            (*callback)(map, &a);
+        }
+        vtsHMap map;
+        vtsDoubleArrayCallbackType callback;
+    };
+    C_BEGIN
+    Callback c;
+    c.map = map;
+    c.callback = callback;
+    map->p->callbacks().collidersOverrideDistance = c;
+    C_END
+}
+
+void vtsCallbacksCollidersLod(vtsHMap map,
+    vtsUint32CallbackType callback)
+{
+    struct Callback
+    {
+        void operator()(uint32 &a)
+        {
+            (*callback)(map, &a);
+        }
+        vtsHMap map;
+        vtsUint32CallbackType callback;
+    };
+    C_BEGIN
+    Callback c;
+    c.map = map;
+    c.callback = callback;
+    map->p->callbacks().collidersOverrideLod = c;
     C_END
 }
 

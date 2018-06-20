@@ -483,8 +483,8 @@ public:
              const vtslibs::registry::View::FreeLayerParams &params);
 
     bool prerequisitesCheck();
-    void updateTravelMode();
     bool isGeodata();
+    TraverseMode getTraverseMode();
 
     BoundParamInfo::List boundList(
             const SurfaceInfo *surface, sint32 surfaceReference);
@@ -501,7 +501,6 @@ public:
     std::shared_ptr<TraverseNode> traverseRoot;
 
     MapImpl *const map;
-    TraverseMode traverseMode;
     Credits::Scope creditScope;
 
 private:
@@ -633,10 +632,13 @@ public:
         vec3 forwardUnitVector;
         vec3 cameraPosPhys;
         vec3 focusPosPhys;
+        double fixedModeDistance;
+        uint32 fixedModeLod;
         uint32 windowWidth;
         uint32 windowHeight;
         uint32 tickIndex;
-        
+        TraverseMode currentTraverseMode;
+
         Renderer();
     } renderer;
 
@@ -724,6 +726,7 @@ public:
     void renderFinalize();
     void renderTickPrepare(double elapsedTime);
     void renderTickRender();
+    void renderTickColliders();
     vtslibs::vts::TileId roundId(TileId nodeId);
     Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
                            BoundParamInfo::List &boundList, double priority);
@@ -758,10 +761,13 @@ public:
     void travModeHierarchical(TraverseNode *trav, bool loadOnly);
     void travModeFlat(TraverseNode *trav);
     void travModeBalanced(TraverseNode *trav, bool renderOnly);
+    void travModeFixed(TraverseNode *trav);
     void traverseRender(TraverseNode *trav);
     void traverseClearing(TraverseNode *trav);
+    void setCurrentTraversalMode(TraverseMode mode);
     void updateCamera();
     bool prerequisitesCheck();
+    void sortOpaqueFrontToBack();
     uint32 applyCameraRotationNormalization(vec3 &rot);
     uint32 applyCameraRotationNormalization(math::Point3 &rot);
     vec3 applyCameraRotationNormalizationPermanently();

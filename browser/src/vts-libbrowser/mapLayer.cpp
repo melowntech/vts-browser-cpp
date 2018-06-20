@@ -35,7 +35,6 @@ FreeInfo::FreeInfo(const vtslibs::registry::FreeLayer &fl,
 {}
 
 MapLayer::MapLayer(MapImpl *map) : map(map),
-    traverseMode(TraverseMode::Flat),
     creditScope(Credits::Scope::Imagery)
 {
     boundLayerParams = map->mapConfig->view.surfaces;
@@ -44,7 +43,6 @@ MapLayer::MapLayer(MapImpl *map) : map(map),
 MapLayer::MapLayer(MapImpl *map, const std::string &name,
                    const vtslibs::registry::View::FreeLayerParams &params)
     : freeLayerName(name), freeLayerParams(params), map(map),
-      traverseMode(TraverseMode::Flat),
       creditScope(Credits::Scope::Imagery)
 {
     boundLayerParams[""] = params.boundLayers;
@@ -57,14 +55,6 @@ bool MapLayer::prerequisitesCheck()
     if (freeLayerParams)
         return prerequisitesCheckFreeLayer();
     return prerequisitesCheckMainSurfaces();
-}
-
-void MapLayer::updateTravelMode()
-{
-    if (isGeodata())
-        traverseMode = map->options.traverseModeGeodata;
-    else
-        traverseMode = map->options.traverseModeSurfaces;
 }
 
 bool MapLayer::isGeodata()
@@ -81,6 +71,14 @@ bool MapLayer::isGeodata()
         }
     }
     return false;
+}
+
+TraverseMode MapLayer::getTraverseMode()
+{
+    if (isGeodata())
+        return map->options.traverseModeGeodata;
+    else
+        return map->options.traverseModeSurfaces;
 }
 
 BoundParamInfo::List MapLayer::boundList(const SurfaceInfo *surface,

@@ -94,15 +94,24 @@ enum class NavigationMode
 
 enum class TraverseMode
 {
-    // this mode downloads each and every lod from top to the required level,
+    // disables traversal of the specific feature
+    None,
+
+    // Flat mode requires least amount of memory and downloads
+    Flat,
+
+    // Hierarchical mode downloads every lod from top to the required level,
     //   this ensures that it has at least something to show at all times
     Hierarchical,
 
-    // this mode downloads only the smallest set of data
-    Flat,
-
-    // this mode is a compromise
+    // Balanced does litle downloads but makes rendering more consistent
     Balanced,
+
+    // Fixed mode completely changes how the traversal works
+    //   it will use fixed selected lod (and some coarser where unavailable)
+    //   and it will render everything up to some specified distance
+    // this mode is designed for use with colliders query
+    Fixed,
 };
 
 enum class FreeLayerType

@@ -83,9 +83,11 @@ void clipBoardCopy(nk_handle, const char *text, int len)
 }
 
 static const char *traverseModeNames[] = {
-    "Hierarchical",
+    "None",
     "Flat",
+    "Hierarchical",
     "Balanced",
+    "Fixed",
 };
 
 static const char *navigationTypeNames[] = {
@@ -704,14 +706,6 @@ public:
                 // polygon edges
                 r.renderPolygonEdges = nk_check_label(&ctx, "edges",
                                                 r.renderPolygonEdges);
-
-                // render meshes
-                o.debugRenderMeshes = nk_check_label(&ctx,
-                    "meshes", o.debugRenderMeshes);
-
-                // render geodata
-                o.debugRenderGeodata = nk_check_label(&ctx,
-                    "geodata", o.debugRenderGeodata);
 
                 // render compas
                 nk_checkbox_label(&ctx,

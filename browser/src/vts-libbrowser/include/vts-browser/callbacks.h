@@ -34,8 +34,11 @@ extern "C" {
 #endif
 
 typedef void (*vtsResourceCallbackType)(vtsHMap map, vtsHResource resource);
-typedef void (*vtsStateCallbackType)(vtsHMap map);
-typedef void (*vtsCameraOverrideCallbackType)(vtsHMap map, double values[]);
+typedef void (*vtsEmptyCallbackType)(vtsHMap map);
+typedef void (*vtsDoubleArrayCallbackType)(vtsHMap map, double values[]);
+typedef void (*vtsDoubleCallbackType)(vtsHMap map, double *value);
+typedef void (*vtsUint32ArrayCallbackType)(vtsHMap map, uint32 values[]);
+typedef void (*vtsUint32CallbackType)(vtsHMap map, uint32 *value);
 typedef const char *(*vtsProjFinderCallbackType)(const char *name);
 
 VTS_API void vtsCallbacksLoadTexture(vtsHMap map,
@@ -44,22 +47,29 @@ VTS_API void vtsCallbacksLoadMesh(vtsHMap map,
                         vtsResourceCallbackType callback);
 
 VTS_API void vtsCallbacksMapconfigAvailable(vtsHMap map,
-                        vtsStateCallbackType callback);
+                        vtsEmptyCallbackType callback);
 VTS_API void vtsCallbacksMapconfigReady(vtsHMap map,
-                        vtsStateCallbackType callback);
+                        vtsEmptyCallbackType callback);
 
 VTS_API void vtsCallbacksCameraEye(vtsHMap map,
-                        vtsCameraOverrideCallbackType callback);
+                        vtsDoubleArrayCallbackType callback);
 VTS_API void vtsCallbacksCameraTarget(vtsHMap map,
-                        vtsCameraOverrideCallbackType callback);
+                        vtsDoubleArrayCallbackType callback);
 VTS_API void vtsCallbacksCameraUp(vtsHMap map,
-                        vtsCameraOverrideCallbackType callback);
+                        vtsDoubleArrayCallbackType callback);
 VTS_API void vtsCallbacksCameraFovAspectNearFar(vtsHMap map,
-                        vtsCameraOverrideCallbackType callback);
+                        vtsDoubleArrayCallbackType callback);
 VTS_API void vtsCallbacksCameraView(vtsHMap map,
-                        vtsCameraOverrideCallbackType callback);
+                        vtsDoubleArrayCallbackType callback);
 VTS_API void vtsCallbacksCameraProj(vtsHMap map,
-                        vtsCameraOverrideCallbackType callback);
+                        vtsDoubleArrayCallbackType callback);
+
+VTS_API void vtsCallbacksCollidersCenter(vtsHMap map,
+                        vtsDoubleArrayCallbackType callback);
+VTS_API void vtsCallbacksCollidersDistance(vtsHMap map,
+                        vtsDoubleCallbackType callback);
+VTS_API void vtsCallbacksCollidersLod(vtsHMap map,
+                        vtsUint32CallbackType callback);
 
 VTS_API void vtsProjFinder(vtsProjFinderCallbackType callback);
 

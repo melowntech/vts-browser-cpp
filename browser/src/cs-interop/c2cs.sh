@@ -83,11 +83,14 @@ awk '{gsub(/bool /,"[MarshalAs(UnmanagedType.I1)] bool ")} 1' - | \
 # boolret
 awk '{gsub(/boolret /,"bool ")} 1' - | \
 
-# out parameter
-sed 's/\([[:alnum:]]\+\) \*\([[:alnum:]]\+\)/out \1 \2/g' - | \
+# ref parameter
+sed 's/\([[:alnum:]]\+\) \*\([[:alnum:]]\+\)/ref \1 \2/g' - | \
 
 # static extern
 awk '{sub(/VTS_API/,"public static extern")} 1' - | \
+
+# replace double spaces
+sed 's/  / /' - | \
 
 # add empty lines
 awk '{sub(/;/,";\n")} 1' - | \

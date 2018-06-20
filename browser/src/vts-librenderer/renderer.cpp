@@ -114,7 +114,6 @@ public:
         Mesh *m = (Mesh*)t.mesh.get();
         if (!m || !tex)
             return;
-        shaderSurface->bind();
         shaderSurface->uniformMat4(1, t.mv);
         shaderSurface->uniformMat3(2, t.uvm);
         shaderSurface->uniformVec4(3, t.color);
@@ -142,7 +141,6 @@ public:
         Mesh *m = (Mesh*)t.mesh.get();
         if (!m)
             return;
-        shaderInfographic->bind();
         shaderInfographic->uniformMat4(1, t.mv);
         shaderInfographic->uniformVec4(2, t.color);
         shaderInfographic->uniform(3, (int)(!!t.texColor));
@@ -160,7 +158,6 @@ public:
         Mesh *m = (Mesh*)t.mesh.get();
         if (!m)
             return;
-        shaderInfographic->bind();
         shaderInfographic->uniformMat4(1, t.mv);
         shaderInfographic->uniformVec4(2, t.color);
         shaderInfographic->uniform(3, (int)(!!t.texColor));
@@ -341,6 +338,7 @@ public:
         glDisable(GL_BLEND);
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
+        shaderSurface->bind();
         for (const DrawTask &t : draws->opaque)
             drawSurface(t);
         CHECK_GL("rendered opaque");
@@ -370,6 +368,7 @@ public:
 
         // render transparent
         glEnable(GL_BLEND);
+        shaderSurface->bind();
         for (const DrawTask &t : draws->transparent)
             drawSurface(t);
         CHECK_GL("rendered transparent");
@@ -379,6 +378,7 @@ public:
         {
             glDisable(GL_BLEND);
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            shaderSurface->bind();
             for (const DrawTask &it : draws->opaque)
             {
                 DrawTask t(it);
@@ -405,11 +405,13 @@ public:
         glDisable(GL_DEPTH_TEST);
 
         // render geodata
+        shaderInfographic->bind();
         for (const auto &t : draws->geodata)
             drawGeodata(t);
         CHECK_GL("rendered geodata");
 
         // render infographics
+        shaderInfographic->bind();
         for (const DrawTask &t : draws->infographics)
             drawInfographic(t);
         CHECK_GL("rendered infographics");
@@ -637,6 +639,7 @@ public:
         }
 
         // Load it in
+        uboAtm->bind();
         uboAtm->load(atmBlock);
 
         // Bind atmosphere uniform buffer to index 0

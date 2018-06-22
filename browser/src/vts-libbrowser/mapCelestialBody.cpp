@@ -35,9 +35,11 @@ MapCelestialBody::MapCelestialBody() :
     majorRadius(0), minorRadius(0)
 {}
 
-MapCelestialBody::Atmosphere::Atmosphere() : thickness(0),
-    horizontalExponent(0), verticalExponent(0),
-    colorLow{0,0,0,0}, colorHigh{0,0,0,0}
+MapCelestialBody::Atmosphere::Atmosphere() :
+    colorHorizon{0,0,0,0}, colorZenith{0,0,0,0},
+    colorGradientExponent(0.3),
+    thickness(0), thicknessQuantile(1e-6),
+    visibility(0), visibilityQuantile(1e-2)
 {}
 
 bool MapConfig::isEarth() const
@@ -59,35 +61,43 @@ void MapConfig::initializeCelestialBody() const
     if (isEarth())
     {
         map->body.name = "Earth";
-        a.thickness = map->body.majorRadius * 0.01;
-        a.horizontalExponent = 420;
-        a.verticalExponent = 7;
-        static vec4 lowColor = vec4(158, 206, 255, 255) / 255;
-        static vec4 highColor = vec4(62, 120, 229, 255) / 255;
-        for (int i = 0; i < 4; i++)
-        {
-            a.colorLow[i] = lowColor[i];
-            a.colorHigh[i] = highColor[i];
-        }
+        a.thickness = 100000;
+        a.visibility = 100000;
+        a.colorHorizon = { 158, 206, 255, 255 };
+        a.colorZenith = { 62, 120, 229, 255 };
     }
     else if (std::abs(map->body.majorRadius - 3396200) < 30000)
     {
         map->body.name = "Mars";
-        a.thickness = map->body.majorRadius * 0.01;
-        a.horizontalExponent = 180;
-        a.verticalExponent = 7;
-        static vec4 lowColor = vec4(115, 100, 74, 255) / 255;
-        static vec4 highColor = vec4(115, 100, 74, 255) / 255;
-        for (int i = 0; i < 4; i++)
-        {
-            a.colorLow[i] = lowColor[i];
-            a.colorHigh[i] = highColor[i];
-        }
+        a.thickness = 50000;
+        a.visibility = 200000;
+        a.colorHorizon = { 115, 100, 74, 255 };
+        a.colorZenith = { 115, 100, 74, 255 };
     }
     else
     {
         map->body.name = "<unknown>";
     }
+    for (int i = 0; i < 4; i++)
+    {
+        a.colorHorizon[i] /= 255;
+        a.colorZenith[i] /= 255;
+    }
+}
+
+void AtmosphereDerivedAttributes(const MapCelestialBody &body,
+    double &boundaryThickness,
+    double &horizontalExponent, double &verticalExponent)
+{
+    boundaryThickness = horizontalExponent = verticalExponent = 0;
+    if (body.majorRadius <= 0 || body.atmosphere.thickness <= 0)
+        return;
+    const auto &a = body.atmosphere;
+    // todo recompute the boundaryThickness with predefined quantile
+    boundaryThickness = a.thickness;
+    verticalExponent = std::log(1 / a.thicknessQuantile);
+    horizontalExponent = body.majorRadius
+        * std::log(1 / a.visibilityQuantile) / a.visibility;
 }
 
 } // namespace vts

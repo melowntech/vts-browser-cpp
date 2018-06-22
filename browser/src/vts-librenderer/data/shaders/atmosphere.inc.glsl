@@ -4,9 +4,10 @@ uniform sampler2D texAtmDensity;
 layout(std140) uniform uboAtm
 {
     mat4 uniAtmViewInv;
-    vec4 uniAtmColorLow;
-    vec4 uniAtmColorHigh;
-    vec4 uniAtmParams; // atmosphere thickness (divided by major axis), horizontal exponent, minor axis (divided by major axis), major axis
+    vec4 uniAtmColorHorizon;
+    vec4 uniAtmColorZenith;
+    vec4 uniAtmSizes; // atmosphere thickness (divided by major axis), major / minor axes ratio, inverze major axis
+    vec4 uniAtmCoefs; // horizontal exponent, colorGradientExponent
     vec3 uniAtmCameraPosition; // world position of camera (divided by major axis)
 };
 
@@ -30,25 +31,25 @@ float atmSampleDensity(vec2 uv)
     s.w = atmDecodeFloat(texelFetchOffset(texAtmDensity, iuv, 0, ivec2(1,1)));
     vec2 f = fract(uvp); // interpolation factors
     vec2 a = mix(s.xz, s.yw, f.x);
-    float b = mix(a.x, a.y, f.y);
-    return b * 5.0;
+    return mix(a.x, a.y, f.y);
 }
 
 // fragDir is in model space
 float atmDensityDir(vec3 fragDir, float fragDist)
 {
-    if (uniAtmParams[0] == 0.0) // no atmosphere
+    if (uniAtmSizes[0] == 0.0) // no atmosphere
         return 0.0;
 
     // convert from ellipsoidal into spherical space
-    vec3 ellipseToSphere = vec3(1.0, 1.0, 1.0 / uniAtmParams[2]);
-    vec3 camPos = uniAtmCameraPosition * ellipseToSphere;
+    vec3 camPos = uniAtmCameraPosition;
+    camPos.z *= uniAtmSizes[1];
     vec3 camNormal = normalize(camPos);
-    fragDir = normalize(fragDir * ellipseToSphere);
+    fragDir.z *= uniAtmSizes[1];
+    fragDir = normalize(fragDir);
     if (fragDist < 1000.0)
     {
         vec3 T = uniAtmCameraPosition + fragDist * fragDir;
-        T *= ellipseToSphere;
+        T.z *= uniAtmSizes[1];
         fragDist = length(T - camPos);
     }
 
@@ -56,12 +57,13 @@ float atmDensityDir(vec3 fragDir, float fragDist)
     float ts[2];
     ts[1] = fragDist; // max ray length
     float l = length(camPos); // distance of camera center from world origin
-    float x = dot(fragDir, -camNormal) * l; // distance from camera to a point called "x", which is on the ray and closest to world origin
+    float x = dot(fragDir, camNormal) * -l; // distance from camera to a point called "x", which is on the ray and closest to world origin
     float y2 = l * l - x * x;
     float y = sqrt(y2); // distance of the ray from world origin
 
-    float atmHeight = uniAtmParams[0]; // atmosphere height (excluding planet radius)
-    float atmRad = 1.0 + atmHeight; // atmosphere height including planet radius
+    float atmThickness = uniAtmSizes[0]; // atmosphere height (excluding planet radius)
+	float invAtmThickness = 1.0 / atmThickness;
+    float atmRad = 1.0 + atmThickness; // atmosphere height including planet radius
     float atmRad2 = atmRad * atmRad;
 
     if (y > atmRad)
@@ -94,7 +96,7 @@ float atmDensityDir(vec3 fragDir, float fragDist)
     {
         float t = x - ts[i];
         float r = sqrt(t * t + y2);
-        vec2 uv = vec2(0.5 - 0.5 * t / r, 0.5 + 0.5 * (r - 1.0) / atmHeight);
+        vec2 uv = vec2(0.5 - 0.5 * t / r, 0.5 + 0.5 * (r - 1.0) * invAtmThickness);
         if (swapDirection)
             uv.x = 1.0 - uv.x;
         ds[i] = atmSampleDensity(uv);
@@ -104,7 +106,8 @@ float atmDensityDir(vec3 fragDir, float fragDist)
     float density = ds[0] - ds[1];
     if (swapDirection)
         density *= -1.0;
-    return 1.0 - exp(-uniAtmParams[1] * density);
+	float transmittance = exp(-uniAtmCoefs[0] * density);
+	return 1.0 - transmittance;
 }
 
 // fragVect is view-space fragment position
@@ -112,7 +115,7 @@ float atmDensity(vec3 fragVect)
 {
     // convert fragVect to world-space and divide by major radius
     fragVect = (uniAtmViewInv * vec4(fragVect, 1.0)).xyz;
-    fragVect = fragVect / uniAtmParams[3];
+    fragVect = fragVect * uniAtmSizes[2];
     vec3 f = fragVect - uniAtmCameraPosition;
     return atmDensityDir(f, length(f));
 }
@@ -120,7 +123,7 @@ float atmDensity(vec3 fragVect)
 vec4 atmColor(float density, vec4 color)
 {
     density = clamp(density, 0.0, 1.0);
-    vec3 a = mix(uniAtmColorLow.rgb, uniAtmColorHigh.rgb, pow(1.0 - density, 0.3));
+    vec3 a = mix(uniAtmColorHorizon.rgb, uniAtmColorZenith.rgb, pow(1.0 - density, uniAtmCoefs[1]));
     return vec4(mix(color.rgb, a, density), color.a);
 }
 

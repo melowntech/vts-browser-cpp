@@ -57,11 +57,12 @@ class ShaderAtm : public Shader
 public:
     struct AtmBlock
     {
-        mat4f viewInv;
-        vec4f colorLow;
-        vec4f colorHigh;
-        vec4f params;
-        vec3f cameraPosition;
+        mat4f uniAtmViewInv;
+        vec4f uniAtmColorHorizon;
+        vec4f uniAtmColorZenith;
+        vec4f uniAtmSizes; // atmosphere thickness (divided by major axis), major / minor axes ratio, inverze major axis
+        vec4f uniAtmCoefs; // horizontal exponent, colorGradientExponent
+        vec3f uniAtmCameraPosition; // world position of camera (divided by major axis)
     };
 
     void initializeAtmosphere()
@@ -612,30 +613,44 @@ public:
 
         if (options.renderAtmosphere && !draws->camera.mapProjected)
         {
+            double boundaryThickness, horizontalExponent, verticalExponent;
+            AtmosphereDerivedAttributes(*body, boundaryThickness,
+                horizontalExponent, verticalExponent);
+
             // uniParams
-            atmBlock.params =
+            atmBlock.uniAtmSizes =
             {
-                (float)(body->atmosphere.thickness / body->majorRadius),
-                (float)body->atmosphere.horizontalExponent,
-                (float)(body->minorRadius / body->majorRadius),
-                (float)body->majorRadius
+                (float)(boundaryThickness / body->majorRadius),
+                (float)(body->majorRadius / body->minorRadius),
+                (float)(1.0 / body->majorRadius),
+                0.f
+            };
+            atmBlock.uniAtmCoefs =
+            {
+                // times 5 as a compensation for density texture normalization
+                (float)(horizontalExponent * 5),
+                (float)(body->atmosphere.colorGradientExponent),
+                0.f,
+                0.f
             };
 
             // camera position
             vec3 camPos = rawToVec3(draws->camera.eye) / body->majorRadius;
-            atmBlock.cameraPosition = camPos.cast<float>();
+            atmBlock.uniAtmCameraPosition = camPos.cast<float>();
 
             // view inv
             mat4 vi = rawToMat4(draws->camera.view).inverse();
-            atmBlock.viewInv = vi.cast<float>();
+            atmBlock.uniAtmViewInv = vi.cast<float>();
 
             // colors
-            atmBlock.colorLow = rawToVec4(body->atmosphere.colorLow);
-            atmBlock.colorHigh = rawToVec4(body->atmosphere.colorHigh);
+            atmBlock.uniAtmColorHorizon
+                = rawToVec4(body->atmosphere.colorHorizon.data());
+            atmBlock.uniAtmColorZenith
+                = rawToVec4(body->atmosphere.colorZenith.data());
         }
         else
         {
-            atmBlock.params = { 0, 0, 0, 0 };
+            memset(&atmBlock, 0, sizeof(atmBlock));
         }
 
         // Load it in

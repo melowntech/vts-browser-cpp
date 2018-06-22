@@ -29,6 +29,8 @@
 
 #include "renderer.hpp"
 
+#include <vts-libs/vts/atmosphereDensityTexture.hpp>
+
 namespace vts { namespace renderer { namespace priv
 {
 
@@ -37,31 +39,7 @@ namespace
 
 bool areSame(const vts::MapCelestialBody &a, const vts::MapCelestialBody &b)
 {
-    return a.majorRadius == b.majorRadius
-        && a.minorRadius == b.minorRadius
-        && a.atmosphere.thickness == b.atmosphere.thickness
-        && a.atmosphere.horizontalExponent == b.atmosphere.horizontalExponent
-        && a.atmosphere.verticalExponent == b.atmosphere.verticalExponent;
-}
-
-void encodeFloat(double v, unsigned char *target)
-{
-    assert(v >= 0 && v < 1);
-    vec4 enc = vec4(1.0, 256.0, 256.0*256.0, 256.0*256.0*256.0) * v;
-    for (int i = 0; i < 4; i++)
-        enc[i] -= std::floor(enc[i]); // frac
-    vec4 tmp;
-    for (int i = 0; i < 3; i++)
-        tmp[i] = enc[i + 1] / 256.0; // shift
-    tmp[3] = 0;
-    enc -= tmp; // subtract
-    for (int i = 0; i < 4; i++)
-        target[i] = enc[i] * 256.0;
-}
-
-double sqr(double a)
-{
-    return a * a;
+    return memcmp(&a.atmosphere, &b.atmosphere, sizeof(a.atmosphere)) == 0;
 }
 
 } // namespace
@@ -86,9 +64,12 @@ void AtmosphereImpl::threadEntry()
         vts::setLogThreadName("atmosphere");
         vts::log(vts::LogLevel::info2, "Loading atmosphere density texture");
 
-        double atmHeight = body.atmosphere.thickness / body.majorRadius;
+        double boundaryThickness, horizontalExponent, verticalExponent;
+        AtmosphereDerivedAttributes(body, boundaryThickness,
+            horizontalExponent, verticalExponent);
+
+        double atmHeight = boundaryThickness / body.majorRadius;
         double atmRad = 1 + atmHeight;
-        double atmRad2 = sqr(atmRad);
 
         spec.buffer.free();
         spec.width = 512;
@@ -100,7 +81,7 @@ void AtmosphereImpl::threadEntry()
             std::stringstream ss;
             ss << std::setprecision(7) << std::fixed
                << "density-" << spec.width << "-" << spec.height << "-"
-               << atmRad << "-" << body.atmosphere.verticalExponent << ".png";
+               << atmRad << "-" << verticalExponent << ".png";
             name = ss.str();
         }
 
@@ -127,59 +108,19 @@ void AtmosphereImpl::threadEntry()
         {
             vts::log(vts::LogLevel::info3,
                      "The atmosphere density texture will be generated anew");
-            spec.buffer.allocate(spec.width * spec.height * 4);
-            unsigned char *valsArray = (unsigned char*)spec.buffer.data();
 
-            // actually generate the texture content
-            for (uint32 xx = 0; xx < spec.width; xx++)
-            {
-                std::stringstream ss;
-                ss << "Atmosphere progress: " << xx << " / " << spec.width;
-                vts::log(vts::LogLevel::info1, ss.str());
-
-                double cosfi = 2 * xx / (double)spec.width - 1;
-                double fi = std::acos(cosfi);
-                double sinfi = std::sin(fi);
-
-                for (uint32 yy = 0; yy < spec.height; yy++)
-                {
-                    double yyy = yy / (double)spec.height;
-                    double r = 2 * atmHeight * yyy - atmHeight + 1;
-                    double t0 = cosfi * r;
-                    double y = sinfi * r;
-                    double y2 = sqr(y);
-                    double a = sqrt(atmRad2 - y2);
-                    double density = 0;
-                    static const double step = 0.0003;
-                    for (double t = t0; t < a; t += step)
-                    {
-                        double h = std::sqrt(sqr(t) + y2);
-                        h = (clamp(h, 1, atmRad) - 1) / atmHeight;
-                        double a = std::exp(h
-                            * -body.atmosphere.verticalExponent);
-                        density += a;
-                    }
-                    density *= step;
-                    encodeFloat(density * 0.2,
-                                valsArray + ((yy * spec.width + xx) * 4));
-                }
-            }
-
-            // save the texture to file
-            {
-                vts::log(vts::LogLevel::info3,
-                         std::string() + "The atmosphere texture "
-                         "will be saved to file <" + name + ">");
-                try
-                {
-                    Buffer b = spec.encodePng();
-                    writeLocalFileBuffer(name, b);
-                }
-                catch (...)
-                {
-                    // dont care
-                }
-            }
+            vtslibs::vts::generateAtmosphereTextureSpec gats;
+            gats.width = spec.width;
+            gats.height = spec.height;
+            gats.thickness = atmHeight;
+            gats.verticalCoefficient = verticalExponent;
+            vtslibs::vts::generateAtmosphereTexture(gats);
+            assert(gats.components == spec.components);
+            assert(gats.width == spec.width && gats.height == spec.height);
+            assert(gats.data.size() == spec.width * spec.height
+                * spec.components);
+            spec.buffer.resize(gats.data.size());
+            memcpy(spec.buffer.data(), gats.data.data(), gats.data.size());
         }
 
         vts::log(vts::LogLevel::info2, "Finished atmosphere density texture");

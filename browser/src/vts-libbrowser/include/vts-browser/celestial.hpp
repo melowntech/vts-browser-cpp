@@ -27,6 +27,7 @@
 #ifndef CELESTIAL_HPP_eruiehowwedw
 #define CELESTIAL_HPP_eruiehowwedw
 
+#include <array>
 #include <string>
 #include "foundation.hpp"
 
@@ -37,19 +38,50 @@ class VTS_API MapCelestialBody
 {
 public:
     std::string name;
-    double majorRadius;
-    double minorRadius;
+    double majorRadius; // meters
+    double minorRadius; // meters
     struct VTS_API Atmosphere
     {
+        // color of the sky (RGBA 0..1) near the horizon
+        std::array<float, 4> colorHorizon;
+        // color of the sky (RGBA 0..1) directly overhead
+        std::array<float, 4> colorZenith;
+
+        // Coefficient controlling the steepness of the color
+        //   gradient between zenith and horizon.
+        // The two colors are weighted by the formula
+        //   T ^ colorGradientExponent,
+        //   where T is the transmittance obtained by
+        //   integrating the atmosphere density
+        double colorGradientExponent;
+
+        // Height of the atmosphere in meters.
+        // As the density of the atmosphere decreases exponentially,
+        //   the "boundary" of the atmosphere is defined as the altitude
+        //   where the density drops to one millionth (1e-6)
+        //   of zero altitude density.
         double thickness;
-        double horizontalExponent;
-        double verticalExponent;
-        float colorLow[4];
-        float colorHigh[4];
+
+        // the coefficient 1e-6 in the definition of atmosphere thickness
+        double thicknessQuantile;
+
+        // Distance at which objects and color features
+        //   are no longer clearly discernible.
+        // We define this to be the distance (at zero altitude)
+        //   at which an object's color is attenuated to 1 %
+        //   of its original value by atmospheric effects.
+        double visibility;
+
+        // The coefficient 1e-2 in the definition of the visibility
+        double visibilityQuantile;
         Atmosphere();
     } atmosphere;
     MapCelestialBody();
 };
+
+VTS_API void AtmosphereDerivedAttributes(const MapCelestialBody &body,
+    double &boundaryThickness,
+    double &horizontalExponent, double &verticalExponent);
 
 } // namespace vts
 

@@ -67,17 +67,28 @@ namespace vts
         public double thickness;
         public double horizontalExponent;
         public double verticalExponent;
-        public float[] colorLow;
-        public float[] colorHigh;
+        public double colorGradientExponent;
+        public float[] colorHorizon;
+        public float[] colorZenith;
 
         public void Load(Map map)
         {
-            if (colorLow == null)
+            if (colorHorizon == null)
             {
-                colorLow = new float[4];
-                colorHigh = new float[4];
+                colorHorizon = new float[4];
+                colorZenith = new float[4];
             }
-            BrowserInterop.vtsCelestialAtmosphere(map.Handle, out thickness, out horizontalExponent, out verticalExponent, colorLow, colorHigh);
+            float[] colors = new float[8];
+            double[] parameters = new double[5];
+            BrowserInterop.vtsCelestialAtmosphere(map.Handle, colors, parameters);
+            Util.CheckInterop();
+            for (int i = 0; i < 4; i++)
+            {
+                colorHorizon[i] = colors[i];
+                colorZenith[i] = colors[i + 4];
+            }
+            colorGradientExponent = parameters[0];
+            BrowserInterop.vtsCelestialAtmosphereDerivedAttributes(map.Handle, out thickness, out horizontalExponent, out verticalExponent);
             Util.CheckInterop();
         }
     }

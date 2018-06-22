@@ -27,6 +27,7 @@
 #include <ogr_spatialref.h>
 
 #include "map.hpp"
+#include "utilities/json.hpp"
 
 namespace vts
 {
@@ -53,12 +54,48 @@ bool MapConfig::isEarth() const
 void MapConfig::initializeCelestialBody() const
 {
     map->body = MapCelestialBody();
-    auto n = srs(referenceFrame.model.physicalSrs);
-    auto r = n.srsDef.reference();
-    map->body.majorRadius = r.GetSemiMajor();
-    map->body.minorRadius = r.GetSemiMinor();
+    {
+        // find body radius based on reference frame
+        auto n = srs(referenceFrame.model.physicalSrs);
+        auto r = n.srsDef.reference();
+        map->body.majorRadius = r.GetSemiMajor();
+        map->body.minorRadius = r.GetSemiMinor();
+    }
+
     MapCelestialBody::Atmosphere &a = map->body.atmosphere;
-    if (isEarth())
+
+    // load body from mapconfig
+    if (map->mapConfig->referenceFrame.body)
+    {
+        const auto &b = map->mapConfig->bodies.get(
+            *map->mapConfig->referenceFrame.body);
+        Json::Value j = boost::any_cast<Json::Value>(b.json);
+        map->body.name = j["name"].asString();
+        if (j.isMember("atmosphere"))
+        {
+            Json::Value &ja = j["atmosphere"];
+#define J(NAME) if (ja.isMember(#NAME)) \
+                    a.NAME = ja[#NAME].asDouble();
+            J(thickness);
+            J(thicknessQuantile);
+            J(visibility);
+            J(visibilityQuantile);
+            J(colorGradientExponent);
+#undef J
+            for (uint32 i = 0; i < 4; i++)
+            {
+#define C(NAME) if (ja[#NAME].isArray() && i < ja[#NAME].size()) \
+                    a.NAME[i] = ja[#NAME][i].asFloat();
+                C(colorHorizon);
+                C(colorZenith);
+#undef C
+            }
+        }
+    }
+
+    // mapconfig does not define the body
+    // try to detect it and use defaults
+    else if (isEarth())
     {
         map->body.name = "Earth";
         a.thickness = 100000;
@@ -78,6 +115,8 @@ void MapConfig::initializeCelestialBody() const
     {
         map->body.name = "<unknown>";
     }
+
+    // normalize colors
     for (int i = 0; i < 4; i++)
     {
         a.colorHorizon[i] /= 255;

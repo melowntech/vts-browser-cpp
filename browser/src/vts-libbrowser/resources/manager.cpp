@@ -37,8 +37,9 @@ namespace vts
 CacheWriteData::CacheWriteData() : expires(-1)
 {}
 
-CacheWriteData::CacheWriteData(FetchTaskImpl *task) : name(task->name),
-    buffer(task->reply.content.copy()), expires(task->reply.expires)
+CacheWriteData::CacheWriteData(FetchTaskImpl *task) :
+    buffer(task->reply.content.copy()),
+    name(task->name), expires(task->reply.expires)
 {}
 
 void FetchTaskImpl::fetchDone()

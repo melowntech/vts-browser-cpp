@@ -96,7 +96,7 @@ void MapImpl::updateAtmosphereDensity()
         = mapConfig->atmosphereDensityTexture;
     assert(tex);
     touchResource(tex);
-    switch (tex->state)
+    switch ((Resource::State)tex->state)
     {
     case Resource::State::errorRetry:
     case Resource::State::availFail:

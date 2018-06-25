@@ -87,6 +87,7 @@ set(SRC_LIST
     utilities/threadName.hpp
     utilities/threadName.cpp
     utilities/threadQueue.hpp
+    atmosphereDensityTexture.cpp
     boostProgramOptions.cpp
     boundLayers.cpp
     buffer.cpp

@@ -1,6 +1,4 @@
-define_module(LIBRARY vts-renderer DEPENDS vts-libs-nucleus vts-browser glad)
-
-# TODO remove the dependency on vts-libs-nucleus when the atmosphere density texture is generated in the browser library
+define_module(LIBRARY vts-renderer DEPENDS vts-browser glad)
 
 set(PUB_HDR_LIST
     include/vts-renderer/foundation_common.h
@@ -17,7 +15,6 @@ set(SRC_LIST
     renderer_c.cpp
     classes.cpp
     foundation.cpp
-    atmosphereDensityTexture.cpp
 )
 
 set(DATA_LIST
@@ -35,7 +32,6 @@ set(DATA_LIST
     data/shaders/copyDepth.frag.glsl
     data/shaders/copyDepth.vert.glsl
     data/textures/compas.png
-    #data/textures/atmosphere/density-512-512-1.0100000-7.0000000.png
 )
 
 buildsys_pack_data(initializeRenderData)

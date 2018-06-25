@@ -34,6 +34,13 @@ namespace vts
 // A FETCH THREAD
 ////////////////////////////
 
+CacheWriteData::CacheWriteData() : expires(-1)
+{}
+
+CacheWriteData::CacheWriteData(FetchTaskImpl *task) : name(task->name),
+    buffer(task->reply.content.copy()), expires(task->reply.expires)
+{}
+
 void FetchTaskImpl::fetchDone()
 {
     LOG(debug) << "Resource <" << name << "> finished downloading";
@@ -113,13 +120,7 @@ void FetchTaskImpl::fetchDone()
     // (deferred) write to cache
     if (state == Resource::State::availFail
         || state == Resource::State::downloaded)
-    {
-        CacheWriteData c;
-        c.name = name;
-        c.buffer = reply.content.copy();
-        c.expires = reply.expires;
-        map->resources.queCacheWrite.push(std::move(c));
-    }
+        map->resources.queCacheWrite.push(this);
 }
 
 ////////////////////////////

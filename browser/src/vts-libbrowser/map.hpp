@@ -84,14 +84,6 @@ enum class Validity
     Valid,
 };
 
-class CacheWriteData
-{
-public:
-    std::string name;
-    Buffer buffer;
-    sint64 expires;
-};
-
 class FetchTaskImpl : public FetchTask
 {
 public:
@@ -105,6 +97,16 @@ public:
     std::shared_ptr<vtslibs::registry::BoundLayer::Availability> availTest;
     std::weak_ptr<class Resource> resource;
     uint32 redirectionsCount;
+};
+
+class CacheWriteData
+{
+public:
+    CacheWriteData();
+    CacheWriteData(FetchTaskImpl *task);
+    Buffer buffer;
+    std::string name;
+    sint64 expires;
 };
 
 class Resource
@@ -529,7 +531,7 @@ public:
     vtslibs::registry::Srs::Type navigationSrsType() const;
 
     void consolidateView();
-    void initializeCelestialBody() const;
+    void initializeCelestialBody();
     bool isEarth() const;
 
     BoundInfo *getBoundInfo(const std::string &id);
@@ -540,6 +542,8 @@ public:
             const std::string &id);
 
     BrowserOptions browserOptions;
+
+    std::shared_ptr<GpuTexture> atmosphereDensityTexture;
 
 private:
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
@@ -604,8 +608,10 @@ public:
         ThreadQueue<std::weak_ptr<Resource>> queCacheRead;
         ThreadQueue<std::weak_ptr<Resource>> queUpload;
         ThreadQueue<CacheWriteData> queCacheWrite;
+        ThreadQueue<std::weak_ptr<GpuTexture>> queAtmosphere;
         std::thread thrCacheReader;
         std::thread thrCacheWriter;
+        std::thread thrAtmosphereGenerator;
 
         class Fetching
         {
@@ -683,6 +689,7 @@ public:
     void resourcesStartDownloads();
     void resourcesUpdateStatistics();
     void resourcesDownloadsEntry();
+    void resourcesAtmosphereGeneratorEntry();
     void resourceUploadProcess(const std::shared_ptr<Resource> &r);
 
     void cacheWriteEntry();
@@ -717,6 +724,7 @@ public:
     void updateSearch();
     void initiateSri(const vtslibs::registry::Position *position);
     void updateSris();
+    void updateAtmosphereDensity();
     double getMapRenderProgress();
 
     // renderer methods

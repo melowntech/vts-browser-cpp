@@ -49,6 +49,7 @@ void MapConfig::load()
     // clear
     *(vtslibs::vts::MapConfig*)this = vtslibs::vts::MapConfig();
     browserOptions = BrowserOptions();
+    atmosphereDensityTexture.reset();
     boundInfos.clear();
     freeInfos.clear();
 

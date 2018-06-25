@@ -42,7 +42,8 @@ MapCreateOptions::MapCreateOptions() :
     disableCache(false),
     hashCachePaths(true),
     disableSearchUrlFallbackOutsideEarth(true),
-    disableBrowserOptionsSearchUrls(false)
+    disableBrowserOptionsSearchUrls(false),
+    disableAtmosphereDensityTexture(false)
 {}
 
 MapCreateOptions::MapCreateOptions(const std::string &json)

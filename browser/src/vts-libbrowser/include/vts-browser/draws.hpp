@@ -58,6 +58,8 @@ public:
     std::vector<DrawTask> geodata;
     std::vector<DrawTask> infographics;
 
+    std::shared_ptr<void> atmosphereDensityTexture;
+
     struct VTS_API Camera : public vtsCCameraBase
     {} camera;
 

@@ -79,7 +79,6 @@ class RendererImpl
 public:
     RenderVariables vars;
     RenderOptions options;
-    AtmosphereDensity atmosphere;
 
     std::shared_ptr<Texture> texCompas;
     std::shared_ptr<Shader> shaderTexture;
@@ -557,8 +556,6 @@ public:
         {
             uboAtm = std::make_shared<UniformBuffer>();
         }
-
-        atmosphere.initialize();
     }
 
     void finalize()
@@ -571,8 +568,6 @@ public:
         shaderCopyDepth.reset();
         meshQuad.reset();
         meshRect.reset();
-
-        atmosphere.finalize();
 
         if (vars.frameRenderBufferId)
         {
@@ -611,10 +606,20 @@ public:
     {
         ShaderAtm::AtmBlock atmBlock;
 
-        if (options.renderAtmosphere && !draws->camera.mapProjected)
+        if (options.renderAtmosphere
+            && !draws->camera.mapProjected
+            && draws->atmosphereDensityTexture)
         {
+            // bind atmosphere density texture
+            {
+                glActiveTexture(GL_TEXTURE4);
+                Texture *tex = (Texture*)draws->atmosphereDensityTexture.get();
+                tex->bind();
+                glActiveTexture(GL_TEXTURE0);
+            }
+
             double boundaryThickness, horizontalExponent, verticalExponent;
-            AtmosphereDerivedAttributes(*body, boundaryThickness,
+            atmosphereDerivedAttributes(*body, boundaryThickness,
                 horizontalExponent, verticalExponent);
 
             // uniParams
@@ -627,8 +632,7 @@ public:
             };
             atmBlock.uniAtmCoefs =
             {
-                // times 5 as a compensation for density texture normalization
-                (float)(horizontalExponent * 5),
+                (float)(horizontalExponent),
                 (float)(body->atmosphere.colorGradientExponent),
                 0.f,
                 0.f
@@ -659,15 +663,6 @@ public:
 
         // Bind atmosphere uniform buffer to index 0
         uboAtm->bindToIndex(0);
-
-        // bind atmosphere density texture
-        Texture *tex = atmosphere.validate(*body);
-        if (tex)
-        {
-            glActiveTexture(GL_TEXTURE4);
-            tex->bind();
-            glActiveTexture(GL_TEXTURE0);
-        }
     }
 
     void renderCompass(const double screenPosSize[3],

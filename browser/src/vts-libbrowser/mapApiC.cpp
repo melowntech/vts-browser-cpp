@@ -1001,7 +1001,7 @@ void vtsCelestialAtmosphereDerivedAttributes(vtsHMap map,
     C_BEGIN
     const auto &a = map->p->celestialBody();
     double bt, he, ve;
-    AtmosphereDerivedAttributes(a, bt, he, ve);
+    atmosphereDerivedAttributes(a, bt, he, ve);
     if (boundaryThickness)
         *boundaryThickness = bt;
     if (horizontalExponent)

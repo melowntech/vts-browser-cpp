@@ -37,7 +37,7 @@ MapCelestialBody::MapCelestialBody() :
 {}
 
 MapCelestialBody::Atmosphere::Atmosphere() :
-    colorHorizon{0,0,0,0}, colorZenith{0,0,0,0},
+    colorHorizon{ 0,0,0,0 }, colorZenith{ 0,0,0,0 },
     colorGradientExponent(0.3),
     thickness(0), thicknessQuantile(1e-6),
     visibility(0), visibilityQuantile(1e-2)
@@ -51,7 +51,7 @@ bool MapConfig::isEarth() const
     return std::abs(a - 6378137) < 50000;
 }
 
-void MapConfig::initializeCelestialBody() const
+void MapConfig::initializeCelestialBody()
 {
     map->body = MapCelestialBody();
     {
@@ -75,7 +75,7 @@ void MapConfig::initializeCelestialBody() const
         {
             Json::Value &ja = j["atmosphere"];
 #define J(NAME) if (ja.isMember(#NAME)) \
-                    a.NAME = ja[#NAME].asDouble();
+                a.NAME = ja[#NAME].asDouble();
             J(thickness);
             J(thicknessQuantile);
             J(visibility);
@@ -85,7 +85,7 @@ void MapConfig::initializeCelestialBody() const
             for (uint32 i = 0; i < 4; i++)
             {
 #define C(NAME) if (ja[#NAME].isArray() && i < ja[#NAME].size()) \
-                    a.NAME[i] = ja[#NAME][i].asFloat();
+                a.NAME[i] = ja[#NAME][i].asFloat();
                 C(colorHorizon);
                 C(colorZenith);
 #undef C
@@ -122,9 +122,30 @@ void MapConfig::initializeCelestialBody() const
         a.colorHorizon[i] /= 255;
         a.colorZenith[i] /= 255;
     }
+
+    // atmosphere density texture
+    if (!map->createOptions.disableAtmosphereDensityTexture
+        && navigationSrsType() != vtslibs::registry::Srs::Type::projected
+        && map->body.majorRadius > 0
+        && a.thickness > 0)
+    {
+        // todo make the name with services from mapconfig
+        //   to allow download
+        std::string name;
+        {
+            double a, b, c;
+            atmosphereDerivedAttributes(map->body, a, b, c);
+            std::stringstream ss;
+            ss << std::setprecision(7) << std::fixed
+                << "atmosphere-" << (a / map->body.majorRadius)
+                << "-" << c << ".png";
+            name = ss.str();
+        }
+        atmosphereDensityTexture = map->getTexture(name);
+    }
 }
 
-void AtmosphereDerivedAttributes(const MapCelestialBody &body,
+void atmosphereDerivedAttributes(const MapCelestialBody &body,
     double &boundaryThickness,
     double &horizontalExponent, double &verticalExponent)
 {
@@ -136,7 +157,8 @@ void AtmosphereDerivedAttributes(const MapCelestialBody &body,
     boundaryThickness = a.thickness;
     verticalExponent = std::log(1 / a.thicknessQuantile);
     horizontalExponent = body.majorRadius
-        * std::log(1 / a.visibilityQuantile) / a.visibility;
+        * std::log(1 / a.visibilityQuantile) / a.visibility * 5;
+    // times 5 as compensation for texture normalization factor
 }
 
 } // namespace vts

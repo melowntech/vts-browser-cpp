@@ -52,7 +52,7 @@ public:
     // leave it empty to use default ($HOME/.cache/vts-browser)
     std::string cachePath;
 
-    // search url (and srs) are usually provided in browser options in mapconfig
+    // search url/srs are usually provided in browser options in mapconfig
     // however, if they are not provided, these fallbacks are used
     std::string searchUrlFallback;
     std::string searchSrsFallback;
@@ -74,8 +74,11 @@ public:
     // true to try detect Earth and only use the fallbacks on it
     bool disableSearchUrlFallbackOutsideEarth;
 
-    // true to disable search url (and srs) from mapconfig and use the fallbacks
+    // true to disable search url/srs from mapconfig and use the fallbacks
     bool disableBrowserOptionsSearchUrls;
+
+    // set to true if you do your own atmosphere rendering
+    bool disableAtmosphereDensityTexture;
 };
 
 class VTS_API ControlOptions

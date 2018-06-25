@@ -421,6 +421,9 @@ void MapImpl::renderTickPrepare(double elapsedTime)
     updateSris();
     for (auto &it : layers)
         traverseClearing(it->traverseRoot.get());
+
+    if (mapConfig->atmosphereDensityTexture)
+        updateAtmosphereDensity();
 }
 
 void MapImpl::renderTickRender()
@@ -624,6 +627,14 @@ void MapImpl::updateCamera()
         c.aspect = aspect;
         c.fov = fov;
         c.mapProjected = projected;
+    }
+
+    // atmosphere
+    if (mapConfig->atmosphereDensityTexture
+        && *mapConfig->atmosphereDensityTexture)
+    {
+        draws.atmosphereDensityTexture
+            = mapConfig->atmosphereDensityTexture->info.userData;
     }
 }
 

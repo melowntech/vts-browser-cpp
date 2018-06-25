@@ -869,6 +869,8 @@ MapImpl::MapImpl(Map *map, const MapCreateOptions &options,
     resources.cache = Cache::create(options);
     resources.thrCacheReader = std::thread(&MapImpl::cacheReadEntry, this);
     resources.thrCacheWriter = std::thread(&MapImpl::cacheWriteEntry, this);
+    resources.thrAtmosphereGenerator
+            = std::thread(&MapImpl::resourcesAtmosphereGeneratorEntry, this);
     resources.fetching.thr
             = std::thread(&MapImpl::resourcesDownloadsEntry, this);
 }
@@ -878,8 +880,10 @@ MapImpl::~MapImpl()
     resources.queCacheRead.terminate();
     resources.queCacheWrite.terminate();
     resources.queUpload.terminate();
+    resources.queAtmosphere.terminate();
     resources.thrCacheReader.join();
     resources.thrCacheWriter.join();
+    resources.thrAtmosphereGenerator.join();
     resources.fetching.stop = true;
     resources.fetching.con.notify_all();
     resources.fetching.thr.join();

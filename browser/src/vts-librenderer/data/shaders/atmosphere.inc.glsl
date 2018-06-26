@@ -63,7 +63,7 @@ float atmDensityDir(vec3 fragDir, float fragDist)
     float y = sqrt(y2); // distance of the ray from world origin
 
     float atmThickness = uniAtmSizes[0]; // atmosphere height (excluding planet radius)
-	float invAtmThickness = 1.0 / atmThickness;
+    float invAtmThickness = 1.0 / atmThickness;
     float atmRad = 1.0 + atmThickness; // atmosphere height including planet radius
     float atmRad2 = atmRad * atmRad;
 
@@ -107,8 +107,8 @@ float atmDensityDir(vec3 fragDir, float fragDist)
     float density = ds[0] - ds[1];
     if (swapDirection)
         density *= -1.0;
-	float transmittance = exp(-uniAtmCoefs[0] * density);
-	return 1.0 - transmittance;
+    float transmittance = exp(-uniAtmCoefs[0] * density);
+    return 1.0 - transmittance;
 }
 
 // fragVect is view-space fragment position

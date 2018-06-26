@@ -51,6 +51,8 @@ VTS_API void vtsGetTextureResolution(vtsHResource resource,
                 uint32 *width, uint32 *height, uint32 *components);
 VTS_API uint32 vtsGetTextureType(vtsHResource resource);
 VTS_API uint32 vtsGetTextureInternalFormat(vtsHResource resource);
+VTS_API uint32 vtsGetTextureFilterMode(vtsHResource resource);
+VTS_API uint32 vtsGetTextureWrapMode(vtsHResource resource);
 VTS_API void vtsGetTextureBuffer(vtsHResource resource,
                 void **data, uint32 *size);
 

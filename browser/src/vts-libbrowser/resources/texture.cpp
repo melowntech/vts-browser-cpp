@@ -32,11 +32,11 @@ namespace vts
 
 GpuTextureSpec::GpuTextureSpec()
     : width(0), height(0), components(0),
-    type(GpuTypeEnum::UnsignedByte), internalFormat(0)
+    type(GpuTypeEnum::UnsignedByte), internalFormat(0),
+    filterMode(FilterMode::NearestMipmapLinear), wrapMode(WrapMode::Repeat)
 {}
 
-GpuTextureSpec::GpuTextureSpec(const Buffer &buffer)
-    : type(GpuTypeEnum::UnsignedByte), internalFormat(0)
+GpuTextureSpec::GpuTextureSpec(const Buffer &buffer) : GpuTextureSpec()
 {
     decodeImage(buffer, this->buffer, width, height, components);
 }
@@ -74,13 +74,17 @@ Buffer GpuTextureSpec::encodePng() const
 }
 
 GpuTexture::GpuTexture(MapImpl *map, const std::string &name) :
-    Resource(map, name)
+    Resource(map, name),
+    filterMode(GpuTextureSpec::FilterMode::Linear),
+    wrapMode(GpuTextureSpec::WrapMode::Repeat)
 {}
 
 void GpuTexture::load()
 {
     LOG(info2) << "Loading (gpu) texture <" << name << ">";
     GpuTextureSpec spec(fetch->reply.content);
+    spec.filterMode = filterMode;
+    spec.wrapMode = wrapMode;
 
     if (map->options.debugExtractRawResources)
     {
@@ -93,7 +97,8 @@ void GpuTexture::load()
         {
             boost::filesystem::create_directories(prefix + b);
             Buffer out;
-            encodePng(spec.buffer, out, spec.width, spec.height, spec.components);
+            encodePng(spec.buffer, out,
+                spec.width, spec.height, spec.components);
             writeLocalFileBuffer(path, out);
         }
     }

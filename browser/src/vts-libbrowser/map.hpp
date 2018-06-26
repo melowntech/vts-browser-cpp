@@ -167,6 +167,8 @@ public:
     GpuTexture(MapImpl *map, const std::string &name);
     void load() override;
     FetchTask::ResourceType resourceType() const override;
+    GpuTextureSpec::FilterMode filterMode;
+    GpuTextureSpec::WrapMode wrapMode;
 };
 
 class AuthConfig : public Resource

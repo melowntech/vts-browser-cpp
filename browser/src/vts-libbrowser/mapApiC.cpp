@@ -704,6 +704,22 @@ uint32 vtsGetTextureInternalFormat(vtsHResource resource)
     return 0;
 }
 
+uint32 vtsGetTextureFilterMode(vtsHResource resource)
+{
+    C_BEGIN
+    return (uint32)resource->ptr.t->filterMode;
+    C_END
+    return 0;
+}
+
+uint32 vtsGetTextureWrapMode(vtsHResource resource)
+{
+    C_BEGIN
+    return (uint32)resource->ptr.t->wrapMode;
+    C_END
+    return 0;
+}
+
 void vtsGetTextureBuffer(vtsHResource resource,
         void **data, uint32 *size)
 {
@@ -1179,6 +1195,14 @@ const vtsCDrawBase *vtsDrawsAllInOne(vtsHDrawsGroup group, uint32 index,
     *texColor = t.texColor.get();
     *texMask = t.texMask.get();
     return &t;
+    C_END
+    return nullptr;
+}
+
+void *vtsDrawsAtmosphereDensityTexture(vtsHMap map)
+{
+    C_BEGIN
+    return map->p->draws().atmosphereDensityTexture.get();
     C_END
     return nullptr;
 }

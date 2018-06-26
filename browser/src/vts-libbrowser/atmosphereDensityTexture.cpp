@@ -92,7 +92,7 @@ void MapImpl::resourcesAtmosphereGeneratorEntry()
 
 void MapImpl::updateAtmosphereDensity()
 {
-    const std::shared_ptr<GpuTexture> tex
+    const std::shared_ptr<GpuTexture> &tex
         = mapConfig->atmosphereDensityTexture;
     assert(tex);
     touchResource(tex);

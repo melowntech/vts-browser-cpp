@@ -152,6 +152,9 @@ public static extern IntPtr vtsDrawsDetail(IntPtr group, uint index);
 public static extern IntPtr vtsDrawsAllInOne(IntPtr group, uint index, ref IntPtr mesh, ref IntPtr texColor, ref IntPtr texMask);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern IntPtr vtsDrawsAtmosphereDensityTexture(IntPtr map);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern IntPtr vtsFetcherCreateDefault([MarshalAs(UnmanagedType.LPStr)] string createOptions);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
@@ -379,6 +382,12 @@ public static extern uint vtsGetTextureType(IntPtr resource);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern uint vtsGetTextureInternalFormat(IntPtr resource);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern uint vtsGetTextureFilterMode(IntPtr resource);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern uint vtsGetTextureWrapMode(IntPtr resource);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsGetTextureBuffer(IntPtr resource, ref IntPtr data, ref uint size);

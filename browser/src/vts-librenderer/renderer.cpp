@@ -454,7 +454,6 @@ public:
                                       "data/textures/compas.png"));
             spec.verticalFlip();
             texCompas->load(spec);
-            texCompas->generateMipmaps();
         }
 
         // load shader texture

@@ -47,6 +47,7 @@ enum class GpuTypeEnum
     Float = 0x1406, // four bytes
 };
 
+// number of bytes for one element of that type
 VTS_API uint32 gpuTypeSize(GpuTypeEnum type);
 
 // this is passed to the load* callbacks for the application to fill it in
@@ -98,6 +99,27 @@ public:
 
     // encode the image into png format
     Buffer encodePng() const;
+
+    enum class FilterMode
+    {
+        // compatible with OpenGL
+        Nearest = 0x2600,
+        Linear = 0x2601,
+        NearestMipmapNearest = 0x2700,
+        LinearMipmapNearest = 0x2701,
+        NearestMipmapLinear = 0x2702,
+        LinearMipmapLinear = 0x2703,
+    } filterMode;
+
+    enum class WrapMode
+    {
+        // compatible with OpenGL
+        Repeat = 0x2901,
+        ClampToEdge = 0x812F,
+        ClampToBorder = 0x812D,
+        MirroredRepeat = 0x8370,
+        MirrorClampToEdge = 0x8743,
+    } wrapMode;
 };
 
 // information about mesh passed to loadMesh callback

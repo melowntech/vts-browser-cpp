@@ -64,7 +64,8 @@ namespace vts
 
     public struct Atmosphere
     {
-        public double thickness;
+        public Object densityTexture;
+        public double boundaryThickness;
         public double horizontalExponent;
         public double verticalExponent;
         public double colorGradientExponent;
@@ -88,8 +89,19 @@ namespace vts
                 colorZenith[i] = colors[i + 4];
             }
             colorGradientExponent = parameters[0];
-            BrowserInterop.vtsCelestialAtmosphereDerivedAttributes(map.Handle, ref thickness, ref horizontalExponent, ref verticalExponent);
+            BrowserInterop.vtsCelestialAtmosphereDerivedAttributes(map.Handle, ref boundaryThickness, ref horizontalExponent, ref verticalExponent);
             Util.CheckInterop();
+            {
+                IntPtr ptr = BrowserInterop.vtsDrawsAtmosphereDensityTexture(map.Handle);
+                Util.CheckInterop();
+                if (ptr == IntPtr.Zero)
+                    densityTexture = null;
+                else
+                {
+                    GCHandle hnd = GCHandle.FromIntPtr(ptr);
+                    densityTexture = hnd.Target;
+                }
+            }
         }
     }
 

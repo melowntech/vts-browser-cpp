@@ -45,6 +45,7 @@ void initializeGuiSkin(nk_context &ctx, GuiSkinMedia &media,
         tex = std::make_shared<Texture>();
         vts::GpuTextureSpec spec(
         vts::readInternalMemoryBuffer("data/textures/gwen.png"));
+        spec.filterMode = vts::GpuTextureSpec::FilterMode::Linear;
         tex->load(spec);
         media.skin = tex->getId();
     }

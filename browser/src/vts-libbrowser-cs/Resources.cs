@@ -42,6 +42,27 @@ namespace vts
         Float = 0x1406, // four bytes
     };
 
+    public enum FilterMode
+    {
+        // compatible with OpenGL
+        Nearest = 0x2600,
+        Linear = 0x2601,
+        NearestMipmapNearest = 0x2700,
+        LinearMipmapNearest = 0x2701,
+        NearestMipmapLinear = 0x2702,
+        LinearMipmapLinear = 0x2703,
+    };
+
+    public enum WrapMode
+    {
+        // compatible with OpenGL
+        Repeat = 0x2901,
+        ClampToEdge = 0x812F,
+        ClampToBorder = 0x812D,
+        MirroredRepeat = 0x8370,
+        MirrorClampToEdge = 0x8743,
+    };
+
     public enum FaceMode
     {
         // compatible with OpenGL
@@ -59,6 +80,8 @@ namespace vts
         public uint height;
         public uint components;
         public GpuType type;
+        public FilterMode filterMode;
+        public WrapMode wrapMode;
         public byte[] data;
 
         public void Load(IntPtr handle)
@@ -66,6 +89,10 @@ namespace vts
             BrowserInterop.vtsGetTextureResolution(handle, ref width, ref height, ref components);
             Util.CheckInterop();
             type = (GpuType)BrowserInterop.vtsGetTextureType(handle);
+            Util.CheckInterop();
+            filterMode = (FilterMode)BrowserInterop.vtsGetTextureFilterMode(handle);
+            Util.CheckInterop();
+            wrapMode = (WrapMode)BrowserInterop.vtsGetTextureWrapMode(handle);
             Util.CheckInterop();
             IntPtr bufPtr = IntPtr.Zero;
             uint bufSize = 0;

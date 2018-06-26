@@ -57,6 +57,8 @@ VTS_API const vtsCDrawBase *vtsDrawsDetail(vtsHDrawsGroup group, uint32 index);
 VTS_API const vtsCDrawBase *vtsDrawsAllInOne(vtsHDrawsGroup group, uint32 index,
                               void **mesh, void **texColor, void **texMask);
 
+VTS_API void *vtsDrawsAtmosphereDensityTexture(vtsHMap map);
+
 #ifdef __cplusplus
 } // extern C
 #endif

@@ -142,6 +142,10 @@ void MapConfig::initializeCelestialBody()
             name = ss.str();
         }
         atmosphereDensityTexture = map->getTexture(name);
+        atmosphereDensityTexture->filterMode
+            = GpuTextureSpec::FilterMode::Nearest;
+        atmosphereDensityTexture->wrapMode
+            = GpuTextureSpec::WrapMode::ClampToEdge;
     }
 }
 

@@ -96,7 +96,7 @@ int loadShader(const std::string &source, int stage)
                  std::string("shader source: \n") + source);
         throw;
     }
-    checkGlImpl("load shader source");
+    CHECK_GL("load shader source");
     return s;
 }
 
@@ -139,7 +139,7 @@ void Shader::load(const std::string &vertexShader,
         throw;
     }
     glFinish();
-    checkGlImpl("load shader program");
+    CHECK_GL("load shader program");
 }
 
 void Shader::loadInternal(const std::string &vertexName,
@@ -321,6 +321,13 @@ GLenum findFormat(const GpuTextureSpec &spec)
     }
 }
 
+GLenum magFilter(const GpuTextureSpec &spec)
+{
+    if (spec.filterMode == GpuTextureSpec::FilterMode::Nearest)
+        return (GLenum)GpuTextureSpec::FilterMode::Nearest;
+    return (GLenum)GpuTextureSpec::FilterMode::Linear;
+}
+
 } // namespace
 
 void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec)
@@ -335,18 +342,30 @@ void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec)
     glTexImage2D(GL_TEXTURE_2D, 0, findInternalFormat(spec),
                  spec.width, spec.height, 0,
                  findFormat(spec), (GLenum)spec.type, spec.buffer.data());
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+        (GLenum)spec.filterMode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+        magFilter(spec));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+        (GLenum)spec.wrapMode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+        (GLenum)spec.wrapMode);
 
-    //#ifndef VTSR_OPENGLES
     if (GLAD_GL_EXT_texture_filter_anisotropic)
     {
         glTexParameterf(GL_TEXTURE_2D,
                         GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropySamples);
     }
-    //#endif
+
+    switch (spec.filterMode)
+    {
+    case GpuTextureSpec::FilterMode::Nearest:
+    case GpuTextureSpec::FilterMode::Linear:
+        break;
+    default:
+        glGenerateMipmap(GL_TEXTURE_2D);
+        break;
+    }
 
     grayscale = spec.components == 1;
 
@@ -360,14 +379,6 @@ void Texture::load(vts::GpuTextureSpec &spec)
 {
     ResourceInfo info;
     load(info, spec);
-}
-
-void Texture::generateMipmaps()
-{
-    glBindTexture(GL_TEXTURE_2D, id);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                                    GL_LINEAR_MIPMAP_LINEAR);
-    glGenerateMipmap(GL_TEXTURE_2D);
 }
 
 uint32 Texture::getId() const

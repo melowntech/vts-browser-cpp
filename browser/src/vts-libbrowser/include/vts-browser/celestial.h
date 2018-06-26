@@ -36,7 +36,15 @@ extern "C" {
 VTS_API const char *vtsCelestialName(vtsHMap map);
 VTS_API double vtsCelestialMajorRadius(vtsHMap map);
 VTS_API double vtsCelestialMinorRadius(vtsHMap map);
-VTS_API void vtsCelestialAtmosphere(vtsHMap map, double *thickness, double *horizontalExponent, double *verticalExponent, float colorLow[4], float colorHigh[4]);
+
+// colors: horizon rgba, zenith rgba
+// parameters: color gradient exponent,
+//   thickness, quantile, visibility, quantile
+VTS_API void vtsCelestialAtmosphere(vtsHMap map,
+                float colors[8], double parameters[5]);
+VTS_API void vtsCelestialAtmosphereDerivedAttributes(vtsHMap map,
+                double *boundaryThickness,
+                double *horizontalExponent, double *verticalExponent);
 
 #ifdef __cplusplus
 } // extern C

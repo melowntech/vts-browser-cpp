@@ -27,6 +27,7 @@
 #include <ogr_spatialref.h>
 
 #include "map.hpp"
+#include "utilities/json.hpp"
 
 namespace vts
 {
@@ -35,9 +36,11 @@ MapCelestialBody::MapCelestialBody() :
     majorRadius(0), minorRadius(0)
 {}
 
-MapCelestialBody::Atmosphere::Atmosphere() : thickness(0),
-    horizontalExponent(0), verticalExponent(0),
-    colorLow{0,0,0,0}, colorHigh{0,0,0,0}
+MapCelestialBody::Atmosphere::Atmosphere() :
+    colorHorizon{ 0,0,0,0 }, colorZenith{ 0,0,0,0 },
+    colorGradientExponent(0.3),
+    thickness(0), thicknessQuantile(1e-6),
+    visibility(0), visibilityQuantile(1e-2)
 {}
 
 bool MapConfig::isEarth() const
@@ -48,46 +51,114 @@ bool MapConfig::isEarth() const
     return std::abs(a - 6378137) < 50000;
 }
 
-void MapConfig::initializeCelestialBody() const
+void MapConfig::initializeCelestialBody()
 {
     map->body = MapCelestialBody();
-    auto n = srs(referenceFrame.model.physicalSrs);
-    auto r = n.srsDef.reference();
-    map->body.majorRadius = r.GetSemiMajor();
-    map->body.minorRadius = r.GetSemiMinor();
+    {
+        // find body radius based on reference frame
+        auto n = srs(referenceFrame.model.physicalSrs);
+        auto r = n.srsDef.reference();
+        map->body.majorRadius = r.GetSemiMajor();
+        map->body.minorRadius = r.GetSemiMinor();
+    }
+
     MapCelestialBody::Atmosphere &a = map->body.atmosphere;
-    if (isEarth())
+
+    // load body from mapconfig
+    if (map->mapConfig->referenceFrame.body)
+    {
+        const auto &b = map->mapConfig->bodies.get(
+            *map->mapConfig->referenceFrame.body);
+        Json::Value j = boost::any_cast<Json::Value>(b.json);
+        map->body.name = j["name"].asString();
+        if (j.isMember("atmosphere"))
+        {
+            Json::Value &ja = j["atmosphere"];
+#define J(NAME) if (ja.isMember(#NAME)) \
+                a.NAME = ja[#NAME].asDouble();
+            J(thickness);
+            J(thicknessQuantile);
+            J(visibility);
+            J(visibilityQuantile);
+            J(colorGradientExponent);
+#undef J
+            for (uint32 i = 0; i < 4; i++)
+            {
+#define C(NAME) if (ja[#NAME].isArray() && i < ja[#NAME].size()) \
+                a.NAME[i] = ja[#NAME][i].asFloat();
+                C(colorHorizon);
+                C(colorZenith);
+#undef C
+            }
+        }
+    }
+
+    // mapconfig does not define the body
+    // try to detect it and use defaults
+    else if (isEarth())
     {
         map->body.name = "Earth";
-        a.thickness = map->body.majorRadius * 0.01;
-        a.horizontalExponent = 420;
-        a.verticalExponent = 7;
-        static vec4 lowColor = vec4(158, 206, 255, 255) / 255;
-        static vec4 highColor = vec4(62, 120, 229, 255) / 255;
-        for (int i = 0; i < 4; i++)
-        {
-            a.colorLow[i] = lowColor[i];
-            a.colorHigh[i] = highColor[i];
-        }
+        a.thickness = 100000;
+        a.visibility = 100000;
+        a.colorHorizon = { 158, 206, 255, 255 };
+        a.colorZenith = { 62, 120, 229, 255 };
     }
     else if (std::abs(map->body.majorRadius - 3396200) < 30000)
     {
         map->body.name = "Mars";
-        a.thickness = map->body.majorRadius * 0.01;
-        a.horizontalExponent = 180;
-        a.verticalExponent = 7;
-        static vec4 lowColor = vec4(115, 100, 74, 255) / 255;
-        static vec4 highColor = vec4(115, 100, 74, 255) / 255;
-        for (int i = 0; i < 4; i++)
-        {
-            a.colorLow[i] = lowColor[i];
-            a.colorHigh[i] = highColor[i];
-        }
+        a.thickness = 50000;
+        a.visibility = 200000;
+        a.colorHorizon = { 115, 100, 74, 255 };
+        a.colorZenith = { 115, 100, 74, 255 };
     }
     else
     {
         map->body.name = "<unknown>";
     }
+
+    // normalize colors
+    for (int i = 0; i < 4; i++)
+    {
+        a.colorHorizon[i] /= 255;
+        a.colorZenith[i] /= 255;
+    }
+
+    // atmosphere density texture
+    if (!map->createOptions.disableAtmosphereDensityTexture
+        && navigationSrsType() != vtslibs::registry::Srs::Type::projected
+        && map->body.majorRadius > 0
+        && a.thickness > 0)
+    {
+        // todo make the name with services from mapconfig
+        //   to allow download
+        std::string name;
+        {
+            double a, b, c;
+            atmosphereDerivedAttributes(map->body, a, b, c);
+            std::stringstream ss;
+            ss << std::setprecision(7) << std::fixed
+                << "atmosphere-" << (a / map->body.majorRadius)
+                << "-" << c << ".png";
+            name = ss.str();
+        }
+        atmosphereDensityTexture = map->getTexture(name);
+    }
+}
+
+void atmosphereDerivedAttributes(const MapCelestialBody &body,
+    double &boundaryThickness,
+    double &horizontalExponent, double &verticalExponent)
+{
+    boundaryThickness = horizontalExponent = verticalExponent = 0;
+    if (body.majorRadius <= 0 || body.atmosphere.thickness <= 0)
+        return;
+    const auto &a = body.atmosphere;
+    // todo recompute the boundaryThickness with predefined quantile
+    boundaryThickness = a.thickness;
+    verticalExponent = std::log(1 / a.thicknessQuantile);
+    horizontalExponent = body.majorRadius
+        * std::log(1 / a.visibilityQuantile) / a.visibility * 5;
+    // times 5 as compensation for texture normalization factor
 }
 
 } // namespace vts

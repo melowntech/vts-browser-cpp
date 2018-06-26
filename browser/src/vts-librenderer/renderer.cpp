@@ -57,11 +57,12 @@ class ShaderAtm : public Shader
 public:
     struct AtmBlock
     {
-        mat4f viewInv;
-        vec4f colorLow;
-        vec4f colorHigh;
-        vec4f params;
-        vec3f cameraPosition;
+        mat4f uniAtmViewInv;
+        vec4f uniAtmColorHorizon;
+        vec4f uniAtmColorZenith;
+        vec4f uniAtmSizes; // atmosphere thickness (divided by major axis), major / minor axes ratio, inverze major axis
+        vec4f uniAtmCoefs; // horizontal exponent, colorGradientExponent
+        vec3f uniAtmCameraPosition; // world position of camera (divided by major axis)
     };
 
     void initializeAtmosphere()
@@ -78,7 +79,6 @@ class RendererImpl
 public:
     RenderVariables vars;
     RenderOptions options;
-    AtmosphereDensity atmosphere;
 
     std::shared_ptr<Texture> texCompas;
     std::shared_ptr<Shader> shaderTexture;
@@ -114,7 +114,6 @@ public:
         Mesh *m = (Mesh*)t.mesh.get();
         if (!m || !tex)
             return;
-        shaderSurface->bind();
         shaderSurface->uniformMat4(1, t.mv);
         shaderSurface->uniformMat3(2, t.uvm);
         shaderSurface->uniformVec4(3, t.color);
@@ -142,7 +141,6 @@ public:
         Mesh *m = (Mesh*)t.mesh.get();
         if (!m)
             return;
-        shaderInfographic->bind();
         shaderInfographic->uniformMat4(1, t.mv);
         shaderInfographic->uniformVec4(2, t.color);
         shaderInfographic->uniform(3, (int)(!!t.texColor));
@@ -160,7 +158,6 @@ public:
         Mesh *m = (Mesh*)t.mesh.get();
         if (!m)
             return;
-        shaderInfographic->bind();
         shaderInfographic->uniformMat4(1, t.mv);
         shaderInfographic->uniformVec4(2, t.color);
         shaderInfographic->uniform(3, (int)(!!t.texColor));
@@ -341,6 +338,7 @@ public:
         glDisable(GL_BLEND);
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
+        shaderSurface->bind();
         for (const DrawTask &t : draws->opaque)
             drawSurface(t);
         CHECK_GL("rendered opaque");
@@ -370,6 +368,7 @@ public:
 
         // render transparent
         glEnable(GL_BLEND);
+        shaderSurface->bind();
         for (const DrawTask &t : draws->transparent)
             drawSurface(t);
         CHECK_GL("rendered transparent");
@@ -379,6 +378,7 @@ public:
         {
             glDisable(GL_BLEND);
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            shaderSurface->bind();
             for (const DrawTask &it : draws->opaque)
             {
                 DrawTask t(it);
@@ -405,11 +405,13 @@ public:
         glDisable(GL_DEPTH_TEST);
 
         // render geodata
+        shaderInfographic->bind();
         for (const auto &t : draws->geodata)
             drawGeodata(t);
         CHECK_GL("rendered geodata");
 
         // render infographics
+        shaderInfographic->bind();
         for (const DrawTask &t : draws->infographics)
             drawInfographic(t);
         CHECK_GL("rendered infographics");
@@ -554,8 +556,6 @@ public:
         {
             uboAtm = std::make_shared<UniformBuffer>();
         }
-
-        atmosphere.initialize();
     }
 
     void finalize()
@@ -568,8 +568,6 @@ public:
         shaderCopyDepth.reset();
         meshQuad.reset();
         meshRect.reset();
-
-        atmosphere.finalize();
 
         if (vars.frameRenderBufferId)
         {
@@ -608,48 +606,63 @@ public:
     {
         ShaderAtm::AtmBlock atmBlock;
 
-        if (options.renderAtmosphere && !draws->camera.mapProjected)
+        if (options.renderAtmosphere
+            && !draws->camera.mapProjected
+            && draws->atmosphereDensityTexture)
         {
-            // uniParams
-            atmBlock.params =
+            // bind atmosphere density texture
             {
-                (float)(body->atmosphere.thickness / body->majorRadius),
-                (float)body->atmosphere.horizontalExponent,
-                (float)(body->minorRadius / body->majorRadius),
-                (float)body->majorRadius
+                glActiveTexture(GL_TEXTURE4);
+                Texture *tex = (Texture*)draws->atmosphereDensityTexture.get();
+                tex->bind();
+                glActiveTexture(GL_TEXTURE0);
+            }
+
+            double boundaryThickness, horizontalExponent, verticalExponent;
+            atmosphereDerivedAttributes(*body, boundaryThickness,
+                horizontalExponent, verticalExponent);
+
+            // uniParams
+            atmBlock.uniAtmSizes =
+            {
+                (float)(boundaryThickness / body->majorRadius),
+                (float)(body->majorRadius / body->minorRadius),
+                (float)(1.0 / body->majorRadius),
+                0.f
+            };
+            atmBlock.uniAtmCoefs =
+            {
+                (float)(horizontalExponent),
+                (float)(body->atmosphere.colorGradientExponent),
+                0.f,
+                0.f
             };
 
             // camera position
             vec3 camPos = rawToVec3(draws->camera.eye) / body->majorRadius;
-            atmBlock.cameraPosition = camPos.cast<float>();
+            atmBlock.uniAtmCameraPosition = camPos.cast<float>();
 
             // view inv
             mat4 vi = rawToMat4(draws->camera.view).inverse();
-            atmBlock.viewInv = vi.cast<float>();
+            atmBlock.uniAtmViewInv = vi.cast<float>();
 
             // colors
-            atmBlock.colorLow = rawToVec4(body->atmosphere.colorLow);
-            atmBlock.colorHigh = rawToVec4(body->atmosphere.colorHigh);
+            atmBlock.uniAtmColorHorizon
+                = rawToVec4(body->atmosphere.colorHorizon.data());
+            atmBlock.uniAtmColorZenith
+                = rawToVec4(body->atmosphere.colorZenith.data());
         }
         else
         {
-            atmBlock.params = { 0, 0, 0, 0 };
+            memset(&atmBlock, 0, sizeof(atmBlock));
         }
 
         // Load it in
+        uboAtm->bind();
         uboAtm->load(atmBlock);
 
         // Bind atmosphere uniform buffer to index 0
         uboAtm->bindToIndex(0);
-
-        // bind atmosphere density texture
-        Texture *tex = atmosphere.validate(*body);
-        if (tex)
-        {
-            glActiveTexture(GL_TEXTURE4);
-            tex->bind();
-            glActiveTexture(GL_TEXTURE0);
-        }
     }
 
     void renderCompass(const double screenPosSize[3],

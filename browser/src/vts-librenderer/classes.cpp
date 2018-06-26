@@ -530,7 +530,7 @@ void UniformBuffer::bindToIndex(uint32 index)
 
 void UniformBuffer::load(size_t size, const void *data)
 {
-    bind();
+    assert(ubo != 0);
     glBufferData(GL_UNIFORM_BUFFER, size, data, GL_DYNAMIC_DRAW);
 }
 

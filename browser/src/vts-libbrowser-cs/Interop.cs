@@ -110,7 +110,10 @@ public static extern double vtsCelestialMajorRadius(IntPtr map);
 public static extern double vtsCelestialMinorRadius(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsCelestialAtmosphere(IntPtr map, ref double thickness, ref double horizontalExponent, ref double verticalExponent, [Out] float[] colorLow, [Out] float[] colorHigh);
+public static extern void vtsCelestialAtmosphere(IntPtr map, [Out] float[] colors, [Out] double[] parameters);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsCelestialAtmosphereDerivedAttributes(IntPtr map, ref double boundaryThickness, ref double horizontalExponent, ref double verticalExponent);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern IntPtr vtsDrawsCamera(IntPtr map);

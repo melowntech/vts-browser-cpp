@@ -50,20 +50,6 @@ namespace priv
 extern uint32 maxAntialiasingSamples;
 extern float maxAnisotropySamples;
 
-struct AtmosphereDensity
-{
-    AtmosphereDensity();
-    ~AtmosphereDensity();
-
-    void initialize();
-    void finalize();
-
-    Texture *validate(const MapCelestialBody &current);
-
-private:
-    std::shared_ptr<class AtmosphereImpl> impl;
-};
-
 } // namespace priv
 
 using namespace priv;

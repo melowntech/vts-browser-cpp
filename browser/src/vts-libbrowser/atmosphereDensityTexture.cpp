@@ -28,7 +28,7 @@
 #include "image/image.hpp"
 #include "include/vts-browser/log.hpp"
 
-#include <vts-libs/vts/atmosphereDensityTexture.hpp>
+#include <vts-libs/vts/atmospheredensitytexture.hpp>
 
 namespace vts
 {
@@ -44,16 +44,16 @@ void generateAtmosphereTexture(const std::shared_ptr<GpuTexture> &tex,
         horizontalExponent, verticalExponent);
 
     // generate the texture anew
-    vtslibs::vts::generateAtmosphereTextureSpec gats;
+    vtslibs::vts::AtmosphereTextureSpec gats;
     gats.thickness = boundaryThickness / body.majorRadius;
     gats.verticalCoefficient = verticalExponent;
-    vtslibs::vts::generateAtmosphereTexture(gats);
+    auto res = vtslibs::vts::generateAtmosphereTexture(gats);
 
     // store the result
-    Buffer tmp(gats.data.size());
-    memcpy(tmp.data(), gats.data.data(), gats.data.size());
+    Buffer tmp(res.data.size());
+    memcpy(tmp.data(), res.data.data(), res.data.size());
     encodePng(tmp, tex->fetch->reply.content,
-        gats.width, gats.height, gats.components);
+        res.size.width, res.size.height, res.components);
 
     // mark the texture ready
     {

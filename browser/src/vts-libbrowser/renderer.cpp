@@ -451,6 +451,7 @@ void MapImpl::renderTickColliders()
 
     setCurrentTraversalMode(TraverseMode::Fixed);
 
+    renderer.focusPosPhys = vec3(0, 0, 0);
     if (callbacks.collidersOverrideCenter)
         callbacks.collidersOverrideCenter(renderer.focusPosPhys.data());
     if (callbacks.collidersOverrideDistance)

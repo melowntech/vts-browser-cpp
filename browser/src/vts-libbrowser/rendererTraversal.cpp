@@ -537,6 +537,10 @@ void MapImpl::travModeHierarchical(TraverseNode *trav, bool loadOnly)
     if (!travInit(trav))
         return;
 
+    // the resources may not be unloaded (eg. by collision probes)
+    //   or the rendering will stop
+    trav->lastRenderTime = trav->lastAccessTime;
+
     touchDraws(trav);
     if (trav->surface && trav->rendersEmpty())
         travDetermineDraws(trav);

@@ -168,7 +168,6 @@ void mapInitialize()
                 GpuTextureSpec spec(buff);
                 scalesTextureYaw = std::make_shared<Texture>();
                 scalesTextureYaw->load(info, spec);
-                scalesTextureYaw->generateMipmaps();
             }
 
             // load texture pitch
@@ -178,7 +177,6 @@ void mapInitialize()
                 GpuTextureSpec spec(buff);
                 scalesTexturePitch = std::make_shared<Texture>();
                 scalesTexturePitch->load(info, spec);
-                scalesTexturePitch->generateMipmaps();
             }
 
             // load texture zoom
@@ -188,7 +186,6 @@ void mapInitialize()
                 GpuTextureSpec spec(buff);
                 scalesTextureZoom = std::make_shared<Texture>();
                 scalesTextureZoom->load(info, spec);
-                scalesTextureZoom->generateMipmaps();
             }
         }
 

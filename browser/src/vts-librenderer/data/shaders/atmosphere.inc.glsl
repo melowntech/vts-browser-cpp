@@ -13,7 +13,7 @@ layout(std140) uniform uboAtm
 
 float atmDecodeFloat(vec4 rgba)
 {
-    return dot(rgba, vec4(1.0, 1.0 / 256.0, 1.0 / (256.0*256.0), 1.0 / (256.0*256.0*256.0)));
+    return dot(rgba, vec4(1.0, 1.0 / 256.0, 1.0 / (256.0*256.0), 0.0));
 }
 
 float atmSampleDensity(vec2 uv)
@@ -22,7 +22,6 @@ float atmSampleDensity(vec2 uv)
     //   it is important to first decode the float from rgba and only after
     //   that to filter the values
     ivec2 res = textureSize(texAtmDensity, 0);
-    uv.y = 1.0 - uv.y;
     vec2 uvp = uv * vec2(res - 1);
     ivec2 iuv = ivec2(uvp); // upper-left texel fetch coordinates
     vec4 s;

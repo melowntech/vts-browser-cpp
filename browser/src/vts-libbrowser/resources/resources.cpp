@@ -75,7 +75,8 @@ Validity MapImpl::getResourceValidity(const std::string &name)
     return getResourceValidity(it->second);
 }
 
-Validity MapImpl::getResourceValidity(const std::shared_ptr<Resource> &resource)
+Validity MapImpl::getResourceValidity(
+    const std::shared_ptr<Resource> &resource)
 {
     switch ((Resource::State)resource->state)
     {
@@ -92,6 +93,13 @@ Validity MapImpl::getResourceValidity(const std::shared_ptr<Resource> &resource)
 std::shared_ptr<GpuTexture> MapImpl::getTexture(const std::string &name)
 {
     return getMapResource<GpuTexture>(this, name);
+}
+
+std::shared_ptr<GpuAtmosphereDensityTexture>
+MapImpl::getAtmosphereDensityTexture(
+    const std::string &name)
+{
+    return getMapResource<GpuAtmosphereDensityTexture>(this, name);
 }
 
 std::shared_ptr<GpuMesh> MapImpl::getMesh(const std::string &name)

@@ -25,6 +25,7 @@
  */
 
 #include <ogr_spatialref.h>
+#include <vts-libs/vts/atmospheredensitytexture.hpp>
 
 #include "map.hpp"
 #include "utilities/json.hpp"
@@ -129,23 +130,23 @@ void MapConfig::initializeCelestialBody()
         && map->body.majorRadius > 0
         && a.thickness > 0)
     {
-        // todo make the name with services from mapconfig
-        //   to allow download
-        std::string name;
+        double a, b, c;
+        atmosphereDerivedAttributes(map->body, a, b, c);
+        vtslibs::vts::AtmosphereTextureSpec spec;
+        spec.thickness = a / map->body.majorRadius;
+        spec.verticalCoefficient = c;
+        std::string name = spec.toQueryArg();
+        if (map->mapConfig->services.has("atmdensity"))
         {
-            double a, b, c;
-            atmosphereDerivedAttributes(map->body, a, b, c);
-            std::stringstream ss;
-            ss << std::setprecision(7) << std::fixed
-                << "atmosphere-" << (a / map->body.majorRadius)
-                << "-" << c << ".png";
-            name = ss.str();
+            UrlTemplate temp(map->mapConfig->services.get("atmdensity").url);
+            UrlTemplate::Vars vars;
+            vars.params = { name };
+            name = temp(vars);
+            name = convertPath(name, map->mapConfigPath);
         }
-        atmosphereDensityTexture = map->getTexture(name);
-        atmosphereDensityTexture->filterMode
-            = GpuTextureSpec::FilterMode::Nearest;
-        atmosphereDensityTexture->wrapMode
-            = GpuTextureSpec::WrapMode::ClampToEdge;
+        else
+            name = "generate://atmdensity-" + name;
+        atmosphereDensityTexture = map->getAtmosphereDensityTexture(name);
     }
 }
 

@@ -289,6 +289,11 @@ void MapImpl::cacheReadProcess(const std::shared_ptr<Resource> &r)
         r->state = Resource::State::downloaded;
         r->fetch->reply.code = 200;
     }
+    else if (startsWith(r->name, "generate://"))
+    {
+        r->state = Resource::State::errorRetry;
+        // will be handled elsewhere
+    }
     else
     {
         r->state = Resource::State::startDownload;

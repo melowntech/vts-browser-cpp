@@ -171,6 +171,13 @@ public:
     GpuTextureSpec::WrapMode wrapMode;
 };
 
+class GpuAtmosphereDensityTexture : public GpuTexture
+{
+public:
+    GpuAtmosphereDensityTexture(MapImpl *map, const std::string &name);
+    void load() override;
+};
+
 class AuthConfig : public Resource
 {
 public:
@@ -544,7 +551,7 @@ public:
 
     BrowserOptions browserOptions;
 
-    std::shared_ptr<GpuTexture> atmosphereDensityTexture;
+    std::shared_ptr<GpuAtmosphereDensityTexture> atmosphereDensityTexture;
 
 private:
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
@@ -609,7 +616,7 @@ public:
         ThreadQueue<std::weak_ptr<Resource>> queCacheRead;
         ThreadQueue<std::weak_ptr<Resource>> queUpload;
         ThreadQueue<CacheWriteData> queCacheWrite;
-        ThreadQueue<std::weak_ptr<GpuTexture>> queAtmosphere;
+        ThreadQueue<std::weak_ptr<GpuAtmosphereDensityTexture>> queAtmosphere;
         std::thread thrCacheReader;
         std::thread thrCacheWriter;
         std::thread thrAtmosphereGenerator;
@@ -705,6 +712,8 @@ public:
     Validity getResourceValidity(const std::shared_ptr<Resource> &resource);
 
     std::shared_ptr<GpuTexture> getTexture(const std::string &name);
+    std::shared_ptr<GpuAtmosphereDensityTexture>
+        getAtmosphereDensityTexture(const std::string &name);
     std::shared_ptr<GpuMesh> getMesh(const std::string &name);
     std::shared_ptr<AuthConfig> getAuthConfig(const std::string &name);
     std::shared_ptr<MapConfig> getMapConfig(const std::string &name);

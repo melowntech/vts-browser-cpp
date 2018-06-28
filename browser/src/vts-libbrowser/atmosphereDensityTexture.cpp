@@ -36,7 +36,8 @@ namespace vts
 namespace
 {
 
-void generateAtmosphereTexture(const std::shared_ptr<GpuTexture> &tex,
+void generateAtmosphereTexture(
+    const std::shared_ptr<GpuAtmosphereDensityTexture> &tex,
     const MapCelestialBody &body)
 {
     double boundaryThickness, horizontalExponent, verticalExponent;
@@ -47,7 +48,8 @@ void generateAtmosphereTexture(const std::shared_ptr<GpuTexture> &tex,
     vtslibs::vts::AtmosphereTextureSpec gats;
     gats.thickness = boundaryThickness / body.majorRadius;
     gats.verticalCoefficient = verticalExponent;
-    auto res = vtslibs::vts::generateAtmosphereTexture(gats);
+    auto res = vtslibs::vts::generateAtmosphereTexture(gats,
+            vtslibs::vts::AtmosphereTexture::Format::gray3);
 
     // store the result
     Buffer tmp(res.data.size());
@@ -66,16 +68,67 @@ void generateAtmosphereTexture(const std::shared_ptr<GpuTexture> &tex,
     tex->map->resources.queCacheWrite.push(tex->fetch.get());
 }
 
+void gray3ToRgb(GpuTextureSpec &spec)
+{
+    if (spec.components != 1)
+    {
+        LOGTHROW(err2, std::runtime_error)
+            << "Atmosphere density texture"
+            " has <" << spec.components << "> components,"
+            " but grayscale is expected.";
+    }
+    spec.components = 3;
+    spec.height /= 3;
+
+    Buffer orig = std::move(spec.buffer);
+    const char *r = orig.data() + (spec.width * spec.height) * 0;
+    const char *g = orig.data() + (spec.width * spec.height) * 1;
+    const char *b = orig.data() + (spec.width * spec.height) * 2;
+
+    spec.buffer.allocate(spec.width * spec.height * spec.components);
+    char *res = spec.buffer.data();
+    for (uint32 y = 0; y < spec.height; y++)
+    {
+        for (uint32 x = 0; x < spec.width; x++)
+        {
+            res[(y * spec.width + x) * spec.components + 0]
+                = r[y * spec.width + x];
+            res[(y * spec.width + x) * spec.components + 1]
+                = g[y * spec.width + x];
+            res[(y * spec.width + x) * spec.components + 2]
+                = b[y * spec.width + x];
+        }
+    }
+}
+
 } // namespace
+
+GpuAtmosphereDensityTexture::GpuAtmosphereDensityTexture(MapImpl *map,
+    const std::string &name) : GpuTexture(map, name)
+{
+    filterMode = GpuTextureSpec::FilterMode::Nearest;
+    wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
+}
+
+void GpuAtmosphereDensityTexture::load()
+{
+    LOG(info2) << "Loading (gpu) texture <" << name << ">";
+    GpuTextureSpec spec(fetch->reply.content);
+    spec.filterMode = filterMode;
+    spec.wrapMode = wrapMode;
+    gray3ToRgb(spec);
+    map->callbacks.loadTexture(info, spec);
+    info.ramMemoryCost += sizeof(*this);
+}
 
 void MapImpl::resourcesAtmosphereGeneratorEntry()
 {
     setLogThreadName("atmosphere generator");
     while (!resources.queAtmosphere.stopped())
     {
-        std::weak_ptr<GpuTexture> w;
+        std::weak_ptr<GpuAtmosphereDensityTexture> w;
         resources.queAtmosphere.waitPop(w);
-        std::shared_ptr<GpuTexture> r = w.lock();
+        std::shared_ptr<GpuAtmosphereDensityTexture> r = w.lock();
         if (!r)
             continue;
         try
@@ -87,12 +140,11 @@ void MapImpl::resourcesAtmosphereGeneratorEntry()
             r->state = Resource::State::errorFatal;
         }
     }
-    
 }
 
 void MapImpl::updateAtmosphereDensity()
 {
-    const std::shared_ptr<GpuTexture> &tex
+    const std::shared_ptr<GpuAtmosphereDensityTexture> &tex
         = mapConfig->atmosphereDensityTexture;
     assert(tex);
     touchResource(tex);

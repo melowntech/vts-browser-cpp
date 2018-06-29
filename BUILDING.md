@@ -1,10 +1,10 @@
 
 # Build for Windows Desktop
 
-You have multiple options.
+You have multiple options:
 
  - Download (or build) and install all required dependencies yourself.
- - (Recommended) Use [Windows Wrapper](https://github.com/Melown/vts-browser-cpp-win) instead.
+ - (Recommended) Use [Build Wrapper](https://github.com/Melown/vts-browser-cpp-build-wrapper) instead.
    The wrapper has integrated build scripts for all dependencies making building the browser a peace of cake :D
 
 # Build for Linux Desktop
@@ -12,7 +12,7 @@ You have multiple options.
 Install packages that are required to build the library.
 
 ```bash
-sudo apt-get install \
+sudo apt install \
     libboost-all-dev \
     libeigen3-dev \
     libgdal-dev \
@@ -35,7 +35,7 @@ make
 And run the example application.
 
 ```bash
-bin/vts-browser-desktop <mapconfig-url>
+bin/vts-browser-desktop
 ```
 
 # Build for macOS

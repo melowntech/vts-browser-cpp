@@ -157,10 +157,18 @@ void atmosphereDerivedAttributes(const MapCelestialBody &body,
     boundaryThickness = horizontalExponent = verticalExponent = 0;
     if (body.majorRadius <= 0 || body.atmosphere.thickness <= 0)
         return;
+
     const auto &a = body.atmosphere;
-    // todo recompute the boundaryThickness with predefined quantile
-    boundaryThickness = a.thickness;
-    verticalExponent = std::log(1 / a.thicknessQuantile);
+
+    // using the atmosphere thickness quantile directly might lead to
+    //   sharp edge at the atmosphere boundary,
+    //   therefore we have to recompute the properties for a custom quantile
+    double targetQuantile = 1e-6;
+    double k = std::log(1 / a.thicknessQuantile) / a.thickness;
+    boundaryThickness = std::log(1 / targetQuantile) / k;
+
+    verticalExponent = std::log(1 / targetQuantile);
+
     horizontalExponent = body.majorRadius
         * std::log(1 / a.visibilityQuantile) / a.visibility * 5;
     // times 5 as compensation for texture normalization factor

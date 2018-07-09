@@ -16,15 +16,6 @@ void main()
 {
     // texture color
     vec4 color = texture(texColor, varUvTex);
-    if (uniFlags.y > 0)
-        color = color.rrra; // monochromatic texture
-
-    // uv clipping
-    if (varUvClip.x < uniUvClip.x
-            || varUvClip.y < uniUvClip.y
-            || varUvClip.x > uniUvClip.z
-            || varUvClip.y > uniUvClip.w)
-        discard;
 
     // mask
     if (uniFlags.x > 0)
@@ -32,6 +23,18 @@ void main()
         if (texture(texMask, varUvTex).r < 0.5)
             discard;
     }
+
+    // uv clipping
+    // uv clipping must go after all texture accesses to allow for computation of derivatives in uniform control flow
+    if (varUvClip.x < uniUvClip.x
+            || varUvClip.y < uniUvClip.y
+            || varUvClip.x > uniUvClip.z
+            || varUvClip.y > uniUvClip.w)
+        discard;
+
+    // monochromatic texture
+    if (uniFlags.y > 0)
+        color = color.rrra;
 
     // base color
     if (uniFlags.z > 0)

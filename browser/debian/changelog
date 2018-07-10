@@ -1,3 +1,10 @@
+vts-browser (0.15) melown-xenial; urgency=medium
+
+  * faster caching
+  * atmosphere in mapconfig
+
+ -- Tomas Maly <tomas.maly@melown.com>  Tue, 10 Jul 2018 12:34:53 +0200
+
 vts-browser (0.14) melown-xenial; urgency=medium
 
   * persistent mouse sensitivity setting

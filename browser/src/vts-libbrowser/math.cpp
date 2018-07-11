@@ -376,14 +376,22 @@ vec2f vec3to2f(vec3f v, bool division)
 vec2ui16 vec2to2ui16(vec2 v, bool normalized)
 {
     if (normalized)
+    {
         v *= 65535.0;
+        for (int i = 0; i < 2; i++)
+            v[i] = std::min(std::max(v[i], 0.0), 65535.0);
+    }
     return v.cast<uint16>();
 }
 
 vec2ui16 vec2to2ui16(vec2f v, bool normalized)
 {
     if (normalized)
+    {
         v *= 65535.0f;
+        for (int i = 0; i < 2; i++)
+            v[i] = std::min(std::max(v[i], 0.0f), 65535.0f);
+    }
     return v.cast<uint16>();
 }
 

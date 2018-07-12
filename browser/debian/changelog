@@ -1,3 +1,9 @@
+vts-browser (0.16) melown-xenial; urgency=medium
+
+  * fix clamp in uv
+
+ -- Tomas Maly <tomas.maly@melown.com>  Thu, 12 Jul 2018 17:30:58 +0200
+
 vts-browser (0.15) melown-xenial; urgency=medium
 
   * faster caching

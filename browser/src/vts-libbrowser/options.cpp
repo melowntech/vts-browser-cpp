@@ -156,7 +156,7 @@ MapOptions::MapOptions() :
     debugDetachedCamera(false),
     debugEnableVirtualSurfaces(true),
     debugEnableSri(false),
-    debugSaveCorruptedFiles(true),
+    debugSaveCorruptedFiles(false),
     debugFlatShading(false),
     debugValidateGeodataStyles(true),
     debugRenderSurrogates(false),

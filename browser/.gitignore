@@ -11,4 +11,4 @@
 /lib
 /build*
 /density-*.png
-
+/*.log

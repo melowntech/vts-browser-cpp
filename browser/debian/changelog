@@ -1,3 +1,9 @@
+vts-browser (0.17) melown-xenial; urgency=medium
+
+  * load options from file
+
+ -- Tomas Maly <tomas.maly@melown.com>  Fri, 13 Jul 2018 15:11:45 +0200
+
 vts-browser (0.16) melown-xenial; urgency=medium
 
   * fix clamp in uv

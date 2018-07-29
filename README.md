@@ -50,7 +50,19 @@ and _vts-browser-desktop_ (example application).
 
 See [BUILDING.md](BUILDING.md) for detailed instructions.
 
-## Using the Libraries
+## Running Example Application
+
+Run the desktop example application with default mapconfig (our Intergeo presentation):
+```bash
+vts-browser-desktop
+```
+
+Run the desktop example application with specific mapconfig:
+```bash
+vts-browser-desktop https://cdn.melown.com/mario/store/melown2015/map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json
+```
+
+## Development Using the Libraries
 
 See [USING.md](USING.md) for detailed instructions.
 

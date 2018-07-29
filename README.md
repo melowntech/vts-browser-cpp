@@ -18,6 +18,8 @@ that bring VTS client capabilities to your native applications.
 - Clean C++ API.
   - C and C# bindings are available too.
 - Works on Windows, Linux, macOS and iOS.
+  - We also provide [plugin for VTS integration into Unity 3D](https://github.com/Melown/vts-browser-unity-plugin).
+  - And [javascript browser](https://github.com/Melown/vts-browser-js) for integration with websites.
 - Simple -> minimal application using these libraries has about 200 LOC.
   See [vts-browser-minimal](https://github.com/Melown/vts-browser-cpp/wiki/examples-minimal).
 

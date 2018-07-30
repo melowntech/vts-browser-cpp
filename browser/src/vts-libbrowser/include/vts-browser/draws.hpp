@@ -53,10 +53,19 @@ public:
 class VTS_API MapDraws
 {
 public:
+    // tasks that may be rendered in optimized way without any transparency
+    // (may be rendered in any order)
     std::vector<DrawTask> opaque;
+    // tasks that need blending enabled for correct rendering
+    // (must be rendered in given order)
     std::vector<DrawTask> transparent;
+    // geodata
     std::vector<DrawTask> geodata;
+    // visualization of debug data
     std::vector<DrawTask> infographics;
+    // meshes suitable for collision detection
+    // each node's mesh is reported only once
+    std::vector<DrawTask> colliders;
 
     std::shared_ptr<void> atmosphereDensityTexture;
 

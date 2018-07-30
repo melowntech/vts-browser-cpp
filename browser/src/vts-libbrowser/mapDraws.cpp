@@ -97,6 +97,7 @@ void MapDraws::clear()
     transparent.clear();
     geodata.clear();
     infographics.clear();
+    colliders.clear();
 }
 
 RenderTask::RenderTask() : model(identityMatrix4()),

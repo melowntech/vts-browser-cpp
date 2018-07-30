@@ -131,6 +131,9 @@ public static extern IntPtr vtsDrawsGeodata(IntPtr map);
 public static extern IntPtr vtsDrawsInfographics(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern IntPtr vtsDrawsColliders(IntPtr map);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern uint vtsDrawsCount(IntPtr group);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]

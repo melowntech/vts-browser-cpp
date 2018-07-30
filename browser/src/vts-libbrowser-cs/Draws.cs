@@ -131,6 +131,7 @@ namespace vts
         public List<DrawTask> transparent;
         public List<DrawTask> geodata;
         public List<DrawTask> infographics;
+        public List<DrawTask> colliders;
 
         private Object Load(IntPtr ptr)
         {
@@ -183,6 +184,7 @@ namespace vts
             Load(ref transparent, BrowserInterop.vtsDrawsTransparent(map.Handle));
             Load(ref geodata, BrowserInterop.vtsDrawsGeodata(map.Handle));
             Load(ref infographics, BrowserInterop.vtsDrawsInfographics(map.Handle));
+            Load(ref colliders, BrowserInterop.vtsDrawsColliders(map.Handle));
         }
     }
 }

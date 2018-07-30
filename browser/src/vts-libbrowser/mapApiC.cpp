@@ -1136,6 +1136,14 @@ vtsHDrawsGroup vtsDrawsInfographics(vtsHMap map)
     return nullptr;
 }
 
+vtsHDrawsGroup vtsDrawsColliders(vtsHMap map)
+{
+    C_BEGIN
+    return createDrawIterator(map->p->draws().colliders);
+    C_END
+    return nullptr;
+}
+
 uint32 vtsDrawsCount(vtsHDrawsGroup group)
 {
     C_BEGIN

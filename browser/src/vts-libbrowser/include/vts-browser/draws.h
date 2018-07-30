@@ -43,6 +43,7 @@ VTS_API vtsHDrawsGroup vtsDrawsOpaque(vtsHMap map);
 VTS_API vtsHDrawsGroup vtsDrawsTransparent(vtsHMap map);
 VTS_API vtsHDrawsGroup vtsDrawsGeodata(vtsHMap map);
 VTS_API vtsHDrawsGroup vtsDrawsInfographics(vtsHMap map);
+VTS_API vtsHDrawsGroup vtsDrawsColliders(vtsHMap map);
 VTS_API uint32 vtsDrawsCount(vtsHDrawsGroup group);
 VTS_API void vtsDrawsDestroy(vtsHDrawsGroup group);
 

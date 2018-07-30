@@ -474,6 +474,7 @@ public:
     std::vector<RenderTask> opaque;
     std::vector<RenderTask> transparent;
     std::vector<RenderTask> geodata;
+    std::vector<RenderTask> colliders;
 
     TraverseNode(MapLayer *layer, TraverseNode *parent,
                  const NodeInfo &nodeInfo);

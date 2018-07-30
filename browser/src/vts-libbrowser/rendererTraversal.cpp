@@ -450,10 +450,29 @@ bool MapImpl::travDetermineDrawsSurface(TraverseNode *trav)
     if (determined)
     {
         assert(trav->rendersEmpty());
+
+        // renders
         std::swap(trav->opaque, newOpaque);
         std::swap(trav->transparent, newTransparent);
+
+        // colliders
+        assert(trav->colliders.empty());
+        for (uint32 subMeshIndex = 0, e = meshAgg->submeshes.size();
+            subMeshIndex != e; subMeshIndex++)
+        {
+            const MeshPart &part = meshAgg->submeshes[subMeshIndex];
+            std::shared_ptr<GpuMesh> mesh = part.renderable;
+            RenderTask task;
+            task.mesh = mesh;
+            task.model = part.normToPhys;
+            trav->colliders.push_back(task);
+        }
+
+        // credits
         trav->credits.insert(trav->credits.end(),
                              newCredits.begin(), newCredits.end());
+
+        // validity
         if (trav->rendersEmpty())
             trav->surface = nullptr;
         else

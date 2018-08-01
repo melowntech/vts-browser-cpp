@@ -1,4 +1,4 @@
-include_directories(nuklear)
+include_directories(SYSTEM nuklear)
 configure_file(nuklear/nuklear.h nuklear.c)
 add_library(nuklear STATIC ${CMAKE_CURRENT_BINARY_DIR}/nuklear.c)
 buildsys_library(nuklear)

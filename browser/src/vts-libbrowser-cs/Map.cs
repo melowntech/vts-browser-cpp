@@ -331,7 +331,7 @@ namespace vts
 
         protected void Dispose(bool disposing)
         {
-            if (Handle != null)
+            if (Handle != IntPtr.Zero)
             {
                 BrowserInterop.vtsMapDestroy(Handle);
                 Util.CheckInterop();

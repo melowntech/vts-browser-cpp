@@ -84,14 +84,16 @@ namespace vts
         private void MapconfigAvailableCallback(IntPtr h)
         {
             Debug.Assert(h == Handle);
-            EventMapconfigAvailable?.Invoke();
+            if (EventMapconfigAvailable != null)
+                EventMapconfigAvailable.Invoke();
         }
 
         private BrowserInterop.vtsEmptyCallbackType MapconfigReadyDelegate;
         private void MapconfigReadyCallback(IntPtr h)
         {
             Debug.Assert(h == Handle);
-            EventMapconfigReady?.Invoke();
+            if (EventMapconfigReady != null)
+                EventMapconfigReady.Invoke();
         }
 
         private BrowserInterop.vtsDoubleArrayCallbackType CameraEyeDelegate;
@@ -205,8 +207,6 @@ namespace vts
             Debug.Assert(h == Handle);
             if (EventCollidersLod != null)
                 EventCollidersLod.Invoke(ref value);
-            else
-                value = 0; // this is wrong, the parameter must be ref, not out
         }
 
         private BrowserInterop.vtsResourceCallbackType LoadTextureDelegate;

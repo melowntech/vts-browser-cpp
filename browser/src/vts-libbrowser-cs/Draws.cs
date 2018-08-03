@@ -158,7 +158,7 @@ namespace vts
                     IntPtr pm = IntPtr.Zero, ptc = IntPtr.Zero, ptm = IntPtr.Zero;
                     IntPtr dataPtr = BrowserInterop.vtsDrawsAllInOne(group, i, ref pm, ref ptc, ref ptm);
                     Util.CheckInterop();
-                    if (pm == null)
+                    if (pm == IntPtr.Zero)
                         continue;
                     t.data = (DrawBase)Marshal.PtrToStructure(dataPtr, typeof(DrawBase));
                     t.mesh = Load(pm);

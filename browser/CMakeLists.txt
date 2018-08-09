@@ -93,8 +93,8 @@ if(BUILDSYS_IOS)
     endif()
 else()
     # find SDL
+    cmake_policy(SET CMP0004 OLD) # because SDL installed on some systems has improperly configured libraries
     find_package(SDL2 REQUIRED)
-    string(STRIP "{SDL2_INCLUDE_DIR}" SDL2_INCLUDE_DIR) # because SDL installed on some systems has improperly configured libraries
     include_directories(SYSTEM ${SDL2_INCLUDE_DIR})
 
     # minimal application

@@ -1,4 +1,3 @@
-include_directories(SYSTEM nuklear)
 configure_file(nuklear/nuklear.h nuklear.c)
 add_library(nuklear STATIC ${CMAKE_CURRENT_BINARY_DIR}/nuklear.c)
 buildsys_library(nuklear)
@@ -16,7 +15,7 @@ set(NUKLEAR_COMPONENTS
 target_compile_definitions(nuklear PUBLIC ${NUKLEAR_COMPONENTS})
 
 if(NOT WIN32)
-    target_compile_options(nuklear PRIVATE -Wno-error -Wno-unused-variable)
+    target_compile_options(nuklear PRIVATE -w) # disable all warnings
 endif()
 
 buildsys_fix_symlinks(${CMAKE_CURRENT_SOURCE_DIR})

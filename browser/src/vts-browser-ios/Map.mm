@@ -230,7 +230,7 @@ namespace
         model(1,3) = screenPos.origin.y;
         mat4f mvp = (proj * model).cast<float>();
         mat3f uvm = identityMatrix3().cast<float>();
-        uvm(0.0) = texturePos.size.width;
+        uvm(0,0) = texturePos.size.width;
         uvm(1,1) = texturePos.size.height;
         uvm(0,2) = texturePos.origin.x;
         uvm(1,2) = texturePos.origin.y;

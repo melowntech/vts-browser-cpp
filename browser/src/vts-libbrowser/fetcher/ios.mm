@@ -37,15 +37,15 @@ namespace
 class FetcherImpl : public Fetcher
 {
 public:
-	
-	virtual void initialize()
-	{}
-	
+
+    virtual void initialize()
+    {}
+
     virtual void finalize()
     {}
-    
+
     NSURLSession *session;
-    
+
     void completed(const std::shared_ptr<FetchTask> &task, NSData *data, NSHTTPURLResponse *response)
     {
         task->reply.contentType = [response.MIMEType UTF8String];
@@ -54,12 +54,12 @@ public:
         task->reply.content.allocate([data length]);
         memcpy(task->reply.content.data(), [data bytes], [data length]);
     }
-    
+
     virtual void fetch(const std::shared_ptr<FetchTask> &task_)
     {
-    	std::shared_ptr<FetchTask> task = task_;
-    	NSString *urlString = [NSString stringWithCString:task->query.url.c_str() encoding:NSUTF8StringEncoding];
-	    NSURL *url = [NSURL URLWithString:urlString];
+        std::shared_ptr<FetchTask> task = task_;
+        NSString *urlString = [NSString stringWithCString:task->query.url.c_str() encoding:NSUTF8StringEncoding];
+            NSURL *url = [NSURL URLWithString:urlString];
         [[session dataTaskWithURL:url completionHandler:^(NSData *data, NSURLResponse *response, NSError *error)
         {
             if (error)
@@ -72,21 +72,21 @@ public:
                 completed(task, data, (NSHTTPURLResponse*)response);
             }
             task->fetchDone();
-		}] resume];
+        }] resume];
     }
 
-	FetcherImpl(const FetcherOptions &options)
-	{
-		NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
-		session = [NSURLSession sessionWithConfiguration:config];
+    FetcherImpl(const FetcherOptions &options)
+    {
+        NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
+        session = [NSURLSession sessionWithConfiguration:config];
         [session retain];
-	}
+    }
 
-	~FetcherImpl()
-	{
-		[session invalidateAndCancel];
+    ~FetcherImpl()
+    {
+        [session invalidateAndCancel];
         [session release];
-	}
+    }
 };
 
 }

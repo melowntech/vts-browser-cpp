@@ -4,7 +4,7 @@ message(STATUS "*** Using ios toolchain ***")
 message(STATUS "***************************")
 
 # Policies
-cmake_policy(SET CMP0054 NEW)
+cmake_policy(SET CMP0054 NEW) # Only interpret if() arguments as variables or keywords when unquoted.
 
 # Standard settings
 set(CMAKE_CROSSCOMPILING TRUE)
@@ -38,7 +38,6 @@ execute_process(COMMAND xcrun -sdk ${IOS_PLATFORM} -find g++ OUTPUT_VARIABLE CMA
 execute_process(COMMAND xcrun -sdk ${IOS_PLATFORM} -find ar OUTPUT_VARIABLE CMAKE_AR OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND xcrun -sdk ${IOS_PLATFORM} --show-sdk-path OUTPUT_VARIABLE CMAKE_OSX_SYSROOT OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-#set(IOS_MIN_VERSION "10.0" CACHE STRING "Minimum iOS version target")
 set(CMAKE_XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "10.0")
 set(CMAKE_XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2")
 

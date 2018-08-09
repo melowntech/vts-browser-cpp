@@ -4,17 +4,19 @@ set(EXTRA_LIB_DEPS)
 set(EXTRA_LIB_MODULES)
 
 if(BUILDSYS_IOS)
-
     # ios
     list(APPEND EXTRA_LIB_DEPS iconv objc "-framework CoreGraphics")
     list(APPEND EXTRA_SRC_LIST fetcher/ios.mm)
-
 else()
-
     # desktop
+    buildsys_fix_symlinks(${CMAKE_CURRENT_SOURCE_DIR}/fetcher)
+    find_package(CURL REQUIRED)
+    include_directories(SYSTEM ${CURL_INCLUDE_DIR})
+    add_subdirectory(fetcher/http)
+    include_directories(SYSTEM fetcher)
+    buildsys_ide_groups(http deps)
     list(APPEND EXTRA_LIB_MODULES http)
     list(APPEND EXTRA_SRC_LIST fetcher/curl.cpp)
-
 endif()
 
 find_package(ZLIB REQUIRED)
@@ -133,10 +135,17 @@ set(DATA_LIST
 )
 
 buildsys_pack_data(initializeBrowserData)
-add_library(vts-browser ${LIB_TYPE} ${SRC_LIST} ${PUB_HDR_LIST})
-target_compile_definitions(vts-browser ${LIB_VIS} VTS_BROWSER_BUILD_${LIB_TYPE})
-target_link_libraries(vts-browser ${LIB_VIS} ${MODULE_LIBRARIES} ${EXTRA_LIB_DEPS})
-target_link_libraries(vts-browser PRIVATE initializeBrowserData)
+if(BUILDSYS_EMBEDDED AND NOT BUILD_FRAMEWORK_ONLY)
+    add_library(vts-browser STATIC ${SRC_LIST} ${PUB_HDR_LIST})
+    target_compile_definitions(vts-browser PUBLIC VTS_BUILD_STATIC)
+    target_link_libraries(vts-browser PUBLIC initializeBrowserData ${MODULE_LIBRARIES} ${EXTRA_LIB_DEPS})
+else()
+    add_library(vts-browser SHARED ${SRC_LIST} ${PUB_HDR_LIST})
+    target_compile_definitions(vts-browser PRIVATE VTS_BUILD_SHARED)
+    target_link_libraries(vts-browser PRIVATE initializeBrowserData ${MODULE_LIBRARIES} ${EXTRA_LIB_DEPS})
+    set_target_properties(vts-browser PROPERTIES FRAMEWORK TRUE)
+    set_target_properties(vts-browser PROPERTIES PUBLIC_HEADER "${PUB_HDR_LIST}")
+endif()
 buildsys_library(vts-browser)
 buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})
 buildsys_target_compile_definitions(vts-browser ${MODULE_DEFINITIONS})
@@ -147,6 +156,8 @@ option(VTS_ENABLE_FREE_LAYERS "compile in support for free layers [WIP]")
 if(VTS_ENABLE_FREE_LAYERS)
     target_compile_definitions(vts-browser PRIVATE VTS_ENABLE_FREE_LAYERS)
 endif()
+
+
 
 #######################################################################
 # Install
@@ -168,6 +179,7 @@ install(TARGETS vts-browser
     RUNTIME DESTINATION ${BIN_INSTALL_DIR}
     LIBRARY DESTINATION ${LIB_INSTALL_DIR}
     ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
+    FRAMEWORK DESTINATION ${LIB_INSTALL_DIR}
 )
 
 install(EXPORT vts-browser

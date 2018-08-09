@@ -35,9 +35,9 @@
 #define VTS_API_IMPORT __attribute__((visibility ("default")))
 #endif
 
-#ifdef VTS_BROWSER_BUILD_STATIC
+#ifdef VTS_BUILD_STATIC
 #define VTS_API
-#elif VTS_BROWSER_BUILD_SHARED
+#elif VTS_BUILD_SHARED
 #define VTS_API VTS_API_EXPORT
 #else
 #define VTS_API VTS_API_IMPORT

@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
 project(vts-browser)
 
-if (APPLE)
+if(APPLE)
     # earlier versions of CMake on apple had an error that include paths were not considered SYSTEM where they should be
     cmake_minimum_required(VERSION 3.9.1 FATAL_ERROR)
 endif()
@@ -76,19 +76,6 @@ set(SHARE_INSTALL_DIR share)
 
 # vts browser & renderer libraries
 message(STATUS "including vts browser and renderer libraries")
-if(BUILDSYS_EMBEDDED)
-    set(LIB_TYPE STATIC)
-    set(LIB_VIS PUBLIC)
-else()
-    set(LIB_TYPE SHARED)
-    set(LIB_VIS PRIVATE)
-
-    # find http and curl
-    find_package(CURL REQUIRED)
-    include_directories(SYSTEM ${CURL_INCLUDE_DIR})
-    add_subdirectory(src/http)
-    buildsys_ide_groups(http deps)
-endif()
 add_subdirectory(src/vts-libbrowser)
 include_directories(src/vts-libbrowser/include)
 add_subdirectory(src/glad)
@@ -96,14 +83,18 @@ add_subdirectory(src/vts-librenderer)
 include_directories(src/vts-librenderer/include)
 
 # application
+set(CMAKE_MACOSX_BUNDLE TRUE)
 if(BUILDSYS_IOS)
-    # ios application
-    message(STATUS "including vts-browser-ios")
-    add_subdirectory(src/vts-browser-ios)
+    if(NOT BUILD_FRAMEWORK_ONLY)
+        # ios application
+        message(STATUS "including vts-browser-ios")
+        add_subdirectory(src/vts-browser-ios)
+        set(VS_STARTUP_PROJECT vts-browser-ios)
+    endif()
 else()
     # find SDL
-    cmake_policy(SET CMP0004 OLD) # because SDL installed on some systems has improperly configured libraries
     find_package(SDL2 REQUIRED)
+    string(STRIP "{SDL2_INCLUDE_DIR}" SDL2_INCLUDE_DIR) # because SDL installed on some systems has improperly configured libraries
     include_directories(SYSTEM ${SDL2_INCLUDE_DIR})
 
     # minimal application
@@ -115,11 +106,12 @@ else()
     message(STATUS "including vts-browser-desktop")
     add_subdirectory(src/nuklear)
     add_subdirectory(src/vts-browser-desktop)
+    set(VS_STARTUP_PROJECT vts-browser-desktop)
 endif()
 
 # vts csharp libraries
 option(VTS_ENABLE_CSHARP "generate csharp libraries")
-if (VTS_ENABLE_CSHARP)
+if(VTS_ENABLE_CSHARP)
     message(STATUS "including csharp libraries")
     set(CMAKE_CSharp_FLAGS "${CMAKE_CSharp_FLAGS} -langversion:6 -unsafe")
     add_subdirectory(src/vts-libbrowser-cs)

@@ -33,6 +33,7 @@ buildsys_ide_groups(vts-browser-desktop apps)
 # install
 install(TARGETS vts-browser-desktop
     RUNTIME DESTINATION ${BIN_INSTALL_DIR}
+    BUNDLE DESTINATION ${BIN_INSTALL_DIR}
     COMPONENT browser-desktop
 )
 

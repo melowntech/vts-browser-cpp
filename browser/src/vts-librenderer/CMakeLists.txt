@@ -35,18 +35,25 @@ set(DATA_LIST
 )
 
 buildsys_pack_data(initializeRenderData)
-add_library(vts-renderer ${LIB_TYPE} ${SRC_LIST} ${PUB_HDR_LIST})
-target_compile_definitions(vts-renderer ${LIB_VIS} VTSR_BUILD_${LIB_TYPE})
-target_compile_definitions(vts-renderer PRIVATE VTSR_INCLUDE_GL)
-target_link_libraries(vts-renderer ${LIB_VIS} ${MODULE_LIBRARIES})
-target_link_libraries(vts-renderer PRIVATE initializeRenderData)
+if(BUILDSYS_EMBEDDED AND NOT BUILD_FRAMEWORK_ONLY)
+    add_library(vts-renderer STATIC ${SRC_LIST} ${PUB_HDR_LIST})
+    target_compile_definitions(vts-renderer PUBLIC VTSR_BUILD_STATIC)
+    target_compile_definitions(vts-renderer PRIVATE VTSR_INCLUDE_GL)
+    target_link_libraries(vts-renderer PUBLIC initializeRenderData ${MODULE_LIBRARIES})
+else()
+    add_library(vts-renderer SHARED ${SRC_LIST} ${PUB_HDR_LIST})
+    target_compile_definitions(vts-renderer PRIVATE VTSR_BUILD_SHARED VTSR_INCLUDE_GL)
+    target_link_libraries(vts-renderer PRIVATE initializeRenderData ${MODULE_LIBRARIES})
+    set_target_properties(vts-renderer PROPERTIES FRAMEWORK TRUE)
+    set_target_properties(vts-renderer PROPERTIES PUBLIC_HEADER "${PUB_HDR_LIST}")
+endif()
 buildsys_library(vts-renderer)
 buildsys_soversion(vts-renderer ${vts-browser_SO_VERSION})
 buildsys_target_compile_definitions(vts-renderer ${MODULE_DEFINITIONS})
 buildsys_position_independent(${MODULE_LIBRARIES})
 buildsys_ide_groups(vts-renderer libs)
 
-if(BUILDSYS_IOS)
+if(BUILDSYS_EMBEDDED)
     target_compile_definitions(vts-renderer PRIVATE VTSR_OPENGLES)
 endif()
 
@@ -72,6 +79,7 @@ install(TARGETS vts-renderer
     RUNTIME DESTINATION ${BIN_INSTALL_DIR}
     LIBRARY DESTINATION ${LIB_INSTALL_DIR}
     ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
+    FRAMEWORK DESTINATION ${LIB_INSTALL_DIR}
 )
 
 install(EXPORT vts-renderer

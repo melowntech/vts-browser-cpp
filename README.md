@@ -9,7 +9,7 @@ that bring VTS client capabilities to your native applications.
 
 (Click the image to play)
 
-## Design & Features
+## Features
 
 - Highly flexible -> almost all aspects can be changed through configuration or callbacks.
 - Rendering API independent -> the browser library, on its own, does not render anything.

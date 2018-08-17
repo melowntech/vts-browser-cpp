@@ -74,48 +74,65 @@ set(LIB_INSTALL_DIR lib)
 set(BIN_INSTALL_DIR bin)
 set(SHARE_INSTALL_DIR share)
 
-# vts browser & renderer libraries
-message(STATUS "including vts browser and renderer libraries")
+# libraries type
+if(BUILDSYS_EMBEDDED)
+    set(VTS_LIBS_TYPE_DEFAULT STATIC)
+else()
+    set(VTS_LIBS_TYPE_DEFAULT SHARED)
+endif()
+set(VTS_LIBS_TYPE ${VTS_LIBS_TYPE_DEFAULT} CACHE STRING "Type of libraries")
+set_property(CACHE VTS_LIBS_TYPE PROPERTY STRINGS STATIC SHARED MODULE)
+if(VTS_LIBS_TYPE STREQUAL STATIC)
+    set(VTS_LIBS_VISIBILITY PUBLIC)
+    set(VTS_LIBS_BUILD_TYPE STATIC)
+else()
+    set(VTS_LIBS_VISIBILITY PRIVATE)
+    set(VTS_LIBS_BUILD_TYPE SHARED) # module is shared too
+endif()
+
+# vts browser library
+message(STATUS "including vts browser library")
 add_subdirectory(src/vts-libbrowser)
 include_directories(src/vts-libbrowser/include)
-add_subdirectory(src/glad)
-add_subdirectory(src/vts-librenderer)
-include_directories(src/vts-librenderer/include)
 
-# application
-set(CMAKE_MACOSX_BUNDLE TRUE)
-if(BUILDSYS_IOS)
-    if(NOT BUILD_FRAMEWORK_ONLY)
+if(NOT VTS_LIBS_TYPE STREQUAL MODULE)
+    # vts renderer library
+    message(STATUS "including vts renderer library")
+    add_subdirectory(src/glad)
+    add_subdirectory(src/vts-librenderer)
+    include_directories(src/vts-librenderer/include)
+
+    # application
+    if(BUILDSYS_IOS)
         # ios application
         message(STATUS "including vts-browser-ios")
         add_subdirectory(src/vts-browser-ios)
         set(VS_STARTUP_PROJECT vts-browser-ios)
+    else()
+        # find SDL
+        cmake_policy(SET CMP0004 OLD) # because SDL installed on some systems has improperly configured libraries
+        find_package(SDL2 REQUIRED)
+        include_directories(SYSTEM ${SDL2_INCLUDE_DIR})
+
+        # minimal application
+        message(STATUS "including vts-browser-minimal")
+        add_subdirectory(src/vts-browser-minimal-c)
+        add_subdirectory(src/vts-browser-minimal-cpp)
+
+        # desktop application
+        message(STATUS "including vts-browser-desktop")
+        add_subdirectory(src/nuklear)
+        add_subdirectory(src/vts-browser-desktop)
+        set(VS_STARTUP_PROJECT vts-browser-desktop)
     endif()
-else()
-    # find SDL
-    cmake_policy(SET CMP0004 OLD) # because SDL installed on some systems has improperly configured libraries
-    find_package(SDL2 REQUIRED)
-    include_directories(SYSTEM ${SDL2_INCLUDE_DIR})
 
-    # minimal application
-    message(STATUS "including vts-browser-minimal")
-    add_subdirectory(src/vts-browser-minimal-c)
-    add_subdirectory(src/vts-browser-minimal-cpp)
-
-    # desktop application
-    message(STATUS "including vts-browser-desktop")
-    add_subdirectory(src/nuklear)
-    add_subdirectory(src/vts-browser-desktop)
-    set(VS_STARTUP_PROJECT vts-browser-desktop)
-endif()
-
-# vts csharp libraries
-option(VTS_ENABLE_CSHARP "generate csharp libraries")
-if(VTS_ENABLE_CSHARP)
-    message(STATUS "including csharp libraries")
-    set(CMAKE_CSharp_FLAGS "${CMAKE_CSharp_FLAGS} -langversion:6 -unsafe")
-    add_subdirectory(src/vts-libbrowser-cs)
-    add_subdirectory(src/vts-librenderer-cs)
-    add_subdirectory(src/vts-browser-minimal-cs)
+    # vts csharp libraries
+    if(MSVC)
+        message(STATUS "including csharp libraries")
+        set(CMAKE_CSharp_FLAGS "${CMAKE_CSharp_FLAGS} -langversion:6 -unsafe")
+        add_subdirectory(src/vts-libbrowser-cs)
+        add_subdirectory(src/vts-librenderer-cs)
+        add_subdirectory(src/vts-browser-minimal-cs)
+    endif()
 endif()
 

@@ -4,15 +4,25 @@
 You have multiple options:
 
  - Download (or build) and install all required dependencies yourself.
+   Then use cmake.
  - (Recommended) Use [Build Wrapper](https://github.com/Melown/vts-browser-cpp-build-wrapper) instead.
    The wrapper has integrated build scripts for all dependencies making building the browser a peace of cake :D
 
 # Build for Linux Desktop
 
+The Gdal library must be version 2. Additional source list is required on eg. Ubuntu Xenial.
+
+```bash
+sudo add-apt-repository ppa:ubuntugis/ppa
+```
+
 Install packages that are required to build the library.
 
 ```bash
+sudo apt update
 sudo apt install \
+    cmake \
+    python-minimal \
     libboost-all-dev \
     libeigen3-dev \
     libgdal-dev \
@@ -24,7 +34,7 @@ sudo apt install \
 
 Clone the git repository with all submodules.
 The library build system is cmake based.
-However, for a convenience, a make shortcut exists.
+However, for convenience, a make shortcut exists.
 
 ```bash
 git clone --recursive https://github.com/Melown/vts-browser-cpp.git
@@ -71,6 +81,7 @@ Use the generated xcode project as usual.
 You have multiple options:
 
  - Build all required dependencies yourself.
+   Then use cmake with -DCMAKE_TOOLCHAIN_FILE=\<path-to-our-ios.toolchain.cmake\>.
  - (Recommended) Use [Build Wrapper](https://github.com/Melown/vts-browser-cpp-build-wrapper) instead.
    The wrapper has integrated build scripts for all dependencies making building the browser a peace of cake :D
 
@@ -94,8 +105,7 @@ You have multiple options:
 │   │       └── README.md
 │   ├── BUILDING.md
 │   ├── LICENSE
-│   ├── README.md
-│   └── .git
+│   └── README.md
 └── your-new-awesome-application-using-vts
     └── CMakeLists.txt or xcodeproj which links to the libraries
 ```

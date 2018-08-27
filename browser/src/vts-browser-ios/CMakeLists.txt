@@ -37,8 +37,7 @@ buildsys_pack_data(initializeIosData)
 add_executable(vts-browser-ios MACOSX_BUNDLE ${SRC_LIST} ${DATA_LIST} ${RES_LIST})
 target_link_libraries(vts-browser-ios initializeIosData ${MODULE_LIBRARIES}
     objc "-framework CoreData" "-framework UIKit" "-framework GLKit" "-framework OpenGLES")
-buildsys_binary(vts-browser-ios)
-buildsys_target_compile_definitions(vts-browser-ios ${MODULE_DEFINITIONS})
+target_compile_definitions(vts-browser-ios PRIVATE ${MODULE_DEFINITIONS})
 set_target_properties(vts-browser-ios PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER "VTS Browser"
     MACOSX_BUNDLE_BUNDLE_NAME vts-browser-ios
@@ -47,6 +46,25 @@ set_target_properties(vts-browser-ios PROPERTIES
     XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
     XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME AppIcon
     RESOURCE "${RES_LIST}"
+    INSTALL_RPATH "@executable_path;@executable_path/Frameworks"
 )
+buildsys_binary(vts-browser-ios)
 buildsys_ide_groups(vts-browser-ios apps)
+
+
+if(VTS_BROWSER_TYPE STREQUAL SHARED)
+    # todo
+endif()
+
+if(VTS_BROWSER_TYPE STREQUAL FRAMEWORK)
+    add_custom_command(TARGET vts-browser-ios POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory
+            "$<TARGET_FILE_DIR:vts-browser>"
+            "$<TARGET_FILE_DIR:vts-browser-ios>/Frameworks/$<TARGET_FILE_NAME:vts-browser>.framework"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory
+            "$<TARGET_FILE_DIR:vts-renderer>"
+            "$<TARGET_FILE_DIR:vts-browser-ios>/Frameworks/$<TARGET_FILE_NAME:vts-renderer>.framework"
+        COMMENT "copy vts browser libraries to final bundle"
+    )
+endif()
 

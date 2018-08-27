@@ -35,16 +35,21 @@ set(DATA_LIST
 )
 
 buildsys_pack_data(initializeRenderData)
-add_library(vts-renderer ${VTS_LIBS_TYPE} ${SRC_LIST} ${PUB_HDR_LIST})
-target_compile_definitions(vts-renderer ${VTS_LIBS_VISIBILITY} VTSR_BUILD_${VTS_LIBS_TYPE})
-target_compile_definitions(vts-renderer PRIVATE VTSR_INCLUDE_GL)
-target_link_libraries(vts-renderer ${VTS_LIBS_VISIBILITY} initializeRenderData ${MODULE_LIBRARIES})
-set_target_properties(vts-renderer PROPERTIES PUBLIC_HEADER "${PUB_HDR_LIST}")
-set_target_properties(vts-renderer PROPERTIES FRAMEWORK TRUE)
-set_target_properties(vts-renderer PROPERTIES BUNDLE TRUE)
+add_library(vts-renderer ${VTS_BROWSER_BUILD_LIBRARY} ${SRC_LIST} ${PUB_HDR_LIST})
+target_link_libraries(vts-renderer ${VTS_BROWSER_BUILD_VISIBILITY} initializeRenderData ${MODULE_LIBRARIES})
+target_compile_definitions(vts-renderer ${VTS_BROWSER_BUILD_VISIBILITY} VTSR_BUILD_${VTS_BROWSER_BUILD_MACRO})
+target_compile_definitions(vts-renderer PRIVATE VTSR_INCLUDE_GL ${MODULE_DEFINITIONS})
+set_target_properties(vts-renderer PROPERTIES
+    MACOSX_FRAMEWORK_IDENTIFIER com.melown.vts-renderer
+    MACOSX_BUNDLE_BUNDLE_NAME vts-renderer
+    MACOSX_BUNDLE_BUNDLE_VERSION ${vts-browser_SO_VERSION}
+    PUBLIC_HEADER "${PUB_HDR_LIST}"
+)
+if(VTS_BROWSER_TYPE STREQUAL FRAMEWORK)
+    set_target_properties(vts-renderer PROPERTIES FRAMEWORK TRUE)
+endif()
 buildsys_library(vts-renderer)
 buildsys_soversion(vts-renderer ${vts-browser_SO_VERSION})
-buildsys_target_compile_definitions(vts-renderer ${MODULE_DEFINITIONS})
 buildsys_position_independent(${MODULE_LIBRARIES})
 buildsys_ide_groups(vts-renderer libs)
 
@@ -59,11 +64,13 @@ endif()
 
 if(NOT BUILDSYS_EMBEDDED)
 
+include(GNUInstallDirs)
+
 set(VTSRENDERER_LIBRARIES vts-renderer)
 
 # headers
 install(FILES ${PUB_HDR_LIST}
-    DESTINATION ${INCLUDE_INSTALL_DIR}/vts-renderer
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/vts-renderer
     COMPONENT renderer-dev
 )
 
@@ -71,24 +78,26 @@ install(FILES ${PUB_HDR_LIST}
 install(TARGETS vts-renderer
     COMPONENT renderer
     EXPORT vts-renderer
-    RUNTIME DESTINATION ${BIN_INSTALL_DIR}
-    LIBRARY DESTINATION ${LIB_INSTALL_DIR}
-    ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
-    FRAMEWORK DESTINATION ${LIB_INSTALL_DIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 install(EXPORT vts-renderer
-    DESTINATION ${SHARE_INSTALL_DIR}/VtsRenderer
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/VtsRenderer
     COMPONENT renderer-dev
 )
 
 # VtsRendererConfig.cmake and VtsRendererVersion.cmake
 include(CMakePackageConfigHelpers)
 
+set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
+
 configure_package_config_file(
     VtsRendererConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/VtsRendererConfig.cmake
-    INSTALL_DESTINATION ${SHARE_INSTALL_DIR}/VtsRenderer
+    INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/VtsRenderer
     PATH_VARS INCLUDE_INSTALL_DIR
 )
 
@@ -101,7 +110,7 @@ write_basic_package_version_file(
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/VtsRendererConfig.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/VtsRendererConfigVersion.cmake
-    DESTINATION ${SHARE_INSTALL_DIR}/VtsRenderer
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/VtsRenderer
     COMPONENT renderer-dev
 )
 

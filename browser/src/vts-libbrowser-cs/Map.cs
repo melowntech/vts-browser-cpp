@@ -25,6 +25,8 @@
  */
 
 using System;
+using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace vts
 {
@@ -44,8 +46,16 @@ namespace vts
         {
             handle = BrowserInterop.vtsMapCreate(createOptions, IntPtr.Zero);
             Util.CheckInterop();
+            GlobalMaps.Add(handle, this);
             AssignInternalDelegates();
             AssignInternalCallbacks();
+        }
+
+        private static Dictionary<IntPtr, Map> GlobalMaps = new Dictionary<IntPtr, Map>();
+        private static Map GetMap(IntPtr h)
+        {
+            Debug.Assert(GlobalMaps[h] != null);
+            return GlobalMaps[h];
         }
 
         public void SetMapConfigPath(string mapConfigPath, string authPath = "", string sriPath = "")
@@ -333,6 +343,7 @@ namespace vts
         {
             if (Handle != IntPtr.Zero)
             {
+                GlobalMaps.Remove(Handle);
                 BrowserInterop.vtsMapDestroy(Handle);
                 Util.CheckInterop();
                 handle = IntPtr.Zero;

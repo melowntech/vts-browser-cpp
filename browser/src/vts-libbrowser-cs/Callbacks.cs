@@ -28,6 +28,10 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+#if ENABLE_IL2CPP
+using AOT;
+#endif
+
 namespace vts
 {
     public partial class Map
@@ -81,168 +85,210 @@ namespace vts
         }
 
         private BrowserInterop.vtsEmptyCallbackType MapconfigAvailableDelegate;
-        private void MapconfigAvailableCallback(IntPtr h)
+#if ENABLE_IL2CPP
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsEmptyCallbackType))]
+#endif
+        private static void MapconfigAvailableCallback(IntPtr h)
         {
-            Debug.Assert(h == Handle);
-            if (EventMapconfigAvailable != null)
-                EventMapconfigAvailable.Invoke();
+            Map m = GetMap(h);
+            if (m.EventMapconfigAvailable != null)
+                m.EventMapconfigAvailable.Invoke();
         }
 
         private BrowserInterop.vtsEmptyCallbackType MapconfigReadyDelegate;
-        private void MapconfigReadyCallback(IntPtr h)
+#if ENABLE_IL2CPP
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsEmptyCallbackType))]
+#endif
+        private static void MapconfigReadyCallback(IntPtr h)
         {
-            Debug.Assert(h == Handle);
-            if (EventMapconfigReady != null)
-                EventMapconfigReady.Invoke();
+            Map m = GetMap(h);
+            if (m.EventMapconfigReady != null)
+                m.EventMapconfigReady.Invoke();
         }
 
         private BrowserInterop.vtsDoubleArrayCallbackType CameraEyeDelegate;
-        private void CameraEyeCallback(IntPtr h, IntPtr values)
+#if ENABLE_IL2CPP
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))]
+#endif
+        private static void CameraEyeCallback(IntPtr h, IntPtr values)
         {
-            Debug.Assert(h == Handle);
-            if (EventCameraEye != null)
+            Map m = GetMap(h);
+            if (m.EventCameraEye != null)
             {
                 double[] tmp = new double[3];
                 Marshal.Copy(values, tmp, 0, 3);
-                EventCameraEye.Invoke(ref tmp);
+                m.EventCameraEye.Invoke(ref tmp);
                 Util.CheckArray(tmp, 3);
                 Marshal.Copy(tmp, 0, values, 3);
             }
         }
 
         private BrowserInterop.vtsDoubleArrayCallbackType CameraTargetDelegate;
-        private void CameraTargetCallback(IntPtr h, IntPtr values)
+#if ENABLE_IL2CPP
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))]
+#endif
+        private static void CameraTargetCallback(IntPtr h, IntPtr values)
         {
-            Debug.Assert(h == Handle);
-            if (EventCameraTarget != null)
+            Map m = GetMap(h);
+            if (m.EventCameraTarget != null)
             {
                 double[] tmp = new double[3];
                 Marshal.Copy(values, tmp, 0, 3);
-                EventCameraTarget.Invoke(ref tmp);
+                m.EventCameraTarget.Invoke(ref tmp);
                 Util.CheckArray(tmp, 3);
                 Marshal.Copy(tmp, 0, values, 3);
             }
         }
 
         private BrowserInterop.vtsDoubleArrayCallbackType CameraUpDelegate;
-        private void CameraUpCallback(IntPtr h, IntPtr values)
+#if ENABLE_IL2CPP
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))]
+#endif
+        private static void CameraUpCallback(IntPtr h, IntPtr values)
         {
-            Debug.Assert(h == Handle);
-            if (EventCameraUp != null)
+            Map m = GetMap(h);
+            if (m.EventCameraUp != null)
             {
                 double[] tmp = new double[3];
                 Marshal.Copy(values, tmp, 0, 3);
-                EventCameraUp.Invoke(ref tmp);
+                m.EventCameraUp.Invoke(ref tmp);
                 Util.CheckArray(tmp, 3);
                 Marshal.Copy(tmp, 0, values, 3);
             }
         }
 
         private BrowserInterop.vtsDoubleArrayCallbackType CameraFovAspectNearFarDelegate;
-        private void CameraFovAspectNearFarCallback(IntPtr h, IntPtr values)
+#if ENABLE_IL2CPP
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))]
+#endif
+        private static void CameraFovAspectNearFarCallback(IntPtr h, IntPtr values)
         {
-            Debug.Assert(h == Handle);
-            if (EventCameraFovAspectNearFar != null)
+            Map m = GetMap(h);
+            if (m.EventCameraFovAspectNearFar != null)
             {
                 double[] tmp = new double[4];
                 Marshal.Copy(values, tmp, 0, 4);
-                EventCameraFovAspectNearFar.Invoke(ref tmp[0], ref tmp[1], ref tmp[2], ref tmp[3]);
+                m.EventCameraFovAspectNearFar.Invoke(ref tmp[0], ref tmp[1], ref tmp[2], ref tmp[3]);
                 Marshal.Copy(tmp, 0, values, 4);
             }
         }
 
         private BrowserInterop.vtsDoubleArrayCallbackType CameraViewDelegate;
-        private void CameraViewCallback(IntPtr h, IntPtr values)
+#if ENABLE_IL2CPP
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))]
+#endif
+        private static void CameraViewCallback(IntPtr h, IntPtr values)
         {
-            Debug.Assert(h == Handle);
-            if (EventCameraView != null)
+            Map m = GetMap(h);
+            if (m.EventCameraView != null)
             {
                 double[] tmp = new double[16];
                 Marshal.Copy(values, tmp, 0, 16);
-                EventCameraView.Invoke(ref tmp);
+                m.EventCameraView.Invoke(ref tmp);
                 Util.CheckArray(tmp, 16);
                 Marshal.Copy(tmp, 0, values, 16);
             }
         }
 
         private BrowserInterop.vtsDoubleArrayCallbackType CameraProjDelegate;
-        private void CameraProjCallback(IntPtr h, IntPtr values)
+#if ENABLE_IL2CPP
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))]
+#endif
+        private static void CameraProjCallback(IntPtr h, IntPtr values)
         {
-            Debug.Assert(h == Handle);
-            if (EventCameraProj != null)
+            Map m = GetMap(h);
+            if (m.EventCameraProj != null)
             {
                 double[] tmp = new double[16];
                 Marshal.Copy(values, tmp, 0, 16);
-                EventCameraProj.Invoke(ref tmp);
+                m.EventCameraProj.Invoke(ref tmp);
                 Util.CheckArray(tmp, 16);
                 Marshal.Copy(tmp, 0, values, 16);
             }
         }
 
         private BrowserInterop.vtsDoubleArrayCallbackType CollidersCenterDelegate;
-        private void CollidersCenterCallback(IntPtr h, IntPtr values)
+#if ENABLE_IL2CPP
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))]
+#endif
+        private static void CollidersCenterCallback(IntPtr h, IntPtr values)
         {
-            Debug.Assert(h == Handle);
-            if (EventCollidersCenter != null)
+            Map m = GetMap(h);
+            if (m.EventCollidersCenter != null)
             {
                 double[] tmp = new double[3];
                 Marshal.Copy(values, tmp, 0, 3);
-                EventCollidersCenter.Invoke(ref tmp);
+                m.EventCollidersCenter.Invoke(ref tmp);
                 Util.CheckArray(tmp, 3);
                 Marshal.Copy(tmp, 0, values, 3);
             }
         }
 
         private BrowserInterop.vtsDoubleCallbackType CollidersDistanceDelegate;
-        private void CollidersDistanceCallback(IntPtr h, ref double value)
+#if ENABLE_IL2CPP
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleCallbackType))]
+#endif
+        private static void CollidersDistanceCallback(IntPtr h, ref double value)
         {
-            Debug.Assert(h == Handle);
-            if (EventCollidersDistance != null)
-                EventCollidersDistance.Invoke(ref value);
+            Map m = GetMap(h);
+            if (m.EventCollidersDistance != null)
+                m.EventCollidersDistance.Invoke(ref value);
         }
 
         private BrowserInterop.vtsUint32CallbackType CollidersLodDelegate;
-        private void CollidersLodCallback(IntPtr h, ref uint value)
+#if ENABLE_IL2CPP
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsUint32CallbackType))]
+#endif
+        private static void CollidersLodCallback(IntPtr h, ref uint value)
         {
-            Debug.Assert(h == Handle);
-            if (EventCollidersLod != null)
-                EventCollidersLod.Invoke(ref value);
+            Map m = GetMap(h);
+            if (m.EventCollidersLod != null)
+                m.EventCollidersLod.Invoke(ref value);
         }
 
         private BrowserInterop.vtsResourceCallbackType LoadTextureDelegate;
-        private void LoadTextureCallback(IntPtr h, IntPtr r)
+#if ENABLE_IL2CPP
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsResourceCallbackType))]
+#endif
+        private static void LoadTextureCallback(IntPtr h, IntPtr r)
         {
-            Debug.Assert(h == Handle);
-            if (EventLoadTexture != null)
+            Map m = GetMap(h);
+            if (m.EventLoadTexture != null)
             {
                 Texture t = new Texture();
                 t.Load(r);
                 BrowserInterop.vtsSetResourceMemoryCost(r, 0, (uint)t.data.Length);
                 Util.CheckInterop();
-                GCHandle hnd = GCHandle.Alloc(EventLoadTexture.Invoke(t));
-                BrowserInterop.vtsSetResourceUserData(r, GCHandle.ToIntPtr(hnd), UnloadResourceDelegate);
+                GCHandle hnd = GCHandle.Alloc(m.EventLoadTexture.Invoke(t));
+                BrowserInterop.vtsSetResourceUserData(r, GCHandle.ToIntPtr(hnd), m.UnloadResourceDelegate);
                 Util.CheckInterop();
             }
         }
 
         private BrowserInterop.vtsResourceCallbackType LoadMeshDelegate;
-        private void LoadMeshCallback(IntPtr h, IntPtr r)
+#if ENABLE_IL2CPP
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsResourceCallbackType))]
+#endif
+        private static void LoadMeshCallback(IntPtr h, IntPtr r)
         {
-            Debug.Assert(h == Handle);
-            if (EventLoadMesh != null)
+            Map m = GetMap(h);
+            if (m.EventLoadMesh != null)
             {
-                Mesh m = new Mesh();
-                m.Load(r);
-                BrowserInterop.vtsSetResourceMemoryCost(r, 0, (uint)(m.vertices == null ? 0 : m.vertices.Length) + (uint)(m.indices == null ? 0 : m.indices.Length) * 2);
+                Mesh msh = new Mesh();
+                msh.Load(r);
+                BrowserInterop.vtsSetResourceMemoryCost(r, 0, (uint)(msh.vertices == null ? 0 : msh.vertices.Length) + (uint)(msh.indices == null ? 0 : msh.indices.Length) * 2);
                 Util.CheckInterop();
-                GCHandle hnd = GCHandle.Alloc(EventLoadMesh.Invoke(m));
-                BrowserInterop.vtsSetResourceUserData(r, GCHandle.ToIntPtr(hnd), UnloadResourceDelegate);
+                GCHandle hnd = GCHandle.Alloc(m.EventLoadMesh.Invoke(msh));
+                BrowserInterop.vtsSetResourceUserData(r, GCHandle.ToIntPtr(hnd), m.UnloadResourceDelegate);
                 Util.CheckInterop();
             }
         }
 
         private BrowserInterop.vtsResourceDeleterCallbackType UnloadResourceDelegate;
-        private void UnloadResourceCallback(IntPtr ptr)
+#if ENABLE_IL2CPP
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsResourceDeleterCallbackType))]
+#endif
+        private static void UnloadResourceCallback(IntPtr ptr)
         {
             GCHandle hnd = GCHandle.FromIntPtr(ptr);
             object obj = hnd.Target;

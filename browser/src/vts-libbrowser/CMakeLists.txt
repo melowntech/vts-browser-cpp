@@ -135,15 +135,21 @@ set(DATA_LIST
 )
 
 buildsys_pack_data(initializeBrowserData)
-add_library(vts-browser ${VTS_LIBS_TYPE} ${SRC_LIST} ${PUB_HDR_LIST})
-target_compile_definitions(vts-browser ${VTS_LIBS_VISIBILITY} VTS_BUILD_${VTS_LIBS_TYPE})
-target_link_libraries(vts-browser ${VTS_LIBS_VISIBILITY} initializeBrowserData ${MODULE_LIBRARIES} ${EXTRA_LIB_DEPS})
-set_target_properties(vts-browser PROPERTIES PUBLIC_HEADER "${PUB_HDR_LIST}")
-set_target_properties(vts-browser PROPERTIES FRAMEWORK TRUE)
-set_target_properties(vts-browser PROPERTIES BUNDLE TRUE)
+add_library(vts-browser ${VTS_BROWSER_BUILD_LIBRARY} ${SRC_LIST} ${PUB_HDR_LIST})
+target_compile_definitions(vts-browser ${VTS_BROWSER_BUILD_VISIBILITY} VTS_BUILD_${VTS_BROWSER_BUILD_MACRO})
+target_compile_definitions(vts-browser PRIVATE ${MODULE_DEFINITIONS})
+target_link_libraries(vts-browser ${VTS_BROWSER_BUILD_VISIBILITY} initializeBrowserData ${MODULE_LIBRARIES} ${EXTRA_LIB_DEPS})
+set_target_properties(vts-browser PROPERTIES
+    MACOSX_FRAMEWORK_IDENTIFIER com.melown.vts-browser
+    MACOSX_BUNDLE_BUNDLE_NAME vts-browser
+    MACOSX_BUNDLE_BUNDLE_VERSION ${vts-browser_SO_VERSION}
+    PUBLIC_HEADER "${PUB_HDR_LIST}"
+)
+if(VTS_BROWSER_TYPE STREQUAL FRAMEWORK)
+    set_target_properties(vts-browser PROPERTIES FRAMEWORK TRUE)
+endif()
 buildsys_library(vts-browser)
 buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})
-buildsys_target_compile_definitions(vts-browser ${MODULE_DEFINITIONS})
 buildsys_position_independent(${MODULE_LIBRARIES})
 buildsys_ide_groups(vts-browser libs)
 
@@ -159,11 +165,13 @@ endif()
 
 if(NOT BUILDSYS_EMBEDDED)
 
+include(GNUInstallDirs)
+
 set(VTSBROWSER_LIBRARIES vts-browser)
 
 # headers
 install(FILES ${PUB_HDR_LIST}
-    DESTINATION ${INCLUDE_INSTALL_DIR}/vts-browser
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/vts-browser
     COMPONENT browser-dev
 )
 
@@ -171,24 +179,26 @@ install(FILES ${PUB_HDR_LIST}
 install(TARGETS vts-browser
     COMPONENT browser
     EXPORT vts-browser
-    RUNTIME DESTINATION ${BIN_INSTALL_DIR}
-    LIBRARY DESTINATION ${LIB_INSTALL_DIR}
-    ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
-    FRAMEWORK DESTINATION ${LIB_INSTALL_DIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 install(EXPORT vts-browser
-    DESTINATION ${SHARE_INSTALL_DIR}/VtsBrowser
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/VtsBrowser
     COMPONENT browser-dev
 )
 
 # VtsBrowserConfig.cmake and VtsBrowserVersion.cmake
 include(CMakePackageConfigHelpers)
 
+set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
+
 configure_package_config_file(
     VtsBrowserConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfig.cmake
-    INSTALL_DESTINATION ${SHARE_INSTALL_DIR}/VtsBrowser
+    INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/VtsBrowser
     PATH_VARS INCLUDE_INSTALL_DIR
 )
 
@@ -201,7 +211,7 @@ write_basic_package_version_file(
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfig.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfigVersion.cmake
-    DESTINATION ${SHARE_INSTALL_DIR}/VtsBrowser
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/VtsBrowser
     COMPONENT browser-dev
 )
 

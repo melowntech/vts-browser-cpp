@@ -35,7 +35,11 @@ namespace vts
 	public static class BrowserInterop
 	{
 
+#if ENABLE_IL2CPP
+	const string LibName = "__Internal";
+#else
 	const string LibName = "vts-browser";
+#endif
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void vtsResourceCallbackType(IntPtr map, IntPtr resource);

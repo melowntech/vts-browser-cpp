@@ -7,17 +7,15 @@ if(APPLE)
     cmake_minimum_required(VERSION 3.9.1 FATAL_ERROR)
 endif()
 
-cmake_policy(SET CMP0042 NEW) # use rpath
-
 # by default, this is OSS build (can be overriden by customer machinery)
 set(BUILDSYS_DEFAULT_CUSTOMER_NAME oss)
 include(buildsys/cmake/buildsys.cmake)
 buildsys_fix_symlinks(${CMAKE_CURRENT_SOURCE_DIR})
 
-# Bump shared libraries version here
+# bump shared libraries version here
 set(vts-browser_SO_VERSION 0.0.0)
 
-# cmake functions
+# include additional buildsys functions
 include(cmake/buildsys_ide_groups.cmake)
 include(cmake/buildsys_pack_data.cmake)
 
@@ -68,26 +66,19 @@ buildsys_nobuild_target(vts-libs)
 add_subdirectory(src/vts-libs)
 buildsys_ide_groups(vts-libs-nucleus deps)
 
-# install paths
-set(INCLUDE_INSTALL_DIR include)
-set(LIB_INSTALL_DIR lib)
-set(BIN_INSTALL_DIR bin)
-set(SHARE_INSTALL_DIR share)
-
 # libraries type
-if(BUILDSYS_EMBEDDED)
-    set(VTS_LIBS_TYPE_DEFAULT STATIC)
+set(VTS_BROWSER_TYPE SHARED CACHE STRING "Type of browser libraries")
+set_property(CACHE VTS_BROWSER_TYPE PROPERTY STRINGS STATIC SHARED MODULE FRAMEWORK)
+set(VTS_BROWSER_BUILD_LIBRARY ${VTS_BROWSER_TYPE})
+if(VTS_BROWSER_TYPE STREQUAL STATIC)
+    set(VTS_BROWSER_BUILD_VISIBILITY PUBLIC)
+    set(VTS_BROWSER_BUILD_MACRO STATIC)
 else()
-    set(VTS_LIBS_TYPE_DEFAULT SHARED)
+    set(VTS_BROWSER_BUILD_VISIBILITY PRIVATE)
+    set(VTS_BROWSER_BUILD_MACRO SHARED)
 endif()
-set(VTS_LIBS_TYPE ${VTS_LIBS_TYPE_DEFAULT} CACHE STRING "Type of libraries")
-set_property(CACHE VTS_LIBS_TYPE PROPERTY STRINGS STATIC SHARED MODULE)
-if(VTS_LIBS_TYPE STREQUAL STATIC)
-    set(VTS_LIBS_VISIBILITY PUBLIC)
-    set(VTS_LIBS_BUILD_TYPE STATIC)
-else()
-    set(VTS_LIBS_VISIBILITY PRIVATE)
-    set(VTS_LIBS_BUILD_TYPE SHARED) # module is shared too
+if(VTS_BROWSER_TYPE STREQUAL FRAMEWORK)
+    set(VTS_BROWSER_BUILD_LIBRARY SHARED)
 endif()
 
 # vts browser library

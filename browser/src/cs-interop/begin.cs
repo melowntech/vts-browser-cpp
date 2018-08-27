@@ -35,5 +35,9 @@ namespace vts
 	public static class CLASSNAME
 	{
 
+#if ENABLE_IL2CPP
+	const string LibName = "__Internal";
+#else
 	const string LibName = "LIBNAME";
+#endif
 

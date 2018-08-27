@@ -72,7 +72,7 @@ add_subdirectory(src/vts-libs)
 buildsys_ide_groups(vts-libs-nucleus deps)
 
 # libraries type
-set(VTS_BROWSER_TYPE SHARED CACHE STRING "Type of browser libraries")
+set(VTS_BROWSER_TYPE FRAMEWORK CACHE STRING "Type of browser libraries")
 set_property(CACHE VTS_BROWSER_TYPE PROPERTY STRINGS STATIC SHARED MODULE FRAMEWORK)
 set(VTS_BROWSER_BUILD_LIBRARY ${VTS_BROWSER_TYPE})
 if(VTS_BROWSER_TYPE STREQUAL STATIC)

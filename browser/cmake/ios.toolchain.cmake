@@ -3,16 +3,16 @@ message(STATUS "***************************")
 message(STATUS "*** Using ios toolchain ***")
 message(STATUS "***************************")
 
-# Standard settings
+# standard settings
 set(CMAKE_CROSSCOMPILING TRUE)
 set(BUILDSYS_IOS TRUE)
 set(BUILDSYS_EMBEDDED TRUE)
 
-# Setup iOS platform unless specified manually with IOS_PLATFORM
+# setup iOS platform unless specified manually with IOS_PLATFORM
 if(NOT DEFINED IOS_PLATFORM)
     set(IOS_PLATFORM "iphoneos")
 endif()
-# Check the platform selection and setup for developer root
+# check the platform selection and setup for developer root
 if(IOS_PLATFORM STREQUAL "iphoneos")
     set(CMAKE_XCODE_EFFECTIVE_PLATFORMS "-iphoneos")
     set(CMAKE_OSX_ARCHITECTURES arm64)
@@ -23,8 +23,9 @@ else()
     message(FATAL_ERROR "Unsupported IOS_PLATFORM value selected. Please choose iphoneos or iphonesimulator")
 endif()
 set(CMAKE_SYSTEM_PROCESSOR ${CMAKE_OSX_ARCHITECTURES})
+set(CMAKE_XCODE_ATTRIBUTE_ARCHS ${CMAKE_OSX_ARCHITECTURES})
 
-# Find compiler, ar and sysroot
+# find compiler, ar and sysroot
 execute_process(COMMAND xcode-select -print-path OUTPUT_VARIABLE CMAKE_XCODE_DEVELOPER_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND xcrun -sdk ${IOS_PLATFORM} -find gcc OUTPUT_VARIABLE CMAKE_C_COMPILER OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND xcrun -sdk ${IOS_PLATFORM} -find g++ OUTPUT_VARIABLE CMAKE_CXX_COMPILER OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -46,7 +47,7 @@ set(CMAKE_SHARED_LIBRARY_RUNTIME_C_FLAG -Wl,-rpath,)
 set(CMAKE_MACOSX_BUNDLE TRUE)
 set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "NO")
 
-# Set the find root to the iOS developer roots and to user defined paths
+# set the find root to the iOS developer roots and to user defined paths
 set(CMAKE_FIND_ROOT_PATH ${CMAKE_OSX_SYSROOT} ${CMAKE_IOS_SDK_ROOT} ${CMAKE_PREFIX_PATH})
 
 # set up the default search directories for frameworks

@@ -53,7 +53,21 @@ buildsys_ide_groups(vts-browser-ios apps)
 
 
 if(VTS_BROWSER_TYPE STREQUAL SHARED)
-    # todo
+    add_custom_command(TARGET vts-browser-ios POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E copy
+            "$<TARGET_FILE:vts-browser>"
+            "$<TARGET_FILE_DIR:vts-browser-ios>/$<TARGET_FILE_NAME:vts-browser>"
+        COMMAND "${CMAKE_COMMAND}" -E create_symlink
+            "$<TARGET_FILE_NAME:vts-browser>"
+            "$<TARGET_FILE_DIR:vts-browser-ios>/$<TARGET_SONAME_FILE_NAME:vts-browser>"
+        COMMAND "${CMAKE_COMMAND}" -E copy
+            "$<TARGET_FILE:vts-renderer>"
+            "$<TARGET_FILE_DIR:vts-browser-ios>/$<TARGET_FILE_NAME:vts-renderer>"
+        COMMAND "${CMAKE_COMMAND}" -E create_symlink
+            "$<TARGET_FILE_NAME:vts-renderer>"
+            "$<TARGET_FILE_DIR:vts-browser-ios>/$<TARGET_SONAME_FILE_NAME:vts-renderer>"
+        COMMENT "copy vts browser libraries to final bundle"
+    )
 endif()
 
 if(VTS_BROWSER_TYPE STREQUAL FRAMEWORK)

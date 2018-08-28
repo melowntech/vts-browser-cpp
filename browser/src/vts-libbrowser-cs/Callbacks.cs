@@ -86,9 +86,9 @@ namespace vts
 
         private BrowserInterop.vtsEmptyCallbackType MapconfigAvailableDelegate;
 #if ENABLE_IL2CPP
-        [MonoPInvokeCallback(typeof(BrowserInterop.vtsEmptyCallbackType))]
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsEmptyCallbackType))] static
 #endif
-        private static void MapconfigAvailableCallback(IntPtr h)
+        private void MapconfigAvailableCallback(IntPtr h)
         {
             Map m = GetMap(h);
             if (m.EventMapconfigAvailable != null)
@@ -97,9 +97,9 @@ namespace vts
 
         private BrowserInterop.vtsEmptyCallbackType MapconfigReadyDelegate;
 #if ENABLE_IL2CPP
-        [MonoPInvokeCallback(typeof(BrowserInterop.vtsEmptyCallbackType))]
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsEmptyCallbackType))] static
 #endif
-        private static void MapconfigReadyCallback(IntPtr h)
+        private void MapconfigReadyCallback(IntPtr h)
         {
             Map m = GetMap(h);
             if (m.EventMapconfigReady != null)
@@ -108,9 +108,9 @@ namespace vts
 
         private BrowserInterop.vtsDoubleArrayCallbackType CameraEyeDelegate;
 #if ENABLE_IL2CPP
-        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))]
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))] static
 #endif
-        private static void CameraEyeCallback(IntPtr h, IntPtr values)
+        private void CameraEyeCallback(IntPtr h, IntPtr values)
         {
             Map m = GetMap(h);
             if (m.EventCameraEye != null)
@@ -125,9 +125,9 @@ namespace vts
 
         private BrowserInterop.vtsDoubleArrayCallbackType CameraTargetDelegate;
 #if ENABLE_IL2CPP
-        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))]
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))] static
 #endif
-        private static void CameraTargetCallback(IntPtr h, IntPtr values)
+        private void CameraTargetCallback(IntPtr h, IntPtr values)
         {
             Map m = GetMap(h);
             if (m.EventCameraTarget != null)
@@ -142,9 +142,9 @@ namespace vts
 
         private BrowserInterop.vtsDoubleArrayCallbackType CameraUpDelegate;
 #if ENABLE_IL2CPP
-        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))]
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))] static
 #endif
-        private static void CameraUpCallback(IntPtr h, IntPtr values)
+        private void CameraUpCallback(IntPtr h, IntPtr values)
         {
             Map m = GetMap(h);
             if (m.EventCameraUp != null)
@@ -159,9 +159,9 @@ namespace vts
 
         private BrowserInterop.vtsDoubleArrayCallbackType CameraFovAspectNearFarDelegate;
 #if ENABLE_IL2CPP
-        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))]
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))] static
 #endif
-        private static void CameraFovAspectNearFarCallback(IntPtr h, IntPtr values)
+        private void CameraFovAspectNearFarCallback(IntPtr h, IntPtr values)
         {
             Map m = GetMap(h);
             if (m.EventCameraFovAspectNearFar != null)
@@ -175,9 +175,9 @@ namespace vts
 
         private BrowserInterop.vtsDoubleArrayCallbackType CameraViewDelegate;
 #if ENABLE_IL2CPP
-        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))]
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))] static
 #endif
-        private static void CameraViewCallback(IntPtr h, IntPtr values)
+        private void CameraViewCallback(IntPtr h, IntPtr values)
         {
             Map m = GetMap(h);
             if (m.EventCameraView != null)
@@ -192,9 +192,9 @@ namespace vts
 
         private BrowserInterop.vtsDoubleArrayCallbackType CameraProjDelegate;
 #if ENABLE_IL2CPP
-        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))]
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))] static
 #endif
-        private static void CameraProjCallback(IntPtr h, IntPtr values)
+        private void CameraProjCallback(IntPtr h, IntPtr values)
         {
             Map m = GetMap(h);
             if (m.EventCameraProj != null)
@@ -209,9 +209,9 @@ namespace vts
 
         private BrowserInterop.vtsDoubleArrayCallbackType CollidersCenterDelegate;
 #if ENABLE_IL2CPP
-        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))]
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleArrayCallbackType))] static
 #endif
-        private static void CollidersCenterCallback(IntPtr h, IntPtr values)
+        private void CollidersCenterCallback(IntPtr h, IntPtr values)
         {
             Map m = GetMap(h);
             if (m.EventCollidersCenter != null)
@@ -226,9 +226,9 @@ namespace vts
 
         private BrowserInterop.vtsDoubleCallbackType CollidersDistanceDelegate;
 #if ENABLE_IL2CPP
-        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleCallbackType))]
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsDoubleCallbackType))] static
 #endif
-        private static void CollidersDistanceCallback(IntPtr h, ref double value)
+        private void CollidersDistanceCallback(IntPtr h, ref double value)
         {
             Map m = GetMap(h);
             if (m.EventCollidersDistance != null)
@@ -237,9 +237,9 @@ namespace vts
 
         private BrowserInterop.vtsUint32CallbackType CollidersLodDelegate;
 #if ENABLE_IL2CPP
-        [MonoPInvokeCallback(typeof(BrowserInterop.vtsUint32CallbackType))]
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsUint32CallbackType))] static
 #endif
-        private static void CollidersLodCallback(IntPtr h, ref uint value)
+        private void CollidersLodCallback(IntPtr h, ref uint value)
         {
             Map m = GetMap(h);
             if (m.EventCollidersLod != null)
@@ -248,9 +248,9 @@ namespace vts
 
         private BrowserInterop.vtsResourceCallbackType LoadTextureDelegate;
 #if ENABLE_IL2CPP
-        [MonoPInvokeCallback(typeof(BrowserInterop.vtsResourceCallbackType))]
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsResourceCallbackType))] static
 #endif
-        private static void LoadTextureCallback(IntPtr h, IntPtr r)
+        private void LoadTextureCallback(IntPtr h, IntPtr r)
         {
             Map m = GetMap(h);
             if (m.EventLoadTexture != null)
@@ -267,9 +267,9 @@ namespace vts
 
         private BrowserInterop.vtsResourceCallbackType LoadMeshDelegate;
 #if ENABLE_IL2CPP
-        [MonoPInvokeCallback(typeof(BrowserInterop.vtsResourceCallbackType))]
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsResourceCallbackType))] static
 #endif
-        private static void LoadMeshCallback(IntPtr h, IntPtr r)
+        private void LoadMeshCallback(IntPtr h, IntPtr r)
         {
             Map m = GetMap(h);
             if (m.EventLoadMesh != null)
@@ -286,9 +286,9 @@ namespace vts
 
         private BrowserInterop.vtsResourceDeleterCallbackType UnloadResourceDelegate;
 #if ENABLE_IL2CPP
-        [MonoPInvokeCallback(typeof(BrowserInterop.vtsResourceDeleterCallbackType))]
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsResourceDeleterCallbackType))] static
 #endif
-        private static void UnloadResourceCallback(IntPtr ptr)
+        private void UnloadResourceCallback(IntPtr ptr)
         {
             GCHandle hnd = GCHandle.FromIntPtr(ptr);
             object obj = hnd.Target;

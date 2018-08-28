@@ -46,17 +46,27 @@ namespace vts
         {
             handle = BrowserInterop.vtsMapCreate(createOptions, IntPtr.Zero);
             Util.CheckInterop();
+#if ENABLE_IL2CPP
             GlobalMaps.Add(handle, this);
+#endif
             AssignInternalDelegates();
             AssignInternalCallbacks();
         }
 
+#if ENABLE_IL2CPP
         private static Dictionary<IntPtr, Map> GlobalMaps = new Dictionary<IntPtr, Map>();
         private static Map GetMap(IntPtr h)
         {
             Debug.Assert(GlobalMaps[h] != null);
             return GlobalMaps[h];
         }
+#else
+        private Map GetMap(IntPtr h)
+        {
+            Debug.Assert(Handle == h);
+            return this;
+        }
+#endif
 
         public void SetMapConfigPath(string mapConfigPath, string authPath = "", string sriPath = "")
         {
@@ -343,7 +353,9 @@ namespace vts
         {
             if (Handle != IntPtr.Zero)
             {
+#if ENABLE_IL2CPP
                 GlobalMaps.Remove(Handle);
+#endif
                 BrowserInterop.vtsMapDestroy(Handle);
                 Util.CheckInterop();
                 handle = IntPtr.Zero;

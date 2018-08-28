@@ -145,8 +145,11 @@ set_target_properties(vts-browser PROPERTIES
     MACOSX_BUNDLE_BUNDLE_VERSION ${vts-browser_SO_VERSION}
     PUBLIC_HEADER "${PUB_HDR_LIST}"
 )
-if(VTS_BROWSER_TYPE STREQUAL FRAMEWORK)
+if(VTS_BROWSER_TYPE STREQUAL "FRAMEWORK")
     set_target_properties(vts-browser PROPERTIES FRAMEWORK TRUE)
+endif()
+if(VTS_BROWSER_TYPE STREQUAL "MODULE")
+    set_target_properties(vts-browser PROPERTIES BUNDLE TRUE)
 endif()
 buildsys_library(vts-browser)
 buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})

@@ -8,6 +8,7 @@ set(GEN_CODE "${GEN_CODE}namespace vts { namespace detail { void addInternalMemo
 set(GEN_CODE "${GEN_CODE}using namespace vts::detail\;\n")
 set(GEN_CODE "${GEN_CODE}void ${NAME}()\n{\n")
 foreach(path ${DATA_LIST})
+    set_source_files_properties(${path} PROPERTIES HEADER_FILE_ONLY TRUE) # do not compile that file
     string(REPLACE "/" "_" name ${path})
     string(REPLACE "." "_" name ${name})
     string(REPLACE "-" "_" name ${name})

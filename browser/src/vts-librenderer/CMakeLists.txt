@@ -35,7 +35,7 @@ set(DATA_LIST
 )
 
 buildsys_pack_data(initializeRenderData)
-add_library(vts-renderer ${VTS_BROWSER_BUILD_LIBRARY} ${SRC_LIST} ${PUB_HDR_LIST})
+add_library(vts-renderer ${VTS_BROWSER_BUILD_LIBRARY} ${SRC_LIST} ${PUB_HDR_LIST} ${DATA_LIST})
 target_link_libraries(vts-renderer ${VTS_BROWSER_BUILD_VISIBILITY} initializeRenderData ${MODULE_LIBRARIES})
 target_compile_definitions(vts-renderer ${VTS_BROWSER_BUILD_VISIBILITY} VTSR_BUILD_${VTS_BROWSER_BUILD_MACRO})
 target_compile_definitions(vts-renderer PRIVATE VTSR_INCLUDE_GL ${MODULE_DEFINITIONS})

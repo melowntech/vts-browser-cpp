@@ -652,6 +652,7 @@ void MapImpl::travModeBalanced(TraverseNode *trav, bool renderOnly)
         if (trav->surface && trav->rendersEmpty())
             travDetermineDraws(trav);
         renderOnly = true;
+        gridPreloadRequest(trav);
     }
 
     if (renderOnly && !trav->rendersEmpty())

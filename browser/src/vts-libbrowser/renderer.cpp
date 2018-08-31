@@ -438,6 +438,7 @@ void MapImpl::renderTickRender()
         setCurrentTraversalMode(it->getTraverseMode());
         traverseRender(it->traverseRoot.get());
     }
+    gridPreloadProcess();
     for (const RenderTask &r : navigation.renders)
         draws.infographics.emplace_back(r, this);
     sortOpaqueFrontToBack();

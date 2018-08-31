@@ -72,6 +72,7 @@ public:
     uint32 resourcesPreparing;
     uint32 currentNodeMetaUpdates;
     uint32 currentNodeDrawsUpdates;
+    uint32 currentGridNodes;
     NavigationMode currentNavigationMode;
 };
 

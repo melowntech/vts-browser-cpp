@@ -145,6 +145,8 @@ MapOptions::MapOptions() :
     maxFetchRetries(5),
     fetchFirstRetryTimeOffset(1),
     fixedTraversalLod(15),
+    balancedGridLodOffset(5),
+    balancedGridNeighborsDistance(1),
     navigationType(NavigationType::Quick),
     navigationMode(NavigationMode::Seamless),
     traverseModeSurfaces(TraverseMode::Balanced),
@@ -201,6 +203,8 @@ void MapOptions::applyJson(const std::string &json)
     AJ(maxFetchRetries, asUInt);
     AJ(fetchFirstRetryTimeOffset, asUInt);
     AJ(fixedTraversalLod, asUInt);
+    AJ(balancedGridLodOffset, asUInt);
+    AJ(balancedGridNeighborsDistance, asUInt);
     AJE(navigationType, NavigationType);
     AJE(navigationMode, NavigationMode);
     AJE(traverseModeSurfaces, TraverseMode);
@@ -249,6 +253,8 @@ std::string MapOptions::toJson() const
     TJ(maxFetchRetries, asUInt);
     TJ(fetchFirstRetryTimeOffset, asUInt);
     TJ(fixedTraversalLod, asUInt);
+    TJ(balancedGridLodOffset, asUInt);
+    TJ(balancedGridNeighborsDistance, asUInt);
     TJE(navigationType, NavigationType);
     TJE(navigationMode, NavigationMode);
     TJE(traverseModeSurfaces, TraverseMode);

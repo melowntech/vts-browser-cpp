@@ -115,6 +115,7 @@ set(SRC_LIST
     navigationPiha.cpp
     options.cpp
     renderer.cpp
+    rendererGrids.cpp
     rendererTraversal.cpp
     search.cpp
     sri.cpp

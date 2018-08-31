@@ -426,9 +426,11 @@ public:
             char buffer[256];
 
             // camera control sensitivity
-            if (nk_tree_push(&ctx, NK_TREE_TAB, "Mouse Sensitivity", NK_MINIMIZED))
+            if (nk_tree_push(&ctx, NK_TREE_TAB, "Mouse Sensitivity",
+                NK_MINIMIZED))
             {
-                float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
+                float ratio[] = { width * 0.4f, width * 0.45f,
+                    width * 0.15f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
                 ControlOptions &co = o.controlOptions;
 
@@ -473,7 +475,8 @@ public:
                 {
                     try
                     {
-                        writeLocalFileBuffer(controlOptionsPath(), Buffer(co.toJson()));
+                        writeLocalFileBuffer(controlOptionsPath(),
+                            Buffer(co.toJson()));
                     }
                     catch(...)
                     {
@@ -486,7 +489,8 @@ public:
                 {
                     try
                     {
-                        co.applyJson(readLocalFileBuffer(controlOptionsPath()).str());
+                        co.applyJson(readLocalFileBuffer(
+                            controlOptionsPath()).str());
                     }
                     catch(...)
                     {
@@ -606,8 +610,9 @@ public:
                         for (unsigned i = 0; i < sizeof(traverseModeNames)
                              / sizeof(traverseModeNames[0]); i++)
                         {
-                            if (nk_combo_item_label(&ctx, traverseModeNames[i],
-                                                    NK_TEXT_LEFT))
+                            if (nk_combo_item_label(&ctx,
+                                    traverseModeNames[i],
+                                    NK_TEXT_LEFT))
                                 o.traverseModeSurfaces = (TraverseMode)i;
                         }
                         nk_combo_end(&ctx);
@@ -623,8 +628,9 @@ public:
                         for (unsigned i = 0; i < sizeof(traverseModeNames)
                              / sizeof(traverseModeNames[0]); i++)
                         {
-                            if (nk_combo_item_label(&ctx, traverseModeNames[i],
-                                                    NK_TEXT_LEFT))
+                            if (nk_combo_item_label(&ctx,
+                                               traverseModeNames[i],
+                                               NK_TEXT_LEFT))
                                 o.traverseModeGeodata = (TraverseMode)i;
                         }
                         nk_combo_end(&ctx);
@@ -632,8 +638,27 @@ public:
                 }
 
                 {
-                    float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
+                    float ratio[] = { width * 0.4f, width * 0.45f,
+                        width * 0.15f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
+
+                    // balanced grids
+                    if (o.traverseModeSurfaces == TraverseMode::Balanced)
+                    {
+                        // balancedGridLodOffset
+                        nk_label(&ctx, "Grid offset:", NK_TEXT_LEFT);
+                        o.balancedGridLodOffset = nk_slide_int(&ctx,
+                            -1, o.balancedGridLodOffset, 10, 1);
+                        sprintf(buffer, "%d", o.balancedGridLodOffset);
+                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                        // balancedGridNeighborsDistance
+                        nk_label(&ctx, "Grid neighbors:", NK_TEXT_LEFT);
+                        o.balancedGridNeighborsDistance = nk_slide_int(&ctx,
+                            0, o.balancedGridNeighborsDistance, 3, 1);
+                        sprintf(buffer, "%d", o.balancedGridNeighborsDistance);
+                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                    }
 
                     // maxTexelToPixelScale
                     nk_label(&ctx, "Texel to pixel:", NK_TEXT_LEFT);
@@ -839,6 +864,7 @@ public:
 
                 S("GPU memory:", s.currentGpuMemUseKB / 1024, " MB");
                 S("RAM memory:", s.currentRamMemUseKB / 1024, " MB");
+                S("Grid nodes:", s.currentGridNodes, "");
                 S("Node meta updates:", s.currentNodeMetaUpdates, "");
                 S("Node draw updates:", s.currentNodeDrawsUpdates, "");
                 S("Preparing:", s.resourcesPreparing, "");

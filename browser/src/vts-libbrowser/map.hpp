@@ -511,6 +511,7 @@ public:
     boost::optional<SurfaceStack> tilesetStack;
 
     std::shared_ptr<TraverseNode> traverseRoot;
+    std::vector<TileId> gridLoadRequests;
 
     MapImpl *const map;
     Credits::Scope creditScope;
@@ -785,6 +786,10 @@ public:
     void traverseRender(TraverseNode *trav);
     void traverseClearing(TraverseNode *trav);
     void setCurrentTraversalMode(TraverseMode mode);
+    void gridPreloadRequest(TraverseNode *trav);
+    void gridPreloadProcess();
+    void gridPreloadProcess(TraverseNode *trav,
+                            const std::vector<TileId> &requests);
     void updateCamera();
     bool prerequisitesCheck();
     void sortOpaqueFrontToBack();

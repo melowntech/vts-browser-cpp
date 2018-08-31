@@ -185,6 +185,17 @@ public:
     // for colliders, it may be overriden from callback
     uint32 fixedTraversalLod;
 
+    // coarser lod offset for grids for use with balanced traversal
+    // -1 to disable grids entirely
+    uint32 balancedGridLodOffset;
+
+    // distance to neighbors for grids for use with balanced traversal
+    // 0: no neighbors
+    // 1: one layer of neighbors (8 total)
+    // 2: two layers (24 total)
+    // etc.
+    uint32 balancedGridNeighborsDistance;
+
     NavigationType navigationType;
     NavigationMode navigationMode;
     TraverseMode traverseModeSurfaces;

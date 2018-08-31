@@ -61,6 +61,7 @@ std::string MapStatistics::toJson() const
     TJ(resourcesPreparing, asUInt);
     TJ(currentNodeMetaUpdates, asUInt);
     TJ(currentNodeDrawsUpdates, asUInt);
+    TJ(currentGridNodes, asUInt);
     TJE(currentNavigationMode, NavigationMode);
     return jsonToString(v);
 }
@@ -81,6 +82,7 @@ void MapStatistics::resetAll()
     currentRamMemUseKB = 0;
     resourcesActive = 0;
     resourcesPreparing = 0;
+    currentGridNodes = 0;
     currentNavigationMode = (NavigationMode)0;
 }
 

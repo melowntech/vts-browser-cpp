@@ -232,6 +232,7 @@ public:
     bool debugRenderSurrogates;
     bool debugRenderMeshBoxes;
     bool debugRenderTileBoxes;
+    bool debugRenderSubtileBoxes;
     bool debugRenderObjectPosition;
     bool debugRenderTargetPosition;
     bool debugRenderAltitudeShiftCorners;

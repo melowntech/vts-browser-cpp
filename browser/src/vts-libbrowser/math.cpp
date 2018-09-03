@@ -133,6 +133,13 @@ vec3 max(const vec3 &a, const vec3 &b)
                 std::max(a(2), b(2)));
 }
 
+vec3 interpolate(vec3 a, vec3 b, double f)
+{
+    return vec3(interpolate(a(0), b(0), f),
+                interpolate(a(1), b(1), f),
+                interpolate(a(2), b(2), f));
+}
+
 mat4 frustumMatrix(double left, double right,
                    double bottom, double top,
                    double near_, double far_)

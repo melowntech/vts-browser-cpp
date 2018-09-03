@@ -204,16 +204,19 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
     statistics.nodesRenderedPerLod[std::min<uint32>(
         trav->nodeInfo.nodeId().lod, MapStatistics::MaxLods - 1)]++;
 
+    bool isSubNode = uvClip(0) > 0 || uvClip(1) > 0
+                  || uvClip(2) < 1 || uvClip(3) < 1;
+
     // draws
     for (const RenderTask &r : trav->opaque)
-        draws.opaque.emplace_back(r, uvClip.data(), this);
+        draws.opaque.emplace_back(this, r, uvClip.data());
     for (const RenderTask &r : trav->transparent)
-        draws.transparent.emplace_back(r, uvClip.data(), this);
+        draws.transparent.emplace_back(this, r, uvClip.data());
     for (const RenderTask &r : trav->geodata)
-        draws.geodata.emplace_back(r, uvClip.data(), this);
-    if (uvClip(0) <= 0 && uvClip(1) <= 0 && uvClip(2) >= 1 && uvClip(3) >= 1)
+        draws.geodata.emplace_back(this, r, uvClip.data());
+    if (!isSubNode)
         for (const RenderTask &r : trav->colliders)
-            draws.colliders.emplace_back(r, this);
+            draws.colliders.emplace_back(this, r);
 
     // surrogate
     if (options.debugRenderSurrogates && trav->surrogatePhys)
@@ -225,7 +228,7 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
                 * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
         task.color = vec3to4f(trav->surface->color, task.color(3));
         if (task.ready())
-            draws.infographics.emplace_back(task, this);
+            draws.infographics.emplace_back(this, task);
     }
 
     // mesh box
@@ -239,12 +242,13 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
             task.mesh->priority = std::numeric_limits<float>::infinity();
             task.color = vec3to4f(trav->surface->color, task.color(3));
             if (task.ready())
-                draws.infographics.emplace_back(task, this);
+                draws.infographics.emplace_back(this, task);
         }
     }
 
     // tile box
-    if (options.debugRenderTileBoxes)
+    if (options.debugRenderTileBoxes
+            || (options.debugRenderSubtileBoxes && isSubNode))
     {
         RenderTask task;
         task.mesh = getMesh("internal://data/meshes/line.obj");
@@ -266,20 +270,54 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
                 break;
             }
         }
+        static const uint32 cora[] = {
+            0, 0, 1, 2, 4, 4, 5, 6, 0, 1, 2, 3
+        };
+        static const uint32 corb[] = {
+            1, 2, 3, 3, 5, 6, 7, 7, 4, 5, 6, 7
+        };
         if (task.ready())
         {
-            static const uint32 cora[] = {
-                0, 0, 1, 2, 4, 4, 5, 6, 0, 1, 2, 3
-            };
-            static const uint32 corb[] = {
-                1, 2, 3, 3, 5, 6, 7, 7, 4, 5, 6, 7
-            };
-            for (uint32 i = 0; i < 12; i++)
+            // regular tile box
+            if (options.debugRenderTileBoxes)
             {
-                vec3 a = trav->cornersPhys[cora[i]];
-                vec3 b = trav->cornersPhys[corb[i]];
-                task.model = lookAt(a, b);
-                draws.infographics.emplace_back(task, this);
+                for (uint32 i = 0; i < 12; i++)
+                {
+                    vec3 a = trav->cornersPhys[cora[i]];
+                    vec3 b = trav->cornersPhys[corb[i]];
+                    task.model = lookAt(a, b);
+                    draws.infographics.emplace_back(this, task);
+                }
+            }
+            // sub tile box
+            if (options.debugRenderSubtileBoxes && isSubNode)
+            {
+                vec3 *cp = trav->cornersPhys;
+                vec3 cs1[8];
+                cs1[0] = interpolate(cp[0], cp[1], uvClip[0]);
+                cs1[1] = interpolate(cp[0], cp[1], uvClip[2]);
+                cs1[2] = interpolate(cp[2], cp[3], uvClip[0]);
+                cs1[3] = interpolate(cp[2], cp[3], uvClip[2]);
+                cs1[4] = interpolate(cp[4], cp[5], uvClip[0]);
+                cs1[5] = interpolate(cp[4], cp[5], uvClip[2]);
+                cs1[6] = interpolate(cp[6], cp[7], uvClip[0]);
+                cs1[7] = interpolate(cp[6], cp[7], uvClip[2]);
+                vec3 cs2[8];
+                cs2[0] = interpolate(cs1[0], cs1[2], uvClip[1]);
+                cs2[1] = interpolate(cs1[1], cs1[3], uvClip[1]);
+                cs2[2] = interpolate(cs1[0], cs1[2], uvClip[3]);
+                cs2[3] = interpolate(cs1[1], cs1[3], uvClip[3]);
+                cs2[4] = interpolate(cs1[4], cs1[6], uvClip[1]);
+                cs2[5] = interpolate(cs1[5], cs1[7], uvClip[1]);
+                cs2[6] = interpolate(cs1[4], cs1[6], uvClip[3]);
+                cs2[7] = interpolate(cs1[5], cs1[7], uvClip[3]);
+                for (uint32 i = 0; i < 12; i++)
+                {
+                    vec3 a = cs2[cora[i]];
+                    vec3 b = cs2[corb[i]];
+                    task.model = lookAt(a, b);
+                    draws.infographics.emplace_back(this, task);
+                }
             }
         }
     }
@@ -440,7 +478,7 @@ void MapImpl::renderTickRender()
     }
     gridPreloadProcess();
     for (const RenderTask &r : navigation.renders)
-        draws.infographics.emplace_back(r, this);
+        draws.infographics.emplace_back(this, r);
     sortOpaqueFrontToBack();
 }
 
@@ -631,7 +669,7 @@ void MapImpl::updateCamera()
                 vec3 a = corners[cora[i]];
                 vec3 b = corners[corb[i]];
                 task.model = lookAt(a, b);
-                draws.infographics.emplace_back(task, this);
+                draws.infographics.emplace_back(this, task);
             }
         }
     }
@@ -648,7 +686,7 @@ void MapImpl::updateCamera()
         r.model = translationMatrix(phys)
                 * scaleMatrix(pos.verticalExtent * 0.015);
         if (r.ready())
-            draws.infographics.emplace_back(r, this);
+            draws.infographics.emplace_back(this, r);
     }
 
     // render target position
@@ -663,7 +701,7 @@ void MapImpl::updateCamera()
         r.model = translationMatrix(phys)
                 * scaleMatrix(navigation.targetViewExtent * 0.015);
         if (r.ready())
-            draws.infographics.emplace_back(r, this);
+            draws.infographics.emplace_back(this, r);
     }
 
     // update draws camera

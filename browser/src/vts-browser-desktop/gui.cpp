@@ -700,13 +700,17 @@ public:
                 r.renderAtmosphere = nk_check_label(&ctx, "atmosphere",
                                                    r.renderAtmosphere);
 
-                // render mesh wire boxes
+                // render mesh boxes
                 o.debugRenderMeshBoxes = nk_check_label(&ctx, "mesh boxes",
                                                    o.debugRenderMeshBoxes);
 
-                // render tile corners
+                // render tile boxes
                 o.debugRenderTileBoxes = nk_check_label(&ctx, "tile boxes",
                                                     o.debugRenderTileBoxes);
+
+                // render subtile boxes
+                o.debugRenderSubtileBoxes = nk_check_label(&ctx,
+                    "subtile boxes", o.debugRenderSubtileBoxes);
 
                 // render surrogates
                 o.debugRenderSurrogates = nk_check_label(&ctx, "surrogates",
@@ -714,15 +718,16 @@ public:
 
                 // render objective position
                 o.debugRenderObjectPosition = nk_check_label(&ctx,
-                                "objective pos.", o.debugRenderObjectPosition);
+                            "objective pos.", o.debugRenderObjectPosition);
 
                 // render target position
                 o.debugRenderTargetPosition = nk_check_label(&ctx,
-                                "target pos.", o.debugRenderTargetPosition);
+                            "target pos.", o.debugRenderTargetPosition);
 
                 // render altitude shift corners
                 o.debugRenderAltitudeShiftCorners = nk_check_label(&ctx,
-                    "altitude shift corners", o.debugRenderAltitudeShiftCorners);
+                    "altitude shift corners",
+                    o.debugRenderAltitudeShiftCorners);
 
                 // flat shading
                 o.debugFlatShading = nk_check_label(&ctx, "flat shading",
@@ -864,7 +869,6 @@ public:
 
                 S("GPU memory:", s.currentGpuMemUseKB / 1024, " MB");
                 S("RAM memory:", s.currentRamMemUseKB / 1024, " MB");
-                S("Grid nodes:", s.currentGridNodes, "");
                 S("Node meta updates:", s.currentNodeMetaUpdates, "");
                 S("Node draw updates:", s.currentNodeDrawsUpdates, "");
                 S("Preparing:", s.resourcesPreparing, "");
@@ -895,6 +899,7 @@ public:
                 }
 
                 S("Total:", s.metaNodesTraversedTotal, "");
+                S("Grid nodes:", s.currentGridNodes, "");
 
                 nk_tree_pop(&ctx);
             }

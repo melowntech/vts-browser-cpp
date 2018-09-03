@@ -46,8 +46,8 @@ public:
     std::shared_ptr<void> texMask;
 
     DrawTask();
-    DrawTask(const RenderTask &r, const MapImpl *m);
-    DrawTask(const RenderTask &r, const float *uvClip, const MapImpl *m);
+    DrawTask(const MapImpl *m, const RenderTask &r);
+    DrawTask(const MapImpl *m, const RenderTask &r, const float *uvClip);
 };
 
 class VTS_API MapDraws

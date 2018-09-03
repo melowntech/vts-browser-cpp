@@ -3,7 +3,15 @@
 [VTS Browser CPP](https://github.com/melown/vts-browser-cpp) is a collection of libraries
 that bring VTS client capabilities to your native applications.
 
-## iOS Example App Preview
+## Examples
+
+### Unity 3D Integration Example
+
+[![Youtube Preview](https://raw.githubusercontent.com/Melown/vts-browser-unity-plugin/master/screenshots/aircraft.png)](https://www.youtube.com/watch?v=FuVA15Cj54k&feature=youtu.be)
+
+(Click the image to play)
+
+### iOS App Example
 
 [![Youtube Preview](https://raw.githubusercontent.com/wiki/Melown/vts-browser-cpp/vts-browser-ios.jpg)](https://www.youtube.com/watch?v=BP_zyMTHVlg&feature=youtu.be)
 

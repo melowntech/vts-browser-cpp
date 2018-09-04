@@ -96,6 +96,7 @@ void TraverseNode::clearRenders()
 
 bool TraverseNode::rendersReady() const
 {
+    assert(!rendersEmpty());
     for (auto &it : opaque)
         if (!it.ready())
             return false;

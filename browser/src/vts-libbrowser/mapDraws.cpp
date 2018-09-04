@@ -42,7 +42,7 @@ DrawTask::DrawTask()
     flatShading = false;
 }
 
-DrawTask::DrawTask(const RenderTask &r, const MapImpl *m)
+DrawTask::DrawTask(const MapImpl *m, const RenderTask &r)
     : DrawTask()
 {
     assert(r.ready());
@@ -66,20 +66,11 @@ DrawTask::DrawTask(const RenderTask &r, const MapImpl *m)
     externalUv = r.externalUv;
 }
 
-DrawTask::DrawTask(const RenderTask &r, const float *uvClip, const MapImpl *m)
-    : DrawTask(r, m)
+DrawTask::DrawTask(const MapImpl *m, const RenderTask &r, const float *uvClip)
+    : DrawTask(m, r)
 {
     for (int i = 0; i < 4; i++)
         this->uvClip[i] = uvClip[i];
-
-    // debug
-    /*
-    if (uvClip[0] != -1)
-    {
-        for (int i = 0; i < 3; i++)
-            color[i] *= 0.4;
-    }
-    */
 }
 
 MapDraws::Camera::Camera()

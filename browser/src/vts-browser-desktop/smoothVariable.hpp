@@ -24,40 +24,52 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <array>
+#ifndef smoothVariable_hpp_seg45es554sdg
+#define smoothVariable_hpp_seg45es554sdg
 
-namespace vts
+#include <algorithm>
+
+template<class T, unsigned N>
+struct smoothVariable
 {
+    T v[N];
+    unsigned p;
 
-template<class T, unsigned int N>
-struct Array
-{
-private:
-    typedef std::array<T, N> A;
-    A a_;
-    unsigned int s_;
-
-public:
-    typename A::iterator begin() { return a_.begin(); }
-    typename A::iterator end() { return a_.begin() + s_; }
-    Array() : s_(0) {}
-    void clear() { resize(0); }
-    void resize(unsigned int s)
+    smoothVariable() : p(0)
     {
-        if (s > N)
-            throw std::runtime_error("overflow error");
-        for (unsigned int i = std::min(s, s_); i < std::max(s, s_); i++)
-            a_[i] = T();
-        s_ = s;
+        for (unsigned i = 0; i < N; i++)
+            v[i] = T();
     }
-    void push_back(T &&v) { resize(s_ + 1); a_[s_ - 1] = std::move(v); }
-    unsigned int size() const { return s_; }
-    unsigned int capacity() const { return N; }
-    bool empty() const { return s_ == 0; }
-    T &operator [] (unsigned int i) { assert(i < s_); return a_[i]; }
-    const T &operator [] (unsigned int i) const { assert(i < s_); return a_[i]; }
+
+    void add(const T &a)
+    {
+        v[p] = a;
+        p = (p + 1) % N;
+    }
+
+    T avg() const
+    {
+        T r = T();
+        for (unsigned i = 0; i < N; i++)
+            r += v[i];
+        return r / N;
+    }
+
+    T min() const
+    {
+        T r = v[0];
+        for (unsigned i = 1; i < N; i++)
+            r = std::min(r, v[i]);
+        return r;
+    }
+
+    T max() const
+    {
+        T r = v[0];
+        for (unsigned i = 1; i < N; i++)
+            r = std::max(r, v[i]);
+        return r;
+    }
 };
 
-} // namespace vts
-
-
+#endif

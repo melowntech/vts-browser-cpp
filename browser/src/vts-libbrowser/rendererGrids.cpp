@@ -126,8 +126,6 @@ void MapImpl::gridPreloadProcess(TraverseNode *trav,
     for (const auto &c : trav->childs)
         gridPreloadProcess(c.get(), childRequests[
             childIndex(myId, c->nodeInfo.nodeId())]);
-
-    trav->clearRenders();
 }
 
 } // namespace vts

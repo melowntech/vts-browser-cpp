@@ -164,6 +164,7 @@ MapOptions::MapOptions() :
     debugRenderSurrogates(false),
     debugRenderMeshBoxes(false),
     debugRenderTileBoxes(false),
+    debugRenderSubtileBoxes(false),
     debugRenderObjectPosition(false),
     debugRenderTargetPosition(false),
     debugRenderAltitudeShiftCorners(false),
@@ -222,6 +223,7 @@ void MapOptions::applyJson(const std::string &json)
     AJ(debugRenderSurrogates, asBool);
     AJ(debugRenderMeshBoxes, asBool);
     AJ(debugRenderTileBoxes, asBool);
+    AJ(debugRenderSubtileBoxes, asBool);
     AJ(debugRenderObjectPosition, asBool);
     AJ(debugRenderTargetPosition, asBool);
     AJ(debugRenderAltitudeShiftCorners, asBool);
@@ -272,6 +274,7 @@ std::string MapOptions::toJson() const
     TJ(debugRenderSurrogates, asBool);
     TJ(debugRenderMeshBoxes, asBool);
     TJ(debugRenderTileBoxes, asBool);
+    TJ(debugRenderSubtileBoxes, asBool);
     TJ(debugRenderObjectPosition, asBool);
     TJ(debugRenderTargetPosition, asBool);
     TJ(debugRenderAltitudeShiftCorners, asBool);

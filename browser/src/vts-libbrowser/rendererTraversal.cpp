@@ -540,8 +540,6 @@ bool MapImpl::travInit(TraverseNode *trav)
 
     // update trav
     trav->lastAccessTime = renderer.tickIndex;
-
-    // priority
     updateNodePriority(trav);
 
     // prepare meta data
@@ -602,10 +600,7 @@ void MapImpl::travModeFlat(TraverseNode *trav)
         return;
 
     if (!visibilityTest(trav))
-    {
-        trav->clearRenders();
         return;
-    }
 
     if (coarsenessTest(trav) || trav->childs.empty())
     {
@@ -619,54 +614,67 @@ void MapImpl::travModeFlat(TraverseNode *trav)
 
     for (auto &t : trav->childs)
         travModeFlat(t.get());
-
-    trav->clearRenders();
 }
 
-void MapImpl::travModeBalanced(TraverseNode *trav, bool renderOnly)
+bool MapImpl::travModeBalanced(TraverseNode *trav, bool renderOnly)
 {
     if (renderOnly)
     {
-        trav->lastAccessTime = renderer.tickIndex;
         if (!trav->meta)
-        {
-            renderNodeCoarserRecursive(trav);
-            return;
-        }
+            return false;
+        trav->lastAccessTime = renderer.tickIndex;
     }
-    else if (!travInit(trav))
+    else
     {
-        renderNodeCoarserRecursive(trav);
-        return;
+        if (!travInit(trav))
+            return false;
     }
 
     if (!visibilityTest(trav))
-    {
-        trav->clearRenders();
-        return;
-    }
+        return true;
 
-    if (!renderOnly && (coarsenessTest(trav) || trav->childs.empty()))
+    if (renderOnly)
     {
+        if (!trav->rendersEmpty())
+        {
+            touchDraws(trav);
+            renderNode(trav);
+            return true;
+        }
+    }
+    else if (coarsenessTest(trav) || trav->childs.empty())
+    {
+        gridPreloadRequest(trav);
         touchDraws(trav);
         if (trav->surface && trav->rendersEmpty())
             travDetermineDraws(trav);
+        if (!trav->rendersEmpty())
+        {
+            renderNode(trav);
+            return true;
+        }
         renderOnly = true;
-        gridPreloadRequest(trav);
     }
 
-    if (renderOnly && !trav->rendersEmpty())
+    Array<bool, 4> oks;
+    oks.resize(trav->childs.size());
+    uint32 i = 0, okc = 0;
+    for (auto &it : trav->childs)
     {
-        renderNode(trav);
-        return;
+        bool ok = travModeBalanced(it.get(), renderOnly);
+        oks[i++] = ok;
+        if (ok)
+            okc++;
     }
-
-    if (trav->childs.empty())
-        renderNodeCoarserRecursive(trav);
-    else for (auto &t : trav->childs)
-        travModeBalanced(t.get(), renderOnly);
-
-    trav->clearRenders();
+    if (okc == 0 && renderOnly)
+        return false;
+    i = 0;
+    for (auto &it : trav->childs)
+    {
+        if (!oks[i++])
+            renderNodeCoarser(it.get());
+    }
+    return true;
 }
 
 void MapImpl::travModeFixed(TraverseNode *trav)
@@ -676,10 +684,7 @@ void MapImpl::travModeFixed(TraverseNode *trav)
 
     if (travDistance(trav, renderer.focusPosPhys)
         > renderer.fixedModeDistance)
-    {
-        trav->clearRenders();
         return;
-    }
 
     if (trav->nodeInfo.nodeId().lod >= renderer.fixedModeLod
         || trav->childs.empty())
@@ -694,8 +699,6 @@ void MapImpl::travModeFixed(TraverseNode *trav)
 
     for (auto &t : trav->childs)
         travModeFixed(t.get());
-
-    trav->clearRenders();
 }
 
 void MapImpl::traverseRender(TraverseNode *trav)
@@ -726,6 +729,8 @@ void MapImpl::traverseClearing(TraverseNode *trav)
         trav->clearAll();
         return;
     }
+
+    trav->clearRenders(); // clear based on lastRenderTime
 
     for (auto &it : trav->childs)
         traverseClearing(it.get());

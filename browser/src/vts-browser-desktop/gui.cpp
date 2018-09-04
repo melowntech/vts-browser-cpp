@@ -230,7 +230,8 @@ public:
         // load control options
         try
         {
-            window->map->options().controlOptions.applyJson(readLocalFileBuffer(controlOptionsPath()).str());
+            window->map->options().controlOptions.applyJson(
+                        readLocalFileBuffer(controlOptionsPath()).str());
         }
         catch(...)
         {
@@ -557,7 +558,8 @@ public:
                 }
 
                 {
-                    float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
+                    float ratio[] = { width * 0.4f, width * 0.45f,
+                                      width * 0.15f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
 
                     // navigation max view extent multiplier
@@ -700,13 +702,17 @@ public:
                 r.renderAtmosphere = nk_check_label(&ctx, "atmosphere",
                                                    r.renderAtmosphere);
 
-                // render mesh wire boxes
+                // render mesh boxes
                 o.debugRenderMeshBoxes = nk_check_label(&ctx, "mesh boxes",
                                                    o.debugRenderMeshBoxes);
 
-                // render tile corners
+                // render tile boxes
                 o.debugRenderTileBoxes = nk_check_label(&ctx, "tile boxes",
                                                     o.debugRenderTileBoxes);
+
+                // render subtile boxes
+                o.debugRenderSubtileBoxes = nk_check_label(&ctx,
+                    "subtile boxes", o.debugRenderSubtileBoxes);
 
                 // render surrogates
                 o.debugRenderSurrogates = nk_check_label(&ctx, "surrogates",
@@ -714,15 +720,16 @@ public:
 
                 // render objective position
                 o.debugRenderObjectPosition = nk_check_label(&ctx,
-                                "objective pos.", o.debugRenderObjectPosition);
+                            "objective pos.", o.debugRenderObjectPosition);
 
                 // render target position
                 o.debugRenderTargetPosition = nk_check_label(&ctx,
-                                "target pos.", o.debugRenderTargetPosition);
+                            "target pos.", o.debugRenderTargetPosition);
 
                 // render altitude shift corners
                 o.debugRenderAltitudeShiftCorners = nk_check_label(&ctx,
-                    "altitude shift corners", o.debugRenderAltitudeShiftCorners);
+                    "altitude shift corners",
+                    o.debugRenderAltitudeShiftCorners);
 
                 // flat shading
                 o.debugFlatShading = nk_check_label(&ctx, "flat shading",
@@ -824,7 +831,7 @@ public:
                 | NK_WINDOW_MINIMIZABLE;
         if (prepareFirst)
             flags |= NK_WINDOW_MINIMIZED;
-        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 600), flags))
+        if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 650), flags))
         {
             MapStatistics &s = window->map->statistics();
             float width = nk_window_get_content_region_size(&ctx).x - 30;
@@ -838,19 +845,26 @@ public:
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                 nk_label(&ctx, "Loading:", NK_TEXT_LEFT);
-                nk_prog(&ctx, (int)(1000 * window->map->getMapRenderProgress()),
+                nk_prog(&ctx, (int)(
+                        1000 * window->map->getMapRenderProgress()),
                         1000, false);
 
-                S("Time map:", window->timingMapProcess, " ms");
+                S("Time map min:", window->timingMapSmooth.min(), " ms");
+                //S("Time map avg:", window->timingMapSmooth.avg(), " ms");
+                S("Time map max:", window->timingMapSmooth.max(), " ms");
                 S("Time app:", window->timingAppProcess, " ms");
-                S("Time frame:", window->timingTotalFrame, " ms");
+                S("Time frame min:", window->timingFrameSmooth.min(), " ms");
+                //S("Time frame avg:", window->timingFrameSmooth.avg(), " ms");
+                S("Time frame max:", window->timingFrameSmooth.max(), " ms");
                 S("Render tick:", s.renderTicks, "");
                 nk_label(&ctx, "Z range:", NK_TEXT_LEFT);
-                sprintf(buffer, "%0.0f - %0.0f", window->map->draws().camera.near_,
+                sprintf(buffer, "%0.0f - %0.0f",
+                        window->map->draws().camera.near_,
                         window->map->draws().camera.far_);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Nav. mode:", NK_TEXT_LEFT);
-                nk_label(&ctx, navigationModeNames[(int)s.currentNavigationMode],
+                nk_label(&ctx, navigationModeNames[
+                         (int)s.currentNavigationMode],
                         NK_TEXT_RIGHT);
 
                 nk_tree_pop(&ctx);
@@ -864,7 +878,6 @@ public:
 
                 S("GPU memory:", s.currentGpuMemUseKB / 1024, " MB");
                 S("RAM memory:", s.currentRamMemUseKB / 1024, " MB");
-                S("Grid nodes:", s.currentGridNodes, "");
                 S("Node meta updates:", s.currentNodeMetaUpdates, "");
                 S("Node draw updates:", s.currentNodeDrawsUpdates, "");
                 S("Preparing:", s.resourcesPreparing, "");
@@ -881,7 +894,8 @@ public:
             }
 
             // traversed
-            if (nk_tree_push(&ctx, NK_TREE_TAB, "Traversed nodes", NK_MINIMIZED))
+            if (nk_tree_push(&ctx, NK_TREE_TAB, "Traversed nodes",
+                             NK_MINIMIZED))
             {
                 float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
@@ -895,12 +909,14 @@ public:
                 }
 
                 S("Total:", s.metaNodesTraversedTotal, "");
+                S("Grid nodes:", s.currentGridNodes, "");
 
                 nk_tree_pop(&ctx);
             }
 
             // rendered nodes
-            if (nk_tree_push(&ctx, NK_TREE_TAB, "Rendered nodes", NK_MINIMIZED))
+            if (nk_tree_push(&ctx, NK_TREE_TAB, "Rendered nodes",
+                             NK_MINIMIZED))
             {
                 float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
@@ -918,7 +934,8 @@ public:
             }
 
             // draw calls
-            if (nk_tree_push(&ctx, NK_TREE_TAB, "Draw calls", NK_MINIMIZED))
+            if (nk_tree_push(&ctx, NK_TREE_TAB, "Draw calls",
+                             NK_MINIMIZED))
             {
                 float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);

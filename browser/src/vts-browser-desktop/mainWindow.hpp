@@ -27,6 +27,8 @@
 #ifndef MAINWINDOW_H_wuiegfzbn
 #define MAINWINDOW_H_wuiegfzbn
 
+#include "smoothVariable.hpp"
+
 #include <vts-browser/math.hpp>
 #include <vts-browser/resources.hpp>
 #include <vts-renderer/renderer.hpp>
@@ -102,6 +104,8 @@ public:
     std::shared_ptr<vts::renderer::Mesh> meshSphere;
     std::shared_ptr<vts::renderer::Mesh> meshLine;
     std::vector<Mark> marks;
+    smoothVariable<uint32, 60> timingMapSmooth;
+    smoothVariable<uint32, 60> timingFrameSmooth;
     uint32 timingMapProcess;
     uint32 timingAppProcess;
     uint32 timingTotalFrame;

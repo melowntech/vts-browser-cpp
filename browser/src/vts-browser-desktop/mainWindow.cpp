@@ -321,15 +321,12 @@ void MainWindow::run()
             }
         }
 
-        shouldClose = processEvents();
-
-        uint32 timeFrameStart = SDL_GetTicks();
+        uint32 time1 = SDL_GetTicks();
         try
         {
             SDL_GL_GetDrawableSize(window, (int*)&ro.width, (int*)&ro.height);
             map->setWindowSize(ro.width, ro.height);
-            map->renderTickPrepare((timeFrameStart - lastFrameTime) * 1e-3);
-            lastFrameTime = timeFrameStart;
+            map->renderTickPrepare(timingTotalFrame * 1e-3);
             map->renderTickRender();
         }
         catch (const vts::MapConfigException &e)
@@ -342,11 +339,13 @@ void MainWindow::run()
             else
                 throw;
         }
-        uint32 timeMapRender = SDL_GetTicks();
+
+        uint32 time2 = SDL_GetTicks();
+        shouldClose = processEvents();
+        if (appOptions.closeOnFullRender && map->getMapRenderComplete())
+            shouldClose = true;
         prepareMarks();
         renderFrame();
-        uint32 timeAppRender = SDL_GetTicks();
-
         if (map->statistics().renderTicks % 120 == 0)
         {
             std::string creditLine = std::string() + "vts-browser-desktop: "
@@ -354,28 +353,30 @@ void MainWindow::run()
             SDL_SetWindowTitle(window, creditLine.c_str());
         }
 
+        uint32 time3 = SDL_GetTicks();
         SDL_GL_SwapWindow(window);
-        uint32 timeFrameFinish = SDL_GetTicks();
 
-        // temporary workaround for when v-sync is missing
-        uint32 duration = timeFrameFinish - timeFrameStart;
+        uint32 time4 = SDL_GetTicks();
+        // workaround for when v-sync is missing
+        uint32 duration = time4 - time1;
         if (duration < 16)
         {
-            microSleep(16 - duration);
-            timeFrameFinish = SDL_GetTicks();
+            microSleep((16 - duration) * 1000);
+            time4 = SDL_GetTicks();
         }
 
-        timingMapProcess = timeMapRender - timeFrameStart;
-        timingAppProcess = timeAppRender - timeMapRender;
-        timingTotalFrame = timeFrameFinish - timeFrameStart;
+        timingMapProcess = time2 - time1;
+        timingAppProcess = time3 - time2;
+        timingTotalFrame = time4 - lastFrameTime;
+        lastFrameTime = time4;
 
-        if (appOptions.closeOnFullRender && map->getMapRenderComplete())
-            shouldClose = true;
+        timingMapSmooth.add(timingMapProcess);
+        timingFrameSmooth.add(timingTotalFrame);
     }
 
     gui.finalize();
 
-    // closing the whole app may take some time waiting on pending downloads
+    // closing the whole app may take some time (waiting on pending downloads)
     //   therefore we hide the window here so that the user
     //   does not get disturbed by it
     SDL_HideWindow(window);

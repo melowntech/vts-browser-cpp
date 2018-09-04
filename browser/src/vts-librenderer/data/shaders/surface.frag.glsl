@@ -14,38 +14,44 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
-    // texture color
-    vec4 color = texture(texColor, varUvTex);
+    // derivatives computed before leaving uniform control flow
+    vec2 uvDx = dFdx(varUvTex);
+    vec2 uvDy = dFdy(varUvTex);
+    vec3 viewDx = dFdx(varViewPosition);
+    vec3 viewDy = dFdy(varViewPosition);
+
+    // uv clipping
+    if (varUvClip.x < uniUvClip.x
+        || varUvClip.y < uniUvClip.y
+        || varUvClip.x > uniUvClip.z
+        || varUvClip.y > uniUvClip.w)
+        discard;
 
     // mask
     if (uniFlags.x > 0)
     {
-        if (texture(texMask, varUvTex).r < 0.5)
+        // assuming mipmaps are not needed:
+        //   is textureLod more efficient than regular texture access?
+        if (textureLod(texMask, varUvTex, 0.0).r < 0.5)
             discard;
     }
 
-    // uv clipping
-    // uv clipping must go after all texture accesses to allow for computation of derivatives in uniform control flow
-    if (varUvClip.x < uniUvClip.x
-            || varUvClip.y < uniUvClip.y
-            || varUvClip.x > uniUvClip.z
-            || varUvClip.y > uniUvClip.w)
-        discard;
-
-    // monochromatic texture
-    if (uniFlags.y > 0)
-        color = color.rrra;
-
-    // base color
     if (uniFlags.z > 0)
     {
         // flat shading
-        vec3 n = normalize(cross(dFdx(varViewPosition),
-                                 dFdy(varViewPosition)));
+        vec3 n = normalize(cross(viewDx, viewDy));
         outColor = vec4(vec3(max(n.z * 0.8, 0.0) + 0.125), 1.0);
     }
     else
-        outColor = color;
+    {
+        // base color
+        outColor = textureGrad(texColor, varUvTex, uvDx, uvDy);
+
+        // monochromatic texture
+        if (uniFlags.y > 0)
+            outColor = outColor.rrra;
+    }
+
     outColor *= uniColor;
 
     // atmosphere

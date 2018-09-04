@@ -189,31 +189,36 @@ double MapImpl::coarsenessValue(TraverseNode *trav)
     return result;
 }
 
-void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
+void MapImpl::renderNode(TraverseNode *trav,
+        TraverseNode *orig, const vec4f &uvClip)
 {
+    assert(trav && orig);
     assert(trav->meta);
     assert(trav->surface);
     assert(!trav->rendersEmpty());
     assert(trav->rendersReady());
     assert(renderer.currentTraverseMode == TraverseMode::Fixed
         || visibilityTest(trav));
-    assert(trav->surface);
 
     // statistics
     statistics.nodesRenderedTotal++;
     statistics.nodesRenderedPerLod[std::min<uint32>(
         trav->nodeInfo.nodeId().lod, MapStatistics::MaxLods - 1)]++;
 
+    bool isSubNode = trav != orig;
+    assert(isSubNode == (uvClip(0) > 0 || uvClip(1) > 0
+                  || uvClip(2) < 1 || uvClip(3) < 1));
+
     // draws
     for (const RenderTask &r : trav->opaque)
-        draws.opaque.emplace_back(r, uvClip.data(), this);
+        draws.opaque.emplace_back(this, r, uvClip.data());
     for (const RenderTask &r : trav->transparent)
-        draws.transparent.emplace_back(r, uvClip.data(), this);
+        draws.transparent.emplace_back(this, r, uvClip.data());
     for (const RenderTask &r : trav->geodata)
-        draws.geodata.emplace_back(r, uvClip.data(), this);
-    if (uvClip(0) <= 0 && uvClip(1) <= 0 && uvClip(2) >= 1 && uvClip(3) >= 1)
+        draws.geodata.emplace_back(this, r, uvClip.data());
+    if (!isSubNode)
         for (const RenderTask &r : trav->colliders)
-            draws.colliders.emplace_back(r, this);
+            draws.colliders.emplace_back(this, r);
 
     // surrogate
     if (options.debugRenderSurrogates && trav->surrogatePhys)
@@ -225,7 +230,7 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
                 * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
         task.color = vec3to4f(trav->surface->color, task.color(3));
         if (task.ready())
-            draws.infographics.emplace_back(task, this);
+            draws.infographics.emplace_back(this, task);
     }
 
     // mesh box
@@ -239,12 +244,13 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
             task.mesh->priority = std::numeric_limits<float>::infinity();
             task.color = vec3to4f(trav->surface->color, task.color(3));
             if (task.ready())
-                draws.infographics.emplace_back(task, this);
+                draws.infographics.emplace_back(this, task);
         }
     }
 
     // tile box
-    if (options.debugRenderTileBoxes)
+    if (options.debugRenderTileBoxes
+            || (options.debugRenderSubtileBoxes && isSubNode))
     {
         RenderTask task;
         task.mesh = getMesh("internal://data/meshes/line.obj");
@@ -266,20 +272,37 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
                 break;
             }
         }
+        static const uint32 cora[] = {
+            0, 0, 1, 2, 4, 4, 5, 6, 0, 1, 2, 3
+        };
+        static const uint32 corb[] = {
+            1, 2, 3, 3, 5, 6, 7, 7, 4, 5, 6, 7
+        };
         if (task.ready())
         {
-            static const uint32 cora[] = {
-                0, 0, 1, 2, 4, 4, 5, 6, 0, 1, 2, 3
-            };
-            static const uint32 corb[] = {
-                1, 2, 3, 3, 5, 6, 7, 7, 4, 5, 6, 7
-            };
-            for (uint32 i = 0; i < 12; i++)
+            // regular tile box
+            if (options.debugRenderTileBoxes && !isSubNode)
             {
-                vec3 a = trav->cornersPhys[cora[i]];
-                vec3 b = trav->cornersPhys[corb[i]];
-                task.model = lookAt(a, b);
-                draws.infographics.emplace_back(task, this);
+                for (uint32 i = 0; i < 12; i++)
+                {
+                    vec3 a = trav->cornersPhys[cora[i]];
+                    vec3 b = trav->cornersPhys[corb[i]];
+                    task.model = lookAt(a, b);
+                    draws.infographics.emplace_back(this, task);
+                }
+            }
+            // sub tile box
+            for (int i = 0; i < 3; i++)
+                task.color[i] *= 0.5;
+            if (options.debugRenderSubtileBoxes && isSubNode)
+            {
+                for (uint32 i = 0; i < 12; i++)
+                {
+                    vec3 a = orig->cornersPhys[cora[i]];
+                    vec3 b = orig->cornersPhys[corb[i]];
+                    task.model = lookAt(a, b);
+                    draws.infographics.emplace_back(this, task);
+                }
             }
         }
     }
@@ -290,6 +313,11 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
                              trav->nodeInfo.distanceFromRoot());
 
     trav->lastRenderTime = renderer.tickIndex;
+}
+
+void MapImpl::renderNode(TraverseNode *trav)
+{
+    renderNode(trav, trav, vec4f(-1, -1, 2, 2));
 }
 
 namespace
@@ -308,7 +336,9 @@ void updateRangeToHalf(float &a, float &b, int which)
 
 } // namespace
 
-void MapImpl::renderNodeCoarserRecursive(TraverseNode *trav, vec4f uvClip)
+
+void MapImpl::renderNodeCoarser(TraverseNode *trav,
+    TraverseNode *orig, vec4f uvClip)
 {
     if (!trav->parent)
         return;
@@ -319,9 +349,14 @@ void MapImpl::renderNodeCoarserRecursive(TraverseNode *trav, vec4f uvClip)
     updateRangeToHalf(arr[1], arr[3], 1 - (id.y % 2));
 
     if (!trav->parent->rendersEmpty() && trav->parent->rendersReady())
-        renderNode(trav->parent, uvClip);
+        renderNode(trav->parent, orig, uvClip);
     else
-        renderNodeCoarserRecursive(trav->parent, uvClip);
+        renderNodeCoarser(trav->parent, orig, uvClip);
+}
+
+void MapImpl::renderNodeCoarser(TraverseNode *trav)
+{
+    renderNodeCoarser(trav, trav, vec4f(0, 0, 1, 1));
 }
 
 bool MapImpl::prerequisitesCheck()
@@ -440,7 +475,7 @@ void MapImpl::renderTickRender()
     }
     gridPreloadProcess();
     for (const RenderTask &r : navigation.renders)
-        draws.infographics.emplace_back(r, this);
+        draws.infographics.emplace_back(this, r);
     sortOpaqueFrontToBack();
 }
 
@@ -631,7 +666,7 @@ void MapImpl::updateCamera()
                 vec3 a = corners[cora[i]];
                 vec3 b = corners[corb[i]];
                 task.model = lookAt(a, b);
-                draws.infographics.emplace_back(task, this);
+                draws.infographics.emplace_back(this, task);
             }
         }
     }
@@ -648,7 +683,7 @@ void MapImpl::updateCamera()
         r.model = translationMatrix(phys)
                 * scaleMatrix(pos.verticalExtent * 0.015);
         if (r.ready())
-            draws.infographics.emplace_back(r, this);
+            draws.infographics.emplace_back(this, r);
     }
 
     // render target position
@@ -663,7 +698,7 @@ void MapImpl::updateCamera()
         r.model = translationMatrix(phys)
                 * scaleMatrix(navigation.targetViewExtent * 0.015);
         if (r.ready())
-            draws.infographics.emplace_back(r, this);
+            draws.infographics.emplace_back(this, r);
     }
 
     // update draws camera

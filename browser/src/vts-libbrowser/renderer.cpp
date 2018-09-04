@@ -381,21 +381,23 @@ bool MapImpl::prerequisitesCheck()
     if (!testAndThrow(mapConfig->state, "Map config failure."))
         return false;
 
-    if (!convertor)
+    if (!mapconfigAvailable)
     {
         convertor = CoordManip::create(
                     *mapConfig,
                     mapConfig->browserOptions.searchSrs,
                     createOptions.customSrs1,
                     createOptions.customSrs2);
-    }
 
-    if (!mapconfigAvailable)
-    {
+        renderer.credits.merge(mapConfig.get());
+        initializeNavigation();
+        mapConfig->initializeCelestialBody();
+
         LOG(info3) << "Map config is available.";
         mapconfigAvailable = true;
         if (callbacks.mapconfigAvailable)
         {
+            // this may change mapconfigAvailable
             callbacks.mapconfigAvailable();
             return false;
         }
@@ -426,14 +428,10 @@ bool MapImpl::prerequisitesCheck()
             return false;
     }
 
-    renderer.credits.merge(mapConfig.get());
-    initializeNavigation();
-    mapConfig->initializeCelestialBody();
-
     LOG(info2) << "Map config is ready.";
     mapconfigReady = true;
     if (callbacks.mapconfigReady)
-        callbacks.mapconfigReady(); // this may change initialized state
+        callbacks.mapconfigReady(); // this may change mapconfigReady
     return mapconfigReady;
 }
 

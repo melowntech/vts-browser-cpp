@@ -41,6 +41,7 @@
 #include <vts-browser/log.hpp>
 #include <vts-browser/celestial.hpp>
 #include <vts-browser/math.hpp>
+#include <vts-browser/callbacks.hpp>
 #include <vts-renderer/classes.hpp>
 
 #include <SDL2/SDL.h>
@@ -295,32 +296,30 @@ void MainWindow::run()
     map->renderInitialize();
     gui.initialize(this);
 
-    bool initialPositionSet = false;
+    if (!appOptions.initialPosition.empty())
+    {
+        map->callbacks().mapconfigAvailable = [&](){
+            vts::log(vts::LogLevel::info2,
+                     "Setting initial position");
+            try
+            {
+                map->setPositionUrl(appOptions.initialPosition);
+                map->options().navigationType
+                        = vts::NavigationType::Instant;
+            }
+            catch (...)
+            {
+                vts::log(vts::LogLevel::warn3,
+                         "Failed to set initial position");
+            }
+            map->callbacks().mapconfigAvailable = {};
+        };
+    }
+
     bool shouldClose = false;
-
     uint32 lastFrameTime = SDL_GetTicks();
-
     while (!shouldClose)
     {
-        if (!initialPositionSet && map->getMapConfigReady())
-        {
-            initialPositionSet = true;
-            if (!appOptions.initialPosition.empty())
-            {
-                try
-                {
-                    map->setPositionUrl(appOptions.initialPosition);
-                    map->options().navigationType
-                            = vts::NavigationType::Instant;
-                }
-                catch (...)
-                {
-                    vts::log(vts::LogLevel::warn3,
-                             "failed to set initial position");
-                }
-            }
-        }
-
         uint32 time1 = SDL_GetTicks();
         try
         {

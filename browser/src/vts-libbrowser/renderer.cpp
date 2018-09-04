@@ -189,23 +189,25 @@ double MapImpl::coarsenessValue(TraverseNode *trav)
     return result;
 }
 
-void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
+void MapImpl::renderNode(TraverseNode *trav,
+        TraverseNode *orig, const vec4f &uvClip)
 {
+    assert(trav && orig);
     assert(trav->meta);
     assert(trav->surface);
     assert(!trav->rendersEmpty());
     assert(trav->rendersReady());
     assert(renderer.currentTraverseMode == TraverseMode::Fixed
         || visibilityTest(trav));
-    assert(trav->surface);
 
     // statistics
     statistics.nodesRenderedTotal++;
     statistics.nodesRenderedPerLod[std::min<uint32>(
         trav->nodeInfo.nodeId().lod, MapStatistics::MaxLods - 1)]++;
 
-    bool isSubNode = uvClip(0) > 0 || uvClip(1) > 0
-                  || uvClip(2) < 1 || uvClip(3) < 1;
+    bool isSubNode = trav != orig;
+    assert(isSubNode == (uvClip(0) > 0 || uvClip(1) > 0
+                  || uvClip(2) < 1 || uvClip(3) < 1));
 
     // draws
     for (const RenderTask &r : trav->opaque)
@@ -279,7 +281,7 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
         if (task.ready())
         {
             // regular tile box
-            if (options.debugRenderTileBoxes)
+            if (options.debugRenderTileBoxes && !isSubNode)
             {
                 for (uint32 i = 0; i < 12; i++)
                 {
@@ -290,31 +292,14 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
                 }
             }
             // sub tile box
+            for (int i = 0; i < 3; i++)
+                task.color[i] *= 0.5;
             if (options.debugRenderSubtileBoxes && isSubNode)
             {
-                vec3 *cp = trav->cornersPhys;
-                vec3 cs1[8];
-                cs1[0] = interpolate(cp[0], cp[1], uvClip[0]);
-                cs1[1] = interpolate(cp[0], cp[1], uvClip[2]);
-                cs1[2] = interpolate(cp[2], cp[3], uvClip[0]);
-                cs1[3] = interpolate(cp[2], cp[3], uvClip[2]);
-                cs1[4] = interpolate(cp[4], cp[5], uvClip[0]);
-                cs1[5] = interpolate(cp[4], cp[5], uvClip[2]);
-                cs1[6] = interpolate(cp[6], cp[7], uvClip[0]);
-                cs1[7] = interpolate(cp[6], cp[7], uvClip[2]);
-                vec3 cs2[8];
-                cs2[0] = interpolate(cs1[0], cs1[2], uvClip[1]);
-                cs2[1] = interpolate(cs1[1], cs1[3], uvClip[1]);
-                cs2[2] = interpolate(cs1[0], cs1[2], uvClip[3]);
-                cs2[3] = interpolate(cs1[1], cs1[3], uvClip[3]);
-                cs2[4] = interpolate(cs1[4], cs1[6], uvClip[1]);
-                cs2[5] = interpolate(cs1[5], cs1[7], uvClip[1]);
-                cs2[6] = interpolate(cs1[4], cs1[6], uvClip[3]);
-                cs2[7] = interpolate(cs1[5], cs1[7], uvClip[3]);
                 for (uint32 i = 0; i < 12; i++)
                 {
-                    vec3 a = cs2[cora[i]];
-                    vec3 b = cs2[corb[i]];
+                    vec3 a = orig->cornersPhys[cora[i]];
+                    vec3 b = orig->cornersPhys[corb[i]];
                     task.model = lookAt(a, b);
                     draws.infographics.emplace_back(this, task);
                 }
@@ -328,6 +313,11 @@ void MapImpl::renderNode(TraverseNode *trav, const vec4f &uvClip)
                              trav->nodeInfo.distanceFromRoot());
 
     trav->lastRenderTime = renderer.tickIndex;
+}
+
+void MapImpl::renderNode(TraverseNode *trav)
+{
+    renderNode(trav, trav, vec4f(-1, -1, 2, 2));
 }
 
 namespace
@@ -346,7 +336,9 @@ void updateRangeToHalf(float &a, float &b, int which)
 
 } // namespace
 
-void MapImpl::renderNodeCoarserRecursive(TraverseNode *trav, vec4f uvClip)
+
+void MapImpl::renderNodeCoarser(TraverseNode *trav,
+    TraverseNode *orig, vec4f uvClip)
 {
     if (!trav->parent)
         return;
@@ -357,9 +349,14 @@ void MapImpl::renderNodeCoarserRecursive(TraverseNode *trav, vec4f uvClip)
     updateRangeToHalf(arr[1], arr[3], 1 - (id.y % 2));
 
     if (!trav->parent->rendersEmpty() && trav->parent->rendersReady())
-        renderNode(trav->parent, uvClip);
+        renderNode(trav->parent, orig, uvClip);
     else
-        renderNodeCoarserRecursive(trav->parent, uvClip);
+        renderNodeCoarser(trav->parent, orig, uvClip);
+}
+
+void MapImpl::renderNodeCoarser(TraverseNode *trav)
+{
+    renderNodeCoarser(trav, trav, vec4f(0, 0, 1, 1));
 }
 
 bool MapImpl::prerequisitesCheck()

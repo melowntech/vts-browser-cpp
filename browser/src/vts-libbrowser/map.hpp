@@ -758,9 +758,11 @@ public:
     bool coarsenessTest(TraverseNode *trav);
     double coarsenessValue(TraverseNode *trav);
     void renderNode(TraverseNode *trav,
-                    const vec4f &uvClip = vec4f(-1,-1,2,2));
-    void renderNodeCoarserRecursive(TraverseNode *trav,
-                    vec4f uvClip = vec4f(0,0,1,1));
+                    TraverseNode *orig, const vec4f &uvClip);
+    void renderNode(TraverseNode *trav);
+    void renderNodeCoarser(TraverseNode *trav,
+                    TraverseNode *orig, vec4f uvClip);
+    void renderNodeCoarser(TraverseNode *trav);
     std::shared_ptr<GpuTexture> travInternalTexture(TraverseNode *trav,
                                                   uint32 subMeshIndex);
     bool generateMonolithicGeodataTrav(TraverseNode *trav);
@@ -781,7 +783,7 @@ public:
     bool travInit(TraverseNode *trav);
     void travModeHierarchical(TraverseNode *trav, bool loadOnly);
     void travModeFlat(TraverseNode *trav);
-    void travModeBalanced(TraverseNode *trav, bool renderOnly);
+    bool travModeBalanced(TraverseNode *trav, bool renderOnly);
     void travModeFixed(TraverseNode *trav);
     void traverseRender(TraverseNode *trav);
     void traverseClearing(TraverseNode *trav);

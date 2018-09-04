@@ -54,6 +54,8 @@ public:
     unsigned int size() const { return s_; }
     unsigned int capacity() const { return N; }
     bool empty() const { return s_ == 0; }
+    T &operator [] (unsigned int i) { assert(i < s_); return a_[i]; }
+    const T &operator [] (unsigned int i) const { assert(i < s_); return a_[i]; }
 };
 
 } // namespace vts

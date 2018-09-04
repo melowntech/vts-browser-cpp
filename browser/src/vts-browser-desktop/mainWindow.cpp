@@ -369,6 +369,9 @@ void MainWindow::run()
         timingAppProcess = time3 - time2;
         timingTotalFrame = time4 - lastFrameTime;
         lastFrameTime = time4;
+
+        timingMapSmooth.add(timingMapProcess);
+        timingFrameSmooth.add(timingTotalFrame);
     }
 
     gui.finalize();

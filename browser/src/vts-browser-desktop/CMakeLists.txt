@@ -7,6 +7,7 @@ set(SRC_LIST
     dataThread.cpp dataThread.hpp
     guiSkin.cpp guiSkin.hpp
     gui.cpp
+    smoothVariable.hpp
     mainWindow.cpp mainWindow.hpp
     programOptions.cpp programOptions.hpp
     editor.cpp editor.hpp

@@ -210,8 +210,19 @@ void MapImpl::renderNode(TraverseNode *trav,
                   || uvClip(2) < 1 || uvClip(3) < 1));
 
     // draws
-    for (const RenderTask &r : trav->opaque)
-        draws.opaque.emplace_back(this, r, uvClip.data());
+    if (isSubNode)
+    {
+        // some neighboring subtiles may be merged together
+        //   this will reduce gpu overhead on rasterization
+        // since the merging process ultimately alters the rendering order
+        //   it is only allowed on opaque draws
+        trav->layer->opaqueSubtiles[trav].subtiles.emplace_back(orig, uvClip);
+    }
+    else
+    {
+        for (const RenderTask &r : trav->opaque)
+            draws.opaque.emplace_back(this, r, uvClip.data());
+    }
     for (const RenderTask &r : trav->transparent)
         draws.transparent.emplace_back(this, r, uvClip.data());
     for (const RenderTask &r : trav->geodata)
@@ -470,6 +481,9 @@ void MapImpl::renderTickRender()
     {
         setCurrentTraversalMode(it->getTraverseMode());
         traverseRender(it->traverseRoot.get());
+        for (auto &os : it->opaqueSubtiles)
+            os.second.resolve(os.first, this);
+        it->opaqueSubtiles.clear();
     }
     gridPreloadProcess();
     for (const RenderTask &r : navigation.renders)

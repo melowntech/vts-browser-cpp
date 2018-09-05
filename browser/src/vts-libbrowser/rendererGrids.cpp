@@ -46,7 +46,59 @@ uint32 childIndex(const TileId &me, const TileId &child)
     return vtslibs::vts::child(t);
 }
 
+// compare with epsilon
+bool aeq(float a, float b)
+{
+    return std::abs(a - b) < 1e-7;
+}
+
+// check if two subtiles that are in one line are direct neighbors
+bool leftNeighbor(const vec4f &a, const vec4f &b)
+{
+    assert(aeq(a[1], b[1]));
+    assert(aeq(a[3], b[3]));
+    return aeq(a[2], b[0]);
+}
+
 } // namespace
+
+SubtilesMerger::Subtile::Subtile(TraverseNode *orig, const vec4f &uvClip)
+    : orig(orig), uvClip(uvClip)
+{}
+
+void SubtilesMerger::resolve(TraverseNode *trav, MapImpl *impl)
+{
+    assert(!subtiles.empty());
+    std::sort(subtiles.begin(), subtiles.end(),
+        [](const Subtile &a, const Subtile &b) {
+        return a.orig->nodeInfo.nodeId() < b.orig->nodeInfo.nodeId();
+    });
+    // merge consecutive subtiles that form a line in the x direction
+    // better algorithm may exist, but this will work for now
+    auto prevIt = subtiles.begin();
+    for (auto it = subtiles.begin() + 1; it != subtiles.end(); it++)
+    {
+        Subtile &p = *prevIt;
+        Subtile &n = *it;
+        if (p.orig->nodeInfo.nodeId().lod == n.orig->nodeInfo.nodeId().lod
+            && p.orig->nodeInfo.nodeId().y == n.orig->nodeInfo.nodeId().y
+            && leftNeighbor(p.uvClip, n.uvClip))
+        {
+            p.uvClip[2] = n.uvClip[2];
+            n.orig = nullptr;
+        }
+        else
+            prevIt = it;
+    }
+    for (Subtile &it : subtiles)
+    {
+        if (it.orig)
+        {
+            for (auto &r : trav->opaque)
+                impl->draws.opaque.emplace_back(impl, r, it.uvClip.data());
+        }
+    }
+}
 
 void MapImpl::gridPreloadRequest(TraverseNode *trav)
 {

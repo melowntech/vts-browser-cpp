@@ -485,6 +485,19 @@ public:
     bool rendersEmpty() const;
 };
 
+class SubtilesMerger
+{
+public:
+    struct Subtile
+    {
+        TraverseNode *orig;
+        vec4f uvClip;
+        Subtile(TraverseNode *orig, const vec4f &uvClip);
+    };
+    std::vector<Subtile> subtiles;
+    void resolve(TraverseNode *trav, MapImpl *impl);
+};
+
 class MapLayer
 {
 public:
@@ -512,6 +525,7 @@ public:
 
     std::shared_ptr<TraverseNode> traverseRoot;
     std::vector<TileId> gridLoadRequests;
+    std::map<TraverseNode*, SubtilesMerger> opaqueSubtiles;
 
     MapImpl *const map;
     Credits::Scope creditScope;

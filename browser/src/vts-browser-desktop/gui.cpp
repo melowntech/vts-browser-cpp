@@ -753,9 +753,9 @@ public:
                 nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
 
                 // enable camera normalization
-                o.enableCameraNormalization = nk_check_label(&ctx,
+                o.cameraNormalization = nk_check_label(&ctx,
                                 "camera normalization",
-                                o.enableCameraNormalization);
+                                o.cameraNormalization);
 
                 // camera zoom limit
                 {
@@ -778,11 +778,11 @@ public:
 
                 // virtual surfaces
                 {
-                    bool old = o.debugEnableVirtualSurfaces;
-                    o.debugEnableVirtualSurfaces = nk_check_label(&ctx,
+                    bool old = o.debugVirtualSurfaces;
+                    o.debugVirtualSurfaces = nk_check_label(&ctx,
                             "virtual surfaces",
-                            o.debugEnableVirtualSurfaces);
-                    if (old != o.debugEnableVirtualSurfaces)
+                            o.debugVirtualSurfaces);
+                    if (old != o.debugVirtualSurfaces)
                         window->map->purgeViewCache();
                 }
 

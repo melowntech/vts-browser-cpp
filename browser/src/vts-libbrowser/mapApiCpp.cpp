@@ -358,7 +358,7 @@ void Map::setPositionPoint(const double point[3])
     }
     vec3 v = rawToVec3(point);
     impl->setPoint(v);
-    if (impl->options.enableArbitrarySriRequests
+    if (impl->options.arbitrarySriRequests
             && impl->convertor->geoDistance(
                 vecFromUblas<vec3>(impl->mapConfig->position.position), v)
             > impl->mapConfig->position.verticalExtent * 3)
@@ -756,7 +756,7 @@ void Map::setViewCurrent(const std::string &name)
     impl->mapConfig->view = it->second;
     impl->purgeViewCache();
     impl->mapConfigView = name;
-    if (impl->options.enableArbitrarySriRequests)
+    if (impl->options.arbitrarySriRequests)
         impl->initiateSri(nullptr);
 }
 

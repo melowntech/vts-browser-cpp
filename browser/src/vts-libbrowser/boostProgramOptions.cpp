@@ -109,11 +109,11 @@ void optionsConfigCreateOptions(
         ->default_value(opts->cachePath),
         "Path to a directory where all downloaded resources are cached.")
 
-    ((section + "disableCache").c_str(),
-        po::value<bool>(&opts->disableCache)
-        ->default_value(opts->disableCache)
-        ->implicit_value(!opts->disableCache),
-        "Set to yes to completly disable the cache.")
+    ((section + "diskCache").c_str(),
+        po::value<bool>(&opts->diskCache)
+        ->default_value(opts->diskCache)
+        ->implicit_value(!opts->diskCache),
+        "Use disk cache.")
     ;
 }
 
@@ -186,6 +186,28 @@ void optionsConfigMapOptions(
         "hierarchical\n"
         "balanced\n"
         "fixed")
+
+    ((section + "balancedGridLodOffset").c_str(),
+        po::value<uint32>(&opts->balancedGridLodOffset)
+        ->default_value(opts->balancedGridLodOffset),
+        "Coarser lod offset for grids for use with balanced traversal.")
+
+    ((section + "balancedGridNeighborsDistance").c_str(),
+        po::value<uint32>(&opts->balancedGridNeighborsDistance)
+        ->default_value(opts->balancedGridNeighborsDistance),
+        "Distance to neighbors for grids for use with balanced traversal.")
+
+    ((section + "cameraNormalization").c_str(),
+        po::value<bool>(&opts->cameraNormalization)
+        ->default_value(opts->cameraNormalization)
+        ->implicit_value(!opts->cameraNormalization),
+        "Limits camera tilt and yaw.")
+
+    ((section + "cameraAltitudeChanges").c_str(),
+        po::value<bool>(&opts->cameraAltitudeChanges)
+        ->default_value(opts->cameraAltitudeChanges)
+        ->implicit_value(!opts->cameraAltitudeChanges),
+        "Vertically converges objective position towards ground.")
     ;
 }
 
@@ -203,17 +225,17 @@ void optionsConfigDebugOptions(
         ->implicit_value(!opts->debugDetachedCamera),
         "debugDetachedCamera")
 
-    ((section + "debugEnableVirtualSurfaces").c_str(),
-        po::value<bool>(&opts->debugEnableVirtualSurfaces)
-        ->default_value(opts->debugEnableVirtualSurfaces)
-        ->implicit_value(!opts->debugEnableVirtualSurfaces),
-        "debugEnableVirtualSurfaces")
+    ((section + "debugVirtualSurfaces").c_str(),
+        po::value<bool>(&opts->debugVirtualSurfaces)
+        ->default_value(opts->debugVirtualSurfaces)
+        ->implicit_value(!opts->debugVirtualSurfaces),
+        "debugVirtualSurfaces")
 
-    ((section + "debugEnableSri").c_str(),
-        po::value<bool>(&opts->debugEnableSri)
-        ->default_value(opts->debugEnableSri)
-        ->implicit_value(!opts->debugEnableSri),
-        "debugEnableSri")
+    ((section + "debugSri").c_str(),
+        po::value<bool>(&opts->debugSri)
+        ->default_value(opts->debugSri)
+        ->implicit_value(!opts->debugSri),
+        "debugSri")
 
     ((section + "debugSaveCorruptedFiles").c_str(),
         po::value<bool>(&opts->debugSaveCorruptedFiles)
@@ -281,22 +303,28 @@ void optionsConfigFetcherOptions(
     ((section + "maxHostConnections").c_str(),
         po::value<uint32>(&opts->maxHostConnections)
         ->default_value(opts->maxHostConnections),
-        "Maximum concurrent connections to same host.")
+        "Maximum concurrent connections to same host (per thread).")
 
     ((section + "maxTotalConnections").c_str(),
         po::value<uint32>(&opts->maxTotalConnections)
         ->default_value(opts->maxTotalConnections),
-        "Total limit of concurrent connections.")
+        "Total limit of concurrent connections (per thread).")
 
     ((section + "maxCacheConections").c_str(),
         po::value<uint32>(&opts->maxCacheConections)
         ->default_value(opts->maxCacheConections),
-        "Size of curl connection cache.")
+        "Size of curl connection cache (per thread).")
 
     ((section + "pipelining").c_str(),
         po::value<sint32>(&opts->pipelining)
         ->default_value(opts->pipelining),
         "HTTP pipelining mode.")
+
+    ((section + "extraFileLog").c_str(),
+        po::value<bool>(&opts->extraFileLog)
+        ->default_value(opts->extraFileLog)
+        ->implicit_value(!opts->extraFileLog),
+        "Produce separate log with downloads.")
     ;
 }
 

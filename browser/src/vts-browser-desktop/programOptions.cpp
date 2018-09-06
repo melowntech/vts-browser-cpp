@@ -99,7 +99,7 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 po::value<bool>(&appOptions.purgeDiskCache)
                 ->default_value(appOptions.purgeDiskCache)
                 ->implicit_value(!appOptions.purgeDiskCache),
-                "Purge the disk cache during the initialization."
+                "Purge the disk cache during initialization."
             )
             ("renderAtmosphere",
                 po::value<bool>(&renderOptions.renderAtmosphere)
@@ -121,14 +121,18 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 "rendering the whole image."
             )*/
             ("mapOptions",
-                po::value<std::string>()->notifier([&](const std::string &name) {
-                    mapOptions.applyJson(vts::readLocalFileBuffer(name).str());
+                po::value<std::string>()->notifier(
+                    [&](const std::string &name) {
+                        mapOptions.applyJson(
+                            vts::readLocalFileBuffer(name).str());
                 }),
                 "Path to additional JSON encoded map options."
             )
             ("createOptions",
-                po::value<std::string>()->notifier([&](const std::string &name) {
-                    createOptions.applyJson(vts::readLocalFileBuffer(name).str());
+                po::value<std::string>()->notifier(
+                    [&](const std::string &name) {
+                        createOptions.applyJson(
+                            vts::readLocalFileBuffer(name).str());
                 }),
                 "Path to additional JSON encoded create options."
             )

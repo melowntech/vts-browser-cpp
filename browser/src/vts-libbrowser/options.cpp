@@ -39,11 +39,11 @@ MapCreateOptions::MapCreateOptions() :
     searchUrlFallback("https://eu-n1.windyty.com/search.php?format=json"
                        "&addressdetails=1&limit=20&q={value}"),
     searchSrsFallback("+proj=longlat +datum=WGS84 +nodefs"),
-    disableCache(false),
+    diskCache(true),
     hashCachePaths(true),
-    disableSearchUrlFallbackOutsideEarth(true),
-    disableBrowserOptionsSearchUrls(false),
-    disableAtmosphereDensityTexture(false)
+    searchUrlFallbackOutsideEarth(false),
+    browserOptionsSearchUrls(true),
+    atmosphereDensityTexture(true)
 {}
 
 MapCreateOptions::MapCreateOptions(const std::string &json)
@@ -62,10 +62,10 @@ void MapCreateOptions::applyJson(const std::string &json)
     AJ(searchSrsFallback, asString);
     AJ(customSrs1, asString);
     AJ(customSrs2, asString);
-    AJ(disableCache, asBool);
+    AJ(diskCache, asBool);
     AJ(hashCachePaths, asBool);
-    AJ(disableSearchUrlFallbackOutsideEarth, asBool);
-    AJ(disableBrowserOptionsSearchUrls, asBool);
+    AJ(searchUrlFallbackOutsideEarth, asBool);
+    AJ(browserOptionsSearchUrls, asBool);
 }
 
 std::string MapCreateOptions::toJson() const
@@ -77,10 +77,10 @@ std::string MapCreateOptions::toJson() const
     TJ(searchSrsFallback, asString);
     TJ(customSrs1, asString);
     TJ(customSrs2, asString);
-    TJ(disableCache, asBool);
+    TJ(diskCache, asBool);
     TJ(hashCachePaths, asBool);
-    TJ(disableSearchUrlFallbackOutsideEarth, asBool);
-    TJ(disableBrowserOptionsSearchUrls, asBool);
+    TJ(searchUrlFallbackOutsideEarth, asBool);
+    TJ(browserOptionsSearchUrls, asBool);
     return jsonToString(v);
 }
 
@@ -151,13 +151,13 @@ MapOptions::MapOptions() :
     navigationMode(NavigationMode::Seamless),
     traverseModeSurfaces(TraverseMode::Balanced),
     traverseModeGeodata(TraverseMode::Hierarchical),
-    enableSearchResultsFilter(true),
-    enableArbitrarySriRequests(true),
-    enableCameraNormalization(true),
-    enableCameraAltitudeChanges(true),
+    searchResultsFiltering(true),
+    arbitrarySriRequests(true),
+    cameraNormalization(true),
+    cameraAltitudeChanges(true),
     debugDetachedCamera(false),
-    debugEnableVirtualSurfaces(true),
-    debugEnableSri(false),
+    debugVirtualSurfaces(true),
+    debugSri(false),
     debugSaveCorruptedFiles(false),
     debugFlatShading(false),
     debugValidateGeodataStyles(true),
@@ -210,13 +210,13 @@ void MapOptions::applyJson(const std::string &json)
     AJE(navigationMode, NavigationMode);
     AJE(traverseModeSurfaces, TraverseMode);
     AJE(traverseModeGeodata, TraverseMode);
-    AJ(enableSearchResultsFilter, asBool);
-    AJ(enableArbitrarySriRequests, asBool);
-    AJ(enableCameraNormalization, asBool);
-    AJ(enableCameraAltitudeChanges, asBool);
+    AJ(searchResultsFiltering, asBool);
+    AJ(arbitrarySriRequests, asBool);
+    AJ(cameraNormalization, asBool);
+    AJ(cameraAltitudeChanges, asBool);
     AJ(debugDetachedCamera, asBool);
-    AJ(debugEnableVirtualSurfaces, asBool);
-    AJ(debugEnableSri, asBool);
+    AJ(debugVirtualSurfaces, asBool);
+    AJ(debugSri, asBool);
     AJ(debugSaveCorruptedFiles, asBool);
     AJ(debugFlatShading, asBool);
     AJ(debugValidateGeodataStyles, asBool);
@@ -261,13 +261,13 @@ std::string MapOptions::toJson() const
     TJE(navigationMode, NavigationMode);
     TJE(traverseModeSurfaces, TraverseMode);
     TJE(traverseModeGeodata, TraverseMode);
-    TJ(enableSearchResultsFilter, asBool);
-    TJ(enableArbitrarySriRequests, asBool);
-    TJ(enableCameraNormalization, asBool);
-    TJ(enableCameraAltitudeChanges, asBool);
+    TJ(searchResultsFiltering, asBool);
+    TJ(arbitrarySriRequests, asBool);
+    TJ(cameraNormalization, asBool);
+    TJ(cameraAltitudeChanges, asBool);
     TJ(debugDetachedCamera, asBool);
-    TJ(debugEnableVirtualSurfaces, asBool);
-    TJ(debugEnableSri, asBool);
+    TJ(debugVirtualSurfaces, asBool);
+    TJ(debugSri, asBool);
     TJ(debugSaveCorruptedFiles, asBool);
     TJ(debugFlatShading, asBool);
     TJ(debugValidateGeodataStyles, asBool);

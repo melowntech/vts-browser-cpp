@@ -62,7 +62,7 @@ class CacheImpl : public Cache
 {
 public:
     CacheImpl(const MapCreateOptions &options) :
-        root(options.cachePath), disabled(options.disableCache),
+        root(options.cachePath), disabled(!options.diskCache),
         hashes(options.hashCachePaths)
     {
         if (!disabled)

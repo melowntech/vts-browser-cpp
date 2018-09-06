@@ -218,7 +218,7 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
             t.importance = vtod(it["importance"]);
             task->results.push_back(t);
         }
-        if (map->options.enableSearchResultsFilter)
+        if (map->options.searchResultsFiltering)
             filterSearchResults(map, task);
     }
     catch (const std::exception &e)

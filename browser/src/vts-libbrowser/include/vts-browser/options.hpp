@@ -62,8 +62,8 @@ public:
     std::string customSrs1;
     std::string customSrs2;
 
-    // true to disable the hard drive cache entirely
-    bool disableCache;
+    // use hard drive cache for downloads
+    bool diskCache;
 
     // true -> use new scheme for naming (hashing) files
     //         in a hierarchy of directories in the cache
@@ -71,14 +71,14 @@ public:
     //          is clearly reflected in the cached file name
     bool hashCachePaths;
 
-    // true to try detect Earth and only use the fallbacks on it
-    bool disableSearchUrlFallbackOutsideEarth;
+    // use search url/srs fallbacks on any body (not just Earth)
+    bool searchUrlFallbackOutsideEarth;
 
-    // true to disable search url/srs from mapconfig and use the fallbacks
-    bool disableBrowserOptionsSearchUrls;
+    // use search url/srs from mapconfig
+    bool browserOptionsSearchUrls;
 
-    // set to true if you do your own atmosphere rendering
-    bool disableAtmosphereDensityTexture;
+    // provide density texture for atmosphere rendering
+    bool atmosphereDensityTexture;
 };
 
 class VTS_API ControlOptions
@@ -203,28 +203,25 @@ public:
 
     // to improve search results relevance, the results are further
     //   filtered and reordered
-    // set this to false to prevent such filtering
-    bool enableSearchResultsFilter;
+    bool searchResultsFiltering;
 
     // some applications may be changing viewer locations too rapidly
     //   and it may make the SRI optimizations inefficient
     // setting this option to false will allow the use of SRI
     //   only when the mapconfig changes
-    bool enableArbitrarySriRequests;
+    bool arbitrarySriRequests;
 
-    // setting this to false will disable that camera tilt and yaw
-    //   are limited
+    // limits camera tilt and yaw
     // uses viewExtentThresholdScaleLow/High
     // applies tiltLimitAngleLow/High (and yaw limit)
-    bool enableCameraNormalization;
+    bool cameraNormalization;
 
-    // setting this to false will disable that camera vertical
-    //   objective position converges to ground
-    bool enableCameraAltitudeChanges;
+    // vertically converges objective position towards ground
+    bool cameraAltitudeChanges;
 
     bool debugDetachedCamera;
-    bool debugEnableVirtualSurfaces;
-    bool debugEnableSri;
+    bool debugVirtualSurfaces;
+    bool debugSri;
     bool debugSaveCorruptedFiles;
     bool debugFlatShading;
     bool debugValidateGeodataStyles;

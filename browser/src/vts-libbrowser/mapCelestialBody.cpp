@@ -125,7 +125,7 @@ void MapConfig::initializeCelestialBody()
     }
 
     // atmosphere density texture
-    if (!map->createOptions.disableAtmosphereDensityTexture
+    if (map->createOptions.atmosphereDensityTexture
         && navigationSrsType() != vtslibs::registry::Srs::Type::projected
         && map->body.majorRadius > 0
         && a.thickness > 0)

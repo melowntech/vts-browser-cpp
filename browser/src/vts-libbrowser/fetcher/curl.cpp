@@ -62,9 +62,9 @@ public:
         begin = std::chrono::high_resolution_clock::now();
         if (options.extraFileLog)
         {
-            extraLog.open("downloads.log");
+            extraLog.open("vts-browser-fetcher.log");
             if (extraLog)
-                extraLog << time() << " starting download log" << std::endl;
+                extraLog << time() << " starting_fetcher_log" << std::endl;
         }
     }
 
@@ -72,7 +72,7 @@ public:
     {
         assert(initCount == 0);
         if (extraLog)
-            extraLog << time() << " finished download log" << std::endl;
+            extraLog << time() << " finished_fetcher_log" << std::endl;
     }
 
     virtual void initialize() override

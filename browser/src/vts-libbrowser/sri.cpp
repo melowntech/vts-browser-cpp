@@ -141,7 +141,7 @@ void MapImpl::updateSris()
 void MapImpl::initiateSri(const vtslibs::registry::Position *position)
 {
     if (mapConfigPath.empty() || resources.sriPath.empty()
-            || !options.debugEnableSri)
+            || !options.debugSri)
         return;
     std::stringstream ss;
     ss << resources.sriPath;
@@ -156,7 +156,7 @@ void MapImpl::initiateSri(const vtslibs::registry::Position *position)
         ss << "&pos=" << boost::lexical_cast<std::string>(*position);
     if (!mapConfigView.empty())
         ss << "&view=" << utility::urlEncode(mapConfigView);
-    ss << "&vs=" << (options.debugEnableVirtualSurfaces ? "true" : "false");
+    ss << "&vs=" << (options.debugVirtualSurfaces ? "true" : "false");
     ss << "&size=" << renderer.windowWidth << 'x' << renderer.windowHeight;
     std::string name = ss.str();
     LOG(info2) << "Initiating SRI <" << name << ">";

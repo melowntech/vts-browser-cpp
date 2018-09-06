@@ -38,7 +38,7 @@ MapImpl::Navigation::Navigation() :
 
 uint32 MapImpl::applyCameraRotationNormalization(vec3 &rot)
 {
-    if (!options.enableCameraNormalization
+    if (!options.cameraNormalization
             || options.navigationType == NavigationType::FlyOver
             || mapConfig->position.type
                     == vtslibs::registry::Position::Type::subjective)
@@ -288,7 +288,7 @@ void MapImpl::updateNavigation(double elapsedTime)
     navigation.changeRotation(0) += navigation.autoRotation;
 
     // limit rotation for seamless navigation mode
-    if (options.enableCameraNormalization
+    if (options.cameraNormalization
             && options.navigationMode == NavigationMode::Seamless
             && navigation.mode == NavigationMode::Azimuthal
             && mapConfig->position.type
@@ -419,7 +419,7 @@ void MapImpl::updateNavigation(double elapsedTime)
     }
 
     // normalize rotation
-    if (options.enableCameraNormalization
+    if (options.cameraNormalization
             && pos.type == vtslibs::registry::Position::Type::objective
             && mapConfig->position.type
                     == vtslibs::registry::Position::Type::objective)

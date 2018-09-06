@@ -60,11 +60,11 @@ void MapConfig::load()
     }
 
     // search url on earth
-    if (isEarth() || !map->createOptions.disableSearchUrlFallbackOutsideEarth)
+    if (isEarth() || map->createOptions.searchUrlFallbackOutsideEarth)
     {
         browserOptions.searchUrl = map->createOptions.searchUrlFallback;
         browserOptions.searchSrs = map->createOptions.searchSrsFallback;
-        browserOptions.searchFilter = map->options.enableSearchResultsFilter;
+        browserOptions.searchFilter = map->options.searchResultsFiltering;
     }
 
     // browser options
@@ -74,7 +74,7 @@ void MapConfig::load()
         Json::Value r = bo["rotate"];
         if (r.isDouble())
             browserOptions.autorotate = r.asDouble() * 0.1;
-        if (!map->createOptions.disableBrowserOptionsSearchUrls)
+        if (map->createOptions.browserOptionsSearchUrls)
         {
             r = bo["controlSearchUrl"];
             if (r.isString())

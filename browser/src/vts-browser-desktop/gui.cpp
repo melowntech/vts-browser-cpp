@@ -786,6 +786,10 @@ public:
                         window->map->purgeViewCache();
                 }
 
+                // coarseness disks
+                o.debugCoarsenessDisks = nk_check_label(&ctx,
+                    "coarseness disks", o.debugCoarsenessDisks);
+
                 // geodata validation
                 {
                     bool old = o.debugValidateGeodataStyles;
@@ -849,12 +853,12 @@ public:
                         1000 * window->map->getMapRenderProgress()),
                         1000, false);
 
-                S("Time map min:", window->timingMapSmooth.min(), " ms");
-                //S("Time map avg:", window->timingMapSmooth.avg(), " ms");
+                //S("Time map min:", window->timingMapSmooth.min(), " ms");
+                S("Time map avg:", window->timingMapSmooth.avg(), " ms");
                 S("Time map max:", window->timingMapSmooth.max(), " ms");
                 S("Time app:", window->timingAppProcess, " ms");
-                S("Time frame min:", window->timingFrameSmooth.min(), " ms");
-                //S("Time frame avg:", window->timingFrameSmooth.avg(), " ms");
+                //S("Time frame min:", window->timingFrameSmooth.min(), " ms");
+                S("Time frame avg:", window->timingFrameSmooth.avg(), " ms");
                 S("Time frame max:", window->timingFrameSmooth.max(), " ms");
                 S("Render tick:", s.renderTicks, "");
                 nk_label(&ctx, "Z range:", NK_TEXT_LEFT);
@@ -1101,13 +1105,15 @@ public:
             {
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 nk_label(&ctx, "View extent:", NK_TEXT_LEFT);
-                sprintf(buffer, "%10.1f", window->map->getPositionViewExtent());
+                sprintf(buffer, "%10.1f",
+                        window->map->getPositionViewExtent());
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             }
 
             // fov
             {
-                float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
+                float ratio[] = { width * 0.4f,
+                        width * 0.45f, width * 0.15f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
                 nk_label(&ctx, "Fov:", NK_TEXT_LEFT);
                 window->map->setPositionFov(nk_slide_float(&ctx, 10,
@@ -1121,7 +1127,8 @@ public:
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 nk_label(&ctx, "Output:", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Copy to clipboard"))
-                    SDL_SetClipboardText(window->map->getPositionUrl().c_str());
+                    SDL_SetClipboardText(
+                            window->map->getPositionUrl().c_str());
             }
 
             // auto movement
@@ -1160,7 +1167,8 @@ public:
         return ss.str();
     }
 
-    bool prepareViewsBoundLayers(MapView::BoundLayerInfo::List &bl, uint32 &bid)
+    bool prepareViewsBoundLayers(MapView::BoundLayerInfo::List &bl,
+                                    uint32 &bid)
     {
         const std::vector<std::string> boundLayers
                 = window->map->getResourceBoundLayers();
@@ -1389,7 +1397,8 @@ public:
                 for (const std::string &ln : freeLayers)
                 {
                     nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
-                    bool v1 = view.freeLayers.find(ln) != view.freeLayers.end();
+                    bool v1 = view.freeLayers.find(ln)
+                                != view.freeLayers.end();
                     bool v2 = nk_check_label(&ctx, ln.c_str(), v1);
                     if (v2)
                     {
@@ -1402,7 +1411,8 @@ public:
                         {
                             // bound layers
                             viewChanged = viewChanged
-                                || prepareViewsBoundLayers(s.boundLayers, bid);
+                                || prepareViewsBoundLayers(
+                                        s.boundLayers, bid);
                         } break;
                         case FreeLayerType::MonolithicGeodata:
                             editableGeodata = true;
@@ -1417,7 +1427,8 @@ public:
                         if (editableGeodata || editableStyle)
                         {
                             {
-                                float ratio[] = { 15, (width - 15) * 0.5f, (width - 15) * 0.5f };
+                                float ratio[] = { 15, (width - 15) * 0.5f,
+                                                (width - 15) * 0.5f };
                                 nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
                             }
                             nk_label(&ctx, "", NK_TEXT_LEFT);
@@ -1425,9 +1436,11 @@ public:
                             {
                                 if (nk_button_label(&ctx, "Style"))
                                 {
-                                    std::string v = window->map->getResourceFreeLayerStyle(ln);
+                                    std::string v = window->map
+                                        ->getResourceFreeLayerStyle(ln);
                                     v = editor(ln + ".style", v);
-                                    window->map->setResourceFreeLayerStyle(ln, v);
+                                    window->map
+                                        ->setResourceFreeLayerStyle(ln, v);
                                 }
                             }
                             else
@@ -1436,9 +1449,11 @@ public:
                             {
                                 if (nk_button_label(&ctx, "Geodata"))
                                 {
-                                    std::string v = window->map->getResourceFreeLayerGeodata(ln);
+                                    std::string v = window->map
+                                        ->getResourceFreeLayerGeodata(ln);
                                     v = editor(ln + ".geo", v);
-                                    window->map->setResourceFreeLayerGeodata(ln, v);
+                                    window->map
+                                        ->setResourceFreeLayerGeodata(ln, v);
                                 }
                             }
                             else
@@ -1644,7 +1659,8 @@ public:
             int index = 0;
             for (auto &r : res)
             {
-                float ratio[] = { width * 0.7f, width * 0.18f, width * 0.12f };
+                float ratio[] = { width * 0.7f,
+                            width * 0.18f, width * 0.12f };
                 nk_layout_row(&ctx, NK_STATIC, 18, 3, ratio);
 
                 // title
@@ -1679,7 +1695,8 @@ public:
                     nk_label(&ctx, "", NK_TEXT_LEFT);
 
                 // region
-                if (nk_tree_push_id(&ctx, NK_TREE_NODE, r.region.c_str(), NK_MINIMIZED, index))
+                if (nk_tree_push_id(&ctx, NK_TREE_NODE, r.region.c_str(),
+                        NK_MINIMIZED, index))
                 {
                     float ratio[] = { width * 0.2f, width * 0.8f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);

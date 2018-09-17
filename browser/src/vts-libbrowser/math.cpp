@@ -659,5 +659,26 @@ void matToRaw(const mat4f &a, float v[16])
         v[i] = atc(a, i);
 }
 
+double nan1()
+{
+    return std::numeric_limits<double>::quiet_NaN();
+}
+
+vec2 nan2()
+{
+    vec2 n;
+    for (uint32 i = 0; i < 2; i++)
+        n[i] = nan1();
+    return n;
+}
+
+vec3 nan3()
+{
+    vec3 n;
+    for (uint32 i = 0; i < 3; i++)
+        n[i] = nan1();
+    return n;
+}
+
 } // namespace vts
 

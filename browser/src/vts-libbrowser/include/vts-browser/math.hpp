@@ -154,6 +154,10 @@ U vecToUblas(const T &t)
     return res;
 }
 
+VTS_API double nan1();
+VTS_API vec2 nan2();
+VTS_API vec3 nan3();
+
 } // namespace vts
 
 #endif // MATH_H_wegfzebvgfhjusd

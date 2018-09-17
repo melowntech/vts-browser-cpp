@@ -264,6 +264,29 @@ void MapImpl::travDetermineMetaImpl(TraverseNode *trav)
 
             trav->obb = obb;
         }
+
+        // disks
+        if (trav->nodeInfo.distanceFromRoot() > 4)
+        {
+            vec2 exU = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
+            vec2 exL = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
+            vec3 sds = vec2to3((exU + exL) * 0.5,
+                trav->meta->geomExtents.z.min);
+            vec3 vn1 = convertor->convert(sds,
+                trav->nodeInfo.node(), Srs::Physical);
+            trav->diskNormalPhys = vn1.normalized();
+            trav->diskHeightsPhys[0] = vn1.norm();
+            sds = vec2to3((exU + exL) * 0.5,
+                trav->meta->geomExtents.z.max);
+            vec3 vn2 = convertor->convert(sds,
+                trav->nodeInfo.node(), Srs::Physical);
+            trav->diskHeightsPhys[1] = vn2.norm();
+            sds = vec2to3(exU, trav->meta->geomExtents.z.min);
+            vec3 vc = convertor->convert(sds,
+                trav->nodeInfo.node(), Srs::Physical);
+            trav->diskHalfAngle = std::acos(dot(trav->diskNormalPhys,
+                                                vc.normalized()));
+        }
     }
     else if (trav->meta->extents.ll != trav->meta->extents.ur)
     {

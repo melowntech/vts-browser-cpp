@@ -463,6 +463,9 @@ public:
     boost::optional<vec3> surrogatePhys;
     boost::optional<float> surrogateNav;
     const SurfaceInfo *surface;
+    vec3 diskNormalPhys;
+    vec2 diskHeightsPhys;
+    double diskHalfAngle;
 
     uint32 lastAccessTime;
     uint32 lastRenderTime;

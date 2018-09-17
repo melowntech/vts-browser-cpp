@@ -149,6 +149,26 @@ bool MapImpl::coarsenessTest(TraverseNode *trav)
     return coarsenessValue(trav) < options.maxTexelToPixelScale;
 }
 
+namespace
+{
+
+double distanceToDisk(const vec3 &diskNormal,
+    const vec2 &diskHeights, double diskHalfAngle,
+    const vec3 &point)
+{
+    double l = point.norm();
+    vec3 n = point.normalized();
+    double angle = std::acos(dot(diskNormal, n));
+    double vertical = l > diskHeights[1] ? l - diskHeights[1] :
+        l < diskHeights[0] ? diskHeights[0] - l : 0;
+    double horizontal = std::max(angle - diskHalfAngle, 0.0) * l;
+    double d = std::sqrt(vertical * vertical + horizontal * horizontal);
+    assert(d == d && d >= 0);
+    return d;
+}
+
+} // namespace
+
 double MapImpl::coarsenessValue(TraverseNode *trav)
 {
     bool applyTexelSize = trav->meta->flags()
@@ -174,19 +194,34 @@ double MapImpl::coarsenessValue(TraverseNode *trav)
         texelSize = m / trav->meta->displaySize;
     }
 
-    // test the value on all corners of node bounding box
-    double result = 0;
-    vec3 up = renderer.perpendicularUnitVector * texelSize;
-    for (const vec3 &c : trav->cornersPhys)
+    if (options.debugCoarsenessDisks
+        && trav->diskHalfAngle == trav->diskHalfAngle)
     {
-        vec3 c1 = c - up * 0.5;
-        vec3 c2 = c1 + up;
-        c1 = vec4to3(renderer.viewProj * vec3to4(c1, 1), true);
-        c2 = vec4to3(renderer.viewProj * vec3to4(c2, 1), true);
-        double len = std::abs(c2[1] - c1[1]) * renderer.windowHeight * 0.5;
-        result = std::max(result, len);
+        // test the value at point at the distance from the disk
+        double dist = distanceToDisk(trav->diskNormalPhys,
+            trav->diskHeightsPhys, trav->diskHalfAngle,
+            renderer.cameraPosPhys);
+        double v = texelSize * renderer.windowHeight / dist;
+        assert(v == v && v > 0);
+        return v;
     }
-    return result;
+    else
+    {
+        // test the value on all corners of node bounding box
+        double result = 0;
+        for (const vec3 &c : trav->cornersPhys)
+        {
+            vec3 up = renderer.perpendicularUnitVector * texelSize;
+            vec3 c1 = c - up * 0.5;
+            vec3 c2 = c1 + up;
+            c1 = vec4to3(renderer.viewProj * vec3to4(c1, 1), true);
+            c2 = vec4to3(renderer.viewProj * vec3to4(c2, 1), true);
+            double len = std::abs(c2[1] - c1[1])
+                * renderer.windowHeight * 0.5;
+            result = std::max(result, len);
+        }
+        return result;
+    }
 }
 
 void MapImpl::renderNode(TraverseNode *trav,

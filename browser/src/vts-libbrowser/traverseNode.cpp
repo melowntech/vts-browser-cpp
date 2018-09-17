@@ -47,16 +47,19 @@ TraverseNode::TraverseNode(vts::MapLayer *layer, TraverseNode *parent,
       hash(hashf(nodeInfo)),
       surface(nullptr),
       lastAccessTime(0), lastRenderTime(0),
-      priority(std::numeric_limits<double>::quiet_NaN())
+      priority(nan1())
 {
     // initialize corners to NAN
     {
-        vec3 n;
-        for (uint32 i = 0; i < 3; i++)
-            n[i] = std::numeric_limits<double>::quiet_NaN();
         for (uint32 i = 0; i < 8; i++)
-            cornersPhys[i] = n;
-        surrogatePhys = n;
+            cornersPhys[i] = nan3();
+        surrogatePhys = nan3();
+    }
+    // initialize disk to NAN
+    {
+        diskNormalPhys = nan3();
+        diskHeightsPhys = nan2();
+        diskHalfAngle = nan1();
     }
     // initialize aabb to universe
     {

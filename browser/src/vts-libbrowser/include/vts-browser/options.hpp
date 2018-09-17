@@ -225,6 +225,7 @@ public:
     bool debugSaveCorruptedFiles;
     bool debugFlatShading;
     bool debugValidateGeodataStyles;
+    bool debugCoarsenessDisks;
 
     bool debugRenderSurrogates;
     bool debugRenderMeshBoxes;

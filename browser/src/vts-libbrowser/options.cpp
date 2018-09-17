@@ -161,6 +161,7 @@ MapOptions::MapOptions() :
     debugSaveCorruptedFiles(false),
     debugFlatShading(false),
     debugValidateGeodataStyles(true),
+    debugCoarsenessDisks(true),
     debugRenderSurrogates(false),
     debugRenderMeshBoxes(false),
     debugRenderTileBoxes(false),
@@ -220,6 +221,7 @@ void MapOptions::applyJson(const std::string &json)
     AJ(debugSaveCorruptedFiles, asBool);
     AJ(debugFlatShading, asBool);
     AJ(debugValidateGeodataStyles, asBool);
+    AJ(debugCoarsenessDisks, asBool);
     AJ(debugRenderSurrogates, asBool);
     AJ(debugRenderMeshBoxes, asBool);
     AJ(debugRenderTileBoxes, asBool);
@@ -271,6 +273,7 @@ std::string MapOptions::toJson() const
     TJ(debugSaveCorruptedFiles, asBool);
     TJ(debugFlatShading, asBool);
     TJ(debugValidateGeodataStyles, asBool);
+    TJ(debugCoarsenessDisks, asBool);
     TJ(debugRenderSurrogates, asBool);
     TJ(debugRenderMeshBoxes, asBool);
     TJ(debugRenderTileBoxes, asBool);

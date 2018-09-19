@@ -384,11 +384,14 @@ public:
 
         // render transparent
         glEnable(GL_BLEND);
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(0, -10);
         shaderSurface->bind();
         enableClipDistance(true);
         for (const DrawTask &t : draws->transparent)
             drawSurface(t);
         enableClipDistance(false);
+        glDisable(GL_POLYGON_OFFSET_FILL);
         CHECK_GL("rendered transparent");
 
         // render polygon edges

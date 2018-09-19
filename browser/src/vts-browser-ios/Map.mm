@@ -97,7 +97,7 @@ void mapInitialize()
     {
         MapCreateOptions createOptions;
         createOptions.clientId = "vts-browser-ios";
-        createOptions.disableCache = true;
+        createOptions.diskCache = false;
         assert(!map);
         map = new Map(createOptions, vts::Fetcher::create(vts::FetcherOptions()));
     }

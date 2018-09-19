@@ -31,6 +31,9 @@ namespace vts { namespace renderer
 
 #ifdef VTSR_OPENGLES
 std::string Shader::preamble = "#version 300 es\n"
+#ifdef __APPLE__
+        "#extension GL_APPLE_clip_distance : require\n"
+#endif
         "precision highp float;\n"
         "precision highp int;\n";
 #else

@@ -170,6 +170,20 @@ public:
         m->dispatch();
     }
 
+    void enableClipDistance(bool enable)
+    {
+        if (enable)
+        {
+            for (int i = 0; i < 4; i++)
+                glEnable(GL_CLIP_DISTANCE0 + i);
+        }
+        else
+        {
+            for (int i = 0; i < 4; i++)
+                glDisable(GL_CLIP_DISTANCE0 + i);
+        }
+    }
+
     void render()
     {
         CHECK_GL("pre-frame check");
@@ -339,8 +353,10 @@ public:
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
         shaderSurface->bind();
+        enableClipDistance(true);
         for (const DrawTask &t : draws->opaque)
             drawSurface(t);
+        enableClipDistance(false);
         CHECK_GL("rendered opaque");
 
         // render background (atmosphere)
@@ -369,8 +385,10 @@ public:
         // render transparent
         glEnable(GL_BLEND);
         shaderSurface->bind();
+        enableClipDistance(true);
         for (const DrawTask &t : draws->transparent)
             drawSurface(t);
+        enableClipDistance(false);
         CHECK_GL("rendered transparent");
 
         // render polygon edges

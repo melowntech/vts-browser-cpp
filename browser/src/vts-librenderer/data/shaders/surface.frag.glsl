@@ -3,11 +3,9 @@ uniform sampler2D texColor;
 uniform sampler2D texMask;
 
 uniform vec4 uniColor;
-uniform vec4 uniUvClip;
 uniform ivec4 uniFlags; // mask, monochromatic, flat shading, uv source
 
 in vec2 varUvTex;
-in vec2 varUvClip;
 in vec3 varViewPosition;
 
 layout(location = 0) out vec4 outColor;
@@ -19,13 +17,6 @@ void main()
     vec2 uvDy = dFdy(varUvTex);
     vec3 viewDx = dFdx(varViewPosition);
     vec3 viewDy = dFdy(varViewPosition);
-
-    // uv clipping
-    if (varUvClip.x < uniUvClip.x
-        || varUvClip.y < uniUvClip.y
-        || varUvClip.x > uniUvClip.z
-        || varUvClip.y > uniUvClip.w)
-        discard;
 
     // mask
     if (uniFlags.x > 0)

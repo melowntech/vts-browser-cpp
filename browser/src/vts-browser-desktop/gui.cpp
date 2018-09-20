@@ -122,7 +122,7 @@ public:
         posAutoMotion(0,0,0), posAutoRotation(0),
         viewExtentLimitScaleMin(0),
         viewExtentLimitScaleMax(std::numeric_limits<double>::infinity()),
-        positionSrs(2), window(window), prepareFirst(true)
+        positionSrs(2), window(window), prepareFirst(true), hideTheGui(false)
     {
         gladLoadGLLoader(&SDL_GL_GetProcAddress);
 
@@ -322,12 +322,18 @@ public:
 
     int handleEvent(SDL_Event *evt)
     {
-        // some code copied from the demos
+        // hide the gui toggle
+        const Uint8* state = SDL_GetKeyboardState(0);
+        if (evt->type == SDL_KEYUP && state[SDL_SCANCODE_LCTRL] && evt->key.keysym.sym == SDLK_g)
+        {
+            hideTheGui = !hideTheGui;
+            return 1;
+        }
 
+        // some code copied from the demos
         if (evt->type == SDL_KEYUP || evt->type == SDL_KEYDOWN) {
             /* key events */
             int down = evt->type == SDL_KEYDOWN;
-            const Uint8* state = SDL_GetKeyboardState(0);
             SDL_Keycode sym = evt->key.keysym.sym;
             if (sym == SDLK_RSHIFT || sym == SDLK_LSHIFT)
                 nk_input_key(&ctx, NK_KEY_SHIFT, down);
@@ -665,7 +671,7 @@ public:
                     // maxTexelToPixelScale
                     nk_label(&ctx, "Texel to pixel:", NK_TEXT_LEFT);
                     o.maxTexelToPixelScale = nk_slide_float(&ctx,
-                            1, o.maxTexelToPixelScale, 5, 0.01);
+                            0.3, o.maxTexelToPixelScale, 30, 0.1);
                     sprintf(buffer, "%3.1f", o.maxTexelToPixelScale);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
@@ -1747,6 +1753,8 @@ public:
 
     void render(int width, int height)
     {
+        if (hideTheGui)
+            return;
         prepare(width, height);
         dispatch(width, height);
     }
@@ -1779,6 +1787,7 @@ public:
 
     MainWindow *window;
     bool prepareFirst;
+    bool hideTheGui;
 
     static const int MaxVertexMemory = 4 * 1024 * 1024;
     static const int MaxElementMemory = 4 * 1024 * 1024;

@@ -1823,3 +1823,8 @@ void MainWindow::Gui::finalize()
 {
     impl.reset();
 }
+
+void MainWindow::Gui::visible(bool visible)
+{
+    impl->hideTheGui = !visible;
+}

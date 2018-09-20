@@ -12,6 +12,7 @@ set(SRC_LIST
     programOptions.cpp programOptions.hpp
     editor.cpp editor.hpp
     main.cpp
+    screenshot.cpp
 )
 
 set(DATA_LIST

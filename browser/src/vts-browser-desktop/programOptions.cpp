@@ -88,13 +88,6 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 "Uses url format, eg.:\n"
                 "obj,long,lat,fix,height,pitch,yaw,roll,extent,fov"
             )
-            ("closeWhenComplete",
-                po::value<bool>(&appOptions.closeOnFullRender)
-                ->default_value(appOptions.closeOnFullRender)
-                ->implicit_value(!appOptions.closeOnFullRender),
-                "Quit the application when it finishes "
-                "rendering the whole image."
-            )
             ("purgeCache",
                 po::value<bool>(&appOptions.purgeDiskCache)
                 ->default_value(appOptions.purgeDiskCache)
@@ -113,13 +106,26 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 ->implicit_value(16),
                 "Antialiasing samples."
             )
-            /*("screenshotWhenComplete",
+            ("oversampleRender",
+                po::value<uint32>(&appOptions.oversampleRender)
+                ->default_value(appOptions.oversampleRender)
+                ->implicit_value(2),
+                "Rendering resolution multiplier."
+            )
+            ("closeWhenComplete",
+                po::value<bool>(&appOptions.closeOnFullRender)
+                ->default_value(appOptions.closeOnFullRender)
+                ->implicit_value(!appOptions.closeOnFullRender),
+                "Quit the application when it finishes "
+                "rendering the whole image."
+            )
+            ("screenshotWhenComplete",
                 po::value<bool>(&appOptions.screenshotOnFullRender)
-             ->default_value(appOptions.screenshotOnFullRender)
-             ->implicit_value(!appOptions.screenshotOnFullRender),
+                ->default_value(appOptions.screenshotOnFullRender)
+                ->implicit_value(!appOptions.screenshotOnFullRender),
                 "Save screenshot when it finishes "
                 "rendering the whole image."
-            )*/
+            )
             ("mapOptions",
                 po::value<std::string>()->notifier(
                     [&](const std::string &name) {

@@ -69,6 +69,7 @@ void microSleep(uint64 micros)
 } // namespace
 
 AppOptions::AppOptions() :
+    oversampleRender(1),
     renderCompas(false),
     screenshotOnFullRender(false),
     closeOnFullRender(false),
@@ -154,7 +155,7 @@ void MainWindow::renderFrame()
         render.renderCompass(posSize, rot);
     }
 
-    gui.render(ro.width, ro.height);
+    gui.render(ro.targetViewportW, ro.targetViewportH);
 }
 
 void MainWindow::prepareMarks()
@@ -282,19 +283,30 @@ bool MainWindow::processEvents()
     return false;
 }
 
+void MainWindow::updateWindowSize()
+{
+    vts::renderer::RenderOptions &ro = render.options();
+    SDL_GL_GetDrawableSize(window, (int*)&ro.width, (int*)&ro.height);
+    ro.targetViewportW = ro.width;
+    ro.targetViewportH = ro.height;
+    ro.width *= appOptions.oversampleRender;
+    ro.height *= appOptions.oversampleRender;
+    map->setWindowSize(ro.width, ro.height);
+}
+
 void MainWindow::run()
 {
     if (appOptions.purgeDiskCache)
         map->purgeDiskCache();
 
-    vts::renderer::RenderOptions &ro = render.options();
-    SDL_GL_GetDrawableSize(window, (int*)&ro.width, (int*)&ro.height);
-    map->setWindowSize(ro.width, ro.height);
+    updateWindowSize();
     render.bindLoadFunctions(map);
 
     setMapConfigPath(appOptions.paths[0]);
     map->renderInitialize();
     gui.initialize(this);
+    if (appOptions.screenshotOnFullRender)
+        gui.visible(false);
 
     if (!appOptions.initialPosition.empty())
     {
@@ -323,8 +335,7 @@ void MainWindow::run()
         uint32 time1 = SDL_GetTicks();
         try
         {
-            SDL_GL_GetDrawableSize(window, (int*)&ro.width, (int*)&ro.height);
-            map->setWindowSize(ro.width, ro.height);
+            updateWindowSize();
             map->renderTickPrepare(timingTotalFrame * 1e-3);
             map->renderTickRender();
         }
@@ -341,10 +352,17 @@ void MainWindow::run()
 
         uint32 time2 = SDL_GetTicks();
         shouldClose = processEvents();
-        if (appOptions.closeOnFullRender && map->getMapRenderComplete())
-            shouldClose = true;
         prepareMarks();
         renderFrame();
+        bool renderCompleted = map->getMapRenderComplete();
+        if (appOptions.screenshotOnFullRender && renderCompleted)
+        {
+            appOptions.screenshotOnFullRender = false;
+            makeScreenshot();
+            gui.visible(false);
+        }
+        if (appOptions.closeOnFullRender && renderCompleted)
+            shouldClose = true;
         if (map->statistics().renderTicks % 120 == 0)
         {
             std::string creditLine = std::string() + "vts-browser-desktop: "

@@ -46,6 +46,8 @@ typedef struct vtsCRenderOptionsBase
     uint32 targetFrameBuffer;
     uint32 targetViewportX;
     uint32 targetViewportY;
+    uint32 targetViewportW; // zero will use the default width
+    uint32 targetViewportH; // zero will use the default height
 
     // other options
     uint32 antialiasingSamples; // two or more to enable multisampling

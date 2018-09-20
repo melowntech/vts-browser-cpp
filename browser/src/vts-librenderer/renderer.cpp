@@ -453,12 +453,17 @@ public:
         // copy the color to screen
         if (options.colorToTargetFrameBuffer)
         {
+            uint32 w = options.targetViewportW ? options.targetViewportW
+                                               : options.width;
+            uint32 h = options.targetViewportH ? options.targetViewportH
+                                               : options.height;
+            bool same = w == options.width && h == options.height;
             glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, options.targetFrameBuffer);
             glBlitFramebuffer(0, 0, options.width, options.height,
                               options.targetViewportX, options.targetViewportY,
-                              options.width, options.height,
-                              GL_COLOR_BUFFER_BIT, GL_NEAREST);
+                              w, h, GL_COLOR_BUFFER_BIT,
+                              same ? GL_NEAREST : GL_LINEAR);
             CHECK_GL("copied the color to screen (resolving multisampling)");
         }
 

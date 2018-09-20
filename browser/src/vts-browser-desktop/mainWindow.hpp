@@ -61,6 +61,7 @@ struct AppOptions
 {
     std::vector<MapPaths> paths;
     std::string initialPosition;
+    uint32 oversampleRender;
     int renderCompas;
     bool screenshotOnFullRender;
     bool closeOnFullRender;
@@ -86,6 +87,7 @@ public:
         void inputBegin();
         bool input(union SDL_Event &event);
         void inputEnd();
+        void visible(bool visible);
     private:
         std::shared_ptr<class GuiImpl> impl;
     } gui;
@@ -97,6 +99,8 @@ public:
     void prepareMarks();
     void renderFrame();
     bool processEvents();
+    void updateWindowSize();
+    void makeScreenshot();
 
     void setMapConfigPath(const MapPaths &paths);
 

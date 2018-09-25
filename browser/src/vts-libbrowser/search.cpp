@@ -262,16 +262,52 @@ SearchItem::SearchItem() :
 SearchItem::SearchItem(const std::string &json) :
     SearchItem()
 {
-    (void)json;
-    LOG(warn3) << "<SearchItem(const std::string &json)>"
-               << " is not yet implemented";
+    Json::Value v = stringToJson(json);
+    AJ(displayName, asString);
+    AJ(title, asString);
+    AJ(type, asString);
+    AJ(region, asString);
+    AJ(road, asString);
+    AJ(city, asString);
+    AJ(county, asString);
+    AJ(state, asString);
+    AJ(houseNumber, asString);
+    AJ(stateDistrict, asString);
+    AJ(country, asString);
+    AJ(countryCode, asString);
+    AJ(radius, asDouble);
+    AJ(distance, asDouble);
+    AJ(importance, asDouble);
+    Json::Value p = v["position"];
+    position[0] = p["x"].asDouble();
+    position[1] = p["y"].asDouble();
+    position[2] = p["z"].asDouble();
 }
 
 std::string SearchItem::toJson() const
 {
-    LOG(warn3) << "<SearchItem::toJson()>"
-               << " is not yet implemented";
-    return "";
+    Json::Value p;
+    p["x"] = position[0];
+    p["y"] = position[1];
+    p["z"] = position[2];
+    Json::Value v;
+    TJ(displayName, asString);
+    TJ(title, asString);
+    TJ(type, asString);
+    TJ(region, asString);
+    TJ(road, asString);
+    TJ(city, asString);
+    TJ(county, asString);
+    TJ(state, asString);
+    TJ(houseNumber, asString);
+    TJ(stateDistrict, asString);
+    TJ(country, asString);
+    TJ(countryCode, asString);
+    TJ(radius, asDouble);
+    TJ(distance, asDouble);
+    TJ(importance, asDouble);
+    v["position"] = p;
+    return jsonToString(v);
 }
 
 SearchTask::SearchTask(const std::string &query, const double point[3]) :

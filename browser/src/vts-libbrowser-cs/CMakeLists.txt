@@ -10,6 +10,7 @@ set(SRC_LIST
     Math.cs
     Resources.cs
     Utilities.cs
+    Searching.cs
 )
 
 add_library(vts-browser-cs ${SRC_LIST})

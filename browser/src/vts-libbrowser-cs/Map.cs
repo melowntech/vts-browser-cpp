@@ -337,6 +337,20 @@ namespace vts
             Util.CheckInterop();
             return res;
         }
+        
+        public bool GetSearchable()
+        {
+            bool res = BrowserInterop.vtsMapGetSearchable(Handle);
+            Util.CheckInterop();
+            return res;
+        }
+        
+        public SearchTask Search(string query)
+        {
+            IntPtr ptr = BrowserInterop.vtsMapSearch(Handle, query);
+            Util.CheckInterop();
+            return new SearchTask(ptr);
+        }
 
         public void Dispose()
         {

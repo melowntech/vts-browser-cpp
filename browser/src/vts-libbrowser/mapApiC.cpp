@@ -594,6 +594,23 @@ void vtsCameraSetOptions(vtsHCamera cam, const char *options)
 // NAVIGATION
 ////////////////////////////////////////////////////////////////////////////
 
+vtsHNavigation vtsNavigationCreate(vtsHCamera cam)
+{
+    C_BEGIN
+    vtsHNavigation r = new vtsCNavigation();
+    r->p = cam->p->navigation();
+    return r;
+    C_END
+    return nullptr;
+}
+
+void vtsNavigationDestroy(vtsHNavigation nav)
+{
+    C_BEGIN
+    delete nav;
+    C_END
+}
+
 // navigation
 
 void vtsNavigationPan(vtsHNavigation nav, const double value[3])
@@ -792,7 +809,7 @@ uint32 vtsGpuTypeSize(uint32 type)
     return 0;
 }
 
-void vtsSetResourceUserData(vtsHResource resource, void *data,
+void vtsResourceSetUserData(vtsHResource resource, void *data,
                             vtsResourceDeleterCallbackType deleter)
 {
     struct Callback
@@ -810,7 +827,7 @@ void vtsSetResourceUserData(vtsHResource resource, void *data,
     C_END
 }
 
-void vtsSetResourceMemoryCost(vtsHResource resource,
+void vtsResourceSetMemoryCost(vtsHResource resource,
                               uint32 ramMem, uint32 gpuMem)
 {
     C_BEGIN
@@ -819,7 +836,7 @@ void vtsSetResourceMemoryCost(vtsHResource resource,
     C_END
 }
 
-void vtsGetTextureResolution(vtsHResource resource,
+void vtsTextureGetResolution(vtsHResource resource,
         uint32 *width, uint32 *height, uint32 *components)
 {
     C_BEGIN
@@ -829,7 +846,7 @@ void vtsGetTextureResolution(vtsHResource resource,
     C_END
 }
 
-uint32 vtsGetTextureType(vtsHResource resource)
+uint32 vtsTextureGetType(vtsHResource resource)
 {
     C_BEGIN
     return (uint32)resource->ptr.t->type;
@@ -837,7 +854,7 @@ uint32 vtsGetTextureType(vtsHResource resource)
     return 0;
 }
 
-uint32 vtsGetTextureInternalFormat(vtsHResource resource)
+uint32 vtsTextureGetInternalFormat(vtsHResource resource)
 {
     C_BEGIN
     return resource->ptr.t->internalFormat;
@@ -845,7 +862,7 @@ uint32 vtsGetTextureInternalFormat(vtsHResource resource)
     return 0;
 }
 
-uint32 vtsGetTextureFilterMode(vtsHResource resource)
+uint32 vtsTextureGetFilterMode(vtsHResource resource)
 {
     C_BEGIN
     return (uint32)resource->ptr.t->filterMode;
@@ -853,7 +870,7 @@ uint32 vtsGetTextureFilterMode(vtsHResource resource)
     return 0;
 }
 
-uint32 vtsGetTextureWrapMode(vtsHResource resource)
+uint32 vtsTextureGetWrapMode(vtsHResource resource)
 {
     C_BEGIN
     return (uint32)resource->ptr.t->wrapMode;
@@ -861,7 +878,7 @@ uint32 vtsGetTextureWrapMode(vtsHResource resource)
     return 0;
 }
 
-void vtsGetTextureBuffer(vtsHResource resource,
+void vtsTextureGetBuffer(vtsHResource resource,
         void **data, uint32 *size)
 {
     C_BEGIN
@@ -870,7 +887,7 @@ void vtsGetTextureBuffer(vtsHResource resource,
     C_END
 }
 
-uint32 vtsGetMeshFaceMode(vtsHResource resource)
+uint32 vtsMeshGetFaceMode(vtsHResource resource)
 {
     C_BEGIN
     return (uint32)resource->ptr.m->faceMode;
@@ -878,7 +895,7 @@ uint32 vtsGetMeshFaceMode(vtsHResource resource)
     return 0;
 }
 
-void vtsGetMeshVertices(vtsHResource resource,
+void vtsMeshGetVertices(vtsHResource resource,
         void **data, uint32 *size, uint32 *count)
 {
     C_BEGIN
@@ -888,7 +905,7 @@ void vtsGetMeshVertices(vtsHResource resource,
     C_END
 }
 
-void vtsGetMeshIndices(vtsHResource resource,
+void vtsMeshGetIndices(vtsHResource resource,
         void **data, uint32 *size, uint32 *count)
 {
     C_BEGIN
@@ -898,7 +915,7 @@ void vtsGetMeshIndices(vtsHResource resource,
     C_END
 }
 
-void vtsGetMeshAttribute(vtsHResource resource, uint32 index,
+void vtsMeshGetAttribute(vtsHResource resource, uint32 index,
         uint32 *offset, uint32 *stride, uint32 *components,
         uint32 *type, bool *enable, bool *normalized)
 {
@@ -1298,7 +1315,7 @@ void vtsSearchDestroy(vtsHSearch search)
     C_END
 }
 
-bool vtsSearchDone(vtsHSearch search)
+bool vtsSearchGetDone(vtsHSearch search)
 {
     C_BEGIN
     return search->p->done;
@@ -1306,7 +1323,7 @@ bool vtsSearchDone(vtsHSearch search)
     return false;
 }
 
-uint32 vtsSearchResultsCount(vtsHSearch search)
+uint32 vtsSearchGetResultsCount(vtsHSearch search)
 {
     assert((bool)search->p->done);
     C_BEGIN
@@ -1315,7 +1332,7 @@ uint32 vtsSearchResultsCount(vtsHSearch search)
     return 0;
 }
 
-const char *vtsSearchResultData(vtsHSearch search, uint32 index)
+const char *vtsSearchGetResultData(vtsHSearch search, uint32 index)
 {
     assert((bool)search->p->done);
     C_BEGIN

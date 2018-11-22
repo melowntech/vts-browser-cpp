@@ -40,15 +40,15 @@ namespace vts
 
         public bool Check()
         {
-            bool res = BrowserInterop.vtsSearchDone(ptr);
+            bool res = BrowserInterop.vtsSearchGetDone(ptr);
             Util.CheckInterop();
             if (res)
             {
                 results.Clear();
-                uint cnt = BrowserInterop.vtsSearchResultsCount(ptr);
+                uint cnt = BrowserInterop.vtsSearchGetResultsCount(ptr);
                 for (uint i = 0; i < cnt; i++)
                 {
-                    string r = Util.CheckString(BrowserInterop.vtsSearchResultData(ptr, i));
+                    string r = Util.CheckString(BrowserInterop.vtsSearchGetResultData(ptr, i));
                     results.Add(r);
                 }
             }

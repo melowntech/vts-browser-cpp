@@ -3,14 +3,16 @@ project(vts-browser-cs CSharp)
 
 set(SRC_LIST
     Callbacks.cs
+    Camera.cs
     Draws.cs
     Exception.cs
     Interop.cs
     Map.cs
     Math.cs
+    Navigation.cs
     Resources.cs
+    Search.cs
     Utilities.cs
-    Searching.cs
 )
 
 add_library(vts-browser-cs ${SRC_LIST})

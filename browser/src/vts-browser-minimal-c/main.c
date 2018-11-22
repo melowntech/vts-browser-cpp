@@ -25,6 +25,8 @@
  */
 
 #include <vts-browser/map.h>
+#include <vts-browser/camera.h>
+#include <vts-browser/navigation.h>
 #include <vts-browser/log.h>
 #include <vts-browser/fetcher.h>
 #include <vts-renderer/renderer.h>
@@ -36,6 +38,8 @@ SDL_Window *window;
 SDL_GLContext renderContext;
 vtsHRenderer render;
 vtsHMap map;
+vtsHCamera cam;
+vtsHNavigation nav;
 bool shouldClose = false;
 
 void check()
@@ -53,7 +57,7 @@ void updateResolution()
     vtsCRenderOptionsBase *ro = vtsRendererOptions(render);
     SDL_GL_GetDrawableSize(window, (int*)&ro->width,
                                    (int*)&ro->height);
-    vtsMapSetWindowSize(map, ro->width, ro->height);
+    vtsCameraSetViewportSize(cam, ro->width, ro->height);
     check();
 }
 
@@ -116,6 +120,12 @@ int main()
     map = vtsMapCreate("", NULL);
     check();
 
+    // acquire handles for camera and navigation
+    cam = vtsCameraCreate(map);
+    check();
+    nav = vtsNavigationCreate(cam);
+    check();
+
     // set required callbacks for creating mesh and texture resources
     vtsRendererBindLoadFunctions(render, map);
     check();
@@ -133,7 +143,7 @@ int main()
     vtsMapSetConfigPaths(map,
             "https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json",
-                         "", "");
+            "");
     check();
 
     // acquire current time to measure how long each frame takes
@@ -161,17 +171,17 @@ int main()
                                 (double)event.motion.yrel, 0 };
                     if (event.motion.state & SDL_BUTTON(SDL_BUTTON_LEFT))
                     {
-                        vtsMapPan(map, p);
+                        vtsNavigationPan(nav, p);
                         check();
                     }
                     if (event.motion.state & SDL_BUTTON(SDL_BUTTON_RIGHT))
                     {
-                        vtsMapRotate(map, p);
+                        vtsNavigationRotate(nav, p);
                         check();
                     }
                 } break;
                 case SDL_MOUSEWHEEL:
-                    vtsMapZoom(map, event.wheel.y);
+                    vtsNavigationZoom(nav, event.wheel.y);
                     check();
                     break;
                 }
@@ -182,20 +192,17 @@ int main()
         vtsMapDataTick(map);
         check();
 
+        // check if the window has been resized
+        updateResolution();
+
         // update navigation etc.
         uint32 currentRenderTime = SDL_GetTicks();
-        vtsMapRenderTickPrepare(map,
-                    (currentRenderTime - lastRenderTime) * 1e-3);
+        vtsMapRenderTick(map, (currentRenderTime - lastRenderTime) * 1e-3);
         check();
         lastRenderTime = currentRenderTime;
 
-        // prepare the rendering data
-        updateResolution();
-        vtsMapRenderTickRender(map);
-        check();
-
         // actually render the map
-        vtsRendererRender(render, map);
+        vtsRendererRender(render, cam);
         check();
 
         // present the rendered image to the screen
@@ -211,6 +218,8 @@ int main()
     check();
     vtsRendererFinalize(render);
     check();
+    vtsNavigationDestroy(nav);
+    vtsCameraDestroy(cam);
     vtsMapDestroy(map);
     vtsRendererDestroy(render);
 

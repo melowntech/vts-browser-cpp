@@ -39,9 +39,9 @@ VTS_API vtsHSearch vtsMapSearchAt(vtsHMap map, const char *query,
                                   const double point[3]);
 VTS_API void vtsSearchDestroy(vtsHSearch search);
 
-VTS_API bool vtsSearchDone(vtsHSearch search);
-VTS_API uint32 vtsSearchResultsCount(vtsHSearch search);
-VTS_API const char *vtsSearchResultData(vtsHSearch search,
+VTS_API bool vtsSearchGetDone(vtsHSearch search);
+VTS_API uint32 vtsSearchGetResultsCount(vtsHSearch search);
+VTS_API const char *vtsSearchGetResultData(vtsHSearch search,
                                         uint32 index);
 VTS_API void vtsSearchUpdateDistances(vtsHSearch search,
                         const double point[3]);

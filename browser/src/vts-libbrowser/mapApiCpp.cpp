@@ -181,13 +181,7 @@ bool Map::getMapRenderComplete() const
 {
     if (!getMapconfigReady())
         return false;
-    /*
-    return impl->statistics.currentNodeMetaUpdates == 0
-        && impl->statistics.currentNodeDrawsUpdates == 0
-        && impl->statistics.resourcesPreparing == 0;
-    */
-    // todo
-    return false;
+    return impl->getMapRenderComplete();
 }
 
 double Map::getMapRenderProgress() const

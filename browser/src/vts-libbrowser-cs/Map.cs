@@ -68,25 +68,25 @@ namespace vts
         }
 #endif
 
-        public void SetMapConfigPath(string mapConfigPath, string authPath = "", string sriPath = "")
+        public void SetMapconfigPath(string mapconfigPath, string authPath = "")
         {
-            BrowserInterop.vtsMapSetConfigPaths(Handle, mapConfigPath, authPath, sriPath);
+            BrowserInterop.vtsMapSetConfigPaths(Handle, mapconfigPath, authPath);
             Util.CheckInterop();
         }
 
-        public string GetMapConfigPath()
+        public string GetMapconfigPath()
         {
             return Util.CheckString(BrowserInterop.vtsMapGetConfigPath(Handle));
         }
 
-        public bool GetMapConfigAvailable()
+        public bool GetMapconfigAvailable()
         {
             bool res = BrowserInterop.vtsMapGetConfigAvailable(Handle);
             Util.CheckInterop();
             return res;
         }
 
-        public bool GetMapConfigReady()
+        public bool GetMapconfigReady()
         {
             bool res = BrowserInterop.vtsMapGetConfigReady(Handle);
             Util.CheckInterop();
@@ -137,33 +137,15 @@ namespace vts
             Util.CheckInterop();
         }
 
-        public void RenderTickPrepare(double elapsedTime)
+        public void RenderTick(double elapsedTime)
         {
-            BrowserInterop.vtsMapRenderTickPrepare(Handle, elapsedTime);
-            Util.CheckInterop();
-        }
-
-        public void RenderTickRender()
-        {
-            BrowserInterop.vtsMapRenderTickRender(Handle);
-            Util.CheckInterop();
-        }
-
-        public void RenderTickColliders()
-        {
-            BrowserInterop.vtsMapRenderTickColliders(Handle);
+            BrowserInterop.vtsMapRenderTick(Handle, elapsedTime);
             Util.CheckInterop();
         }
 
         public void RenderDeinitialize()
         {
             BrowserInterop.vtsMapRenderFinalize(Handle);
-            Util.CheckInterop();
-        }
-
-        public void SetWindowSize(uint width, uint height)
-        {
-            BrowserInterop.vtsMapSetWindowSize(Handle, width, height);
             Util.CheckInterop();
         }
 
@@ -177,156 +159,10 @@ namespace vts
             return Util.CheckString(BrowserInterop.vtsMapGetStatistics(Handle));
         }
 
-        public string GetCredits()
-        {
-            return Util.CheckString(BrowserInterop.vtsMapGetCredits(Handle));
-        }
-
-        public string GetCreditsShort()
-        {
-            return Util.CheckString(BrowserInterop.vtsMapGetCreditsShort(Handle));
-        }
-
-        public string GetCreditsFull()
-        {
-            return Util.CheckString(BrowserInterop.vtsMapGetCreditsFull(Handle));
-        }
-
         public void SetOptions(string json)
         {
             BrowserInterop.vtsMapSetOptions(Handle, json);
             Util.CheckInterop();
-        }
-
-        public void Pan(double[] value)
-        {
-            Util.CheckArray(value, 3);
-            BrowserInterop.vtsMapPan(Handle, value);
-            Util.CheckInterop();
-        }
-
-        public void Rotate(double[] value)
-        {
-            Util.CheckArray(value, 3);
-            BrowserInterop.vtsMapRotate(Handle, value);
-            Util.CheckInterop();
-        }
-
-        public void Zoom(double value)
-        {
-            BrowserInterop.vtsMapZoom(Handle, value);
-            Util.CheckInterop();
-        }
-        
-        public void ResetPositionAltitude()
-        {
-            BrowserInterop.vtsMapResetPositionAltitude(Handle);
-            Util.CheckInterop();
-        }
-
-        public void ResetNavigationMode()
-        {
-            BrowserInterop.vtsMapResetNavigationMode(Handle);
-            Util.CheckInterop();
-        }
-
-        public void SetPositionSubjective(bool subjective, bool convert)
-        {
-            BrowserInterop.vtsMapSetPositionSubjective(Handle, subjective, convert);
-            Util.CheckInterop();
-        }
-
-        public void SetPositionPoint(double[] point)
-        {
-            Util.CheckArray(point, 3);
-            BrowserInterop.vtsMapSetPositionPoint(Handle, point);
-            Util.CheckInterop();
-        }
-
-        public void SetPositionRotation(double[] rot)
-        {
-            Util.CheckArray(rot, 3);
-            BrowserInterop.vtsMapSetPositionRotation(Handle, rot);
-            Util.CheckInterop();
-        }
-
-        public void SetPositionViewExtent(double viewExtent)
-        {
-            BrowserInterop.vtsMapSetPositionViewExtent(Handle, viewExtent);
-            Util.CheckInterop();
-        }
-
-        public void SetPositionFov(double fov)
-        {
-            BrowserInterop.vtsMapSetPositionFov(Handle, fov);
-            Util.CheckInterop();
-        }
-
-        public void SetPositionJson(string position)
-        {
-            BrowserInterop.vtsMapSetPositionJson(Handle, position);
-            Util.CheckInterop();
-        }
-
-        public void SetPositionUrl(string position)
-        {
-            BrowserInterop.vtsMapSetPositionUrl(Handle, position);
-            Util.CheckInterop();
-        }
-
-        public bool GetPositionSubjective()
-        {
-            bool res = BrowserInterop.vtsMapGetPositionSubjective(Handle);
-            Util.CheckInterop();
-            return res;
-        }
-
-        public double[] GetPositionPoint()
-        {
-            double[] res = new double[3];
-            BrowserInterop.vtsMapGetPositionPoint(Handle, res);
-            Util.CheckInterop();
-            return res;
-        }
-
-        public double[] GetPositionRotation()
-        {
-            double[] res = new double[3];
-            BrowserInterop.vtsMapGetPositionRotation(Handle, res);
-            Util.CheckInterop();
-            return res;
-        }
-
-        public double[] GetPositionRotationLimited()
-        {
-            double[] res = new double[3];
-            BrowserInterop.vtsMapGetPositionRotationLimited(Handle, res);
-            Util.CheckInterop();
-            return res;
-        }
-
-        public double GetPositionViewExtent()
-        {
-            double res = BrowserInterop.vtsMapGetPositionViewExtent(Handle);
-            Util.CheckInterop();
-            return res;
-        }
-
-        public double GetPositionFov()
-        {
-            double res = BrowserInterop.vtsMapGetPositionFov(Handle);
-            Util.CheckInterop();
-            return res;
-        }
-
-        public string GetPositionJson()
-        {
-            return Util.CheckString(BrowserInterop.vtsMapGetPositionJson(Handle));
-        }
-
-        public string GetPositionUrl()
-        {
-            return Util.CheckString(BrowserInterop.vtsMapGetPositionUrl(Handle));
         }
 
         public double[] Convert(double[] point, Srs srsFrom, Srs srsTo)
@@ -337,14 +173,14 @@ namespace vts
             Util.CheckInterop();
             return res;
         }
-        
+
         public bool GetSearchable()
         {
             bool res = BrowserInterop.vtsMapGetSearchable(Handle);
             Util.CheckInterop();
             return res;
         }
-        
+
         public SearchTask Search(string query)
         {
             IntPtr ptr = BrowserInterop.vtsMapSearch(Handle, query);

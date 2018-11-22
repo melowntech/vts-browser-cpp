@@ -49,10 +49,12 @@ namespace vtsBrowserMinimalCs
         {
             Renderer.LoadGlFunctions(VtsGL.AnyGlFnc);
             map = new Map("");
+            cam = new Camera(map);
+            nav = new Navigation(cam);
             renderer = new Renderer();
             map.DataInitialize();
             map.RenderInitialize();
-            map.SetMapConfigPath("https://cdn.melown.com/mario/store/melown2015/map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
+            map.SetMapconfigPath("https://cdn.melown.com/mario/store/melown2015/map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
             renderer.Initialize();
             renderer.BindLoadFunctions(map);
         }
@@ -63,6 +65,8 @@ namespace vtsBrowserMinimalCs
             map.RenderDeinitialize();
             map.DataDeinitialize();
             renderer = null;
+            nav = null;
+            cam = null;
             map = null;
         }
 
@@ -72,16 +76,15 @@ namespace vtsBrowserMinimalCs
             if (c.Width <= 0 || c.Height <= 0)
                 return;
 
-            map.SetWindowSize((uint)c.Width, (uint)c.Height);
+            cam.SetViewportSize((uint)c.Width, (uint)c.Height);
             map.DataTick();
-            map.RenderTickPrepare(0);
-            map.RenderTickRender();
+            map.RenderTick(0);
 
             RenderOptions ro = renderer.Options;
             ro.width = (uint)c.Width;
             ro.height = (uint)c.Height;
             renderer.Options = ro;
-            renderer.Render(map);
+            renderer.Render(cam);
         }
 
         public void MapMousePress(object sender, MouseEventArgs e)
@@ -102,18 +105,20 @@ namespace vtsBrowserMinimalCs
             p[0] = xrel;
             p[1] = yrel;
             if (e.Button == MouseButtons.Left)
-                map.Pan(p);
+                nav.Pan(p);
             if (e.Button == MouseButtons.Right)
-                map.Rotate(p);
+                nav.Rotate(p);
         }
 
         public void MapMouseWheel(object sender, MouseEventArgs e)
         {
-            map.Zoom(e.Delta / 120);
+            nav.Zoom(e.Delta / 120);
         }
 
         public int LastMouseX, LastMouseY;
         public Map map;
+        public Camera cam;
+        public Navigation nav;
         public Renderer renderer;
     }
 }

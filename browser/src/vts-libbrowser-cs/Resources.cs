@@ -86,17 +86,17 @@ namespace vts
 
         public void Load(IntPtr handle)
         {
-            BrowserInterop.vtsGetTextureResolution(handle, ref width, ref height, ref components);
+            BrowserInterop.vtsTextureGetResolution(handle, ref width, ref height, ref components);
             Util.CheckInterop();
-            type = (GpuType)BrowserInterop.vtsGetTextureType(handle);
+            type = (GpuType)BrowserInterop.vtsTextureGetType(handle);
             Util.CheckInterop();
-            filterMode = (FilterMode)BrowserInterop.vtsGetTextureFilterMode(handle);
+            filterMode = (FilterMode)BrowserInterop.vtsTextureGetFilterMode(handle);
             Util.CheckInterop();
-            wrapMode = (WrapMode)BrowserInterop.vtsGetTextureWrapMode(handle);
+            wrapMode = (WrapMode)BrowserInterop.vtsTextureGetWrapMode(handle);
             Util.CheckInterop();
             IntPtr bufPtr = IntPtr.Zero;
             uint bufSize = 0;
-            BrowserInterop.vtsGetTextureBuffer(handle, ref bufPtr, ref bufSize);
+            BrowserInterop.vtsTextureGetBuffer(handle, ref bufPtr, ref bufSize);
             Util.CheckInterop();
             data = new byte[bufSize];
             Marshal.Copy(bufPtr, data, 0, (int)bufSize);
@@ -124,11 +124,11 @@ namespace vts
 
         public void Load(IntPtr handle)
         {
-            faceMode = (FaceMode)BrowserInterop.vtsGetMeshFaceMode(handle);
+            faceMode = (FaceMode)BrowserInterop.vtsMeshGetFaceMode(handle);
             Util.CheckInterop();
             IntPtr bufPtr = IntPtr.Zero;
             uint bufSize = 0;
-            BrowserInterop.vtsGetMeshIndices(handle, ref bufPtr, ref bufSize, ref indicesCount);
+            BrowserInterop.vtsMeshGetIndices(handle, ref bufPtr, ref bufSize, ref indicesCount);
             Util.CheckInterop();
             if (indicesCount > 0)
             {
@@ -137,7 +137,7 @@ namespace vts
                 indices = new ushort[indicesCount];
                 Buffer.BlockCopy(tmp, 0, indices, 0, (int)indicesCount * 2);
             }
-            BrowserInterop.vtsGetMeshVertices(handle, ref bufPtr, ref bufSize, ref verticesCount);
+            BrowserInterop.vtsMeshGetVertices(handle, ref bufPtr, ref bufSize, ref verticesCount);
             Util.CheckInterop();
             vertices = new byte[bufSize];
             Marshal.Copy(bufPtr, vertices, 0, (int)bufSize);
@@ -151,7 +151,7 @@ namespace vts
                 a.enable = false;
                 a.normalized = false;
                 uint type = 0;
-                BrowserInterop.vtsGetMeshAttribute(handle, i, ref a.offset, ref a.stride, ref a.components, ref type, ref a.enable, ref a.normalized);
+                BrowserInterop.vtsMeshGetAttribute(handle, i, ref a.offset, ref a.stride, ref a.components, ref type, ref a.enable, ref a.normalized);
                 Util.CheckInterop();
                 a.type = (GpuType)type;
                 attributes.Add(a);

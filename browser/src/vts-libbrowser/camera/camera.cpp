@@ -502,4 +502,21 @@ void CameraImpl::sortOpaqueFrontToBack()
     });
 }
 
+bool MapImpl::getMapRenderComplete()
+{
+    if (statistics.resourcesPreparing > 0)
+        return false;
+    for (auto &camera : cameras)
+    {
+        auto cam = camera.lock();
+        if (cam)
+        {
+            if (cam->statistics.currentNodeMetaUpdates > 0
+                || cam->statistics.currentNodeDrawsUpdates > 0)
+                return false;
+        }
+    }
+    return true;
+}
+
 } // namespace vts

@@ -61,9 +61,9 @@ namespace vts
             Util.CheckInterop();
         }
 
-        public void Render(Map map)
+        public void Render(Camera camera)
         {
-            RendererInterop.vtsRendererRender(Handle, map.Handle);
+            RendererInterop.vtsRendererRender(Handle, camera.Handle);
             Util.CheckInterop();
         }
         

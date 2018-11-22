@@ -25,9 +25,11 @@
  */
 
 #include <vts-browser/map.hpp>
-#include <vts-browser/options.hpp>
+#include <vts-browser/mapOptions.hpp>
 #include <vts-browser/log.hpp>
 #include <vts-browser/fetcher.hpp>
+#include <vts-browser/camera.hpp>
+#include <vts-browser/navigation.hpp>
 #include <vts-renderer/renderer.hpp>
 
 #define SDL_MAIN_HANDLED
@@ -37,6 +39,8 @@ SDL_Window *window;
 SDL_GLContext renderContext;
 vts::renderer::Renderer render;
 std::shared_ptr<vts::Map> map;
+std::shared_ptr<vts::Camera> cam;
+std::shared_ptr<vts::Navigation> nav;
 bool shouldClose = false;
 
 void updateResolution()
@@ -44,7 +48,7 @@ void updateResolution()
     vts::renderer::RenderOptions &ro = render.options();
     SDL_GL_GetDrawableSize(window, (int*)&ro.width,
                                    (int*)&ro.height);
-    map->setWindowSize(ro.width, ro.height);
+    cam->setViewportSize(ro.width, ro.height);
 }
 
 int main(int, char *[])
@@ -102,6 +106,10 @@ int main(int, char *[])
     map = std::make_shared<vts::Map>(vts::MapCreateOptions(),
                 vts::Fetcher::create(vts::FetcherOptions()));
 
+    // acquire a camera and navigation handles
+    cam = map->camera();
+    nav = cam->navigation();
+
     // set required callbacks for creating mesh and texture resources
     render.bindLoadFunctions(map.get());
 
@@ -111,7 +119,7 @@ int main(int, char *[])
     map->dataInitialize();
 
     // configure an url to the map that should be displayed
-    map->setMapConfigPath("https://cdn.melown.com/mario/store/melown2015/"
+    map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
 
     // acquire current time to measure how long each frame takes
@@ -138,12 +146,12 @@ int main(int, char *[])
                     double p[3] = { (double)event.motion.xrel,
                                 (double)event.motion.yrel, 0 };
                     if (event.motion.state & SDL_BUTTON(SDL_BUTTON_LEFT))
-                        map->pan(p);
+                        nav->pan(p);
                     if (event.motion.state & SDL_BUTTON(SDL_BUTTON_RIGHT))
-                        map->rotate(p);
+                        nav->rotate(p);
                 } break;
                 case SDL_MOUSEWHEEL:
-                    map->zoom(event.wheel.y);
+                    nav->zoom(event.wheel.y);
                     break;
                 }
             }
@@ -152,17 +160,16 @@ int main(int, char *[])
         // update downloads
         map->dataTick();
 
+        // check if window size has changed
+        updateResolution();
+
         // update navigation etc.
         uint32 currentRenderTime = SDL_GetTicks();
-        map->renderTickPrepare((currentRenderTime - lastRenderTime) * 1e-3);
+        map->renderTick((currentRenderTime - lastRenderTime) * 1e-3);
         lastRenderTime = currentRenderTime;
 
-        // prepare the rendering data
-        updateResolution();
-        map->renderTickRender();
-
         // actually render the map
-        render.render(map.get());
+        render.render(cam.get());
 
         // present the rendered image to the screen
         SDL_GL_SwapWindow(window);
@@ -170,6 +177,12 @@ int main(int, char *[])
 
     // release all rendering related data
     render.finalize();
+
+    // release camera and navigation
+    if (nav)
+        nav.reset();
+    if (cam)
+        cam.reset();
 
     // release the map
     if (map)

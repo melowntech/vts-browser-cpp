@@ -39,7 +39,6 @@ namespace vts
         public double near, far;
         public double aspect;
         public double fov;
-        [MarshalAs(UnmanagedType.I1)] public bool mapProjected;
     }
 
     [StructLayout(LayoutKind.Sequential)]

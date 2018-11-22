@@ -701,6 +701,7 @@ public:
     void updateSearch();
     void updateAtmosphereDensity();
     double getMapRenderProgress();
+    bool getMapRenderComplete();
     vtslibs::vts::TileId roundId(TileId nodeId);
 };
 

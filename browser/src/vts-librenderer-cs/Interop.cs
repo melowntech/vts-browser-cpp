@@ -77,7 +77,7 @@ public static extern IntPtr vtsRendererVariables(
  IntPtr renderer);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsRendererRender(IntPtr renderer, IntPtr map);
+public static extern void vtsRendererRender(IntPtr renderer, IntPtr camera);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsRendererRenderCompas(IntPtr renderer, [In] double[] screenPosSize, [In] double[] mapRotation);

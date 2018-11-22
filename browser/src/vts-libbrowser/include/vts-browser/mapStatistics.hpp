@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STATISTICS_HPP_wqieufhbvgjh
-#define STATISTICS_HPP_wqieufhbvgjh
+#ifndef MAP_STATISTICS_HPP_wqieufhbvgjh
+#define MAP_STATISTICS_HPP_wqieufhbvgjh
 
 #include <string>
 
@@ -39,18 +39,6 @@ class VTS_API MapStatistics
 public:
     MapStatistics();
     std::string toJson() const;
-
-    void resetAll();
-    void resetFrame();
-
-    static const uint32 MaxLods = 25;
-
-    // frame statistics
-
-    uint32 nodesRenderedTotal;
-    uint32 nodesRenderedPerLod[MaxLods];
-    uint32 metaNodesTraversedTotal;
-    uint32 metaNodesTraversedPerLod[MaxLods];
 
     // global statistics
 
@@ -70,10 +58,6 @@ public:
     uint32 resourcesActive;
     uint32 resourcesDownloading;
     uint32 resourcesPreparing;
-    uint32 currentNodeMetaUpdates;
-    uint32 currentNodeDrawsUpdates;
-    uint32 currentGridNodes;
-    NavigationMode currentNavigationMode;
 };
 
 } // namespace vts

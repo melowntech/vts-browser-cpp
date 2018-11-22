@@ -24,7 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "map.hpp"
+#include "navigation.hpp"
 
 namespace vts
 {
@@ -103,12 +103,12 @@ bool MapImpl::getPositionAltitude(double &result,
     // find surface division coordinates (and appropriate node info)
     vec2 sds;
     boost::optional<NodeInfo> info;
-    for (auto &it : mapConfig->referenceFrame.division.nodes)
+    for (auto &it : mapconfig->referenceFrame.division.nodes)
     {
         if (it.second.partitioning.mode
                 != vtslibs::registry::PartitioningMode::bisection)
             continue;
-        NodeInfo ni(mapConfig->referenceFrame, it.first, false, *mapConfig);
+        NodeInfo ni(mapconfig->referenceFrame, it.first, false, *mapconfig);
         try
         {
             sds = vec3to2(convertor->convert(navPos,
@@ -176,6 +176,7 @@ bool MapImpl::getPositionAltitude(double &result,
         points[i] = vecFromUblas<vec2>(ext.ll + ext.ur) * 0.5;
         altitudes[i] = *t->surrogateNav;
         minUsedLod = std::min(minUsedLod, (uint32)t->nodeInfo.nodeId().lod);
+        /*
         if (options.debugRenderAltitudeShiftCorners)
         {
             RenderTask task;
@@ -185,8 +186,9 @@ bool MapImpl::getPositionAltitude(double &result,
                     * scaleMatrix(t->nodeInfo.extents().size() * 0.031);
             task.color = vec4f(1.f, 1.f, 1.f, 1.f);
             if (*task.mesh)
-                navigation.renders.push_back(task);
+                renders.push_back(task);
         }
+        */
     }
 
     // interpolate
@@ -194,40 +196,40 @@ bool MapImpl::getPositionAltitude(double &result,
     return true;
 }
 
-void MapImpl::updatePositionAltitude(double fadeOutFactor)
+void NavigationImpl::updatePositionAltitude(double fadeOutFactor)
 {
     if (!options.cameraAltitudeChanges)
         return;
 
     double altitude;
-    if (!getPositionAltitude(altitude, navigation.targetPoint,
-            mapConfig->position.verticalExtent
+    if (!camera->map->getPositionAltitude(altitude, targetPoint,
+            position.verticalExtent
             / options.navigationSamplesPerViewExtent))
         return;
 
     // set the altitude
-    if (navigation.positionAltitudeReset)
+    if (positionAltitudeReset)
     {
-        navigation.targetPoint[2] = altitude
-                + *navigation.positionAltitudeReset;
-        navigation.positionAltitudeReset.reset();
+        targetPoint[2] = altitude
+                + *positionAltitudeReset;
+        positionAltitudeReset.reset();
     }
-    else if (navigation.lastPositionAltitude)
+    else if (lastPositionAltitude)
     {
-        navigation.targetPoint[2] += altitude
-                - *navigation.lastPositionAltitude;
+        targetPoint[2] += altitude
+                - *lastPositionAltitude;
         if (fadeOutFactor == fadeOutFactor)
         {
-            navigation.targetPoint[2] = interpolate(navigation.targetPoint[2],
+            targetPoint[2] = interpolate(targetPoint[2],
                     altitude, std::min(1.0, fadeOutFactor)
                     * options.cameraAltitudeFadeOutFactor);
         }
     }
     else
     {
-        navigation.targetPoint[2] = altitude;
+        targetPoint[2] = altitude;
     }
-    navigation.lastPositionAltitude = altitude;
+    lastPositionAltitude = altitude;
 }
 
 } // namespace vts

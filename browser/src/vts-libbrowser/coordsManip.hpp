@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CSCONVERTER_H_erxtz
-#define CSCONVERTER_H_erxtz
+#ifndef COORDSMANIP_HPP_erxtz
+#define COORDSMANIP_HPP_erxtz
 
 #include <string>
 #include <memory>

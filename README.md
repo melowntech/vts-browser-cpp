@@ -7,7 +7,7 @@ that bring VTS client capabilities to your native applications.
 
 ### Unity 3D Integration Example
 
-[![Youtube Preview](https://raw.githubusercontent.com/Melown/vts-browser-unity-plugin/master/screenshots/aircraft.png)](https://www.youtube.com/watch?v=FuVA15Cj54k&feature=youtu.be)
+[![Youtube Preview](https://raw.githubusercontent.com/Melown/vts-browser-unity-plugin/master/screenshots/alps-aircraft.png)](https://www.youtube.com/watch?v=FuVA15Cj54k&feature=youtu.be)
 
 (Click the image to play)
 
@@ -19,7 +19,7 @@ that bring VTS client capabilities to your native applications.
 
 ## Features
 
-- Highly flexible -> almost all aspects can be changed through configuration or callbacks.
+- Highly flexible -> almost all aspects can be changed through configuration.
 - Rendering API independent -> the browser library, on its own, does not render anything.
   Instead, it just tells the application what to render.
   - A convenient OpenGL and OpenGL ES rendering library is also provided.

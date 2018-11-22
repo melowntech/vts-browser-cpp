@@ -104,7 +104,10 @@ void FetchTaskImpl::fetchDone()
     if (state == Resource::State::downloading)
         state = Resource::State::downloaded;
     else
+    {
         reply.content.free();
+        reply.code = 0;
+    }
     {
         std::shared_ptr<Resource> rs = resource.lock();
         if (rs)
@@ -412,7 +415,7 @@ void MapImpl::resourcesRemoveOld()
         memRamUse += it.second->info.ramMemoryCost;
         memGpuUse += it.second->info.gpuMemoryCost;
         // consider long time not used resources only
-        if (it.second->lastAccessTick + 5 < renderer.tickIndex)
+        if (it.second->lastAccessTick + 5 < renderTickIndex)
         {
             Res r(it.first,
                 it.second->info.ramMemoryCost + it.second->info.gpuMemoryCost,
@@ -458,7 +461,7 @@ void MapImpl::resourcesCheckInitialized()
     for (auto it : resources.resources)
     {
         const std::shared_ptr<Resource> &r = it.second;
-        if (r->lastAccessTick + 1 != renderer.tickIndex)
+        if (r->lastAccessTick + 1 != renderTickIndex)
             continue; // skip resources that were not accessed last tick
         switch ((Resource::State)r->state)
         {
@@ -506,7 +509,7 @@ void MapImpl::resourcesStartDownloads()
     for (auto it : resources.resources)
     {
         const std::shared_ptr<Resource> &r = it.second;
-        if (r->lastAccessTick + 1 != renderer.tickIndex)
+        if (r->lastAccessTick + 1 != renderTickIndex)
             continue; // skip resources that were not accessed last tick
         if (r->state == Resource::State::startDownload)
             res.push_back(r);
@@ -557,7 +560,7 @@ void MapImpl::resourceRenderFinalize()
 void MapImpl::resourceRenderTick()
 {
     // split workload into multiple render frames
-    switch (renderer.tickIndex % 4)
+    switch (renderTickIndex % 4)
     {
     case 0: return resourcesRemoveOld();
     case 1: return resourcesCheckInitialized();

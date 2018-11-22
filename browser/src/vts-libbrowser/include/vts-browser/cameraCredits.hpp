@@ -24,48 +24,45 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAPAPIC_HPP_sdrg456de6
-#define MAPAPIC_HPP_sdrg456de6
-
-#include "include/vts-browser/foundation.h"
+#ifndef CAMERA_CREDITS_HPP_wefherjkgf
+#define CAMERA_CREDITS_HPP_wefherjkgf
 
 #include <string>
-#include <memory>
+#include <vector>
 
-#define C_BEGIN try {
-#define C_END } catch(...) { vts::handleExceptions(); }
+#include "foundation.hpp"
 
 namespace vts
 {
 
-VTS_API void handleExceptions();
-VTS_API void setError(sint32 code, const std::string &msg);
-VTS_API const char *retStr(const std::string &str);
-
-class Map;
-class Camera;
-
-} // namespace
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct vtsCMap
+class VTS_API CameraCredits
 {
-    std::shared_ptr<vts::Map> p;
-    void *userData;
+public:
+    CameraCredits();
+    std::string toJson() const;
 
-    vtsCMap() : userData(nullptr) {}
-} vtsCMap;
+    std::string textShort() const;
+    std::string textFull() const;
 
-typedef struct vtsCCamera
-{
-    std::shared_ptr<vts::Camera> p;
-} vtsCCamera;
+    void clear();
 
-#ifdef __cplusplus
-} // extern C
-#endif
+    struct VTS_API Credit
+    {
+        std::string notice;
+        std::string url;
+        uint32 hits;
+        uint32 maxLod;
+    };
+
+    struct VTS_API Scope
+    {
+        std::vector<Credit> credits;
+    };
+
+    Scope imagery;
+    Scope geodata;
+};
+
+} // namespace vts
 
 #endif

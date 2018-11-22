@@ -24,16 +24,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CREDITS_edfgvbbnk
-#define CREDITS_edfgvbbnk
+#ifndef CREDITS_HPP_edfgvbbnk
+#define CREDITS_HPP_edfgvbbnk
 
 #include <vts-libs/registry.hpp>
 
-#include "include/vts-browser/credits.hpp"
+#include "include/vts-browser/cameraCredits.hpp"
 
 namespace vtslibs { namespace vts {
 
-struct MapConfig;
+struct Mapconfig;
 
 }} // namespace vtslibs::vts
 
@@ -54,7 +54,7 @@ public:
     boost::optional<vtslibs::registry::CreditId> find(
             const std::string &name) const;
     void hit(Scope scope, vtslibs::registry::CreditId id, uint32 lod);
-    void tick(MapCredits &credits);
+    void tick(CameraCredits &credits);
     void merge(vtslibs::registry::RegistryBase *reg);
     void merge(vtslibs::registry::Credit credit);
     void purge();

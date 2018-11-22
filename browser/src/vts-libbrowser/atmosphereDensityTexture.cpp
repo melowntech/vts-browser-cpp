@@ -145,7 +145,7 @@ void MapImpl::resourcesAtmosphereGeneratorEntry()
 void MapImpl::updateAtmosphereDensity()
 {
     const std::shared_ptr<GpuAtmosphereDensityTexture> &tex
-        = mapConfig->atmosphereDensityTexture;
+        = mapconfig->atmosphereDensityTexture;
     assert(tex);
     touchResource(tex);
     switch ((Resource::State)tex->state)

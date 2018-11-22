@@ -41,34 +41,38 @@ namespace vts
 class VTS_API Map
 {
 public:
-    Map(const class MapCreateOptions &options, const std::shared_ptr<class Fetcher> &fetcher);
-    virtual ~Map();
+    Map(const class MapCreateOptions &options,
+        const std::shared_ptr<class Fetcher> &fetcher);
+    ~Map();
 
-    // mapConfigPath: url to map config
+    // mapconfigPath: url to mapconfig
     // authPath: url to authentication server,
     //    alternatively, it may contain special value 'token:???'
     //    which is taken directly as authentication token instead of url
-    // sriPath: url for fast summary resource information retrieval
-    void setMapConfigPath(const std::string &mapConfigPath,
-                          const std::string &authPath = "",
-                          const std::string &sriPath = "");
-    std::string getMapConfigPath() const;
+    void setMapconfigPath(const std::string &mapconfigPath,
+                          const std::string &authPath = "");
+    std::string getMapconfigPath() const;
 
     void purgeViewCache();
     void purgeDiskCache();
 
-    // returns whether the map config has been downloaded
+    // returns whether the mapconfig has been downloaded
     //   and parsed successfully
     // most other functions will not work until this returns true
-    bool getMapConfigAvailable() const;
-    // returns whether the map config and all other required
+    bool getMapconfigAvailable() const;
+
+    // returns whether the mapconfig and all other required
     //   external definitions has been downloaded
     //   and parsed successfully
     // some other functions will not work until this returns true
-    bool getMapConfigReady() const;
+    bool getMapconfigReady() const;
+
+    bool getMapProjected() const;
+
     // returns whether the map has all resources needed for complete
     //   render
     bool getMapRenderComplete() const;
+
     // returns estimation of progress till complete render
     double getMapRenderProgress() const;
 
@@ -89,57 +93,26 @@ public:
     void dataAllRun();
 
     void renderInitialize();
-    void renderTickPrepare(double elapsedTime); // seconds since last call
-    void renderTickRender();
-    void renderTickColliders();
+    void renderTick(double elapsedTime); // seconds since last call
     void renderFinalize();
-    void setWindowSize(uint32 width, uint32 height);
+
+    // create new camera
+    // you may have multiple cameras in single map
+    std::shared_ptr<class Camera> camera();
 
     class MapCallbacks &callbacks();
     class MapStatistics &statistics();
-    class MapOptions &options();
-    class MapDraws &draws();
-    const class MapCredits &credits();
+    class MapRuntimeOptions &options();
     const class MapCelestialBody &celestialBody();
+    std::shared_ptr<void> atmosphereDensityTexture();
 
-    void pan(const double value[3]);
-    void pan(const std::array<double, 3> &lst);
-    void rotate(const double value[3]);
-    void rotate(const std::array<double, 3> &lst);
-    void zoom(double value);
-
-    // corrects current position altitude to match the surface
-    void resetPositionAltitude();
-
-    // this will reset navigation to azimuthal mode (or whichever is set)
-    void resetNavigationMode();
-
-    void setPositionSubjective(bool subjective, bool convert);
-    void setPositionPoint(const double point[3]);
-    void setPositionPoint(const std::array<double, 3> &lst);
-    void setPositionRotation(const double rot[3]);
-    void setPositionRotation(const std::array<double, 3> &lst);
-    void setPositionViewExtent(double viewExtent);
-    void setPositionFov(double fov);
-    void setPositionJson(const std::string &position);
-    void setPositionUrl(const std::string &position);
-    void setAutoRotation(double value);
-
-    bool getPositionSubjective() const;
-    void getPositionPoint(double point[3]) const;
-    void getPositionRotation(double point[3]) const;
-    void getPositionRotationLimited(double point[3]) const;
-    double getPositionViewExtent() const;
-    double getPositionFov() const;
-    std::string getPositionJson() const;
-    std::string getPositionUrl() const;
-    double getAutoRotation() const;
-
+    // srs conversion
     void convert(const double pointFrom[3], double pointTo[3],
                 Srs srsFrom, Srs srsTo) const;
     void convert(const std::array<double, 3> &pointFrom, double pointTo[3],
                 Srs srsFrom, Srs srsTo) const;
 
+    // surfaces and layers resources
     std::vector<std::string> getResourceSurfaces() const;
     std::vector<std::string> getResourceBoundLayers() const;
     std::vector<std::string> getResourceFreeLayers() const;
@@ -156,6 +129,7 @@ public:
     void setResourceFreeLayerStyle(const std::string &name,
                                    const std::string &value);
 
+    // view manipulation
     std::vector<std::string> getViewNames() const;
     std::string getViewCurrent() const;
     std::string getViewJson(const std::string &name) const;
@@ -165,14 +139,13 @@ public:
     void setViewData(const std::string &name, const class MapView &view);
     void removeView(const std::string &name);
 
+    // searching
     bool searchable() const;
     std::shared_ptr<class SearchTask> search(const std::string &query);
     std::shared_ptr<class SearchTask> search(const std::string &query,
                                 const double point[3]); // navigation srs
     std::shared_ptr<class SearchTask> search(const std::string &query,
                      const std::array<double, 3> &lst); // navigation srs
-
-    void printDebugInfo();
 
 private:
     std::shared_ptr<class MapImpl> impl;

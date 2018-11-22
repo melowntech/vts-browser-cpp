@@ -29,7 +29,7 @@
 #include <utility/md5.hpp>
 #include <dbglog/dbglog.hpp>
 
-#include "../include/vts-browser/options.hpp"
+#include "../include/vts-browser/mapOptions.hpp"
 
 #include "cache.hpp"
 

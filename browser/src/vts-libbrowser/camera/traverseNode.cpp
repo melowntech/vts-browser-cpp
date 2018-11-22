@@ -24,7 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "map.hpp"
+#include "camera.hpp"
 
 namespace vts
 {
@@ -88,7 +88,7 @@ void TraverseNode::clearAll()
 
 void TraverseNode::clearRenders()
 {
-    if (lastRenderTime + 5 > layer->map->renderer.tickIndex)
+    if (lastRenderTime + 5 > layer->map->renderTickIndex)
         return;
     opaque.clear();
     transparent.clear();

@@ -28,7 +28,9 @@
 #include <utility/enum-io.hpp>
 #include <dbglog/dbglog.hpp>
 #include "include/vts-browser/boostProgramOptions.hpp"
-#include "include/vts-browser/options.hpp"
+#include "include/vts-browser/mapOptions.hpp"
+#include "include/vts-browser/cameraOptions.hpp"
+#include "include/vts-browser/navigationOptions.hpp"
 #include "include/vts-browser/fetcher.hpp"
 #include "include/vts-browser/log.hpp"
 
@@ -91,10 +93,10 @@ void optionsConfigLog(
     ;
 }
 
-void optionsConfigCreateOptions(
-        boost::program_options::options_description &desc,
-        MapCreateOptions *opts,
-        std::string section)
+void optionsConfigMapCreate(
+    boost::program_options::options_description &desc,
+    class MapCreateOptions *opts,
+    std::string section)
 {
     sanitizeSection(section);
     desc.add_options()
@@ -117,18 +119,13 @@ void optionsConfigCreateOptions(
     ;
 }
 
-void optionsConfigMapOptions(
-        boost::program_options::options_description &desc,
-        MapOptions *opts,
-        std::string section)
+void optionsConfigMapRuntime(
+    boost::program_options::options_description &desc,
+    class MapRuntimeOptions *opts,
+    std::string section)
 {
     sanitizeSection(section);
     desc.add_options()
-
-    ((section + "maxTexelToPixelScale").c_str(),
-        po::value<double>(&opts->maxTexelToPixelScale)
-        ->default_value(opts->maxTexelToPixelScale),
-        "Maximum ratio of texture details to the viewport resolution.")
 
     ((section + "renderTilesScale").c_str(),
         po::value<double>(&opts->renderTilesScale)
@@ -167,35 +164,102 @@ void optionsConfigMapOptions(
         ->default_value(opts->fetchFirstRetryTimeOffset),
         "Delay in seconds for first resource download retry.")
 
-    ((section + "traverseModeSurfaces").c_str(),
-        po::value<TraverseMode>(&opts->traverseModeSurfaces)
-        ->default_value(opts->traverseModeSurfaces),
-        "Render traversal mode for surfaces:\n"
-        "none\n"
-        "flat\n"
-        "hierarchical\n"
-        "balanced\n"
-        "fixed")
+    ((section + "debugVirtualSurfaces").c_str(),
+        po::value<bool>(&opts->debugVirtualSurfaces)
+        ->default_value(opts->debugVirtualSurfaces)
+        ->implicit_value(!opts->debugVirtualSurfaces),
+        "debugVirtualSurfaces")
 
-    ((section + "traverseModeGeodata").c_str(),
-        po::value<TraverseMode>(&opts->traverseModeGeodata)
-        ->default_value(opts->traverseModeGeodata),
-        "Render traversal mode for geodata:\n"
-        "none\n"
-        "flat\n"
-        "hierarchical\n"
-        "balanced\n"
-        "fixed")
+    ((section + "debugSaveCorruptedFiles").c_str(),
+        po::value<bool>(&opts->debugSaveCorruptedFiles)
+        ->default_value(opts->debugSaveCorruptedFiles)
+        ->implicit_value(!opts->debugSaveCorruptedFiles),
+        "debugSaveCorruptedFiles")
+    ;
+}
 
-    ((section + "balancedGridLodOffset").c_str(),
-        po::value<uint32>(&opts->balancedGridLodOffset)
-        ->default_value(opts->balancedGridLodOffset),
-        "Coarser lod offset for grids for use with balanced traversal.")
+void optionsConfigCamera(
+    boost::program_options::options_description &desc,
+    class CameraOptions *opts,
+    std::string section)
+{
+    sanitizeSection(section);
+    desc.add_options()
 
-    ((section + "balancedGridNeighborsDistance").c_str(),
-        po::value<uint32>(&opts->balancedGridNeighborsDistance)
-        ->default_value(opts->balancedGridNeighborsDistance),
-        "Distance to neighbors for grids for use with balanced traversal.")
+        ((section + "maxTexelToPixelScale").c_str(),
+            po::value<double>(&opts->maxTexelToPixelScale)
+            ->default_value(opts->maxTexelToPixelScale),
+            "Maximum ratio of texture details to the viewport resolution.")
+
+        ((section + "traverseModeSurfaces").c_str(),
+            po::value<TraverseMode>(&opts->traverseModeSurfaces)
+            ->default_value(opts->traverseModeSurfaces),
+            "Render traversal mode for surfaces:\n"
+            "none\n"
+            "flat\n"
+            "hierarchical\n"
+            "balanced\n"
+            "fixed")
+
+        ((section + "traverseModeGeodata").c_str(),
+            po::value<TraverseMode>(&opts->traverseModeGeodata)
+            ->default_value(opts->traverseModeGeodata),
+            "Render traversal mode for geodata:\n"
+            "none\n"
+            "flat\n"
+            "hierarchical\n"
+            "balanced\n"
+            "fixed")
+
+        ((section + "balancedGridLodOffset").c_str(),
+            po::value<uint32>(&opts->balancedGridLodOffset)
+            ->default_value(opts->balancedGridLodOffset),
+            "Coarser lod offset for grids for use with balanced traversal.")
+
+        ((section + "balancedGridNeighborsDistance").c_str(),
+            po::value<uint32>(&opts->balancedGridNeighborsDistance)
+            ->default_value(opts->balancedGridNeighborsDistance),
+            "Distance to neighbors for grids for use with balanced traversal.")
+
+        ((section + "debugDetachedCamera").c_str(),
+            po::value<bool>(&opts->debugDetachedCamera)
+            ->default_value(opts->debugDetachedCamera)
+            ->implicit_value(!opts->debugDetachedCamera),
+            "debugDetachedCamera")
+
+        ((section + "debugFlatShading").c_str(),
+            po::value<bool>(&opts->debugFlatShading)
+            ->default_value(opts->debugFlatShading)
+            ->implicit_value(!opts->debugFlatShading),
+            "debugFlatShading")
+
+        ((section + "debugRenderSurrogates").c_str(),
+            po::value<bool>(&opts->debugRenderSurrogates)
+            ->default_value(opts->debugRenderSurrogates)
+            ->implicit_value(!opts->debugRenderSurrogates),
+            "debugRenderSurrogates")
+
+        ((section + "debugRenderMeshBoxes").c_str(),
+            po::value<bool>(&opts->debugRenderMeshBoxes)
+            ->default_value(opts->debugRenderMeshBoxes)
+            ->implicit_value(!opts->debugRenderMeshBoxes),
+            "debugRenderMeshBoxes")
+
+        ((section + "debugRenderTileBoxes").c_str(),
+            po::value<bool>(&opts->debugRenderTileBoxes)
+            ->default_value(opts->debugRenderTileBoxes)
+            ->implicit_value(!opts->debugRenderTileBoxes),
+            "debugRenderTileBoxes")
+    ;
+}
+
+void optionsConfigNavigation(
+    boost::program_options::options_description &desc,
+    class NavigationOptions *opts,
+    std::string section)
+{
+    sanitizeSection(section);
+    desc.add_options()
 
     ((section + "cameraNormalization").c_str(),
         po::value<bool>(&opts->cameraNormalization)
@@ -208,64 +272,6 @@ void optionsConfigMapOptions(
         ->default_value(opts->cameraAltitudeChanges)
         ->implicit_value(!opts->cameraAltitudeChanges),
         "Vertically converges objective position towards ground.")
-    ;
-}
-
-void optionsConfigDebugOptions(
-        boost::program_options::options_description &desc,
-        MapOptions *opts,
-        std::string section)
-{
-    sanitizeSection(section);
-    desc.add_options()
-
-    ((section + "debugDetachedCamera").c_str(),
-        po::value<bool>(&opts->debugDetachedCamera)
-        ->default_value(opts->debugDetachedCamera)
-        ->implicit_value(!opts->debugDetachedCamera),
-        "debugDetachedCamera")
-
-    ((section + "debugVirtualSurfaces").c_str(),
-        po::value<bool>(&opts->debugVirtualSurfaces)
-        ->default_value(opts->debugVirtualSurfaces)
-        ->implicit_value(!opts->debugVirtualSurfaces),
-        "debugVirtualSurfaces")
-
-    ((section + "debugSri").c_str(),
-        po::value<bool>(&opts->debugSri)
-        ->default_value(opts->debugSri)
-        ->implicit_value(!opts->debugSri),
-        "debugSri")
-
-    ((section + "debugSaveCorruptedFiles").c_str(),
-        po::value<bool>(&opts->debugSaveCorruptedFiles)
-        ->default_value(opts->debugSaveCorruptedFiles)
-        ->implicit_value(!opts->debugSaveCorruptedFiles),
-        "debugSaveCorruptedFiles")
-
-    ((section + "debugFlatShading").c_str(),
-        po::value<bool>(&opts->debugFlatShading)
-        ->default_value(opts->debugFlatShading)
-        ->implicit_value(!opts->debugFlatShading),
-        "debugFlatShading")
-
-    ((section + "debugRenderSurrogates").c_str(),
-        po::value<bool>(&opts->debugRenderSurrogates)
-        ->default_value(opts->debugRenderSurrogates)
-        ->implicit_value(!opts->debugRenderSurrogates),
-        "debugRenderSurrogates")
-
-    ((section + "debugRenderMeshBoxes").c_str(),
-        po::value<bool>(&opts->debugRenderMeshBoxes)
-        ->default_value(opts->debugRenderMeshBoxes)
-        ->implicit_value(!opts->debugRenderMeshBoxes),
-        "debugRenderMeshBoxes")
-
-    ((section + "debugRenderTileBoxes").c_str(),
-        po::value<bool>(&opts->debugRenderTileBoxes)
-        ->default_value(opts->debugRenderTileBoxes)
-        ->implicit_value(!opts->debugRenderTileBoxes),
-        "debugRenderTileBoxes")
 
     ((section + "debugRenderObjectPosition").c_str(),
         po::value<bool>(&opts->debugRenderObjectPosition)

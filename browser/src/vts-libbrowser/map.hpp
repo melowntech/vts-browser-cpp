@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAP_H_cvukikljqwdf
-#define MAP_H_cvukikljqwdf
+#ifndef MAP_HPP_cvukikljqwdf
+#define MAP_HPP_cvukikljqwdf
 
 #include <memory>
 #include <string>
@@ -45,15 +45,14 @@
 #include <dbglog/dbglog.hpp>
 
 #include "include/vts-browser/celestial.hpp"
-#include "include/vts-browser/statistics.hpp"
-#include "include/vts-browser/options.hpp"
-#include "include/vts-browser/callbacks.hpp"
 #include "include/vts-browser/search.hpp"
-#include "include/vts-browser/draws.hpp"
 #include "include/vts-browser/math.hpp"
 #include "include/vts-browser/exceptions.hpp"
 #include "include/vts-browser/resources.hpp"
 #include "include/vts-browser/fetcher.hpp"
+#include "include/vts-browser/mapCallbacks.hpp"
+#include "include/vts-browser/mapOptions.hpp"
+#include "include/vts-browser/mapStatistics.hpp"
 
 #include "resources/cache.hpp"
 #include "credits.hpp"
@@ -76,6 +75,9 @@ using vtslibs::vts::UrlTemplate;
 
 class MapLayer;
 class MapImpl;
+class RenderTask;
+class CameraImpl;
+class NavigationImpl;
 
 enum class Validity
 {
@@ -138,7 +140,7 @@ public:
     void updateAvailability(const std::shared_ptr<vtslibs::registry
         ::BoundLayer::Availability> &availTest);
     void forceRedownload();
-    operator bool () const; // return state == ready
+    operator bool() const; // return state == ready
 
     const std::string name;
     MapImpl *const map;
@@ -195,7 +197,7 @@ private:
 };
 
 class ExternalBoundLayer : public Resource,
-        public vtslibs::registry::BoundLayer
+    public vtslibs::registry::BoundLayer
 {
 public:
     ExternalBoundLayer(MapImpl *map, const std::string &name);
@@ -204,7 +206,7 @@ public:
 };
 
 class ExternalFreeLayer : public Resource,
-        public vtslibs::registry::FreeLayer
+    public vtslibs::registry::FreeLayer
 {
 public:
     ExternalFreeLayer(MapImpl *map, const std::string &name);
@@ -220,7 +222,7 @@ public:
     FetchTask::ResourceType resourceType() const override;
 
     uint8 flags[vtslibs::registry::BoundLayer::rasterMetatileWidth
-                * vtslibs::registry::BoundLayer::rasterMetatileHeight];
+        * vtslibs::registry::BoundLayer::rasterMetatileHeight];
 };
 
 class MetaTile : public Resource, public vtslibs::vts::MetaTile
@@ -287,17 +289,6 @@ public:
     vtslibs::vts::TilesetReferencesList dataRaw;
 };
 
-class SriIndex : public Resource
-{
-public:
-    SriIndex(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-    void update();
-
-    std::vector<std::shared_ptr<MetaTile>> metatiles;
-};
-
 class GeodataFeatures : public Resource
 {
 public:
@@ -325,7 +316,7 @@ public:
     void load() override;
     FetchTask::ResourceType resourceType() const override;
     void update(const std::string &style, const std::string &features,
-                uint32 lod);
+        uint32 lod);
 
     std::vector<RenderTask> renders;
 
@@ -339,10 +330,10 @@ class BoundInfo : public vtslibs::registry::BoundLayer
 {
 public:
     BoundInfo(const vtslibs::registry::BoundLayer &bl,
-              const std::string &url);
+        const std::string &url);
 
     std::shared_ptr<vtslibs::registry::BoundLayer::Availability>
-                                    availability;
+        availability;
     UrlTemplate urlExtTex;
     UrlTemplate urlMeta;
     UrlTemplate urlMask;
@@ -352,7 +343,7 @@ class FreeInfo : public vtslibs::registry::FreeLayer
 {
 public:
     FreeInfo(const vtslibs::registry::FreeLayer &fl,
-              const std::string &url);
+        const std::string &url);
 
     std::string url; // external free layer url
 
@@ -368,8 +359,8 @@ public:
 
     BoundParamInfo(const vtslibs::registry::View::BoundLayerParams &params);
     mat3f uvMatrix() const;
-    Validity prepare(const NodeInfo &nodeInfo, MapImpl *impl,
-                     uint32 subMeshIndex, double priority);
+    Validity prepare(const NodeInfo &nodeInfo, CameraImpl *impl,
+        uint32 subMeshIndex, double priority);
 
     std::shared_ptr<GpuTexture> textureColor;
     std::shared_ptr<GpuTexture> textureMask;
@@ -377,7 +368,7 @@ public:
     bool transparent;
 
 private:
-    Validity prepareDepth(MapImpl *impl, double priority);
+    Validity prepareDepth(CameraImpl *impl, double priority);
 
     UrlTemplate::Vars orig;
     sint32 depth;
@@ -388,13 +379,13 @@ class SurfaceInfo
 public:
     SurfaceInfo();
     SurfaceInfo(const vtslibs::vts::SurfaceCommonConfig &surface,
-                const std::string &parentPath);
+        const std::string &parentPath);
     SurfaceInfo(const vtslibs::registry::FreeLayer::MeshTiles &surface,
-                const std::string &parentPath);
+        const std::string &parentPath);
     SurfaceInfo(const vtslibs::registry::FreeLayer::GeodataTiles &surface,
-                const std::string &parentPath);
+        const std::string &parentPath);
     SurfaceInfo(const vtslibs::registry::FreeLayer::Geodata &surface,
-                const std::string &parentPath);
+        const std::string &parentPath);
 
     UrlTemplate urlMeta;
     UrlTemplate urlMesh;
@@ -412,10 +403,10 @@ public:
     void colorize();
 
     void generateVirtual(MapImpl *map,
-            const vtslibs::vts::VirtualSurfaceConfig *virtualSurface);
+        const vtslibs::vts::VirtualSurfaceConfig *virtualSurface);
     void generateTileset(MapImpl *map,
-            const std::vector<std::string> &vsId,
-            const vtslibs::vts::TilesetReferencesList &dataRaw);
+        const std::vector<std::string> &vsId,
+        const vtslibs::vts::TilesetReferencesList &dataRaw);
     void generateReal(MapImpl *map);
     void generateFree(MapImpl *map, const FreeInfo &freeLayer);
 
@@ -480,7 +471,7 @@ public:
     std::vector<RenderTask> colliders;
 
     TraverseNode(MapLayer *layer, TraverseNode *parent,
-                 const NodeInfo &nodeInfo);
+        const NodeInfo &nodeInfo);
     ~TraverseNode();
     void clearAll();
     void clearRenders();
@@ -498,7 +489,7 @@ public:
         Subtile(TraverseNode *orig, const vec4f &uvClip);
     };
     std::vector<Subtile> subtiles;
-    void resolve(TraverseNode *trav, MapImpl *impl);
+    void resolve(TraverseNode *trav, CameraImpl *impl);
 };
 
 class MapLayer
@@ -508,14 +499,13 @@ public:
     MapLayer(MapImpl *map);
     // free layer
     MapLayer(MapImpl *map, const std::string &name,
-             const vtslibs::registry::View::FreeLayerParams &params);
+        const vtslibs::registry::View::FreeLayerParams &params);
 
     bool prerequisitesCheck();
     bool isGeodata();
-    TraverseMode getTraverseMode();
 
     BoundParamInfo::List boundList(
-            const SurfaceInfo *surface, sint32 surfaceReference);
+        const SurfaceInfo *surface, sint32 surfaceReference);
 
     vtslibs::registry::View::Surfaces boundLayerParams;
 
@@ -538,7 +528,7 @@ private:
     bool prerequisitesCheckFreeLayer();
 };
 
-class MapConfig : public Resource, public vtslibs::vts::MapConfig
+class Mapconfig : public Resource, public vtslibs::vts::MapConfig
 {
 public:
     class BrowserOptions
@@ -552,7 +542,7 @@ public:
         bool searchFilter;
     };
 
-    MapConfig(MapImpl *map, const std::string &name);
+    Mapconfig(MapImpl *map, const std::string &name);
     void load() override;
     FetchTask::ResourceType resourceType() const override;
     vtslibs::registry::Srs::Type navigationSrsType() const;
@@ -564,9 +554,9 @@ public:
     BoundInfo *getBoundInfo(const std::string &id);
     FreeInfo *getFreeInfo(const std::string &id);
     vtslibs::vts::SurfaceCommonConfig *findGlue(
-            const vtslibs::vts::Glue::Id &id);
+        const vtslibs::vts::Glue::Id &id);
     vtslibs::vts::SurfaceCommonConfig *findSurface(
-            const std::string &id);
+        const std::string &id);
 
     BrowserOptions browserOptions;
 
@@ -587,35 +577,20 @@ public:
 
     class Map *const map;
     const MapCreateOptions createOptions;
+    Credits credits;
     MapCallbacks callbacks;
     MapStatistics statistics;
-    MapOptions options;
-    MapDraws draws;
-    MapCredits credits;
+    MapRuntimeOptions options;
     MapCelestialBody body;
-    std::shared_ptr<MapConfig> mapConfig;
+    std::shared_ptr<Mapconfig> mapconfig;
     std::shared_ptr<CoordManip> convertor;
     std::vector<std::shared_ptr<MapLayer>> layers;
-    std::string mapConfigPath;
-    std::string mapConfigView;
+    std::vector<std::weak_ptr<class CameraImpl>> cameras;
+    std::string mapconfigPath;
+    std::string mapconfigView;
+    uint32 renderTickIndex;
     bool mapconfigAvailable;
     bool mapconfigReady;
-
-    class Navigation
-    {
-    public:
-        std::vector<RenderTask> renders;
-        vec3 changeRotation;
-        vec3 targetPoint;
-        double autoRotation;
-        double targetViewExtent;
-        boost::optional<double> lastPositionAltitude;
-        boost::optional<double> positionAltitudeReset;
-        NavigationMode mode;
-        NavigationType previousType;
-
-        Navigation();
-    } navigation;
 
     class Resources
     {
@@ -625,9 +600,7 @@ public:
         std::shared_ptr<AuthConfig> auth;
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
         std::deque<std::weak_ptr<SearchTask>> searchTasks;
-        std::deque<std::shared_ptr<SriIndex>> sriTasks;
         std::string authPath;
-        std::string sriPath;
         std::atomic<uint32> downloads;
         uint32 tickIndex;
         uint32 progressEstimationMaxResources;
@@ -654,55 +627,28 @@ public:
         Resources();
     } resources;
 
-    class Renderer
-    {
-    public:
-        Credits credits;
-        mat4 viewProj;
-        mat4 viewProjRender;
-        mat4 viewRender;
-        vec4 frustumPlanes[6];
-        vec3 perpendicularUnitVector;
-        vec3 forwardUnitVector;
-        vec3 cameraPosPhys;
-        vec3 focusPosPhys;
-        double fixedModeDistance;
-        uint32 fixedModeLod;
-        uint32 windowWidth;
-        uint32 windowHeight;
-        uint32 tickIndex;
-        TraverseMode currentTraverseMode;
-
-        Renderer();
-    } renderer;
-
     // map api methods
-    void setMapConfigPath(const std::string &mapConfigPath,
-                          const std::string &authPath,
-                          const std::string &sriPath);
-    void purgeMapConfig();
+    void setMapconfigPath(const std::string &mapconfigPath,
+                          const std::string &authPath);
+    void purgeMapconfig();
     void purgeViewCache();
-    void printDebugInfo();
 
-    // navigation
-    void pan(vec3 value);
-    void rotate(vec3 value);
-    void zoom(double value);
-    void setPoint(const vec3 &point);
-    void setRotation(const vec3 &euler);
-    void setViewExtent(double viewExtent);
-    bool getPositionAltitude(double &result, const vec3 &navPos,
-                             double samples);
-    void updatePositionAltitude(double fadeOutFactor
-                = std::numeric_limits<double>::quiet_NaN());
-    void resetNavigationMode();
-    void convertPositionSubjObj();
-    void positionToCamera(vec3 &center, vec3 &dir, vec3 &up);
-    double positionObjectiveDistance();
+    // rendering
+    void renderInitialize();
+    void renderFinalize();
+    void renderTick(double elapsedTime);
+    bool prerequisitesCheck();
     void initializeNavigation();
-    void navigationTypeChanged();
-    void updateNavigation(double elapsedTime);
-    bool isNavigationModeValid() const;
+    bool getPositionAltitude(double &result, const vec3 &navPos,
+        double samples);
+    std::pair<Validity, const std::string &> getActualGeoStyle(
+        const std::string &name);
+    std::pair<Validity, const std::string &> getActualGeoFeatures(
+        const std::string &name, const std::string &geoName,
+        float priority);
+    std::pair<Validity, const std::string &> getActualGeoFeatures(
+        const std::string &name);
+    void traverseClearing(TraverseNode *trav);
 
     // resources methods
     void resourceDataInitialize();
@@ -735,7 +681,7 @@ public:
         getAtmosphereDensityTexture(const std::string &name);
     std::shared_ptr<GpuMesh> getMesh(const std::string &name);
     std::shared_ptr<AuthConfig> getAuthConfig(const std::string &name);
-    std::shared_ptr<MapConfig> getMapConfig(const std::string &name);
+    std::shared_ptr<Mapconfig> getMapconfig(const std::string &name);
     std::shared_ptr<MetaTile> getMetaTile(const std::string &name);
     std::shared_ptr<NavTile> getNavTile(const std::string &name);
     std::shared_ptr<MeshAggregate> getMeshAggregate(const std::string &name);
@@ -746,7 +692,6 @@ public:
     std::shared_ptr<BoundMetaTile> getBoundMetaTile(const std::string &name);
     std::shared_ptr<SearchTaskImpl> getSearchTask(const std::string &name);
     std::shared_ptr<TilesetMapping> getTilesetMapping(const std::string &name);
-    std::shared_ptr<SriIndex> getSriIndex(const std::string &name);
     std::shared_ptr<GeodataFeatures> getGeoFeatures(const std::string &name);
     std::shared_ptr<GeodataStylesheet> getGeoStyle(const std::string &name);
     std::shared_ptr<GpuGeodata> getGeodata(const std::string &name);
@@ -754,67 +699,9 @@ public:
     std::shared_ptr<SearchTask> search(const std::string &query,
                                        const double point[3]);
     void updateSearch();
-    void initiateSri(const vtslibs::registry::Position *position);
-    void updateSris();
     void updateAtmosphereDensity();
     double getMapRenderProgress();
-
-    // renderer methods
-    void renderInitialize();
-    void renderFinalize();
-    void renderTickPrepare(double elapsedTime);
-    void renderTickRender();
-    void renderTickColliders();
     vtslibs::vts::TileId roundId(TileId nodeId);
-    Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
-                           BoundParamInfo::List &boundList, double priority);
-    void touchDraws(const RenderTask &task);
-    void touchDraws(const std::vector<RenderTask> &renders);
-    void touchDraws(TraverseNode *trav);
-    bool visibilityTest(TraverseNode *trav);
-    bool coarsenessTest(TraverseNode *trav);
-    double coarsenessValue(TraverseNode *trav);
-    void renderNode(TraverseNode *trav,
-                    TraverseNode *orig, const vec4f &uvClip);
-    void renderNode(TraverseNode *trav);
-    void renderNodeCoarser(TraverseNode *trav,
-                    TraverseNode *orig, vec4f uvClip);
-    void renderNodeCoarser(TraverseNode *trav);
-    std::shared_ptr<GpuTexture> travInternalTexture(TraverseNode *trav,
-                                                  uint32 subMeshIndex);
-    bool generateMonolithicGeodataTrav(TraverseNode *trav);
-    std::pair<Validity, const std::string &> getActualGeoStyle(
-            const std::string &name);
-    std::pair<Validity, const std::string &> getActualGeoFeatures(
-            const std::string &name, const std::string &geoName,
-            float priority);
-    std::pair<Validity, const std::string &> getActualGeoFeatures(
-            const std::string &name);
-    bool travDetermineMeta(TraverseNode *trav);
-    void travDetermineMetaImpl(TraverseNode *trav);
-    bool travDetermineDraws(TraverseNode *trav);
-    bool travDetermineDrawsSurface(TraverseNode *trav);
-    bool travDetermineDrawsGeodata(TraverseNode *trav);
-    double travDistance(TraverseNode *trav, const vec3 pointPhys);
-    void updateNodePriority(TraverseNode *trav);
-    bool travInit(TraverseNode *trav);
-    void travModeHierarchical(TraverseNode *trav, bool loadOnly);
-    void travModeFlat(TraverseNode *trav);
-    bool travModeBalanced(TraverseNode *trav, bool renderOnly);
-    void travModeFixed(TraverseNode *trav);
-    void traverseRender(TraverseNode *trav);
-    void traverseClearing(TraverseNode *trav);
-    void setCurrentTraversalMode(TraverseMode mode);
-    void gridPreloadRequest(TraverseNode *trav);
-    void gridPreloadProcess();
-    void gridPreloadProcess(TraverseNode *trav,
-                            const std::vector<TileId> &requests);
-    void updateCamera();
-    bool prerequisitesCheck();
-    void sortOpaqueFrontToBack();
-    uint32 applyCameraRotationNormalization(vec3 &rot);
-    uint32 applyCameraRotationNormalization(math::Point3 &rot);
-    vec3 applyCameraRotationNormalizationPermanently();
 };
 
 bool testAndThrow(Resource::State state, const std::string &message);

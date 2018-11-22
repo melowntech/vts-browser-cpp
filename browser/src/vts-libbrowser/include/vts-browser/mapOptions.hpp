@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OPTIONS_HPP_kwegfdzvgsdfj
-#define OPTIONS_HPP_kwegfdzvgsdfj
+#ifndef MAP_OPTIONS_HPP_kwegfdzvgsdfj
+#define MAP_OPTIONS_HPP_kwegfdzvgsdfj
 
 #include <string>
 
@@ -81,80 +81,20 @@ public:
     bool atmosphereDensityTexture;
 };
 
-class VTS_API ControlOptions
-{
-public:
-    ControlOptions();
-    ControlOptions(const std::string &json);
-    void applyJson(const std::string &json);
-    std::string toJson() const;
-
-    // multiplier that is applied to mouse input for the respective actions
-    double sensitivityPan;
-    double sensitivityZoom;
-    double sensitivityRotate;
-
-    // innertia coefficients [0 - 1) for smoothing the navigation changes
-    // inertia of zero makes all changes to apply immediately
-    // while inertia of almost one makes the moves very smooth and slow
-    double inertiaPan;
-    double inertiaZoom;
-    double inertiaRotate;
-};
-
 // options of the map which may be changed anytime
 // (although, some of the options may take effect slowly
 //    as some internal caches are beeing rebuild)
-class VTS_API MapOptions
+class VTS_API MapRuntimeOptions
 {
 public:
-    MapOptions();
-    MapOptions(const std::string &json);
+    MapRuntimeOptions();
+    MapRuntimeOptions(const std::string &json);
     void applyJson(const std::string &json);
     std::string toJson() const;
-
-    ControlOptions controlOptions;
-
-    // maximum ratio of texture details to the viewport resolution
-    // increasing this ratio yealds less detailed map
-    //   but reduces memory usage and memory bandwith
-    double maxTexelToPixelScale;
-
-    // lower and upper limit for view-extent
-    // expressed as multiplicative factor of planet major radius
-    double viewExtentLimitScaleMin;
-    double viewExtentLimitScaleMax;
-
-    // view-extent thresholds at which the camera normalization takes effect
-    // expressed as multiplicative factor of planet major radius
-    double viewExtentThresholdScaleLow;
-    double viewExtentThresholdScaleHigh;
-
-    // camera tilt limits (eg. -90 - 0)
-    double tiltLimitAngleLow;
-    double tiltLimitAngleHigh;
-
-    // multiplicative factor at which camera altitude will converge to terrain
-    //   when panning or zooming
-    // range 0 (off) to 1 (fast)
-    double cameraAltitudeFadeOutFactor;
-
-    // latitude threshold (0 - 90) used for azimuthal navigation
-    double navigationLatitudeThreshold;
-
-    // maximum view-extent multiplier allowed for PIHA, must be larger than 1
-    double navigationPihaViewExtentMult;
-    // maximum position change allowed for PIHA, must be positive
-    double navigationPihaPositionChange;
 
     // relative scale of every tile.
     // small up-scale may reduce occasional holes on tile borders.
     double renderTilesScale;
-
-    // maximum distance of meshes emited for fixed traversal mode
-    // defined in physical length units (metres)
-    // for colliders, it may be overriden from callback
-    double fixedTraversalDistance;
 
     // memory threshold at which resources start to be released
     uint32 targetResourcesMemoryKB;
@@ -164,11 +104,6 @@ public:
 
     // maximum number of resources processed per dataTick
     uint32 maxResourceProcessesPerTick;
-
-    // number of virtual samples to fit the view-extent
-    // it is used to determine lod index at which to retrieve
-    //   the altitude used to correct camera position
-    uint32 navigationSamplesPerViewExtent;
 
     // maximum number of redirections before the download fails
     // this is to prevent infinite loops
@@ -181,60 +116,14 @@ public:
     // each subsequent retry is delayed twice as long as before
     uint32 fetchFirstRetryTimeOffset;
 
-    // desired lod used with fixed traversal mode
-    // for colliders, it may be overriden from callback
-    uint32 fixedTraversalLod;
-
-    // coarser lod offset for grids for use with balanced traversal
-    // -1 to disable grids entirely
-    uint32 balancedGridLodOffset;
-
-    // distance to neighbors for grids for use with balanced traversal
-    // 0: no neighbors
-    // 1: one layer of neighbors (8 total)
-    // 2: two layers (24 total)
-    // etc.
-    uint32 balancedGridNeighborsDistance;
-
-    NavigationType navigationType;
-    NavigationMode navigationMode;
-    TraverseMode traverseModeSurfaces;
-    TraverseMode traverseModeGeodata;
-
     // to improve search results relevance, the results are further
     //   filtered and reordered
     bool searchResultsFiltering;
 
-    // some applications may be changing viewer locations too rapidly
-    //   and it may make the SRI optimizations inefficient
-    // setting this option to false will allow the use of SRI
-    //   only when the mapconfig changes
-    bool arbitrarySriRequests;
-
-    // limits camera tilt and yaw
-    // uses viewExtentThresholdScaleLow/High
-    // applies tiltLimitAngleLow/High (and yaw limit)
-    bool cameraNormalization;
-
-    // vertically converges objective position towards ground
-    bool cameraAltitudeChanges;
-
-    bool debugDetachedCamera;
     bool debugVirtualSurfaces;
-    bool debugSri;
     bool debugSaveCorruptedFiles;
-    bool debugFlatShading;
     bool debugValidateGeodataStyles;
     bool debugCoarsenessDisks;
-
-    bool debugRenderSurrogates;
-    bool debugRenderMeshBoxes;
-    bool debugRenderTileBoxes;
-    bool debugRenderSubtileBoxes;
-    bool debugRenderObjectPosition;
-    bool debugRenderTargetPosition;
-    bool debugRenderAltitudeShiftCorners;
-
     bool debugExtractRawResources;
 };
 

@@ -24,13 +24,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "include/vts-browser/math.hpp"
-#include "include/vts-browser/map.hpp"
+#include "../include/vts-browser/math.hpp"
+#include "../include/vts-browser/map.hpp"
 
 namespace vts
 {
 
-void navigationPiha(const class MapOptions &inOptions,
+void navigationPiha(
+    const class NavigationOptions &inNavOpts,
     double inTimeDiff, // seconds
     double inFov, // degrees
     double inHorizontalDistance, // unsigned

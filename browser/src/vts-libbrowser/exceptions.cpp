@@ -29,7 +29,7 @@
 namespace vts
 {
 
-MapConfigException::MapConfigException(const std::string &what_arg) :
+MapconfigException::MapconfigException(const std::string &what_arg) :
     std::runtime_error(what_arg)
 {}
 

@@ -32,42 +32,67 @@ define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus
 set(PUB_HDR_LIST
     # C/C++ API
     include/vts-browser/foundation_common.h
-    include/vts-browser/draws_common.h
+    include/vts-browser/camera_common.h
     # C++ API
     include/vts-browser/boostProgramOptions.hpp
     include/vts-browser/buffer.hpp
-    include/vts-browser/callbacks.hpp
+    include/vts-browser/camera.hpp
+    include/vts-browser/cameraCredits.hpp
+    include/vts-browser/cameraDraws.hpp
+    include/vts-browser/cameraOptions.hpp
+    include/vts-browser/cameraStatistics.hpp
     include/vts-browser/celestial.hpp
-    include/vts-browser/credits.hpp
-    include/vts-browser/draws.hpp
     include/vts-browser/exceptions.hpp
     include/vts-browser/fetcher.hpp
     include/vts-browser/foundation.hpp
     include/vts-browser/log.hpp
     include/vts-browser/map.hpp
+    include/vts-browser/mapCallbacks.hpp
+    include/vts-browser/mapOptions.hpp
+    include/vts-browser/mapStatistics.hpp
     include/vts-browser/math.hpp
-    include/vts-browser/options.hpp
+    include/vts-browser/navigation.hpp
+    include/vts-browser/navigationOptions.hpp
     include/vts-browser/resources.hpp
     include/vts-browser/search.hpp
-    include/vts-browser/statistics.hpp
     include/vts-browser/view.hpp
     # C API
     include/vts-browser/callbacks.h
+    include/vts-browser/camera.h
     include/vts-browser/celestial.h
-    include/vts-browser/draws.h
     include/vts-browser/fetcher.h
     include/vts-browser/foundation.h
     include/vts-browser/log.h
     include/vts-browser/map.h
     include/vts-browser/math.h
+    include/vts-browser/navigation.h
     include/vts-browser/resources.h
     include/vts-browser/search.h
 )
 
 set(SRC_LIST
+    camera/boundLayers.cpp
+    camera/camera.cpp
+    camera/camera.hpp
+    camera/cameraApi.cpp
+    camera/draws.cpp
+    camera/grids.cpp
+    camera/surfaceStack.cpp
+    camera/traversal.cpp
+    camera/traverseNode.cpp
+    image/image.cpp
+    image/image.hpp
+    image/jpeg.cpp
+    image/png.cpp
+    navigation/altitude.cpp
+    navigation/navigation.cpp
+    navigation/navigation.hpp
+    navigation/navigationApi.cpp
+    navigation/piha.cpp
+    navigation/piha.hpp
     resources/auth.cpp
-    resources/cache.hpp
     resources/cache.cpp
+    resources/cache.hpp
     resources/fetcher.cpp
     resources/geodata.cpp
     resources/manager.cpp
@@ -77,51 +102,35 @@ set(SRC_LIST
     resources/resource.cpp
     resources/resources.cpp
     resources/texture.cpp
-    image/image.hpp
-    image/image.cpp
-    image/jpeg.cpp
-    image/png.cpp
     utilities/array.hpp
-    utilities/json.hpp
     utilities/json.cpp
-    utilities/obj.hpp
+    utilities/json.hpp
     utilities/obj.cpp
-    utilities/threadName.hpp
+    utilities/obj.hpp
     utilities/threadName.cpp
+    utilities/threadName.hpp
     utilities/threadQueue.hpp
     atmosphereDensityTexture.cpp
     boostProgramOptions.cpp
-    boundLayers.cpp
     buffer.cpp
-    coordsManip.hpp
-    coordsManip.cpp
-    credits.hpp
+    celestialBody.cpp
     credits.cpp
+    credits.hpp
+    coordsManip.cpp
+    coordsManip.hpp
     exceptions.cpp
     log.cpp
+    map.cpp
     map.hpp
-    mapApiC.hpp
     mapApiC.cpp
+    mapApiC.hpp
     mapApiCpp.cpp
-    mapCelestialBody.cpp
-    mapDraws.cpp
     mapLayer.cpp
-    mapUtilities.cpp
     math.cpp
     mathColor.cpp
-    navigation.cpp
-    navigationAltitude.cpp
-    navigationPiha.hpp
-    navigationPiha.cpp
     options.cpp
-    renderer.cpp
-    rendererGrids.cpp
-    rendererTraversal.cpp
     search.cpp
-    sri.cpp
     statistics.cpp
-    surfaceStack.cpp
-    traverseNode.cpp
     ${EXTRA_SRC_LIST}
 )
 

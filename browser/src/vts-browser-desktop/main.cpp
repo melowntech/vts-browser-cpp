@@ -26,9 +26,6 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <vts-browser/map.hpp>
-#include <vts-browser/options.hpp>
-#include <vts-browser/log.hpp>
 
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
@@ -115,12 +112,15 @@ int main(int argc, char *argv[])
 
         vts::MapCreateOptions createOptions;
         createOptions.clientId = "vts-browser-desktop";
-        vts::MapOptions mapOptions;
+        vts::MapRuntimeOptions mapOptions;
+        vts::CameraOptions camOptions;
+        vts::NavigationOptions navOptions;
         mapOptions.targetResourcesMemoryKB = 512 * 1024;
         vts::FetcherOptions fetcherOptions;
         AppOptions appOptions;
         vts::renderer::RenderOptions renderOptions;
         if (!programOptions(createOptions, mapOptions, fetcherOptions,
+                            camOptions, navOptions,
                             renderOptions, appOptions, argc, argv))
             return 0;
 
@@ -132,10 +132,14 @@ int main(int argc, char *argv[])
         {
             vts::Map map(createOptions,
                 vts::Fetcher::create(fetcherOptions));
+            auto camera = map.camera();
+            auto navigation = camera->navigation();
             map.options() = mapOptions;
+            camera->options() = camOptions;
+            navigation->options() = navOptions;
             DataThread data(window, dataContext, &map);
             MainWindow main(window, renderContext,
-                &map, appOptions, renderOptions);
+                &map, camera.get(), navigation.get(), appOptions, renderOptions);
             main.run();
         }
 

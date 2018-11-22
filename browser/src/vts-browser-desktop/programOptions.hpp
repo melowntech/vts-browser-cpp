@@ -29,12 +29,13 @@
 
 #include <vector>
 #include "mainWindow.hpp"
-#include <vts-browser/options.hpp>
 #include <vts-browser/fetcher.hpp>
 
 bool programOptions(vts::MapCreateOptions &createOptions,
-                    vts::MapOptions &mapOptions,
+                    vts::MapRuntimeOptions &mapOptions,
                     vts::FetcherOptions &fetcherOptions,
+                    vts::CameraOptions &camOptions,
+                    vts::NavigationOptions &navOptions,
                     vts::renderer::RenderOptions &renderOptions,
                     AppOptions &appOptions,
                     int argc, char *argv[]);

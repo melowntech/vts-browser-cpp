@@ -24,42 +24,42 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CREDITS_HPP_wefherjkgf
-#define CREDITS_HPP_wefherjkgf
+#ifndef MAP_CALLBACKS_HPP_skjgfjshfk
+#define MAP_CALLBACKS_HPP_skjgfjshfk
 
-#include <string>
-#include <vector>
+#include <functional>
 
 #include "foundation.hpp"
 
 namespace vts
 {
 
-class VTS_API MapCredits
+class VTS_API MapCallbacks
 {
 public:
-    MapCredits();
-    std::string toJson() const;
+    // function callback to upload a texture to gpu
+    // invoked from Map::dataTick()
+    std::function<void(class ResourceInfo &, class GpuTextureSpec &)>
+            loadTexture;
 
-    std::string textShort() const;
-    std::string textFull() const;
+    // function callback to upload a mesh to gpu
+    // invoked from Map::dataTick()
+    std::function<void(class ResourceInfo &, class GpuMeshSpec &)>
+            loadMesh;
 
-    struct VTS_API Credit
-    {
-        std::string notice;
-        std::string url;
-        uint32 hits;
-        uint32 maxLod;
-    };
+    // function callback when the mapconfig is downloaded
+    // invoked from Map::renderTick()
+    // suitable to change view, position, etc.
+    std::function<void()> mapconfigAvailable;
 
-    struct VTS_API Scope
-    {
-        std::vector<Credit> credits;
-    };
-
-    Scope imagery;
-    Scope geodata;
+    // function callback when the mapconfig and all other required
+    //   external definitions are initialized
+    // invoked from Map::renderTick()
+    // suitable to start navigation etc.
+    std::function<void()> mapconfigReady;
 };
+
+VTS_API extern std::function<const char *(const char *)> projFinder;
 
 } // namespace vts
 

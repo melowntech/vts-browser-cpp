@@ -27,16 +27,12 @@
 #include <cstring>
 #include <set>
 
-#include <vts-browser/map.hpp>
-#include <vts-browser/statistics.hpp>
-#include <vts-browser/options.hpp>
+#include <vts-browser/mapStatistics.hpp>
+#include <vts-browser/cameraStatistics.hpp>
+#include <vts-browser/cameraDraws.hpp>
 #include <vts-browser/view.hpp>
 #include <vts-browser/search.hpp>
-#include <vts-browser/log.hpp>
-#include <vts-browser/draws.hpp>
 #include <vts-browser/celestial.hpp>
-
-#include <vts-renderer/classes.hpp>
 
 #include <SDL2/SDL.h>
 
@@ -230,7 +226,7 @@ public:
         // load control options
         try
         {
-            window->map->options().controlOptions.applyJson(
+            window->navigation->options().applyJson(
                         readLocalFileBuffer(controlOptionsPath()).str());
         }
         catch(...)
@@ -426,7 +422,9 @@ public:
             flags |= NK_WINDOW_MINIMIZED;
         if (nk_begin(&ctx, "Options", nk_rect(10, 10, 250, 600), flags))
         {
-            MapOptions &o = window->map->options();
+            MapRuntimeOptions &mr = window->map->options();
+            CameraOptions &c = window->camera->options();
+            NavigationOptions &n = window->navigation->options();
             AppOptions &a = window->appOptions;
             renderer::RenderOptions &r = window->render.options();
             float width = nk_window_get_content_region_size(&ctx).x - 30;
@@ -439,40 +437,39 @@ public:
                 float ratio[] = { width * 0.4f, width * 0.45f,
                     width * 0.15f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
-                ControlOptions &co = o.controlOptions;
 
                 // sensitivity
                 nk_label(&ctx, "Pan speed:", NK_TEXT_LEFT);
-                co.sensitivityPan = nk_slide_float(&ctx,
-                        0.1, co.sensitivityPan, 3, 0.01);
-                sprintf(buffer, "%4.2f", co.sensitivityPan);
+                n.sensitivityPan = nk_slide_float(&ctx,
+                        0.1, n.sensitivityPan, 3, 0.01);
+                sprintf(buffer, "%4.2f", n.sensitivityPan);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Zoom speed:", NK_TEXT_LEFT);
-                co.sensitivityZoom = nk_slide_float(&ctx,
-                        0.1, co.sensitivityZoom, 3, 0.01);
-                sprintf(buffer, "%4.2f", co.sensitivityZoom);
+                n.sensitivityZoom = nk_slide_float(&ctx,
+                        0.1, n.sensitivityZoom, 3, 0.01);
+                sprintf(buffer, "%4.2f", n.sensitivityZoom);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Rotate speed:", NK_TEXT_LEFT);
-                co.sensitivityRotate = nk_slide_float(&ctx,
-                        0.1, co.sensitivityRotate, 3, 0.01);
-                sprintf(buffer, "%4.2f", co.sensitivityRotate);
+                n.sensitivityRotate = nk_slide_float(&ctx,
+                        0.1, n.sensitivityRotate, 3, 0.01);
+                sprintf(buffer, "%4.2f", n.sensitivityRotate);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                 // inertia
                 nk_label(&ctx, "Pan inertia:", NK_TEXT_LEFT);
-                co.inertiaPan = nk_slide_float(&ctx,
-                        0, co.inertiaPan, 0.99, 0.01);
-                sprintf(buffer, "%4.2f", co.inertiaPan);
+                n.inertiaPan = nk_slide_float(&ctx,
+                        0, n.inertiaPan, 0.99, 0.01);
+                sprintf(buffer, "%4.2f", n.inertiaPan);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Zoom inertia:", NK_TEXT_LEFT);
-                co.inertiaZoom = nk_slide_float(&ctx,
-                        0, co.inertiaZoom, 0.99, 0.01);
-                sprintf(buffer, "%4.2f", co.inertiaZoom);
+                n.inertiaZoom = nk_slide_float(&ctx,
+                        0, n.inertiaZoom, 0.99, 0.01);
+                sprintf(buffer, "%4.2f", n.inertiaZoom);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "Rotate inertia:", NK_TEXT_LEFT);
-                co.inertiaRotate = nk_slide_float(&ctx,
-                        0, co.inertiaRotate, 0.99, 0.01);
-                sprintf(buffer, "%4.2f", co.inertiaRotate);
+                n.inertiaRotate = nk_slide_float(&ctx,
+                        0, n.inertiaRotate, 0.99, 0.01);
+                sprintf(buffer, "%4.2f", n.inertiaRotate);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                 nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
@@ -483,7 +480,7 @@ public:
                     try
                     {
                         writeLocalFileBuffer(controlOptionsPath(),
-                            Buffer(co.toJson()));
+                            Buffer(n.toJson()));
                     }
                     catch(...)
                     {
@@ -496,7 +493,7 @@ public:
                 {
                     try
                     {
-                        co.applyJson(readLocalFileBuffer(
+                        n.applyJson(readLocalFileBuffer(
                             controlOptionsPath()).str());
                     }
                     catch(...)
@@ -508,13 +505,13 @@ public:
                 // reset
                 if (nk_button_label(&ctx, "Reset"))
                 {
-                    ControlOptions d;
-                    co.sensitivityPan       = d.sensitivityPan;
-                    co.sensitivityZoom      = d.sensitivityZoom;
-                    co.sensitivityRotate    = d.sensitivityRotate;
-                    co.inertiaPan           = d.inertiaPan;
-                    co.inertiaZoom          = d.inertiaZoom;
-                    co.inertiaRotate        = d.inertiaRotate;
+                    NavigationOptions d;
+                    n.sensitivityPan       = d.sensitivityPan;
+                    n.sensitivityZoom      = d.sensitivityZoom;
+                    n.sensitivityRotate    = d.sensitivityRotate;
+                    n.inertiaPan           = d.inertiaPan;
+                    n.inertiaZoom          = d.inertiaZoom;
+                    n.inertiaRotate        = d.inertiaRotate;
                 }
 
                 // end group
@@ -531,7 +528,7 @@ public:
                     // navigation type
                     nk_label(&ctx, "Nav. type:", NK_TEXT_LEFT);
                     if (nk_combo_begin_label(&ctx,
-                                 navigationTypeNames[(int)o.navigationType],
+                                 navigationTypeNames[(int)n.navigationType],
                                  nk_vec2(nk_widget_width(&ctx), 200)))
                     {
                         nk_layout_row_dynamic(&ctx, 16, 1);
@@ -540,7 +537,7 @@ public:
                         {
                             if (nk_combo_item_label(&ctx,
                                     navigationTypeNames[i], NK_TEXT_LEFT))
-                                o.navigationType = (NavigationType)i;
+                                n.navigationType = (NavigationType)i;
                         }
                         nk_combo_end(&ctx);
                     }
@@ -548,7 +545,7 @@ public:
                     // navigation mode
                     nk_label(&ctx, "Nav. mode:", NK_TEXT_LEFT);
                     if (nk_combo_begin_label(&ctx,
-                                 navigationModeNames[(int)o.navigationMode],
+                                 navigationModeNames[(int)n.navigationMode],
                                  nk_vec2(nk_widget_width(&ctx), 200)))
                     {
                         nk_layout_row_dynamic(&ctx, 16, 1);
@@ -557,7 +554,7 @@ public:
                         {
                             if (nk_combo_item_label(&ctx,
                                         navigationModeNames[i],NK_TEXT_LEFT))
-                                o.navigationMode = (NavigationMode)i;
+                                n.navigationMode = (NavigationMode)i;
                         }
                         nk_combo_end(&ctx);
                     }
@@ -570,30 +567,30 @@ public:
 
                     // navigation max view extent multiplier
                     nk_label(&ctx, "Piha zoom:", NK_TEXT_LEFT);
-                    o.navigationPihaViewExtentMult = nk_slide_float(&ctx,
-                            1.002, o.navigationPihaViewExtentMult, 1.2, 0.002);
-                    sprintf(buffer, "%5.3f", o.navigationPihaViewExtentMult);
+                    n.navigationPihaViewExtentMult = nk_slide_float(&ctx,
+                            1.002, n.navigationPihaViewExtentMult, 1.2, 0.002);
+                    sprintf(buffer, "%5.3f", n.navigationPihaViewExtentMult);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                     // navigation max position change
                     nk_label(&ctx, "Piha move:", NK_TEXT_LEFT);
-                    o.navigationPihaPositionChange = nk_slide_float(&ctx,
-                            0.002, o.navigationPihaPositionChange, 0.2, 0.002);
-                    sprintf(buffer, "%5.3f", o.navigationPihaPositionChange);
+                    n.navigationPihaPositionChange = nk_slide_float(&ctx,
+                            0.002, n.navigationPihaPositionChange, 0.2, 0.002);
+                    sprintf(buffer, "%5.3f", n.navigationPihaPositionChange);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                     // navigation samples per view extent
                     nk_label(&ctx, "Nav. samples:", NK_TEXT_LEFT);
-                    o.navigationSamplesPerViewExtent = nk_slide_int(&ctx,
-                            1, o.navigationSamplesPerViewExtent, 16, 1);
-                    sprintf(buffer, "%3d", o.navigationSamplesPerViewExtent);
+                    n.navigationSamplesPerViewExtent = nk_slide_int(&ctx,
+                            1, n.navigationSamplesPerViewExtent, 16, 1);
+                    sprintf(buffer, "%3d", n.navigationSamplesPerViewExtent);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                     // altitude fade out
                     nk_label(&ctx, "Altitude fade:", NK_TEXT_LEFT);
-                    o.cameraAltitudeFadeOutFactor = nk_slide_float(&ctx,
-                            0, o.cameraAltitudeFadeOutFactor, 1, 0.01);
-                    sprintf(buffer, "%4.2f", o.cameraAltitudeFadeOutFactor);
+                    n.cameraAltitudeFadeOutFactor = nk_slide_float(&ctx,
+                            0, n.cameraAltitudeFadeOutFactor, 1, 0.01);
+                    sprintf(buffer, "%4.2f", n.cameraAltitudeFadeOutFactor);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 }
 
@@ -611,7 +608,7 @@ public:
                     // traverse mode (surfaces)
                     nk_label(&ctx, "Surfaces:", NK_TEXT_LEFT);
                     if (nk_combo_begin_label(&ctx,
-                             traverseModeNames[(int)o.traverseModeSurfaces],
+                             traverseModeNames[(int)c.traverseModeSurfaces],
                              nk_vec2(nk_widget_width(&ctx), 200)))
                     {
                         nk_layout_row_dynamic(&ctx, 16, 1);
@@ -621,7 +618,7 @@ public:
                             if (nk_combo_item_label(&ctx,
                                     traverseModeNames[i],
                                     NK_TEXT_LEFT))
-                                o.traverseModeSurfaces = (TraverseMode)i;
+                                c.traverseModeSurfaces = (TraverseMode)i;
                         }
                         nk_combo_end(&ctx);
                     }
@@ -629,7 +626,7 @@ public:
                     // traverse mode (geodata)
                     nk_label(&ctx, "Geodata:", NK_TEXT_LEFT);
                     if (nk_combo_begin_label(&ctx,
-                             traverseModeNames[(int)o.traverseModeGeodata],
+                             traverseModeNames[(int)c.traverseModeGeodata],
                              nk_vec2(nk_widget_width(&ctx), 200)))
                     {
                         nk_layout_row_dynamic(&ctx, 16, 1);
@@ -639,7 +636,7 @@ public:
                             if (nk_combo_item_label(&ctx,
                                                traverseModeNames[i],
                                                NK_TEXT_LEFT))
-                                o.traverseModeGeodata = (TraverseMode)i;
+                                c.traverseModeGeodata = (TraverseMode)i;
                         }
                         nk_combo_end(&ctx);
                     }
@@ -651,28 +648,28 @@ public:
                     nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
 
                     // balanced grids
-                    if (o.traverseModeSurfaces == TraverseMode::Balanced)
+                    if (c.traverseModeSurfaces == TraverseMode::Balanced)
                     {
                         // balancedGridLodOffset
                         nk_label(&ctx, "Grid offset:", NK_TEXT_LEFT);
-                        o.balancedGridLodOffset = nk_slide_int(&ctx,
-                            -1, o.balancedGridLodOffset, 10, 1);
-                        sprintf(buffer, "%d", o.balancedGridLodOffset);
+                        c.balancedGridLodOffset = nk_slide_int(&ctx,
+                            -1, c.balancedGridLodOffset, 10, 1);
+                        sprintf(buffer, "%d", c.balancedGridLodOffset);
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                         // balancedGridNeighborsDistance
                         nk_label(&ctx, "Grid neighbors:", NK_TEXT_LEFT);
-                        o.balancedGridNeighborsDistance = nk_slide_int(&ctx,
-                            0, o.balancedGridNeighborsDistance, 3, 1);
-                        sprintf(buffer, "%d", o.balancedGridNeighborsDistance);
+                        c.balancedGridNeighborsDistance = nk_slide_int(&ctx,
+                            0, c.balancedGridNeighborsDistance, 3, 1);
+                        sprintf(buffer, "%d", c.balancedGridNeighborsDistance);
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                     }
 
                     // maxTexelToPixelScale
                     nk_label(&ctx, "Texel to pixel:", NK_TEXT_LEFT);
-                    o.maxTexelToPixelScale = nk_slide_float(&ctx,
-                            0.3, o.maxTexelToPixelScale, 30, 0.1);
-                    sprintf(buffer, "%3.1f", o.maxTexelToPixelScale);
+                    c.maxTexelToPixelScale = nk_slide_float(&ctx,
+                            0.3, c.maxTexelToPixelScale, 30, 0.1);
+                    sprintf(buffer, "%3.1f", c.maxTexelToPixelScale);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                     // antialiasing samples
@@ -689,9 +686,9 @@ public:
 
                     // maxResourcesMemory
                     nk_label(&ctx, "Target memory:", NK_TEXT_LEFT);
-                    o.targetResourcesMemoryKB = 1024 * nk_slide_int(&ctx,
-                            0, o.targetResourcesMemoryKB / 1024, 2048, 32);
-                    sprintf(buffer, "%3d", o.targetResourcesMemoryKB / 1024);
+                    mr.targetResourcesMemoryKB = 1024 * nk_slide_int(&ctx,
+                            0, mr.targetResourcesMemoryKB / 1024, 2048, 32);
+                    sprintf(buffer, "%3d", mr.targetResourcesMemoryKB / 1024);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 }
 
@@ -709,37 +706,37 @@ public:
                                                    r.renderAtmosphere);
 
                 // render mesh boxes
-                o.debugRenderMeshBoxes = nk_check_label(&ctx, "mesh boxes",
-                                                   o.debugRenderMeshBoxes);
+                c.debugRenderMeshBoxes = nk_check_label(&ctx, "mesh boxes",
+                                                   c.debugRenderMeshBoxes);
 
                 // render tile boxes
-                o.debugRenderTileBoxes = nk_check_label(&ctx, "tile boxes",
-                                                    o.debugRenderTileBoxes);
+                c.debugRenderTileBoxes = nk_check_label(&ctx, "tile boxes",
+                                                    c.debugRenderTileBoxes);
 
                 // render subtile boxes
-                o.debugRenderSubtileBoxes = nk_check_label(&ctx,
-                    "subtile boxes", o.debugRenderSubtileBoxes);
+                c.debugRenderSubtileBoxes = nk_check_label(&ctx,
+                    "subtile boxes", c.debugRenderSubtileBoxes);
 
                 // render surrogates
-                o.debugRenderSurrogates = nk_check_label(&ctx, "surrogates",
-                                                    o.debugRenderSurrogates);
+                c.debugRenderSurrogates = nk_check_label(&ctx, "surrogates",
+                                                    c.debugRenderSurrogates);
 
                 // render objective position
-                o.debugRenderObjectPosition = nk_check_label(&ctx,
-                            "objective pos.", o.debugRenderObjectPosition);
+                n.debugRenderObjectPosition = nk_check_label(&ctx,
+                            "objective pos.", n.debugRenderObjectPosition);
 
                 // render target position
-                o.debugRenderTargetPosition = nk_check_label(&ctx,
-                            "target pos.", o.debugRenderTargetPosition);
+                n.debugRenderTargetPosition = nk_check_label(&ctx,
+                            "target pos.", n.debugRenderTargetPosition);
 
                 // render altitude shift corners
-                o.debugRenderAltitudeShiftCorners = nk_check_label(&ctx,
+                n.debugRenderAltitudeShiftCorners = nk_check_label(&ctx,
                     "altitude shift corners",
-                    o.debugRenderAltitudeShiftCorners);
+                    n.debugRenderAltitudeShiftCorners);
 
                 // flat shading
-                o.debugFlatShading = nk_check_label(&ctx, "flat shading",
-                                                    o.debugFlatShading);
+                c.debugFlatShading = nk_check_label(&ctx, "flat shading",
+                                                    c.debugFlatShading);
 
                 // polygon edges
                 r.renderPolygonEdges = nk_check_label(&ctx, "edges",
@@ -759,9 +756,9 @@ public:
                 nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
 
                 // enable camera normalization
-                o.cameraNormalization = nk_check_label(&ctx,
+                n.cameraNormalization = nk_check_label(&ctx,
                                 "camera normalization",
-                                o.cameraNormalization);
+                                n.cameraNormalization);
 
                 // camera zoom limit
                 {
@@ -772,43 +769,39 @@ public:
                     if (e != ePrev)
                     {
                         std::swap(viewExtentLimitScaleMin,
-                                  o.viewExtentLimitScaleMin);
+                                  n.viewExtentLimitScaleMin);
                         std::swap(viewExtentLimitScaleMax,
-                                  o.viewExtentLimitScaleMax);
+                                  n.viewExtentLimitScaleMax);
                     }
                 }
 
                 // detached camera
-                o.debugDetachedCamera = nk_check_label(&ctx,
-                                "detached camera", o.debugDetachedCamera);
+                c.debugDetachedCamera = nk_check_label(&ctx,
+                                "detached camera", c.debugDetachedCamera);
 
                 // virtual surfaces
                 {
-                    bool old = o.debugVirtualSurfaces;
-                    o.debugVirtualSurfaces = nk_check_label(&ctx,
+                    bool old = mr.debugVirtualSurfaces;
+                    mr.debugVirtualSurfaces = nk_check_label(&ctx,
                             "virtual surfaces",
-                            o.debugVirtualSurfaces);
-                    if (old != o.debugVirtualSurfaces)
+                            mr.debugVirtualSurfaces);
+                    if (old != mr.debugVirtualSurfaces)
                         window->map->purgeViewCache();
                 }
 
                 // coarseness disks
-                o.debugCoarsenessDisks = nk_check_label(&ctx,
-                    "coarseness disks", o.debugCoarsenessDisks);
+                mr.debugCoarsenessDisks = nk_check_label(&ctx,
+                    "coarseness disks", mr.debugCoarsenessDisks);
 
                 // geodata validation
                 {
-                    bool old = o.debugValidateGeodataStyles;
-                    o.debugValidateGeodataStyles = nk_check_label(&ctx,
+                    bool old = mr.debugValidateGeodataStyles;
+                    mr.debugValidateGeodataStyles = nk_check_label(&ctx,
                             "validate geodata styles",
-                            o.debugValidateGeodataStyles);
-                    if (old != o.debugValidateGeodataStyles)
+                            mr.debugValidateGeodataStyles);
+                    if (old != mr.debugValidateGeodataStyles)
                         window->map->purgeViewCache();
                 }
-
-                // print debug info
-                if (nk_button_label(&ctx, "Print debug info"))
-                    window->map->printDebugInfo();
 
                 // purge disk cache
                 if (nk_button_label(&ctx, "Purge disk cache"))
@@ -843,7 +836,8 @@ public:
             flags |= NK_WINDOW_MINIMIZED;
         if (nk_begin(&ctx, "Statistics", nk_rect(270, 10, 250, 650), flags))
         {
-            MapStatistics &s = window->map->statistics();
+            MapStatistics &ms = window->map->statistics();
+            CameraStatistics &cs = window->camera->statistics();
             float width = nk_window_get_content_region_size(&ctx).x - 30;
 
             char buffer[256];
@@ -866,16 +860,12 @@ public:
                 //S("Time frame min:", window->timingFrameSmooth.min(), " ms");
                 S("Time frame avg:", window->timingFrameSmooth.avg(), " ms");
                 S("Time frame max:", window->timingFrameSmooth.max(), " ms");
-                S("Render tick:", s.renderTicks, "");
+                S("Render tick:", ms.renderTicks, "");
                 nk_label(&ctx, "Z range:", NK_TEXT_LEFT);
                 sprintf(buffer, "%0.0f - %0.0f",
-                        window->map->draws().camera.near_,
-                        window->map->draws().camera.far_);
+                        window->camera->draws().camera.near_,
+                        window->camera->draws().camera.far_);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                nk_label(&ctx, "Nav. mode:", NK_TEXT_LEFT);
-                nk_label(&ctx, navigationModeNames[
-                         (int)s.currentNavigationMode],
-                        NK_TEXT_RIGHT);
 
                 nk_tree_pop(&ctx);
             }
@@ -886,19 +876,19 @@ public:
                 float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
-                S("GPU memory:", s.currentGpuMemUseKB / 1024, " MB");
-                S("RAM memory:", s.currentRamMemUseKB / 1024, " MB");
-                S("Node meta updates:", s.currentNodeMetaUpdates, "");
-                S("Node draw updates:", s.currentNodeDrawsUpdates, "");
-                S("Preparing:", s.resourcesPreparing, "");
-                S("Downloading:", s.resourcesDownloading, "");
-                S("Downloaded:", s.resourcesDownloaded, "");
-                S("Disk loaded:", s.resourcesDiskLoaded, "");
-                S("Active:", s.resourcesActive, "");
-                S("Processed:", s.resourcesProcessed, "");
-                S("Created:", s.resourcesCreated, "");
-                S("Released:", s.resourcesReleased, "");
-                S("Failed:", s.resourcesFailed, "");
+                S("GPU memory:", ms.currentGpuMemUseKB / 1024, " MB");
+                S("RAM memory:", ms.currentRamMemUseKB / 1024, " MB");
+                S("Node meta updates:", cs.currentNodeMetaUpdates, "");
+                S("Node draw updates:", cs.currentNodeDrawsUpdates, "");
+                S("Preparing:", ms.resourcesPreparing, "");
+                S("Downloading:", ms.resourcesDownloading, "");
+                S("Downloaded:", ms.resourcesDownloaded, "");
+                S("Disk loaded:", ms.resourcesDiskLoaded, "");
+                S("Active:", ms.resourcesActive, "");
+                S("Processed:", ms.resourcesProcessed, "");
+                S("Created:", ms.resourcesCreated, "");
+                S("Released:", ms.resourcesReleased, "");
+                S("Failed:", ms.resourcesFailed, "");
 
                 nk_tree_pop(&ctx);
             }
@@ -910,16 +900,16 @@ public:
                 float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
-                for (unsigned i = 0; i < MapStatistics::MaxLods; i++)
+                for (unsigned i = 0; i < CameraStatistics::MaxLods; i++)
                 {
-                    if (s.metaNodesTraversedPerLod[i] == 0)
+                    if (cs.metaNodesTraversedPerLod[i] == 0)
                         continue;
                     sprintf(buffer, "[%d]:", i);
-                    S(buffer, s.metaNodesTraversedPerLod[i], "");
+                    S(buffer, cs.metaNodesTraversedPerLod[i], "");
                 }
 
-                S("Total:", s.metaNodesTraversedTotal, "");
-                S("Grid nodes:", s.currentGridNodes, "");
+                S("Total:", cs.metaNodesTraversedTotal, "");
+                S("Grid nodes:", cs.currentGridNodes, "");
 
                 nk_tree_pop(&ctx);
             }
@@ -931,14 +921,14 @@ public:
                 float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
-                for (unsigned i = 0; i < MapStatistics::MaxLods; i++)
+                for (unsigned i = 0; i < CameraStatistics::MaxLods; i++)
                 {
-                    if (s.nodesRenderedPerLod[i] == 0)
+                    if (cs.nodesRenderedPerLod[i] == 0)
                         continue;
                     sprintf(buffer, "[%d]:", i);
-                    S(buffer, s.nodesRenderedPerLod[i], "");
+                    S(buffer, cs.nodesRenderedPerLod[i], "");
                 }
-                S("Total:", s.nodesRenderedTotal, "");
+                S("Total:", cs.nodesRenderedTotal, "");
 
                 nk_tree_pop(&ctx);
             }
@@ -950,7 +940,7 @@ public:
                 float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
-                const MapDraws &d = window->map->draws();
+                const CameraDraws &d = window->camera->draws();
                 S("Opaque: ", d.opaque.size(), "");
                 S("Transparent: ", d.transparent.size(), "");
                 S("Geodata: ", d.geodata.size(), "");
@@ -976,7 +966,7 @@ public:
             float width = nk_window_get_content_region_size(&ctx).x - 30;
 
             // loading?
-            if (!window->map->getMapConfigAvailable())
+            if (!window->map->getMapconfigAvailable())
             {
                 nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
                 nk_label(&ctx, "Loading...", NK_TEXT_LEFT);
@@ -996,9 +986,9 @@ public:
                     try
                     {
                         const char *text = SDL_GetClipboardText();
-                        window->map->options().navigationType
+                        window->navigation->options().navigationType
                                 = vts::NavigationType::FlyOver;
-                        window->map->setPositionUrl(text);
+                        window->navigation->setPositionUrl(text);
                     }
                     catch(...)
                     {
@@ -1009,12 +999,12 @@ public:
 
             // subjective position
             {
-                int subj = window->map->getPositionSubjective();
+                int subj = window->navigation->getSubjective();
                 int prev = subj;
                 nk_label(&ctx, "Type:", NK_TEXT_LEFT);
                 nk_checkbox_label(&ctx, "subjective", &subj);
                 if (subj != prev)
-                    window->map->setPositionSubjective(!!subj, true);
+                    window->navigation->setSubjective(!!subj, true);
             }
 
             // srs
@@ -1041,7 +1031,7 @@ public:
             {
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 double n[3];
-                window->map->getPositionPoint(n);
+                window->navigation->getPoint(n);
                 try
                 {
                     window->map->convert(n, n, Srs::Navigation,
@@ -1064,9 +1054,9 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset altitude"))
                 {
-                    window->map->options().navigationType
+                    window->navigation->options().navigationType
                             = vts::NavigationType::Quick;
-                    window->map->resetPositionAltitude();
+                    window->navigation->resetAltitude();
                 }
             }
 
@@ -1075,8 +1065,8 @@ public:
                 float ratio2[] = { width * 0.4f, width * 0.3f, width * 0.3f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio2);
                 double n[3], c[3];
-                window->map->getPositionRotation(n);
-                window->map->getPositionRotationLimited(c);
+                window->navigation->getRotation(n);
+                window->navigation->getRotationLimited(c);
                 // yaw
                 nk_label(&ctx, "Yaw:", NK_TEXT_LEFT);
                 sprintf(buffer, "%5.1f", n[0]);
@@ -1100,10 +1090,10 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset rotation"))
                 {
-                    window->map->setPositionRotation({0,270,0});
-                    window->map->options().navigationType
+                    window->navigation->setRotation({0,270,0});
+                    window->navigation->options().navigationType
                             = vts::NavigationType::Quick;
-                    window->map->resetNavigationMode();
+                    window->navigation->resetNavigationMode();
                 }
             }
 
@@ -1112,7 +1102,7 @@ public:
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 nk_label(&ctx, "View extent:", NK_TEXT_LEFT);
                 sprintf(buffer, "%10.1f",
-                        window->map->getPositionViewExtent());
+                        window->navigation->getViewExtent());
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             }
 
@@ -1122,9 +1112,9 @@ public:
                         width * 0.45f, width * 0.15f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
                 nk_label(&ctx, "Fov:", NK_TEXT_LEFT);
-                window->map->setPositionFov(nk_slide_float(&ctx, 10,
-                                    window->map->getPositionFov(), 100, 1));
-                sprintf(buffer, "%5.1f", window->map->getPositionFov());
+                window->navigation->setFov(nk_slide_float(&ctx, 10,
+                                    window->navigation->getFov(), 100, 1));
+                sprintf(buffer, "%5.1f", window->navigation->getFov());
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             }
 
@@ -1134,7 +1124,7 @@ public:
                 nk_label(&ctx, "Output:", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Copy to clipboard"))
                     SDL_SetClipboardText(
-                            window->map->getPositionUrl().c_str());
+                            window->navigation->getPositionUrl().c_str());
             }
 
             // auto movement
@@ -1152,9 +1142,9 @@ public:
                 nk_label(&ctx, "Rotate:", NK_TEXT_LEFT);
                 posAutoRotation = nk_slide_float(&ctx, -3,
                                 posAutoRotation, 3, 0.1);
-                window->map->pan(posAutoMotion.data());
-                window->map->rotate({ posAutoRotation, 0, 0 });
-                window->map->options().navigationType
+                window->navigation->pan(posAutoMotion.data());
+                window->navigation->rotate({ posAutoRotation, 0, 0 });
+                window->navigation->options().navigationType
                         = vts::NavigationType::Quick;
                 nk_tree_pop(&ctx);
             }
@@ -1253,7 +1243,7 @@ public:
 
     uint32 currentMapConfig()
     {
-        std::string current = window->map->getMapConfigPath();
+        std::string current = window->map->getMapconfigPath();
         uint32 idx = 0;
         for (auto it : window->appOptions.paths)
         {
@@ -1291,7 +1281,7 @@ public:
                 // combo selector
                 nk_layout_row(&ctx, NK_STATIC, 20, 1, &width);
                 if (nk_combo_begin_label(&ctx,
-                                 window->map->getMapConfigPath().c_str(),
+                                 window->map->getMapconfigPath().c_str(),
                                  nk_vec2(nk_widget_width(&ctx), 200)))
                 {
                     nk_layout_row_dynamic(&ctx, 16, 1);
@@ -1331,7 +1321,7 @@ public:
             }
 
             // loading?
-            if (!window->map->getMapConfigAvailable())
+            if (!window->map->getMapconfigAvailable())
             {
                 nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
                 nk_label(&ctx, "Loading...", NK_TEXT_LEFT);
@@ -1557,8 +1547,8 @@ public:
                         double n[3] = { m.coord(0), m.coord(1), m.coord(2) };
                         window->map->convert(n, n, Srs::Physical,
                                                  Srs::Navigation);
-                        window->map->setPositionPoint(n);
-                        window->map->options().navigationType
+                        window->navigation->setPoint(n);
+                        window->navigation->options().navigationType
                                 = vts::NavigationType::FlyOver;
                     }
                     sprintf(buffer, "%.8f", n[1]);
@@ -1592,7 +1582,7 @@ public:
             try
             {
                 double point[3];
-                window->map->getPositionPoint(point);
+                window->navigation->getPoint(point);
                 search->updateDistances(point);
             }
             catch (...)
@@ -1685,15 +1675,15 @@ public:
                     if (nk_button_label(&ctx, "Go"))
                     {
                         double pr = window->map->celestialBody().majorRadius;
-                        window->map->setPositionSubjective(false, false);
-                        window->map->setPositionViewExtent(std::max(
+                        window->navigation->setSubjective(false, false);
+                        window->navigation->setViewExtent(std::max(
                         6667.0 * pr / window->map->celestialBody().majorRadius,
                             r.radius * 2));
-                        window->map->setPositionRotation({0,270,0});
-                        window->map->resetPositionAltitude();
-                        window->map->resetNavigationMode();
-                        window->map->setPositionPoint(r.position);
-                        window->map->options().navigationType
+                        window->navigation->setRotation({0,270,0});
+                        window->navigation->resetAltitude();
+                        window->navigation->resetNavigationMode();
+                        window->navigation->setPoint(r.position);
+                        window->navigation->options().navigationType
                                 = vts::NavigationType::FlyOver;
                     }
                 }

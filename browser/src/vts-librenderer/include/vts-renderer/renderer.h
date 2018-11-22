@@ -46,7 +46,7 @@ VTSR_API vtsCRenderOptionsBase *vtsRendererOptions(
                                             vtsHRenderer renderer);
 VTSR_API const vtsCRenderVariablesBase *vtsRendererVariables(
                                             vtsHRenderer renderer);
-VTSR_API void vtsRendererRender(vtsHRenderer renderer, vtsHMap map);
+VTSR_API void vtsRendererRender(vtsHRenderer renderer, vtsHCamera camera);
 VTSR_API void vtsRendererRenderCompas(vtsHRenderer renderer,
                                 const double screenPosSize[3],
                                 const double mapRotation[3]);

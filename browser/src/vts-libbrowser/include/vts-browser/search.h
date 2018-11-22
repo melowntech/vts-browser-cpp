@@ -33,8 +33,6 @@
 extern "C" {
 #endif
 
-typedef struct vtsCSearch *vtsHSearch;
-
 VTS_API bool vtsMapGetSearchable(vtsHMap map);
 VTS_API vtsHSearch vtsMapSearch(vtsHMap map, const char *query);
 VTS_API vtsHSearch vtsMapSearchAt(vtsHMap map, const char *query,

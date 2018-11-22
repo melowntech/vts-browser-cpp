@@ -31,20 +31,20 @@
 namespace vts
 {
 
-MapConfig::BrowserOptions::BrowserOptions() :
+Mapconfig::BrowserOptions::BrowserOptions() :
     autorotate(0), searchFilter(true)
 {}
 
-MapConfig::MapConfig(MapImpl *map, const std::string &name)
+Mapconfig::Mapconfig(MapImpl *map, const std::string &name)
     : Resource(map, name)
 {
     priority = std::numeric_limits<float>::infinity();
 }
 
-void MapConfig::load()
+void Mapconfig::load()
 {
     assert(map->layers.empty());
-    LOG(info2) << "Parsing map config <" << name << ">";
+    LOG(info2) << "Parsing mapconfig <" << name << ">";
 
     // clear
     *(vtslibs::vts::MapConfig*)this = vtslibs::vts::MapConfig();
@@ -98,17 +98,17 @@ void MapConfig::load()
     info.ramMemoryCost += sizeof(*this);
 }
 
-FetchTask::ResourceType MapConfig::resourceType() const
+FetchTask::ResourceType Mapconfig::resourceType() const
 {
-    return FetchTask::ResourceType::MapConfig;
+    return FetchTask::ResourceType::Mapconfig;
 }
 
-vtslibs::registry::Srs::Type MapConfig::navigationSrsType() const
+vtslibs::registry::Srs::Type Mapconfig::navigationSrsType() const
 {
     return srs.get(referenceFrame.model.navigationSrs).type;
 }
 
-BoundInfo *MapConfig::getBoundInfo(const std::string &id)
+BoundInfo *Mapconfig::getBoundInfo(const std::string &id)
 {
     auto it = boundInfos.find(id);
     if (it != boundInfos.end())
@@ -130,7 +130,7 @@ BoundInfo *MapConfig::getBoundInfo(const std::string &id)
             // merge credits
             for (auto &c : r->credits)
                 if (c.second)
-                    map->renderer.credits.merge(*c.second);
+                    map->credits.merge(*c.second);
         }
         else
         {
@@ -141,7 +141,7 @@ BoundInfo *MapConfig::getBoundInfo(const std::string &id)
     return nullptr;
 }
 
-FreeInfo *MapConfig::getFreeInfo(const std::string &id)
+FreeInfo *Mapconfig::getFreeInfo(const std::string &id)
 {
     auto it = freeInfos.find(id);
     if (it != freeInfos.end())
@@ -163,7 +163,7 @@ FreeInfo *MapConfig::getFreeInfo(const std::string &id)
             // merge credits
             for (auto &c : r->credits)
                 if (c.second)
-                    map->renderer.credits.merge(*c.second);
+                    map->credits.merge(*c.second);
         }
         else
         {
@@ -174,7 +174,7 @@ FreeInfo *MapConfig::getFreeInfo(const std::string &id)
     return nullptr;
 }
 
-vtslibs::vts::SurfaceCommonConfig *MapConfig::findGlue(
+vtslibs::vts::SurfaceCommonConfig *Mapconfig::findGlue(
         const vtslibs::vts::Glue::Id &id)
 {
     for (auto &it : glues)
@@ -185,7 +185,7 @@ vtslibs::vts::SurfaceCommonConfig *MapConfig::findGlue(
     return nullptr;
 }
 
-vtslibs::vts::SurfaceCommonConfig *MapConfig::findSurface(
+vtslibs::vts::SurfaceCommonConfig *Mapconfig::findSurface(
         const std::string &id)
 {
     for (auto &it : surfaces)
@@ -196,7 +196,7 @@ vtslibs::vts::SurfaceCommonConfig *MapConfig::findSurface(
     return nullptr;
 }
 
-void MapConfig::consolidateView()
+void Mapconfig::consolidateView()
 {
     // remove invalid surfaces from current view
     std::set<std::string> resSurf;

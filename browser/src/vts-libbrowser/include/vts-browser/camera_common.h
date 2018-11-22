@@ -24,45 +24,35 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAPAPIC_HPP_sdrg456de6
-#define MAPAPIC_HPP_sdrg456de6
+#ifndef CAMERA_COMMON_H_desgjjgf
+#define CAMERA_COMMON_H_desgjjgf
 
-#include "include/vts-browser/foundation.h"
-
-#include <string>
-#include <memory>
-
-#define C_BEGIN try {
-#define C_END } catch(...) { vts::handleExceptions(); }
-
-namespace vts
-{
-
-VTS_API void handleExceptions();
-VTS_API void setError(sint32 code, const std::string &msg);
-VTS_API const char *retStr(const std::string &str);
-
-class Map;
-class Camera;
-
-} // namespace
+#include "foundation.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct vtsCMap
+typedef struct vtsCDrawBase
 {
-    std::shared_ptr<vts::Map> p;
-    void *userData;
+    float mv[16];
+    float uvm[9];
+    float color[4];
+    float uvClip[4];
+    float center[3];
+    bool externalUv;
+    bool flatShading;
+} vtsCDrawBase;
 
-    vtsCMap() : userData(nullptr) {}
-} vtsCMap;
-
-typedef struct vtsCCamera
+typedef struct vtsCCameraBase
 {
-    std::shared_ptr<vts::Camera> p;
-} vtsCCamera;
+    double view[16];
+    double proj[16];
+    double eye[3];
+    double near_, far_;
+    double aspect;
+    double fov; // vertical, degrees
+} vtsCCameraBase;
 
 #ifdef __cplusplus
 } // extern C

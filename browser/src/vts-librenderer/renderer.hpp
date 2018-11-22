@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FOUNDATION_H_qwergfbhjk
-#define FOUNDATION_H_qwergfbhjk
+#ifndef RENDERER_HPP_deh4f6d4hj
+#define RENDERER_HPP_deh4f6d4hj
 
 #include <assert.h>
 #include <sstream>
@@ -34,9 +34,6 @@
 #include <vts-browser/log.hpp>
 #include <vts-browser/math.hpp>
 #include <vts-browser/buffer.hpp>
-#include <vts-browser/resources.hpp>
-#include <vts-browser/draws.hpp>
-#include <vts-browser/celestial.hpp>
 
 #include "include/vts-renderer/classes.hpp"
 #include "include/vts-renderer/renderer.hpp"

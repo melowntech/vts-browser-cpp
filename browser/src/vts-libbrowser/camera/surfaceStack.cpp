@@ -26,7 +26,7 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include "map.hpp"
+#include "camera.hpp"
 
 namespace vts
 {
@@ -58,14 +58,14 @@ void SurfaceStack::generateVirtual(MapImpl *map,
     assert(surfaces.empty());
     LOG(info2) << "Generating (virtual) surface stack for <"
                << boost::algorithm::join(virtualSurface->id, ",") << ">";
-    surfaces.emplace_back(*virtualSurface, map->mapConfig->name);
+    surfaces.emplace_back(*virtualSurface, map->mapconfig->name);
 }
 
 void SurfaceStack::generateTileset(MapImpl *map,
         const std::vector<std::string> &vsId,
         const vtslibs::vts::TilesetReferencesList &dataRaw)
 {
-    auto *mapConfig = map->mapConfig.get();
+    auto *mapconfig = map->mapconfig.get();
 
     assert(surfaces.empty());
     surfaces.reserve(dataRaw.size() + 1);
@@ -76,8 +76,8 @@ void SurfaceStack::generateTileset(MapImpl *map,
         if (it.size() == 1)
         { // surface
             SurfaceInfo i(
-                    *mapConfig->findSurface(vsId[it[0]]),
-                    mapConfig->name);
+                    *mapconfig->findSurface(vsId[it[0]]),
+                    mapconfig->name);
             i.name.push_back(vsId[it[0]]);
             surfaces.push_back(i);
         }
@@ -88,8 +88,8 @@ void SurfaceStack::generateTileset(MapImpl *map,
             for (auto &it2 : it)
                 id.push_back(vsId[it2]);
             SurfaceInfo i(
-                    *mapConfig->findGlue(id),
-                    mapConfig->name);
+                    *mapconfig->findGlue(id),
+                    mapconfig->name);
             i.name = id;
             surfaces.push_back(i);
         }
@@ -104,15 +104,15 @@ void SurfaceStack::generateReal(MapImpl *map)
 
     // prepare initial surface stack
     vtslibs::vts::TileSetGlues::list lst;
-    for (auto &s : map->mapConfig->view.surfaces)
+    for (auto &s : map->mapconfig->view.surfaces)
     {
         vtslibs::vts::TileSetGlues ts(s.first);
-        for (auto &g : map->mapConfig->glues)
+        for (auto &g : map->mapconfig->glues)
         {
             bool active = g.id.back() == ts.tilesetId;
             for (auto &it : g.id)
-                if (map->mapConfig->view.surfaces.find(it)
-                        == map->mapConfig->view.surfaces.end())
+                if (map->mapconfig->view.surfaces.find(it)
+                        == map->mapconfig->view.surfaces.end())
                     active = false;
             if (active)
                 ts.glues.push_back(vtslibs::vts::Glue(g.id));
@@ -120,10 +120,10 @@ void SurfaceStack::generateReal(MapImpl *map)
         lst.push_back(ts);
     }
 
-    // sort surfaces by their order in mapConfig
+    // sort surfaces by their order in mapconfig
     std::unordered_map<std::string, uint32> order;
     uint32 i = 0;
-    for (auto &it : map->mapConfig->surfaces)
+    for (auto &it : map->mapconfig->surfaces)
         order[it.id] = i++;
     std::sort(lst.begin(), lst.end(), [order](
               vtslibs::vts::TileSetGlues &a,
@@ -144,14 +144,14 @@ void SurfaceStack::generateReal(MapImpl *map)
         for (auto &g : ts.glues)
         {
             SurfaceInfo i(
-                    *map->mapConfig->findGlue(g.id),
-                    map->mapConfig->name);
+                    *map->mapconfig->findGlue(g.id),
+                    map->mapconfig->name);
             i.name = g.id;
             surfaces.push_back(i);
         }
         SurfaceInfo i(
-                    *map->mapConfig->findSurface(ts.tilesetId),
-                    map->mapConfig->name);
+                    *map->mapconfig->findSurface(ts.tilesetId),
+                    map->mapconfig->name);
         i.name = { ts.tilesetId };
         surfaces.push_back(i);
     }

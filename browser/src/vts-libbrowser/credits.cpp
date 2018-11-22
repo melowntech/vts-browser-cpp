@@ -90,17 +90,17 @@ void Credits::hit(Scope scope, vtslibs::registry::CreditId id, uint32 lod)
     it->maxLod = std::max(it->maxLod, lod);
 }
 
-void Credits::tick(MapCredits &credits)
+void Credits::tick(CameraCredits &credits)
 {
-    MapCredits::Scope *scopes[(int)Scope::Total_] = {
+    CameraCredits::Scope *scopes[(int)Scope::Total_] = {
         &credits.imagery, &credits.geodata };
     for (int i = 0; i < (int)Scope::Total_; i++)
     {
-        MapCredits::Scope *s = scopes[i];
+        CameraCredits::Scope *s = scopes[i];
         s->credits.clear();
         for (Hit &it : hits[i])
         {
-            MapCredits::Credit c;
+            CameraCredits::Credit c;
             auto t = stor(it.id, std::nothrow);
             if (!t || t->notice.empty())
                 continue;
@@ -111,8 +111,8 @@ void Credits::tick(MapCredits &credits)
             s->credits.push_back(c);
         }
         std::sort(s->credits.begin(), s->credits.end(),
-                  [](const MapCredits::Credit &a,
-                  const MapCredits::Credit &b){
+                  [](const CameraCredits::Credit &a,
+                  const CameraCredits::Credit &b){
             return a.hits > b.hits;
         });
         hits[i].clear();
@@ -141,12 +141,12 @@ Credits::Hit::Hit(vtslibs::registry::CreditId id)
     : id(id), hits(0), maxLod(0)
 {}
 
-MapCredits::MapCredits()
+CameraCredits::CameraCredits()
 {}
 
 namespace
 {
-    Json::Value credit(const MapCredits::Credit &c)
+    Json::Value credit(const CameraCredits::Credit &c)
     {
         Json::Value v;
         v["notice"] = c.notice;
@@ -157,7 +157,7 @@ namespace
     }
 }
 
-std::string MapCredits::toJson() const
+std::string CameraCredits::toJson() const
 {
     Json::Value v;
     for (const auto &it : imagery.credits)
@@ -167,7 +167,7 @@ std::string MapCredits::toJson() const
     return jsonToString(v);
 }
 
-std::string MapCredits::textShort() const
+std::string CameraCredits::textShort() const
 {
     std::string result;
     result.reserve(500);
@@ -186,7 +186,7 @@ std::string MapCredits::textShort() const
     return result;
 }
 
-std::string MapCredits::textFull() const
+std::string CameraCredits::textFull() const
 {
     std::string result;
     result.reserve(1000);
@@ -209,6 +209,15 @@ std::string MapCredits::textFull() const
         }
     }
     return result;
+}
+
+void CameraCredits::clear()
+{
+    Scope *scopes[(int)Credits::Scope::Total_] = { &imagery, &geodata };
+    for (int i = 0; i < (int)Credits::Scope::Total_; i++)
+    {
+        scopes[i]->credits.clear();
+    }
 }
 
 } // namespace vts

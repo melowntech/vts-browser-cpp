@@ -24,26 +24,50 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DRAWS_H_sdjigsauzf
-#define DRAWS_H_sdjigsauzf
+#ifndef CAMERA_H_sdjigsauzf
+#define CAMERA_H_sdjigsauzf
 
-#include "draws_common.h"
-#include "foundation.h"
+#include "camera_common.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-VTS_API const vtsCCameraBase *vtsDrawsCamera(vtsHMap map);
+VTS_API vtsHCamera vtsCameraCreate(vtsHMap map);
+VTS_API void vtsCameraDestroy(vtsHCamera cam);
 
-typedef struct vtsCDrawsGroup *vtsHDrawsGroup;
+// camera
+VTS_API void vtsCameraSetViewportSize(vtsHCamera cam,
+                    uint32 width, uint32 height);
+VTS_API void vtsCameraSetView(vtsHCamera cam, const double eye[3],
+                    const double target[3], const double up[3]);
+VTS_API void vtsCameraSetProj(vtsHCamera cam, double fovyDegs,
+                    double near_, double far_);
+VTS_API void vtsCameraGetViewportSize(vtsHCamera cam,
+                    uint32 *width, uint32 *height);
+VTS_API void vtsCameraGetView(vtsHCamera cam, double eye[3],
+                    double target[3], double up[3]);
+VTS_API void vtsCameraGetProj(vtsHCamera cam, double *fovyDegs,
+                    double *near_, double *far_);
+VTS_API void vtsCameraSuggestedNearFar(vtsHCamera cam,
+                    double *near_, double *far_);
+
+// credits
+VTS_API const char *vtsCameraGetCredits(vtsHCamera cam);
+VTS_API const char *vtsCameraGetCreditsShort(vtsHCamera cam);
+VTS_API const char *vtsCameraGetCreditsFull(vtsHCamera cam);
+
+// options & statistics
+VTS_API const char *vtsCameraGetOptions(vtsHCamera cam);
+VTS_API const char *vtsCameraGetStatistics(vtsHCamera cam);
+VTS_API void vtsCameraSetOptions(vtsHCamera cam, const char *options);
 
 // acquire iterator for the draw tasks
-VTS_API vtsHDrawsGroup vtsDrawsOpaque(vtsHMap map);
-VTS_API vtsHDrawsGroup vtsDrawsTransparent(vtsHMap map);
-VTS_API vtsHDrawsGroup vtsDrawsGeodata(vtsHMap map);
-VTS_API vtsHDrawsGroup vtsDrawsInfographics(vtsHMap map);
-VTS_API vtsHDrawsGroup vtsDrawsColliders(vtsHMap map);
+VTS_API vtsHDrawsGroup vtsDrawsOpaque(vtsHCamera cam);
+VTS_API vtsHDrawsGroup vtsDrawsTransparent(vtsHCamera cam);
+VTS_API vtsHDrawsGroup vtsDrawsGeodata(vtsHCamera cam);
+VTS_API vtsHDrawsGroup vtsDrawsInfographics(vtsHCamera cam);
+VTS_API vtsHDrawsGroup vtsDrawsColliders(vtsHCamera cam);
 VTS_API uint32 vtsDrawsCount(vtsHDrawsGroup group);
 VTS_API void vtsDrawsDestroy(vtsHDrawsGroup group);
 
@@ -55,8 +79,11 @@ VTS_API const vtsCDrawBase *vtsDrawsDetail(vtsHDrawsGroup group, uint32 index);
 
 // accesor for all data pointed to by the iterator
 // (this function is subject to more frequent changes)
-VTS_API const vtsCDrawBase *vtsDrawsAllInOne(vtsHDrawsGroup group, uint32 index,
-                              void **mesh, void **texColor, void **texMask);
+VTS_API const vtsCDrawBase *vtsDrawsAllInOne(vtsHDrawsGroup group,
+                    uint32 index, void **mesh,
+                    void **texColor, void **texMask);
+
+VTS_API const vtsCCameraBase *vtsDrawsCamera(vtsHCamera cam);
 
 VTS_API void *vtsDrawsAtmosphereDensityTexture(vtsHMap map);
 

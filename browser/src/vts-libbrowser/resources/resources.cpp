@@ -64,7 +64,7 @@ MapImpl::Resources::Fetching::Fetching() :
 
 void MapImpl::touchResource(const std::shared_ptr<Resource> &resource)
 {
-    resource->lastAccessTick = renderer.tickIndex;
+    resource->lastAccessTick = renderTickIndex;
 }
 
 Validity MapImpl::getResourceValidity(const std::string &name)
@@ -112,9 +112,9 @@ std::shared_ptr<AuthConfig> MapImpl::getAuthConfig(const std::string &name)
     return getMapResource<AuthConfig>(this, name);
 }
 
-std::shared_ptr<MapConfig> MapImpl::getMapConfig(const std::string &name)
+std::shared_ptr<Mapconfig> MapImpl::getMapconfig(const std::string &name)
 {
-    return getMapResource<MapConfig>(this, name);
+    return getMapResource<Mapconfig>(this, name);
 }
 
 std::shared_ptr<MetaTile> MapImpl::getMetaTile(const std::string &name)
@@ -161,11 +161,6 @@ std::shared_ptr<TilesetMapping> MapImpl::getTilesetMapping(
         const std::string &name)
 {
     return getMapResource<TilesetMapping>(this, name);
-}
-
-std::shared_ptr<SriIndex> MapImpl::getSriIndex(const std::string &name)
-{
-    return getMapResource<SriIndex>(this, name);
 }
 
 std::shared_ptr<GeodataFeatures> MapImpl::getGeoFeatures(

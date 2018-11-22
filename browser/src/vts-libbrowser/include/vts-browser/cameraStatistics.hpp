@@ -24,39 +24,32 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DRAWS_COMMON_H_desgjjgf
-#define DRAWS_COMMON_H_desgjjgf
+#ifndef CAMERA_STATISTICS_HPP_wqieufhbvgjh
+#define CAMERA_STATISTICS_HPP_wqieufhbvgjh
 
-#include "foundation_common.h"
+#include <string>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "foundation.hpp"
 
-typedef struct vtsCDrawBase
+namespace vts
 {
-    float mv[16];
-    float uvm[9];
-    float color[4];
-    float uvClip[4];
-    float center[3];
-    bool externalUv;
-    bool flatShading;
-} vtsCDrawBase;
 
-typedef struct vtsCCameraBase
+class VTS_API CameraStatistics
 {
-    double view[16];
-    double proj[16];
-    double eye[3];
-    double near_, far_;
-    double aspect;
-    double fov; // vertical, degrees
-    bool mapProjected;
-} vtsCCameraBase;
+public:
+    CameraStatistics();
+    std::string toJson() const;
 
-#ifdef __cplusplus
-} // extern C
-#endif
+    static const uint32 MaxLods = 25;
+    uint32 nodesRenderedTotal;
+    uint32 nodesRenderedPerLod[MaxLods];
+    uint32 metaNodesTraversedTotal;
+    uint32 metaNodesTraversedPerLod[MaxLods];
+    uint32 currentNodeMetaUpdates;
+    uint32 currentNodeDrawsUpdates;
+    uint32 currentGridNodes;
+};
+
+} // namespace vts
 
 #endif

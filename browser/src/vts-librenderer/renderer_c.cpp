@@ -116,10 +116,10 @@ const vtsCRenderVariablesBase *vtsRendererVariables(
     return nullptr;
 }
 
-void vtsRendererRender(vtsHRenderer renderer, vtsHMap map)
+void vtsRendererRender(vtsHRenderer renderer, vtsHCamera camera)
 {
     C_BEGIN
-    renderer->p->render(map->p.get());
+    renderer->p->render(camera->p.get());
     C_END
 }
 

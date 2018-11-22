@@ -24,31 +24,39 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <boost/algorithm/string.hpp>
+//#include <boost/algorithm/string.hpp>
+//#include <functional> // bad_function_call exception
 
+#include "include/vts-browser/buffer.hpp"
 #include "include/vts-browser/callbacks.h"
+#include "include/vts-browser/camera.h"
+#include "include/vts-browser/camera.hpp"
+#include "include/vts-browser/cameraCredits.hpp"
+#include "include/vts-browser/cameraDraws.hpp"
+#include "include/vts-browser/cameraOptions.hpp"
+#include "include/vts-browser/cameraStatistics.hpp"
 #include "include/vts-browser/celestial.h"
-#include "include/vts-browser/draws.h"
-#include "include/vts-browser/fetcher.h"
-#include "include/vts-browser/log.h"
-#include "include/vts-browser/map.h"
-#include "include/vts-browser/math.h"
-#include "include/vts-browser/resources.h"
-#include "include/vts-browser/search.h"
-
-#include "include/vts-browser/map.hpp"
-#include "include/vts-browser/exceptions.hpp"
-#include "include/vts-browser/log.hpp"
-#include "include/vts-browser/options.hpp"
-#include "include/vts-browser/statistics.hpp"
-#include "include/vts-browser/search.hpp"
-#include "include/vts-browser/credits.hpp"
 #include "include/vts-browser/celestial.hpp"
-#include "include/vts-browser/callbacks.hpp"
-#include "include/vts-browser/resources.hpp"
+#include "include/vts-browser/exceptions.hpp"
+#include "include/vts-browser/fetcher.h"
 #include "include/vts-browser/fetcher.hpp"
-#include "include/vts-browser/draws.hpp"
+#include "include/vts-browser/log.h"
+#include "include/vts-browser/log.hpp"
+#include "include/vts-browser/map.h"
+#include "include/vts-browser/map.hpp"
+#include "include/vts-browser/mapCallbacks.hpp"
+#include "include/vts-browser/mapOptions.hpp"
+#include "include/vts-browser/mapStatistics.hpp"
+#include "include/vts-browser/math.h"
 #include "include/vts-browser/math.hpp"
+#include "include/vts-browser/navigation.h"
+#include "include/vts-browser/navigation.hpp"
+#include "include/vts-browser/navigationOptions.hpp"
+#include "include/vts-browser/resources.h"
+#include "include/vts-browser/resources.hpp"
+#include "include/vts-browser/search.h"
+#include "include/vts-browser/search.hpp"
+#include "include/vts-browser/view.hpp"
 
 #include "utilities/json.hpp"
 #include "mapApiC.hpp"
@@ -79,7 +87,7 @@ void handleExceptions()
         throw;
     }
 #define CATCH(C, E) catch (E &e) { setError(C, e.what()); }
-    CATCH(-101, MapConfigException)
+    CATCH(-101, MapconfigException)
     CATCH(-100, AuthException)
     CATCH(-21, std::ios_base::failure)
     CATCH(-20, std::invalid_argument)
@@ -127,6 +135,11 @@ const char *retStr(const std::string &str)
 extern "C" {
 #endif
 
+typedef struct vtsCNavigation
+{
+    std::shared_ptr<vts::Navigation> p;
+} vtsCNavigation;
+
 typedef struct vtsCSearch
 {
     std::shared_ptr<vts::SearchTask> p;
@@ -172,7 +185,7 @@ const char *vtsErrCodeToName(sint32 code)
     {
     case 0: return "no error";
 #define CATCH(C, E) case C: return #E;
-    CATCH(-101, MapConfigException)
+    CATCH(-101, MapconfigException)
     CATCH(-100, AuthException)
     CATCH(-21, std::ios_base::failure)
     CATCH(-20, std::invalid_argument)
@@ -208,6 +221,10 @@ void vtsErrClear()
     s.code = 0;
     s.msg = "";
 }
+
+////////////////////////////////////////////////////////////////////////////
+// LOG
+////////////////////////////////////////////////////////////////////////////
 
 void vtsLogSetMaskStr(const char *mask)
 {
@@ -273,6 +290,10 @@ void vtsLog(uint32 level, const char *message)
     }
 }
 
+////////////////////////////////////////////////////////////////////////////
+// MAP
+////////////////////////////////////////////////////////////////////////////
+
 vtsHMap vtsMapCreate(const char *createOptions, vtsHFetcher fetcher)
 {
     C_BEGIN
@@ -306,18 +327,18 @@ void *vtsMapGetCustomData(vtsHMap map)
     return nullptr;
 }
 
-void vtsMapSetConfigPaths(vtsHMap map, const char *mapConfigPath,
-                          const char *authPath, const char *sriPath)
+void vtsMapSetConfigPaths(vtsHMap map, const char *mapconfigPath,
+                          const char *authPath)
 {
     C_BEGIN
-    map->p->setMapConfigPath(mapConfigPath, authPath, sriPath);
+    map->p->setMapconfigPath(mapconfigPath, authPath);
     C_END
 }
 
 const char *vtsMapGetConfigPath(vtsHMap map)
 {
     C_BEGIN
-    return vts::retStr(map->p->getMapConfigPath());
+    return vts::retStr(map->p->getMapconfigPath());
     C_END
     return nullptr;
 }
@@ -325,7 +346,7 @@ const char *vtsMapGetConfigPath(vtsHMap map)
 bool vtsMapGetConfigAvailable(vtsHMap map)
 {
     C_BEGIN
-    return map->p->getMapConfigAvailable();
+    return map->p->getMapconfigAvailable();
     C_END
     return false;
 }
@@ -333,7 +354,7 @@ bool vtsMapGetConfigAvailable(vtsHMap map)
 bool vtsMapGetConfigReady(vtsHMap map)
 {
     C_BEGIN
-    return map->p->getMapConfigReady();
+    return map->p->getMapconfigReady();
     C_END
     return false;
 }
@@ -389,24 +410,10 @@ void vtsMapRenderInitialize(vtsHMap map)
     C_END
 }
 
-void vtsMapRenderTickPrepare(vtsHMap map, double elapsedTime)
+void vtsMapRenderTick(vtsHMap map, double elapsedTime)
 {
     C_BEGIN
-    map->p->renderTickPrepare(elapsedTime);
-    C_END
-}
-
-void vtsMapRenderTickRender(vtsHMap map)
-{
-    C_BEGIN
-    map->p->renderTickRender();
-    C_END
-}
-
-void vtsMapRenderTickColliders(vtsHMap map)
-{
-    C_BEGIN
-    map->p->renderTickColliders();
+    map->p->renderTick(elapsedTime);
     C_END
 }
 
@@ -414,13 +421,6 @@ void vtsMapRenderFinalize(vtsHMap map)
 {
     C_BEGIN
     map->p->renderFinalize();
-    C_END
-}
-
-void vtsMapSetWindowSize(vtsHMap map, uint32 width, uint32 height)
-{
-    C_BEGIN
-    map->p->setWindowSize(width, height);
     C_END
 }
 
@@ -440,208 +440,349 @@ const char *vtsMapGetStatistics(vtsHMap map)
     return nullptr;
 }
 
-const char *vtsMapGetCredits(vtsHMap map)
-{
-    C_BEGIN
-    return vts::retStr(map->p->credits().toJson());
-    C_END
-    return nullptr;
-}
-
-const char *vtsMapGetCreditsShort(vtsHMap map)
-{
-    C_BEGIN
-    return vts::retStr(map->p->credits().textShort());
-    C_END
-    return nullptr;
-}
-
-const char *vtsMapGetCreditsFull(vtsHMap map)
-{
-    C_BEGIN
-    return vts::retStr(map->p->credits().textFull());
-    C_END
-    return nullptr;
-}
-
 void vtsMapSetOptions(vtsHMap map, const char *options)
 {
     C_BEGIN
-    vts::MapOptions mo = map->p->options();
+    vts::MapRuntimeOptions mo = map->p->options();
     mo.applyJson(options);
     map->p->options() = mo; // all or nothing
     C_END
 }
 
-void vtsMapPan(vtsHMap map, const double value[3])
-{
-    C_BEGIN
-    map->p->pan(value);
-    C_END
-}
-
-void vtsMapRotate(vtsHMap map, const double value[3])
-{
-    C_BEGIN
-    map->p->rotate(value);
-    C_END
-}
-
-void vtsMapZoom(vtsHMap map, double value)
-{
-    C_BEGIN
-    map->p->zoom(value);
-    C_END
-}
-
-void vtsMapResetPositionAltitude(vtsHMap map)
-{
-    C_BEGIN
-    map->p->resetPositionAltitude();
-    C_END
-}
-
-void vtsMapResetNavigationMode(vtsHMap map)
-{
-    C_BEGIN
-    map->p->resetNavigationMode();
-    C_END
-}
-
-void vtsMapSetPositionSubjective(vtsHMap map, bool subjective,
-                                 bool convert)
-{
-    C_BEGIN
-    map->p->setPositionSubjective(subjective, convert);
-    C_END
-}
-
-void vtsMapSetPositionPoint(vtsHMap map, const double point[3])
-{
-    C_BEGIN
-    map->p->setPositionPoint(point);
-    C_END
-}
-
-void vtsMapSetPositionRotation(vtsHMap map, const double point[3])
-{
-    C_BEGIN
-    map->p->setPositionRotation(point);
-    C_END
-}
-
-void vtsMapSetPositionViewExtent(vtsHMap map, double viewExtent)
-{
-    C_BEGIN
-    map->p->setPositionViewExtent(viewExtent);
-    C_END
-}
-
-void vtsMapSetPositionFov(vtsHMap map, double fov)
-{
-    C_BEGIN
-    map->p->setPositionFov(fov);
-    C_END
-}
-
-void vtsMapSetPositionJson(vtsHMap map, const char *position)
-{
-    C_BEGIN
-    map->p->setPositionJson(position);
-    C_END
-}
-
-void vtsMapSetPositionUrl(vtsHMap map, const char *position)
-{
-    C_BEGIN
-    map->p->setPositionUrl(position);
-    C_END
-}
-
-void vtsMapSetAutoRotation(vtsHMap map, double value)
-{
-    C_BEGIN
-    map->p->setAutoRotation(value);
-    C_END
-}
-
-bool vtsMapGetPositionSubjective(vtsHMap map)
-{
-    C_BEGIN
-    return map->p->getPositionSubjective();
-    C_END
-    return false;
-}
-
-void vtsMapGetPositionPoint(vtsHMap map, double point[3])
-{
-    C_BEGIN
-    map->p->getPositionPoint(point);
-    C_END
-}
-
-void vtsMapGetPositionRotation(vtsHMap map, double rot[3])
-{
-    C_BEGIN
-    map->p->getPositionRotation(rot);
-    C_END
-}
-
-void vtsMapGetPositionRotationLimited(vtsHMap map, double rot[3])
-{
-    C_BEGIN
-    map->p->getPositionRotationLimited(rot);
-    C_END
-}
-
-double vtsMapGetPositionViewExtent(vtsHMap map)
-{
-    C_BEGIN
-    map->p->getPositionViewExtent();
-    C_END
-    return 0.0;
-}
-
-double vtsMapGetPositionFov(vtsHMap map)
-{
-    C_BEGIN
-    return map->p->getPositionFov();
-    C_END
-    return 0.0;
-}
-
-const char *vtsMapGetPositionUrl(vtsHMap map)
-{
-    C_BEGIN
-    return vts::retStr(map->p->getPositionUrl());
-    C_END
-    return nullptr;
-}
-
-const char *vtsMapGetPositionJson(vtsHMap map)
-{
-    C_BEGIN
-    return vts::retStr(map->p->getPositionJson());
-    C_END
-    return nullptr;
-}
-
-double vtsMapGetAutoRotation(vtsHMap map)
-{
-    C_BEGIN
-    return map->p->getAutoRotation();
-    C_END
-    return 0.0;
-}
-
 void vtsMapConvert(vtsHMap map,
-                   const double pointFrom[3], double pointTo[3],
-                   uint32 srsFrom, uint32 SrsTo)
+    const double pointFrom[3], double pointTo[3],
+    uint32 srsFrom, uint32 SrsTo)
 {
     C_BEGIN
     map->p->convert(pointFrom, pointTo, (vts::Srs)srsFrom, (vts::Srs)SrsTo);
     C_END
 }
+
+////////////////////////////////////////////////////////////////////////////
+// CAMERA
+////////////////////////////////////////////////////////////////////////////
+
+vtsHCamera vtsCameraCreate(vtsHMap map)
+{
+    C_BEGIN
+    vtsHCamera r = new vtsCCamera();
+    r->p = map->p->camera();
+    return r;
+    C_END
+    return nullptr;
+}
+
+void vtsCameraDestroy(vtsHCamera cam)
+{
+    C_BEGIN
+    delete cam;
+    C_END
+}
+
+// camera
+
+void vtsCameraSetViewportSize(vtsHCamera cam,
+    uint32 width, uint32 height)
+{
+    C_BEGIN
+    cam->p->setViewportSize(width, height);
+    C_END
+}
+
+void vtsCameraSetView(vtsHCamera cam, const double eye[3],
+    const double target[3], const double up[3])
+{
+    C_BEGIN
+    cam->p->setView(eye, target, up);
+    C_END
+}
+
+void vtsCameraSetProj(vtsHCamera cam, double fovyDegs,
+    double near_, double far_)
+{
+    C_BEGIN
+    cam->p->setProj(fovyDegs, near_, far_);
+    C_END
+}
+
+void vtsCameraGetViewportSize(vtsHCamera cam,
+    uint32 *width, uint32 *height)
+{
+    C_BEGIN
+    cam->p->getViewportSize(*width, *height);
+    C_END
+}
+
+void vtsCameraGetView(vtsHCamera cam, double eye[3],
+    double target[3], double up[3])
+{
+    C_BEGIN
+    cam->p->getView(eye, target, up);
+    C_END
+}
+
+void vtsCameraGetProj(vtsHCamera cam, double *fovyDegs,
+    double *near_, double *far_)
+{
+    C_BEGIN
+    cam->p->getProj(*fovyDegs, *near_, *far_);
+    C_END
+}
+
+void vtsCameraSuggestedNearFar(vtsHCamera cam,
+    double *near_, double *far_)
+{
+    C_BEGIN
+    cam->p->suggestedNearFar(*near_, *far_);
+    C_END
+}
+
+// credits
+
+const char *vtsCameraGetCredits(vtsHCamera cam)
+{
+    C_BEGIN
+    return vts::retStr(cam->p->credits().toJson());
+    C_END
+    return nullptr;
+}
+
+const char *vtsCameraGetCreditsShort(vtsHCamera cam)
+{
+    C_BEGIN
+    return vts::retStr(cam->p->credits().textShort());
+    C_END
+    return nullptr;
+}
+
+const char *vtsCameraGetCreditsFull(vtsHCamera cam)
+{
+    C_BEGIN
+    return vts::retStr(cam->p->credits().textFull());
+    C_END
+    return nullptr;
+}
+
+// options & statistics
+
+const char *vtsCameraGetOptions(vtsHCamera cam)
+{
+    C_BEGIN
+    return vts::retStr(cam->p->options().toJson());
+    C_END
+    return nullptr;
+}
+
+const char *vtsCameraGetStatistics(vtsHCamera cam)
+{
+    C_BEGIN
+    return vts::retStr(cam->p->statistics().toJson());
+    C_END
+    return nullptr;
+}
+
+void vtsCameraSetOptions(vtsHCamera cam, const char *options)
+{
+    C_BEGIN
+    vts::CameraOptions co = cam->p->options();
+    co.applyJson(options);
+    cam->p->options() = co; // all or nothing
+    C_END
+}
+
+////////////////////////////////////////////////////////////////////////////
+// NAVIGATION
+////////////////////////////////////////////////////////////////////////////
+
+// navigation
+
+void vtsNavigationPan(vtsHNavigation nav, const double value[3])
+{
+    C_BEGIN
+    nav->p->pan(value);
+    C_END
+}
+
+void vtsNavigationRotate(vtsHNavigation nav, const double value[3])
+{
+    C_BEGIN
+    nav->p->rotate(value);
+    C_END
+}
+
+void vtsNavigationZoom(vtsHNavigation nav, double value)
+{
+    C_BEGIN
+    nav->p->zoom(value);
+    C_END
+}
+
+void vtsNavigationResetAltitude(vtsHNavigation nav)
+{
+    C_BEGIN
+    nav->p->resetAltitude();
+    C_END
+}
+
+void vtsNavigationResetNavigationMode(vtsHNavigation nav)
+{
+    C_BEGIN
+    nav->p->resetNavigationMode();
+    C_END
+}
+
+// setters
+
+void vtsNavigationSetSubjective(vtsHNavigation nav, bool subjective,
+                                 bool convert)
+{
+    C_BEGIN
+    nav->p->setSubjective(subjective, convert);
+    C_END
+}
+
+void vtsNavigationSetPoint(vtsHNavigation nav, const double point[3])
+{
+    C_BEGIN
+    nav->p->setPoint(point);
+    C_END
+}
+
+void vtsNavigationSetRotation(vtsHNavigation nav, const double point[3])
+{
+    C_BEGIN
+    nav->p->setRotation(point);
+    C_END
+}
+
+void vtsNavigationSetViewExtent(vtsHNavigation nav, double viewExtent)
+{
+    C_BEGIN
+    nav->p->setViewExtent(viewExtent);
+    C_END
+}
+
+void vtsNavigationSetFov(vtsHNavigation nav, double fov)
+{
+    C_BEGIN
+    nav->p->setFov(fov);
+    C_END
+}
+
+void vtsNavigationSetAutoRotation(vtsHNavigation nav, double value)
+{
+    C_BEGIN
+    nav->p->setAutoRotation(value);
+    C_END
+}
+
+void vtsNavigationSetJson(vtsHNavigation nav, const char *pos)
+{
+    C_BEGIN
+    nav->p->setPositionJson(pos);
+    C_END
+}
+
+void vtsNavigationSetUrl(vtsHNavigation nav, const char *pos)
+{
+    C_BEGIN
+    nav->p->setPositionUrl(pos);
+    C_END
+}
+
+// getters
+
+bool vtsNavigationGetSubjective(vtsHNavigation nav)
+{
+    C_BEGIN
+    return nav->p->getSubjective();
+    C_END
+    return false;
+}
+
+void vtsNavigationGetPoint(vtsHNavigation nav, double point[3])
+{
+    C_BEGIN
+    nav->p->getPoint(point);
+    C_END
+}
+
+void vtsNavigationGetRotation(vtsHNavigation nav, double rot[3])
+{
+    C_BEGIN
+    nav->p->getRotation(rot);
+    C_END
+}
+
+void vtsNavigationGetRotationLimited(vtsHNavigation nav, double rot[3])
+{
+    C_BEGIN
+    nav->p->getRotationLimited(rot);
+    C_END
+}
+
+double vtsNavigationGetViewExtent(vtsHNavigation nav)
+{
+    C_BEGIN
+    nav->p->getViewExtent();
+    C_END
+    return 0.0;
+}
+
+double vtsNavigationGetFov(vtsHNavigation nav)
+{
+    C_BEGIN
+    return nav->p->getFov();
+    C_END
+    return 0.0;
+}
+
+double vtsNavigationGetAutoRotation(vtsHNavigation nav)
+{
+    C_BEGIN
+    return nav->p->getAutoRotation();
+    C_END
+    return 0.0;
+}
+
+const char *vtsNavigationGetPositionUrl(vtsHNavigation nav)
+{
+    C_BEGIN
+    return vts::retStr(nav->p->getPositionUrl());
+    C_END
+    return nullptr;
+}
+
+const char *vtsNavigationGetPositionJson(vtsHNavigation nav)
+{
+    C_BEGIN
+    return vts::retStr(nav->p->getPositionJson());
+    C_END
+    return nullptr;
+}
+
+// options
+
+const char *vtsNavigationGetOptions(vtsHNavigation nav)
+{
+    C_BEGIN
+    return vts::retStr(nav->p->options().toJson());
+    C_END
+    return nullptr;
+}
+
+void vtsNavigationSetOptions(vtsHNavigation nav, const char *options)
+{
+    C_BEGIN
+    vts::NavigationOptions no = nav->p->options();
+    no.applyJson(options);
+    nav->p->options() = no; // all or nothing
+    C_END
+}
+
+////////////////////////////////////////////////////////////////////////////
+// RESOURCES
+////////////////////////////////////////////////////////////////////////////
 
 uint32 vtsGpuTypeSize(uint32 type)
 {
@@ -785,6 +926,25 @@ void vtsGetMeshAttribute(vtsHResource resource, uint32 index,
     C_END
 }
 
+////////////////////////////////////////////////////////////////////////////
+// CALLBACKS
+////////////////////////////////////////////////////////////////////////////
+
+namespace
+{
+
+struct StateCallback
+{
+    void operator()()
+    {
+        (*callback)(map);
+    }
+    vtsHMap map;
+    vtsEmptyCallbackType callback;
+};
+
+} // namespace
+
 void vtsCallbacksLoadTexture(vtsHMap map,
                 vtsResourceCallbackType callback)
 {
@@ -831,21 +991,6 @@ void vtsCallbacksLoadMesh(vtsHMap map,
     C_END
 }
 
-namespace
-{
-
-struct StateCallback
-{
-    void operator()()
-    {
-        (*callback)(map);
-    }
-    vtsHMap map;
-    vtsEmptyCallbackType callback;
-};
-
-} // namespace
-
 void vtsCallbacksMapconfigAvailable(vtsHMap map,
                 vtsEmptyCallbackType callback)
 {
@@ -868,137 +1013,6 @@ void vtsCallbacksMapconfigReady(vtsHMap map,
     C_END
 }
 
-namespace
-{
-
-struct DoubleCallback
-{
-    void operator()(double *ds)
-    {
-        (*callback)(map, ds);
-    }
-    vtsHMap map;
-    vtsDoubleArrayCallbackType callback;
-    DoubleCallback(vtsHMap map,
-                vtsDoubleArrayCallbackType callback)
-        : map(map), callback(callback) {}
-};
-
-} // namespace
-
-void vtsCallbacksCameraEye(vtsHMap map,
-                vtsDoubleArrayCallbackType callback)
-{
-    C_BEGIN
-    map->p->callbacks().cameraOverrideEye = DoubleCallback(map, callback);
-    C_END
-}
-
-void vtsCallbacksCameraTarget(vtsHMap map,
-                vtsDoubleArrayCallbackType callback)
-{
-    C_BEGIN
-    map->p->callbacks().cameraOverrideTarget = DoubleCallback(map, callback);
-    C_END
-}
-
-void vtsCallbacksCameraUp(vtsHMap map,
-                vtsDoubleArrayCallbackType callback)
-{
-    C_BEGIN
-    map->p->callbacks().cameraOverrideUp = DoubleCallback(map, callback);
-    C_END
-}
-
-void vtsCallbacksCameraFovAspectNearFar(vtsHMap map,
-                vtsDoubleArrayCallbackType callback)
-{
-    struct Callback
-    {
-        void operator()(double &a, double &b, double &c, double &d)
-        {
-            double tmp[4] = {a, b, c, d};
-            (*callback)(map, tmp);
-            a = tmp[0];
-            b = tmp[1];
-            c = tmp[2];
-            d = tmp[3];
-        }
-        vtsHMap map;
-        vtsDoubleArrayCallbackType callback;
-    };
-    C_BEGIN
-    Callback c;
-    c.map = map;
-    c.callback = callback;
-    map->p->callbacks().cameraOverrideFovAspectNearFar = c;
-    C_END
-}
-
-void vtsCallbacksCameraView(vtsHMap map,
-                vtsDoubleArrayCallbackType callback)
-{
-    C_BEGIN
-    map->p->callbacks().cameraOverrideView = DoubleCallback(map, callback);
-    C_END
-}
-
-void vtsCallbacksCameraProj(vtsHMap map,
-                vtsDoubleArrayCallbackType callback)
-{
-    C_BEGIN
-    map->p->callbacks().cameraOverrideProj = DoubleCallback(map, callback);
-    C_END
-}
-
-void vtsCallbacksCollidersCenter(vtsHMap map,
-    vtsDoubleArrayCallbackType callback)
-{
-    C_BEGIN
-    map->p->callbacks().collidersOverrideCenter = DoubleCallback(map, callback);
-    C_END
-}
-
-void vtsCallbacksCollidersDistance(vtsHMap map,
-    vtsDoubleArrayCallbackType callback)
-{
-    struct Callback
-    {
-        void operator()(double &a)
-        {
-            (*callback)(map, &a);
-        }
-        vtsHMap map;
-        vtsDoubleArrayCallbackType callback;
-    };
-    C_BEGIN
-    Callback c;
-    c.map = map;
-    c.callback = callback;
-    map->p->callbacks().collidersOverrideDistance = c;
-    C_END
-}
-
-void vtsCallbacksCollidersLod(vtsHMap map,
-    vtsUint32CallbackType callback)
-{
-    struct Callback
-    {
-        void operator()(uint32 &a)
-        {
-            (*callback)(map, &a);
-        }
-        vtsHMap map;
-        vtsUint32CallbackType callback;
-    };
-    C_BEGIN
-    Callback c;
-    c.map = map;
-    c.callback = callback;
-    map->p->callbacks().collidersOverrideLod = c;
-    C_END
-}
-
 void vtsProjFinder(vtsProjFinderCallbackType callback)
 {
     struct Callback
@@ -1010,11 +1024,15 @@ void vtsProjFinder(vtsProjFinderCallbackType callback)
         vtsProjFinderCallbackType callback;
     };
     C_BEGIN
-    Callback c;
+        Callback c;
     c.callback = callback;
     vts::projFinder = c;
     C_END
 }
+
+////////////////////////////////////////////////////////////////////////////
+// CELESTIAL
+////////////////////////////////////////////////////////////////////////////
 
 const char *vtsCelestialName(vtsHMap map)
 {
@@ -1082,13 +1100,9 @@ void vtsCelestialAtmosphereDerivedAttributes(vtsHMap map,
     C_END
 }
 
-const vtsCCameraBase *vtsDrawsCamera(vtsHMap map)
-{
-    C_BEGIN
-    return &map->p->draws().camera;
-    C_END
-    return nullptr;
-}
+////////////////////////////////////////////////////////////////////////////
+// DRAWS
+////////////////////////////////////////////////////////////////////////////
 
 namespace
 {
@@ -1104,42 +1118,42 @@ vtsHDrawsGroup createDrawIterator(std::vector<vts::DrawTask> &vec)
 
 } // namespace
 
-vtsHDrawsGroup vtsDrawsOpaque(vtsHMap map)
+vtsHDrawsGroup vtsDrawsOpaque(vtsHCamera cam)
 {
     C_BEGIN
-    return createDrawIterator(map->p->draws().opaque);
+    return createDrawIterator(cam->p->draws().opaque);
     C_END
     return nullptr;
 }
 
-vtsHDrawsGroup vtsDrawsTransparent(vtsHMap map)
+vtsHDrawsGroup vtsDrawsTransparent(vtsHCamera cam)
 {
     C_BEGIN
-    return createDrawIterator(map->p->draws().transparent);
+    return createDrawIterator(cam->p->draws().transparent);
     C_END
     return nullptr;
 }
 
-vtsHDrawsGroup vtsDrawsGeodata(vtsHMap map)
+vtsHDrawsGroup vtsDrawsGeodata(vtsHCamera cam)
 {
     C_BEGIN
-    return createDrawIterator(map->p->draws().geodata);
+    return createDrawIterator(cam->p->draws().geodata);
     C_END
     return nullptr;
 }
 
-vtsHDrawsGroup vtsDrawsInfographics(vtsHMap map)
+vtsHDrawsGroup vtsDrawsInfographics(vtsHCamera cam)
 {
     C_BEGIN
-    return createDrawIterator(map->p->draws().infographics);
+    return createDrawIterator(cam->p->draws().infographics);
     C_END
     return nullptr;
 }
 
-vtsHDrawsGroup vtsDrawsColliders(vtsHMap map)
+vtsHDrawsGroup vtsDrawsColliders(vtsHCamera cam)
 {
     C_BEGIN
-    return createDrawIterator(map->p->draws().colliders);
+    return createDrawIterator(cam->p->draws().colliders);
     C_END
     return nullptr;
 }
@@ -1207,13 +1221,25 @@ const vtsCDrawBase *vtsDrawsAllInOne(vtsHDrawsGroup group, uint32 index,
     return nullptr;
 }
 
-void *vtsDrawsAtmosphereDensityTexture(vtsHMap map)
+const vtsCCameraBase *vtsDrawsCamera(vtsHCamera cam)
 {
     C_BEGIN
-    return map->p->draws().atmosphereDensityTexture.get();
+    return &cam->p->draws().camera;
     C_END
     return nullptr;
 }
+
+void *vtsDrawsAtmosphereDensityTexture(vtsHMap map)
+{
+    C_BEGIN
+    return map->p->atmosphereDensityTexture().get();
+    C_END
+    return nullptr;
+}
+
+////////////////////////////////////////////////////////////////////////////
+// FETCHER
+////////////////////////////////////////////////////////////////////////////
 
 vtsHFetcher vtsFetcherCreateDefault(const char *createOptions)
 {
@@ -1231,6 +1257,10 @@ void vtsFetcherDestroy(vtsHFetcher fetcher)
     delete fetcher;
     C_END
 }
+
+////////////////////////////////////////////////////////////////////////////
+// SEARCHING
+////////////////////////////////////////////////////////////////////////////
 
 bool vtsMapGetSearchable(vtsHMap map)
 {
@@ -1301,6 +1331,10 @@ void vtsSearchUpdateDistances(vtsHSearch search,
     search->p->updateDistances(point);
     C_END
 }
+
+////////////////////////////////////////////////////////////////////////////
+// MATH
+////////////////////////////////////////////////////////////////////////////
 
 void vtsMathMul44x44(double result[16], const double l[16],
     const double r[16])

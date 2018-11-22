@@ -26,7 +26,7 @@
 
 #include <utility/uri.hpp>
 
-#include "map.hpp"
+#include "camera.hpp"
 
 namespace vts
 {
@@ -75,10 +75,10 @@ mat3f BoundParamInfo::uvMatrix() const
     return m;
 }
 
-Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
+Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, CameraImpl *impl,
                 uint32 subMeshIndex, double priority)
 {
-    bound = impl->mapConfig->getBoundInfo(id);
+    bound = impl->map->mapconfig->getBoundInfo(id);
     if (!bound)
         return Validity::Indeterminate;
 
@@ -120,7 +120,7 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, MapImpl *impl,
     }
 }
 
-Validity BoundParamInfo::prepareDepth(MapImpl *impl, double priority)
+Validity BoundParamInfo::prepareDepth(CameraImpl *impl, double priority)
 {
     UrlTemplate::Vars vars = orig;
 
@@ -144,9 +144,10 @@ Validity BoundParamInfo::prepareDepth(MapImpl *impl, double priority)
         v.localId.x &= ~255;
         v.localId.y &= ~255;
         std::string boundName = bound->urlMeta(v);
-        std::shared_ptr<BoundMetaTile> bmt = impl->getBoundMetaTile(boundName);
+        std::shared_ptr<BoundMetaTile> bmt
+                = impl->map->getBoundMetaTile(boundName);
         bmt->updatePriority(priority);
-        switch (impl->getResourceValidity(bmt))
+        switch (impl->map->getResourceValidity(bmt))
         {
         case Validity::Indeterminate:
             return Validity::Indeterminate;
@@ -166,10 +167,10 @@ Validity BoundParamInfo::prepareDepth(MapImpl *impl, double priority)
 
     transparent = bound->isTransparent || (!!alpha && *alpha < 1);
 
-    textureColor = impl->getTexture(bound->urlExtTex(vars));
+    textureColor = impl->map->getTexture(bound->urlExtTex(vars));
     textureColor->updatePriority(priority);
     textureColor->updateAvailability(bound->availability);
-    switch (impl->getResourceValidity(textureColor))
+    switch (impl->map->getResourceValidity(textureColor))
     {
     case Validity::Indeterminate:
         return Validity::Indeterminate;
@@ -180,9 +181,9 @@ Validity BoundParamInfo::prepareDepth(MapImpl *impl, double priority)
     }
     if (!watertight)
     {
-        textureMask = impl->getTexture(bound->urlMask(vars));
+        textureMask = impl->map->getTexture(bound->urlMask(vars));
         textureMask->updatePriority(priority);
-        switch (impl->getResourceValidity(textureMask))
+        switch (impl->map->getResourceValidity(textureMask))
         {
         case Validity::Indeterminate:
             return Validity::Indeterminate;
@@ -198,7 +199,7 @@ Validity BoundParamInfo::prepareDepth(MapImpl *impl, double priority)
     return Validity::Valid;
 }
 
-Validity MapImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
+Validity CameraImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
         uint32 subMeshIndex, BoundParamInfo::List &boundList, double priority)
 {
     std::reverse(boundList.begin(), boundList.end());

@@ -24,19 +24,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DRAWS_HPP_qwedfzugvsdfh
-#define DRAWS_HPP_qwedfzugvsdfh
+#ifndef CAMERA_DRAWS_HPP_qwedfzugvsdfh
+#define CAMERA_DRAWS_HPP_qwedfzugvsdfh
 
 #include <vector>
 #include <memory>
 
-#include "draws_common.h"
+#include "camera_common.h"
 
 namespace vts
 {
 
 class RenderTask;
-class MapImpl;
+class CameraImpl;
 
 class VTS_API DrawTask : public vtsCDrawBase
 {
@@ -46,11 +46,11 @@ public:
     std::shared_ptr<void> texMask;
 
     DrawTask();
-    DrawTask(const MapImpl *m, const RenderTask &r);
-    DrawTask(const MapImpl *m, const RenderTask &r, const float *uvClip);
+    DrawTask(const CameraImpl *m, const RenderTask &r);
+    DrawTask(const CameraImpl *m, const RenderTask &r, const float *uvClip);
 };
 
-class VTS_API MapDraws
+class VTS_API CameraDraws
 {
 public:
     // tasks that may be rendered in optimized way without any transparency
@@ -67,14 +67,12 @@ public:
     // each node's mesh is reported only once
     std::vector<DrawTask> colliders;
 
-    std::shared_ptr<void> atmosphereDensityTexture;
-
     struct VTS_API Camera : public vtsCCameraBase
     {
         Camera();
     } camera;
 
-    MapDraws();
+    CameraDraws();
     void clear();
 };
 

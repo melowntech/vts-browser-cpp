@@ -24,7 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "map.hpp"
+#include "camera.hpp"
 
 namespace vts
 {
@@ -42,7 +42,7 @@ DrawTask::DrawTask()
     flatShading = false;
 }
 
-DrawTask::DrawTask(const MapImpl *m, const RenderTask &r)
+DrawTask::DrawTask(const CameraImpl *m, const RenderTask &r)
     : DrawTask()
 {
     assert(r.ready());
@@ -52,7 +52,7 @@ DrawTask::DrawTask(const MapImpl *m, const RenderTask &r)
         texColor = r.textureColor->info.userData;
     if (r.textureMask)
         texMask = r.textureMask->info.userData;
-    mat4f mv = (m->renderer.viewRender * r.model).cast<float>();
+    mat4f mv = (m->viewRender * r.model).cast<float>();
     for (int i = 0; i < 16; i++)
         this->mv[i] = mv(i);
     for (int i = 0; i < 9; i++)
@@ -66,22 +66,22 @@ DrawTask::DrawTask(const MapImpl *m, const RenderTask &r)
     externalUv = r.externalUv;
 }
 
-DrawTask::DrawTask(const MapImpl *m, const RenderTask &r, const float *uvClip)
+DrawTask::DrawTask(const CameraImpl *m, const RenderTask &r, const float *uvClip)
     : DrawTask(m, r)
 {
     for (int i = 0; i < 4; i++)
         this->uvClip[i] = uvClip[i];
 }
 
-MapDraws::Camera::Camera()
+CameraDraws::Camera::Camera()
 {
     memset(this, 0, sizeof(*this));
 }
 
-MapDraws::MapDraws()
+CameraDraws::CameraDraws()
 {}
 
-void MapDraws::clear()
+void CameraDraws::clear()
 {
     camera = Camera();
     opaque.clear();

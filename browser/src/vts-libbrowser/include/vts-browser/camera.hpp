@@ -24,48 +24,52 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAPAPIC_HPP_sdrg456de6
-#define MAPAPIC_HPP_sdrg456de6
+#ifndef CAMERA_HPP_jihsefk
+#define CAMERA_HPP_jihsefk
 
-#include "include/vts-browser/foundation.h"
-
-#include <string>
+#include <array>
 #include <memory>
 
-#define C_BEGIN try {
-#define C_END } catch(...) { vts::handleExceptions(); }
+#include "foundation.hpp"
 
 namespace vts
 {
 
-VTS_API void handleExceptions();
-VTS_API void setError(sint32 code, const std::string &msg);
-VTS_API const char *retStr(const std::string &str);
-
-class Map;
-class Camera;
-
-} // namespace
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct vtsCMap
+class VTS_API Camera
 {
-    std::shared_ptr<vts::Map> p;
-    void *userData;
+public:
 
-    vtsCMap() : userData(nullptr) {}
-} vtsCMap;
+    Camera(class MapImpl *map);
 
-typedef struct vtsCCamera
-{
-    std::shared_ptr<vts::Camera> p;
-} vtsCCamera;
+    void setViewportSize(uint32 width, uint32 height);
+    void setView(const double eye[3], const double target[3],
+                const double up[3]);
+    void setView(const std::array<double, 3> &eye,
+                const std::array<double, 3> &target,
+                const std::array<double, 3> &up);
+    void setProj(double fovyDegs, double near_, double far_);
 
-#ifdef __cplusplus
-} // extern C
-#endif
+    void getViewportSize(uint32 &width, uint32 &height);
+    void getView(double eye[3], double target[3], double up[3]);
+    void getProj(double &fovyDegs, double &near_, double &far_);
+
+    void suggestedNearFar(double &near_, double &far_);
+
+    class CameraCredits &credits();
+    class CameraDraws &draws();
+    class CameraOptions &options();
+    class CameraStatistics &statistics();
+    class Map *map();
+
+    // create new navigation
+    // only the last navigation created for this camera will be used
+    std::shared_ptr<class Navigation> navigation();
+
+private:
+    std::shared_ptr<class CameraImpl> impl;
+    friend class Map;
+};
+
+} // namespace vts
 
 #endif

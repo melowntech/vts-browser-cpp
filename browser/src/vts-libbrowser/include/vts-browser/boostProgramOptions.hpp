@@ -37,20 +37,25 @@ VTS_API void optionsConfigLog(
         boost::program_options::options_description &desc,
         std::string section = "log");
 
-VTS_API void optionsConfigCreateOptions(
+VTS_API void optionsConfigMapCreate(
         boost::program_options::options_description &desc,
         class MapCreateOptions *opts,
         std::string section = "map");
 
-VTS_API void optionsConfigMapOptions(
+VTS_API void optionsConfigMapRuntime(
         boost::program_options::options_description &desc,
-        class MapOptions *opts,
+        class MapRuntimeOptions *opts,
         std::string section = "map");
 
-VTS_API void optionsConfigDebugOptions(
+VTS_API void optionsConfigCamera(
         boost::program_options::options_description &desc,
-        class MapOptions *opts,
-        std::string section = "map");
+        class CameraOptions *opts,
+        std::string section = "camera");
+
+VTS_API void optionsConfigNavigation(
+        boost::program_options::options_description &desc,
+        class NavigationOptions *opts,
+        std::string section = "navigation");
 
 VTS_API void optionsConfigFetcherOptions(
         boost::program_options::options_description &desc,

@@ -34,6 +34,7 @@ namespace vts
 {
 
 class Map;
+class Camera;
 class MapDraws;
 class MapCelestialBody;
 class ResourceInfo;
@@ -75,9 +76,7 @@ public:
     RenderOptions &options();
     const RenderVariables &variables() const;
 
-    void render(const MapDraws &draws,
-                const MapCelestialBody &celestialBody);
-    void render(Map *map);
+    void render(Camera *cam);
 
     void renderCompass(const double screenPosSize[3],
                        const double mapRotation[3]);

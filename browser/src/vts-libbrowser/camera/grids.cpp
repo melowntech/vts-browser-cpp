@@ -24,7 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "map.hpp"
+#include "camera.hpp"
 
 namespace vts
 {
@@ -66,7 +66,7 @@ SubtilesMerger::Subtile::Subtile(TraverseNode *orig, const vec4f &uvClip)
     : orig(orig), uvClip(uvClip)
 {}
 
-void SubtilesMerger::resolve(TraverseNode *trav, MapImpl *impl)
+void SubtilesMerger::resolve(TraverseNode *trav, CameraImpl *impl)
 {
     assert(!subtiles.empty());
     std::sort(subtiles.begin(), subtiles.end(),
@@ -100,7 +100,7 @@ void SubtilesMerger::resolve(TraverseNode *trav, MapImpl *impl)
     }
 }
 
-void MapImpl::gridPreloadRequest(TraverseNode *trav)
+void CameraImpl::gridPreloadRequest(TraverseNode *trav)
 {
     assert(trav);
     assert(trav->surface);
@@ -132,10 +132,10 @@ void MapImpl::gridPreloadRequest(TraverseNode *trav)
     }
 }
 
-void MapImpl::gridPreloadProcess()
+void CameraImpl::gridPreloadProcess()
 {
     statistics.currentGridNodes = 0;
-    for (auto &it : layers)
+    for (auto &it : map->layers)
     {
         auto &glr = it->gridLoadRequests;
         std::sort(glr.begin(), glr.end());
@@ -146,7 +146,7 @@ void MapImpl::gridPreloadProcess()
     }
 }
 
-void MapImpl::gridPreloadProcess(TraverseNode *trav,
+void CameraImpl::gridPreloadProcess(TraverseNode *trav,
     const std::vector<TileId> &requests)
 {
     if (requests.empty())

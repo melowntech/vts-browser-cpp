@@ -558,6 +558,5 @@ uint32 UniformBuffer::getUbo() const
     return ubo;
 }
 
-
 } } // namespace vts renderer
 

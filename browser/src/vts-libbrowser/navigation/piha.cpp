@@ -25,8 +25,8 @@
  */
 
 #include <dbglog/dbglog.hpp>
-#include "include/vts-browser/options.hpp"
-#include "navigationPiha.hpp"
+#include "../include/vts-browser/navigationOptions.hpp"
+#include "piha.hpp"
 
 namespace vts
 {
@@ -47,7 +47,7 @@ double sumExtents(double v1, double v2, double mult)
 } // namespace
 
 void navigationPiha(
-        const MapOptions &inOptions,
+        const NavigationOptions &inNavOpts,
         double inTimeDiff,
         double inFov,
         double inHorizontalDistance,
@@ -61,7 +61,7 @@ void navigationPiha(
         double &outVerticalMove,
         vec3 &outRotation)
 {
-    if (inOptions.navigationType == NavigationType::Instant)
+    if (inNavOpts.navigationType == NavigationType::Instant)
     {
         outHorizontalMove = inHorizontalDistance;
         outVerticalMove = inVerticalChange;
@@ -70,24 +70,23 @@ void navigationPiha(
         return;
     }
 
-    const ControlOptions &co = inOptions.controlOptions;
-    if (inOptions.navigationType == NavigationType::Quick)
+    if (inNavOpts.navigationType == NavigationType::Quick)
     {
         outHorizontalMove = inHorizontalDistance
-                * (1 - co.inertiaPan);
+                * (1 - inNavOpts.inertiaPan);
         outVerticalMove = inVerticalChange
-                * (1 - co.inertiaPan);
+                * (1 - inNavOpts.inertiaPan);
         outRotation = inStartRotation + inRotationChange
-                * (1 - co.inertiaRotate);
+                * (1 - inNavOpts.inertiaRotate);
         outViewExtent = inStartViewExtent + inViewExtentChange
-                * (1 - co.inertiaZoom);
+                * (1 - inNavOpts.inertiaZoom);
         return;
     }
 
     double distanceWhileExtentChanges = sumExtents(inStartViewExtent,
             inStartViewExtent + inViewExtentChange,
-            inOptions.navigationPihaViewExtentMult)
-            * inOptions.navigationPihaPositionChange;
+            inNavOpts.navigationPihaViewExtentMult)
+            * inNavOpts.navigationPihaPositionChange;
 
     static const double piHalf = 3.14159265358979323846264338327 * 0.5;
 
@@ -101,27 +100,27 @@ void navigationPiha(
         a = piHalf - (piHalf - a) * 2.0;
     }
     double dr = distanceWhileExtentChanges + inHorizontalDistance;
-    double dc = inStartViewExtent * inOptions.navigationPihaPositionChange;
+    double dc = inStartViewExtent * inNavOpts.navigationPihaPositionChange;
     double d = std::min(dr / (dc * 60 + 1), 1.0); // smooth landing
     double vf = std::sin(a) * d; // view extent factor
     double hf = std::cos(a) * d; // horizontal factor
 
     // view extent and horizontal move
     outViewExtent = inStartViewExtent
-            * std::pow(inOptions.navigationPihaViewExtentMult, vf);
+            * std::pow(inNavOpts.navigationPihaViewExtentMult, vf);
     outViewExtent = std::max(outViewExtent,
                         inStartViewExtent - std::abs(inViewExtentChange));
     outHorizontalMove = std::min(outViewExtent
-                    * inOptions.navigationPihaPositionChange
+                    * inNavOpts.navigationPihaPositionChange
                     * std::max(hf, 0.0), inHorizontalDistance);
 
     // vertical move and camera rotation
     double ch = inHorizontalDistance > 1 ? outHorizontalMove
                                            / inHorizontalDistance : 1;
     outVerticalMove = inVerticalChange * std::min(ch,
-                                    1 - co.inertiaPan);
+                                    1 - inNavOpts.inertiaPan);
     outRotation = inStartRotation + inRotationChange * std::min(ch,
-                                    1 - co.inertiaRotate);
+                                    1 - inNavOpts.inertiaRotate);
 
     // todo better camera rotation in fly-over type
 

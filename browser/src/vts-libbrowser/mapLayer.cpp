@@ -37,7 +37,7 @@ FreeInfo::FreeInfo(const vtslibs::registry::FreeLayer &fl,
 MapLayer::MapLayer(MapImpl *map) : map(map),
     creditScope(Credits::Scope::Imagery)
 {
-    boundLayerParams = map->mapConfig->view.surfaces;
+    boundLayerParams = map->mapconfig->view.surfaces;
 }
 
 MapLayer::MapLayer(MapImpl *map, const std::string &name,
@@ -73,14 +73,6 @@ bool MapLayer::isGeodata()
     return false;
 }
 
-TraverseMode MapLayer::getTraverseMode()
-{
-    if (isGeodata())
-        return map->options.traverseModeGeodata;
-    else
-        return map->options.traverseModeSurfaces;
-}
-
 BoundParamInfo::List MapLayer::boundList(const SurfaceInfo *surface,
                                          sint32 surfaceReference)
 {
@@ -98,18 +90,18 @@ BoundParamInfo::List MapLayer::boundList(const SurfaceInfo *surface,
 
 bool MapLayer::prerequisitesCheckMainSurfaces()
 {
-    auto *mapConfig = map->mapConfig.get();
+    auto *mapconfig = map->mapconfig.get();
 
     // check for virtual surface
     if (map->options.debugVirtualSurfaces)
     {
         std::vector<std::string> viewSurfaces;
-        viewSurfaces.reserve(mapConfig->view.surfaces.size());
-        for (auto &it : mapConfig->view.surfaces)
+        viewSurfaces.reserve(mapconfig->view.surfaces.size());
+        for (auto &it : mapconfig->view.surfaces)
             viewSurfaces.push_back(it.first);
         std::sort(viewSurfaces.begin(), viewSurfaces.end());
         for (vtslibs::vts::VirtualSurfaceConfig &it
-             : mapConfig->virtualSurfaces)
+             : mapconfig->virtualSurfaces)
         {
             std::vector<std::string> virtSurfaces(it.id.begin(), it.id.end());
             if (virtSurfaces.size() != viewSurfaces.size())
@@ -119,7 +111,7 @@ bool MapLayer::prerequisitesCheckMainSurfaces()
             if (!boost::algorithm::equals(viewSurfaces, virtSurfaces2))
                 continue;
             auto tilesetMapping = map->getTilesetMapping(
-                    convertPath(it.mapping, mapConfig->name));
+                    convertPath(it.mapping, mapconfig->name));
             if (!testAndThrow(tilesetMapping->state,
                               "Tileset mapping failure."))
                 return false;
@@ -136,7 +128,7 @@ bool MapLayer::prerequisitesCheckMainSurfaces()
         surfaceStack.generateReal(map);
 
     traverseRoot = std::make_shared<TraverseNode>(this, nullptr, NodeInfo(
-                    mapConfig->referenceFrame, TileId(), false, *mapConfig));
+                    mapconfig->referenceFrame, TileId(), false, *mapconfig));
     traverseRoot->priority = std::numeric_limits<double>::infinity();
 
     return true;
@@ -144,9 +136,9 @@ bool MapLayer::prerequisitesCheckMainSurfaces()
 
 bool MapLayer::prerequisitesCheckFreeLayer()
 {
-    auto *mapConfig = map->mapConfig.get();
+    auto *mapconfig = map->mapconfig.get();
 
-    auto *fl = mapConfig->getFreeInfo(freeLayerName);
+    auto *fl = mapconfig->getFreeInfo(freeLayerName);
     if (!fl)
         return false;
     freeLayer = *fl;
@@ -154,50 +146,12 @@ bool MapLayer::prerequisitesCheckFreeLayer()
     surfaceStack.generateFree(map, *freeLayer);
 
     traverseRoot = std::make_shared<TraverseNode>(this, nullptr, NodeInfo(
-                    mapConfig->referenceFrame, TileId(), false, *mapConfig));
+                    mapconfig->referenceFrame, TileId(), false, *mapconfig));
     traverseRoot->priority = std::numeric_limits<double>::infinity();
 
     if (freeLayer->type != vtslibs::registry::FreeLayer::Type::meshTiles)
         creditScope = Credits::Scope::Geodata;
 
-    return true;
-}
-
-bool MapImpl::generateMonolithicGeodataTrav(TraverseNode *trav)
-{
-    assert(!!trav->layer->freeLayer);
-    assert(!!trav->layer->freeLayerParams);
-
-    const vtslibs::registry::FreeLayer::Geodata &g
-            = boost::get<vtslibs::registry::FreeLayer::Geodata>(
-                trav->layer->freeLayer->definition);
-
-    trav->meta.emplace();
-
-    // extents
-    {
-        vec3 el = vecFromUblas<vec3>
-                (mapConfig->referenceFrame.division.extents.ll);
-        vec3 eu = vecFromUblas<vec3>
-                (mapConfig->referenceFrame.division.extents.ur);
-        vec3 ed = eu - el;
-        ed = vec3(1 / ed[0], 1 / ed[1], 1 / ed[2]);
-        trav->meta->extents.ll = vecToUblas<math::Point3>(
-                    (vecFromUblas<vec3>(g.extents.ll) - el).cwiseProduct(ed));
-        trav->meta->extents.ur = vecToUblas<math::Point3>(
-                    (vecFromUblas<vec3>(g.extents.ur) - el).cwiseProduct(ed));
-    }
-
-    // aabb
-    trav->aabbPhys[0] = vecFromUblas<vec3>(g.extents.ll);
-    trav->aabbPhys[1] = vecFromUblas<vec3>(g.extents.ur);
-
-    // other
-    trav->meta->displaySize = g.displaySize;
-    trav->meta->update(vtslibs::vts::MetaNode::Flag::applyDisplaySize);
-    travDetermineMetaImpl(trav); // update physical corners
-    trav->surface = &trav->layer->surfaceStack.surfaces[0];
-    updateNodePriority(trav);
     return true;
 }
 
@@ -221,7 +175,7 @@ MapLayer *getLayer(MapImpl *map, const std::string &name)
 std::pair<Validity, const std::string &> MapImpl::getActualGeoStyle(
         const std::string &name)
 {
-    FreeInfo *f = mapConfig->getFreeInfo(name);
+    FreeInfo *f = mapconfig->getFreeInfo(name);
     if (!f)
         return { Validity::Indeterminate, empty };
     if (!f->overrideStyle.empty())
@@ -231,7 +185,7 @@ std::pair<Validity, const std::string &> MapImpl::getActualGeoStyle(
         std::string url;
         MapLayer *layer = getLayer(this, name);
         if (layer && layer->freeLayerParams->style)
-            url = convertPath(*layer->freeLayerParams->style, mapConfigPath);
+            url = convertPath(*layer->freeLayerParams->style, mapconfigPath);
         else
         {
             switch (f->type)
@@ -285,7 +239,7 @@ std::pair<Validity, const std::string &> MapImpl::getActualGeoFeatures(
     MapLayer *layer = getLayer(this, name);
     assert(layer->freeLayer->type
            == vtslibs::registry::FreeLayer::Type::geodata);
-    NodeInfo node(mapConfig->referenceFrame, *mapConfig);
+    NodeInfo node(mapconfig->referenceFrame, *mapconfig);
     std::string geoName = layer->surfaceStack.surfaces[0].urlGeodata(
             UrlTemplate::Vars(node.nodeId(), vtslibs::vts::local(node)));
     return getActualGeoFeatures(name, geoName,

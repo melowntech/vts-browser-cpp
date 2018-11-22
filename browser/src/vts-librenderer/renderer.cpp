@@ -26,8 +26,12 @@
 
 #include "renderer.hpp"
 
+#include <vts-browser/resources.hpp>
 #include <vts-browser/map.hpp>
-#include <vts-browser/callbacks.hpp>
+#include <vts-browser/mapCallbacks.hpp>
+#include <vts-browser/camera.hpp>
+#include <vts-browser/cameraDraws.hpp>
+#include <vts-browser/celestial.hpp>
 
 namespace vts { namespace renderer
 {
@@ -90,8 +94,9 @@ public:
     std::shared_ptr<Mesh> meshRect; // positions: 0 .. 1
     std::shared_ptr<UniformBuffer> uboAtm;
 
-    const MapDraws *draws;
+    const CameraDraws *draws;
     const MapCelestialBody *body;
+    Texture *atmosphereDensityTexture;
 
     mat4 view;
     mat4 proj;
@@ -101,8 +106,12 @@ public:
     uint32 heightPrev;
     uint32 antialiasingPrev;
 
+    bool projected;
+
     RendererImpl() : draws(nullptr), body(nullptr),
-        widthPrev(0), heightPrev(0), antialiasingPrev(0)
+        atmosphereDensityTexture(nullptr),
+        widthPrev(0), heightPrev(0), antialiasingPrev(0),
+        projected(false)
     {}
 
     ~RendererImpl()
@@ -632,14 +641,13 @@ public:
         ShaderAtm::AtmBlock atmBlock;
 
         if (options.renderAtmosphere
-            && !draws->camera.mapProjected
-            && draws->atmosphereDensityTexture)
+            && !projected
+            && atmosphereDensityTexture)
         {
             // bind atmosphere density texture
             {
                 glActiveTexture(GL_TEXTURE4);
-                Texture *tex = (Texture*)draws->atmosphereDensityTexture.get();
-                tex->bind();
+                atmosphereDensityTexture->bind();
                 glActiveTexture(GL_TEXTURE0);
             }
 
@@ -846,19 +854,17 @@ const RenderVariables &Renderer::variables() const
     return impl->vars;
 }
 
-void Renderer::render(const MapDraws &draws,
-            const MapCelestialBody &body)
+void Renderer::render(Camera *cam)
 {
-    impl->draws = &draws;
-    impl->body = &body;
+    impl->draws = &cam->draws();
+    impl->body = &cam->map()->celestialBody();
+    impl->projected = cam->map()->getMapProjected();
+    impl->atmosphereDensityTexture
+        = (Texture*)cam->map()->atmosphereDensityTexture().get();
     impl->render();
     impl->draws = nullptr;
     impl->body = nullptr;
-}
-
-void Renderer::render(Map *map)
-{
-    render(map->draws(), map->celestialBody());
+    impl->atmosphereDensityTexture = nullptr;
 }
 
 void Renderer::renderCompass(const double screenPosSize[3],

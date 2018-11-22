@@ -30,14 +30,12 @@
 
 namespace po = boost::program_options;
 
-MapPaths parseConfigPaths(const std::string &config,
-                                   const std::string &auth,
-                                   const std::string &sri)
+MapPaths parseConfigPaths(const std::string &config, const std::string &auth)
 {
     assert(!config.empty());
     std::vector<std::string> a;
     boost::split(a, config, boost::is_any_of("|"));
-    if (a.size() > 3)
+    if (a.size() > 2)
         throw std::runtime_error("Config path contains too many parts.");
     MapPaths r;
     r.mapConfig = a[0];
@@ -45,16 +43,14 @@ MapPaths parseConfigPaths(const std::string &config,
         r.auth = a[1];
     else
         r.auth = auth;
-    if (a.size() > 2)
-        r.sri = a[2];
-    else
-        r.sri = sri;
     return r;
 }
 
 bool programOptions(vts::MapCreateOptions &createOptions,
-                    vts::MapOptions &mapOptions,
+                    vts::MapRuntimeOptions &mapOptions,
                     vts::FetcherOptions &fetcherOptions,
+                    vts::CameraOptions &camOptions,
+                    vts::NavigationOptions &navOptions,
                     vts::renderer::RenderOptions &renderOptions,
                     AppOptions &appOptions,
                     int argc, char *argv[])
@@ -69,18 +65,12 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 po::value<std::vector<std::string>>(&configs)->composing(),
                 "Mapconfig URL(s).\n"
                 "Available formats:\n"
-                "<config>|<auth>|<sri>\n"
                 "<config>|<auth>\n"
-                "<config>||<sri>\n"
                 "<config>"
             )
             ("auth,a",
                 po::value<std::string>(&auth),
                 "Authentication url fallback."
-            )
-            ("sri,s",
-                po::value<std::string>(&sri),
-                "SRI url fallback."
             )
             ("position,p",
                 po::value<std::string>(&appOptions.initialPosition),
@@ -148,9 +138,10 @@ bool programOptions(vts::MapCreateOptions &createOptions,
     popts.add("url", -1);
 
     vts::optionsConfigLog(desc);
-    vts::optionsConfigCreateOptions(desc, &createOptions);
-    vts::optionsConfigMapOptions(desc, &mapOptions);
-    vts::optionsConfigDebugOptions(desc, &mapOptions);
+    vts::optionsConfigMapCreate(desc, &createOptions);
+    vts::optionsConfigMapRuntime(desc, &mapOptions);
+    vts::optionsConfigCamera(desc, &camOptions);
+    vts::optionsConfigNavigation(desc, &navOptions);
     vts::optionsConfigFetcherOptions(desc, &fetcherOptions);
 
     po::variables_map vm;
@@ -176,7 +167,7 @@ bool programOptions(vts::MapCreateOptions &createOptions,
     else
     {
         for (auto &it : configs)
-            appOptions.paths.push_back(parseConfigPaths(it, auth, sri));
+            appOptions.paths.push_back(parseConfigPaths(it, auth));
     }
 
     return true;

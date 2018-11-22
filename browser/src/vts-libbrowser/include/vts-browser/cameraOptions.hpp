@@ -24,27 +24,58 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXCEPTIONS_HPP_wgfrferg
-#define EXCEPTIONS_HPP_wgfrferg
+#ifndef CAMERA_OPTIONS_HPP_kwegfdzvgsdfj
+#define CAMERA_OPTIONS_HPP_kwegfdzvgsdfj
 
 #include <string>
-#include <stdexcept>
 
 #include "foundation.hpp"
 
 namespace vts
 {
 
-class VTS_API MapconfigException : public std::runtime_error
+class VTS_API CameraOptions
 {
 public:
-    MapconfigException(const std::string &what_arg);
-};
+    CameraOptions();
+    CameraOptions(const std::string &json);
+    void applyJson(const std::string &json);
+    std::string toJson() const;
 
-class VTS_API AuthException : public std::runtime_error
-{
-public:
-    AuthException(const std::string &what_arg);
+    // maximum ratio of texture details to the viewport resolution
+    // increasing this ratio yealds less detailed map
+    //   but reduces memory usage and network bandwith
+    double maxTexelToPixelScale;
+
+    // maximum distance of meshes emited for fixed traversal mode
+    // defined in physical length units (metres)
+    // for colliders, it may be overriden from callback
+    double fixedTraversalDistance;
+
+    // desired lod used with fixed traversal mode
+    // for colliders, it may be overriden from callback
+    uint32 fixedTraversalLod;
+
+    // coarser lod offset for grids for use with balanced traversal
+    // -1 to disable grids entirely
+    uint32 balancedGridLodOffset;
+
+    // distance to neighbors for grids for use with balanced traversal
+    // 0: no neighbors
+    // 1: one ring of neighbors (8 total)
+    // 2: two rings (24 total)
+    // etc.
+    uint32 balancedGridNeighborsDistance;
+
+    TraverseMode traverseModeSurfaces;
+    TraverseMode traverseModeGeodata;
+
+    bool debugDetachedCamera;
+    bool debugFlatShading;
+    bool debugRenderSurrogates;
+    bool debugRenderMeshBoxes;
+    bool debugRenderTileBoxes;
+    bool debugRenderSubtileBoxes;
 };
 
 } // namespace vts

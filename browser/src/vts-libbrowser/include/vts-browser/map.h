@@ -42,8 +42,8 @@ VTS_API void vtsMapSetCustomData(vtsHMap map, void *data);
 VTS_API void *vtsMapGetCustomData(vtsHMap map);
 
 // config path
-VTS_API void vtsMapSetConfigPaths(vtsHMap map, const char *mapConfigPath,
-                                  const char *authPath, const char *sriPath);
+VTS_API void vtsMapSetConfigPaths(vtsHMap map, const char *mapconfigPath,
+                                  const char *authPath);
 VTS_API const char *vtsMapGetConfigPath(vtsHMap map);
 
 // readyness status
@@ -60,46 +60,13 @@ VTS_API void vtsMapDataAllRun(vtsHMap map);
 
 // rendering
 VTS_API void vtsMapRenderInitialize(vtsHMap map);
-VTS_API void vtsMapRenderTickPrepare(vtsHMap map, double elapsedTime); // seconds since last call
-VTS_API void vtsMapRenderTickRender(vtsHMap map);
-VTS_API void vtsMapRenderTickColliders(vtsHMap map);
+VTS_API void vtsMapRenderTick(vtsHMap map, double elapsedTime); // seconds since last call
 VTS_API void vtsMapRenderFinalize(vtsHMap map);
-VTS_API void vtsMapSetWindowSize(vtsHMap map, uint32 width, uint32 height);
 
-// options, statistics and credits
+// options and statistics
 VTS_API const char *vtsMapGetOptions(vtsHMap map);
 VTS_API const char *vtsMapGetStatistics(vtsHMap map);
-VTS_API const char *vtsMapGetCredits(vtsHMap map);
-VTS_API const char *vtsMapGetCreditsShort(vtsHMap map);
-VTS_API const char *vtsMapGetCreditsFull(vtsHMap map);
 VTS_API void vtsMapSetOptions(vtsHMap map, const char *options);
-
-// navigation
-VTS_API void vtsMapPan(vtsHMap map, const double value[3]);
-VTS_API void vtsMapRotate(vtsHMap map, const double value[3]);
-VTS_API void vtsMapZoom(vtsHMap map, double value);
-VTS_API void vtsMapResetPositionAltitude(vtsHMap map);
-VTS_API void vtsMapResetNavigationMode(vtsHMap map);
-
-// position
-VTS_API void vtsMapSetPositionSubjective(vtsHMap map, bool subjective,
-                                         bool convert);
-VTS_API void vtsMapSetPositionPoint(vtsHMap map, const double point[3]);
-VTS_API void vtsMapSetPositionRotation(vtsHMap map, const double point[3]);
-VTS_API void vtsMapSetPositionViewExtent(vtsHMap map, double viewExtent);
-VTS_API void vtsMapSetPositionFov(vtsHMap map, double fov);
-VTS_API void vtsMapSetPositionJson(vtsHMap map, const char *position);
-VTS_API void vtsMapSetPositionUrl(vtsHMap map, const char *position);
-VTS_API void vtsMapSetAutoRotation(vtsHMap map, double value);
-VTS_API bool vtsMapGetPositionSubjective(vtsHMap map);
-VTS_API void vtsMapGetPositionPoint(vtsHMap map, double point[3]);
-VTS_API void vtsMapGetPositionRotation(vtsHMap map, double rot[3]);
-VTS_API void vtsMapGetPositionRotationLimited(vtsHMap map, double rot[3]);
-VTS_API double vtsMapGetPositionViewExtent(vtsHMap map);
-VTS_API double vtsMapGetPositionFov(vtsHMap map);
-VTS_API const char *vtsMapGetPositionUrl(vtsHMap map);
-VTS_API const char *vtsMapGetPositionJson(vtsHMap map);
-VTS_API double vtsMapGetAutoRotation(vtsHMap map);
 
 // conversion
 VTS_API void vtsMapConvert(vtsHMap map,

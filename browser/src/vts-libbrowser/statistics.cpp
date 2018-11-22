@@ -24,28 +24,32 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dbglog/dbglog.hpp>
-
-#include "include/vts-browser/statistics.hpp"
 #include "utilities/json.hpp"
+#include "include/vts-browser/mapStatistics.hpp"
+#include "include/vts-browser/cameraStatistics.hpp"
 
 namespace vts
 {
 
-MapStatistics::MapStatistics()
-{
-    resetAll();
-}
+MapStatistics::MapStatistics() :
+    resourcesDownloaded(0),
+    resourcesDiskLoaded(0),
+    resourcesProcessed(0),
+    resourcesCreated(0),
+    resourcesReleased(0),
+    resourcesFailed(0),
+    renderTicks(0),
+    dataTicks(0),
+    currentGpuMemUseKB(0),
+    currentRamMemUseKB(0),
+    resourcesActive(0),
+    resourcesDownloading(0),
+    resourcesPreparing(0)
+{}
 
 std::string MapStatistics::toJson() const
 {
     Json::Value v;
-    for (auto it : nodesRenderedPerLod)
-        v["nodesRenderedPerLod"].append(it);
-    for (auto it : metaNodesTraversedPerLod)
-        v["metaNodesTraversedPerLod"].append(it);
-    TJ(nodesRenderedTotal, asUInt);
-    TJ(metaNodesTraversedTotal, asUInt);
     TJ(resourcesDownloaded, asUInt);
     TJ(resourcesDiskLoaded, asUInt);
     TJ(resourcesProcessed, asUInt);
@@ -59,44 +63,36 @@ std::string MapStatistics::toJson() const
     TJ(resourcesActive, asUInt);
     TJ(resourcesDownloading, asUInt);
     TJ(resourcesPreparing, asUInt);
-    TJ(currentNodeMetaUpdates, asUInt);
-    TJ(currentNodeDrawsUpdates, asUInt);
-    TJ(currentGridNodes, asUInt);
-    TJE(currentNavigationMode, NavigationMode);
     return jsonToString(v);
 }
 
-void MapStatistics::resetAll()
+CameraStatistics::CameraStatistics() :
+    nodesRenderedTotal(0),
+    metaNodesTraversedTotal(0),
+    currentNodeMetaUpdates(0),
+    currentNodeDrawsUpdates(0),
+    currentGridNodes(0)
 {
-    resetFrame();
-    resourcesDownloaded = 0;
-    resourcesDiskLoaded = 0;
-    resourcesProcessed = 0;
-    resourcesCreated = 0;
-    resourcesReleased = 0;
-    resourcesFailed = 0;
-    renderTicks = 0;
-    dataTicks = 0;
-    resourcesDownloading = 0;
-    currentGpuMemUseKB = 0;
-    currentRamMemUseKB = 0;
-    resourcesActive = 0;
-    resourcesPreparing = 0;
-    currentGridNodes = 0;
-    currentNavigationMode = (NavigationMode)0;
-}
-
-void MapStatistics::resetFrame()
-{
-    currentNodeMetaUpdates = 0;
-    currentNodeDrawsUpdates = 0;
-    nodesRenderedTotal = 0;
-    metaNodesTraversedTotal = 0;
     for (uint32 i = 0; i < MaxLods; i++)
     {
         nodesRenderedPerLod[i] = 0;
         metaNodesTraversedPerLod[i] = 0;
     }
+}
+
+std::string CameraStatistics::toJson() const
+{
+    Json::Value v;
+    for (auto it : nodesRenderedPerLod)
+        v["nodesRenderedPerLod"].append(it);
+    for (auto it : metaNodesTraversedPerLod)
+        v["metaNodesTraversedPerLod"].append(it);
+    TJ(nodesRenderedTotal, asUInt);
+    TJ(metaNodesTraversedTotal, asUInt);
+    TJ(currentNodeMetaUpdates, asUInt);
+    TJ(currentNodeDrawsUpdates, asUInt);
+    TJ(currentGridNodes, asUInt);
+    return jsonToString(v);
 }
 
 } // namespace vts

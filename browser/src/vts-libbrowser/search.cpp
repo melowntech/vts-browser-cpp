@@ -37,7 +37,7 @@ namespace
 
 std::string generateSearchUrl(MapImpl *impl, const std::string &query)
 {
-    std::string url = impl->mapConfig->browserOptions.searchUrl;
+    std::string url = impl->mapconfig->browserOptions.searchUrl;
     static const std::string rep = "{value}";
     auto s = url.find(rep);
     if (s != std::string::npos)
@@ -61,8 +61,8 @@ double distance(MapImpl *map, const double a[], const double b[],
             return def;
     vec3 va(a[0], a[1], a[2]);
     vec3 vb(b[0], b[1], b[2]);
-    switch (map->mapConfig->srs.get(
-                map->mapConfig->referenceFrame.model.navigationSrs).type)
+    switch (map->mapconfig->srs.get(
+                map->mapconfig->referenceFrame.model.navigationSrs).type)
     {
     case vtslibs::registry::Srs::Type::cartesian:
     case vtslibs::registry::Srs::Type::projected:
@@ -234,8 +234,8 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
 
 SearchTaskImpl::SearchTaskImpl(MapImpl *map, const std::string &name) :
     Resource(map, name),
-    validityUrl(map->mapConfig->browserOptions.searchUrl),
-    validitySrs(map->mapConfig->browserOptions.searchSrs)
+    validityUrl(map->mapconfig->browserOptions.searchUrl),
+    validitySrs(map->mapconfig->browserOptions.searchSrs)
 {}
 
 void SearchTaskImpl::load()
@@ -319,9 +319,9 @@ SearchTask::~SearchTask()
 
 void SearchTask::updateDistances(const double point[3])
 {
-    if (!impl || !impl->map->mapConfig || !impl->map->mapconfigReady
-        || impl->map->mapConfig->browserOptions.searchUrl != impl->validityUrl
-        || impl->map->mapConfig->browserOptions.searchSrs != impl->validitySrs)
+    if (!impl || !impl->map->mapconfig || !impl->map->mapconfigReady
+        || impl->map->mapconfig->browserOptions.searchUrl != impl->validityUrl
+        || impl->map->mapconfig->browserOptions.searchSrs != impl->validitySrs)
     {
         LOGTHROW(err1, std::runtime_error) << "Search is no longer valid";
     }

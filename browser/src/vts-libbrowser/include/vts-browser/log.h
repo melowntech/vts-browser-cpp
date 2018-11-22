@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOG_H_sdghf
-#define LOG_H_sdghf
+#ifndef LOG_H_sdghfa45
+#define LOG_H_sdghfa45
 
 #include "foundation.h"
 

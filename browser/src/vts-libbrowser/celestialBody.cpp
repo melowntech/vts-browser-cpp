@@ -44,7 +44,7 @@ MapCelestialBody::Atmosphere::Atmosphere() :
     visibility(0), visibilityQuantile(1e-2)
 {}
 
-bool MapConfig::isEarth() const
+bool Mapconfig::isEarth() const
 {
     auto n = srs(referenceFrame.model.physicalSrs);
     auto r = n.srsDef.reference();
@@ -52,7 +52,7 @@ bool MapConfig::isEarth() const
     return std::abs(a - 6378137) < 50000;
 }
 
-void MapConfig::initializeCelestialBody()
+void Mapconfig::initializeCelestialBody()
 {
     map->body = MapCelestialBody();
     {
@@ -66,10 +66,10 @@ void MapConfig::initializeCelestialBody()
     MapCelestialBody::Atmosphere &a = map->body.atmosphere;
 
     // load body from mapconfig
-    if (map->mapConfig->referenceFrame.body)
+    if (map->mapconfig->referenceFrame.body)
     {
-        const auto &b = map->mapConfig->bodies.get(
-            *map->mapConfig->referenceFrame.body);
+        const auto &b = map->mapconfig->bodies.get(
+            *map->mapconfig->referenceFrame.body);
         Json::Value j = boost::any_cast<Json::Value>(b.json);
         map->body.name = j["name"].asString();
         if (j.isMember("atmosphere"))
@@ -136,13 +136,13 @@ void MapConfig::initializeCelestialBody()
         spec.thickness = a / map->body.majorRadius;
         spec.verticalCoefficient = c;
         std::string name = spec.toQueryArg();
-        if (map->mapConfig->services.has("atmdensity"))
+        if (map->mapconfig->services.has("atmdensity"))
         {
-            UrlTemplate temp(map->mapConfig->services.get("atmdensity").url);
+            UrlTemplate temp(map->mapconfig->services.get("atmdensity").url);
             UrlTemplate::Vars vars;
             vars.params = { name };
             name = temp(vars);
-            name = convertPath(name, map->mapConfigPath);
+            name = convertPath(name, map->mapconfigPath);
         }
         else
             name = "generate://atmdensity-" + name;

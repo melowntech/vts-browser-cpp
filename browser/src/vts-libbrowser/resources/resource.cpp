@@ -89,7 +89,7 @@ bool Resource::allowDiskCache(FetchTask::ResourceType type)
     switch (type)
     {
     case FetchTask::ResourceType::AuthConfig:
-    case FetchTask::ResourceType::MapConfig:
+    case FetchTask::ResourceType::Mapconfig:
     case FetchTask::ResourceType::BoundLayerConfig:
     case FetchTask::ResourceType::FreeLayerConfig:
     case FetchTask::ResourceType::TilesetMappingConfig:

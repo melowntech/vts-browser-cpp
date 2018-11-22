@@ -43,7 +43,7 @@ public:
     enum class ResourceType
     {
         Undefined,
-        MapConfig,
+        Mapconfig,
         AuthConfig,
         BoundLayerConfig,
         FreeLayerConfig,

@@ -29,7 +29,14 @@
 
 #include "smoothVariable.hpp"
 
+#include <vts-browser/log.hpp>
 #include <vts-browser/math.hpp>
+#include <vts-browser/map.hpp>
+#include <vts-browser/camera.hpp>
+#include <vts-browser/navigation.hpp>
+#include <vts-browser/mapOptions.hpp>
+#include <vts-browser/cameraOptions.hpp>
+#include <vts-browser/navigationOptions.hpp>
 #include <vts-browser/resources.hpp>
 #include <vts-renderer/renderer.hpp>
 #include <vts-renderer/classes.hpp>
@@ -54,7 +61,6 @@ struct MapPaths
 {
     std::string mapConfig;
     std::string auth;
-    std::string sri;
 };
 
 struct AppOptions
@@ -74,7 +80,8 @@ class MainWindow
 {
 public:
     MainWindow(struct SDL_Window *window, void *renderContext,
-        vts::Map *map, const AppOptions &appOptions,
+        vts::Map *map, vts::Camera *camera, vts::Navigation *navigation,
+        const AppOptions &appOptions,
         const vts::renderer::RenderOptions &renderOptions);
     ~MainWindow();
 
@@ -114,6 +121,8 @@ public:
     uint32 timingAppProcess;
     uint32 timingTotalFrame;
     vts::Map *const map;
+    vts::Camera *const camera;
+    vts::Navigation *const navigation;
     vts::renderer::Renderer render;
     struct SDL_Window *window;
     void *renderContext;

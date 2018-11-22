@@ -30,19 +30,13 @@
 #include <cmath>
 #include <cstdio>
 
-#include <vts-browser/map.hpp>
-#include <vts-browser/statistics.hpp>
-#include <vts-browser/draws.hpp>
 #include <vts-browser/buffer.hpp>
-#include <vts-browser/resources.hpp>
-#include <vts-browser/options.hpp>
 #include <vts-browser/exceptions.hpp>
-#include <vts-browser/credits.hpp>
-#include <vts-browser/log.hpp>
 #include <vts-browser/celestial.hpp>
-#include <vts-browser/math.hpp>
-#include <vts-browser/callbacks.hpp>
-#include <vts-renderer/classes.hpp>
+#include <vts-browser/mapCallbacks.hpp>
+#include <vts-browser/mapStatistics.hpp>
+#include <vts-browser/cameraDraws.hpp>
+#include <vts-browser/cameraCredits.hpp>
 
 #include <SDL2/SDL.h>
 
@@ -77,10 +71,12 @@ AppOptions::AppOptions() :
 {}
 
 MainWindow::MainWindow(struct SDL_Window *window, void *renderContext,
-            vts::Map *map, const AppOptions &appOptions,
-            const vts::renderer::RenderOptions &renderOptions) :
+    vts::Map *map, vts::Camera *camera, vts::Navigation *navigation,
+    const AppOptions &appOptions,
+    const vts::renderer::RenderOptions &renderOptions) :
     appOptions(appOptions),
-    map(map), window(window), renderContext(renderContext)
+    map(map), camera(camera), navigation(navigation),
+    window(window), renderContext(renderContext)
 {
     vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
 
@@ -142,7 +138,7 @@ MainWindow::~MainWindow()
 void MainWindow::renderFrame()
 {
     vts::renderer::RenderOptions &ro = render.options();
-    render.render(map);
+    render.render(camera);
 
     // compas
     if (appOptions.renderCompas)
@@ -151,7 +147,7 @@ void MainWindow::renderFrame()
         double offset = size * (0.5 + 0.2);
         double posSize[3] = { offset, offset, size };
         double rot[3];
-        map->getPositionRotationLimited(rot);
+        navigation->getRotationLimited(rot);
         render.renderCompass(posSize, rot);
     }
 
@@ -160,14 +156,14 @@ void MainWindow::renderFrame()
 
 void MainWindow::prepareMarks()
 {
-    vts::mat4 view = vts::rawToMat4(map->draws().camera.view);
+    vts::mat4 view = vts::rawToMat4(camera->draws().camera.view);
 
     const Mark *prev = nullptr;
     for (const Mark &m : marks)
     {
         vts::mat4 mv = view
                 * vts::translationMatrix(m.coord)
-                * vts::scaleMatrix(map->getPositionViewExtent() * 0.005);
+                * vts::scaleMatrix(navigation->getViewExtent() * 0.005);
         vts::mat4f mvf = mv.cast<float>();
         vts::DrawTask t;
         vts::vec4f c = vts::vec3to4f(m.color, 1);
@@ -175,14 +171,14 @@ void MainWindow::prepareMarks()
             t.color[i] = c(i);
         t.mesh = meshSphere;
         memcpy(t.mv, mvf.data(), sizeof(t.mv));
-        map->draws().infographics.push_back(t);
+        camera->draws().infographics.push_back(t);
         if (prev)
         {
             t.mesh = meshLine;
             mv = view * vts::lookAt(m.coord, prev->coord);
             mvf = mv.cast<float>();
             memcpy(t.mv, mvf.data(), sizeof(t.mv));
-            map->draws().infographics.push_back(t);
+            camera->draws().infographics.push_back(t);
         }
         prev = &m;
     }
@@ -220,16 +216,16 @@ bool MainWindow::processEvents()
         // north-up button
         if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_SPACE)
         {
-            map->setPositionRotation({0,270,0});
-            map->options().navigationType = vts::NavigationType::Quick;
-            map->resetNavigationMode();
+            navigation->setRotation({0,270,0});
+            navigation->options().navigationType = vts::NavigationType::Quick;
+            navigation->resetNavigationMode();
         }
 
         // mouse wheel
         if (event.type == SDL_MOUSEWHEEL)
         {
-            map->zoom(event.wheel.y);
-            map->options().navigationType = vts::NavigationType::Quick;
+            navigation->zoom(event.wheel.y);
+            navigation->options().navigationType = vts::NavigationType::Quick;
         }
 
         // camera jump to double click
@@ -243,8 +239,9 @@ bool MainWindow::processEvents()
                 double posNav[3];
                 map->convert(posPhys.data(), posNav,
                              vts::Srs::Physical, vts::Srs::Navigation);
-                map->setPositionPoint(posNav);
-                map->options().navigationType = vts::NavigationType::Quick;
+                navigation->setPoint(posNav);
+                navigation->options().navigationType
+                                = vts::NavigationType::Quick;
             }
         }
 
@@ -269,12 +266,14 @@ bool MainWindow::processEvents()
             switch (mode)
             {
             case 1:
-                map->pan(p);
-                map->options().navigationType = vts::NavigationType::Quick;
+                navigation->pan(p);
+                navigation->options().navigationType
+                    = vts::NavigationType::Quick;
                 break;
             case 2:
-                map->rotate(p);
-                map->options().navigationType = vts::NavigationType::Quick;
+                navigation->rotate(p);
+                navigation->options().navigationType
+                    = vts::NavigationType::Quick;
                 break;
             }
         }
@@ -291,7 +290,7 @@ void MainWindow::updateWindowSize()
     ro.targetViewportH = ro.height;
     ro.width *= appOptions.oversampleRender;
     ro.height *= appOptions.oversampleRender;
-    map->setWindowSize(ro.width, ro.height);
+    camera->setViewportSize(ro.width, ro.height);
 }
 
 void MainWindow::run()
@@ -315,8 +314,8 @@ void MainWindow::run()
                      "Setting initial position");
             try
             {
-                map->setPositionUrl(appOptions.initialPosition);
-                map->options().navigationType
+                navigation->setPositionUrl(appOptions.initialPosition);
+                navigation->options().navigationType
                         = vts::NavigationType::Instant;
             }
             catch (...)
@@ -336,10 +335,9 @@ void MainWindow::run()
         try
         {
             updateWindowSize();
-            map->renderTickPrepare(timingTotalFrame * 1e-3);
-            map->renderTickRender();
+            map->renderTick(timingTotalFrame * 1e-3);
         }
-        catch (const vts::MapConfigException &e)
+        catch (const vts::MapconfigException &e)
         {
             std::stringstream s;
             s << "Exception <" << e.what() << ">";
@@ -366,7 +364,7 @@ void MainWindow::run()
         if (map->statistics().renderTicks % 120 == 0)
         {
             std::string creditLine = std::string() + "vts-browser-desktop: "
-                    + map->credits().textFull();
+                    + camera->credits().textFull();
             SDL_SetWindowTitle(window, creditLine.c_str());
         }
 
@@ -421,6 +419,6 @@ vts::vec3 MainWindow::getWorldPositionFromCursor()
 
 void MainWindow::setMapConfigPath(const MapPaths &paths)
 {
-    map->setMapConfigPath(paths.mapConfig, paths.auth, paths.sri);
+    map->setMapconfigPath(paths.mapConfig, paths.auth);
 }
 

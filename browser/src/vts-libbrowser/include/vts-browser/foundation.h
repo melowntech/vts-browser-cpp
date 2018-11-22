@@ -51,9 +51,13 @@ VTS_API const char *vtsErrCodeToName(sint32 code);
 VTS_API void vtsErrClear();
 
 // opaque structures and handles
-typedef struct vtsCMap *vtsHMap;
 typedef struct vtsCFetcher *vtsHFetcher;
+typedef struct vtsCMap *vtsHMap;
 typedef struct vtsCResource *vtsHResource;
+typedef struct vtsCCamera *vtsHCamera;
+typedef struct vtsCDrawsGroup *vtsHDrawsGroup;
+typedef struct vtsCNavigation *vtsHNavigation;
+typedef struct vtsCSearch *vtsHSearch;
 
 #ifdef __cplusplus
 } // extern C

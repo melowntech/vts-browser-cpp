@@ -219,11 +219,11 @@ NavigationOptions::NavigationOptions() :
     navigationLatitudeThreshold(80),
     navigationPihaViewExtentMult(1.02),
     navigationPihaPositionChange(0.02),
+    navigationSamplesPerViewExtent(8),
     navigationType(NavigationType::Quick),
     navigationMode(NavigationMode::Seamless),
     cameraNormalization(true),
     cameraAltitudeChanges(true),
-    navigationSamplesPerViewExtent(8),
     debugRenderObjectPosition(false),
     debugRenderTargetPosition(false),
     debugRenderAltitudeShiftCorners(false)

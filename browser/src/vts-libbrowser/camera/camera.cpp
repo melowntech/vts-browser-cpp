@@ -362,6 +362,8 @@ void CameraImpl::updateCamera(double elapsedTime)
     if (windowWidth == 0 || windowHeight == 0)
         return;
 
+    (void)elapsedTime;
+
     mat4 view = lookAt(eye, target, up);
 
     // few other variables

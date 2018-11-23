@@ -51,13 +51,13 @@ public:
     mat4 viewProj;
     mat4 viewProjRender;
     mat4 viewRender;
+    mat4 apiProj;
     vec4 frustumPlanes[6];
     vec3 perpendicularUnitVector;
     vec3 forwardUnitVector;
     vec3 cameraPosPhys;
     vec3 focusPosPhys;
     vec3 eye, target, up;
-    double fovyDegs, near_, far_;
     uint32 windowWidth;
     uint32 windowHeight;
 

@@ -59,6 +59,13 @@ namespace vts
             Util.CheckInterop();
         }
 
+        public void SetProj(double[] proj)
+        {
+            Util.CheckArray(proj, 16);
+            BrowserInterop.vtsCameraSetProjMatrix(Handle, proj);
+            Util.CheckInterop();
+        }
+
         public void GetViewportSize(out uint width, out uint height)
         {
             width = height = 0;
@@ -72,13 +79,6 @@ namespace vts
             target = new double[3];
             up = new double[3];
             BrowserInterop.vtsCameraGetView(Handle, eye, target, up);
-            Util.CheckInterop();
-        }
-
-        public void GetProj(out double fovyDegs, out double near, out double far)
-        {
-            fovyDegs = near = far = 0;
-            BrowserInterop.vtsCameraGetProj(Handle, ref fovyDegs, ref near, ref far);
             Util.CheckInterop();
         }
 

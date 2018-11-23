@@ -31,7 +31,6 @@ namespace vts
 
 CameraImpl::CameraImpl(MapImpl *map, Camera *cam) :
     map(map), camera(cam),
-    fovyDegs(0), near_(0), far_(0),
     windowWidth(0), windowHeight(0)
 {}
 
@@ -364,16 +363,9 @@ void CameraImpl::updateCamera(double elapsedTime)
         return;
 
     mat4 view = lookAt(eye, target, up);
-    double aspect = (double)windowWidth
-                  / (double)windowHeight;
-    assert(fovyDegs > 1e-3 && fovyDegs < 180 - 1e-3);
-    assert(aspect > 0);
-    assert(near_ > 0);
-    assert(far_ > near_);
-    mat4 proj = perspectiveMatrix(fovyDegs, aspect, near_, far_);
 
     // few other variables
-    viewProjRender = proj * view;
+    viewProjRender = apiProj * view;
     viewRender = view;
     if (!options.debugDetachedCamera)
     {
@@ -423,12 +415,8 @@ void CameraImpl::updateCamera(double elapsedTime)
     {
         CameraDraws::Camera &c = draws.camera;
         matToRaw(view, c.view);
-        matToRaw(proj, c.proj);
+        matToRaw(apiProj, c.proj);
         vecToRaw(eye, c.eye);
-        c.near_ = near_;
-        c.far_ = far_;
-        c.aspect = aspect;
-        c.fov = fovyDegs;
     }
 
     // traverse and generate draws

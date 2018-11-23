@@ -36,9 +36,6 @@ namespace vts
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)] public double[] view;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)] public double[] proj;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)] public double[] eye;
-        public double near, far;
-        public double aspect;
-        public double fov;
     }
 
     [StructLayout(LayoutKind.Sequential)]

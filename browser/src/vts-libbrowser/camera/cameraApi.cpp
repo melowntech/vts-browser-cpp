@@ -65,9 +65,13 @@ void Camera::setView(const std::array<double, 3> &eye,
 
 void Camera::setProj(double fovyDegs, double near_, double far_)
 {
-    impl->fovyDegs = fovyDegs;
-    impl->near_ = near_;
-    impl->far_ = far_;
+    double aspect = (double)impl->windowWidth / (double)impl->windowHeight;
+    impl->apiProj = perspectiveMatrix(fovyDegs, aspect, near_, far_);
+}
+
+void Camera::setProj(const double proj[16])
+{
+    impl->apiProj = rawToMat4(proj);
 }
 
 void Camera::getViewportSize(uint32 &width, uint32 &height)
@@ -81,13 +85,6 @@ void Camera::getView(double eye[3], double target[3], double up[3])
     vecToRaw(impl->eye, eye);
     vecToRaw(impl->target, target);
     vecToRaw(impl->up, up);
-}
-
-void Camera::getProj(double &fovyDegs, double &near_, double &far_)
-{
-    fovyDegs = impl->fovyDegs;
-    near_ = impl->near_;
-    far_ = impl->far_;
 }
 
 void Camera::suggestedNearFar(double &near_, double &far_)

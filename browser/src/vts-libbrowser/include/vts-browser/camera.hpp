@@ -48,10 +48,10 @@ public:
                 const std::array<double, 3> &target,
                 const std::array<double, 3> &up);
     void setProj(double fovyDegs, double near_, double far_);
+    void setProj(const double proj[16]);
 
     void getViewportSize(uint32 &width, uint32 &height);
     void getView(double eye[3], double target[3], double up[3]);
-    void getProj(double &fovyDegs, double &near_, double &far_);
 
     void suggestedNearFar(double &near_, double &far_);
 

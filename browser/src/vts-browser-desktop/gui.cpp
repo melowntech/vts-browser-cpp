@@ -861,11 +861,6 @@ public:
                 S("Time frame avg:", window->timingFrameSmooth.avg(), " ms");
                 S("Time frame max:", window->timingFrameSmooth.max(), " ms");
                 S("Render tick:", ms.renderTicks, "");
-                nk_label(&ctx, "Z range:", NK_TEXT_LEFT);
-                sprintf(buffer, "%0.0f - %0.0f",
-                        window->camera->draws().camera.near_,
-                        window->camera->draws().camera.far_);
-                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                 nk_tree_pop(&ctx);
             }

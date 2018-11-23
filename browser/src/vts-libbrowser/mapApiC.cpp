@@ -505,6 +505,13 @@ void vtsCameraSetProj(vtsHCamera cam, double fovyDegs,
     C_END
 }
 
+void vtsCameraSetProjMatrix(vtsHCamera cam, const double proj[16])
+{
+    C_BEGIN
+    cam->p->setProj(proj);
+    C_END
+}
+
 void vtsCameraGetViewportSize(vtsHCamera cam,
     uint32 *width, uint32 *height)
 {
@@ -518,14 +525,6 @@ void vtsCameraGetView(vtsHCamera cam, double eye[3],
 {
     C_BEGIN
     cam->p->getView(eye, target, up);
-    C_END
-}
-
-void vtsCameraGetProj(vtsHCamera cam, double *fovyDegs,
-    double *near_, double *far_)
-{
-    C_BEGIN
-    cam->p->getProj(*fovyDegs, *near_, *far_);
     C_END
 }
 

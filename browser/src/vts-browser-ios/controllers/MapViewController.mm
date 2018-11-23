@@ -27,9 +27,11 @@
 #include <map>
 #include <set>
 #include "../Map.h"
-#include <vts-browser/draws.hpp>
+#include <vts-browser/mapOptions.hpp>
+#include <vts-browser/cameraOptions.hpp>
+#include <vts-browser/navigationOptions.hpp>
+#include <vts-browser/cameraDraws.hpp>
 #include <vts-browser/math.hpp>
-#include <vts-browser/options.hpp>
 #include <vts-browser/exceptions.hpp>
 #include <vts-renderer/renderer.hpp>
 
@@ -83,8 +85,8 @@ using namespace vts;
             if (extraConfig.controlType == 0 || !pitchMultiEnabled)
             {
                 CGPoint p = [recognizer translationInView:self.view];
-                map->pan({p.x * 1.5, p.y * 1.5, 0});
-                map->options().navigationType = vts::NavigationType::Quick;
+                navigation->pan({p.x * 1.5, p.y * 1.5, 0});
+                navigation->options().navigationType = vts::NavigationType::Quick;
             }
             [recognizer setTranslation:CGPoint() inView:self.view];
             fullscreenOverride = false;
@@ -102,8 +104,8 @@ using namespace vts;
         case UIGestureRecognizerStateChanged:
         {
             CGPoint p = [recognizer translationInView:self.view];
-            map->rotate({3 * p.x, 0, 0});
-            map->options().navigationType = vts::NavigationType::Quick;
+            navigation->rotate({3 * p.x, 0, 0});
+            navigation->options().navigationType = vts::NavigationType::Quick;
             [recognizer setTranslation:CGPoint() inView:self.view];
             fullscreenOverride = false;
         } break;
@@ -120,8 +122,8 @@ using namespace vts;
         case UIGestureRecognizerStateChanged:
         {
             CGPoint p = [recognizer translationInView:self.view];
-            map->rotate({0, 3 * p.y, 0});
-            map->options().navigationType = vts::NavigationType::Quick;
+            navigation->rotate({0, 3 * p.y, 0});
+            navigation->options().navigationType = vts::NavigationType::Quick;
             [recognizer setTranslation:CGPoint() inView:self.view];
             fullscreenOverride = false;
         } break;
@@ -138,8 +140,8 @@ using namespace vts;
         case UIGestureRecognizerStateChanged:
         {
             CGPoint p = [recognizer translationInView:self.view];
-            map->zoom(-0.05 * p.y);
-            map->options().navigationType = vts::NavigationType::Quick;
+            navigation->zoom(-0.05 * p.y);
+            navigation->options().navigationType = vts::NavigationType::Quick;
             [recognizer setTranslation:CGPoint() inView:self.view];
             fullscreenOverride = false;
         } break;
@@ -157,8 +159,8 @@ using namespace vts;
         {
             if (!pitchMultiEnabled)
             {
-                map->rotate({-380 * recognizer.rotation, 0, 0});
-                map->options().navigationType = vts::NavigationType::Quick;
+                navigation->rotate({-380 * recognizer.rotation, 0, 0});
+                navigation->options().navigationType = vts::NavigationType::Quick;
             }
             [recognizer setRotation:0];
             fullscreenOverride = false;
@@ -188,8 +190,8 @@ using namespace vts;
             if (pitchMultiEnabled)
             {
                 CGPoint p = [recognizer translationInView:self.view];
-                map->rotate({0, 5 * p.y, 0});
-                map->options().navigationType = vts::NavigationType::Quick;
+                navigation->rotate({0, 5 * p.y, 0});
+                navigation->options().navigationType = vts::NavigationType::Quick;
             }
             [recognizer setTranslation:CGPoint() inView:self.view];
             fullscreenOverride = false;
@@ -208,8 +210,8 @@ using namespace vts;
         {
             if (!pitchMultiEnabled)
             {
-                map->zoom(6 * (recognizer.scale - 1));
-                map->options().navigationType = vts::NavigationType::Quick;
+                navigation->zoom(6 * (recognizer.scale - 1));
+                navigation->options().navigationType = vts::NavigationType::Quick;
             }
             [recognizer setScale:1];
             fullscreenOverride = false;
@@ -225,9 +227,9 @@ using namespace vts;
     {
         case UIGestureRecognizerStateBegan:
         {
-            map->setPositionRotation({0,270,0});
-            map->options().navigationType = vts::NavigationType::Quick;
-            map->resetNavigationMode();
+            navigation->setRotation({0,270,0});
+            navigation->options().navigationType = vts::NavigationType::Quick;
+            navigation->resetNavigationMode();
             fullscreenOverride = false;
         } break;
         default:
@@ -275,8 +277,8 @@ using namespace vts;
             {
                 double speed = 10;
                 CGPoint p = [recognizer translationInView:self.view];
-                map->rotate({p.x * speed, p.y * speed, 0});
-                map->options().navigationType = vts::NavigationType::Quick;
+                navigation->rotate({p.x * speed, p.y * speed, 0});
+                navigation->options().navigationType = vts::NavigationType::Quick;
             }
             [recognizer setTranslation:CGPoint() inView:self.view];
             fullscreenOverride = false;
@@ -441,7 +443,7 @@ using namespace vts;
     self.title = _item.name;
     {
         std::string url([_item.url UTF8String]);
-        map->setMapConfigPath(url);
+        map->setMapconfigPath(url);
     }
 }
 
@@ -503,7 +505,7 @@ using namespace vts;
 
 - (void)progressUpdate
 {
-    if (map->getMapConfigReady())
+    if (map->getMapconfigReady())
         [_activityIndicator stopAnimating];
     else
         [_activityIndicator startAnimating];
@@ -517,10 +519,9 @@ using namespace vts;
 
     try
     {
-        map->renderTickPrepare([self timeSinceLastUpdate]);
-        map->renderTickRender();
+        map->renderTick([self timeSinceLastUpdate]);
     }
-    catch (const vts::MapConfigException &)
+    catch (const vts::MapconfigException &)
     {
         [[self navigationController] popViewControllerAnimated:YES];
         return;
@@ -540,7 +541,7 @@ using namespace vts;
         ro.targetFrameBuffer = fbo;
     }
 
-    render.render(map);
+    render.render(camera);
     glBindFramebuffer(GL_FRAMEBUFFER, ro.targetFrameBuffer);
 
     if (gotoPoint(0) == gotoPoint(0))
@@ -552,8 +553,8 @@ using namespace vts;
             double posNav[3];
             map->convert(posWorld.data(), posNav,
                          Srs::Physical, Srs::Navigation);
-            map->setPositionPoint(posNav);
-            map->options().navigationType = vts::NavigationType::Quick;
+            navigation->setPoint(posNav);
+            navigation->options().navigationType = vts::NavigationType::Quick;
         }
         gotoPoint(0) = std::numeric_limits<double>::quiet_NaN();
         glBindFramebuffer(GL_FRAMEBUFFER, ro.targetFrameBuffer);
@@ -565,7 +566,7 @@ using namespace vts;
     ro.targetViewportY = rect.origin.y * view.contentScaleFactor;
     ro.width = rect.size.width * view.contentScaleFactor;
     ro.height = rect.size.height * view.contentScaleFactor;
-    map->setWindowSize(ro.width, ro.height);
+    camera->setViewportSize(ro.width, ro.height);
 }
 
 @end

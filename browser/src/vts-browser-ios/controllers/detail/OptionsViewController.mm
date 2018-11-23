@@ -25,7 +25,9 @@
  */
 
 #include "../../Map.h"
-#include <vts-browser/options.hpp>
+#include <vts-browser/mapOptions.hpp>
+#include <vts-browser/cameraOptions.hpp>
+#include <vts-browser/navigationOptions.hpp>
 
 #import "OptionsViewController.h"
 
@@ -58,9 +60,9 @@ namespace
         NSKeyedUnarchiver *coder = [[NSKeyedUnarchiver alloc] initForReadingWithData:data];
 
         if ([coder containsValueForKey:@"traverseMode"])
-            map->options().traverseModeSurfaces = (vts::TraverseMode)[coder decodeIntForKey:@"traverseMode"];
+            camera->options().traverseModeSurfaces = (vts::TraverseMode)[coder decodeIntForKey:@"traverseMode"];
         if ([coder containsValueForKey:@"maxTexelToPixelScale"])
-            map->options().maxTexelToPixelScale = [coder decodeDoubleForKey:@"maxTexelToPixelScale"];
+            camera->options().maxTexelToPixelScale = [coder decodeDoubleForKey:@"maxTexelToPixelScale"];
         if ([coder containsValueForKey:@"controlType"])
             extraConfig.controlType = [coder decodeIntForKey:@"controlType"];
         if ([coder containsValueForKey:@"touchSize"])
@@ -80,8 +82,8 @@ namespace
         NSMutableData *data = [NSMutableData data];
         NSKeyedArchiver *coder = [[NSKeyedArchiver alloc] initForWritingWithMutableData:data];
 
-        [coder encodeInt:(int)map->options().traverseModeSurfaces forKey:@"traverseMode"];
-        [coder encodeDouble:map->options().maxTexelToPixelScale forKey:@"maxTexelToPixelScale"];
+        [coder encodeInt:(int)camera->options().traverseModeSurfaces forKey:@"traverseMode"];
+        [coder encodeDouble:camera->options().maxTexelToPixelScale forKey:@"maxTexelToPixelScale"];
         [coder encodeInt:extraConfig.controlType forKey:@"controlType"];
         [coder encodeFloat:extraConfig.touchSize forKey:@"touchSize"];
         [coder encodeBool:extraConfig.showControlAreas forKey:@"showControlAreas"];
@@ -111,8 +113,8 @@ void loadAppConfig()
 - (void)updateViewControls
 {
     // rendering
-    _optTraversal.selectedSegmentIndex = (int)map->options().traverseModeSurfaces;
-    _optQualityDegrad.value = map->options().maxTexelToPixelScale;
+    _optTraversal.selectedSegmentIndex = (int)camera->options().traverseModeSurfaces;
+    _optQualityDegrad.value = camera->options().maxTexelToPixelScale;
     // controls
     _optTouchSize.enabled = extraConfig.controlType == 0;
     _optTouchAreas.enabled = extraConfig.controlType == 0;
@@ -133,13 +135,13 @@ void loadAppConfig()
 
 - (IBAction)optTraversalChanged:(UISegmentedControl *)sender
 {
-    map->options().traverseModeSurfaces = (vts::TraverseMode)sender.selectedSegmentIndex;
+    camera->options().traverseModeSurfaces = (vts::TraverseMode)sender.selectedSegmentIndex;
     saveConfig();
 }
 
 - (IBAction)optQualityDegradChanged:(UISlider *)sender
 {
-    map->options().maxTexelToPixelScale = sender.value;
+    camera->options().maxTexelToPixelScale = sender.value;
     saveConfig();
 }
 
@@ -180,7 +182,7 @@ void loadAppConfig()
 - (IBAction)resetAllToDefaults:(UIButton *)sender
 {
     extraConfig = ExtraConfig();
-    map->options() = defaultMapOptions();
+    defaultMapOptions(map->options(), camera->options());
     [self updateViewControls];
     saveConfig();
 }

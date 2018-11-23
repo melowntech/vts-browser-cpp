@@ -49,18 +49,18 @@
 {
     double tmp[3];
     // position
-    map->getPositionPoint(tmp);
+    navigation->getPoint(tmp);
     _labX.text = [NSString stringWithFormat:@"%f", tmp[0]];
     _labY.text = [NSString stringWithFormat:@"%f", tmp[1]];
     _labZ.text = [NSString stringWithFormat:@"%f", tmp[2]];
     // rotation
-    map->getPositionRotation(tmp);
+    navigation->getRotation(tmp);
     _labYaw.text = [NSString stringWithFormat:@"%f", tmp[0]];
     _labPitch.text = [NSString stringWithFormat:@"%f", tmp[1]];
     _labRoll.text = [NSString stringWithFormat:@"%f", tmp[2]];
     // other
-    _labViewExtent.text = [NSString stringWithFormat:@"%f", map->getPositionViewExtent()];
-    _labFov.text = [NSString stringWithFormat:@"%f", map->getPositionFov()];
+    _labViewExtent.text = [NSString stringWithFormat:@"%f", navigation->getViewExtent()];
+    _labFov.text = [NSString stringWithFormat:@"%f", navigation->getFov()];
 }
 
 - (void)viewDidLoad

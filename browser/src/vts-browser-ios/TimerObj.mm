@@ -55,10 +55,9 @@
         return;
     try
     {
-        map->renderTickPrepare(0.2);
-        map->renderTickRender();
+        map->renderTick(0.2);
     }
-    catch (const vts::MapConfigException &)
+    catch (const vts::MapconfigException &)
     {
         // do nothing
     }

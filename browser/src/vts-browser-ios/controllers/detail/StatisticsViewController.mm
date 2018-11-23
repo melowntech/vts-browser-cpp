@@ -25,7 +25,8 @@
  */
 
 #include "../../Map.h"
-#include <vts-browser/statistics.hpp>
+#include <vts-browser/mapStatistics.hpp>
+#include <vts-browser/cameraStatistics.hpp>
 
 #import "StatisticsViewController.h"
 
@@ -55,8 +56,8 @@
     _statActiveResources.text = [NSString stringWithFormat:@"%u", map->statistics().resourcesActive];
     _statPreparingResources.text = [NSString stringWithFormat:@"%u", map->statistics().resourcesPreparing];
     _statDownloading.text = [NSString stringWithFormat:@"%u", map->statistics().resourcesDownloading];
-    _statMetaUpdates.text = [NSString stringWithFormat:@"%u", map->statistics().currentNodeMetaUpdates];
-    _statDrawUpdates.text = [NSString stringWithFormat:@"%u", map->statistics().currentNodeDrawsUpdates];
+    _statMetaUpdates.text = [NSString stringWithFormat:@"%u", camera->statistics().currentNodeMetaUpdates];
+    _statDrawUpdates.text = [NSString stringWithFormat:@"%u", camera->statistics().currentNodeDrawsUpdates];
 }
 
 - (void)viewDidLoad

@@ -26,7 +26,7 @@
 
 #include <vts-libs/registry/json.hpp>
 #include <vts-libs/registry/io.hpp>
-#include "../utilities/json.hpp"
+#include "utilities/json.hpp"
 
 #include "include/vts-browser/map.hpp"
 #include "include/vts-browser/view.hpp"

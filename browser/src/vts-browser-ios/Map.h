@@ -28,6 +28,8 @@
 
 #include <vts-browser/log.hpp>
 #include <vts-browser/map.hpp>
+#include <vts-browser/camera.hpp>
+#include <vts-browser/navigation.hpp>
 #include <vts-renderer/renderer.hpp>
 
 #import <OpenGLES/EAGL.h>
@@ -45,11 +47,13 @@ struct ExtraConfig
 };
 
 extern vts::Map *map;
+extern vts::Camera *camera;
+extern vts::Navigation *navigation;
 extern vts::renderer::Renderer render;
 extern ExtraConfig extraConfig;
 
 void mapInitialize();
-vts::MapOptions defaultMapOptions();
+void defaultMapOptions(vts::MapRuntimeOptions &mapOptions, vts::CameraOptions &cameraOptions);
 
 EAGLContext *mapRenderContext();
 void mapRenderControls(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw, CGRect zoom, CGRect compas);

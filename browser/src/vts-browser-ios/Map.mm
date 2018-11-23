@@ -28,7 +28,9 @@
 #include <unistd.h> // usleep
 #include "Map.h"
 #include <vts-browser/math.hpp>
-#include <vts-browser/options.hpp>
+#include <vts-browser/mapOptions.hpp>
+#include <vts-browser/cameraOptions.hpp>
+#include <vts-browser/navigationOptions.hpp>
 #include <vts-browser/fetcher.hpp>
 #include <vts-browser/celestial.hpp>
 #include <vts-renderer/classes.hpp>
@@ -69,6 +71,8 @@ ExtraConfig::ExtraConfig() :
 void loadAppConfig();
 
 Map *map;
+Camera *camera;
+Navigation *navigation;
 Renderer render;
 ExtraConfig extraConfig; 
 
@@ -83,6 +87,8 @@ namespace
     std::shared_ptr<Texture> scalesTextureYaw;
     std::shared_ptr<Texture> scalesTexturePitch;
     std::shared_ptr<Texture> scalesTextureZoom;
+    std::shared_ptr<Camera> cameraPtr;
+    std::shared_ptr<Navigation> navigationPtr;
     TimerObj *timer;
 
     void *iosGlGetProcAddress(const char *name)
@@ -100,10 +106,14 @@ void mapInitialize()
         createOptions.diskCache = false;
         assert(!map);
         map = new Map(createOptions, vts::Fetcher::create(vts::FetcherOptions()));
+        cameraPtr = map->camera();
+        camera = cameraPtr.get();
+        navigationPtr = camera->navigation();
+        navigation = navigationPtr.get();
     }
 
     // configure the map for mobile use
-    map->options() = defaultMapOptions();
+    defaultMapOptions(map->options(), camera->options());
     loadAppConfig();
 
     // configure opengl contexts
@@ -205,13 +215,13 @@ void mapInitialize()
     timer = [[TimerObj alloc] init];
 }
 
-vts::MapOptions defaultMapOptions()
+void defaultMapOptions(vts::MapRuntimeOptions &mapOptions, vts::CameraOptions &cameraOptions)
 {
-    vts::MapOptions opt;
-    opt.maxTexelToPixelScale = 3.2;
-    opt.maxResourceProcessesPerTick = -1; // the resources are processed on a separate thread
-    opt.targetResourcesMemoryKB = 200 * 1024;
-    return opt;
+    mapOptions = vts::MapRuntimeOptions();
+    cameraOptions = vts::CameraOptions();
+    cameraOptions.maxTexelToPixelScale = 3.2;
+    mapOptions.maxResourceProcessesPerTick = -1; // the resources are processed on a separate thread
+    mapOptions.targetResourcesMemoryKB = 200 * 1024;
 }
 
 EAGLContext *mapRenderContext()
@@ -265,7 +275,7 @@ void mapRenderControls(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw
     }
 
     double rotation[3];
-    map->getPositionRotationLimited(rotation);
+    navigation->getRotationLimited(rotation);
     if (rotation[1] < 0)
         rotation[1] += 360;
 
@@ -352,10 +362,10 @@ void mapRenderControls(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw
             float startY = zoom.origin.y + zoom.size.height * 0.5 - radius;
             float singleHeight = 7 * radius;
             float totalHeight = 8 * singleHeight;
-            double zoomVal = map->getPositionViewExtent();
+            double zoomVal = navigation->getViewExtent();
             double zoomScale = map->celestialBody().majorRadius;
-            double zoomMin = map->options().viewExtentLimitScaleMin * zoomScale;
-            double zoomMax = map->options().viewExtentLimitScaleMax * zoomScale;
+            double zoomMin = navigation->options().viewExtentLimitScaleMin * zoomScale;
+            double zoomMax = navigation->options().viewExtentLimitScaleMax * zoomScale;
             zoomVal = std::log2(zoomVal);
             zoomMin = std::log2(zoomMin);
             zoomMax = std::log2(zoomMax);

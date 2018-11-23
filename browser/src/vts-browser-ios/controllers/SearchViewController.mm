@@ -26,7 +26,8 @@
 
 #include "../Map.h"
 #include <vts-browser/search.hpp>
-#include <vts-browser/options.hpp>
+#include <vts-browser/mapOptions.hpp>
+#include <vts-browser/navigationOptions.hpp>
 
 #import "SearchCell.h"
 #import "SearchViewController.h"
@@ -65,7 +66,7 @@
     {
         assert(result->done);
         double pos[3];
-        map->getPositionPoint(pos);
+        navigation->getPoint(pos);
         result->updateDistances(pos);
     }
 
@@ -103,13 +104,13 @@
         return;
     assert(result->done);
     vts::SearchItem &item = result->results[indexPath.row];
-    map->setPositionSubjective(false, false);
-    map->setPositionViewExtent(std::max(6667.0, item.radius * 2));
-    map->setPositionRotation({0,270,0});
-    map->resetPositionAltitude();
-    map->resetNavigationMode();
-    map->options().navigationType = vts::NavigationType::FlyOver;
-    map->setPositionPoint(item.position);
+    navigation->setSubjective(false, false);
+    navigation->setViewExtent(std::max(6667.0, item.radius * 2));
+    navigation->setRotation({0,270,0});
+    navigation->resetAltitude();
+    navigation->resetNavigationMode();
+    navigation->options().navigationType = vts::NavigationType::FlyOver;
+    navigation->setPoint(item.position);
     [self.navigationController popViewControllerAnimated:YES];
 }
 

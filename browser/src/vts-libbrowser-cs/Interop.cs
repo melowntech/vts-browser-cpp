@@ -78,6 +78,9 @@ public static extern void vtsCameraSetViewportSize(IntPtr cam, uint width, uint 
 public static extern void vtsCameraSetView(IntPtr cam, [In] double[] eye, [In] double[] target, [In] double[] up);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsCameraSetViewMatrix(IntPtr cam, [In] double[] view);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsCameraSetProj(IntPtr cam, double fovyDegs, double near_, double far_);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
@@ -88,6 +91,9 @@ public static extern void vtsCameraGetViewportSize(IntPtr cam, ref uint width, r
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsCameraGetView(IntPtr cam, [Out] double[] eye, [Out] double[] target, [Out] double[] up);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsCameraGetViewMatrix(IntPtr cam, [Out] double[] view);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsCameraSuggestedNearFar(IntPtr cam, ref double near_, ref double far_);

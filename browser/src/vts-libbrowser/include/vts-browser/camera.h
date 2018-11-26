@@ -41,6 +41,7 @@ VTS_API void vtsCameraSetViewportSize(vtsHCamera cam,
                     uint32 width, uint32 height);
 VTS_API void vtsCameraSetView(vtsHCamera cam, const double eye[3],
                     const double target[3], const double up[3]);
+VTS_API void vtsCameraSetViewMatrix(vtsHCamera cam, const double view[16]);
 VTS_API void vtsCameraSetProj(vtsHCamera cam, double fovyDegs,
                     double near_, double far_);
 VTS_API void vtsCameraSetProjMatrix(vtsHCamera cam, const double proj[16]);
@@ -48,6 +49,7 @@ VTS_API void vtsCameraGetViewportSize(vtsHCamera cam,
                     uint32 *width, uint32 *height);
 VTS_API void vtsCameraGetView(vtsHCamera cam, double eye[3],
                     double target[3], double up[3]);
+VTS_API void vtsCameraGetViewMatrix(vtsHCamera cam, double view[16]);
 VTS_API void vtsCameraSuggestedNearFar(vtsHCamera cam,
                     double *near_, double *far_);
 

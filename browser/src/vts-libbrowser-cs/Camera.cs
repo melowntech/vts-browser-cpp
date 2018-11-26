@@ -25,8 +25,6 @@
  */
 
 using System;
-using System.Diagnostics;
-using System.Collections.Generic;
 
 namespace vts
 {
@@ -50,6 +48,13 @@ namespace vts
             Util.CheckArray(target, 3);
             Util.CheckArray(up, 3);
             BrowserInterop.vtsCameraSetView(Handle, eye, target, up);
+            Util.CheckInterop();
+        }
+
+        public void SetView(double[] view)
+        {
+            Util.CheckArray(view, 16);
+            BrowserInterop.vtsCameraSetViewMatrix(Handle, view);
             Util.CheckInterop();
         }
 
@@ -82,9 +87,17 @@ namespace vts
             Util.CheckInterop();
         }
 
+        public double[] GetView()
+        {
+            double[] view = new double[16];
+            BrowserInterop.vtsCameraGetViewMatrix(Handle, view);
+            Util.CheckInterop();
+            return view;
+        }
+
         public void SuggestedNearFar(out double near, out double far)
         {
-             near = far = 0;
+            near = far = 0;
             BrowserInterop.vtsCameraSuggestedNearFar(Handle, ref near, ref far);
             Util.CheckInterop();
         }

@@ -170,17 +170,17 @@ namespace vts
             }
         }
 
-        public void Load(Map map)
+        public void Load(Map map, Camera cam)
         {
-            IntPtr camPtr = BrowserInterop.vtsDrawsCamera(map.Handle);
+            IntPtr camPtr = BrowserInterop.vtsDrawsCamera(cam.Handle);
             Util.CheckInterop();
             camera = (CameraBase)Marshal.PtrToStructure(camPtr, typeof(CameraBase));
             celestial.Load(map);
-            Load(ref opaque, BrowserInterop.vtsDrawsOpaque(map.Handle));
-            Load(ref transparent, BrowserInterop.vtsDrawsTransparent(map.Handle));
-            Load(ref geodata, BrowserInterop.vtsDrawsGeodata(map.Handle));
-            Load(ref infographics, BrowserInterop.vtsDrawsInfographics(map.Handle));
-            Load(ref colliders, BrowserInterop.vtsDrawsColliders(map.Handle));
+            Load(ref opaque, BrowserInterop.vtsDrawsOpaque(cam.Handle));
+            Load(ref transparent, BrowserInterop.vtsDrawsTransparent(cam.Handle));
+            Load(ref geodata, BrowserInterop.vtsDrawsGeodata(cam.Handle));
+            Load(ref infographics, BrowserInterop.vtsDrawsInfographics(cam.Handle));
+            Load(ref colliders, BrowserInterop.vtsDrawsColliders(cam.Handle));
         }
     }
 }

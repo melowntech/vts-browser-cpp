@@ -63,6 +63,19 @@ void Camera::setView(const std::array<double, 3> &eye,
     setView(eye.data(), target.data(), up.data());
 }
 
+void Camera::setView(const double view[16])
+{
+    mat4 v = rawToMat4(view).inverse();
+    impl->eye = vec4to3(v * vec4(0, 0, 0, 1));
+    impl->target = vec4to3(v * vec4(0, 0, -1, 0)) + impl->eye;
+    impl->up = vec4to3(v * vec4(0, 1, 0, 0));
+}
+
+void Camera::setView(const std::array<double, 16> &view)
+{
+    setView(view.data());
+}
+
 void Camera::setProj(double fovyDegs, double near_, double far_)
 {
     double aspect = (double)impl->windowWidth / (double)impl->windowHeight;
@@ -87,9 +100,17 @@ void Camera::getView(double eye[3], double target[3], double up[3])
     vecToRaw(impl->up, up);
 }
 
+void Camera::getView(double view[16])
+{
+    matToRaw(lookAt(impl->eye, impl->target, impl->up), view);
+}
+
 void Camera::suggestedNearFar(double &near_, double &far_)
 {
-    impl->suggestedNearFar(near_, far_);
+    if (impl->map->mapconfigReady)
+        impl->suggestedNearFar(near_, far_);
+    else
+        near_ = far_ = 0;
 }
 
 CameraStatistics &Camera::statistics()

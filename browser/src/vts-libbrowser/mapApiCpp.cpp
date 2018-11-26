@@ -171,7 +171,7 @@ bool Map::getMapconfigReady() const
 
 bool Map::getMapProjected() const
 {
-    if (impl->mapconfig && *impl->mapconfig)
+    if (getMapconfigAvailable())
         return impl->mapconfig->navigationSrsType()
             == vtslibs::registry::Srs::Type::projected;
     return false;
@@ -256,7 +256,7 @@ const MapCelestialBody &Map::celestialBody()
 
 std::shared_ptr<void> Map::atmosphereDensityTexture()
 {
-    if (impl->mapconfig && impl->mapconfig->atmosphereDensityTexture
+    if (getMapconfigAvailable() && impl->mapconfig->atmosphereDensityTexture
         && *impl->mapconfig->atmosphereDensityTexture)
         return impl->mapconfig->atmosphereDensityTexture->info.userData;
     return nullptr;

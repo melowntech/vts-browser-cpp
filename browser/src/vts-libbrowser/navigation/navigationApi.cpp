@@ -49,7 +49,7 @@ Navigation::Navigation(CameraImpl *cam)
 
 void Navigation::pan(const double value[3])
 {
-    if (!impl->camera->map->map->getMapconfigReady())
+    if (!impl->camera->map->mapconfigReady)
         return;
     if (impl->position.type
             == vtslibs::registry::Position::Type::objective)
@@ -65,7 +65,7 @@ void Navigation::pan(const std::array<double, 3> &lst)
 
 void Navigation::rotate(const double value[3])
 {
-    if (!impl->camera->map->map->getMapconfigReady())
+    if (!impl->camera->map->mapconfigReady)
         return;
     impl->rotate(rawToVec3(value));
 }
@@ -77,7 +77,7 @@ void Navigation::rotate(const std::array<double, 3> &lst)
 
 void Navigation::zoom(double value)
 {
-    if (!impl->camera->map->map->getMapconfigReady())
+    if (!impl->camera->map->mapconfigReady)
         return;
     if (impl->position.type
             == vtslibs::registry::Position::Type::objective)
@@ -86,7 +86,7 @@ void Navigation::zoom(double value)
 
 void Navigation::resetAltitude()
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
     {
         LOGTHROW(err4, std::logic_error)
             << "Map is not yet available.";
@@ -97,7 +97,7 @@ void Navigation::resetAltitude()
 
 void Navigation::resetNavigationMode()
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
     {
         LOGTHROW(err4, std::logic_error)
             << "Map is not yet available.";
@@ -107,7 +107,7 @@ void Navigation::resetNavigationMode()
 
 void Navigation::setSubjective(bool subjective, bool convert)
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
     {
         LOGTHROW(err4, std::logic_error)
                 << "Map is not yet available.";
@@ -123,7 +123,7 @@ void Navigation::setSubjective(bool subjective, bool convert)
 
 bool Navigation::getSubjective() const
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
         return false;
     return impl->position.type
             == vtslibs::registry::Position::Type::subjective;
@@ -131,7 +131,7 @@ bool Navigation::getSubjective() const
 
 void Navigation::setPoint(const double point[3])
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
     {
         LOGTHROW(err4, std::logic_error)
                 << "Map is not yet available.";
@@ -156,7 +156,7 @@ void Navigation::setPoint(const std::array<double, 3> &lst)
 
 void Navigation::getPoint(double point[3]) const
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
     {
         for (int i = 0; i < 3; i++)
             point[i] = 0;
@@ -167,7 +167,7 @@ void Navigation::getPoint(double point[3]) const
 
 void Navigation::setRotation(const double point[3])
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
     {
         LOGTHROW(err4, std::logic_error)
                 << "Map is not yet available.";
@@ -185,7 +185,7 @@ void Navigation::setRotation(const std::array<double, 3> &lst)
 
 void Navigation::getRotation(double point[3]) const
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
     {
         for (int i = 0; i < 3; i++)
             point[i] = 0;
@@ -196,7 +196,7 @@ void Navigation::getRotation(double point[3]) const
 
 void Navigation::getRotationLimited(double point[3]) const
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
     {
         for (int i = 0; i < 3; i++)
             point[i] = 0;
@@ -209,7 +209,7 @@ void Navigation::getRotationLimited(double point[3]) const
 
 void Navigation::setViewExtent(double viewExtent)
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
     {
         LOGTHROW(err4, std::logic_error)
                 << "Map is not yet available.";
@@ -220,14 +220,14 @@ void Navigation::setViewExtent(double viewExtent)
 
 double Navigation::getViewExtent() const
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
         return 0;
     return impl->position.verticalExtent;
 }
 
 void Navigation::setFov(double fov)
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
     {
         LOGTHROW(err4, std::logic_error)
                 << "Map is not yet available.";
@@ -238,14 +238,14 @@ void Navigation::setFov(double fov)
 
 double Navigation::getFov() const
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
         return 0;
     return impl->position.verticalFov;
 }
 
 std::string Navigation::getPositionJson() const
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
         return "";
     vtslibs::registry::Position p = impl->position;
     impl->applyCameraRotationNormalization(p.orientation);
@@ -254,7 +254,7 @@ std::string Navigation::getPositionJson() const
 
 std::string Navigation::getPositionUrl() const
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
         return "";
     vtslibs::registry::Position p = impl->position;
     impl->applyCameraRotationNormalization(p.orientation);
@@ -286,7 +286,7 @@ void setPosition(Navigation *nav, NavigationImpl *impl,
 
 void Navigation::setPositionJson(const std::string &position)
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
     {
         LOGTHROW(err4, std::logic_error)
                 << "Map is not yet available.";
@@ -298,7 +298,7 @@ void Navigation::setPositionJson(const std::string &position)
 
 void Navigation::setPositionUrl(const std::string &position)
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
     {
         LOGTHROW(err4, std::logic_error)
                 << "Map is not yet available.";
@@ -317,7 +317,7 @@ void Navigation::setPositionUrl(const std::string &position)
 
 void Navigation::setAutoRotation(double value)
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
     {
         LOGTHROW(err4, std::logic_error)
                 << "Map is not yet available.";
@@ -327,7 +327,7 @@ void Navigation::setAutoRotation(double value)
 
 double Navigation::getAutoRotation() const
 {
-    if (!impl->camera->map->map->getMapconfigAvailable())
+    if (!impl->camera->map->mapconfigAvailable)
         return 0;
     return impl->autoRotation;
 }

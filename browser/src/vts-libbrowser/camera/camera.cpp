@@ -29,6 +29,18 @@
 namespace vts
 {
 
+CurrentDraw::CurrentDraw(TraverseNode *trav, TraverseNode *orig,
+    const vec4f &uvClip) : uvClip(uvClip),
+    trav(trav), orig(orig)
+{}
+
+OldDraw::OldDraw(const CurrentDraw &current) :
+    uvClip(current.uvClip),
+    trav(current.trav->nodeInfo.nodeId()),
+    orig(current.orig->nodeInfo.nodeId()),
+    age(0)
+{}
+
 CameraImpl::CameraImpl(MapImpl *map, Camera *cam) :
     map(map), camera(cam),
     windowWidth(0), windowHeight(0)
@@ -50,6 +62,19 @@ void CameraImpl::clear()
         statistics.nodesRenderedTotal = 0;
         statistics.currentNodeMetaUpdates = 0;
         statistics.currentNodeDrawsUpdates = 0;
+        statistics.currentGridNodes = 0;
+    }
+
+    // clear unused camera map layers
+    {
+        auto it = layers.begin();
+        while (it != layers.end())
+        {
+            if (!it->first.lock())
+                it = layers.erase(it);
+            else
+                it++;
+        }
     }
 }
 
@@ -198,23 +223,12 @@ void CameraImpl::renderNode(TraverseNode *trav,
                   || uvClip(2) < 1 || uvClip(3) < 1));
 
     // draws
-    if (isSubNode)
-    {
-        // some neighboring subtiles may be merged together
-        //   this will reduce gpu overhead on rasterization
-        // since the merging process ultimately alters the rendering order
-        //   it is only allowed on opaque draws
-        trav->layer->opaqueSubtiles[trav].subtiles.emplace_back(orig, uvClip);
-    }
+    if (options.lodBlending)
+        currentDraws.emplace_back(trav, orig, uvClip);
     else
-    {
-        for (const RenderTask &r : trav->opaque)
-            draws.opaque.emplace_back(this, r, uvClip.data());
-    }
-    for (const RenderTask &r : trav->transparent)
-        draws.transparent.emplace_back(this, r, uvClip.data());
-    for (const RenderTask &r : trav->geodata)
-        draws.geodata.emplace_back(this, r, uvClip.data());
+        renderNodeDraws(trav, orig, uvClip, nan1());
+
+    // colliders
     if (!isSubNode)
         for (const RenderTask &r : trav->colliders)
             draws.colliders.emplace_back(this, r);
@@ -310,8 +324,6 @@ void CameraImpl::renderNode(TraverseNode *trav,
     for (auto &it : trav->credits)
         map->credits.hit(trav->layer->creditScope, it,
                              trav->nodeInfo.distanceFromRoot());
-
-    trav->lastRenderTime = map->renderTickIndex;
 }
 
 void CameraImpl::renderNode(TraverseNode *trav)
@@ -335,21 +347,29 @@ void updateRangeToHalf(float &a, float &b, int which)
 
 } // namespace
 
-void CameraImpl::renderNodeCoarser(TraverseNode *trav,
-    TraverseNode *orig, vec4f uvClip)
+bool CameraImpl::findNodeCoarser(TraverseNode *&trav,
+    TraverseNode *orig, vec4f &uvClip)
 {
     if (!trav->parent)
-        return;
+        return false;
 
     auto id = trav->nodeInfo.nodeId();
     float *arr = uvClip.data();
     updateRangeToHalf(arr[0], arr[2], id.x % 2);
     updateRangeToHalf(arr[1], arr[3], 1 - (id.y % 2));
 
-    if (!trav->parent->rendersEmpty() && trav->parent->rendersReady())
-        renderNode(trav->parent, orig, uvClip);
+    trav = trav->parent;
+    if (!trav->rendersEmpty() && trav->rendersReady())
+        return true;
     else
-        renderNodeCoarser(trav->parent, orig, uvClip);
+        return findNodeCoarser(trav, orig, uvClip);
+}
+
+void CameraImpl::renderNodeCoarser(TraverseNode *trav,
+    TraverseNode *orig, vec4f uvClip)
+{
+    if (findNodeCoarser(trav, orig, uvClip))
+        renderNode(trav, orig, uvClip);
 }
 
 void CameraImpl::renderNodeCoarser(TraverseNode *trav)
@@ -357,16 +377,96 @@ void CameraImpl::renderNodeCoarser(TraverseNode *trav)
     renderNodeCoarser(trav, trav, vec4f(0, 0, 1, 1));
 }
 
+void CameraImpl::renderNodeDraws(TraverseNode *trav,
+    TraverseNode *orig, const vec4f &uvClip, float opacity)
+{
+    assert(trav && orig);
+    assert(!trav->rendersEmpty());
+    assert(trav->rendersReady());
+
+    if (opacity == opacity)
+    {
+        // opaque becomes transparent
+        for (const RenderTask &r : trav->opaque)
+            draws.transparent.emplace_back(this, r, uvClip.data(), opacity);
+    }
+    else
+    {
+        // some neighboring subtiles may be merged together
+        //   this will reduce gpu overhead on rasterization
+        // since the merging process ultimately alters the rendering order
+        //   it is only allowed on opaque draws
+        if (trav != orig)
+            opaqueSubtiles[trav].subtiles.emplace_back(orig, uvClip);
+        else
+            for (const RenderTask &r : trav->opaque)
+                draws.opaque.emplace_back(this, r, uvClip.data(), nan1());
+    }
+
+    for (const RenderTask &r : trav->transparent)
+        draws.transparent.emplace_back(this, r, uvClip.data(), opacity);
+    for (const RenderTask &r : trav->geodata)
+        draws.geodata.emplace_back(this, r, uvClip.data(), opacity);
+
+    trav->lastRenderTime = map->renderTickIndex;
+    orig->lastRenderTime = map->renderTickIndex;
+}
+
+void CameraImpl::resolveBlending(TraverseNode *root, CameraMapLayer &layer)
+{
+    // identify draws from last frame that are not drawn this frame
+    //   and add them to draws for possible blending
+    {
+        for (auto &it : currentDraws)
+            layer.lastDraws.erase(it.orig->nodeInfo.nodeId());
+        layer.blendDraws.reserve(layer.blendDraws.size()
+                + layer.lastDraws.size());
+        for (auto &it : layer.lastDraws)
+            layer.blendDraws.push_back(it.second);
+        layer.lastDraws.clear();
+        layer.lastDraws.reserve(currentDraws.size());
+        for (auto &it : currentDraws)
+            layer.lastDraws.emplace(it.orig->nodeInfo.nodeId(), it);
+    }
+
+    // identify draws for blending
+    //   and render the rest regularly
+    for (auto &it : layer.blendDraws)
+    {
+        TraverseNode *trav = findTravById(root, it.trav);
+        assert(trav == nullptr || trav->nodeInfo.nodeId() == it.trav);
+        TraverseNode *orig = findTravById(trav, it.orig);
+        if (!orig || trav->rendersEmpty())
+            continue;
+        double opacity = 1 - it.age / options.lodBlendingDuration;
+        if (opacity > 0.01)
+            renderNodeDraws(trav, orig, it.uvClip, opacity);
+    }
+    for (auto &it : currentDraws)
+        renderNodeDraws(it.trav, it.orig, it.uvClip, nan1());
+
+    currentDraws.clear();
+}
+
 void CameraImpl::updateCamera(double elapsedTime)
 {
+    // update age for blendable draws
+    for (auto &it : layers)
+    {
+        auto &old = it.second.blendDraws;
+        old.erase(std::remove_if(old.begin(), old.end(),
+            [&](OldDraw &old) {
+                old.age += elapsedTime;
+                return old.age > options.lodBlendingDuration;
+            }), old.end());
+    }
+
     if (windowWidth == 0 || windowHeight == 0)
         return;
 
-    (void)elapsedTime;
-
     mat4 view = lookAt(eye, target, up);
 
-    // few other variables
+    // render variables
     viewProjRender = apiProj * view;
     viewRender = view;
     if (!options.debugDetachedCamera)
@@ -425,11 +525,15 @@ void CameraImpl::updateCamera(double elapsedTime)
     for (auto &it : map->layers)
     {
         traverseRender(it->traverseRoot.get());
-        for (auto &os : it->opaqueSubtiles)
+        // resolve blending
+        resolveBlending(it->traverseRoot.get(), layers[it]);
+        // resolve subtile merging
+        for (auto &os : opaqueSubtiles)
             os.second.resolve(os.first, this);
-        it->opaqueSubtiles.clear();
+        opaqueSubtiles.clear();
+        // resolve grid preload
+        gridPreloadProcess(it->traverseRoot.get());
     }
-    gridPreloadProcess();
     sortOpaqueFrontToBack();
 
     // update camera credits

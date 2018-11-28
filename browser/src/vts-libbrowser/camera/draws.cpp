@@ -66,11 +66,14 @@ DrawTask::DrawTask(const CameraImpl *m, const RenderTask &r)
     externalUv = r.externalUv;
 }
 
-DrawTask::DrawTask(const CameraImpl *m, const RenderTask &r, const float *uvClip)
+DrawTask::DrawTask(const CameraImpl *m, const RenderTask &r,
+        const float *uvClip, float opacity)
     : DrawTask(m, r)
 {
     for (int i = 0; i < 4; i++)
         this->uvClip[i] = uvClip[i];
+    if (opacity == opacity)
+        this->color[3] *= opacity;
 }
 
 CameraDraws::Camera::Camera()

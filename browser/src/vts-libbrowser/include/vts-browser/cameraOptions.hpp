@@ -47,6 +47,9 @@ public:
     //   but reduces memory usage and network bandwith
     double maxTexelToPixelScale;
 
+    // duration of lod blending in seconds
+    double lodBlendingDuration;
+
     // maximum distance of meshes emited for fixed traversal mode
     // defined in physical length units (metres)
     // for colliders, it may be overriden from callback
@@ -69,6 +72,9 @@ public:
 
     TraverseMode traverseModeSurfaces;
     TraverseMode traverseModeGeodata;
+
+    // enable blending lods to prevend lod popping
+    bool lodBlending;
 
     bool debugDetachedCamera;
     bool debugFlatShading;

@@ -29,22 +29,11 @@
 namespace vts
 {
 
-namespace
-{
-
-uint32 hashf(const NodeInfo &node)
-{
-    auto id = node.nodeId();
-    return std::hash<uint32>()(((uint32)id.x << id.lod) + id.y);
-}
-
-} // namespace
-
 TraverseNode::TraverseNode(vts::MapLayer *layer, TraverseNode *parent,
                            const NodeInfo &nodeInfo)
     : layer(layer), parent(parent),
       nodeInfo(nodeInfo),
-      hash(hashf(nodeInfo)),
+      hash(std::hash<vts::TileId>()(nodeInfo.nodeId())),
       surface(nullptr),
       lastAccessTime(0), lastRenderTime(0),
       priority(nan1())
@@ -88,8 +77,6 @@ void TraverseNode::clearAll()
 
 void TraverseNode::clearRenders()
 {
-    if (lastRenderTime + 5 > layer->map->renderTickIndex)
-        return;
     opaque.clear();
     transparent.clear();
     geodata.clear();

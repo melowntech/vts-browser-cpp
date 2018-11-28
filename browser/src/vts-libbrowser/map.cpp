@@ -130,13 +130,15 @@ bool MapImpl::prerequisitesCheck()
 
 void MapImpl::traverseClearing(TraverseNode *trav)
 {
-    if (trav->lastAccessTime + 5 < renderTickIndex)
+    if (std::max(trav->lastAccessTime, trav->lastRenderTime) + 5
+                < renderTickIndex)
     {
         trav->clearAll();
         return;
     }
 
-    trav->clearRenders(); // clear based on lastRenderTime
+    if (trav->lastRenderTime + 5 < renderTickIndex)
+        trav->clearRenders();
 
     for (auto &it : trav->childs)
         traverseClearing(it.get());
@@ -191,6 +193,24 @@ std::string convertPath(const std::string &path,
         return "";
     assert(!parent.empty());
     return utility::Uri(parent).resolve(path).str();
+}
+
+TraverseNode *findTravById(TraverseNode *trav, const TileId &what)
+{
+    if (!trav)
+        return nullptr;
+    TileId id = trav->nodeInfo.nodeId();
+    if (id == what)
+        return trav;
+    if (what.lod <= id.lod)
+        return findTravById(trav->parent, what);
+    TileId t = what;
+    while (t.lod > id.lod + 1)
+        t = vtslibs::vts::parent(t);
+    for (auto &it : trav->childs)
+        if (it->nodeInfo.nodeId() == t)
+            return findTravById(it.get(), what);
+    return nullptr;
 }
 
 } // namespace vts

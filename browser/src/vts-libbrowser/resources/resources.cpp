@@ -54,8 +54,7 @@ std::shared_ptr<T> getMapResource(MapImpl *map, const std::string &name)
 } // namespace
 
 MapImpl::Resources::Resources() :
-    downloads(0), tickIndex(0),
-    progressEstimationMaxResources(0)
+    downloads(0),  progressEstimationMaxResources(0)
 {}
 
 MapImpl::Resources::Fetching::Fetching() :

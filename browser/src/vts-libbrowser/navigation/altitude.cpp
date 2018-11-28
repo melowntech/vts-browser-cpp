@@ -48,22 +48,6 @@ double generalInterpolation(
     return a / b;
 }
 
-TraverseNode *findTravById(TraverseNode *where, const TileId &id)
-{
-    assert(where);
-    if (where->nodeInfo.nodeId().lod > id.lod)
-        return nullptr;
-    if (where->nodeInfo.nodeId() == id)
-        return where;
-    for (auto &it : where->childs)
-    {
-        auto r = findTravById(it.get(), id);
-        if (r)
-            return r;
-    }
-    return nullptr;
-}
-
 TraverseNode *findTravSds(TraverseNode *where,
         const vec2 &pointSds, uint32 maxLod)
 {

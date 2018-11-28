@@ -95,7 +95,8 @@ void SubtilesMerger::resolve(TraverseNode *trav, CameraImpl *impl)
         if (it.orig)
         {
             for (auto &r : trav->opaque)
-                impl->draws.opaque.emplace_back(impl, r, it.uvClip.data());
+                impl->draws.opaque.emplace_back(impl, r,
+                        it.uvClip.data(), nan1());
         }
     }
 }
@@ -115,8 +116,6 @@ void CameraImpl::gridPreloadRequest(TraverseNode *trav)
         trav = trav->parent;
     }
 
-    auto &glr = trav->layer->gridLoadRequests;
-
     sint32 D = options.balancedGridNeighborsDistance;
     TileId base = trav->nodeInfo.nodeId();
     TileId::index_type m = 1 << base.lod;
@@ -127,23 +126,19 @@ void CameraImpl::gridPreloadRequest(TraverseNode *trav)
             TileId t = base;
             tileWrap(m, t.x, x);
             tileWrap(m, t.y, y);
-            glr.push_back(t);
+            gridLoadRequests.push_back(t);
         }
     }
 }
 
-void CameraImpl::gridPreloadProcess()
+void CameraImpl::gridPreloadProcess(TraverseNode *root)
 {
-    statistics.currentGridNodes = 0;
-    for (auto &it : map->layers)
-    {
-        auto &glr = it->gridLoadRequests;
-        std::sort(glr.begin(), glr.end());
-        glr.erase(std::unique(glr.begin(), glr.end()), glr.end());
-        statistics.currentGridNodes += glr.size();
-        gridPreloadProcess(it->traverseRoot.get(), glr);
-        glr.clear();
-    }
+    auto &glr = gridLoadRequests;
+    std::sort(glr.begin(), glr.end());
+    glr.erase(std::unique(glr.begin(), glr.end()), glr.end());
+    statistics.currentGridNodes += glr.size();
+    gridPreloadProcess(root, glr);
+    glr.clear();
 }
 
 void CameraImpl::gridPreloadProcess(TraverseNode *trav,

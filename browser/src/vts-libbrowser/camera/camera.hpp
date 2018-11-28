@@ -35,8 +35,66 @@
 #include "../include/vts-browser/cameraOptions.hpp"
 #include "../include/vts-browser/cameraStatistics.hpp"
 
+namespace std
+{
+
+template<>
+struct hash<vts::TileId>
+{
+    size_t operator()(const vts::TileId &x) const
+    {
+        size_t r = std::hash<vtslibs::storage::Lod>()(x.lod) << 1;
+        r ^= std::hash<vts::TileId::index_type>()(x.x) << 1;
+        r ^= std::hash<vts::TileId::index_type>()(x.y);
+        return r;
+    }
+};
+
+} // namespace std
+
 namespace vts
 {
+
+class CurrentDraw
+{
+public:
+    vec4f uvClip;
+    TraverseNode *trav;
+    TraverseNode *orig;
+
+    CurrentDraw(TraverseNode *trav, TraverseNode *orig, const vec4f &uvClip);
+};
+
+class OldDraw
+{
+public:
+    vec4f uvClip;
+    TileId trav;
+    TileId orig;
+    double age;
+
+    OldDraw(const CurrentDraw &current);
+};
+
+class CameraMapLayer
+{
+public:
+    std::vector<OldDraw> blendDraws; // draws rendered in previous frames suitable for blending
+    std::unordered_map<TileId, OldDraw> lastDraws; // draws requested to render in last frame
+};
+
+class SubtilesMerger
+{
+public:
+    struct Subtile
+    {
+        TraverseNode *orig;
+        vec4f uvClip;
+        Subtile(TraverseNode *orig, const vec4f &uvClip);
+    };
+    std::vector<Subtile> subtiles;
+    void resolve(TraverseNode *trav, CameraImpl *impl);
+};
 
 class CameraImpl
 {
@@ -48,6 +106,11 @@ public:
     CameraDraws draws;
     CameraOptions options;
     CameraStatistics statistics;
+    std::vector<TileId> gridLoadRequests;
+    std::vector<CurrentDraw> currentDraws;
+    std::unordered_map<TraverseNode*, SubtilesMerger> opaqueSubtiles;
+    std::map<std::weak_ptr<MapLayer>, CameraMapLayer,
+            std::owner_less<std::weak_ptr<MapLayer>>> layers;
     mat4 viewProj;
     mat4 viewProjRender;
     mat4 viewRender;
@@ -74,9 +137,13 @@ public:
     void renderNode(TraverseNode *trav,
                     TraverseNode *orig, const vec4f &uvClip);
     void renderNode(TraverseNode *trav);
+    bool findNodeCoarser(TraverseNode *&trav,
+                    TraverseNode *orig, vec4f &uvClip);
     void renderNodeCoarser(TraverseNode *trav,
                     TraverseNode *orig, vec4f uvClip);
     void renderNodeCoarser(TraverseNode *trav);
+    void renderNodeDraws(TraverseNode *trav,
+        TraverseNode *orig, const vec4f &uvClip, float opacity);
     bool generateMonolithicGeodataTrav(TraverseNode *trav);
     std::shared_ptr<GpuTexture> travInternalTexture(TraverseNode *trav,
                                                   uint32 subMeshIndex);
@@ -94,9 +161,10 @@ public:
     void travModeFixed(TraverseNode *trav);
     void traverseRender(TraverseNode *trav);
     void gridPreloadRequest(TraverseNode *trav);
-    void gridPreloadProcess();
+    void gridPreloadProcess(TraverseNode *root);
     void gridPreloadProcess(TraverseNode *trav,
                             const std::vector<TileId> &requests);
+    void resolveBlending(TraverseNode *root, CameraMapLayer &layer);
     void sortOpaqueFrontToBack();
     void updateCamera(double elapsedTime);
     void suggestedNearFar(double &near_, double &far_);

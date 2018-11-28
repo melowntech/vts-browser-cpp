@@ -49,7 +49,6 @@ public:
     uint32 resourcesReleased;
     uint32 resourcesFailed;
     uint32 renderTicks;
-    uint32 dataTicks;
 
     // current statistics
 

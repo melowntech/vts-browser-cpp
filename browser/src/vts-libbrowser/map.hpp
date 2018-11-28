@@ -60,7 +60,7 @@
 #include "utilities/array.hpp"
 #include "utilities/threadQueue.hpp"
 
-#ifndef NDEBUG
+#if !defined(NDEBUG) && defined(__GNUC__)
     // some debuggers are unable to show contents of unordered containers
     #define unordered_map map
     #define unordered_set set
@@ -479,19 +479,6 @@ public:
     bool rendersEmpty() const;
 };
 
-class SubtilesMerger
-{
-public:
-    struct Subtile
-    {
-        TraverseNode *orig;
-        vec4f uvClip;
-        Subtile(TraverseNode *orig, const vec4f &uvClip);
-    };
-    std::vector<Subtile> subtiles;
-    void resolve(TraverseNode *trav, CameraImpl *impl);
-};
-
 class MapLayer
 {
 public:
@@ -517,8 +504,6 @@ public:
     boost::optional<SurfaceStack> tilesetStack;
 
     std::shared_ptr<TraverseNode> traverseRoot;
-    std::vector<TileId> gridLoadRequests;
-    std::map<TraverseNode*, SubtilesMerger> opaqueSubtiles;
 
     MapImpl *const map;
     Credits::Scope creditScope;
@@ -602,7 +587,6 @@ public:
         std::deque<std::weak_ptr<SearchTask>> searchTasks;
         std::string authPath;
         std::atomic<uint32> downloads;
-        uint32 tickIndex;
         uint32 progressEstimationMaxResources;
 
         ThreadQueue<std::weak_ptr<Resource>> queCacheRead;
@@ -708,6 +692,7 @@ public:
 bool testAndThrow(Resource::State state, const std::string &message);
 std::string convertPath(const std::string &path,
                         const std::string &parent);
+TraverseNode *findTravById(TraverseNode *trav, const TileId &what);
 
 } // namespace vts
 

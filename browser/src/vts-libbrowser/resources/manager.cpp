@@ -181,8 +181,6 @@ void MapImpl::resourceDataFinalize()
 
 void MapImpl::resourceDataTick()
 {
-    statistics.dataTicks = ++resources.tickIndex;
-
     for (uint32 proc = 0; proc
         < options.maxResourceProcessesPerTick; proc++)
     {

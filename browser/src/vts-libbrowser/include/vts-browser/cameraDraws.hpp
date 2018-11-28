@@ -47,7 +47,8 @@ public:
 
     DrawTask();
     DrawTask(const CameraImpl *m, const RenderTask &r);
-    DrawTask(const CameraImpl *m, const RenderTask &r, const float *uvClip);
+    DrawTask(const CameraImpl *m, const RenderTask &r,
+        const float *uvClip, float opacity);
 };
 
 class VTS_API CameraDraws

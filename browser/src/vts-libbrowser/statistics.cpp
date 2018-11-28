@@ -39,7 +39,6 @@ MapStatistics::MapStatistics() :
     resourcesReleased(0),
     resourcesFailed(0),
     renderTicks(0),
-    dataTicks(0),
     currentGpuMemUseKB(0),
     currentRamMemUseKB(0),
     resourcesActive(0),
@@ -57,7 +56,6 @@ std::string MapStatistics::toJson() const
     TJ(resourcesReleased, asUInt);
     TJ(resourcesFailed, asUInt);
     TJ(renderTicks, asUInt);
-    TJ(dataTicks, asUInt);
     TJ(currentGpuMemUseKB, asUInt);
     TJ(currentRamMemUseKB, asUInt);
     TJ(resourcesActive, asUInt);

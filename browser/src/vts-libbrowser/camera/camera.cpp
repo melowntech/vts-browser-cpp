@@ -31,14 +31,14 @@ namespace vts
 
 CurrentDraw::CurrentDraw(TraverseNode *trav, TraverseNode *orig,
     const vec4f &uvClip) : uvClip(uvClip),
-    trav(trav), orig(orig)
+    trav(trav), orig(orig), age(0)
 {}
 
 OldDraw::OldDraw(const CurrentDraw &current) :
     uvClip(current.uvClip),
     trav(current.trav->nodeInfo.nodeId()),
     orig(current.orig->nodeInfo.nodeId()),
-    age(0)
+    age(current.age)
 {}
 
 CameraImpl::CameraImpl(MapImpl *map, Camera *cam) :
@@ -386,6 +386,7 @@ void CameraImpl::renderNodeDraws(TraverseNode *trav,
 
     if (opacity == opacity)
     {
+        assert(opacity >= 0.f && opacity <= 1.f);
         // opaque becomes transparent
         for (const RenderTask &r : trav->opaque)
             draws.transparent.emplace_back(this, r, uvClip.data(), opacity);
@@ -412,38 +413,116 @@ void CameraImpl::renderNodeDraws(TraverseNode *trav,
     orig->lastRenderTime = map->renderTickIndex;
 }
 
-void CameraImpl::resolveBlending(TraverseNode *root, CameraMapLayer &layer)
+namespace
 {
-    // identify draws from last frame that are not drawn this frame
-    //   and add them to draws for possible blending
+
+float opacity(float age, float duration, bool disappearing)
+{
+    age = std::min(std::max(age, 0.f), duration) / duration;
+    if (age < 0.4)
+    { // first half of time
+        if (disappearing)
+            return nan1();
+        return age * 2;
+    }
+    else if (age > 0.6)
+    { // second half of time
+        if (disappearing)
+            return 2 - (age * 2);
+        return nan1();
+    }
+    else
+        return nan1();
+}
+
+} // namespace
+
+void CameraImpl::resolveBlending(TraverseNode *root,
+                        CameraMapLayer &layer, float elapsedTime)
+{
+    // identify ended draws
+    for (auto &it : currentDraws)
     {
-        for (auto &it : currentDraws)
-            layer.lastDraws.erase(it.orig->nodeInfo.nodeId());
-        layer.blendDraws.reserve(layer.blendDraws.size()
-                + layer.lastDraws.size());
-        for (auto &it : layer.lastDraws)
-            layer.blendDraws.push_back(it.second);
-        layer.lastDraws.clear();
-        layer.lastDraws.reserve(currentDraws.size());
-        for (auto &it : currentDraws)
-            layer.lastDraws.emplace(it.orig->nodeInfo.nodeId(), it);
+        auto lit = layer.lastDraws.find(it.orig->nodeInfo.nodeId());
+        if (lit != layer.lastDraws.end()
+                    && lit->second.trav == it.trav->nodeInfo.nodeId())
+        {
+            it.age = lit->second.age + elapsedTime;
+            layer.lastDraws.erase(lit);
+        }
+    }
+    for (auto &it : layer.lastDraws)
+    {
+        it.second.age = 0;
+        layer.blendDraws.emplace_back(it.second);
     }
 
-    // identify draws for blending
-    //   and render the rest regularly
+    // generate lastDraws for next frame
+    layer.lastDraws.clear();
+    layer.lastDraws.reserve(currentDraws.size());
+    for (auto &it : currentDraws)
+    {
+        assert(layer.lastDraws.count(it.orig->nodeInfo.nodeId()) == 0);
+        layer.lastDraws.emplace(it.orig->nodeInfo.nodeId(), it);
+    }
+
+    // detect current draws that have nothing to blend with
+    {
+        std::unordered_map<TileId, bool> currents;
+        currents.reserve(currentDraws.size());
+        for (auto &it : currentDraws)
+            currents[it.orig->nodeInfo.nodeId()] = false;
+        std::unordered_set<TileId> blends;
+        blends.reserve(layer.blendDraws.size());
+        for (auto &it : layer.blendDraws)
+        {
+            blends.insert(it.orig);
+            TileId t = it.orig;
+            while (t.lod > 0)
+            {
+                auto it2 = currents.find(t);
+                if (it2 != currents.end())
+                {
+                    it2->second = true;
+                    break;
+                }
+                t = vtslibs::vts::parent(t);
+            }
+        }
+        for (auto &it : currentDraws)
+        {
+            TileId t = it.orig->nodeInfo.nodeId();
+            bool found = currents[t];
+            while (t.lod > 0)
+            {
+                auto it2 = blends.find(t);
+                if (it2 != blends.end())
+                {
+                    found = true;
+                    break;
+                }
+                t = vtslibs::vts::parent(t);
+            }
+            if (!found)
+                it.age = options.lodBlendingDuration;
+        }
+    }
+
+    // render current draws
+    for (auto &it : currentDraws)
+        renderNodeDraws(it.trav, it.orig, it.uvClip,
+            opacity(it.age, options.lodBlendingDuration, false));
+
+    // render blend draws
     for (auto &it : layer.blendDraws)
     {
         TraverseNode *trav = findTravById(root, it.trav);
-        assert(trav == nullptr || trav->nodeInfo.nodeId() == it.trav);
         TraverseNode *orig = findTravById(trav, it.orig);
         if (!orig || trav->rendersEmpty())
             continue;
-        double opacity = 1 - it.age / options.lodBlendingDuration;
-        if (opacity > 0.01)
-            renderNodeDraws(trav, orig, it.uvClip, opacity);
+        renderNodeDraws(trav, orig, it.uvClip,
+            opacity(it.age, options.lodBlendingDuration, true));
     }
-    for (auto &it : currentDraws)
-        renderNodeDraws(it.trav, it.orig, it.uvClip, nan1());
 
     currentDraws.clear();
 }
@@ -526,7 +605,7 @@ void CameraImpl::updateCamera(double elapsedTime)
     {
         traverseRender(it->traverseRoot.get());
         // resolve blending
-        resolveBlending(it->traverseRoot.get(), layers[it]);
+        resolveBlending(it->traverseRoot.get(), layers[it], elapsedTime);
         // resolve subtile merging
         for (auto &os : opaqueSubtiles)
             os.second.resolve(os.first, this);

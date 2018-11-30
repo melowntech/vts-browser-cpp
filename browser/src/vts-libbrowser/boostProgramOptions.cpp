@@ -284,12 +284,6 @@ void optionsConfigNavigation(
         ->default_value(opts->debugRenderTargetPosition)
         ->implicit_value(!opts->debugRenderTargetPosition),
         "debugRenderTargetPosition")
-
-    ((section + "debugRenderAltitudeShiftCorners").c_str(),
-        po::value<bool>(&opts->debugRenderAltitudeShiftCorners)
-        ->default_value(opts->debugRenderAltitudeShiftCorners)
-        ->implicit_value(!opts->debugRenderAltitudeShiftCorners),
-        "debugRenderAltitudeShiftCorners")
     ;
 }
 

@@ -665,6 +665,14 @@ public:
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                     }
 
+                    // lodBlendingDuration
+                    nk_label(&ctx, "Blend duration:", NK_TEXT_LEFT);
+                    c.lodBlendingDuration = nk_slide_float(&ctx,
+                        0.0, c.lodBlendingDuration, 10, 0.1);
+                    sprintf(buffer, "%3.1f", c.lodBlendingDuration);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                    c.lodBlending = c.lodBlendingDuration > 0;
+
                     // maxTexelToPixelScale
                     nk_label(&ctx, "Texel to pixel:", NK_TEXT_LEFT);
                     c.maxTexelToPixelScale = nk_slide_float(&ctx,
@@ -728,11 +736,6 @@ public:
                 // render target position
                 n.debugRenderTargetPosition = nk_check_label(&ctx,
                             "target pos.", n.debugRenderTargetPosition);
-
-                // render altitude shift corners
-                n.debugRenderAltitudeShiftCorners = nk_check_label(&ctx,
-                    "altitude shift corners",
-                    n.debugRenderAltitudeShiftCorners);
 
                 // flat shading
                 c.debugFlatShading = nk_check_label(&ctx, "flat shading",

@@ -154,9 +154,9 @@ U vecToUblas(const T &t)
     return res;
 }
 
-VTS_API double nan1();
-VTS_API vec2 nan2();
-VTS_API vec3 nan3();
+inline double nan1() { return std::numeric_limits<double>::quiet_NaN(); }
+inline vec2 nan2() { return vec2(nan1(), nan1()); }
+inline vec3 nan3() { return vec3(nan1(), nan1(), nan1()); }
 
 } // namespace vts
 

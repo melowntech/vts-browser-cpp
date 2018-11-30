@@ -61,6 +61,7 @@ public:
     vec4f uvClip;
     TraverseNode *trav;
     TraverseNode *orig;
+    float age;
 
     CurrentDraw(TraverseNode *trav, TraverseNode *orig, const vec4f &uvClip);
 };
@@ -71,7 +72,7 @@ public:
     vec4f uvClip;
     TileId trav;
     TileId orig;
-    double age;
+    float age;
 
     OldDraw(const CurrentDraw &current);
 };
@@ -164,7 +165,8 @@ public:
     void gridPreloadProcess(TraverseNode *root);
     void gridPreloadProcess(TraverseNode *trav,
                             const std::vector<TileId> &requests);
-    void resolveBlending(TraverseNode *root, CameraMapLayer &layer);
+    void resolveBlending(TraverseNode *root,
+                CameraMapLayer &layer, float elapsedTime);
     void sortOpaqueFrontToBack();
     void updateCamera(double elapsedTime);
     void suggestedNearFar(double &near_, double &far_);

@@ -53,6 +53,7 @@ void clearGlState()
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glPolygonOffset(0, 0);
     checkGlImpl("cleared gl state");
 }
 
@@ -395,11 +396,13 @@ public:
         glEnable(GL_BLEND);
         glEnable(GL_POLYGON_OFFSET_FILL);
         glPolygonOffset(0, -10);
+        glDepthMask(GL_FALSE);
         shaderSurface->bind();
         enableClipDistance(true);
         for (const DrawTask &t : draws->transparent)
             drawSurface(t);
         enableClipDistance(false);
+        glDepthMask(GL_TRUE);
         glDisable(GL_POLYGON_OFFSET_FILL);
         CHECK_GL("rendered transparent");
 

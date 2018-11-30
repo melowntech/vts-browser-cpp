@@ -144,14 +144,14 @@ std::string MapRuntimeOptions::toJson() const
 
 CameraOptions::CameraOptions() :
     maxTexelToPixelScale(1.2),
-    lodBlendingDuration(5.0),
+    lodBlendingDuration(1.0),
     fixedTraversalDistance(10000),
     fixedTraversalLod(15),
     balancedGridLodOffset(5),
     balancedGridNeighborsDistance(1),
+    lodBlending(0),
     traverseModeSurfaces(TraverseMode::Balanced),
     traverseModeGeodata(TraverseMode::Hierarchical),
-    lodBlending(true),
     debugDetachedCamera(false),
     debugFlatShading(false),
     debugRenderSurrogates(false),
@@ -176,9 +176,9 @@ void CameraOptions::applyJson(const std::string &json)
     AJ(fixedTraversalLod, asUInt);
     AJ(balancedGridLodOffset, asUInt);
     AJ(balancedGridNeighborsDistance, asUInt);
+    AJ(lodBlending, asUInt);
     AJE(traverseModeSurfaces, TraverseMode);
     AJE(traverseModeGeodata, TraverseMode);
-    AJ(lodBlending, asBool);
     AJ(debugDetachedCamera, asBool);
     AJ(debugFlatShading, asBool);
     AJ(debugRenderSurrogates, asBool);
@@ -196,9 +196,9 @@ std::string CameraOptions::toJson() const
     TJ(fixedTraversalLod, asUInt);
     TJ(balancedGridLodOffset, asUInt);
     TJ(balancedGridNeighborsDistance, asUInt);
+    TJ(lodBlending, asUInt);
     TJE(traverseModeSurfaces, TraverseMode);
     TJE(traverseModeGeodata, TraverseMode);
-    TJ(lodBlending, asBool);
     TJ(debugDetachedCamera, asBool);
     TJ(debugFlatShading, asBool);
     TJ(debugRenderSurrogates, asBool);
@@ -231,8 +231,7 @@ NavigationOptions::NavigationOptions() :
     cameraNormalization(true),
     cameraAltitudeChanges(true),
     debugRenderObjectPosition(false),
-    debugRenderTargetPosition(false),
-    debugRenderAltitudeShiftCorners(false)
+    debugRenderTargetPosition(false)
 {}
 
 NavigationOptions::NavigationOptions(const std::string &json)
@@ -268,7 +267,6 @@ void NavigationOptions::applyJson(const std::string &json)
     AJ(cameraAltitudeChanges, asBool);
     AJ(debugRenderObjectPosition, asBool);
     AJ(debugRenderTargetPosition, asBool);
-    AJ(debugRenderAltitudeShiftCorners, asBool);
 }
 
 std::string NavigationOptions::toJson() const
@@ -297,7 +295,6 @@ std::string NavigationOptions::toJson() const
     TJ(cameraNormalization, asBool);
     TJ(debugRenderObjectPosition, asBool);
     TJ(debugRenderTargetPosition, asBool);
-    TJ(debugRenderAltitudeShiftCorners, asBool);
     return jsonToString(v);
 }
 

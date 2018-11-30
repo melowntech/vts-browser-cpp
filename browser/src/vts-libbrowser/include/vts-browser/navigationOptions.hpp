@@ -99,7 +99,6 @@ public:
 
     bool debugRenderObjectPosition;
     bool debugRenderTargetPosition;
-    bool debugRenderAltitudeShiftCorners;
 };
 
 } // namespace vts

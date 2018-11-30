@@ -70,11 +70,14 @@ public:
     // etc.
     uint32 balancedGridNeighborsDistance;
 
+    // enable blending lods to prevend lod popping
+    // 0: disable
+    // 1: enable, simple
+    // 2: enable, detect draws near edges
+    uint32 lodBlending;
+
     TraverseMode traverseModeSurfaces;
     TraverseMode traverseModeGeodata;
-
-    // enable blending lods to prevend lod popping
-    bool lodBlending;
 
     bool debugDetachedCamera;
     bool debugFlatShading;

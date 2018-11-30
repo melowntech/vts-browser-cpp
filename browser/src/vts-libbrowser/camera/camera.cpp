@@ -459,7 +459,9 @@ void CameraImpl::resolveBlending(TraverseNode *root,
 
     // generate lastDraws for next frame
     layer.lastDraws.clear();
+#ifndef NO_UNORDERED_MAP
     layer.lastDraws.reserve(currentDraws.size());
+#endif
     for (auto &it : currentDraws)
     {
         assert(layer.lastDraws.count(it.orig->nodeInfo.nodeId()) == 0);
@@ -469,11 +471,15 @@ void CameraImpl::resolveBlending(TraverseNode *root,
     // detect current draws that have nothing to blend with
     {
         std::unordered_map<TileId, bool> currents;
+#ifndef NO_UNORDERED_MAP
         currents.reserve(currentDraws.size());
+#endif
         for (auto &it : currentDraws)
             currents[it.orig->nodeInfo.nodeId()] = false;
         std::unordered_set<TileId> blends;
+#ifndef NO_UNORDERED_MAP
         blends.reserve(layer.blendDraws.size());
+#endif
         for (auto &it : layer.blendDraws)
         {
             blends.insert(it.orig);

@@ -64,6 +64,7 @@
     // some debuggers are unable to show contents of unordered containers
     #define unordered_map map
     #define unordered_set set
+    #define NO_UNORDERED_MAP
 #endif
 
 namespace vts

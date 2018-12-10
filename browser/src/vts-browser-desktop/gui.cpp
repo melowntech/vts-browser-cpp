@@ -99,6 +99,12 @@ static const char *navigationModeNames[] = {
     "Seamless",
 };
 
+static const char *lodBlendingModeNames[] = {
+    "Off",
+    "Basic",
+    "Advanced",
+};
+
 } // namespace
 
 Mark::Mark() : open(false)
@@ -602,8 +608,9 @@ public:
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Rendering", NK_MINIMIZED))
             {
                 {
-                    float ratio[] = { width * 0.4f, width * 0.6f };
-                    nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+                    float ratio[] = { width * 0.4f, width * 0.45f,
+                        width * 0.15f };
+                    nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
 
                     // traverse mode (surfaces)
                     nk_label(&ctx, "Surfaces:", NK_TEXT_LEFT);
@@ -622,6 +629,7 @@ public:
                         }
                         nk_combo_end(&ctx);
                     }
+                    nk_label(&ctx, "", NK_TEXT_RIGHT);
 
                     // traverse mode (geodata)
                     nk_label(&ctx, "Geodata:", NK_TEXT_LEFT);
@@ -640,12 +648,7 @@ public:
                         }
                         nk_combo_end(&ctx);
                     }
-                }
-
-                {
-                    float ratio[] = { width * 0.4f, width * 0.45f,
-                        width * 0.15f };
-                    nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
+                    nk_label(&ctx, "", NK_TEXT_RIGHT);
 
                     // balanced grids
                     if (c.traverseModeSurfaces == TraverseMode::Balanced)
@@ -665,13 +668,34 @@ public:
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                     }
 
+                    // lodBlending
+                    nk_label(&ctx, "Lod Blend:", NK_TEXT_LEFT);
+                    if (nk_combo_begin_label(&ctx,
+                        lodBlendingModeNames[c.lodBlending],
+                        nk_vec2(nk_widget_width(&ctx), 200)))
+                    {
+                        nk_layout_row_dynamic(&ctx, 16, 1);
+                        for (unsigned i = 0; i < sizeof(lodBlendingModeNames)
+                            / sizeof(lodBlendingModeNames[0]); i++)
+                        {
+                            if (nk_combo_item_label(&ctx,
+                                lodBlendingModeNames[i],
+                                NK_TEXT_LEFT))
+                                c.lodBlending = i;
+                        }
+                        nk_combo_end(&ctx);
+                    }
+                    nk_label(&ctx, "", NK_TEXT_RIGHT);
+
                     // lodBlendingDuration
-                    nk_label(&ctx, "Blend duration:", NK_TEXT_LEFT);
-                    c.lodBlendingDuration = nk_slide_float(&ctx,
-                        0.0, c.lodBlendingDuration, 10, 0.1);
-                    sprintf(buffer, "%3.1f", c.lodBlendingDuration);
-                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                    c.lodBlending = c.lodBlendingDuration > 0;
+                    if (c.lodBlending)
+                    {
+                        nk_label(&ctx, "Blend duration:", NK_TEXT_LEFT);
+                        c.lodBlendingDuration = nk_slide_float(&ctx,
+                            0.0, c.lodBlendingDuration, 10, 0.1);
+                        sprintf(buffer, "%3.1f", c.lodBlendingDuration);
+                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                    }
 
                     // maxTexelToPixelScale
                     nk_label(&ctx, "Texel to pixel:", NK_TEXT_LEFT);

@@ -359,6 +359,14 @@ bool vtsMapGetConfigReady(vtsHMap map)
     return false;
 }
 
+bool vtsMapGetProjected(vtsHMap map)
+{
+    C_BEGIN
+    return map->p->getMapProjected();
+    C_END
+    return false;
+}
+
 bool vtsMapGetRenderComplete(vtsHMap map)
 {
     C_BEGIN

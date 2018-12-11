@@ -243,6 +243,10 @@ public static extern bool vtsMapGetConfigReady(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 [return: MarshalAs(UnmanagedType.I1)]
+public static extern bool vtsMapGetProjected(IntPtr map);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.I1)]
 public static extern bool vtsMapGetRenderComplete(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]

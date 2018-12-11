@@ -49,6 +49,7 @@ VTS_API const char *vtsMapGetConfigPath(vtsHMap map);
 // readyness status
 VTS_API bool vtsMapGetConfigAvailable(vtsHMap map);
 VTS_API bool vtsMapGetConfigReady(vtsHMap map);
+VTS_API bool vtsMapGetProjected(vtsHMap map);
 VTS_API bool vtsMapGetRenderComplete(vtsHMap map);
 VTS_API double vtsMapGetRenderProgress(vtsHMap map);
 

@@ -93,6 +93,13 @@ namespace vts
             return res;
         }
 
+        public bool GetProjected()
+        {
+            bool res = BrowserInterop.vtsMapGetProjected(Handle);
+            Util.CheckInterop();
+            return res;
+        }
+
         public bool GetMapRenderComplete()
         {
             bool res = BrowserInterop.vtsMapGetRenderComplete(Handle);
@@ -106,7 +113,7 @@ namespace vts
             Util.CheckInterop();
             return res;
         }
-        
+
         public void DataInitialize()
         {
             BrowserInterop.vtsMapDataInitialize(Handle);

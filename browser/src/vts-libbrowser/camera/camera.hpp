@@ -112,11 +112,14 @@ public:
     std::unordered_map<TraverseNode*, SubtilesMerger> opaqueSubtiles;
     std::map<std::weak_ptr<MapLayer>, CameraMapLayer,
             std::owner_less<std::weak_ptr<MapLayer>>> layers;
-    mat4 viewProj;
+    // *Actual = corresponds to current camera settings
+    // *Render, *Culling, updated only when camera is NOT detached
+    mat4 viewProjActual;
     mat4 viewProjRender;
-    mat4 viewRender;
+    mat4 viewProjCulling;
+    mat4 viewActual;
     mat4 apiProj;
-    vec4 frustumPlanes[6];
+    vec4 cullingPlanes[6];
     vec3 perpendicularUnitVector;
     vec3 forwardUnitVector;
     vec3 cameraPosPhys;

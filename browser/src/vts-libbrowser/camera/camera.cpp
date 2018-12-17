@@ -108,14 +108,14 @@ bool CameraImpl::visibilityTest(TraverseNode *trav)
 {
     assert(trav->meta);
     // aabb test
-    if (!aabbTest(trav->aabbPhys, frustumPlanes))
+    if (!aabbTest(trav->aabbPhys, cullingPlanes))
         return false;
     // additional obb test
     if (trav->obb)
     {
         TraverseNode::Obb &obb = *trav->obb;
         vec4 planes[6];
-        vts::frustumPlanes(viewProj * obb.rotInv, planes);
+        vts::frustumPlanes(viewProjCulling * obb.rotInv, planes);
         if (!aabbTest(obb.points, planes))
             return false;
     }
@@ -194,8 +194,8 @@ double CameraImpl::coarsenessValue(TraverseNode *trav)
             vec3 up = perpendicularUnitVector * texelSize;
             vec3 c1 = c - up * 0.5;
             vec3 c2 = c1 + up;
-            c1 = vec4to3(viewProj * vec3to4(c1, 1), true);
-            c2 = vec4to3(viewProj * vec3to4(c2, 1), true);
+            c1 = vec4to3(viewProjRender * vec3to4(c1, 1), true);
+            c2 = vec4to3(viewProjRender * vec3to4(c2, 1), true);
             double len = std::abs(c2[1] - c1[1])
                 * windowHeight * 0.5;
             result = std::max(result, len);
@@ -549,19 +549,19 @@ void CameraImpl::updateCamera(double elapsedTime)
     if (windowWidth == 0 || windowHeight == 0)
         return;
 
-    mat4 view = lookAt(eye, target, up);
-
     // render variables
-    viewProjRender = apiProj * view;
-    viewRender = view;
+    viewActual = lookAt(eye, target, up);
+    viewProjActual = apiProj * viewActual;
     if (!options.debugDetachedCamera)
     {
-        viewProj = viewProjRender;
+        vec3 off = normalize(target - eye) * options.cullingOffsetDistance;
+        viewProjCulling = apiProj * lookAt(eye - off, target, up);
+        viewProjRender = viewProjActual;
         vec3 forward = normalize(target - eye);
         perpendicularUnitVector
             = normalize(cross(cross(up, forward), forward));
         forwardUnitVector = forward;
-        vts::frustumPlanes(viewProj, frustumPlanes);
+        vts::frustumPlanes(viewProjCulling, cullingPlanes);
         cameraPosPhys = eye;
         focusPosPhys = target;
     }
@@ -576,7 +576,7 @@ void CameraImpl::updateCamera(double elapsedTime)
         {
             std::vector<vec3> corners;
             corners.reserve(8);
-            mat4 m = viewProj.inverse();
+            mat4 m = viewProjRender.inverse();
             for (int x = 0; x < 2; x++)
                 for (int y = 0; y < 2; y++)
                     for (int z = 0; z < 2; z++)
@@ -601,7 +601,7 @@ void CameraImpl::updateCamera(double elapsedTime)
     // update draws camera
     {
         CameraDraws::Camera &c = draws.camera;
-        matToRaw(view, c.view);
+        matToRaw(viewActual, c.view);
         matToRaw(apiProj, c.proj);
         vecToRaw(eye, c.eye);
     }

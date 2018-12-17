@@ -52,7 +52,7 @@ DrawTask::DrawTask(const CameraImpl *m, const RenderTask &r)
         texColor = r.textureColor->info.userData;
     if (r.textureMask)
         texMask = r.textureMask->info.userData;
-    mat4f mv = (m->viewRender * r.model).cast<float>();
+    mat4f mv = (m->viewActual * r.model).cast<float>();
     for (int i = 0; i < 16; i++)
         this->mv[i] = mv(i);
     for (int i = 0; i < 9; i++)

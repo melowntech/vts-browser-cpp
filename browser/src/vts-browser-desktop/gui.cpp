@@ -697,6 +697,13 @@ public:
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                     }
 
+                    // cullingOffsetDistance
+                    nk_label(&ctx, "Culling offset:", NK_TEXT_LEFT);
+                    c.cullingOffsetDistance = nk_slide_float(&ctx,
+                        0.0, c.cullingOffsetDistance, 500, 1.0);
+                    sprintf(buffer, "%3.1f", c.cullingOffsetDistance);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
                     // maxTexelToPixelScale
                     nk_label(&ctx, "Texel to pixel:", NK_TEXT_LEFT);
                     c.maxTexelToPixelScale = nk_slide_float(&ctx,

@@ -50,13 +50,15 @@ public:
     // duration of lod blending in seconds
     double lodBlendingDuration;
 
+    // nodes this far from the camera frustum will still be included for render
+    // this is useful to include shadow casters outside camera frustum
+    double cullingOffsetDistance;
+
     // maximum distance of meshes emited for fixed traversal mode
     // defined in physical length units (metres)
-    // for colliders, it may be overriden from callback
     double fixedTraversalDistance;
 
     // desired lod used with fixed traversal mode
-    // for colliders, it may be overriden from callback
     uint32 fixedTraversalLod;
 
     // coarser lod offset for grids for use with balanced traversal

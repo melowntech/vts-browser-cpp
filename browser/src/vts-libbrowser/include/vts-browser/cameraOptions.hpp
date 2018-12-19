@@ -47,9 +47,6 @@ public:
     //   but reduces memory usage and network bandwith
     double maxTexelToPixelScale;
 
-    // duration of lod blending in seconds
-    double lodBlendingDuration;
-
     // nodes this far from the camera frustum will still be included for render
     // this is useful to include shadow casters outside camera frustum
     double cullingOffsetDistance;
@@ -77,6 +74,9 @@ public:
     // 1: enable, simple
     // 2: enable, detect draws near edges
     uint32 lodBlending;
+
+    // duration of lod blending in frames
+    uint32 lodBlendingDuration;
 
     TraverseMode traverseModeSurfaces;
     TraverseMode traverseModeGeodata;

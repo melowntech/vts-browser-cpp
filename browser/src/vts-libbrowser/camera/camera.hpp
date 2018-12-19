@@ -58,30 +58,27 @@ namespace vts
 class CurrentDraw
 {
 public:
-    vec4f uvClip;
     TraverseNode *trav;
     TraverseNode *orig;
-    float age;
 
-    CurrentDraw(TraverseNode *trav, TraverseNode *orig, const vec4f &uvClip);
+    CurrentDraw(TraverseNode *trav, TraverseNode *orig);
 };
 
 class OldDraw
 {
 public:
-    vec4f uvClip;
     TileId trav;
     TileId orig;
-    float age;
+    uint32 age;
 
     OldDraw(const CurrentDraw &current);
+    OldDraw(const TileId &id);
 };
 
 class CameraMapLayer
 {
 public:
-    std::vector<OldDraw> blendDraws; // draws rendered in previous frames suitable for blending
-    std::unordered_map<TileId, OldDraw> lastDraws; // draws requested to render in last frame
+    std::vector<OldDraw> blendDraws;
 };
 
 class SubtilesMerger
@@ -138,16 +135,12 @@ public:
     bool visibilityTest(TraverseNode *trav);
     bool coarsenessTest(TraverseNode *trav);
     double coarsenessValue(TraverseNode *trav);
-    void renderNode(TraverseNode *trav,
-                    TraverseNode *orig, const vec4f &uvClip);
+    void renderNode(TraverseNode *trav, TraverseNode *orig);
     void renderNode(TraverseNode *trav);
-    bool findNodeCoarser(TraverseNode *&trav,
-                    TraverseNode *orig, vec4f &uvClip);
-    void renderNodeCoarser(TraverseNode *trav,
-                    TraverseNode *orig, vec4f uvClip);
+    void renderNodeCoarser(TraverseNode *trav, TraverseNode *orig);
     void renderNodeCoarser(TraverseNode *trav);
-    void renderNodeDraws(TraverseNode *trav,
-        TraverseNode *orig, const vec4f &uvClip, float opacity);
+    void renderNodeDraws(TraverseNode *trav, TraverseNode *orig,
+                            float opacity);
     bool generateMonolithicGeodataTrav(TraverseNode *trav);
     std::shared_ptr<GpuTexture> travInternalTexture(TraverseNode *trav,
                                                   uint32 subMeshIndex);

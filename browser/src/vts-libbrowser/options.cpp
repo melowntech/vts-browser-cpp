@@ -144,15 +144,15 @@ std::string MapRuntimeOptions::toJson() const
 
 CameraOptions::CameraOptions() :
     maxTexelToPixelScale(1.2),
-    lodBlendingDuration(1.0),
     cullingOffsetDistance(0.0),
     fixedTraversalDistance(10000),
     fixedTraversalLod(15),
     balancedGridLodOffset(5),
     balancedGridNeighborsDistance(1),
     lodBlending(0),
+    lodBlendingDuration(60),
     traverseModeSurfaces(TraverseMode::Balanced),
-    traverseModeGeodata(TraverseMode::Hierarchical),
+    traverseModeGeodata(TraverseMode::Flat),
     debugDetachedCamera(false),
     debugFlatShading(false),
     debugRenderSurrogates(false),
@@ -172,13 +172,13 @@ void CameraOptions::applyJson(const std::string &json)
 {
     Json::Value v = stringToJson(json);
     AJ(maxTexelToPixelScale, asDouble);
-    AJ(lodBlendingDuration, asDouble);
     AJ(cullingOffsetDistance, asDouble);
     AJ(fixedTraversalDistance, asDouble);
     AJ(fixedTraversalLod, asUInt);
     AJ(balancedGridLodOffset, asUInt);
     AJ(balancedGridNeighborsDistance, asUInt);
     AJ(lodBlending, asUInt);
+    AJ(lodBlendingDuration, asUInt);
     AJE(traverseModeSurfaces, TraverseMode);
     AJE(traverseModeGeodata, TraverseMode);
     AJ(debugDetachedCamera, asBool);
@@ -193,13 +193,13 @@ std::string CameraOptions::toJson() const
 {
     Json::Value v;
     TJ(maxTexelToPixelScale, asDouble);
-    TJ(lodBlendingDuration, asDouble);
     TJ(cullingOffsetDistance, asDouble);
     TJ(fixedTraversalDistance, asDouble);
     TJ(fixedTraversalLod, asUInt);
     TJ(balancedGridLodOffset, asUInt);
     TJ(balancedGridNeighborsDistance, asUInt);
     TJ(lodBlending, asUInt);
+    TJ(lodBlendingDuration, asUInt);
     TJE(traverseModeSurfaces, TraverseMode);
     TJE(traverseModeGeodata, TraverseMode);
     TJ(debugDetachedCamera, asBool);

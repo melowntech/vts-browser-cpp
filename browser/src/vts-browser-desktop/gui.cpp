@@ -102,7 +102,7 @@ static const char *navigationModeNames[] = {
 static const char *lodBlendingModeNames[] = {
     "Off",
     "Basic",
-    "Advanced",
+    "Precise",
 };
 
 } // namespace
@@ -669,7 +669,7 @@ public:
                     }
 
                     // lodBlending
-                    nk_label(&ctx, "Lod Blend:", NK_TEXT_LEFT);
+                    nk_label(&ctx, "Lod blending:", NK_TEXT_LEFT);
                     if (nk_combo_begin_label(&ctx,
                         lodBlendingModeNames[c.lodBlending],
                         nk_vec2(nk_widget_width(&ctx), 200)))
@@ -691,9 +691,9 @@ public:
                     if (c.lodBlending)
                     {
                         nk_label(&ctx, "Blend duration:", NK_TEXT_LEFT);
-                        c.lodBlendingDuration = nk_slide_float(&ctx,
-                            0.0, c.lodBlendingDuration, 10, 0.1);
-                        sprintf(buffer, "%3.1f", c.lodBlendingDuration);
+                        c.lodBlendingDuration = nk_slide_int(&ctx,
+                            0, c.lodBlendingDuration, 1000, 5);
+                        sprintf(buffer, "%4d", c.lodBlendingDuration);
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                     }
 

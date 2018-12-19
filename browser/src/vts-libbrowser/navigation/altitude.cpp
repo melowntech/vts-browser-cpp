@@ -49,12 +49,13 @@ double generalInterpolation(
 }
 
 TraverseNode *findTravSds(TraverseNode *where,
-        const vec2 &pointSds, uint32 maxLod)
+        const vec2 &pointSds, uint32 maxLod, uint32 currentTime)
 {
     assert(where && where->meta);
     TraverseNode *t = where;
-    while (t->nodeInfo.nodeId().lod < maxLod)
+    while (t->id().lod < maxLod)
     {
+        t->lastAccessTime = currentTime;
         auto p = t;
         for (auto &it : t->childs)
         {
@@ -151,7 +152,7 @@ bool MapImpl::getPositionAltitude(double &result,
         return false;
     for (int i = 0; i < 4; i++)
     {
-        auto t = findTravSds(travRoot, points[i], desiredLod);
+        auto t = findTravSds(travRoot, points[i], desiredLod, renderTickIndex);
         if (!t)
             return false;
         if (!t->surrogateNav)
@@ -159,7 +160,7 @@ bool MapImpl::getPositionAltitude(double &result,
         math::Extents2 ext = t->nodeInfo.extents();
         points[i] = vecFromUblas<vec2>(ext.ll + ext.ur) * 0.5;
         altitudes[i] = *t->surrogateNav;
-        minUsedLod = std::min(minUsedLod, (uint32)t->nodeInfo.nodeId().lod);
+        minUsedLod = std::min(minUsedLod, (uint32)t->id().lod);
         /*
         if (options.debugRenderAltitudeShiftCorners)
         {

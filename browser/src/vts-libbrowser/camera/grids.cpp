@@ -71,7 +71,7 @@ void SubtilesMerger::resolve(TraverseNode *trav, CameraImpl *impl)
     assert(!subtiles.empty());
     std::sort(subtiles.begin(), subtiles.end(),
         [](const Subtile &a, const Subtile &b) {
-        return a.orig->nodeInfo.nodeId() < b.orig->nodeInfo.nodeId();
+        return a.orig->id() < b.orig->id();
     });
     // merge consecutive subtiles that form a line in the x direction
     // better algorithm may exist, but this will work for now
@@ -80,8 +80,8 @@ void SubtilesMerger::resolve(TraverseNode *trav, CameraImpl *impl)
     {
         Subtile &p = *prevIt;
         Subtile &n = *it;
-        if (p.orig->nodeInfo.nodeId().lod == n.orig->nodeInfo.nodeId().lod
-            && p.orig->nodeInfo.nodeId().y == n.orig->nodeInfo.nodeId().y
+        if (p.orig->id().lod == n.orig->id().lod
+            && p.orig->id().y == n.orig->id().y
             && leftNeighbor(p.uvClip, n.uvClip))
         {
             p.uvClip[2] = n.uvClip[2];
@@ -117,7 +117,7 @@ void CameraImpl::gridPreloadRequest(TraverseNode *trav)
     }
 
     sint32 D = options.balancedGridNeighborsDistance;
-    TileId base = trav->nodeInfo.nodeId();
+    TileId base = trav->id();
     TileId::index_type m = 1 << base.lod;
     for (sint32 y = -D; y <= D; y++)
     {
@@ -149,7 +149,7 @@ void CameraImpl::gridPreloadProcess(TraverseNode *trav,
     if (!travInit(trav))
         return;
 
-    TileId myId = trav->nodeInfo.nodeId();
+    TileId myId = trav->id();
     std::vector<TileId> childRequests[4];
     for (auto &cr : childRequests)
         cr.reserve(requests.size());
@@ -172,7 +172,7 @@ void CameraImpl::gridPreloadProcess(TraverseNode *trav,
 
     for (const auto &c : trav->childs)
         gridPreloadProcess(c.get(), childRequests[
-            childIndex(myId, c->nodeInfo.nodeId())]);
+            childIndex(myId, c->id())]);
 }
 
 } // namespace vts

@@ -33,7 +33,7 @@ TraverseNode::TraverseNode(vts::MapLayer *layer, TraverseNode *parent,
                            const NodeInfo &nodeInfo)
     : layer(layer), parent(parent),
       nodeInfo(nodeInfo),
-      hash(std::hash<vts::TileId>()(nodeInfo.nodeId())),
+      hash(std::hash<vts::TileId>()(id())),
       surface(nullptr),
       lastAccessTime(0), lastRenderTime(0),
       priority(nan1())

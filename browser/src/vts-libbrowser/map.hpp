@@ -478,6 +478,7 @@ public:
     void clearRenders();
     bool rendersReady() const;
     bool rendersEmpty() const;
+    TileId id() const { return nodeInfo.nodeId(); }
 };
 
 class MapLayer

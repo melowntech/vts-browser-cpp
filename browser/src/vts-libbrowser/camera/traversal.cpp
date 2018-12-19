@@ -85,7 +85,7 @@ void CameraImpl::updateNodePriority(TraverseNode *trav)
 std::shared_ptr<GpuTexture> CameraImpl::travInternalTexture(TraverseNode *trav,
                                                        uint32 subMeshIndex)
 {
-    UrlTemplate::Vars vars(trav->nodeInfo.nodeId(),
+    UrlTemplate::Vars vars(trav->id(),
             vtslibs::vts::local(trav->nodeInfo), subMeshIndex);
     std::shared_ptr<GpuTexture> res = map->getTexture(
                 trav->surface->urlIntTex(vars));
@@ -149,7 +149,7 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
                 == vtslibs::registry::FreeLayer::Type::geodata)
         return generateMonolithicGeodataTrav(trav);
 
-    const TileId nodeId = trav->nodeInfo.nodeId();
+    const TileId nodeId = trav->id();
 
     // find all metatiles
     std::vector<std::shared_ptr<MetaTile>> metaTiles;
@@ -392,7 +392,7 @@ bool CameraImpl::travDetermineDraws(TraverseNode *trav)
 
 bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
 {
-    const TileId nodeId = trav->nodeInfo.nodeId();
+    const TileId nodeId = trav->id();
 
     // prefetch internal textures
     if (trav->meta->geometry())
@@ -546,7 +546,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
 
 bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
 {
-    const TileId nodeId = trav->nodeInfo.nodeId();
+    const TileId nodeId = trav->id();
     std::string geoName = trav->surface->urlGeodata(
             UrlTemplate::Vars(nodeId, vtslibs::vts::local(trav->nodeInfo)));
 
@@ -564,7 +564,7 @@ bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
         return false;
 
     std::shared_ptr<GpuGeodata> geo = map->getGeodata(geoName + "#$!gpu");
-    geo->update(style.second, features.second, trav->nodeInfo.nodeId().lod);
+    geo->update(style.second, features.second, trav->id().lod);
     geo->updatePriority(trav->priority);
     switch (map->getResourceValidity(geo))
     {
@@ -596,7 +596,7 @@ bool CameraImpl::travInit(TraverseNode *trav)
     {
         statistics.metaNodesTraversedTotal++;
         statistics.metaNodesTraversedPerLod[
-                std::min<uint32>(trav->nodeInfo.nodeId().lod,
+                std::min<uint32>(trav->id().lod,
                                  CameraStatistics::MaxLods-1)]++;
     }
 
@@ -747,7 +747,7 @@ void CameraImpl::travModeFixed(TraverseNode *trav)
     if (travDistance(trav, focusPosPhys) > options.fixedTraversalDistance)
         return;
 
-    if (trav->nodeInfo.nodeId().lod >= options.fixedTraversalLod
+    if (trav->id().lod >= options.fixedTraversalLod
         || trav->childs.empty())
     {
         touchDraws(trav);

@@ -467,6 +467,8 @@ void CameraImpl::resolveBlending(TraverseNode *root,
     if (options.lodBlending == 0)
         return;
 
+    uint32 dur3 = options.lodBlendingDuration / 3;
+
     // update blendDraws age and remove old
     {
         auto &old = layer.blendDraws;
@@ -486,7 +488,7 @@ void CameraImpl::resolveBlending(TraverseNode *root,
             if (it != currentSet.end())
             {
                 // prevent the draw from disappearing
-                b.age = std::min(b.age, options.lodBlendingDuration / 3);
+                b.age = std::min(b.age, dur3);
                 // prevent the draw from adding to blendDraws
                 currentSet.erase(it);
             }
@@ -495,6 +497,33 @@ void CameraImpl::resolveBlending(TraverseNode *root,
         for (auto &c : currentSet)
             layer.blendDraws.emplace_back(c);
         currentDraws.clear();
+    }
+
+    // detect appearing draws that have nothing to blend with
+    if (options.lodBlending >= 2)
+    {
+        std::unordered_set<TileId> blendSet;
+        for (auto &b : layer.blendDraws)
+            if (b.age >= dur3 && b.age <= 2 * dur3)
+                blendSet.insert(b.orig);
+        for (auto &b : layer.blendDraws)
+        {
+            if (b.age >= dur3)
+                continue;
+            bool ok = false;
+            TileId id = b.orig;
+            while (id.lod > 0)
+            {
+                if (blendSet.count(id))
+                {
+                    ok = true;
+                    break;
+                }
+                id = vtslibs::vts::parent(id);
+            }
+            if (!ok)
+                b.age = dur3;
+        }
     }
 
     // render blend draws

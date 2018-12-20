@@ -22,7 +22,7 @@ that bring VTS client capabilities to your native applications.
 - Highly flexible -> almost all aspects can be changed through configuration.
 - Rendering API independent -> the browser library, on its own, does not render anything.
   Instead, it just tells the application what to render.
-  - A convenient OpenGL and OpenGL ES rendering library is also provided.
+  - Separate OpenGL and OpenGL ES rendering library is also provided.
 - Clean C++ API.
   - C and C# bindings are available too.
 - Works on Windows, Linux, macOS and iOS.
@@ -44,7 +44,7 @@ Browser documentation is available at the
 Documentation for the whole VTS is at
 [Read the Docs](https://melown.readthedocs.io).
 
-## Obtaining the Browser Libraries
+## Obtaining the VTS Browser Libraries
 
 ### Install from Melown Repository (Linux Desktop)
 

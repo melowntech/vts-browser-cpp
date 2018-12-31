@@ -431,18 +431,19 @@ namespace
 
 float blendingOpacity(uint32 age, uint32 duration)
 {
-    //  1|  -nan-   
-    //   | /     \  
-    //   |/       \ 
-    //  0+---------+
-    //   0   age   3
-    assert(age >= 0 && age <= duration);
-    uint32 d3 = duration / 3;
-    if (age < d3)
-        return float(age) / d3;
-    if (age > 2 * d3)
-        return 1 - float(age - 2 * d3) / d3;
-    return nan1();
+    // opacity
+    //  1|   +---+    
+    //   |  /|   |\   
+    //   | / |   | \  
+    //   |/  |   |  \ 
+    //  0+---+---+---+
+    //   0  0.5  1  1.5 age/duration
+    assert(age >= 0 && age <= duration * 3 / 2);
+    if (age < duration / 2)
+        return float(age) / (duration / 2);
+    if (age > duration)
+        return 1 - float(age - duration) / (duration / 2);
+    return nan1(); // full opacity is signaled by nan
 }
 
 struct OldHash
@@ -467,19 +468,19 @@ void CameraImpl::resolveBlending(TraverseNode *root,
     if (options.lodBlending == 0)
         return;
 
-    uint32 dur3 = options.lodBlendingDuration / 3;
-
     // update blendDraws age and remove old
     {
+        uint32 duration = options.lodBlendingDuration * 3 / 2;
         auto &old = layer.blendDraws;
         old.erase(std::remove_if(old.begin(), old.end(),
             [&](OldDraw &b) {
-            return ++b.age > options.lodBlendingDuration;
+            return ++b.age > duration;
         }), old.end());
     }
 
     // apply current draws
     {
+        uint32 halfDuration = options.lodBlendingDuration / 2;
         std::unordered_set<OldDraw, OldHash> currentSet(currentDraws.begin(),
             currentDraws.end());
         for (auto &b : layer.blendDraws)
@@ -488,7 +489,7 @@ void CameraImpl::resolveBlending(TraverseNode *root,
             if (it != currentSet.end())
             {
                 // prevent the draw from disappearing
-                b.age = std::min(b.age, dur3);
+                b.age = std::min(b.age, halfDuration);
                 // prevent the draw from adding to blendDraws
                 currentSet.erase(it);
             }
@@ -502,19 +503,21 @@ void CameraImpl::resolveBlending(TraverseNode *root,
     // detect appearing draws that have nothing to blend with
     if (options.lodBlending >= 2)
     {
-        std::unordered_set<TileId> blendSet;
+        uint32 halfDuration = options.lodBlendingDuration / 2;
+        uint32 duration = options.lodBlendingDuration;
+        std::unordered_set<TileId> opaqueTiles;
         for (auto &b : layer.blendDraws)
-            if (b.age >= dur3 && b.age <= 2 * dur3)
-                blendSet.insert(b.orig);
+            if (b.age >= halfDuration && b.age <= duration)
+                opaqueTiles.insert(b.orig);
         for (auto &b : layer.blendDraws)
         {
-            if (b.age >= dur3)
-                continue;
+            if (b.age >= halfDuration)
+                continue; // this draw has already fully appeared
             bool ok = false;
             TileId id = b.orig;
             while (id.lod > 0)
             {
-                if (blendSet.count(id))
+                if (opaqueTiles.count(id))
                 {
                     ok = true;
                     break;
@@ -522,7 +525,7 @@ void CameraImpl::resolveBlending(TraverseNode *root,
                 id = vtslibs::vts::parent(id);
             }
             if (!ok)
-                b.age = dur3;
+                b.age = halfDuration; // skip the appearing phase
         }
     }
 

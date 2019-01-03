@@ -55,6 +55,7 @@ public:
     void getViewportSize(uint32 &width, uint32 &height);
     void getView(double eye[3], double target[3], double up[3]);
     void getView(double view[16]);
+    void getProj(double proj[16]);
 
     void suggestedNearFar(double &near_, double &far_);
 

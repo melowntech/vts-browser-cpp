@@ -96,6 +96,9 @@ public static extern void vtsCameraGetView(IntPtr cam, [Out] double[] eye, [Out]
 public static extern void vtsCameraGetViewMatrix(IntPtr cam, [Out] double[] view);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsCameraGetProjMatrix(IntPtr cam, [Out] double[] proj);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsCameraSuggestedNearFar(IntPtr cam, ref double near_, ref double far_);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
@@ -211,6 +214,9 @@ public static extern void vtsLogSetThreadName([MarshalAs(UnmanagedType.LPStr)] s
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsLogAddSink(uint mask, vtsLogCallbackType callback);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsLogClearSinks();
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsLog(uint level, [MarshalAs(UnmanagedType.LPStr)] string message);

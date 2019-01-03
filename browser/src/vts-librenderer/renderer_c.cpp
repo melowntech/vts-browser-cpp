@@ -40,10 +40,10 @@ void vtsCheckGl(const char *name)
     C_END
 }
 
-void vtsCheckGlFramebuffer()
+void vtsCheckGlFramebuffer(uint32 target)
 {
     C_BEGIN
-    vts::renderer::checkGlFramebuffer();
+    vts::renderer::checkGlFramebuffer(target);
     C_END
 }
 

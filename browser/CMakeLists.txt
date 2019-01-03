@@ -120,6 +120,10 @@ if(NOT VTS_BROWSER_TYPE STREQUAL "MODULE")
         add_subdirectory(src/nuklear)
         add_subdirectory(src/vts-browser-desktop)
         set(VS_STARTUP_PROJECT vts-browser-desktop)
+
+        # two cameras
+        message(STATUS "including vts-browser-two-cameras")
+        add_subdirectory(src/vts-browser-two-cameras)
     endif()
 
     # vts csharp libraries

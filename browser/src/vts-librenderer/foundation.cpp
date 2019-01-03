@@ -74,9 +74,9 @@ void checkGlImpl(const char *name)
     }
 }
 
-void checkGlFramebuffer()
+void checkGlFramebuffer(uint32 target)
 {
-    GLint err = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    GLint err = glCheckFramebufferStatus(target);
     switch (err)
     {
     case GL_FRAMEBUFFER_COMPLETE:

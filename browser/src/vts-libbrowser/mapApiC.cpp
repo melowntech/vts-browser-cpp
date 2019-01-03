@@ -278,6 +278,13 @@ void vtsLogAddSink(uint32 mask, vtsLogCallbackType callback)
     C_END
 }
 
+void vtsLogClearSinks()
+{
+    C_BEGIN
+    vts::clearLogSinks();
+    C_END
+}
+
 void vtsLog(uint32 level, const char *message)
 {
     try
@@ -547,6 +554,13 @@ void vtsCameraGetViewMatrix(vtsHCamera cam, double view[16])
 {
     C_BEGIN
     cam->p->getView(view);
+    C_END
+}
+
+void vtsCameraGetProjMatrix(vtsHCamera cam, double proj[16])
+{
+    C_BEGIN
+    cam->p->getProj(proj);
     C_END
 }
 

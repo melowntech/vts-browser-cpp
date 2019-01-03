@@ -105,6 +105,11 @@ void Camera::getView(double view[16])
     matToRaw(lookAt(impl->eye, impl->target, impl->up), view);
 }
 
+void Camera::getProj(double proj[16])
+{
+    matToRaw(impl->apiProj, proj);
+}
+
 void Camera::suggestedNearFar(double &near_, double &far_)
 {
     if (impl->map->mapconfigReady)

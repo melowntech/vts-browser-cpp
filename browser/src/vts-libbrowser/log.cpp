@@ -66,12 +66,12 @@ public:
     LogSink(LogLevel mask, std::function<void(const std::string&)> callback)
         : Sink((dbglog::level)mask, "app log sink"), callback(callback)
     {}
-    
+
     virtual void write(const std::string &line)
     {
         callback(line);
     }
-    
+
     std::function<void(const std::string&)> callback;
 };
 
@@ -81,6 +81,11 @@ void addLogSink(LogLevel mask, std::function<void(const std::string&)> callback)
 {
     auto s = boost::shared_ptr<LogSink>(new LogSink(mask, callback));
     dbglog::add_sink(s);
+}
+
+void clearLogSinks()
+{
+    dbglog::clear_sinks();
 }
 
 void log(LogLevel level, const std::string &message)

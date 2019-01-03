@@ -95,6 +95,14 @@ namespace vts
             return view;
         }
 
+        public double[] GetProj()
+        {
+            double[] proj = new double[16];
+            BrowserInterop.vtsCameraGetProjMatrix(Handle, proj);
+            Util.CheckInterop();
+            return proj;
+        }
+
         public void SuggestedNearFar(out double near, out double far)
         {
             near = far = 0;

@@ -39,7 +39,7 @@ typedef void *(*GLADloadproc)(const char *name);
 #endif
 
 VTSR_API void vtsCheckGl(const char *name);
-VTSR_API void vtsCheckGlFramebuffer();
+VTSR_API void vtsCheckGlFramebuffer(uint32 target);
 
 // initialize all gl functions
 // should be called once after the gl context has been created

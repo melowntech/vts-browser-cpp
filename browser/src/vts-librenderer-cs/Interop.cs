@@ -48,7 +48,7 @@ public delegate IntPtr GLADloadproc([MarshalAs(UnmanagedType.LPStr)] string name
 public static extern void vtsCheckGl([MarshalAs(UnmanagedType.LPStr)] string name);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsCheckGlFramebuffer();
+public static extern void vtsCheckGlFramebuffer(uint target);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsLoadGlFunctions(GLADloadproc functionLoader);

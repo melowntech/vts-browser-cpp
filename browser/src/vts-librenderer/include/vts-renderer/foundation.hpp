@@ -38,12 +38,14 @@ namespace vts { namespace renderer
 {
 
 VTSR_API void checkGlImpl(const char *name = "");
-VTSR_API void checkGlFramebuffer();
+VTSR_API void checkGlFramebuffer(uint32 target);
 
 #ifdef NDEBUG
 #define CHECK_GL(NAME)
+#define CHECK_GL_FRAMEBUFFER(TARGET)
 #else
 #define CHECK_GL(NAME) checkGlImpl(NAME)
+#define CHECK_GL_FRAMEBUFFER(TARGET) checkGlFramebuffer(TARGET)
 #endif
 
 // initialize all gl functions

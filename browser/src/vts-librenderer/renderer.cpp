@@ -321,7 +321,7 @@ public:
                     vars.textureTargetType, vars.depthRenderTexId, 0);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                     vars.textureTargetType, vars.colorRenderTexId, 0);
-            checkGlFramebuffer();
+            checkGlFramebuffer(GL_FRAMEBUFFER);
 
             // sample frame buffer
             glDeleteFramebuffers(1, &vars.frameReadBufferId);
@@ -329,15 +329,17 @@ public:
             glBindFramebuffer(GL_FRAMEBUFFER, vars.frameReadBufferId);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                                    GL_TEXTURE_2D, vars.depthReadTexId, 0);
-            checkGlFramebuffer();
+            checkGlFramebuffer(GL_FRAMEBUFFER);
 
             CHECK_GL("update frame buffer");
         }
 
         // initialize opengl
         glViewport(0, 0, options.width, options.height);
+        glScissor(0, 0, options.width, options.height);
         glActiveTexture(GL_TEXTURE0);
         glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
+        CHECK_GL_FRAMEBUFFER(GL_FRAMEBUFFER);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_CULL_FACE);
         #ifndef VTSR_OPENGLES
@@ -429,6 +431,8 @@ public:
         {
             glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, vars.frameReadBufferId);
+            CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
+            CHECK_GL_FRAMEBUFFER(GL_DRAW_FRAMEBUFFER);
             glBlitFramebuffer(0, 0, options.width, options.height,
                               0, 0, options.width, options.height,
                               GL_DEPTH_BUFFER_BIT, GL_NEAREST);
@@ -455,6 +459,8 @@ public:
         {
             glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, vars.frameReadBufferId);
+            CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
+            CHECK_GL_FRAMEBUFFER(GL_DRAW_FRAMEBUFFER);
             glBlitFramebuffer(0, 0, options.width, options.height,
                               0, 0, options.width, options.height,
                               GL_COLOR_BUFFER_BIT, GL_NEAREST);
@@ -472,10 +478,12 @@ public:
             bool same = w == options.width && h == options.height;
             glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, options.targetFrameBuffer);
+            CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
+            CHECK_GL_FRAMEBUFFER(GL_DRAW_FRAMEBUFFER);
             glBlitFramebuffer(0, 0, options.width, options.height,
-                              options.targetViewportX, options.targetViewportY,
-                              w, h, GL_COLOR_BUFFER_BIT,
-                              same ? GL_NEAREST : GL_LINEAR);
+                   options.targetViewportX, options.targetViewportY,
+                   options.targetViewportX + w, options.targetViewportY + h,
+                   GL_COLOR_BUFFER_BIT, same ? GL_NEAREST : GL_LINEAR);
             CHECK_GL("copied the color to screen (resolving multisampling)");
         }
 

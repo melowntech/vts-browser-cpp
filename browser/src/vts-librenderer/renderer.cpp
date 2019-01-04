@@ -755,7 +755,7 @@ public:
             glBindFramebuffer(GL_FRAMEBUFFER, fbId);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                    GL_TEXTURE_2D, texId, 0);
-            checkGlFramebuffer();
+            checkGlFramebuffer(GL_FRAMEBUFFER);
 
             shaderCopyDepth->bind();
             int pos[2] = { (int)x, (int)y };

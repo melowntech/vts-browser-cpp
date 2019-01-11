@@ -1,3 +1,12 @@
+vts-browser (0.18) melown-xenial; urgency=medium
+
+  * lod blending
+  * grids rendering
+  * better support for multiple cameras and navigations
+  * improved coarseness test (disks approximation)
+
+ -- Tomas Maly <tomas.maly@melown.com>  Fri, 11 Jan 2019 10:32:16 +0100
+
 vts-browser (0.17) melown-xenial; urgency=medium
 
   * load options from file

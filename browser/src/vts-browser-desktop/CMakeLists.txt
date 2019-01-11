@@ -35,9 +35,9 @@ buildsys_ide_groups(vts-browser-desktop apps)
 # install
 include(GNUInstallDirs)
 install(TARGETS vts-browser-desktop
+    COMPONENT browser-desktop
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}
-    COMPONENT browser-desktop
 )
 
 

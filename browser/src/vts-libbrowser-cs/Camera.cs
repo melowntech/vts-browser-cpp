@@ -141,6 +141,12 @@ namespace vts
             Util.CheckInterop();
         }
 
+        public void RenderUpdate()
+        {
+            BrowserInterop.vtsCameraRenderUpdate(Handle);
+            Util.CheckInterop();
+        }
+
         public void Dispose()
         {
             Dispose(true);

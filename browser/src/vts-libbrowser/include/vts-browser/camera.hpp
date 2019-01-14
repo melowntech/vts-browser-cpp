@@ -59,6 +59,8 @@ public:
 
     void suggestedNearFar(double &near_, double &far_);
 
+    void renderUpdate();
+
     class CameraCredits &credits();
     class CameraDraws &draws();
     class CameraOptions &options();

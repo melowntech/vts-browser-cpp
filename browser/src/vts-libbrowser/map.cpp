@@ -27,18 +27,117 @@
 #include <utility/uri.hpp>
 
 #include "map.hpp"
+#include "navigation/navigation.hpp"
 
 namespace vts
 {
 
 void MapImpl::renderInitialize()
 {
-    LOG(info3) << "Render initialize";
+    LOG(info2) << "Render initialize";
 }
 
 void MapImpl::renderFinalize()
 {
-    LOG(info3) << "Render finalize";
+    LOG(info2) << "Render finalize";
+}
+
+void MapImpl::renderUpdate(double elapsedTime)
+{
+    lastElapsedFrameTime = elapsedTime;
+
+    if (!prerequisitesCheck())
+        return;
+
+    assert(!resources.auth || *resources.auth);
+    assert(mapconfig && *mapconfig);
+    assert(convertor);
+    assert(!layers.empty());
+    assert(layers[0]->traverseRoot);
+
+    updateSearch();
+
+    cameras.erase(std::remove_if(cameras.begin(), cameras.end(),
+        [&](std::weak_ptr<CameraImpl> &camera) {
+        return !!camera.lock();
+    }), cameras.end());
+
+    for (auto &it : layers)
+        traverseClearing(it->traverseRoot.get());
+
+    if (mapconfig->atmosphereDensityTexture)
+        updateAtmosphereDensity();
+}
+
+void MapImpl::initializeNavigation()
+{
+    for (auto &camera : cameras)
+    {
+        auto cam = camera.lock();
+        if (cam)
+        {
+            auto nav = cam->navigation.lock();
+            if (nav)
+                nav->initialize();
+        }
+    }
+}
+
+void MapImpl::purgeMapconfig()
+{
+    LOG(info2) << "Purge mapconfig";
+
+    if (resources.auth)
+        resources.auth->forceRedownload();
+    resources.auth.reset();
+    if (mapconfig)
+        mapconfig->forceRedownload();
+    mapconfig.reset();
+    mapconfigAvailable = false;
+
+    credits.purge();
+    resources.searchTasks.clear();
+    convertor.reset();
+    body = MapCelestialBody();
+    purgeViewCache();
+
+    for (auto &camera : cameras)
+    {
+        auto cam = camera.lock();
+        if (cam)
+        {
+            auto nav = cam->navigation.lock();
+            if (nav)
+            {
+                nav->autoRotation = 0;
+                nav->resetNavigationMode();
+                nav->lastPositionAltitude.reset();
+                nav->positionAltitudeReset.reset();
+            }
+        }
+    }
+}
+
+void MapImpl::purgeViewCache()
+{
+    LOG(info2) << "Purge view cache";
+
+    if (mapconfig)
+        mapconfig->consolidateView();
+    mapconfigReady = false;
+    mapconfigView = "";
+    layers.clear();
+
+    for (auto &camera : cameras)
+    {
+        auto cam = camera.lock();
+        if (cam)
+        {
+            cam->statistics = CameraStatistics();
+            cam->draws = CameraDraws();
+            cam->credits = CameraCredits();
+        }
+    }
 }
 
 void MapImpl::setMapconfigPath(const std::string &mapconfigPath,
@@ -121,7 +220,7 @@ bool MapImpl::prerequisitesCheck()
             return false;
     }
 
-    LOG(info2) << "Mapconfig is ready.";
+    LOG(info3) << "Mapconfig is ready.";
     mapconfigReady = true;
     if (callbacks.mapconfigReady)
         callbacks.mapconfigReady(); // this may change mapconfigReady

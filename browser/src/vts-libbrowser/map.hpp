@@ -575,6 +575,7 @@ public:
     std::vector<std::weak_ptr<class CameraImpl>> cameras;
     std::string mapconfigPath;
     std::string mapconfigView;
+    double lastElapsedFrameTime;
     uint32 renderTickIndex;
     bool mapconfigAvailable;
     bool mapconfigReady;
@@ -622,7 +623,7 @@ public:
     // rendering
     void renderInitialize();
     void renderFinalize();
-    void renderTick(double elapsedTime);
+    void renderUpdate(double elapsedTime);
     bool prerequisitesCheck();
     void initializeNavigation();
     bool getPositionAltitude(double &result, const vec3 &navPos,
@@ -639,11 +640,11 @@ public:
     // resources methods
     void resourceDataInitialize();
     void resourceDataFinalize();
-    void resourceDataTick();
+    void resourceDataUpdate();
     void resourceDataRun();
     void resourceRenderInitialize();
     void resourceRenderFinalize();
-    void resourceRenderTick();
+    void resourceRenderUpdate();
 
     bool resourcesTryRemove(std::shared_ptr<Resource> &r);
     void resourcesRemoveOld();

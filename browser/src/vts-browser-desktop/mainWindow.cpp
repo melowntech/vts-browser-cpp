@@ -335,7 +335,8 @@ void MainWindow::run()
         try
         {
             updateWindowSize();
-            map->renderTick(timingTotalFrame * 1e-3);
+            map->renderUpdate(timingTotalFrame * 1e-3);
+            camera->renderUpdate();
         }
         catch (const vts::MapconfigException &e)
         {

@@ -102,6 +102,9 @@ public static extern void vtsCameraGetProjMatrix(IntPtr cam, [Out] double[] proj
 public static extern void vtsCameraSuggestedNearFar(IntPtr cam, ref double near_, ref double far_);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsCameraRenderUpdate(IntPtr cam);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern IntPtr vtsCameraGetCredits(IntPtr cam);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
@@ -262,7 +265,7 @@ public static extern double vtsMapGetRenderProgress(IntPtr map);
 public static extern void vtsMapDataInitialize(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsMapDataTick(IntPtr map);
+public static extern void vtsMapDataUpdate(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsMapDataFinalize(IntPtr map);
@@ -274,7 +277,7 @@ public static extern void vtsMapDataAllRun(IntPtr map);
 public static extern void vtsMapRenderInitialize(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsMapRenderTick(IntPtr map, double elapsedTime);
+public static extern void vtsMapRenderUpdate(IntPtr map, double elapsedTime);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsMapRenderFinalize(IntPtr map);

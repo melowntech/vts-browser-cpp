@@ -397,10 +397,10 @@ void vtsMapDataInitialize(vtsHMap map)
     C_END
 }
 
-void vtsMapDataTick(vtsHMap map)
+void vtsMapDataUpdate(vtsHMap map)
 {
     C_BEGIN
-    map->p->dataTick();
+    map->p->dataUpdate();
     C_END
 }
 
@@ -425,10 +425,10 @@ void vtsMapRenderInitialize(vtsHMap map)
     C_END
 }
 
-void vtsMapRenderTick(vtsHMap map, double elapsedTime)
+void vtsMapRenderUpdate(vtsHMap map, double elapsedTime)
 {
     C_BEGIN
-    map->p->renderTick(elapsedTime);
+    map->p->renderUpdate(elapsedTime);
     C_END
 }
 
@@ -569,6 +569,13 @@ void vtsCameraSuggestedNearFar(vtsHCamera cam,
 {
     C_BEGIN
     cam->p->suggestedNearFar(*near_, *far_);
+    C_END
+}
+
+void vtsCameraRenderUpdate(vtsHCamera cam)
+{
+    C_BEGIN
+    cam->p->renderUpdate();
     C_END
 }
 

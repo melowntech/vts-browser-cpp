@@ -162,11 +162,13 @@ public:
     void gridPreloadProcess(TraverseNode *trav,
                             const std::vector<TileId> &requests);
     void resolveBlending(TraverseNode *root,
-                CameraMapLayer &layer, float elapsedTime);
+                CameraMapLayer &layer);
     void sortOpaqueFrontToBack();
-    void updateCamera(double elapsedTime);
+    void renderUpdate();
     void suggestedNearFar(double &near_, double &far_);
 };
+
+void updateNavigation(std::weak_ptr<NavigationImpl> nav, double elapsedTime);
 
 } // namespace vts
 

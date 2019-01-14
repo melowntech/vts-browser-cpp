@@ -189,7 +189,7 @@ int main()
         }
 
         // update downloads
-        vtsMapDataTick(map);
+        vtsMapDataUpdate(map);
         check();
 
         // check if the window has been resized
@@ -197,7 +197,8 @@ int main()
 
         // update navigation etc.
         uint32 currentRenderTime = SDL_GetTicks();
-        vtsMapRenderTick(map, (currentRenderTime - lastRenderTime) * 1e-3);
+        vtsMapRenderUpdate(map, (currentRenderTime - lastRenderTime) * 1e-3);
+        vtsCameraRenderUpdate(cam);
         check();
         lastRenderTime = currentRenderTime;
 

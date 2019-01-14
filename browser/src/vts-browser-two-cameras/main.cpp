@@ -141,8 +141,10 @@ int main(int, char *[])
         }
 
         uint32 currentRenderTime = SDL_GetTicks();
-        map->dataTick();
-        map->renderTick((currentRenderTime - lastRenderTime) * 1e-3);
+        map->dataUpdate();
+        map->renderUpdate((currentRenderTime - lastRenderTime) * 1e-3);
+        cam1->renderUpdate();
+        cam2->renderUpdate();
         lastRenderTime = currentRenderTime;
 
         auto &ro = render.options();

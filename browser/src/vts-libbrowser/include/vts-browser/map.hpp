@@ -80,7 +80,7 @@ public:
     // dataTick does at most MapOptions.maxResourceProcessesPerTick
     //   operations and returns
     // you should call it periodically
-    void dataTick();
+    void dataUpdate();
     void dataFinalize();
 
     // blocking alternative to:
@@ -93,7 +93,7 @@ public:
     void dataAllRun();
 
     void renderInitialize();
-    void renderTick(double elapsedTime); // seconds since last call
+    void renderUpdate(double elapsedTime); // seconds since last call
     void renderFinalize();
 
     // create new camera

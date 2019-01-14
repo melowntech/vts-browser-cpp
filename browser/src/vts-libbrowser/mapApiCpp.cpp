@@ -198,9 +198,9 @@ void Map::dataInitialize()
     impl->resourceDataInitialize();
 }
 
-void Map::dataTick()
+void Map::dataUpdate()
 {
-    impl->resourceDataTick();
+    impl->resourceDataUpdate();
 }
 
 void Map::dataFinalize()
@@ -221,11 +221,11 @@ void Map::renderInitialize()
     impl->renderInitialize();
 }
 
-void Map::renderTick(double elapsedTime)
+void Map::renderUpdate(double elapsedTime)
 {
     impl->statistics.renderTicks = ++impl->renderTickIndex;
-    impl->resourceRenderTick();
-    impl->renderTick(elapsedTime);
+    impl->resourceRenderUpdate();
+    impl->renderUpdate(elapsedTime);
 }
 
 void Map::renderFinalize()
@@ -547,6 +547,7 @@ std::shared_ptr<SearchTask> Map::search(const std::string &query,
 MapImpl::MapImpl(Map *map, const MapCreateOptions &options,
                     const std::shared_ptr<Fetcher> &fetcher) :
     map(map), createOptions(options),
+    lastElapsedFrameTime(0),
     renderTickIndex(0),
     mapconfigAvailable(false), mapconfigReady(false)
 {

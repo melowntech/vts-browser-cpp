@@ -179,7 +179,7 @@ void MapImpl::resourceDataFinalize()
     LOG(info3) << "Data finalize";
 }
 
-void MapImpl::resourceDataTick()
+void MapImpl::resourceDataUpdate()
 {
     for (uint32 proc = 0; proc
         < options.maxResourceProcessesPerTick; proc++)
@@ -555,7 +555,7 @@ void MapImpl::resourceRenderFinalize()
     resources.resources.clear();
 }
 
-void MapImpl::resourceRenderTick()
+void MapImpl::resourceRenderUpdate()
 {
     // split workload into multiple render frames
     switch (renderTickIndex % 4)

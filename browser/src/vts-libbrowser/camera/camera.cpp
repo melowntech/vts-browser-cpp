@@ -466,10 +466,8 @@ bool operator == (const OldDraw &l, const OldDraw &r)
 }
 
 void CameraImpl::resolveBlending(TraverseNode *root,
-                        CameraMapLayer &layer, float elapsedTime)
+                        CameraMapLayer &layer)
 {
-    (void)elapsedTime;
-
     if (options.lodBlending == 0)
         return;
 
@@ -546,8 +544,15 @@ void CameraImpl::resolveBlending(TraverseNode *root,
     }
 }
 
-void CameraImpl::updateCamera(double elapsedTime)
+void CameraImpl::renderUpdate()
 {
+    clear();
+
+    if (!map->mapconfigReady)
+        return;
+
+    updateNavigation(navigation, map->lastElapsedFrameTime);
+
     if (windowWidth == 0 || windowHeight == 0)
         return;
 
@@ -613,7 +618,7 @@ void CameraImpl::updateCamera(double elapsedTime)
     {
         traverseRender(it->traverseRoot.get());
         // resolve blending
-        resolveBlending(it->traverseRoot.get(), layers[it], elapsedTime);
+        resolveBlending(it->traverseRoot.get(), layers[it]);
         // resolve subtile merging
         for (auto &os : opaqueSubtiles)
             os.second.resolve(os.first, this);

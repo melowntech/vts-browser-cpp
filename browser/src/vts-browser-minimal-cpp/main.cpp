@@ -158,14 +158,15 @@ int main(int, char *[])
         }
 
         // update downloads
-        map->dataTick();
+        map->dataUpdate();
 
         // check if window size has changed
         updateResolution();
 
         // update navigation etc.
         uint32 currentRenderTime = SDL_GetTicks();
-        map->renderTick((currentRenderTime - lastRenderTime) * 1e-3);
+        map->renderUpdate((currentRenderTime - lastRenderTime) * 1e-3);
+        cam->renderUpdate();
         lastRenderTime = currentRenderTime;
 
         // actually render the map

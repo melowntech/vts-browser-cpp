@@ -120,9 +120,9 @@ namespace vts
             Util.CheckInterop();
         }
 
-        public void DataTick()
+        public void DataUpdate()
         {
-            BrowserInterop.vtsMapDataTick(Handle);
+            BrowserInterop.vtsMapDataUpdate(Handle);
             Util.CheckInterop();
         }
 
@@ -144,9 +144,9 @@ namespace vts
             Util.CheckInterop();
         }
 
-        public void RenderTick(double elapsedTime)
+        public void RenderUpdate(double elapsedTime)
         {
-            BrowserInterop.vtsMapRenderTick(Handle, elapsedTime);
+            BrowserInterop.vtsMapRenderUpdate(Handle, elapsedTime);
             Util.CheckInterop();
         }
 

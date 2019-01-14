@@ -658,108 +658,11 @@ void NavigationImpl::setViewExtent(double viewExtent)
     autoRotation = 0;
 }
 
-void MapImpl::initializeNavigation()
+void updateNavigation(std::weak_ptr<NavigationImpl> nav, double elapsedTime)
 {
-    for (auto &camera : cameras)
-    {
-        auto cam = camera.lock();
-        if (cam)
-        {
-            auto nav = cam->navigation.lock();
-            if (nav)
-                nav->initialize();
-        }
-    }
-}
-
-void MapImpl::purgeMapconfig()
-{
-    LOG(info2) << "Purge mapconfig";
-
-    if (resources.auth)
-        resources.auth->forceRedownload();
-    resources.auth.reset();
-    if (mapconfig)
-        mapconfig->forceRedownload();
-    mapconfig.reset();
-    mapconfigAvailable = false;
-
-    credits.purge();
-    resources.searchTasks.clear();
-    convertor.reset();
-    body = MapCelestialBody();
-    purgeViewCache();
-
-    for (auto &camera : cameras)
-    {
-        auto cam = camera.lock();
-        if (cam)
-        {
-            auto nav = cam->navigation.lock();
-            if (nav)
-            {
-                nav->autoRotation = 0;
-                nav->resetNavigationMode();
-                nav->lastPositionAltitude.reset();
-                nav->positionAltitudeReset.reset();
-            }
-        }
-    }
-}
-
-void MapImpl::purgeViewCache()
-{
-    LOG(info2) << "Purge view cache";
-
-    if (mapconfig)
-        mapconfig->consolidateView();
-    mapconfigReady = false;
-    mapconfigView = "";
-    layers.clear();
-
-    for (auto &camera : cameras)
-    {
-        auto cam = camera.lock();
-        if (cam)
-        {
-            cam->statistics = CameraStatistics();
-            cam->draws = CameraDraws();
-            cam->credits = CameraCredits();
-        }
-    }
-}
-
-void MapImpl::renderTick(double elapsedTime)
-{
-    if (!prerequisitesCheck())
-        return;
-
-    assert(!resources.auth || *resources.auth);
-    assert(mapconfig && *mapconfig);
-    assert(convertor);
-    assert(!layers.empty());
-    assert(layers[0]->traverseRoot);
-
-    updateSearch();
-
-    cameras.erase(std::remove_if(cameras.begin(), cameras.end(),
-        [&](std::weak_ptr<CameraImpl> &camera) {
-            auto cam = camera.lock();
-            if (!cam)
-                return true;
-            cam->clear();
-            auto nav = cam->navigation.lock();
-            if (nav)
-                nav->updateNavigation(elapsedTime);
-            cam->updateCamera(elapsedTime);
-            return false;
-        }), cameras.end());
-
-    for (auto &it : layers)
-        traverseClearing(it->traverseRoot.get());
-
-    if (mapconfig->atmosphereDensityTexture)
-        updateAtmosphereDensity();
+    auto n = nav.lock();
+    if (n)
+        n->updateNavigation(elapsedTime);
 }
 
 } // namespace vts

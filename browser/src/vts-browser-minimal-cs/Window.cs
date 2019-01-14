@@ -76,9 +76,10 @@ namespace vtsBrowserMinimalCs
             if (c.Width <= 0 || c.Height <= 0)
                 return;
 
+            map.DataUpdate();
+            map.RenderUpdate(0);
             cam.SetViewportSize((uint)c.Width, (uint)c.Height);
-            map.DataTick();
-            map.RenderTick(0);
+            cam.RenderUpdate();
 
             RenderOptions ro = renderer.Options;
             ro.width = (uint)c.Width;

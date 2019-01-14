@@ -118,6 +118,11 @@ void Camera::suggestedNearFar(double &near_, double &far_)
         near_ = far_ = 0;
 }
 
+void Camera::renderUpdate()
+{
+    impl->renderUpdate();
+}
+
 CameraStatistics &Camera::statistics()
 {
     return impl->statistics;

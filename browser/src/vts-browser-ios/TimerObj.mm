@@ -55,7 +55,8 @@
         return;
     try
     {
-        map->renderTick(0.2);
+        map->renderUpdate(0.2);
+        camera->renderUpdate();
     }
     catch (const vts::MapconfigException &)
     {

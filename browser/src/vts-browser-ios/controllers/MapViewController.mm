@@ -519,7 +519,8 @@ using namespace vts;
 
     try
     {
-        map->renderTick([self timeSinceLastUpdate]);
+        map->renderUpdate([self timeSinceLastUpdate]);
+        camera->renderUpdate();
     }
     catch (const vts::MapconfigException &)
     {

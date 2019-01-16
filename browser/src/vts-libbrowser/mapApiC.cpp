@@ -735,14 +735,14 @@ void vtsNavigationSetAutoRotation(vtsHNavigation nav, double value)
     C_END
 }
 
-void vtsNavigationSetJson(vtsHNavigation nav, const char *pos)
+void vtsNavigationSetPositionJson(vtsHNavigation nav, const char *pos)
 {
     C_BEGIN
     nav->p->setPositionJson(pos);
     C_END
 }
 
-void vtsNavigationSetUrl(vtsHNavigation nav, const char *pos)
+void vtsNavigationSetPositionUrl(vtsHNavigation nav, const char *pos)
 {
     C_BEGIN
     nav->p->setPositionUrl(pos);

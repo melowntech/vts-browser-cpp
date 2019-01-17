@@ -60,13 +60,6 @@
 #include "utilities/array.hpp"
 #include "utilities/threadQueue.hpp"
 
-#if !defined(NDEBUG) && defined(__GNUC__)
-    // some debuggers are unable to show contents of unordered containers
-    #define unordered_map map
-    #define unordered_set set
-    #define NO_UNORDERED_MAP
-#endif
-
 namespace vts
 {
 

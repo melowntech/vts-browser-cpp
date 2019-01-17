@@ -441,7 +441,7 @@ float blendingOpacity(uint32 age, uint32 duration)
          0  0.5  1  1.5 normalized age
     */
 
-    assert(age >= 0 && age <= duration * 3 / 2);
+    assert(age <= duration * 3 / 2);
     if (age < duration / 2)
         return float(age) / (duration / 2);
     if (age > duration)

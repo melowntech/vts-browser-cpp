@@ -144,7 +144,8 @@ Task::~Task()
     }
     catch(...)
     {
-        // do nothing
+        LOG(err2) << "Unhandled exception in fetch task callback "
+                     "in download of <" << task->query.url << ">";
     }
 }
 

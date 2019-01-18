@@ -309,7 +309,7 @@ public:
     GpuGeodata(MapImpl *map, const std::string &name);
     void load() override;
     FetchTask::ResourceType resourceType() const override;
-    void update(const std::string &style, const std::string &features,
+    bool update(const std::string &style, const std::string &features,
         uint32 lod);
 
     std::vector<RenderTask> renders;

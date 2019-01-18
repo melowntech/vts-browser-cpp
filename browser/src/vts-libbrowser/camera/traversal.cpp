@@ -564,8 +564,9 @@ bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
         return false;
 
     std::shared_ptr<GpuGeodata> geo = map->getGeodata(geoName + "#$!gpu");
-    geo->update(style.second, features.second, trav->id().lod);
     geo->updatePriority(trav->priority);
+    if (geo->update(style.second, features.second, trav->id().lod))
+        map->resources.queUpload.push(geo);
     switch (map->getResourceValidity(geo))
     {
     case Validity::Invalid:

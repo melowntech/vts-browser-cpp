@@ -32,12 +32,26 @@
 
 #include "editor.hpp"
 
+namespace
+{
+    const std::string tmpName = "vts-browser-editing.json";
+
+    bool runSystemCommand(const std::string &cmd)
+    {
+        vts::log(vts::LogLevel::info1, std::string() + "Running command: <" + cmd + ">");
+        auto res = std::system(cmd.c_str());
+        std::ostringstream ss;
+        ss << "Result of System call: " << res;
+        vts::log(vts::LogLevel::info1, ss.str());
+        return res == 0;
+    }
+}
+
 std::string editor(const std::string &name, const std::string &value)
 {
     vts::log(vts::LogLevel::info3,
              std::string() + "Editing file <" + name + ">");
 
-    std::string tmpName = "vts-browser-editing.json";
     std::string result = value;
 
     struct Deleter
@@ -50,16 +64,19 @@ std::string editor(const std::string &name, const std::string &value)
     try
     {
         vts::writeLocalFileBuffer(tmpName, vts::Buffer(value));
-        std::string cmd = "xterm -e $EDITOR " + tmpName;
-        auto res = std::system(cmd.c_str());
-        std::ostringstream ss;
-        ss << "Result of System call: " << res;
-        vts::log(vts::LogLevel::info2, ss.str());
+#ifdef _WIN32
+        if (!runSystemCommand(std::string() + "notepad++.exe -multiInst -notabbar -nosession -noPlugin " + tmpName))
+            if (!runSystemCommand(std::string() + "%EDITOR% " + tmpName))
+                runSystemCommand(std::string() + "notepad.exe " + tmpName);
+#else
+        runSystemCommand(std::string() + "xterm -e $EDITOR " + tmpName);
+#endif // _WIN32
         result = vts::readLocalFileBuffer(tmpName).str();
     }
     catch (...)
     {
-        // nothing
+        vts::log(vts::LogLevel::warn3,
+            std::string() + "Failed editing file <" + name + ">");
     }
 
     return result;

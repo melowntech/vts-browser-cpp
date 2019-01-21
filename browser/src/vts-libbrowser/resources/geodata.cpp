@@ -478,47 +478,13 @@ struct geoContext
 
         // line
         if (evaluate(layer["line"]).asBool())
-        {
-            vec4f color = convertColor(layer["line-color"]);
-            switch (*type)
-            {
-            case Type::Point:
-                break;
-            case Type::Line:
-            {
-                const Value &la = feature->feature["lines"];
-                for (const Value &l : la)
-                {
-                    Point last = {};
-                    bool second = false;
-                    for (const Value &pv : l)
-                    {
-                        Point p = convertPoint(pv);
-                        if (second)
-                        {
-                            LineData lm;
-                            lm.p[0] = last;
-                            lm.p[1] = p;
-                            LineKey li;
-                            li.color = color;
-                            cacheLines[li].push_back(lm);
-                        }
-                        else
-                            second = true;
-                        last = p;
-                    }
-                }
-            } break;
-            case Type::Polygon:
-            {
-                // todo
-            } break;
-            }
-        }
+            processFeatureLine(layer);
 
         // line-label
 
         // point
+        if (evaluate(layer["point"]).asBool())
+            processFeaturePoint(layer);
 
         // icon
 
@@ -529,13 +495,138 @@ struct geoContext
         // next-pass
     }
 
+    void processFeatureLine(const Value &layer)
+    {
+        vec4f color = convertColor(layer["line-color"]);
+        switch (*type)
+        {
+        case Type::Point:
+            // nothing
+            break;
+        case Type::Line:
+        {
+            // convert lines to lines
+            const Value &la = feature->feature["lines"];
+            for (const Value &l : la)
+            {
+                Point last = {};
+                LineKey li;
+                li.color = color;
+                std::vector<LineData> &out = cacheLines[li];
+                bool second = false;
+                for (const Value &pv : l)
+                {
+                    Point p = convertPoint(pv);
+                    if (second)
+                    {
+                        LineData lm;
+                        lm.p[0] = last;
+                        lm.p[1] = p;
+                        out.push_back(lm);
+                    }
+                    else
+                        second = true;
+                    last = p;
+                }
+            }
+        } break;
+        case Type::Polygon:
+        {
+            // convert polygons to lines
+            // todo
+        } break;
+        }
+    }
+
+    void processFeaturePoint(const Value &layer)
+    {
+        vec4f color = convertColor(layer["point-color"]);
+        switch (*type)
+        {
+        case Type::Point:
+        {
+            // convert points to points
+            const Value &pa = feature->feature["points"];
+            for (const Value &p : pa)
+            {
+                PointKey pi;
+                pi.color = color;
+                std::vector<PointData> &out = cachePoints[pi];
+                for (const Value &pv : p)
+                {
+                    PointData lm;
+                    lm.p = convertPoint(pv);
+                    out.push_back(lm);
+                }
+            }
+        } break;
+        case Type::Line:
+        {
+            // convert lines to points
+            const Value &la = feature->feature["lines"];
+            for (const Value &l : la)
+            {
+                PointKey pi;
+                pi.color = color;
+                std::vector<PointData> &out = cachePoints[pi];
+                for (const Value &pv : l)
+                {
+                    PointData lm;
+                    lm.p = convertPoint(pv);
+                    out.push_back(lm);
+                }
+            }
+        } break;
+        case Type::Polygon:
+        {
+            // convert polygons to points
+            // todo
+        } break;
+        }
+    }
+
     // this function takes all the cached values,
     //   merges them as much as possible
     //   and generates actual gpu meshes and render tasks
     void finishGroup()
     {
+        finishGroupPoints();
         finishGroupLines();
         // todo
+    }
+
+    void finishGroupPoints()
+    {
+        for (const std::pair<const PointKey,
+            std::vector<PointData>> &points : cachePoints)
+        {
+            GpuMeshSpec spec;
+            spec.verticesCount = points.second.size();
+            spec.vertices.allocate(points.second.size() * sizeof(Point));
+            uint16 *out = (uint16*)spec.vertices.data();
+            for (const auto &it : points.second)
+            {
+                for (uint32 vi = 0; vi < 3; vi++)
+                    *out++ = it.p[vi];
+            }
+            spec.attributes[0].enable = true;
+            spec.attributes[0].components = 3;
+            spec.attributes[0].type = GpuTypeEnum::UnsignedShort;
+            spec.faceMode = GpuMeshSpec::FaceMode::Points;
+
+            std::shared_ptr<GpuMesh> gm = std::make_shared<GpuMesh>(data->map,
+                data->name + "#$!points");
+            data->map->callbacks.loadMesh(gm->info, spec);
+            gm->state = Resource::State::ready;
+
+            RenderTask task;
+            task.mesh = gm;
+            task.model = group->model();
+            task.color = points.first.color;
+            data->renders.push_back(task);
+        }
+
+        cachePoints.clear();
     }
 
     void finishGroupLines()
@@ -644,6 +735,7 @@ struct geoContext
     //   these will be consumed in finishGroup
     //   which will generate the actual render tasks
 
+    // lines
     struct LineData
     {
         Point p[2];
@@ -659,6 +751,23 @@ struct geoContext
         }
     };
     std::map<LineKey, std::vector<LineData>> cacheLines;
+
+    // points
+    struct PointData
+    {
+        Point p;
+    };
+    struct PointKey
+    {
+        vec4f color;
+
+        bool operator < (const PointKey &other) const
+        {
+            return memcmp(&color, &other.color, sizeof(color)) < 0;
+            // todo consider all parameters
+        }
+    };
+    std::map<PointKey, std::vector<PointData>> cachePoints;
 };
 
 } // namespace

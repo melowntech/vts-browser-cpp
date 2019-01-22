@@ -73,6 +73,8 @@ using Json::Value;
 namespace
 {
 
+#define THROW LOGTHROW(err3, GeodataValidationException)
+
 template<bool Validating>
 struct geoContext
 {
@@ -92,10 +94,7 @@ struct geoContext
             for (uint32 i = 0; i < 3; i++)
             {
                 if (v[i].asUInt() > 65535)
-                {
-                    LOGTHROW(err1, std::runtime_error)
-                            << "Point index outside range.";
-                }
+                    THROW << "Point index outside range.";
             }
         }
         return {{ (uint16)v[0].asUInt(),
@@ -117,7 +116,7 @@ struct geoContext
         {
             if (!value.isArray() || value.size() < minimum
                     || value.size() > maximum)
-                LOGTHROW(err1, std::runtime_error) << message;
+                THROW << message;
         }
     }
 
@@ -179,12 +178,31 @@ struct geoContext
     {
         if (Validating)
         {
+            try
+            {
+                return processInternal();
+            }
+            catch (const GeodataValidationException &)
+            {
+                throw;
+            }
+            catch (const std::runtime_error &e)
+            {
+                throw GeodataValidationException(e.what());
+            }
+        }
+        return processInternal();
+    }
+
+    void processInternal()
+    {
+        if (Validating)
+        {
             // check version
             if (features["version"].asInt() != 1)
             {
-                LOGTHROW(err2, std::runtime_error)
-                        << "Invalid geodata features <"
-                        << data->name << "> version.";
+                THROW << "Invalid geodata features <"
+                    << data->name << "> version.";
             }
         }
 
@@ -227,14 +245,48 @@ struct geoContext
         }
     }
 
+    Value resolveInheritance(const Value &orig)
+    {
+        if (!orig["inheritance"])
+            return orig;
+
+        Value base = resolveInheritance(
+            style["layers"][orig["inheritance"].asString()]);
+
+        for (auto n : orig.getMemberNames())
+            base[n] = orig[n];
+
+        return base;
+    }
+
     // update style layers with inherit property
     void solveInheritance()
     {
-        // todo
+        Value ls;
+        for (const std::string &n : style["layers"].getMemberNames())
+            ls[n] = resolveInheritance(style["layers"][n]);
+        style["layers"] = ls;
     }
 
     // solves @constants, $properties and #identifiers
     Value replacement(const std::string &name)
+    {
+        if (Validating)
+        {
+            try
+            {
+                return replacementInternal(name);
+            }
+            catch (...)
+            {
+                LOG(info3) << "In replacements of <" << name << ">";
+                throw;
+            }
+        }
+        return replacementInternal(name);
+    }
+
+    Value replacementInternal(const std::string &name)
     {
         assert(group);
         assert(type);
@@ -281,17 +333,110 @@ struct geoContext
     // solves functions and string expansion
     Value evaluate(const Value &expression)
     {
-        if (expression.isObject())
+        if (Validating)
         {
-            // handle functions
+            try
+            {
+                return evaluateInternal(expression);
+            }
+            catch (...)
+            {
+                LOG(info3) << "In evaluation of <"
+                    << expression.toStyledString() << ">";
+                throw;
+            }
         }
-        if (expression.isArray() || expression.isObject())
+        return evaluateInternal(expression);
+    }
+
+    Value interpolate(const Value &a, const Value &b, double f)
+    {
+        LOGTHROW(fatal, std::logic_error)
+            << "interpolate is not yet implemented";
+        throw;
+    }
+
+    template<bool Linear>
+    Value evaluatePairsArray(const Value &what, const Value &searchArray)
+    {
+        if (Validating)
+        {
+            if (!searchArray.isArray())
+                THROW << "Expected an array";
+            for (const auto p : searchArray)
+            {
+                if (!p.isArray() || p.size() != 2)
+                    THROW << "Expected an array with two elements";
+            }
+        }
+        double v = evaluate(what).asDouble();
+        for (sint32 index = searchArray.size() - 1; index >= 0; index--)
+        {
+            double v1 = evaluate(searchArray[index][0]).asDouble();
+            if (v > v1)
+                continue;
+            if (Linear)
+            {
+                if (index + 1 < searchArray.size())
+                {
+                    double v2 = evaluate(searchArray[index + 1][0]).asDouble();
+                    return interpolate(
+                        evaluate(searchArray[index + 0][1]),
+                        evaluate(searchArray[index + 1][1]),
+                        (v - v1) / (v2 - v1));
+                }
+            }
+            return evaluate(searchArray[index][1]);
+        }
+        return evaluate(searchArray[0][1]);
+    }
+
+    Value evaluateInternal(const Value &expression)
+    {
+        if (expression.isArray())
         {
             Value r(expression);
             for (Value &it : r)
                 it = evaluate(it);
             return r;
         }
+
+        if (expression.isObject())
+        {
+            if (Validating)
+            {
+                if (expression.size() != 1)
+                    THROW << "Function must have exactly one member";
+            }
+            const std::string fnc = expression.getMemberNames()[0];
+
+            // 'sgn', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'abs', 'deg2rad', 'rad2deg'
+
+            // 'add', 'sub', 'mul', 'div', 'pow', 'atan2'
+
+            // 'min', 'max'
+
+            // 'if'
+
+            // 'strlen', 'str2num', 'lowercase', 'uppercase', 'capitalize'
+
+            // 'has-fonts', 'has-latin', 'is-cjk'
+
+            // 'discrete', 'discrete2', 'linear', 'linear2'
+            if (fnc == "discrete")
+                return evaluatePairsArray<false>(lod, expression[fnc]);
+            if (fnc == "discrete2")
+                return evaluatePairsArray<false>(expression[fnc][0],
+                                                 expression[fnc][1]);
+            if (fnc == "linear")
+                return evaluatePairsArray<true>(lod, expression[fnc]);
+            if (fnc == "linear2")
+                return evaluatePairsArray<true>(expression[fnc][0],
+                                                expression[fnc][1]);
+
+            // 'lod-scaled'
+        }
+
         if (expression.isString())
         {
             std::string s = expression.asString();
@@ -307,10 +452,7 @@ struct geoContext
                     if (Validating)
                     {
                         if (end == s.npos)
-                        {
-                            LOGTHROW(err1, std::runtime_error)
-                                    << "Unmatched <{>";
-                        }
+                            THROW << "Unmatched <{>";
                     }
                     auto open = s.find("{", last + 1);
                     if (end > open)
@@ -328,8 +470,6 @@ struct geoContext
                 std::string res = s.substr(0, start - 1)
                         + evaluate(stringToJson(mid)).asString()
                         + s.substr(end + 1);
-                //LOG(info4) << "String <" << s
-                //           << "> replaced by <" << res << ">";
                 return evaluate(res);
             }
             // find '}'
@@ -337,10 +477,7 @@ struct geoContext
             {
                 auto end = s.find("}");
                 if (end != s.npos)
-                {
-                    LOGTHROW(err1, std::runtime_error)
-                            << "Unmatched <}>";
-                }
+                    THROW << "Unmatched <}>";
             }
             // apply replacements
             return replacement(s);
@@ -353,8 +490,26 @@ struct geoContext
     {
         if (Validating)
         {
+            try
+            {
+                return filterInternal(expression);
+            }
+            catch (...)
+            {
+                LOG(info3) << "In filter <"
+                    << expression.toStyledString() << ">";
+                throw;
+            }
+        }
+        return filterInternal(expression);
+    }
+
+    bool filterInternal(const Value &expression)
+    {
+        if (Validating)
+        {
             if (!expression.isArray())
-                LOGTHROW(err1, std::runtime_error) << "Filter must be array.";
+                THROW << "Filter must be array.";
         }
 
         std::string cond = expression[0].asString();
@@ -441,32 +596,45 @@ struct geoContext
 
         // unknown filter
         if (Validating)
-        {
-            LOGTHROW(err1, std::runtime_error)
-                    << "Unknown filter condition type.";
-        }
+            THROW << "Unknown filter condition type.";
+
         return false;
     }
 
     // process single feature with specific style layer
     void processFeature(const std::string &layerName,
+        boost::optional<sint32> zOverride
+        = boost::optional<sint32>())
+    {
+        if (Validating)
+        {
+            try
+            {
+                return processFeatureInternal(layerName, zOverride);
+            }
+            catch (...)
+            {
+                LOG(info3) << "In layer <" << layerName << ">";
+                throw;
+            }
+        }
+        return processFeatureInternal(layerName, zOverride);
+    }
+
+    void processFeatureInternal(const std::string &layerName,
                         boost::optional<sint32> zOverride
                                 = boost::optional<sint32>())
     {
         const Value &layer = style["layers"][layerName];
 
         // filter
-        if (!zOverride)
-        {
-            if (!filter(layer["filter"]))
-                return;
-        }
-
-        // inherit
+        if (!zOverride && !filter(layer["filter"]))
+            return;
 
         // visible
-        //if (layer.isMember("visible") && !evaluate(layer["visible"]).asBool())
-        //    return;
+        if (layer["visible"])
+            if (!evaluate(layer["visible"]).asBool())
+                return;
 
         // z-index
 
@@ -493,6 +661,11 @@ struct geoContext
         // polygon
 
         // next-pass
+        {
+            auto np = layer["next-pass"];
+            if (np)
+                processFeature(np[1].asString(), np[0].asInt());
+        }
     }
 
     void processFeatureLine(const Value &layer)

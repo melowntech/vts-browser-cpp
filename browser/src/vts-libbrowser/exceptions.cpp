@@ -37,4 +37,9 @@ AuthException::AuthException(const std::string &what_arg) :
     std::runtime_error(what_arg)
 {}
 
+GeodataValidationException::GeodataValidationException
+    (const std::string &what_arg) :
+    std::runtime_error(what_arg)
+{}
+
 } // namespace vts

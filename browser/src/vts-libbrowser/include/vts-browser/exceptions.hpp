@@ -47,6 +47,12 @@ public:
     AuthException(const std::string &what_arg);
 };
 
+class VTS_API GeodataValidationException : public std::runtime_error
+{
+public:
+    GeodataValidationException(const std::string &what_arg);
+};
+
 } // namespace vts
 
 #endif

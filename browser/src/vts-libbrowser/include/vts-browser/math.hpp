@@ -127,10 +127,12 @@ VTS_API vec4f rawToVec4(const float v[4]);
 VTS_API mat3f rawToMat3(const float v[9]);
 VTS_API mat4f rawToMat4(const float v[16]);
 
+VTS_API void vecToRaw(const vec2 &a, double v[2]);
 VTS_API void vecToRaw(const vec3 &a, double v[3]);
 VTS_API void vecToRaw(const vec4 &a, double v[4]);
 VTS_API void matToRaw(const mat3 &a, double v[9]);
 VTS_API void matToRaw(const mat4 &a, double v[16]);
+VTS_API void vecToRaw(const vec2f &a, float v[2]);
 VTS_API void vecToRaw(const vec3f &a, float v[3]);
 VTS_API void vecToRaw(const vec4f &a, float v[4]);
 VTS_API void matToRaw(const mat3f &a, float v[9]);
@@ -157,6 +159,7 @@ U vecToUblas(const T &t)
 inline double nan1() { return std::numeric_limits<double>::quiet_NaN(); }
 inline vec2 nan2() { return vec2(nan1(), nan1()); }
 inline vec3 nan3() { return vec3(nan1(), nan1(), nan1()); }
+inline vec4 nan4() { return vec4(nan1(), nan1(), nan1(), nan1()); }
 
 } // namespace vts
 

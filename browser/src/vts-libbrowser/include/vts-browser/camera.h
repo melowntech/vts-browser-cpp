@@ -65,26 +65,28 @@ VTS_API const char *vtsCameraGetOptions(vtsHCamera cam);
 VTS_API const char *vtsCameraGetStatistics(vtsHCamera cam);
 VTS_API void vtsCameraSetOptions(vtsHCamera cam, const char *options);
 
-// acquire iterator for the draw tasks
-VTS_API vtsHDrawsGroup vtsDrawsOpaque(vtsHCamera cam);
-VTS_API vtsHDrawsGroup vtsDrawsTransparent(vtsHCamera cam);
-VTS_API vtsHDrawsGroup vtsDrawsGeodata(vtsHCamera cam);
-VTS_API vtsHDrawsGroup vtsDrawsInfographics(vtsHCamera cam);
-VTS_API vtsHDrawsGroup vtsDrawsColliders(vtsHCamera cam);
-VTS_API uint32 vtsDrawsCount(vtsHDrawsGroup group);
-VTS_API void vtsDrawsDestroy(vtsHDrawsGroup group);
+// acquire group base for the draw tasks
+VTS_API void vtsDrawsOpaqueGroup(vtsHCamera cam,
+    void **group, uint32 *count);
+VTS_API void vtsDrawsTransparentGroup(vtsHCamera cam,
+    void **group, uint32 *count);
+VTS_API void vtsDrawsGeodataGroup(vtsHCamera cam,
+    void **group, uint32 *count);
+VTS_API void vtsDrawsInfographicsGroup(vtsHCamera cam,
+    void **group, uint32 *count);
+VTS_API void vtsDrawsCollidersGroup(vtsHCamera cam,
+    void **group, uint32 *count);
 
-// accesors for individual data pointed to by the iterator
-VTS_API void *vtsDrawsMesh(vtsHDrawsGroup group, uint32 index);
-VTS_API void *vtsDrawsTexColor(vtsHDrawsGroup group, uint32 index);
-VTS_API void *vtsDrawsTexMask(vtsHDrawsGroup group, uint32 index);
-VTS_API const vtsCDrawBase *vtsDrawsDetail(vtsHDrawsGroup group, uint32 index);
-
-// accesor for all data pointed to by the iterator
-// (this function is subject to more frequent changes)
-VTS_API const vtsCDrawBase *vtsDrawsAllInOne(vtsHDrawsGroup group,
-                    uint32 index, void **mesh,
-                    void **texColor, void **texMask);
+// acquire individual draw tasks data
+VTS_API void vtsDrawsSurfaceTask(void *group, uint32 index,
+    void **mesh, void **texColor, void **texMask,
+    vtsCDrawSurfaceBase **base);
+VTS_API void vtsDrawsGeodataTask(void *group, uint32 index,
+    void **mesh, void **texColor,
+    vtsCDrawGeodataBase **base);
+VTS_API void vtsDrawsSimpleTask(void *group, uint32 index,
+    void **mesh, void **texColor,
+    vtsCDrawSimpleBase **base);
 
 VTS_API const vtsCCameraBase *vtsDrawsCamera(vtsHCamera cam);
 

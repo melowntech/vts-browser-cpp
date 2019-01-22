@@ -69,9 +69,12 @@ using vtslibs::vts::UrlTemplate;
 
 class MapLayer;
 class MapImpl;
-class RenderTask;
 class CameraImpl;
 class NavigationImpl;
+
+class RenderSurfaceTask;
+class RenderGeodataTask;
+class RenderSimpleTask;
 
 enum class Validity
 {
@@ -312,7 +315,7 @@ public:
     bool update(const std::string &style, const std::string &features,
         uint32 lod);
 
-    std::vector<RenderTask> renders;
+    std::vector<RenderGeodataTask> renders;
 
 private:
     uint32 lod;
@@ -407,7 +410,7 @@ public:
     std::vector<SurfaceInfo> surfaces;
 };
 
-class RenderTask
+class RenderSurfaceTask
 {
 public:
     std::shared_ptr<GpuMesh> mesh;
@@ -419,7 +422,39 @@ public:
     bool externalUv;
     bool flatShading;
 
-    RenderTask();
+    RenderSurfaceTask();
+    bool ready() const;
+};
+
+class RenderGeodataTask
+{
+public:
+    std::shared_ptr<GpuMesh> mesh;
+    std::shared_ptr<GpuTexture> textureColor;
+    mat4 model;
+    mat3f uvm;
+    vec4f color;
+    vec4f visibilityRelative;
+    vec3f zBufferOffset;
+    vec2f visibilityAbsolute;
+    float visibility;
+    float culling;
+    sint32 zIndex;
+
+    RenderGeodataTask();
+    bool ready() const;
+};
+
+class RenderSimpleTask
+{
+public:
+    std::shared_ptr<GpuMesh> mesh;
+    std::shared_ptr<GpuTexture> textureColor;
+    mat4 model;
+    mat3f uvm;
+    vec4f color;
+
+    RenderSimpleTask();
     bool ready() const;
 };
 
@@ -459,10 +494,10 @@ public:
     // renders
     std::shared_ptr<Resource> touchResource;
     std::vector<vtslibs::registry::CreditId> credits;
-    std::vector<RenderTask> opaque;
-    std::vector<RenderTask> transparent;
-    std::vector<RenderTask> geodata;
-    std::vector<RenderTask> colliders;
+    std::vector<RenderSurfaceTask> opaque;
+    std::vector<RenderSurfaceTask> transparent;
+    std::vector<RenderGeodataTask> geodata;
+    std::vector<RenderSimpleTask> colliders;
 
     TraverseNode(MapLayer *layer, TraverseNode *parent,
         const NodeInfo &nodeInfo);

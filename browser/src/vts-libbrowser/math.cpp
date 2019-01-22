@@ -611,6 +611,12 @@ mat4f rawToMat4(const float v[16])
     return r;
 }
 
+void vecToRaw(const vec2 &a, double v[2])
+{
+    for (int i = 0; i < 2; i++)
+        v[i] = a[i];
+}
+
 void vecToRaw(const vec3 &a, double v[3])
 {
     for (int i = 0; i < 3; i++)
@@ -633,6 +639,12 @@ void matToRaw(const mat4 &a, double v[16])
 {
     for (int i = 0; i < 16; i++)
         v[i] = atc(a, i);
+}
+
+void vecToRaw(const vec2f &a, float v[2])
+{
+    for (int i = 0; i < 2; i++)
+        v[i] = a[i];
 }
 
 void vecToRaw(const vec3f &a, float v[3])

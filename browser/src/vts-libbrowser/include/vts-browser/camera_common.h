@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-typedef struct vtsCDrawBase
+typedef struct vtsCDrawSurfaceBase
 {
     float mv[16];
     float uvm[9];
@@ -42,7 +42,27 @@ typedef struct vtsCDrawBase
     float center[3];
     bool externalUv;
     bool flatShading;
-} vtsCDrawBase;
+} vtsCDrawSurfaceBase;
+
+typedef struct vtsCDrawGeodataBase
+{
+    float mv[16];
+    float uvm[9];
+    float color[4];
+    float visibilityRelative[4];
+    float zBufferOffset[3];
+    float visibilityAbsolute[2];
+    float visibility;
+    float culling;
+    sint32 zIndex;
+} vtsCDrawGeodataBase;
+
+typedef struct vtsCDrawSimpleBase
+{
+    float mv[16];
+    float uvm[9];
+    float color[4];
+} vtsCDrawSimpleBase;
 
 typedef struct vtsCCameraBase
 {

@@ -487,7 +487,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
     if (options.debugRenderObjectPosition)
     {
         vec3 phys = map->convertor->navToPhys(vecFromUblas<vec3>(position.position));
-        RenderTask r;
+        RenderSimpleTask r;
         r.mesh = map->getMesh("internal://data/meshes/cube.obj");
         r.mesh->priority = std::numeric_limits<float>::infinity();
         r.textureColor = map->getTexture("internal://data/textures/helper.jpg");
@@ -495,14 +495,14 @@ void NavigationImpl::updateNavigation(double elapsedTime)
         r.model = translationMatrix(phys)
             * scaleMatrix(position.verticalExtent * 0.015);
         if (r.ready())
-            camera->draws.infographics.emplace_back(camera, r);
+            camera->draws.infographics.emplace_back(camera->convert(r));
     }
 
     // render target position
     if (options.debugRenderTargetPosition)
     {
         vec3 phys = map->convertor->navToPhys(targetPoint);
-        RenderTask r;
+        RenderSimpleTask r;
         r.mesh = map->getMesh("internal://data/meshes/cube.obj");
         r.mesh->priority = std::numeric_limits<float>::infinity();
         r.textureColor = map->getTexture("internal://data/textures/helper.jpg");
@@ -510,7 +510,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
         r.model = translationMatrix(phys)
             * scaleMatrix(targetViewExtent * 0.015);
         if (r.ready())
-            camera->draws.infographics.emplace_back(camera, r);
+            camera->draws.infographics.emplace_back(camera->convert(r));
     }
 }
 

@@ -95,8 +95,8 @@ void SubtilesMerger::resolve(TraverseNode *trav, CameraImpl *impl)
         if (it.orig)
         {
             for (auto &r : trav->opaque)
-                impl->draws.opaque.emplace_back(impl, r,
-                        it.uvClip.data(), nan1());
+                impl->draws.opaque.emplace_back(impl->convert(r,
+                        it.uvClip, nan1()));
         }
     }
 }

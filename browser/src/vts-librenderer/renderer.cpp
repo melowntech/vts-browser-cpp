@@ -118,7 +118,7 @@ public:
     ~RendererImpl()
     {}
 
-    void drawSurface(const DrawTask &t)
+    void drawSurface(const DrawSurfaceTask &t)
     {
         Texture *tex = (Texture*)t.texColor.get();
         Mesh *m = (Mesh*)t.mesh.get();
@@ -146,7 +146,7 @@ public:
         m->dispatch();
     }
 
-    void drawGeodata(const DrawTask &t)
+    void drawGeodata(const DrawGeodataTask &t)
     {
         Mesh *m = (Mesh*)t.mesh.get();
         if (!m)
@@ -163,7 +163,7 @@ public:
         m->dispatch();
     }
 
-    void drawInfographic(const DrawTask &t)
+    void drawInfographic(const DrawSimpleTask &t)
     {
         Mesh *m = (Mesh*)t.mesh.get();
         if (!m)
@@ -366,7 +366,7 @@ public:
         glDepthFunc(GL_LEQUAL);
         shaderSurface->bind();
         enableClipDistance(true);
-        for (const DrawTask &t : draws->opaque)
+        for (const DrawSurfaceTask &t : draws->opaque)
             drawSurface(t);
         enableClipDistance(false);
         CHECK_GL("rendered opaque");
@@ -401,7 +401,7 @@ public:
         glDepthMask(GL_FALSE);
         shaderSurface->bind();
         enableClipDistance(true);
-        for (const DrawTask &t : draws->transparent)
+        for (const DrawSurfaceTask &t : draws->transparent)
             drawSurface(t);
         enableClipDistance(false);
         glDepthMask(GL_TRUE);
@@ -414,9 +414,9 @@ public:
             glDisable(GL_BLEND);
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             shaderSurface->bind();
-            for (const DrawTask &it : draws->opaque)
+            for (const DrawSurfaceTask &it : draws->opaque)
             {
-                DrawTask t(it);
+                DrawSurfaceTask t(it);
                 t.flatShading = false;
                 t.color[0] = t.color[1] = t.color[2] = t.color[3] = 0;
                 drawSurface(t);
@@ -443,13 +443,13 @@ public:
 
         // render geodata
         shaderInfographic->bind();
-        for (const auto &t : draws->geodata)
+        for (const DrawGeodataTask &t : draws->geodata)
             drawGeodata(t);
         CHECK_GL("rendered geodata");
 
         // render infographics
         shaderInfographic->bind();
-        for (const DrawTask &t : draws->infographics)
+        for (const DrawSimpleTask &t : draws->infographics)
             drawInfographic(t);
         CHECK_GL("rendered infographics");
 

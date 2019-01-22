@@ -29,51 +29,23 @@
 namespace vts
 {
 
-DrawTask::DrawTask()
+DrawSurfaceTask::DrawSurfaceTask()
 {
-    for (int i = 0; i < 16; i++)
-        mv[i] = i % 4 == i / 4 ? 1 : 0;
-    for (int i = 0; i < 9; i++)
-        uvm[i] = i % 3 == i / 3 ? 1 : 0;
-    vecToRaw(vec4f(0,0,0,1), color);
-    vecToRaw(vec4f(-1,-1,2,2), uvClip);
-    vecToRaw(vec3f(0,0,0), center);
-    externalUv = false;
-    flatShading = false;
+    memset((vtsCDrawSurfaceBase*)this, 0, sizeof(vtsCDrawSurfaceBase));
+    color[3] = 1;
+    vecToRaw(vec4f(-1, -1, 2, 2), uvClip);
 }
 
-DrawTask::DrawTask(const CameraImpl *m, const RenderTask &r)
-    : DrawTask()
+DrawGeodataTask::DrawGeodataTask()
 {
-    assert(r.ready());
-    if (r.mesh)
-        mesh = r.mesh->info.userData;
-    if (r.textureColor)
-        texColor = r.textureColor->info.userData;
-    if (r.textureMask)
-        texMask = r.textureMask->info.userData;
-    mat4f mv = (m->viewActual * r.model).cast<float>();
-    for (int i = 0; i < 16; i++)
-        this->mv[i] = mv(i);
-    for (int i = 0; i < 9; i++)
-        this->uvm[i] = r.uvm(i);
-    for (int i = 0; i < 4; i++)
-        this->color[i] = r.color[i];
-    vecToRaw(vec4f(0,0,1,1), uvClip);
-    vec3f c = vec4to3(r.model * vec4(0,0,0,1)).cast<float>();
-    vecToRaw(c, center);
-    flatShading = r.flatShading || m->options.debugFlatShading;
-    externalUv = r.externalUv;
+    memset((vtsCDrawGeodataBase*)this, 0, sizeof(vtsCDrawGeodataBase));
+    color[3] = 1;
 }
 
-DrawTask::DrawTask(const CameraImpl *m, const RenderTask &r,
-        const float *uvClip, float opacity)
-    : DrawTask(m, r)
+DrawSimpleTask::DrawSimpleTask()
 {
-    for (int i = 0; i < 4; i++)
-        this->uvClip[i] = uvClip[i];
-    if (opacity == opacity)
-        this->color[3] *= opacity;
+    memset((vtsCDrawSimpleBase*)this, 0, sizeof(vtsCDrawSimpleBase));
+    color[3] = 1;
 }
 
 CameraDraws::Camera::Camera()
@@ -94,12 +66,12 @@ void CameraDraws::clear()
     colliders.clear();
 }
 
-RenderTask::RenderTask() : model(identityMatrix4()),
+RenderSurfaceTask::RenderSurfaceTask() : model(identityMatrix4()),
     uvm(identityMatrix3().cast<float>()),
-    color(1,1,1,1), externalUv(false), flatShading(false)
+    color(1, 1, 1, 1), externalUv(false), flatShading(false)
 {}
 
-bool RenderTask::ready() const
+bool RenderSurfaceTask::ready() const
 {
     if (mesh && !*mesh)
         return false;
@@ -108,6 +80,101 @@ bool RenderTask::ready() const
     if (textureMask && !*textureMask)
         return false;
     return true;
+}
+
+RenderGeodataTask::RenderGeodataTask() : model(identityMatrix4()),
+    uvm(identityMatrix3().cast<float>()),
+    color(1, 1, 1, 1),
+    visibilityRelative(nan4().cast<float>()),
+    zBufferOffset(nan3().cast<float>()),
+    visibilityAbsolute(nan2().cast<float>()),
+    visibility(nan1()), culling(nan1()), zIndex(0)
+{}
+
+bool RenderGeodataTask::ready() const
+{
+    if (mesh && !*mesh)
+        return false;
+    if (textureColor && !*textureColor)
+        return false;
+    return true;
+}
+
+RenderSimpleTask::RenderSimpleTask() : model(identityMatrix4()),
+    uvm(identityMatrix3().cast<float>()),
+    color(1, 1, 1, 1)
+{}
+
+bool RenderSimpleTask::ready() const
+{
+    if (mesh && !*mesh)
+        return false;
+    if (textureColor && !*textureColor)
+        return false;
+    return true;
+}
+
+namespace
+{
+
+template<class D, class R>
+D convert(CameraImpl *impl, const R &task)
+{
+    assert(task.ready());
+    D result;
+    if (task.mesh)
+        result.mesh = task.mesh->info.userData;
+    if (task.textureColor)
+        result.texColor = task.textureColor->info.userData;
+    mat4f mv = (impl->viewActual * task.model).cast<float>();
+    matToRaw(mv, result.mv);
+    matToRaw(task.uvm, result.uvm);
+    vecToRaw(task.color, result.color);
+    return result;
+}
+
+} // namespace
+
+DrawSurfaceTask CameraImpl::convert(const RenderSurfaceTask &task)
+{
+    DrawSurfaceTask result = vts::convert<DrawSurfaceTask,
+        RenderSurfaceTask>(this, task);
+    if (task.textureMask)
+        result.texMask = task.textureMask->info.userData;
+    vecToRaw(vec4f(0, 0, 1, 1), result.uvClip);
+    vec3f c = vec4to3(task.model * vec4(0, 0, 0, 1)).cast<float>();
+    vecToRaw(c, result.center);
+    result.flatShading = task.flatShading || options.debugFlatShading;
+    result.externalUv = task.externalUv;
+    return result;
+}
+
+DrawSurfaceTask CameraImpl::convert(const RenderSurfaceTask &task,
+    const vec4f &uvClip, float opacity)
+{
+    DrawSurfaceTask result = convert(task);
+    vecToRaw(uvClip, result.uvClip);
+    if (opacity == opacity)
+        result.color[3] *= opacity;
+    return result;
+}
+
+DrawGeodataTask CameraImpl::convert(const RenderGeodataTask &task)
+{
+    DrawGeodataTask result = vts::convert<DrawGeodataTask,
+                            RenderGeodataTask>(this, task);
+    vecToRaw(task.visibilityRelative, result.visibilityRelative);
+    vecToRaw(task.zBufferOffset, result.zBufferOffset);
+    vecToRaw(task.visibilityAbsolute, result.visibilityAbsolute);
+    result.visibility = task.visibility;
+    result.culling = task.culling;
+    result.zIndex = task.zIndex;
+    return result;
+}
+
+DrawSimpleTask CameraImpl::convert(const RenderSimpleTask &task)
+{
+    return vts::convert<DrawSimpleTask, RenderSimpleTask>(this, task);
 }
 
 } // namespace vts

@@ -129,8 +129,6 @@ public:
     void clear();
     Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
                            BoundParamInfo::List &boundList, double priority);
-    void touchDraws(const RenderTask &task);
-    void touchDraws(const std::vector<RenderTask> &renders);
     void touchDraws(TraverseNode *trav);
     bool visibilityTest(TraverseNode *trav);
     bool coarsenessTest(TraverseNode *trav);
@@ -141,6 +139,11 @@ public:
     void renderNodeCoarser(TraverseNode *trav);
     void renderNodeDraws(TraverseNode *trav, TraverseNode *orig,
                             float opacity);
+    DrawSurfaceTask convert(const RenderSurfaceTask &task);
+    DrawSurfaceTask convert(const RenderSurfaceTask &task,
+                            const vec4f &uvClip, float opacity);
+    DrawGeodataTask convert(const RenderGeodataTask &task);
+    DrawSimpleTask convert(const RenderSimpleTask &task);
     bool generateMonolithicGeodataTrav(TraverseNode *trav);
     std::shared_ptr<GpuTexture> travInternalTexture(TraverseNode *trav,
                                                   uint32 subMeshIndex);

@@ -35,20 +35,29 @@
 namespace vts
 {
 
-class RenderTask;
-class CameraImpl;
-
-class VTS_API DrawTask : public vtsCDrawBase
+class VTS_API DrawSurfaceTask : public vtsCDrawSurfaceBase
 {
 public:
     std::shared_ptr<void> mesh;
     std::shared_ptr<void> texColor;
     std::shared_ptr<void> texMask;
+    DrawSurfaceTask();
+};
 
-    DrawTask();
-    DrawTask(const CameraImpl *m, const RenderTask &r);
-    DrawTask(const CameraImpl *m, const RenderTask &r,
-        const float *uvClip, float opacity);
+class VTS_API DrawGeodataTask : public vtsCDrawGeodataBase
+{
+public:
+    std::shared_ptr<void> mesh;
+    std::shared_ptr<void> texColor;
+    DrawGeodataTask();
+};
+
+class VTS_API DrawSimpleTask : public vtsCDrawSimpleBase
+{
+public:
+    std::shared_ptr<void> mesh;
+    std::shared_ptr<void> texColor;
+    DrawSimpleTask();
 };
 
 class VTS_API CameraDraws
@@ -56,17 +65,21 @@ class VTS_API CameraDraws
 public:
     // tasks that may be rendered in optimized way without any transparency
     // (may be rendered in any order)
-    std::vector<DrawTask> opaque;
+    std::vector<DrawSurfaceTask> opaque;
+
     // tasks that need blending enabled for correct rendering
     // (must be rendered in given order)
-    std::vector<DrawTask> transparent;
+    std::vector<DrawSurfaceTask> transparent;
+
     // geodata
-    std::vector<DrawTask> geodata;
+    std::vector<DrawGeodataTask> geodata;
+
     // visualization of debug data
-    std::vector<DrawTask> infographics;
+    std::vector<DrawSimpleTask> infographics;
+
     // meshes suitable for collision detection
-    // each node's mesh is reported only once
-    std::vector<DrawTask> colliders;
+    // each nodes mesh is reported only once
+    std::vector<DrawSimpleTask> colliders;
 
     struct VTS_API Camera : public vtsCCameraBase
     {

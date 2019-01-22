@@ -76,6 +76,7 @@ set(SRC_LIST
     camera/camera.hpp
     camera/cameraApi.cpp
     camera/draws.cpp
+    camera/geodata.cpp
     camera/grids.cpp
     camera/surfaceStack.cpp
     camera/traversal.cpp

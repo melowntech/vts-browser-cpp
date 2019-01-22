@@ -79,7 +79,10 @@ void CameraImpl::clear()
     }
 }
 
-void CameraImpl::touchDraws(const RenderTask &task)
+namespace
+{
+
+void touchDraws(MapImpl *map, const RenderSurfaceTask &task)
 {
     if (task.mesh)
         map->touchResource(task.mesh);
@@ -89,18 +92,35 @@ void CameraImpl::touchDraws(const RenderTask &task)
         map->touchResource(task.textureMask);
 }
 
-void CameraImpl::touchDraws(const std::vector<RenderTask> &renders)
+void touchDraws(MapImpl *map, const RenderGeodataTask &task)
+{
+    if (task.mesh)
+        map->touchResource(task.mesh);
+    if (task.textureColor)
+        map->touchResource(task.textureColor);
+}
+
+void touchDraws(MapImpl *map, const RenderSimpleTask &task)
+{
+    if (task.mesh)
+        map->touchResource(task.mesh);
+    if (task.textureColor)
+        map->touchResource(task.textureColor);
+}
+
+template<class T>
+void touchDraws(MapImpl *map, const std::vector<T> &renders)
 {
     for (auto &it : renders)
-        touchDraws(it);
+        touchDraws(map, it);
 }
+
+} // namespace
 
 void CameraImpl::touchDraws(TraverseNode *trav)
 {
-    for (auto &it : trav->opaque)
-        touchDraws(it);
-    for (auto &it : trav->transparent)
-        touchDraws(it);
+    vts::touchDraws(map, trav->opaque);
+    vts::touchDraws(map, trav->transparent);
     if (trav->touchResource)
         map->touchResource(trav->touchResource);
 }
@@ -226,36 +246,40 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     else
         renderNodeDraws(trav, orig, nan1());
 
-    // colliders
+    // geodata & colliders
     if (!isSubNode)
-        for (const RenderTask &r : trav->colliders)
-            draws.colliders.emplace_back(this, r);
+    {
+        for (const RenderGeodataTask &r : trav->geodata)
+            draws.geodata.emplace_back(convert(r));
+        for (const RenderSimpleTask &r : trav->colliders)
+            draws.colliders.emplace_back(convert(r));
+    }
 
     // surrogate
     if (options.debugRenderSurrogates && trav->surrogatePhys)
     {
-        RenderTask task;
+        RenderSimpleTask task;
         task.mesh = map->getMesh("internal://data/meshes/sphere.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
         task.model = translationMatrix(*trav->surrogatePhys)
                 * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
         task.color = vec3to4f(trav->surface->color, task.color(3));
         if (task.ready())
-            draws.infographics.emplace_back(this, task);
+            draws.infographics.emplace_back(convert(task));
     }
 
     // mesh box
     if (options.debugRenderMeshBoxes)
     {
-        for (RenderTask &r : trav->opaque)
+        for (RenderSurfaceTask &r : trav->opaque)
         {
-            RenderTask task;
+            RenderSimpleTask task;
             task.model = r.model;
             task.mesh = map->getMesh("internal://data/meshes/aabb.obj");
             task.mesh->priority = std::numeric_limits<float>::infinity();
             task.color = vec3to4f(trav->surface->color, task.color(3));
             if (task.ready())
-                draws.infographics.emplace_back(this, task);
+                draws.infographics.emplace_back(convert(task));
         }
     }
 
@@ -263,7 +287,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     if (options.debugRenderTileBoxes
             || (options.debugRenderSubtileBoxes && isSubNode))
     {
-        RenderTask task;
+        RenderSimpleTask task;
         task.mesh = map->getMesh("internal://data/meshes/line.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
         if (trav->layer->freeLayer)
@@ -299,7 +323,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
                     vec3 a = trav->cornersPhys[cora[i]];
                     vec3 b = trav->cornersPhys[corb[i]];
                     task.model = lookAt(a, b);
-                    draws.infographics.emplace_back(this, task);
+                    draws.infographics.emplace_back(convert(task));
                 }
             }
             // sub tile box
@@ -312,7 +336,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
                     vec3 a = orig->cornersPhys[cora[i]];
                     vec3 b = orig->cornersPhys[corb[i]];
                     task.model = lookAt(a, b);
-                    draws.infographics.emplace_back(this, task);
+                    draws.infographics.emplace_back(convert(task));
                 }
             }
         }
@@ -401,8 +425,8 @@ void CameraImpl::renderNodeDraws(TraverseNode *trav,
     {
         assert(opacity >= 0.f && opacity <= 1.f);
         // opaque becomes transparent
-        for (const RenderTask &r : trav->opaque)
-            draws.transparent.emplace_back(this, r, uvClip.data(), opacity);
+        for (const RenderSurfaceTask &r : trav->opaque)
+            draws.transparent.emplace_back(convert(r, uvClip, opacity));
     }
     else
     {
@@ -413,14 +437,12 @@ void CameraImpl::renderNodeDraws(TraverseNode *trav,
         if (trav != orig)
             opaqueSubtiles[trav].subtiles.emplace_back(orig, uvClip);
         else
-            for (const RenderTask &r : trav->opaque)
-                draws.opaque.emplace_back(this, r, uvClip.data(), nan1());
+            for (const RenderSurfaceTask &r : trav->opaque)
+                draws.opaque.emplace_back(convert(r, uvClip, nan1()));
     }
 
-    for (const RenderTask &r : trav->transparent)
-        draws.transparent.emplace_back(this, r, uvClip.data(), opacity);
-    for (const RenderTask &r : trav->geodata)
-        draws.geodata.emplace_back(this, r, uvClip.data(), opacity);
+    for (const RenderSurfaceTask &r : trav->transparent)
+        draws.transparent.emplace_back(convert(r, uvClip, opacity));
 
     trav->lastRenderTime = map->renderTickIndex;
     orig->lastRenderTime = map->renderTickIndex;
@@ -575,7 +597,7 @@ void CameraImpl::renderUpdate()
     else
     {
         // render original camera
-        RenderTask task;
+        RenderSimpleTask task;
         task.mesh = map->getMesh("internal://data/meshes/line.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
         task.color = vec4f(0, 1, 0, 1);
@@ -600,7 +622,7 @@ void CameraImpl::renderUpdate()
                 vec3 a = corners[cora[i]];
                 vec3 b = corners[corb[i]];
                 task.model = lookAt(a, b);
-                draws.infographics.emplace_back(this, task);
+                draws.infographics.emplace_back(convert(task));
             }
         }
     }
@@ -680,8 +702,8 @@ void CameraImpl::suggestedNearFar(double &near_, double &far_)
 void CameraImpl::sortOpaqueFrontToBack()
 {
     vec3 e = rawToVec3(draws.camera.eye);
-    std::sort(draws.opaque.begin(), draws.opaque.end(), [e](const DrawTask &a,
-        const DrawTask &b) {
+    std::sort(draws.opaque.begin(), draws.opaque.end(), [e](
+        const DrawSurfaceTask &a, const DrawSurfaceTask &b) {
         vec3 va = rawToVec3(a.center).cast<double>() - e;
         vec3 vb = rawToVec3(b.center).cast<double>() - e;
         return dot(va, va) < dot(vb, vb);

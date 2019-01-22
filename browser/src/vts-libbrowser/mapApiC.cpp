@@ -150,11 +150,6 @@ typedef struct vtsCFetcher
     std::shared_ptr<vts::Fetcher> p;
 } vtsCFetcher;
 
-typedef struct vtsCDrawsGroup
-{
-    const std::vector<vts::DrawTask> *draws;
-} vtsCDrawIterator;
-
 typedef struct vtsCResource
 {
     vts::ResourceInfo *r;
@@ -630,6 +625,108 @@ void vtsCameraSetOptions(vtsHCamera cam, const char *options)
     co.applyJson(options);
     cam->p->options() = co; // all or nothing
     C_END
+}
+
+////////////////////////////////////////////////////////////////////////////
+// DRAWS
+////////////////////////////////////////////////////////////////////////////
+
+void vtsDrawsOpaqueGroup(vtsHCamera cam,
+    void **group, uint32 *count)
+{
+    C_BEGIN
+    *group = cam->p->draws().opaque.data();
+    *count = cam->p->draws().opaque.size();
+    C_END
+}
+
+void vtsDrawsTransparentGroup(vtsHCamera cam,
+    void **group, uint32 *count)
+{
+    C_BEGIN
+    *group = cam->p->draws().transparent.data();
+    *count = cam->p->draws().transparent.size();
+    C_END
+}
+
+void vtsDrawsGeodataGroup(vtsHCamera cam,
+    void **group, uint32 *count)
+{
+    C_BEGIN
+    *group = cam->p->draws().geodata.data();
+    *count = cam->p->draws().geodata.size();
+    C_END
+}
+
+void vtsDrawsInfographicsGroup(vtsHCamera cam,
+    void **group, uint32 *count)
+{
+    C_BEGIN
+    *group = cam->p->draws().infographics.data();
+    *count = cam->p->draws().infographics.size();
+    C_END
+}
+
+void vtsDrawsCollidersGroup(vtsHCamera cam,
+    void **group, uint32 *count)
+{
+    C_BEGIN
+    *group = cam->p->draws().colliders.data();
+    *count = cam->p->draws().colliders.size();
+    C_END
+}
+
+void vtsDrawsSurfaceTask(void *group, uint32 index,
+    void **mesh, void **texColor, void **texMask,
+    vtsCDrawSurfaceBase **base)
+{
+    C_BEGIN
+    vts::DrawSurfaceTask *t = (vts::DrawSurfaceTask *)group + index;
+    *mesh = t->mesh.get();
+    *texColor = t->texColor.get();
+    *texMask = t->texMask.get();
+    *base = (vtsCDrawSurfaceBase*)t;
+    C_END
+}
+
+void vtsDrawsGeodataTask(void *group, uint32 index,
+    void **mesh, void **texColor,
+    vtsCDrawGeodataBase **base)
+{
+    C_BEGIN
+    vts::DrawGeodataTask *t = (vts::DrawGeodataTask *)group + index;
+    *mesh = t->mesh.get();
+    *texColor = t->texColor.get();
+    *base = (vtsCDrawGeodataBase*)t;
+    C_END
+}
+
+void vtsDrawsSimpleTask(void *group, uint32 index,
+    void **mesh, void **texColor,
+    vtsCDrawSimpleBase **base)
+{
+    C_BEGIN
+    vts::DrawSimpleTask *t = (vts::DrawSimpleTask *)group + index;
+    *mesh = t->mesh.get();
+    *texColor = t->texColor.get();
+    *base = (vtsCDrawSimpleBase*)t;
+    C_END
+}
+
+const vtsCCameraBase *vtsDrawsCamera(vtsHCamera cam)
+{
+    C_BEGIN
+    return &cam->p->draws().camera;
+    C_END
+    return nullptr;
+}
+
+void *vtsDrawsAtmosphereDensityTexture(vtsHMap map)
+{
+    C_BEGIN
+    return map->p->atmosphereDensityTexture().get();
+    C_END
+    return nullptr;
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -1157,143 +1254,6 @@ void vtsCelestialAtmosphereDerivedAttributes(vtsHMap map,
     if (verticalExponent)
         *verticalExponent = ve;
     C_END
-}
-
-////////////////////////////////////////////////////////////////////////////
-// DRAWS
-////////////////////////////////////////////////////////////////////////////
-
-namespace
-{
-
-vtsHDrawsGroup createDrawIterator(std::vector<vts::DrawTask> &vec)
-{
-    if (vec.empty())
-        return nullptr;
-    vtsHDrawsGroup r = new vtsCDrawsGroup;
-    r->draws = &vec;
-    return r;
-}
-
-} // namespace
-
-vtsHDrawsGroup vtsDrawsOpaque(vtsHCamera cam)
-{
-    C_BEGIN
-    return createDrawIterator(cam->p->draws().opaque);
-    C_END
-    return nullptr;
-}
-
-vtsHDrawsGroup vtsDrawsTransparent(vtsHCamera cam)
-{
-    C_BEGIN
-    return createDrawIterator(cam->p->draws().transparent);
-    C_END
-    return nullptr;
-}
-
-vtsHDrawsGroup vtsDrawsGeodata(vtsHCamera cam)
-{
-    C_BEGIN
-    return createDrawIterator(cam->p->draws().geodata);
-    C_END
-    return nullptr;
-}
-
-vtsHDrawsGroup vtsDrawsInfographics(vtsHCamera cam)
-{
-    C_BEGIN
-    return createDrawIterator(cam->p->draws().infographics);
-    C_END
-    return nullptr;
-}
-
-vtsHDrawsGroup vtsDrawsColliders(vtsHCamera cam)
-{
-    C_BEGIN
-    return createDrawIterator(cam->p->draws().colliders);
-    C_END
-    return nullptr;
-}
-
-uint32 vtsDrawsCount(vtsHDrawsGroup group)
-{
-    C_BEGIN
-    if (group)
-        return group->draws->size();
-    else
-        return 0;
-    C_END
-    return 0;
-}
-
-void vtsDrawsDestroy(vtsHDrawsGroup group)
-{
-    C_BEGIN
-    delete group;
-    C_END
-}
-
-void *vtsDrawsMesh(vtsHDrawsGroup group, uint32 index)
-{
-    C_BEGIN
-    return (*group->draws)[index].mesh.get();
-    C_END
-    return nullptr;
-}
-
-void *vtsDrawsTexColor(vtsHDrawsGroup group, uint32 index)
-{
-    C_BEGIN
-    return (*group->draws)[index].texColor.get();
-    C_END
-    return nullptr;
-}
-
-void *vtsDrawsTexMask(vtsHDrawsGroup group, uint32 index)
-{
-    C_BEGIN
-    return (*group->draws)[index].texMask.get();
-    C_END
-    return nullptr;
-}
-
-const vtsCDrawBase *vtsDrawsDetail(vtsHDrawsGroup group, uint32 index)
-{
-    C_BEGIN
-    return &(*group->draws)[index];
-    C_END
-    return nullptr;
-}
-
-const vtsCDrawBase *vtsDrawsAllInOne(vtsHDrawsGroup group, uint32 index,
-                              void **mesh, void **texColor, void **texMask)
-{
-    C_BEGIN
-    const vts::DrawTask &t = (*group->draws)[index];
-    *mesh = t.mesh.get();
-    *texColor = t.texColor.get();
-    *texMask = t.texMask.get();
-    return &t;
-    C_END
-    return nullptr;
-}
-
-const vtsCCameraBase *vtsDrawsCamera(vtsHCamera cam)
-{
-    C_BEGIN
-    return &cam->p->draws().camera;
-    C_END
-    return nullptr;
-}
-
-void *vtsDrawsAtmosphereDensityTexture(vtsHMap map)
-{
-    C_BEGIN
-    return map->p->atmosphereDensityTexture().get();
-    C_END
-    return nullptr;
 }
 
 ////////////////////////////////////////////////////////////////////////////

@@ -165,19 +165,19 @@ void MainWindow::prepareMarks()
                 * vts::translationMatrix(m.coord)
                 * vts::scaleMatrix(navigation->getViewExtent() * 0.005);
         vts::mat4f mvf = mv.cast<float>();
-        vts::DrawTask t;
+        vts::DrawSimpleTask t;
         vts::vec4f c = vts::vec3to4f(m.color, 1);
         for (int i = 0; i < 4; i++)
             t.color[i] = c(i);
         t.mesh = meshSphere;
-        memcpy(t.mv, mvf.data(), sizeof(t.mv));
+        vts::matToRaw(mvf, t.mv);
         camera->draws().infographics.push_back(t);
         if (prev)
         {
             t.mesh = meshLine;
             mv = view * vts::lookAt(m.coord, prev->coord);
             mvf = mv.cast<float>();
-            memcpy(t.mv, mvf.data(), sizeof(t.mv));
+            vts::matToRaw(mvf, t.mv);
             camera->draws().infographics.push_back(t);
         }
         prev = &m;

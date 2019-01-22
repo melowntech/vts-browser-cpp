@@ -419,8 +419,8 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
     }
 
     bool determined = true;
-    std::vector<RenderTask> newOpaque;
-    std::vector<RenderTask> newTransparent;
+    std::vector<RenderSurfaceTask> newOpaque;
+    std::vector<RenderSurfaceTask> newTransparent;
     std::vector<vtslibs::registry::CreditId> newCredits;
 
     // iterate over all submeshes
@@ -468,7 +468,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
                 }
 
                 // draw task
-                RenderTask task;
+                RenderSurfaceTask task;
                 task.textureColor = b.textureColor;
                 task.textureMask = b.textureMask;
                 task.color(3) = b.alpha ? *b.alpha : 1;
@@ -489,7 +489,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
         // internal texture
         if (part.internalUv)
         {
-            RenderTask task;
+            RenderSurfaceTask task;
             task.textureColor = travInternalTexture(trav, subMeshIndex);
             switch (map->getResourceValidity(task.textureColor))
             {
@@ -524,7 +524,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
         {
             const MeshPart &part = meshAgg->submeshes[subMeshIndex];
             std::shared_ptr<GpuMesh> mesh = part.renderable;
-            RenderTask task;
+            RenderSimpleTask task;
             task.mesh = mesh;
             task.model = part.normToPhys;
             trav->colliders.push_back(task);

@@ -39,7 +39,6 @@ DrawSurfaceTask::DrawSurfaceTask()
 DrawGeodataTask::DrawGeodataTask()
 {
     memset((vtsCDrawGeodataBase*)this, 0, sizeof(vtsCDrawGeodataBase));
-    color[3] = 1;
 }
 
 DrawSimpleTask::DrawSimpleTask()
@@ -82,21 +81,11 @@ bool RenderSurfaceTask::ready() const
     return true;
 }
 
-RenderGeodataTask::RenderGeodataTask() : model(identityMatrix4()),
-    uvm(identityMatrix3().cast<float>()),
-    color(1, 1, 1, 1),
-    visibilityRelative(nan4().cast<float>()),
-    zBufferOffset(nan3().cast<float>()),
-    visibilityAbsolute(nan2().cast<float>()),
-    visibility(nan1()), culling(nan1()), zIndex(0)
+RenderGeodataTask::RenderGeodataTask()
 {}
 
 bool RenderGeodataTask::ready() const
 {
-    if (mesh && !*mesh)
-        return false;
-    if (textureColor && !*textureColor)
-        return false;
     return true;
 }
 
@@ -161,14 +150,8 @@ DrawSurfaceTask CameraImpl::convert(const RenderSurfaceTask &task,
 
 DrawGeodataTask CameraImpl::convert(const RenderGeodataTask &task)
 {
-    DrawGeodataTask result = vts::convert<DrawGeodataTask,
-                            RenderGeodataTask>(this, task);
-    vecToRaw(task.visibilityRelative, result.visibilityRelative);
-    vecToRaw(task.zBufferOffset, result.zBufferOffset);
-    vecToRaw(task.visibilityAbsolute, result.visibilityAbsolute);
-    result.visibility = task.visibility;
-    result.culling = task.culling;
-    result.zIndex = task.zIndex;
+    DrawGeodataTask result;
+    result.geodata = task.geodata->info.userData;
     return result;
 }
 

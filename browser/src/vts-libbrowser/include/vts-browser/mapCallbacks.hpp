@@ -40,22 +40,33 @@ public:
     // function callback to upload a texture to gpu
     // invoked from Map::dataTick()
     std::function<void(class ResourceInfo &, class GpuTextureSpec &)>
-            loadTexture;
+        loadTexture;
 
     // function callback to upload a mesh to gpu
     // invoked from Map::dataTick()
     std::function<void(class ResourceInfo &, class GpuMeshSpec &)>
-            loadMesh;
+        loadMesh;
+
+    // function callback to upload font to gpu
+    // invoked from Map::dataTick()
+    std::function<void(class ResourceInfo &, class GpuFontSpec &)>
+        loadFont;
+
+    // function callback to upload geodata to gpu
+    // invoked from Map::dataTick()
+    std::function<void(class ResourceInfo &, class GpuGeodataSpec &)>
+        loadGeodata;
 
     // function callback when the mapconfig is downloaded
     // invoked from Map::renderTick()
     // suitable to change view, position, etc.
+    // this also enables srs conversions
     std::function<void()> mapconfigAvailable;
 
     // function callback when the mapconfig and all other required
     //   external definitions are initialized
     // invoked from Map::renderTick()
-    // suitable to start navigation etc.
+    // suitable to start animated navigation etc.
     std::function<void()> mapconfigReady;
 };
 

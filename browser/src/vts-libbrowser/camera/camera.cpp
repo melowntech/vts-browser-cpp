@@ -94,10 +94,7 @@ void touchDraws(MapImpl *map, const RenderSurfaceTask &task)
 
 void touchDraws(MapImpl *map, const RenderGeodataTask &task)
 {
-    if (task.mesh)
-        map->touchResource(task.mesh);
-    if (task.textureColor)
-        map->touchResource(task.textureColor);
+    // geodata are not a resource
 }
 
 void touchDraws(MapImpl *map, const RenderSimpleTask &task)

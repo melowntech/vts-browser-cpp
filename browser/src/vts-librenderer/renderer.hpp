@@ -38,7 +38,14 @@
 #include "include/vts-renderer/classes.hpp"
 #include "include/vts-renderer/renderer.hpp"
 
-namespace vts { namespace renderer
+namespace vts
+{
+
+class CameraDraws;
+class DrawSurfaceTask;
+class DrawSimpleTask;
+
+namespace renderer
 {
 
 namespace priv
@@ -47,10 +54,59 @@ namespace priv
 extern uint32 maxAntialiasingSamples;
 extern float maxAnisotropySamples;
 
+class RendererImpl
+{
+public:
+    RenderVariables vars;
+    RenderOptions options;
+
+    std::shared_ptr<Texture> texCompas;
+    std::shared_ptr<Shader> shaderTexture;
+    std::shared_ptr<class ShaderAtm> shaderSurface;
+    std::shared_ptr<class ShaderAtm> shaderBackground;
+    std::shared_ptr<Shader> shaderInfographic;
+    std::shared_ptr<Shader> shaderCopyDepth;
+    std::shared_ptr<Mesh> meshQuad; // positions: -1 .. 1
+    std::shared_ptr<Mesh> meshRect; // positions: 0 .. 1
+    std::shared_ptr<UniformBuffer> uboAtm;
+
+    const CameraDraws *draws;
+    const MapCelestialBody *body;
+    Texture *atmosphereDensityTexture;
+
+    mat4 view;
+    mat4 proj;
+    mat4 viewProj;
+
+    uint32 widthPrev;
+    uint32 heightPrev;
+    uint32 antialiasingPrev;
+
+    bool projected;
+
+    static void clearGlState();
+
+    RendererImpl();
+    ~RendererImpl();
+    void drawSurface(const DrawSurfaceTask &t);
+    void drawInfographic(const DrawSimpleTask &t);
+    void enableClipDistance(bool enable);
+    void renderGeodata();
+    void render();
+    void initialize();
+    void finalize();
+    void updateAtmosphereBuffer();
+    void renderCompass(const double screenPosSize[3],
+        const double mapRotation[3]);
+    void getWorldPosition(const double screenPos[2], double worldPos[3]);
+};
+
 } // namespace priv
 
 using namespace priv;
 
-} } // namespace vts renderer
+} // namespace renderer
+
+} // namespace vts
 
 #endif

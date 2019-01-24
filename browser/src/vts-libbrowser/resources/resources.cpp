@@ -174,9 +174,9 @@ std::shared_ptr<GeodataStylesheet> MapImpl::getGeoStyle(
     return getMapResource<GeodataStylesheet>(this, name);
 }
 
-std::shared_ptr<GpuGeodata> MapImpl::getGeodata(const std::string &name)
+std::shared_ptr<GeodataTile> MapImpl::getGeodata(const std::string &name)
 {
-    return getMapResource<GpuGeodata>(this, name);
+    return getMapResource<GeodataTile>(this, name);
 }
 
 } // namespace vts

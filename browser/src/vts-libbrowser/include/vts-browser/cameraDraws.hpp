@@ -47,8 +47,7 @@ public:
 class VTS_API DrawGeodataTask : public vtsCDrawGeodataBase
 {
 public:
-    std::shared_ptr<void> mesh;
-    std::shared_ptr<void> texColor;
+    std::shared_ptr<void> geodata;
     DrawGeodataTask();
 };
 

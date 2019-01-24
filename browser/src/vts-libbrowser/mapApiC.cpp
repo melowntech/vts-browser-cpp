@@ -649,6 +649,7 @@ void vtsDrawsTransparentGroup(vtsHCamera cam,
     C_END
 }
 
+/*
 void vtsDrawsGeodataGroup(vtsHCamera cam,
     void **group, uint32 *count)
 {
@@ -657,6 +658,7 @@ void vtsDrawsGeodataGroup(vtsHCamera cam,
     *count = cam->p->draws().geodata.size();
     C_END
 }
+*/
 
 void vtsDrawsInfographicsGroup(vtsHCamera cam,
     void **group, uint32 *count)
@@ -686,18 +688,6 @@ void vtsDrawsSurfaceTask(void *group, uint32 index,
     *texColor = t->texColor.get();
     *texMask = t->texMask.get();
     *base = (vtsCDrawSurfaceBase*)t;
-    C_END
-}
-
-void vtsDrawsGeodataTask(void *group, uint32 index,
-    void **mesh, void **texColor,
-    vtsCDrawGeodataBase **base)
-{
-    C_BEGIN
-    vts::DrawGeodataTask *t = (vts::DrawGeodataTask *)group + index;
-    *mesh = t->mesh.get();
-    *texColor = t->texColor.get();
-    *base = (vtsCDrawGeodataBase*)t;
     C_END
 }
 

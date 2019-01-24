@@ -35,6 +35,22 @@ using Json::Value;
 namespace
 {
 
+struct GpuGeodataSpecComparator
+{
+    bool operator () (const GpuGeodataSpec &a, const GpuGeodataSpec &b) const
+    {
+        if (a.type != b.type)
+            return a.type < b.type;
+        int c = memcmp(&a.common, &b.common, sizeof(a.common));
+        if (c != 0)
+            return c < 0;
+        int s = memcmp(&a.sharedData, &b.sharedData, sizeof(a.sharedData));
+        if (s != 0)
+            return s < 0;
+        return memcmp(a.model, b.model, sizeof(float) * 16) < 0;
+    }
+};
+
 #define THROW LOGTHROW(err3, GeodataValidationException)
 
 template<bool Validating>
@@ -82,7 +98,7 @@ struct geoContext
         }
     }
 
-    geoContext(GpuGeodata *data, const std::string &style,
+    geoContext(GeodataTile *data, const std::string &style,
                const std::string &features, uint32 lod)
         : data(data),
           style(stringToJson(style)),
@@ -203,7 +219,16 @@ struct geoContext
             }
             this->type.reset();
             this->feature.reset();
-            finishGroup();
+        }
+
+        // convert cache into actual render tasks
+        for (const GpuGeodataSpec &spec : cacheData)
+        {
+            RenderGeodataTask t;
+            t.geodata = std::make_shared<GpuGeodata>();
+            data->map->callbacks.loadGeodata(t.geodata->info,
+                                const_cast<GpuGeodataSpec&>(spec));
+            data->renders.push_back(t);
         }
     }
 
@@ -598,23 +623,18 @@ struct geoContext
             if (!evaluate(layer["visible"]).asBool())
                 return;
 
-        // z-index
-
-        // zbuffer-offset
-
-        // visibility
-
-        // culling
+        GpuGeodataSpec spec;
+        processFeatureCommon(layer, spec, zOverride);
 
         // line
         if (evaluate(layer["line"]).asBool())
-            processFeatureLine(layer);
+            processFeatureLine(layer, spec);
 
         // line-label
 
         // point
         if (evaluate(layer["point"]).asBool())
-            processFeaturePoint(layer);
+            processFeaturePoint(layer, spec);
 
         // icon
 
@@ -630,9 +650,44 @@ struct geoContext
         }
     }
 
-    void processFeatureLine(const Value &layer)
+    void processFeatureCommon(const Value &layer, GpuGeodataSpec &spec,
+        boost::optional<sint32> zOverride)
     {
-        vec4f color = convertColor(layer["line-color"]);
+        // model
+        matToRaw(group->model(), spec.model);
+
+        // z-index
+        if (zOverride)
+            spec.common.zIndex = *zOverride;
+        else if (layer["z-index"])
+            spec.common.zIndex = evaluate(layer["z-index"]).asInt();
+
+        // zbuffer-offset
+        if (layer["zbuffer-offset"])
+        {
+            Value arr = evaluate(layer["zbuffer-offset"]);
+            validateArrayLength(arr, 3, 3,
+                "zbuffer-offset must have 3 values");
+            for (int i = 0; i < 3; i++)
+                spec.common.zBufferOffset[i] = arr[i].asFloat();
+        }
+
+        // visibility
+
+        // culling
+    }
+
+    void processFeatureLine(const Value &layer, GpuGeodataSpec spec)
+    {
+        if (evaluate(layer["line-flat"]).asBool())
+            spec.type = GpuGeodataSpec::Type::LineWorld;
+        else
+            spec.type = GpuGeodataSpec::Type::LineScreen;
+        vecToRaw(convertColor(layer["line-color"]),
+            spec.sharedData.line.color);
+        spec.sharedData.line.width
+            = evaluate(layer["line-width"]).asFloat();
+        GpuGeodataSpec &data = findSpecData(spec);
         switch (*type)
         {
         case Type::Point:
@@ -640,169 +695,97 @@ struct geoContext
             break;
         case Type::Line:
         {
-            // convert lines to lines
             const Value &la = feature->feature["lines"];
             for (const Value &l : la)
             {
-                Point last = {};
-                LineKey li;
-                li.color = color;
-                std::vector<LineData> &out = cacheLines[li];
-                bool second = false;
-                for (const Value &pv : l)
+                if (l.size() == 0)
+                    continue;
                 {
-                    Point p = convertPoint(pv);
-                    if (second)
-                    {
-                        LineData lm;
-                        lm.p[0] = last;
-                        lm.p[1] = p;
-                        out.push_back(lm);
-                    }
-                    else
-                        second = true;
-                    last = p;
+                    Point c = convertPoint(l[0]);
+                    for (int i = 0; i < 3; i++)
+                        data.coordinates.push_back(c[i]);
+                }
+                for (const Value &lv : l)
+                {
+                    Point c = convertPoint(lv);
+                    for (int j = 0; j < 2; j++)
+                        for (int i = 0; i < 3; i++)
+                            data.coordinates.push_back(c[i]);
+                }
+                {
+                    Point c = convertPoint(l[l.size() - 1]);
+                    for (int i = 0; i < 3; i++)
+                        data.coordinates.push_back(c[i]);
                 }
             }
         } break;
         case Type::Polygon:
         {
-            // convert polygons to lines
             // todo
         } break;
         }
     }
 
-    void processFeaturePoint(const Value &layer)
+    void processFeaturePoint(const Value &layer, GpuGeodataSpec spec)
     {
-        vec4f color = convertColor(layer["point-color"]);
+        if (evaluate(layer["point-flat"]).asBool())
+            spec.type = GpuGeodataSpec::Type::PointWorld;
+        else
+            spec.type = GpuGeodataSpec::Type::PointScreen;
+        vecToRaw(convertColor(layer["point-color"]),
+            spec.sharedData.point.color);
+        spec.sharedData.point.radius
+            = evaluate(layer["point-radius"]).asFloat();
+        GpuGeodataSpec &data = findSpecData(spec);
         switch (*type)
         {
         case Type::Point:
         {
-            // convert points to points
             const Value &pa = feature->feature["points"];
             for (const Value &p : pa)
             {
-                PointKey pi;
-                pi.color = color;
-                std::vector<PointData> &out = cachePoints[pi];
                 for (const Value &pv : p)
                 {
-                    PointData lm;
-                    lm.p = convertPoint(pv);
-                    out.push_back(lm);
+                    Point c = convertPoint(pv);
+                    for (int i = 0; i < 3; i++)
+                        data.coordinates.push_back(c[i]);
                 }
             }
         } break;
         case Type::Line:
         {
-            // convert lines to points
             const Value &la = feature->feature["lines"];
             for (const Value &l : la)
             {
-                PointKey pi;
-                pi.color = color;
-                std::vector<PointData> &out = cachePoints[pi];
-                for (const Value &pv : l)
+                for (const Value &lv : l)
                 {
-                    PointData lm;
-                    lm.p = convertPoint(pv);
-                    out.push_back(lm);
+                    Point c = convertPoint(lv);
+                    for (int i = 0; i < 3; i++)
+                        data.coordinates.push_back(c[i]);
                 }
             }
         } break;
         case Type::Polygon:
         {
-            // convert polygons to points
             // todo
         } break;
         }
     }
 
-    // this function takes all the cached values,
-    //   merges them as much as possible
-    //   and generates actual gpu meshes and render tasks
-    void finishGroup()
+    GpuGeodataSpec &findSpecData(const GpuGeodataSpec &spec)
     {
-        finishGroupPoints();
-        finishGroupLines();
-        // todo
-    }
-
-    void finishGroupPoints()
-    {
-        for (const std::pair<const PointKey,
-            std::vector<PointData>> &points : cachePoints)
-        {
-            GpuMeshSpec spec;
-            spec.verticesCount = points.second.size();
-            spec.vertices.allocate(points.second.size() * sizeof(Point));
-            uint16 *out = (uint16*)spec.vertices.data();
-            for (const auto &it : points.second)
-            {
-                for (uint32 vi = 0; vi < 3; vi++)
-                    *out++ = it.p[vi];
-            }
-            spec.attributes[0].enable = true;
-            spec.attributes[0].components = 3;
-            spec.attributes[0].type = GpuTypeEnum::UnsignedShort;
-            spec.faceMode = GpuMeshSpec::FaceMode::Points;
-
-            std::shared_ptr<GpuMesh> gm = std::make_shared<GpuMesh>(data->map,
-                data->name + "#$!points");
-            data->map->callbacks.loadMesh(gm->info, spec);
-            gm->state = Resource::State::ready;
-
-            RenderGeodataTask task;
-            task.mesh = gm;
-            task.model = group->model();
-            task.color = points.first.color;
-            data->renders.push_back(task);
-        }
-
-        cachePoints.clear();
-    }
-
-    void finishGroupLines()
-    {
-        for (const std::pair<const LineKey,
-                std::vector<LineData>> &lines : cacheLines)
-        {
-            GpuMeshSpec spec;
-            spec.verticesCount = lines.second.size() * 2;
-            spec.vertices.allocate(lines.second.size() * sizeof(Point) * 2);
-            uint16 *out = (uint16*)spec.vertices.data();
-            for (const auto &it : lines.second)
-            {
-                for (uint32 pi = 0; pi < 2; pi++)
-                    for (uint32 vi = 0; vi < 3; vi++)
-                        *out++ = it.p[pi][vi];
-            }
-            spec.attributes[0].enable = true;
-            spec.attributes[0].components = 3;
-            spec.attributes[0].type = GpuTypeEnum::UnsignedShort;
-            spec.faceMode = GpuMeshSpec::FaceMode::Lines;
-
-            std::shared_ptr<GpuMesh> gm = std::make_shared<GpuMesh>(data->map,
-                data->name + "#$!lines");
-            data->map->callbacks.loadMesh(gm->info, spec);
-            gm->state = Resource::State::ready;
-
-            RenderGeodataTask task;
-            task.mesh = gm;
-            task.model = group->model();
-            task.color = lines.first.color;
-            data->renders.push_back(task);
-        }
-
-        cacheLines.clear();
+        // only modifying attributes not used in comparison
+        auto specIt = cacheData.find(spec);
+        if (specIt == cacheData.end())
+            specIt = cacheData.insert(spec).first;
+        GpuGeodataSpec &data = const_cast<GpuGeodataSpec&>(*specIt);
+        return data;
     }
 
     // immutable data
     //   data given from the outside world
 
-    GpuGeodata *const data;
+    GeodataTile *const data;
     Value style;
     Value features;
     const uint32 lod;
@@ -867,47 +850,13 @@ struct geoContext
 
     // cache data
     //   temporary data generated while processing features
-    //   these will be consumed in finishGroup
-    //   which will generate the actual render tasks
 
-    // lines
-    struct LineData
-    {
-        Point p[2];
-    };
-    struct LineKey
-    {
-        vec4f color;
-
-        bool operator < (const LineKey &other) const
-        {
-            return memcmp(&color, &other.color, sizeof(color)) < 0;
-            // todo consider all parameters
-        }
-    };
-    std::map<LineKey, std::vector<LineData>> cacheLines;
-
-    // points
-    struct PointData
-    {
-        Point p;
-    };
-    struct PointKey
-    {
-        vec4f color;
-
-        bool operator < (const PointKey &other) const
-        {
-            return memcmp(&color, &other.color, sizeof(color)) < 0;
-            // todo consider all parameters
-        }
-    };
-    std::map<PointKey, std::vector<PointData>> cachePoints;
+    std::set<GpuGeodataSpec, GpuGeodataSpecComparator> cacheData;
 };
 
 } // namespace
 
-void GpuGeodata::load()
+void GeodataTile::load()
 {
     LOG(info2) << "Loading (gpu) geodata <" << name << ">";
     renders.clear();
@@ -936,8 +885,8 @@ void GpuGeodata::load()
         + renders.size() * sizeof(RenderGeodataTask);
     for (const RenderGeodataTask &it : renders)
     {
-        info.gpuMemoryCost += it.mesh->info.gpuMemoryCost;
-        info.ramMemoryCost += it.mesh->info.ramMemoryCost;
+        info.gpuMemoryCost += it.geodata->info.gpuMemoryCost;
+        info.ramMemoryCost += it.geodata->info.ramMemoryCost;
     }
 }
 

@@ -394,6 +394,13 @@ bool Texture::getGrayscale() const
     return grayscale;
 }
 
+void Renderer::loadTexture(ResourceInfo &info, GpuTextureSpec &spec)
+{
+    auto r = std::make_shared<Texture>();
+    r->load(info, spec);
+    info.userData = r;
+}
+
 Mesh::Mesh() :
     vao(0), vbo(0), vio(0)
 {}
@@ -510,6 +517,13 @@ uint32 Mesh::getVbo() const
 uint32 Mesh::getVio() const
 {
     return vio;
+}
+
+void Renderer::loadMesh(ResourceInfo &info, GpuMeshSpec &spec)
+{
+    auto r = std::make_shared<Mesh>();
+    r->load(info, spec);
+    info.userData = r;
 }
 
 UniformBuffer::UniformBuffer() :

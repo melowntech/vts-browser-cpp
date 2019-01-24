@@ -62,18 +62,18 @@ FetchTask::ResourceType GeodataStylesheet::resourceType() const
     return FetchTask::ResourceType::GeodataStylesheet;
 }
 
-GpuGeodata::GpuGeodata(MapImpl *map, const std::string &name)
+GeodataTile::GeodataTile(MapImpl *map, const std::string &name)
     : Resource(map, name), lod(0)
 {
     state = Resource::State::ready;
 }
 
-FetchTask::ResourceType GpuGeodata::resourceType() const
+FetchTask::ResourceType GeodataTile::resourceType() const
 {
     return FetchTask::ResourceType::Undefined;
 }
 
-bool GpuGeodata::update(const std::string &s, const std::string &f, uint32 l)
+bool GeodataTile::update(const std::string &s, const std::string &f, uint32 l)
 {
     switch ((Resource::State)state)
     {
@@ -96,6 +96,70 @@ bool GpuGeodata::update(const std::string &s, const std::string &f, uint32 l)
         break;
     }
     return false;
+}
+
+GpuGeodataSpec::GpuGeodataSpec()
+{
+    matToRaw(identityMatrix4(), model);
+}
+
+GpuGeodataSpec::SharedData::SharedData()
+{
+    memset(this, 0, sizeof(*this));
+}
+
+GpuGeodataSpec::Common::Common() :
+visibility(nan1()), culling(nan1()), zIndex(0)
+{
+    vecToRaw(vec4f(nan4().cast<float>()), visibilityRelative);
+    vecToRaw(vec3f(nan3().cast<float>()), zBufferOffset);
+    vecToRaw(vec2f(nan2().cast<float>()), visibilityAbsolute);
+}
+
+GpuMeshSpec GpuGeodataSpec::createMeshPoints() const
+{
+    GpuMeshSpec spec;
+    spec.verticesCount = coordinates.size() / 3;
+    spec.vertices.allocate(spec.verticesCount * sizeof(uint16) * 3);
+    memcpy(spec.vertices.data(), coordinates.data(), spec.vertices.size());
+    spec.attributes[0].enable = true;
+    spec.attributes[0].components = 3;
+    spec.attributes[0].type = GpuTypeEnum::UnsignedShort;
+    spec.faceMode = GpuMeshSpec::FaceMode::Points;
+    return spec;
+}
+
+GpuMeshSpec GpuGeodataSpec::createMeshLines() const
+{
+    GpuMeshSpec spec;
+    spec.verticesCount = coordinates.size() / 3;
+    spec.vertices.allocate(spec.verticesCount * sizeof(uint16) * 3);
+    memcpy(spec.vertices.data(), coordinates.data(), spec.vertices.size());
+    spec.attributes[0].enable = true;
+    spec.attributes[0].components = 3;
+    spec.attributes[0].type = GpuTypeEnum::UnsignedShort;
+    spec.faceMode = GpuMeshSpec::FaceMode::Lines;
+    return spec;
+}
+
+GpuMeshSpec GpuGeodataSpec::createMesh() const
+{
+    // todo
+    switch (type)
+    {
+    case Type::LineScreen:
+    case Type::LineWorld:
+    case Type::LineLabel:
+        return createMeshLines();
+    case Type::PointScreen:
+    case Type::PointWorld:
+    case Type::PointLabel:
+    case Type::Icon:
+    case Type::PackedPointLabelIcon:
+    case Type::Triangles:
+        return createMeshPoints();
+    }
+    return GpuMeshSpec();
 }
 
 } // namespace vts

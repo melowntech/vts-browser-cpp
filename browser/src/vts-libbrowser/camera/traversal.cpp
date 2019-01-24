@@ -563,7 +563,7 @@ bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
             || features.first == Validity::Indeterminate)
         return false;
 
-    std::shared_ptr<GpuGeodata> geo = map->getGeodata(geoName + "#$!gpu");
+    std::shared_ptr<GeodataTile> geo = map->getGeodata(geoName + "#$!gpu");
     geo->updatePriority(trav->priority);
     if (geo->update(style.second, features.second, trav->id().lod))
         map->resources.queUpload.push(geo);

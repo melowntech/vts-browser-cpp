@@ -36,10 +36,30 @@
 namespace vts { namespace renderer
 {
 
-namespace
+namespace priv
 {
 
-void clearGlState()
+class ShaderAtm : public Shader
+{
+public:
+    struct AtmBlock
+    {
+        mat4f uniAtmViewInv;
+        vec4f uniAtmColorHorizon;
+        vec4f uniAtmColorZenith;
+        vec4f uniAtmSizes; // atmosphere thickness (divided by major axis), major / minor axes ratio, inverze major axis
+        vec4f uniAtmCoefs; // horizontal exponent, colorGradientExponent
+        vec3f uniAtmCameraPosition; // world position of camera (divided by major axis)
+    };
+
+    void initializeAtmosphere()
+    {
+        bindUniformBlockLocations({ {"uboAtm", 0} });
+        bindTextureLocations({ {"texAtmDensity", 4} });
+    }
+};
+
+void RendererImpl::clearGlState()
 {
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
@@ -57,688 +77,617 @@ void clearGlState()
     checkGlImpl("cleared gl state");
 }
 
-class ShaderAtm : public Shader
+RendererImpl::RendererImpl() : draws(nullptr), body(nullptr),
+    atmosphereDensityTexture(nullptr),
+    widthPrev(0), heightPrev(0), antialiasingPrev(0),
+    projected(false)
+{}
+
+RendererImpl::~RendererImpl()
+{}
+
+void RendererImpl::drawSurface(const DrawSurfaceTask &t)
 {
-public:
-    struct AtmBlock
-    {
-        mat4f uniAtmViewInv;
-        vec4f uniAtmColorHorizon;
-        vec4f uniAtmColorZenith;
-        vec4f uniAtmSizes; // atmosphere thickness (divided by major axis), major / minor axes ratio, inverze major axis
-        vec4f uniAtmCoefs; // horizontal exponent, colorGradientExponent
-        vec3f uniAtmCameraPosition; // world position of camera (divided by major axis)
+    Texture *tex = (Texture*)t.texColor.get();
+    Mesh *m = (Mesh*)t.mesh.get();
+    if (!m || !tex)
+        return;
+    shaderSurface->uniformMat4(1, t.mv);
+    shaderSurface->uniformMat3(2, t.uvm);
+    shaderSurface->uniformVec4(3, t.color);
+    shaderSurface->uniformVec4(4, t.uvClip);
+    int flags[4] = {
+        t.texMask ? 1 : -1,
+        tex->getGrayscale() ? 1 : -1,
+        t.flatShading ? 1 : -1,
+        t.externalUv ? 1 : -1
     };
-
-    void initializeAtmosphere()
+    shaderSurface->uniformVec4(5, flags);
+    if (t.texMask)
     {
-        bindUniformBlockLocations({{"uboAtm", 0}});
-        bindTextureLocations({{"texAtmDensity", 4}});
+        glActiveTexture(GL_TEXTURE0 + 1);
+        ((Texture*)t.texMask.get())->bind();
+        glActiveTexture(GL_TEXTURE0 + 0);
     }
-};
+    tex->bind();
+    m->bind();
+    m->dispatch();
+}
 
-} // namespace
-
-class RendererImpl
+void RendererImpl::drawInfographic(const DrawSimpleTask &t)
 {
-public:
-    RenderVariables vars;
-    RenderOptions options;
-
-    std::shared_ptr<Texture> texCompas;
-    std::shared_ptr<Shader> shaderTexture;
-    std::shared_ptr<ShaderAtm> shaderSurface;
-    std::shared_ptr<ShaderAtm> shaderBackground;
-    std::shared_ptr<Shader> shaderInfographic;
-    std::shared_ptr<Shader> shaderCopyDepth;
-    std::shared_ptr<Mesh> meshQuad; // positions: -1 .. 1
-    std::shared_ptr<Mesh> meshRect; // positions: 0 .. 1
-    std::shared_ptr<UniformBuffer> uboAtm;
-
-    const CameraDraws *draws;
-    const MapCelestialBody *body;
-    Texture *atmosphereDensityTexture;
-
-    mat4 view;
-    mat4 proj;
-    mat4 viewProj;
-
-    uint32 widthPrev;
-    uint32 heightPrev;
-    uint32 antialiasingPrev;
-
-    bool projected;
-
-    RendererImpl() : draws(nullptr), body(nullptr),
-        atmosphereDensityTexture(nullptr),
-        widthPrev(0), heightPrev(0), antialiasingPrev(0),
-        projected(false)
-    {}
-
-    ~RendererImpl()
-    {}
-
-    void drawSurface(const DrawSurfaceTask &t)
+    Mesh *m = (Mesh*)t.mesh.get();
+    if (!m)
+        return;
+    shaderInfographic->uniformMat4(1, t.mv);
+    shaderInfographic->uniformVec4(2, t.color);
+    shaderInfographic->uniform(3, (int)(!!t.texColor));
+    if (t.texColor)
     {
         Texture *tex = (Texture*)t.texColor.get();
-        Mesh *m = (Mesh*)t.mesh.get();
-        if (!m || !tex)
-            return;
-        shaderSurface->uniformMat4(1, t.mv);
-        shaderSurface->uniformMat3(2, t.uvm);
-        shaderSurface->uniformVec4(3, t.color);
-        shaderSurface->uniformVec4(4, t.uvClip);
-        int flags[4] = {
-            t.texMask ? 1 : -1,
-            tex->getGrayscale() ? 1 : -1,
-            t.flatShading ? 1 : -1,
-            t.externalUv ? 1 : -1
-        };
-        shaderSurface->uniformVec4(5, flags);
-        if (t.texMask)
-        {
-            glActiveTexture(GL_TEXTURE0 + 1);
-            ((Texture*)t.texMask.get())->bind();
-            glActiveTexture(GL_TEXTURE0 + 0);
-        }
         tex->bind();
-        m->bind();
-        m->dispatch();
     }
+    m->bind();
+    m->dispatch();
+}
 
-    void drawGeodata(const DrawGeodataTask &t)
+void RendererImpl::enableClipDistance(bool enable)
+{
+    if (enable)
     {
-        Mesh *m = (Mesh*)t.mesh.get();
-        if (!m)
-            return;
-        shaderInfographic->uniformMat4(1, t.mv);
-        shaderInfographic->uniformVec4(2, t.color);
-        shaderInfographic->uniform(3, (int)(!!t.texColor));
-        if (t.texColor)
-        {
-            Texture *tex = (Texture*)t.texColor.get();
-            tex->bind();
-        }
-        m->bind();
-        m->dispatch();
+        for (int i = 0; i < 4; i++)
+            glEnable(GL_CLIP_DISTANCE0 + i);
     }
-
-    void drawInfographic(const DrawSimpleTask &t)
+    else
     {
-        Mesh *m = (Mesh*)t.mesh.get();
-        if (!m)
-            return;
-        shaderInfographic->uniformMat4(1, t.mv);
-        shaderInfographic->uniformVec4(2, t.color);
-        shaderInfographic->uniform(3, (int)(!!t.texColor));
-        if (t.texColor)
-        {
-            Texture *tex = (Texture*)t.texColor.get();
-            tex->bind();
-        }
-        m->bind();
-        m->dispatch();
+        for (int i = 0; i < 4; i++)
+            glDisable(GL_CLIP_DISTANCE0 + i);
     }
+}
 
-    void enableClipDistance(bool enable)
+void RendererImpl::render()
+{
+    CHECK_GL("pre-frame check");
+
+    assert(shaderSurface);
+    view = rawToMat4(draws->camera.view);
+    proj = rawToMat4(draws->camera.proj);
+    viewProj = proj * view;
+
+    if (options.width <= 0 || options.height <= 0)
+        return;
+
+    // update framebuffer texture
+    if (options.width != widthPrev || options.height != heightPrev
+        || options.antialiasingSamples != antialiasingPrev)
     {
-        if (enable)
-        {
-            for (int i = 0; i < 4; i++)
-                glEnable(GL_CLIP_DISTANCE0 + i);
-        }
-        else
-        {
-            for (int i = 0; i < 4; i++)
-                glDisable(GL_CLIP_DISTANCE0 + i);
-        }
-    }
+        widthPrev = options.width;
+        heightPrev = options.height;
+        antialiasingPrev = std::max(std::min(options.antialiasingSamples,
+            maxAntialiasingSamples), 1u);
 
-    void render()
-    {
-        CHECK_GL("pre-frame check");
+        vars.textureTargetType
+            = antialiasingPrev > 1 ? GL_TEXTURE_2D_MULTISAMPLE
+            : GL_TEXTURE_2D;
 
-        assert(shaderSurface);
-        view = rawToMat4(draws->camera.view);
-        proj = rawToMat4(draws->camera.proj);
-        viewProj = proj * view;
-
-        if (options.width <= 0 || options.height <= 0)
-            return;
-
-        // update framebuffer texture
-        if (options.width != widthPrev || options.height != heightPrev
-                || options.antialiasingSamples != antialiasingPrev)
-        {
-            widthPrev = options.width;
-            heightPrev = options.height;
-            antialiasingPrev = std::max(std::min(options.antialiasingSamples,
-                             maxAntialiasingSamples), 1u);
-
-            vars.textureTargetType
-                    = antialiasingPrev > 1 ? GL_TEXTURE_2D_MULTISAMPLE
-                                           : GL_TEXTURE_2D;
-
-            // delete old textures
-            glDeleteTextures(1, &vars.depthReadTexId);
-            if (vars.depthRenderTexId != vars.depthReadTexId)
-                glDeleteTextures(1, &vars.depthRenderTexId);
-            glDeleteTextures(1, &vars.colorRenderTexId);
-            if (vars.colorRenderTexId != vars.colorReadTexId)
-                glDeleteTextures(1, &vars.colorRenderTexId);
-            vars.depthReadTexId = vars.depthRenderTexId = 0;
-            vars.colorReadTexId = vars.colorRenderTexId = 0;
-
-            // depth texture for rendering
-            glActiveTexture(GL_TEXTURE0 + 5);
-            glGenTextures(1, &vars.depthRenderTexId);
-            glBindTexture(vars.textureTargetType, vars.depthRenderTexId);
-            if (antialiasingPrev > 1)
-            {
-                glTexImage2DMultisample(vars.textureTargetType,
-                    antialiasingPrev, GL_DEPTH_COMPONENT32,
-                    options.width, options.height, GL_TRUE);
-            }
-            else
-            {
-                glTexImage2D(vars.textureTargetType, 0, GL_DEPTH_COMPONENT32,
-                             options.width, options.height,
-                             0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
-                glTexParameteri(vars.textureTargetType,
-                                GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexParameteri(vars.textureTargetType,
-                                GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            }
-            CHECK_GL("update depth texture for rendering");
-
-            // depth texture for sampling
-            glActiveTexture(GL_TEXTURE0 + 6);
-            if (antialiasingPrev > 1)
-            {
-                glGenTextures(1, &vars.depthReadTexId);
-                glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32,
-                             options.width, options.height,
-                             0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                                GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                                GL_NEAREST);
-            }
-            else
-            {
-                vars.depthReadTexId = vars.depthRenderTexId;
-                glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
-            }
-            CHECK_GL("update depth texture for sampling");
-
-            // color texture for rendering
-            glActiveTexture(GL_TEXTURE0 + 7);
-            glGenTextures(1, &vars.colorRenderTexId);
-            glBindTexture(vars.textureTargetType, vars.colorRenderTexId);
-            if (antialiasingPrev > 1)
-                glTexImage2DMultisample(
-                    vars.textureTargetType, antialiasingPrev, GL_RGB8,
-                            options.width, options.height, GL_TRUE);
-            else
-            {
-                glTexImage2D(vars.textureTargetType, 0, GL_RGB8,
-                             options.width, options.height,
-                             0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-                glTexParameteri(vars.textureTargetType,
-                                GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexParameteri(vars.textureTargetType,
-                                GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            }
-            CHECK_GL("update color texture for rendering");
-
-            // color texture for sampling
-            glActiveTexture(GL_TEXTURE0 + 8);
-            if (antialiasingPrev > 1)
-            {
-                glGenTextures(1, &vars.colorReadTexId);
-                glBindTexture(GL_TEXTURE_2D, vars.colorReadTexId);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8,
-                             options.width, options.height,
-                             0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                                GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                                GL_NEAREST);
-            }
-            else
-            {
-                vars.colorReadTexId = vars.colorRenderTexId;
-                glBindTexture(GL_TEXTURE_2D, vars.colorReadTexId);
-            }
-            CHECK_GL("update color texture for sampling");
-
-            // render frame buffer
-            glDeleteFramebuffers(1, &vars.frameRenderBufferId);
-            glGenFramebuffers(1, &vars.frameRenderBufferId);
-            glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                    vars.textureTargetType, vars.depthRenderTexId, 0);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                    vars.textureTargetType, vars.colorRenderTexId, 0);
-            checkGlFramebuffer(GL_FRAMEBUFFER);
-
-            // sample frame buffer
-            glDeleteFramebuffers(1, &vars.frameReadBufferId);
-            glGenFramebuffers(1, &vars.frameReadBufferId);
-            glBindFramebuffer(GL_FRAMEBUFFER, vars.frameReadBufferId);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                                   GL_TEXTURE_2D, vars.depthReadTexId, 0);
-            checkGlFramebuffer(GL_FRAMEBUFFER);
-
-            CHECK_GL("update frame buffer");
-        }
-
-        // initialize opengl
-        glViewport(0, 0, options.width, options.height);
-        glScissor(0, 0, options.width, options.height);
-        glActiveTexture(GL_TEXTURE0);
-        glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
-        CHECK_GL_FRAMEBUFFER(GL_FRAMEBUFFER);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_CULL_FACE);
-        #ifndef VTSR_OPENGLES
-        glEnable(GL_POLYGON_OFFSET_LINE);
-        glPolygonOffset(0, -1000);
-        #endif
-        glClearColor(0, 0, 0, 1);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        CHECK_GL("initialized opengl");
-
-        // update atmosphere
-        updateAtmosphereBuffer();
-
-        // update shaders
-        mat4f projf = rawToMat4(draws->camera.proj).cast<float>();
-        shaderInfographic->bind();
-        shaderInfographic->uniformMat4(0, projf.data());
-        shaderSurface->bind();
-        shaderSurface->uniformMat4(0, projf.data());
-
-        // render opaque
-        glDisable(GL_BLEND);
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LEQUAL);
-        shaderSurface->bind();
-        enableClipDistance(true);
-        for (const DrawSurfaceTask &t : draws->opaque)
-            drawSurface(t);
-        enableClipDistance(false);
-        CHECK_GL("rendered opaque");
-
-        // render background (atmosphere)
-        {
-            // corner directions
-            vec3 camPos = rawToVec3(draws->camera.eye) / body->majorRadius;
-            mat4 inv = (viewProj * scaleMatrix(body->majorRadius)).inverse();
-            vec4 cornerDirsD[4] = {
-                inv * vec4(-1, -1, 0, 1),
-                inv * vec4(+1, -1, 0, 1),
-                inv * vec4(-1, +1, 0, 1),
-                inv * vec4(+1, +1, 0, 1)
-            };
-            vec3f cornerDirs[4];
-            for (uint32 i = 0; i < 4; i++)
-                cornerDirs[i] = normalize(vec4to3(cornerDirsD[i], true)
-                                 - camPos).cast<float>();
-
-            shaderBackground->bind();
-            for (uint32 i = 0; i < 4; i++)
-                shaderBackground->uniformVec3(i, cornerDirs[i].data());
-            meshQuad->bind();
-            meshQuad->dispatch();
-        }
-
-        // render transparent
-        glEnable(GL_BLEND);
-        glEnable(GL_POLYGON_OFFSET_FILL);
-        glPolygonOffset(0, -10);
-        glDepthMask(GL_FALSE);
-        shaderSurface->bind();
-        enableClipDistance(true);
-        for (const DrawSurfaceTask &t : draws->transparent)
-            drawSurface(t);
-        enableClipDistance(false);
-        glDepthMask(GL_TRUE);
-        glDisable(GL_POLYGON_OFFSET_FILL);
-        CHECK_GL("rendered transparent");
-
-        // render polygon edges
-        if (options.renderPolygonEdges)
-        {
-            glDisable(GL_BLEND);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            shaderSurface->bind();
-            for (const DrawSurfaceTask &it : draws->opaque)
-            {
-                DrawSurfaceTask t(it);
-                t.flatShading = false;
-                t.color[0] = t.color[1] = t.color[2] = t.color[3] = 0;
-                drawSurface(t);
-            }
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            glEnable(GL_BLEND);
-            CHECK_GL("rendered polygon edges");
-        }
-
-        // copy the depth (resolve multisampling)
-        if (vars.depthReadTexId != vars.depthRenderTexId)
-        {
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, vars.frameReadBufferId);
-            CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
-            CHECK_GL_FRAMEBUFFER(GL_DRAW_FRAMEBUFFER);
-            glBlitFramebuffer(0, 0, options.width, options.height,
-                              0, 0, options.width, options.height,
-                              GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-            glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
-            CHECK_GL("copied the depth (resolved multisampling)");
-        }
-        glDisable(GL_DEPTH_TEST);
-
-        // render geodata
-        shaderInfographic->bind();
-        for (const DrawGeodataTask &t : draws->geodata)
-            drawGeodata(t);
-        CHECK_GL("rendered geodata");
-
-        // render infographics
-        shaderInfographic->bind();
-        for (const DrawSimpleTask &t : draws->infographics)
-            drawInfographic(t);
-        CHECK_GL("rendered infographics");
-
-        // copy the color (resolve multisampling)
-        if (options.colorToTexture
-                && vars.colorReadTexId != vars.colorRenderTexId)
-        {
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, vars.frameReadBufferId);
-            CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
-            CHECK_GL_FRAMEBUFFER(GL_DRAW_FRAMEBUFFER);
-            glBlitFramebuffer(0, 0, options.width, options.height,
-                              0, 0, options.width, options.height,
-                              GL_COLOR_BUFFER_BIT, GL_NEAREST);
-            glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
-            CHECK_GL("copied the color to texture (resolving multisampling)");
-        }
-
-        // copy the color to screen
-        if (options.colorToTargetFrameBuffer)
-        {
-            uint32 w = options.targetViewportW ? options.targetViewportW
-                                               : options.width;
-            uint32 h = options.targetViewportH ? options.targetViewportH
-                                               : options.height;
-            bool same = w == options.width && h == options.height;
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, options.targetFrameBuffer);
-            CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
-            CHECK_GL_FRAMEBUFFER(GL_DRAW_FRAMEBUFFER);
-            glBlitFramebuffer(0, 0, options.width, options.height,
-                   options.targetViewportX, options.targetViewportY,
-                   options.targetViewportX + w, options.targetViewportY + h,
-                   GL_COLOR_BUFFER_BIT, same ? GL_NEAREST : GL_LINEAR);
-            CHECK_GL("copied the color to screen (resolving multisampling)");
-        }
-
-        // clear the state
-        clearGlState();
-    }
-
-    void initialize()
-    {
-        // load texture compas
-        {
-            texCompas = std::make_shared<Texture>();
-            vts::GpuTextureSpec spec(vts::readInternalMemoryBuffer(
-                                      "data/textures/compas.png"));
-            spec.verticalFlip();
-            texCompas->load(spec);
-        }
-
-        // load shader texture
-        {
-            shaderTexture = std::make_shared<Shader>();
-            shaderTexture->loadInternal(
-                        "data/shaders/texture.vert.glsl",
-                        "data/shaders/texture.frag.glsl");
-            shaderTexture->loadUniformLocations({"uniMvp", "uniUvm"});
-            shaderTexture->bindTextureLocations({{"uniTexture", 0}});
-        }
-
-        // load shader surface
-        {
-            shaderSurface = std::make_shared<ShaderAtm>();
-            Buffer vert = readInternalMemoryBuffer(
-                        "data/shaders/surface.vert.glsl");
-            Buffer atm = readInternalMemoryBuffer(
-                        "data/shaders/atmosphere.inc.glsl");
-            Buffer frag = readInternalMemoryBuffer(
-                        "data/shaders/surface.frag.glsl");
-            shaderSurface->load(vert.str(), atm.str() + frag.str());
-            shaderSurface->loadUniformLocations({ "uniP", "uniMv", "uniUvMat",
-                "uniColor", "uniUvClip", "uniFlags" });
-            shaderSurface->bindTextureLocations({{"texColor", 0}, {"texMask", 1}});
-            shaderSurface->initializeAtmosphere();
-        }
-
-        // load shader background
-        {
-            shaderBackground = std::make_shared<ShaderAtm>();
-            Buffer vert = readInternalMemoryBuffer(
-                        "data/shaders/background.vert.glsl");
-            Buffer atm = readInternalMemoryBuffer(
-                        "data/shaders/atmosphere.inc.glsl");
-            Buffer frag = readInternalMemoryBuffer(
-                        "data/shaders/background.frag.glsl");
-            shaderBackground->load(vert.str(), atm.str() + frag.str());
-            shaderBackground->loadUniformLocations({"uniCorners[0]",
-                "uniCorners[1]","uniCorners[2]","uniCorners[3]"});
-            shaderBackground->initializeAtmosphere();
-        }
-
-        // load shader infographic
-        {
-            shaderInfographic = std::make_shared<Shader>();
-            shaderInfographic->loadInternal(
-                        "data/shaders/infographic.vert.glsl",
-                        "data/shaders/infographic.frag.glsl");
-            shaderInfographic->loadUniformLocations({"uniP", "uniMv", "uniColor",
-                                                     "uniUseColorTexture"});
-            shaderInfographic->bindTextureLocations({{"texColor", 0},
-                                                     {"texDepth", 6}});
-        }
-
-        // load shader copy depth
-        {
-            shaderCopyDepth = std::make_shared<Shader>();
-            shaderCopyDepth->loadInternal(
-                        "data/shaders/copyDepth.vert.glsl",
-                        "data/shaders/copyDepth.frag.glsl");
-            shaderCopyDepth->loadUniformLocations({"uniTexPos"});
-            shaderCopyDepth->bindTextureLocations({{"texDepth", 0}});
-        }
-
-        // load mesh quad
-        {
-            meshQuad = std::make_shared<Mesh>();
-            vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
-                                      "data/meshes/quad.obj"));
-            assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Triangles);
-            spec.attributes[0].enable = true;
-            spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
-            spec.attributes[0].components = 3;
-            spec.attributes[1].enable = true;
-            spec.attributes[1].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
-            spec.attributes[1].components = 2;
-            spec.attributes[1].offset = sizeof(vts::vec3f);
-            meshQuad->load(spec);
-        }
-
-        // load mesh rect
-        {
-            meshRect = std::make_shared<Mesh>();
-            vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
-                                      "data/meshes/rect.obj"));
-            assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Triangles);
-            spec.attributes[0].enable = true;
-            spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
-            spec.attributes[0].components = 3;
-            spec.attributes[1].enable = true;
-            spec.attributes[1].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
-            spec.attributes[1].components = 2;
-            spec.attributes[1].offset = sizeof(vts::vec3f);
-            meshRect->load(spec);
-        }
-
-        // create atmosphere ubo
-        {
-            uboAtm = std::make_shared<UniformBuffer>();
-        }
-    }
-
-    void finalize()
-    {
-        texCompas.reset();
-        shaderTexture.reset();
-        shaderSurface.reset();
-        shaderBackground.reset();
-        shaderInfographic.reset();
-        shaderCopyDepth.reset();
-        meshQuad.reset();
-        meshRect.reset();
-
-        if (vars.frameRenderBufferId)
-        {
-            glDeleteFramebuffers(1, &vars.frameRenderBufferId);
-            vars.frameRenderBufferId = 0;
-        }
-
-        if (vars.frameReadBufferId)
-        {
-            glDeleteFramebuffers(1, &vars.frameReadBufferId);
-            vars.frameReadBufferId = 0;
-        }
-
-        if (vars.depthRenderTexId)
-        {
+        // delete old textures
+        glDeleteTextures(1, &vars.depthReadTexId);
+        if (vars.depthRenderTexId != vars.depthReadTexId)
             glDeleteTextures(1, &vars.depthRenderTexId);
-            vars.depthRenderTexId = 0;
-        }
-
-        if (vars.depthReadTexId)
-        {
-            glDeleteTextures(1, &vars.depthReadTexId);
-            vars.depthReadTexId = 0;
-        }
-
-        if (vars.colorRenderTexId)
-        {
+        glDeleteTextures(1, &vars.colorRenderTexId);
+        if (vars.colorRenderTexId != vars.colorReadTexId)
             glDeleteTextures(1, &vars.colorRenderTexId);
-            vars.colorRenderTexId = 0;
-        }
+        vars.depthReadTexId = vars.depthRenderTexId = 0;
+        vars.colorReadTexId = vars.colorRenderTexId = 0;
 
-        widthPrev = heightPrev = antialiasingPrev = 0;
-    }
-
-    void updateAtmosphereBuffer()
-    {
-        ShaderAtm::AtmBlock atmBlock;
-
-        if (options.renderAtmosphere
-            && !projected
-            && atmosphereDensityTexture)
+        // depth texture for rendering
+        glActiveTexture(GL_TEXTURE0 + 5);
+        glGenTextures(1, &vars.depthRenderTexId);
+        glBindTexture(vars.textureTargetType, vars.depthRenderTexId);
+        if (antialiasingPrev > 1)
         {
-            // bind atmosphere density texture
-            {
-                glActiveTexture(GL_TEXTURE4);
-                atmosphereDensityTexture->bind();
-                glActiveTexture(GL_TEXTURE0);
-            }
-
-            double boundaryThickness, horizontalExponent, verticalExponent;
-            atmosphereDerivedAttributes(*body, boundaryThickness,
-                horizontalExponent, verticalExponent);
-
-            // uniParams
-            atmBlock.uniAtmSizes =
-            {
-                (float)(boundaryThickness / body->majorRadius),
-                (float)(body->majorRadius / body->minorRadius),
-                (float)(1.0 / body->majorRadius),
-                0.f
-            };
-            atmBlock.uniAtmCoefs =
-            {
-                (float)(horizontalExponent),
-                (float)(body->atmosphere.colorGradientExponent),
-                0.f,
-                0.f
-            };
-
-            // camera position
-            vec3 camPos = rawToVec3(draws->camera.eye) / body->majorRadius;
-            atmBlock.uniAtmCameraPosition = camPos.cast<float>();
-
-            // view inv
-            mat4 vi = rawToMat4(draws->camera.view).inverse();
-            atmBlock.uniAtmViewInv = vi.cast<float>();
-
-            // colors
-            atmBlock.uniAtmColorHorizon
-                = rawToVec4(body->atmosphere.colorHorizon.data());
-            atmBlock.uniAtmColorZenith
-                = rawToVec4(body->atmosphere.colorZenith.data());
+            glTexImage2DMultisample(vars.textureTargetType,
+                antialiasingPrev, GL_DEPTH_COMPONENT32,
+                options.width, options.height, GL_TRUE);
         }
         else
         {
-            memset(&atmBlock, 0, sizeof(atmBlock));
+            glTexImage2D(vars.textureTargetType, 0, GL_DEPTH_COMPONENT32,
+                options.width, options.height,
+                0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
+            glTexParameteri(vars.textureTargetType,
+                GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(vars.textureTargetType,
+                GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         }
+        CHECK_GL("update depth texture for rendering");
 
-        // Load it in
-        uboAtm->bind();
-        uboAtm->load(atmBlock);
+        // depth texture for sampling
+        glActiveTexture(GL_TEXTURE0 + 6);
+        if (antialiasingPrev > 1)
+        {
+            glGenTextures(1, &vars.depthReadTexId);
+            glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32,
+                options.width, options.height,
+                0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                GL_NEAREST);
+        }
+        else
+        {
+            vars.depthReadTexId = vars.depthRenderTexId;
+            glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
+        }
+        CHECK_GL("update depth texture for sampling");
 
-        // Bind atmosphere uniform buffer to index 0
-        uboAtm->bindToIndex(0);
+        // color texture for rendering
+        glActiveTexture(GL_TEXTURE0 + 7);
+        glGenTextures(1, &vars.colorRenderTexId);
+        glBindTexture(vars.textureTargetType, vars.colorRenderTexId);
+        if (antialiasingPrev > 1)
+            glTexImage2DMultisample(
+                vars.textureTargetType, antialiasingPrev, GL_RGB8,
+                options.width, options.height, GL_TRUE);
+        else
+        {
+            glTexImage2D(vars.textureTargetType, 0, GL_RGB8,
+                options.width, options.height,
+                0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+            glTexParameteri(vars.textureTargetType,
+                GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(vars.textureTargetType,
+                GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        }
+        CHECK_GL("update color texture for rendering");
+
+        // color texture for sampling
+        glActiveTexture(GL_TEXTURE0 + 8);
+        if (antialiasingPrev > 1)
+        {
+            glGenTextures(1, &vars.colorReadTexId);
+            glBindTexture(GL_TEXTURE_2D, vars.colorReadTexId);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8,
+                options.width, options.height,
+                0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                GL_NEAREST);
+        }
+        else
+        {
+            vars.colorReadTexId = vars.colorRenderTexId;
+            glBindTexture(GL_TEXTURE_2D, vars.colorReadTexId);
+        }
+        CHECK_GL("update color texture for sampling");
+
+        // render frame buffer
+        glDeleteFramebuffers(1, &vars.frameRenderBufferId);
+        glGenFramebuffers(1, &vars.frameRenderBufferId);
+        glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+            vars.textureTargetType, vars.depthRenderTexId, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            vars.textureTargetType, vars.colorRenderTexId, 0);
+        checkGlFramebuffer(GL_FRAMEBUFFER);
+
+        // sample frame buffer
+        glDeleteFramebuffers(1, &vars.frameReadBufferId);
+        glGenFramebuffers(1, &vars.frameReadBufferId);
+        glBindFramebuffer(GL_FRAMEBUFFER, vars.frameReadBufferId);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+            GL_TEXTURE_2D, vars.depthReadTexId, 0);
+        checkGlFramebuffer(GL_FRAMEBUFFER);
+
+        CHECK_GL("update frame buffer");
     }
 
-    void renderCompass(const double screenPosSize[3],
-                       const double mapRotation[3])
+    // initialize opengl
+    glViewport(0, 0, options.width, options.height);
+    glScissor(0, 0, options.width, options.height);
+    glActiveTexture(GL_TEXTURE0);
+    glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
+    CHECK_GL_FRAMEBUFFER(GL_FRAMEBUFFER);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_CULL_FACE);
+#ifndef VTSR_OPENGLES
+    glEnable(GL_POLYGON_OFFSET_LINE);
+    glPolygonOffset(0, -1000);
+#endif
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    CHECK_GL("initialized opengl");
+
+    // update atmosphere
+    updateAtmosphereBuffer();
+
+    // update shaders
+    mat4f projf = rawToMat4(draws->camera.proj).cast<float>();
+    shaderInfographic->bind();
+    shaderInfographic->uniformMat4(0, projf.data());
+    shaderSurface->bind();
+    shaderSurface->uniformMat4(0, projf.data());
+
+    // render opaque
+    glDisable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    shaderSurface->bind();
+    enableClipDistance(true);
+    for (const DrawSurfaceTask &t : draws->opaque)
+        drawSurface(t);
+    enableClipDistance(false);
+    CHECK_GL("rendered opaque");
+
+    // render background (atmosphere)
     {
-        glEnable(GL_BLEND);
-        glActiveTexture(GL_TEXTURE0);
-        texCompas->bind();
-        shaderTexture->bind();
-        mat4 p = orthographicMatrix(-1, 1, -1, 1, -1, 1)
-                * scaleMatrix(1.0 / widthPrev, 1.0 / heightPrev, 1);
-        mat4 v = translationMatrix(screenPosSize[0] * 2 - widthPrev,
-                                    screenPosSize[1] * 2 - heightPrev, 0)
-                * scaleMatrix(screenPosSize[2], screenPosSize[2], 1);
-        mat4 m = rotationMatrix(0, mapRotation[1] + 90)
-             * rotationMatrix(2, mapRotation[0]);
-        mat4f mvpf = (p * v * m).cast<float>();
-        mat3f uvmf = identityMatrix3().cast<float>();
-        shaderTexture->uniformMat4(0, mvpf.data());
-        shaderTexture->uniformMat3(1, uvmf.data());
+        // corner directions
+        vec3 camPos = rawToVec3(draws->camera.eye) / body->majorRadius;
+        mat4 inv = (viewProj * scaleMatrix(body->majorRadius)).inverse();
+        vec4 cornerDirsD[4] = {
+            inv * vec4(-1, -1, 0, 1),
+            inv * vec4(+1, -1, 0, 1),
+            inv * vec4(-1, +1, 0, 1),
+            inv * vec4(+1, +1, 0, 1)
+        };
+        vec3f cornerDirs[4];
+        for (uint32 i = 0; i < 4; i++)
+            cornerDirs[i] = normalize(vec4to3(cornerDirsD[i], true)
+                - camPos).cast<float>();
+
+        shaderBackground->bind();
+        for (uint32 i = 0; i < 4; i++)
+            shaderBackground->uniformVec3(i, cornerDirs[i].data());
         meshQuad->bind();
         meshQuad->dispatch();
     }
 
-    void getWorldPosition(const double screenPos[2], double worldPos[3])
+    // render transparent
+    glEnable(GL_BLEND);
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(0, -10);
+    glDepthMask(GL_FALSE);
+    shaderSurface->bind();
+    enableClipDistance(true);
+    for (const DrawSurfaceTask &t : draws->transparent)
+        drawSurface(t);
+    enableClipDistance(false);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_POLYGON_OFFSET_FILL);
+    CHECK_GL("rendered transparent");
+
+    // render polygon edges
+    if (options.renderPolygonEdges)
+    {
+        glDisable(GL_BLEND);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        shaderSurface->bind();
+        for (const DrawSurfaceTask &it : draws->opaque)
+        {
+            DrawSurfaceTask t(it);
+            t.flatShading = false;
+            t.color[0] = t.color[1] = t.color[2] = t.color[3] = 0;
+            drawSurface(t);
+        }
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glEnable(GL_BLEND);
+        CHECK_GL("rendered polygon edges");
+    }
+
+    // copy the depth (resolve multisampling)
+    if (vars.depthReadTexId != vars.depthRenderTexId)
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, vars.frameReadBufferId);
+        CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
+        CHECK_GL_FRAMEBUFFER(GL_DRAW_FRAMEBUFFER);
+        glBlitFramebuffer(0, 0, options.width, options.height,
+            0, 0, options.width, options.height,
+            GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+        glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
+        CHECK_GL("copied the depth (resolved multisampling)");
+    }
+    glDisable(GL_DEPTH_TEST);
+
+    // render geodata
+    renderGeodata();
+    CHECK_GL("rendered geodata");
+
+    // render infographics
+    shaderInfographic->bind();
+    for (const DrawSimpleTask &t : draws->infographics)
+        drawInfographic(t);
+    CHECK_GL("rendered infographics");
+
+    // copy the color (resolve multisampling)
+    if (options.colorToTexture
+        && vars.colorReadTexId != vars.colorRenderTexId)
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, vars.frameReadBufferId);
+        CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
+        CHECK_GL_FRAMEBUFFER(GL_DRAW_FRAMEBUFFER);
+        glBlitFramebuffer(0, 0, options.width, options.height,
+            0, 0, options.width, options.height,
+            GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
+        CHECK_GL("copied the color to texture (resolving multisampling)");
+    }
+
+    // copy the color to screen
+    if (options.colorToTargetFrameBuffer)
+    {
+        uint32 w = options.targetViewportW ? options.targetViewportW
+            : options.width;
+        uint32 h = options.targetViewportH ? options.targetViewportH
+            : options.height;
+        bool same = w == options.width && h == options.height;
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, options.targetFrameBuffer);
+        CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
+        CHECK_GL_FRAMEBUFFER(GL_DRAW_FRAMEBUFFER);
+        glBlitFramebuffer(0, 0, options.width, options.height,
+            options.targetViewportX, options.targetViewportY,
+            options.targetViewportX + w, options.targetViewportY + h,
+            GL_COLOR_BUFFER_BIT, same ? GL_NEAREST : GL_LINEAR);
+        CHECK_GL("copied the color to screen (resolving multisampling)");
+    }
+
+    // clear the state
+    clearGlState();
+}
+
+void RendererImpl::initialize()
+{
+    // load texture compas
+    {
+        texCompas = std::make_shared<Texture>();
+        vts::GpuTextureSpec spec(vts::readInternalMemoryBuffer(
+            "data/textures/compas.png"));
+        spec.verticalFlip();
+        texCompas->load(spec);
+    }
+
+    // load shader texture
+    {
+        shaderTexture = std::make_shared<Shader>();
+        shaderTexture->loadInternal(
+            "data/shaders/texture.vert.glsl",
+            "data/shaders/texture.frag.glsl");
+        shaderTexture->loadUniformLocations({ "uniMvp", "uniUvm" });
+        shaderTexture->bindTextureLocations({ {"uniTexture", 0} });
+    }
+
+    // load shader surface
+    {
+        shaderSurface = std::make_shared<ShaderAtm>();
+        Buffer vert = readInternalMemoryBuffer(
+            "data/shaders/surface.vert.glsl");
+        Buffer atm = readInternalMemoryBuffer(
+            "data/shaders/atmosphere.inc.glsl");
+        Buffer frag = readInternalMemoryBuffer(
+            "data/shaders/surface.frag.glsl");
+        shaderSurface->load(vert.str(), atm.str() + frag.str());
+        shaderSurface->loadUniformLocations({ "uniP", "uniMv", "uniUvMat",
+            "uniColor", "uniUvClip", "uniFlags" });
+        shaderSurface->bindTextureLocations({ {"texColor", 0}, {"texMask", 1} });
+        shaderSurface->initializeAtmosphere();
+    }
+
+    // load shader background
+    {
+        shaderBackground = std::make_shared<ShaderAtm>();
+        Buffer vert = readInternalMemoryBuffer(
+            "data/shaders/background.vert.glsl");
+        Buffer atm = readInternalMemoryBuffer(
+            "data/shaders/atmosphere.inc.glsl");
+        Buffer frag = readInternalMemoryBuffer(
+            "data/shaders/background.frag.glsl");
+        shaderBackground->load(vert.str(), atm.str() + frag.str());
+        shaderBackground->loadUniformLocations({ "uniCorners[0]",
+            "uniCorners[1]","uniCorners[2]","uniCorners[3]" });
+        shaderBackground->initializeAtmosphere();
+    }
+
+    // load shader infographic
+    {
+        shaderInfographic = std::make_shared<Shader>();
+        shaderInfographic->loadInternal(
+            "data/shaders/infographic.vert.glsl",
+            "data/shaders/infographic.frag.glsl");
+        shaderInfographic->loadUniformLocations({ "uniP", "uniMv", "uniColor",
+                                                    "uniUseColorTexture" });
+        shaderInfographic->bindTextureLocations({ {"texColor", 0},
+                                                    {"texDepth", 6} });
+    }
+
+    // load shader copy depth
+    {
+        shaderCopyDepth = std::make_shared<Shader>();
+        shaderCopyDepth->loadInternal(
+            "data/shaders/copyDepth.vert.glsl",
+            "data/shaders/copyDepth.frag.glsl");
+        shaderCopyDepth->loadUniformLocations({ "uniTexPos" });
+        shaderCopyDepth->bindTextureLocations({ {"texDepth", 0} });
+    }
+
+    // load mesh quad
+    {
+        meshQuad = std::make_shared<Mesh>();
+        vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
+            "data/meshes/quad.obj"));
+        assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Triangles);
+        spec.attributes[0].enable = true;
+        spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
+        spec.attributes[0].components = 3;
+        spec.attributes[1].enable = true;
+        spec.attributes[1].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
+        spec.attributes[1].components = 2;
+        spec.attributes[1].offset = sizeof(vts::vec3f);
+        meshQuad->load(spec);
+    }
+
+    // load mesh rect
+    {
+        meshRect = std::make_shared<Mesh>();
+        vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
+            "data/meshes/rect.obj"));
+        assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Triangles);
+        spec.attributes[0].enable = true;
+        spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
+        spec.attributes[0].components = 3;
+        spec.attributes[1].enable = true;
+        spec.attributes[1].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
+        spec.attributes[1].components = 2;
+        spec.attributes[1].offset = sizeof(vts::vec3f);
+        meshRect->load(spec);
+    }
+
+    // create atmosphere ubo
+    {
+        uboAtm = std::make_shared<UniformBuffer>();
+    }
+}
+
+void RendererImpl::finalize()
+{
+    texCompas.reset();
+    shaderTexture.reset();
+    shaderSurface.reset();
+    shaderBackground.reset();
+    shaderInfographic.reset();
+    shaderCopyDepth.reset();
+    meshQuad.reset();
+    meshRect.reset();
+
+    if (vars.frameRenderBufferId)
+    {
+        glDeleteFramebuffers(1, &vars.frameRenderBufferId);
+        vars.frameRenderBufferId = 0;
+    }
+
+    if (vars.frameReadBufferId)
+    {
+        glDeleteFramebuffers(1, &vars.frameReadBufferId);
+        vars.frameReadBufferId = 0;
+    }
+
+    if (vars.depthRenderTexId)
+    {
+        glDeleteTextures(1, &vars.depthRenderTexId);
+        vars.depthRenderTexId = 0;
+    }
+
+    if (vars.depthReadTexId)
+    {
+        glDeleteTextures(1, &vars.depthReadTexId);
+        vars.depthReadTexId = 0;
+    }
+
+    if (vars.colorRenderTexId)
+    {
+        glDeleteTextures(1, &vars.colorRenderTexId);
+        vars.colorRenderTexId = 0;
+    }
+
+    widthPrev = heightPrev = antialiasingPrev = 0;
+}
+
+void RendererImpl::updateAtmosphereBuffer()
+{
+    ShaderAtm::AtmBlock atmBlock;
+
+    if (options.renderAtmosphere
+        && !projected
+        && atmosphereDensityTexture)
+    {
+        // bind atmosphere density texture
+        {
+            glActiveTexture(GL_TEXTURE4);
+            atmosphereDensityTexture->bind();
+            glActiveTexture(GL_TEXTURE0);
+        }
+
+        double boundaryThickness, horizontalExponent, verticalExponent;
+        atmosphereDerivedAttributes(*body, boundaryThickness,
+            horizontalExponent, verticalExponent);
+
+        // uniParams
+        atmBlock.uniAtmSizes =
+        {
+            (float)(boundaryThickness / body->majorRadius),
+            (float)(body->majorRadius / body->minorRadius),
+            (float)(1.0 / body->majorRadius),
+            0.f
+        };
+        atmBlock.uniAtmCoefs =
+        {
+            (float)(horizontalExponent),
+            (float)(body->atmosphere.colorGradientExponent),
+            0.f,
+            0.f
+        };
+
+        // camera position
+        vec3 camPos = rawToVec3(draws->camera.eye) / body->majorRadius;
+        atmBlock.uniAtmCameraPosition = camPos.cast<float>();
+
+        // view inv
+        mat4 vi = rawToMat4(draws->camera.view).inverse();
+        atmBlock.uniAtmViewInv = vi.cast<float>();
+
+        // colors
+        atmBlock.uniAtmColorHorizon
+            = rawToVec4(body->atmosphere.colorHorizon.data());
+        atmBlock.uniAtmColorZenith
+            = rawToVec4(body->atmosphere.colorZenith.data());
+    }
+    else
+    {
+        memset(&atmBlock, 0, sizeof(atmBlock));
+    }
+
+    // Load it in
+    uboAtm->bind();
+    uboAtm->load(atmBlock);
+
+    // Bind atmosphere uniform buffer to index 0
+    uboAtm->bindToIndex(0);
+}
+
+void RendererImpl::renderCompass(const double screenPosSize[3],
+    const double mapRotation[3])
+{
+    glEnable(GL_BLEND);
+    glActiveTexture(GL_TEXTURE0);
+    texCompas->bind();
+    shaderTexture->bind();
+    mat4 p = orthographicMatrix(-1, 1, -1, 1, -1, 1)
+        * scaleMatrix(1.0 / widthPrev, 1.0 / heightPrev, 1);
+    mat4 v = translationMatrix(screenPosSize[0] * 2 - widthPrev,
+        screenPosSize[1] * 2 - heightPrev, 0)
+        * scaleMatrix(screenPosSize[2], screenPosSize[2], 1);
+    mat4 m = rotationMatrix(0, mapRotation[1] + 90)
+        * rotationMatrix(2, mapRotation[0]);
+    mat4f mvpf = (p * v * m).cast<float>();
+    mat3f uvmf = identityMatrix3().cast<float>();
+    shaderTexture->uniformMat4(0, mvpf.data());
+    shaderTexture->uniformMat3(1, uvmf.data());
+    meshQuad->bind();
+    meshQuad->dispatch();
+}
+
+void RendererImpl::getWorldPosition(const double screenPos[2], double worldPos[3])
     {
         double x = screenPos[0];
         double y = screenPos[1];
         y = heightPrev - y - 1;
 
         float depth = std::numeric_limits<float>::quiet_NaN();
-        #ifdef VTSR_OPENGLES
+#ifdef VTSR_OPENGLES
         // opengl ES does not support reading depth with glReadPixels
         {
             clearGlState();
@@ -747,14 +696,14 @@ public:
             glGenTextures(1, &texId);
             glBindTexture(GL_TEXTURE_2D, texId);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0,
-                         GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+                GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
             glGenFramebuffers(1, &fbId);
             glBindFramebuffer(GL_FRAMEBUFFER, fbId);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                   GL_TEXTURE_2D, texId, 0);
+                GL_TEXTURE_2D, texId, 0);
             checkGlFramebuffer(GL_FRAMEBUFFER);
 
             shaderCopyDepth->bind();
@@ -769,8 +718,8 @@ public:
             if (res[0] != 0 || res[1] != 0 || res[2] != 0 || res[3] != 0)
             {
                 static const vec4 bitSh = vec4(1.0 / (256.0*256.0*256.0),
-                                               1.0 / (256.0*256.0),
-                                               1.0 / 256.0, 1.0);
+                    1.0 / (256.0*256.0),
+                    1.0 / 256.0, 1.0);
                 depth = 0;
                 for (int i = 0; i < 4; i++)
                     depth += res[i] * bitSh[i];
@@ -781,13 +730,13 @@ public:
             glDeleteFramebuffers(1, &fbId);
             glDeleteTextures(1, &texId);
         }
-        #else
+#else
         {
             glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameReadBufferId);
             glReadPixels((int)x, (int)y, 1, 1,
-                     GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+                GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
         }
-        #endif
+#endif
         CHECK_GL("read depth");
         clearGlState();
 
@@ -800,7 +749,8 @@ public:
         for (int i = 0; i < 3; i++)
             worldPos[i] = res[i];
     }
-};
+
+} // namespace priv
 
 RenderOptions::RenderOptions()
 {
@@ -833,26 +783,16 @@ void Renderer::finalize()
     impl->finalize();
 }
 
-void Renderer::loadTexture(ResourceInfo &info, GpuTextureSpec &spec)
-{
-    auto r = std::make_shared<Texture>();
-    r->load(info, spec);
-    info.userData = r;
-}
-
-void Renderer::loadMesh(ResourceInfo &info, GpuMeshSpec &spec)
-{
-    auto r = std::make_shared<Mesh>();
-    r->load(info, spec);
-    info.userData = r;
-}
-
 void Renderer::bindLoadFunctions(Map *map)
 {
     map->callbacks().loadTexture = std::bind(&Renderer::loadTexture, this,
             std::placeholders::_1, std::placeholders::_2);
     map->callbacks().loadMesh = std::bind(&Renderer::loadMesh, this,
             std::placeholders::_1, std::placeholders::_2);
+    map->callbacks().loadFont = std::bind(&Renderer::loadFont, this,
+        std::placeholders::_1, std::placeholders::_2);
+    map->callbacks().loadGeodata = std::bind(&Renderer::loadGeodata, this,
+        std::placeholders::_1, std::placeholders::_2);
 }
 
 RenderOptions &Renderer::options()

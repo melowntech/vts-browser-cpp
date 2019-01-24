@@ -11,10 +11,13 @@ set(PUB_HDR_LIST
 )
 
 set(SRC_LIST
-    renderer.cpp renderer.hpp
-    renderer_c.cpp
     classes.cpp
+	font.cpp
     foundation.cpp
+	geodata.cpp
+    renderer.cpp
+	renderer.hpp
+    renderer_c.cpp
 )
 
 set(DATA_LIST

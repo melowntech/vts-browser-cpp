@@ -40,6 +40,8 @@ class MapCelestialBody;
 class ResourceInfo;
 class GpuTextureSpec;
 class GpuMeshSpec;
+class GpuFontSpec;
+class GpuGeodataSpec;
 
 namespace renderer
 {
@@ -53,6 +55,13 @@ struct VTSR_API RenderVariables : public vtsCRenderVariablesBase
 {
     RenderVariables();
 };
+
+namespace priv
+{
+
+class RendererImpl;
+
+} // namespace priv
 
 class VTSR_API Renderer
 {
@@ -71,6 +80,8 @@ public:
     // can be directly bound to MapCallbacks
     void loadTexture(ResourceInfo &info, GpuTextureSpec &spec);
     void loadMesh(ResourceInfo &info, GpuMeshSpec &spec);
+    void loadFont(ResourceInfo &info, GpuFontSpec &spec);
+    void loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec);
     void bindLoadFunctions(Map *map);
 
     RenderOptions &options();
@@ -88,7 +99,7 @@ public:
                           double worldPosOut[3]);
 
 private:
-    std::shared_ptr<class RendererImpl> impl;
+    std::shared_ptr<priv::RendererImpl> impl;
 };
 
 } // namespace renderer

@@ -177,6 +177,20 @@ public:
     void load() override;
 };
 
+class GpuFont : public Resource
+{
+public:
+    GpuFont(MapImpl *map, const std::string &name);
+    void load() override;
+    FetchTask::ResourceType resourceType() const override;
+};
+
+class GpuGeodata
+{
+public:
+    ResourceInfo info;
+};
+
 class AuthConfig : public Resource
 {
 public:
@@ -304,12 +318,15 @@ public:
     FetchTask::ResourceType resourceType() const override;
 
     std::string data;
+
+    std::map<std::string, std::shared_ptr<GpuFont>> fonts;
+    std::map<std::string, std::shared_ptr<GpuTexture>> textures;
 };
 
-class GpuGeodata : public Resource
+class GeodataTile : public Resource
 {
 public:
-    GpuGeodata(MapImpl *map, const std::string &name);
+    GeodataTile(MapImpl *map, const std::string &name);
     void load() override;
     FetchTask::ResourceType resourceType() const override;
     bool update(const std::string &style, const std::string &features,
@@ -429,17 +446,7 @@ public:
 class RenderGeodataTask
 {
 public:
-    std::shared_ptr<GpuMesh> mesh;
-    std::shared_ptr<GpuTexture> textureColor;
-    mat4 model;
-    mat3f uvm;
-    vec4f color;
-    vec4f visibilityRelative;
-    vec3f zBufferOffset;
-    vec2f visibilityAbsolute;
-    float visibility;
-    float culling;
-    sint32 zIndex;
+    std::shared_ptr<GpuGeodata> geodata;
 
     RenderGeodataTask();
     bool ready() const;
@@ -709,7 +716,7 @@ public:
     std::shared_ptr<TilesetMapping> getTilesetMapping(const std::string &name);
     std::shared_ptr<GeodataFeatures> getGeoFeatures(const std::string &name);
     std::shared_ptr<GeodataStylesheet> getGeoStyle(const std::string &name);
-    std::shared_ptr<GpuGeodata> getGeodata(const std::string &name);
+    std::shared_ptr<GeodataTile> getGeodata(const std::string &name);
 
     std::shared_ptr<SearchTask> search(const std::string &query,
                                        const double point[3]);

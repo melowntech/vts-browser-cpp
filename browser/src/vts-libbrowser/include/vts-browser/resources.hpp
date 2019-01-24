@@ -28,6 +28,8 @@
 #define RESOURCES_HPP_jhsegfshg
 
 #include <array>
+#include <vector>
+#include <string>
 #include <memory>
 
 #include "buffer.hpp"
@@ -165,6 +167,161 @@ public:
     uint32 verticesCount;
     uint32 indicesCount;
     FaceMode faceMode;
+};
+
+// information about font passed to loadFont callback
+class VTS_API GpuFontSpec
+{
+public:
+    std::string name;
+    Buffer data;
+};
+
+// information about geodata passed to loadGeodata callback
+class VTS_API GpuGeodataSpec
+{
+public:
+    enum class Type
+    {
+        LineScreen,
+        LineWorld,
+        LineLabel,
+        PointScreen,
+        PointWorld,
+        PointLabel,
+        Icon,
+        PackedPointLabelIcon,
+        Triangles,
+    };
+
+    enum class Units
+    {
+        Pixels,
+        Meters,
+        Ratio,
+    };
+
+    enum class TextAlign
+    {
+        Left,
+        Right,
+        Center,
+    };
+
+    enum class Origin
+    {
+        TopLeft,
+        TopRight,
+        TopCenter,
+        CenterLeft,
+        CenterRight,
+        CenterCenter,
+        BottomLeft,
+        BottomRight,
+        BottomCenter,
+    };
+
+    struct VTS_API Stick
+    {
+        float color[4];
+        float width;
+        float minHeight;
+        float maxHeight;
+    };
+
+    struct VTS_API Icon
+    {
+        Stick stick;
+        float offset[2];
+        float scale;
+        Origin origin;
+    };
+
+    struct VTS_API Line
+    {
+        float color[4];
+        float width;
+        Units units;
+    };
+
+    struct VTS_API LineLabel
+    {
+        float color[4];
+        float color2[4];
+        float size;
+        float offset;
+    };
+
+    struct VTS_API Point
+    {
+        float color[4];
+        float radius;
+    };
+
+    struct VTS_API PointLabel
+    {
+        Stick stick;
+        float color[4];
+        float color2[4];
+        float margin[2];
+        float size;
+        float width;
+        float offset;
+        Origin origin;
+        TextAlign textAlign;
+    };
+
+    struct VTS_API PackedPointLabelIcon
+    {
+        PointLabel pointlabel;
+        Icon icon;
+    };
+
+    union VTS_API SharedData // union! not struct
+    {
+        Icon icon;
+        Line line;
+        LineLabel lineLabel;
+        Point point;
+        PointLabel pointLabel;
+        PackedPointLabelIcon packedPointLabelIcon;
+        SharedData();
+    };
+
+    struct VTS_API Common
+    {
+        float visibilityRelative[4];
+        float zBufferOffset[3];
+        float visibilityAbsolute[2];
+        float visibility;
+        float culling;
+        sint32 zIndex;
+        Common();
+    };
+
+    GpuGeodataSpec();
+
+    // generate mesh converting each coordinate pair into single point
+    // for debugging purposes
+    GpuMeshSpec createMeshPoints() const;
+
+    // generate mesh converting each pair of coordinate pairs into single line
+    // for debugging purposes
+    GpuMeshSpec createMeshLines() const;
+
+    // generate mesh with respect to the type
+    // this is designed to be used with the rendering library
+    //   (or a compatible rendering algorithm)
+    GpuMeshSpec createMesh() const;
+
+    std::shared_ptr<void> font;
+    std::shared_ptr<void> texture;
+    std::vector<uint16> coordinates;
+    std::string texts; // zero terminated array of zero terminated strings
+    double model[16];
+    SharedData sharedData;
+    Common common;
+    Type type;
 };
 
 } // namespace vts

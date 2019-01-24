@@ -57,6 +57,7 @@ public:
         SriIndex,
         GeodataFeatures,
         GeodataStylesheet,
+        Font,
     };
 
     struct VTS_API ExtraCodes

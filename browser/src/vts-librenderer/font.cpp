@@ -24,45 +24,47 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CAMERA_COMMON_H_desgjjgf
-#define CAMERA_COMMON_H_desgjjgf
+#include "renderer.hpp"
 
-#include "foundation.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct vtsCDrawSurfaceBase
+namespace vts { namespace renderer
 {
-    float mv[16];
-    float uvm[9];
-    float color[4];
-    float uvClip[4];
-    float center[3];
-    bool externalUv;
-    bool flatShading;
-} vtsCDrawSurfaceBase;
 
-typedef struct vtsCDrawGeodataBase
-{} vtsCDrawGeodataBase;
+Font::Font()
+{}
 
-typedef struct vtsCDrawSimpleBase
+Font::~Font()
 {
-    float mv[16];
-    float uvm[9];
-    float color[4];
-} vtsCDrawSimpleBase;
+    clear();
+}
 
-typedef struct vtsCCameraBase
+void Font::clear()
 {
-    double view[16];
-    double proj[16];
-    double eye[3];
-} vtsCCameraBase;
 
-#ifdef __cplusplus
-} // extern C
-#endif
+}
 
-#endif
+void Font::bind()
+{
+
+}
+
+void Font::load(ResourceInfo &info, GpuFontSpec &spec)
+{
+    clear();
+    // todo
+}
+
+void Font::load(GpuFontSpec &spec)
+{
+    ResourceInfo info;
+    load(info, spec);
+}
+
+void Renderer::loadFont(ResourceInfo &info, GpuFontSpec &spec)
+{
+    auto r = std::make_shared<Font>();
+    r->load(info, spec);
+    info.userData = r;
+}
+
+} } // namespace vts renderer
+

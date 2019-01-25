@@ -679,6 +679,73 @@ void CameraImpl::travModeFlat(TraverseNode *trav)
         travModeFlat(t.get());
 }
 
+// mode == 0 -> default
+// mode == 1 -> load only -> returns true if loaded
+// mode == 2 -> render only
+bool CameraImpl::travModeStable(TraverseNode *trav, int mode)
+{
+    if (mode == 2)
+    {
+        if (!trav->meta)
+            return false;
+        trav->lastAccessTime = map->renderTickIndex;
+    }
+    else
+    {
+        if (!travInit(trav))
+            return false;
+    }
+
+    if (!visibilityTest(trav))
+        return true;
+
+    if (mode == 2)
+    {
+        if (!trav->rendersEmpty())
+        {
+            touchDraws(trav);
+            renderNode(trav);
+        }
+        else for (auto &t : trav->childs)
+            travModeStable(t.get(), 2);
+        return true;
+    }
+
+    if (coarsenessTest(trav) || trav->childs.empty())
+    {
+        touchDraws(trav);
+        if (trav->surface && trav->rendersEmpty())
+            travDetermineDraws(trav);
+        if (mode == 1)
+            return !trav->rendersEmpty();
+        if (!trav->rendersEmpty())
+            renderNode(trav);
+        else for (auto &t : trav->childs)
+            travModeStable(t.get(), 2);
+        return true;
+    }
+
+    if (mode == 0 && !trav->rendersEmpty())
+    {
+        bool ok = true;
+        for (auto &t : trav->childs)
+            ok = travModeStable(t.get(), 1) && ok;
+        if (!ok)
+        {
+            touchDraws(trav);
+            renderNode(trav);
+            return true;
+        }
+    }
+
+    {
+        bool ok = true;
+        for (auto &t : trav->childs)
+            ok = travModeStable(t.get(), mode) && ok;
+        return ok;
+    }
+}
+
 bool CameraImpl::travModeBalanced(TraverseNode *trav, bool renderOnly)
 {
     if (renderOnly)
@@ -770,14 +837,17 @@ void CameraImpl::traverseRender(TraverseNode *trav)
     {
     case TraverseMode::None:
         break;
-    case TraverseMode::Hierarchical:
-        travModeHierarchical(trav, false);
-        break;
     case TraverseMode::Flat:
         travModeFlat(trav);
         break;
+    case TraverseMode::Stable:
+        travModeStable(trav, 0);
+        break;
     case TraverseMode::Balanced:
         travModeBalanced(trav, false);
+        break;
+    case TraverseMode::Hierarchical:
+        travModeHierarchical(trav, false);
         break;
     case TraverseMode::Fixed:
         travModeFixed(trav);

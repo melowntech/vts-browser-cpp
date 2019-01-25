@@ -197,8 +197,9 @@ void optionsConfigCamera(
             "Render traversal mode for surfaces:\n"
             "none\n"
             "flat\n"
-            "hierarchical\n"
+            "stable\n"
             "balanced\n"
+            "hierarchical\n"
             "fixed")
 
         ((section + "traverseModeGeodata").c_str(),
@@ -207,8 +208,9 @@ void optionsConfigCamera(
             "Render traversal mode for geodata:\n"
             "none\n"
             "flat\n"
-            "hierarchical\n"
+            "stable\n"
             "balanced\n"
+            "hierarchical\n"
             "fixed")
 
         ((section + "balancedGridLodOffset").c_str(),
@@ -331,8 +333,9 @@ void optionsConfigFetcherOptions(
 UTILITY_GENERATE_ENUM_IO(TraverseMode,
                          ((None)("none"))
                          ((Flat)("flat"))
-                         ((Hierarchical)("hierarchical"))
+                         ((Stable)("stable"))
                          ((Balanced)("balanced"))
+                         ((Hierarchical)("hierarchical"))
                          ((Fixed)("fixed"))
                          )
 

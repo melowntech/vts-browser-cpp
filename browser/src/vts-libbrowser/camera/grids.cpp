@@ -104,7 +104,6 @@ void SubtilesMerger::resolve(TraverseNode *trav, CameraImpl *impl)
 void CameraImpl::gridPreloadRequest(TraverseNode *trav)
 {
     assert(trav);
-    assert(trav->surface);
     if (options.balancedGridLodOffset == (uint32)-1)
         return;
 

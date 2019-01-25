@@ -157,6 +157,7 @@ public:
     bool travInit(TraverseNode *trav);
     void travModeHierarchical(TraverseNode *trav, bool loadOnly);
     void travModeFlat(TraverseNode *trav);
+    bool travModeStable(TraverseNode *trav, int mode);
     bool travModeBalanced(TraverseNode *trav, bool renderOnly);
     void travModeFixed(TraverseNode *trav);
     void traverseRender(TraverseNode *trav);

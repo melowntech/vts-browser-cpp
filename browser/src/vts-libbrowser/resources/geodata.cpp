@@ -182,7 +182,7 @@ GpuMeshSpec createMeshLineWorld(const GpuGeodataSpec &geo)
         vec3f forward = normalize(vec3f(b - a));
         vec3f side = normalize(cross(forward, up));
         float scale = geo.unionData.line.width * localMeter * 0.5;
-        forward *= std::min(scale, length(vec3f(b - a)) * 0.5f);
+        forward *= scale;
         side *= scale;
         uint32 ib = vertices.size();
 
@@ -212,20 +212,20 @@ GpuMeshSpec createMeshLineWorld(const GpuGeodataSpec &geo)
         indices.push_back(ib + 1);
         indices.push_back(ib + 7);
         indices.push_back(ib + 1);
-        indices.push_back(ib + 7);
         indices.push_back(ib + 6);
+        indices.push_back(ib + 7);
         indices.push_back(ib + 1);
         indices.push_back(ib + 2);
         indices.push_back(ib + 6);
         indices.push_back(ib + 2);
-        indices.push_back(ib + 6);
         indices.push_back(ib + 5);
+        indices.push_back(ib + 6);
         indices.push_back(ib + 2);
         indices.push_back(ib + 3);
         indices.push_back(ib + 5);
         indices.push_back(ib + 3);
-        indices.push_back(ib + 5);
         indices.push_back(ib + 4);
+        indices.push_back(ib + 5);
     }
 
     GpuMeshSpec spec;

@@ -100,12 +100,16 @@ enum class TraverseMode
     // Flat mode requires least amount of memory and downloads
     Flat,
 
+    // Stable is like Flat mode with hysteresis
+    Stable,
+
+    // Balanced provides fast loading with filling empty space
+    //   with coarser tiles
+    Balanced,
+
     // Hierarchical mode downloads every lod from top to the required level,
     //   this ensures that it has at least something to show at all times
     Hierarchical,
-
-    // Balanced does litle downloads but makes rendering more consistent
-    Balanced,
 
     // Fixed mode completely changes how the traversal works
     //   it will use fixed selected lod (and some coarser where unavailable)

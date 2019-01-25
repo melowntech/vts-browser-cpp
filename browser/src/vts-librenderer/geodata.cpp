@@ -41,14 +41,18 @@ public:
     void load(ResourceInfo &info, GpuGeodataSpec &specp)
     {
         this->spec = std::move(specp);
+
         mesh = std::make_shared<Mesh>();
-        mesh->load(spec.createMesh());
+        ResourceInfo mshInfo;
+        mesh->load(mshInfo, spec.createMesh());
+        info.gpuMemoryCost += mshInfo.gpuMemoryCost;
+        info.ramMemoryCost += mshInfo.ramMemoryCost;
+        std::vector<std::array<float, 3>>().swap(spec.coordinates);
+
         texture = std::static_pointer_cast<Texture>(spec.texture);
         font = std::static_pointer_cast<Font>(spec.font);
-        info.gpuMemoryCost += spec.coordinates.size()
-            * sizeof(*spec.coordinates.data());
+
         info.ramMemoryCost += sizeof(spec);
-        std::vector<std::array<float, 3>>().swap(spec.coordinates);
     }
 
     GpuGeodataSpec spec;
@@ -77,7 +81,7 @@ void RendererImpl::initializeGeodata()
 
 void RendererImpl::renderGeodata()
 {
-    glDisable(GL_CULL_FACE);
+    //glDisable(GL_CULL_FACE);
     glDepthMask(GL_FALSE);
 
     shaderGeodata->bind();
@@ -134,17 +138,17 @@ void RendererImpl::renderGeodata()
         msh->bind();
         msh->dispatch();
 
-
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        msh->dispatch();
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        // debug
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        //msh->dispatch();
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
     glLineWidth(1);
     glPointSize(1);
 
     glDepthMask(GL_TRUE);
-    glEnable(GL_CULL_FACE);
+    //glEnable(GL_CULL_FACE);
 }
 
 } // namespace priv

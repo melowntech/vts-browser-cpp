@@ -152,7 +152,7 @@ CameraOptions::CameraOptions() :
     lodBlending(0),
     lodBlendingDuration(60),
     traverseModeSurfaces(TraverseMode::Balanced),
-    traverseModeGeodata(TraverseMode::Flat),
+    traverseModeGeodata(TraverseMode::Stable),
     debugDetachedCamera(false),
     debugFlatShading(false),
     debugRenderSurrogates(false),

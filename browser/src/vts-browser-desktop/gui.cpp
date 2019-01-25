@@ -81,8 +81,9 @@ void clipBoardCopy(nk_handle, const char *text, int len)
 static const char *traverseModeNames[] = {
     "None",
     "Flat",
-    "Hierarchical",
+    "Stable",
     "Balanced",
+    "Hierarchical",
     "Fixed",
 };
 

@@ -66,9 +66,9 @@ void Camera::setView(const std::array<double, 3> &eye,
 void Camera::setView(const double view[16])
 {
     mat4 v = rawToMat4(view).inverse();
-    impl->eye = vec4to3(v * vec4(0, 0, 0, 1));
-    impl->target = vec4to3(v * vec4(0, 0, -1, 0)) + impl->eye;
-    impl->up = vec4to3(v * vec4(0, 1, 0, 0));
+    impl->eye = vec4to3(vec4(v * vec4(0, 0, 0, 1)));
+    impl->target = vec4to3(vec4(v * vec4(0, 0, -1, 0))) + impl->eye;
+    impl->up = vec4to3(vec4(v * vec4(0, 1, 0, 0)));
 }
 
 void Camera::setView(const std::array<double, 16> &view)

@@ -166,7 +166,7 @@ void MainWindow::prepareMarks()
                 * vts::scaleMatrix(navigation->getViewExtent() * 0.005);
         vts::mat4f mvf = mv.cast<float>();
         vts::DrawSimpleTask t;
-        vts::vec4f c = vts::vec3to4f(m.color, 1);
+        vts::vec4f c = vts::vec3to4(m.color, 1);
         for (int i = 0; i < 4; i++)
             t.color[i] = c(i);
         t.mesh = meshSphere;

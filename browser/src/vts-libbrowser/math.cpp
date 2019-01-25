@@ -133,11 +133,74 @@ vec3 max(const vec3 &a, const vec3 &b)
                 std::max(a(2), b(2)));
 }
 
-vec3 interpolate(vec3 a, vec3 b, double f)
+vec3 interpolate(const vec3 &a, const vec3 &b, double f)
 {
     return vec3(interpolate(a(0), b(0), f),
                 interpolate(a(1), b(1), f),
                 interpolate(a(2), b(2), f));
+}
+
+vec3f cross(const vec3f &a, const vec3f &b)
+{
+    return vec3f(
+        a(1) * b(2) - a(2) * b(1),
+        a(2) * b(0) - a(0) * b(2),
+        a(0) * b(1) - a(1) * b(0)
+    );
+}
+
+float dot(const vec3f &a, const vec3f &b)
+{
+    return a(0) * b(0) + a(1) * b(1) + a(2) * b(2);
+}
+
+float dot(const vec2f &a, const vec2f &b)
+{
+    return a(0) * b(0) + a(1) * b(1);
+}
+
+float length(const vec3f &a)
+{
+    return sqrt(dot(a, a));
+}
+
+float length(const vec2f &a)
+{
+    return sqrt(dot(a, a));
+}
+
+vec3f normalize(const vec3f &a)
+{
+    return a / length(a);
+}
+
+vec3f anyPerpendicular(const vec3f &v)
+{
+    vec3f b = normalize(v);
+    vec3f a = std::abs(dot(b, vec3f(0, 0, 1))) > 0.9
+        ? vec3f(0, 1, 0) : vec3f(0, 0, 1);
+    return cross(b, a);
+}
+
+vec3f min(const vec3f &a, const vec3f &b)
+{
+    return vec3f(std::min(a(0), b(0)),
+        std::min(a(1), b(1)),
+        std::min(a(2), b(2)));
+}
+
+vec3f max(const vec3f &a, const vec3f &b)
+{
+    return vec3f(std::max(a(0), b(0)),
+        std::max(a(1), b(1)),
+        std::max(a(2), b(2)));
+}
+
+vec3f interpolate(const vec3f &a, const vec3f &b, float f)
+{
+    return vec3f(interpolate(a(0), b(0), f),
+        interpolate(a(1), b(1), f),
+        interpolate(a(2), b(2), f));
 }
 
 mat4 frustumMatrix(double left, double right,
@@ -187,7 +250,7 @@ mat4 orthographicMatrix(double left, double right,
 
 mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up)
 {
-    vec3 f = normalize(target - eye);
+    vec3 f = normalize(vec3(target - eye));
     vec3 u = normalize(up);
     vec3 s = normalize(cross(f, u));
     u = cross(s, f);
@@ -340,7 +403,7 @@ vec2 vec3to2(vec3 v, bool division)
     return res;
 }
 
-vec4f vec3to4f(vec3f v, float w)
+vec4f vec3to4(vec3f v, float w)
 {
     vec4f res;
     res(0) = v(0);
@@ -350,7 +413,7 @@ vec4f vec3to4f(vec3f v, float w)
     return res;
 }
 
-vec3f vec4to3f(vec4f v, bool division)
+vec3f vec4to3(vec4f v, bool division)
 {
     vec3f res;
     if (division)
@@ -361,7 +424,7 @@ vec3f vec4to3f(vec4f v, bool division)
     return res;
 }
 
-vec3f vec2to3f(vec2f v, float w)
+vec3f vec2to3(vec2f v, float w)
 {
     vec3f res;
     res(0) = v(0);
@@ -370,7 +433,7 @@ vec3f vec2to3f(vec2f v, float w)
     return res;
 }
 
-vec2f vec3to2f(vec3f v, bool division)
+vec2f vec3to2(vec3f v, bool division)
 {
     vec2f res;
     if (division)

@@ -160,8 +160,8 @@ void NavigationImpl::positionToCamera(vec3 &center, vec3 &dir, vec3 &up)
         dir = convertor->navToPhys(dir);
         up = convertor->navToPhys(up);
         // points -> vectors
-        dir = normalize(dir - center);
-        up = normalize(up - center);
+        dir = normalize(vec3(dir - center));
+        up = normalize(vec3(up - center));
     } break;
     case vtslibs::registry::Srs::Type::geographic:
     {
@@ -173,8 +173,8 @@ void NavigationImpl::positionToCamera(vec3 &center, vec3 &dir, vec3 &up)
         vec3 n = convertor->navToPhys(n2);
         vec3 e = convertor->navToPhys(e2);
         // points -> vectors
-        n = normalize(n - center);
-        e = normalize(e - center);
+        n = normalize(vec3(n - center));
+        e = normalize(vec3(e - center));
         // construct NED coordinate system
         vec3 d = normalize(cross(n, e));
         e = normalize(cross(n, d));

@@ -34,6 +34,8 @@ set(DATA_LIST
     data/shaders/color.vert.glsl
     data/shaders/copyDepth.frag.glsl
     data/shaders/copyDepth.vert.glsl
+    data/shaders/geodata.frag.glsl
+    data/shaders/geodata.vert.glsl
     data/textures/compas.png
 )
 

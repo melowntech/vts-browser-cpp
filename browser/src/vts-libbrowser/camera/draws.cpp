@@ -131,7 +131,7 @@ DrawSurfaceTask CameraImpl::convert(const RenderSurfaceTask &task)
     if (task.textureMask)
         result.texMask = task.textureMask->info.userData;
     vecToRaw(vec4f(0, 0, 1, 1), result.uvClip);
-    vec3f c = vec4to3(task.model * vec4(0, 0, 0, 1)).cast<float>();
+    vec3f c = vec4to3(vec4(task.model * vec4(0, 0, 0, 1))).cast<float>();
     vecToRaw(c, result.center);
     result.flatShading = task.flatShading || options.debugFlatShading;
     result.externalUv = task.externalUv;

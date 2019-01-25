@@ -263,8 +263,8 @@ void CameraImpl::travDetermineMetaImpl(TraverseNode *trav)
     {
         vec2 fl = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
         vec2 fu = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
-        vec3 el = vec2to3(fl, trav->meta->geomExtents.z.min);
-        vec3 eu = vec2to3(fu, trav->meta->geomExtents.z.max);
+        vec3 el = vec2to3(fl, double(trav->meta->geomExtents.z.min));
+        vec3 eu = vec2to3(fu, double(trav->meta->geomExtents.z.max));
         vec3 ed = eu - el;
         vec3 *corners = trav->cornersPhys;
         for (uint32 i = 0; i < 8; i++)
@@ -296,7 +296,7 @@ void CameraImpl::travDetermineMetaImpl(TraverseNode *trav)
 
             for (uint32 i = 0; i < 8; i++)
             {
-                vec3 p = vec4to3(t * vec3to4(corners[i], 1), false);
+                vec3 p = vec4to3(vec4(t * vec3to4(corners[i], 1)), false);
                 obb.points[0] = min(obb.points[0], p);
                 obb.points[1] = max(obb.points[1], p);
             }
@@ -309,18 +309,18 @@ void CameraImpl::travDetermineMetaImpl(TraverseNode *trav)
         {
             vec2 exU = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
             vec2 exL = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
-            vec3 sds = vec2to3((exU + exL) * 0.5,
-                trav->meta->geomExtents.z.min);
+            vec3 sds = vec2to3(vec2((exU + exL) * 0.5),
+                double(trav->meta->geomExtents.z.min));
             vec3 vn1 = map->convertor->convert(sds,
                 trav->nodeInfo.node(), Srs::Physical);
             trav->diskNormalPhys = vn1.normalized();
             trav->diskHeightsPhys[0] = vn1.norm();
-            sds = vec2to3((exU + exL) * 0.5,
-                trav->meta->geomExtents.z.max);
+            sds = vec2to3(vec2((exU + exL) * 0.5),
+                double(trav->meta->geomExtents.z.max));
             vec3 vn2 = map->convertor->convert(sds,
                 trav->nodeInfo.node(), Srs::Physical);
             trav->diskHeightsPhys[1] = vn2.norm();
-            sds = vec2to3(exU, trav->meta->geomExtents.z.min);
+            sds = vec2to3(exU, double(trav->meta->geomExtents.z.min));
             vec3 vc = map->convertor->convert(sds,
                 trav->nodeInfo.node(), Srs::Physical);
             trav->diskHalfAngle = std::acos(dot(trav->diskNormalPhys,
@@ -363,8 +363,8 @@ void CameraImpl::travDetermineMetaImpl(TraverseNode *trav)
     {
         vec2 exU = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
         vec2 exL = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
-        vec3 sds = vec2to3((exU + exL) * 0.5,
-                           trav->meta->geomExtents.surrogate);
+        vec3 sds = vec2to3(vec2((exU + exL) * 0.5),
+                           double(trav->meta->geomExtents.surrogate));
         trav->surrogatePhys = map->convertor->convert(sds,
                             trav->nodeInfo.node(), Srs::Physical);
         trav->surrogateNav = map->convertor->convert(sds,

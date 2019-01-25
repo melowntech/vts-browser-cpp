@@ -66,6 +66,7 @@ public:
     std::shared_ptr<class ShaderAtm> shaderBackground;
     std::shared_ptr<Shader> shaderInfographic;
     std::shared_ptr<Shader> shaderCopyDepth;
+    std::shared_ptr<Shader> shaderGeodata;
     std::shared_ptr<Mesh> meshQuad; // positions: -1 .. 1
     std::shared_ptr<Mesh> meshRect; // positions: 0 .. 1
     std::shared_ptr<UniformBuffer> uboAtm;
@@ -93,6 +94,7 @@ public:
     void enableClipDistance(bool enable);
     void renderGeodata();
     void render();
+    void initializeGeodata();
     void initialize();
     void finalize();
     void updateAtmosphereBuffer();

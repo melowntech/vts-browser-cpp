@@ -226,8 +226,9 @@ void MeshAggregate::load()
                 // denormalize vertex positions
                 for (auto &v : msh.vertices)
                 {
-                    v = vecToUblas<math::Point3>(vec4to3(part.normToPhys
-                                    * vec3to4(vecFromUblas<vec3>(v), 1)));
+                    v = vecToUblas<math::Point3>(
+                        vec4to3(vec4(part.normToPhys
+                            * vec3to4(vecFromUblas<vec3>(v), 1))));
                 }
 
                 // copy external uv if there are no internal uv

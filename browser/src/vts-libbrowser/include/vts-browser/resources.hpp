@@ -183,6 +183,7 @@ class VTS_API GpuGeodataSpec
 public:
     enum class Type
     {
+        Invalid,
         LineScreen,
         LineWorld,
         LineLabel,
@@ -196,6 +197,7 @@ public:
 
     enum class Units
     {
+        Invalid,
         Pixels,
         Meters,
         Ratio,
@@ -203,6 +205,7 @@ public:
 
     enum class TextAlign
     {
+        Invalid,
         Left,
         Right,
         Center,
@@ -210,6 +213,7 @@ public:
 
     enum class Origin
     {
+        Invalid,
         TopLeft,
         TopRight,
         TopCenter,
@@ -277,7 +281,7 @@ public:
         Icon icon;
     };
 
-    union VTS_API SharedData // union! not struct
+    union VTS_API UnionData
     {
         Icon icon;
         Line line;
@@ -285,10 +289,10 @@ public:
         Point point;
         PointLabel pointLabel;
         PackedPointLabelIcon packedPointLabelIcon;
-        SharedData();
+        UnionData();
     };
 
-    struct VTS_API Common
+    struct VTS_API CommonData
     {
         float visibilityRelative[4];
         float zBufferOffset[3];
@@ -296,7 +300,7 @@ public:
         float visibility;
         float culling;
         sint32 zIndex;
-        Common();
+        CommonData();
     };
 
     GpuGeodataSpec();
@@ -316,11 +320,11 @@ public:
 
     std::shared_ptr<void> font;
     std::shared_ptr<void> texture;
-    std::vector<uint16> coordinates;
+    std::vector<std::array<float, 3>> coordinates;
     std::string texts; // zero terminated array of zero terminated strings
     double model[16];
-    SharedData sharedData;
-    Common common;
+    UnionData unionData;
+    CommonData commonData;
     Type type;
 };
 

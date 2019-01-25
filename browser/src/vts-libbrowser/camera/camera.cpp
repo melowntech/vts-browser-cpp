@@ -212,8 +212,8 @@ double CameraImpl::coarsenessValue(TraverseNode *trav)
             vec3 up = perpendicularUnitVector * texelSize;
             vec3 c1 = c - up * 0.5;
             vec3 c2 = c1 + up;
-            c1 = vec4to3(viewProjRender * vec3to4(c1, 1), true);
-            c2 = vec4to3(viewProjRender * vec3to4(c2, 1), true);
+            c1 = vec4to3(vec4(viewProjRender * vec3to4(c1, 1)), true);
+            c2 = vec4to3(vec4(viewProjRender * vec3to4(c2, 1)), true);
             double len = std::abs(c2[1] - c1[1])
                 * windowHeight * 0.5;
             result = std::max(result, len);
@@ -260,7 +260,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
         task.mesh->priority = std::numeric_limits<float>::infinity();
         task.model = translationMatrix(*trav->surrogatePhys)
                 * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
-        task.color = vec3to4f(trav->surface->color, task.color(3));
+        task.color = vec3to4(trav->surface->color, task.color(3));
         if (task.ready())
             draws.infographics.emplace_back(convert(task));
     }
@@ -274,7 +274,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
             task.model = r.model;
             task.mesh = map->getMesh("internal://data/meshes/aabb.obj");
             task.mesh->priority = std::numeric_limits<float>::infinity();
-            task.color = vec3to4f(trav->surface->color, task.color(3));
+            task.color = vec3to4(trav->surface->color, task.color(3));
             if (task.ready())
                 draws.infographics.emplace_back(convert(task));
         }
@@ -580,10 +580,10 @@ void CameraImpl::renderUpdate()
     viewProjActual = apiProj * viewActual;
     if (!options.debugDetachedCamera)
     {
-        vec3 off = normalize(target - eye) * options.cullingOffsetDistance;
+        vec3 off = normalize(vec3(target - eye)) * options.cullingOffsetDistance;
         viewProjCulling = apiProj * lookAt(eye - off, target, up);
         viewProjRender = viewProjActual;
-        vec3 forward = normalize(target - eye);
+        vec3 forward = normalize(vec3(target - eye));
         perpendicularUnitVector
             = normalize(cross(cross(up, forward), forward));
         forwardUnitVector = forward;
@@ -606,8 +606,8 @@ void CameraImpl::renderUpdate()
             for (int x = 0; x < 2; x++)
                 for (int y = 0; y < 2; y++)
                     for (int z = 0; z < 2; z++)
-                        corners.push_back(vec4to3(m
-                            * vec4(x * 2 - 1, y * 2 - 1, z * 2 - 1, 1), true));
+                        corners.push_back(vec4to3(vec4(m
+                           * vec4(x * 2 - 1, y * 2 - 1, z * 2 - 1, 1)), true));
             static const uint32 cora[] = {
                 0, 0, 1, 2, 4, 4, 5, 6, 0, 1, 2, 3
             };

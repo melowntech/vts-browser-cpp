@@ -41,10 +41,10 @@ struct GpuGeodataSpecComparator
     {
         if (a.type != b.type)
             return a.type < b.type;
-        int c = memcmp(&a.common, &b.common, sizeof(a.common));
+        int c = memcmp(&a.commonData, &b.commonData, sizeof(a.commonData));
         if (c != 0)
             return c < 0;
-        int s = memcmp(&a.sharedData, &b.sharedData, sizeof(a.sharedData));
+        int s = memcmp(&a.unionData, &b.unionData, sizeof(a.unionData));
         if (s != 0)
             return s < 0;
         return memcmp(a.model, b.model, sizeof(float) * 16) < 0;
@@ -63,21 +63,13 @@ struct geoContext
         Polygon,
     };
 
-    typedef std::array<uint16, 3> Point;
+    typedef std::array<float, 3> Point;
 
     Point convertPoint(const Value &v)
     {
         if (Validating)
-        {
-            for (uint32 i = 0; i < 3; i++)
-            {
-                if (v[i].asUInt() > 65535)
-                    THROW << "Point index outside range.";
-            }
-        }
-        return {{ (uint16)v[0].asUInt(),
-                  (uint16)v[1].asUInt(),
-                  (uint16)v[2].asUInt() }};
+            validateArrayLength(v, 3, 3, "Point must have 3 coordinates");
+        return group->convertPoint(v);
     }
 
     vec4f convertColor(const Value &v)
@@ -422,6 +414,20 @@ struct geoContext
                                                 expression[fnc][1]);
 
             // 'lod-scaled'
+            if (fnc == "lod-scaled")
+            {
+                Value arr = evaluate(expression["lod-scaled"]);
+                validateArrayLength(arr, 2, 3,
+                    "lod-scaled must have 2 or 3 values");
+                float l = arr[0].asFloat();
+                float v = arr[1].asFloat();
+                float bf = arr.size() == 3 ? arr[2].asFloat() : 1;
+                return Value(std::pow(2 * bf, l - lod) * v);
+            }
+
+            // unknown
+            if (Validating)
+                THROW << "Unknown function <" << fnc << ">";
         }
 
         if (expression.isString())
@@ -439,7 +445,8 @@ struct geoContext
                     if (Validating)
                     {
                         if (end == s.npos)
-                            THROW << "Unmatched <{>";
+                            THROW << "Unmatched <{> in <"
+                                  << expression.toStyledString() << ">";
                     }
                     auto open = s.find("{", last + 1);
                     if (end > open)
@@ -464,7 +471,8 @@ struct geoContext
             {
                 auto end = s.find("}");
                 if (end != s.npos)
-                    THROW << "Unmatched <}>";
+                    THROW << "Unmatched <}> in <"
+                          << expression.toStyledString() << ">";
             }
             // apply replacements
             return replacement(s);
@@ -654,13 +662,13 @@ struct geoContext
         boost::optional<sint32> zOverride)
     {
         // model
-        matToRaw(group->model(), spec.model);
+        matToRaw(group->model, spec.model);
 
         // z-index
         if (zOverride)
-            spec.common.zIndex = *zOverride;
+            spec.commonData.zIndex = *zOverride;
         else if (layer["z-index"])
-            spec.common.zIndex = evaluate(layer["z-index"]).asInt();
+            spec.commonData.zIndex = evaluate(layer["z-index"]).asInt();
 
         // zbuffer-offset
         if (layer["zbuffer-offset"])
@@ -669,12 +677,37 @@ struct geoContext
             validateArrayLength(arr, 3, 3,
                 "zbuffer-offset must have 3 values");
             for (int i = 0; i < 3; i++)
-                spec.common.zBufferOffset[i] = arr[i].asFloat();
+                spec.commonData.zBufferOffset[i] = arr[i].asFloat();
         }
 
         // visibility
+        if (layer["visibility"])
+            spec.commonData.visibility
+                = evaluate(layer["visibility"]).asFloat();
+
+        // visibility-abs
+        if (layer["visibility-abs"])
+        {
+            Value arr = evaluate(layer["visibility-abs"]);
+            validateArrayLength(arr, 2, 2,
+                "visibility-abs must have 2 values");
+            for (int i = 0; i < 2; i++)
+                spec.commonData.visibilityAbsolute[i] = arr[i].asFloat();
+        }
+
+        // visibility-rel
+        if (layer["visibility-rel"])
+        {
+            Value arr = evaluate(layer["visibility-rel"]);
+            validateArrayLength(arr, 4, 4,
+                "visibility-rel must have 4 values");
+            for (int i = 0; i < 4; i++)
+                spec.commonData.visibilityRelative[i] = arr[i].asFloat();
+        }
 
         // culling
+        if (layer["culling"])
+            spec.commonData.culling = evaluate(layer["culling"]).asFloat();
     }
 
     void processFeatureLine(const Value &layer, GpuGeodataSpec spec)
@@ -684,9 +717,25 @@ struct geoContext
         else
             spec.type = GpuGeodataSpec::Type::LineScreen;
         vecToRaw(convertColor(layer["line-color"]),
-            spec.sharedData.line.color);
-        spec.sharedData.line.width
+            spec.unionData.line.color);
+        spec.unionData.line.width
             = evaluate(layer["line-width"]).asFloat();
+        if (layer["line-width-units"])
+        {
+            std::string units = evaluate(layer["line-width-units"]).asString();
+            if (units == "ratio")
+                spec.unionData.line.units = GpuGeodataSpec::Units::Ratio;
+            else if (units == "pixels")
+                spec.unionData.line.units = GpuGeodataSpec::Units::Pixels;
+            else if (units == "meters")
+                spec.unionData.line.units = GpuGeodataSpec::Units::Meters;
+            else if (Validating)
+                THROW << "Invalid line-width-units";
+        }
+        else if (spec.type == GpuGeodataSpec::Type::LineWorld)
+            spec.unionData.line.units = GpuGeodataSpec::Units::Meters;
+        else
+            spec.unionData.line.units = GpuGeodataSpec::Units::Pixels;
         GpuGeodataSpec &data = findSpecData(spec);
         switch (*type)
         {
@@ -700,23 +749,14 @@ struct geoContext
             {
                 if (l.size() == 0)
                     continue;
+                data.coordinates.push_back(convertPoint(l[0]));
+                for (const Value &pv : l)
                 {
-                    Point c = convertPoint(l[0]);
-                    for (int i = 0; i < 3; i++)
-                        data.coordinates.push_back(c[i]);
-                }
-                for (const Value &lv : l)
-                {
-                    Point c = convertPoint(lv);
+                    Point c = convertPoint(pv);
                     for (int j = 0; j < 2; j++)
-                        for (int i = 0; i < 3; i++)
-                            data.coordinates.push_back(c[i]);
+                        data.coordinates.push_back(c);
                 }
-                {
-                    Point c = convertPoint(l[l.size() - 1]);
-                    for (int i = 0; i < 3; i++)
-                        data.coordinates.push_back(c[i]);
-                }
+                data.coordinates.push_back(convertPoint(l[l.size() - 1]));
             }
         } break;
         case Type::Polygon:
@@ -733,8 +773,8 @@ struct geoContext
         else
             spec.type = GpuGeodataSpec::Type::PointScreen;
         vecToRaw(convertColor(layer["point-color"]),
-            spec.sharedData.point.color);
-        spec.sharedData.point.radius
+            spec.unionData.point.color);
+        spec.unionData.point.radius
             = evaluate(layer["point-radius"]).asFloat();
         GpuGeodataSpec &data = findSpecData(spec);
         switch (*type)
@@ -745,11 +785,7 @@ struct geoContext
             for (const Value &p : pa)
             {
                 for (const Value &pv : p)
-                {
-                    Point c = convertPoint(pv);
-                    for (int i = 0; i < 3; i++)
-                        data.coordinates.push_back(c[i]);
-                }
+                    data.coordinates.push_back(convertPoint(pv));
             }
         } break;
         case Type::Line:
@@ -757,12 +793,8 @@ struct geoContext
             const Value &la = feature->feature["lines"];
             for (const Value &l : la)
             {
-                for (const Value &lv : l)
-                {
-                    Point c = convertPoint(lv);
-                    for (int i = 0; i < 3; i++)
-                        data.coordinates.push_back(c[i]);
-                }
+                for (const Value &pv : l)
+                    data.coordinates.push_back(convertPoint(pv));
             }
         } break;
         case Type::Polygon:
@@ -798,42 +830,33 @@ struct geoContext
     {
         const Value &group;
 
-        Group(const Value &group)
-            : group(group)
+        Group(const Value &group) : group(group)
         {
             const Value &a = group["bbox"][0];
             vec3 aa = vec3(a[0].asDouble(), a[1].asDouble(), a[2].asDouble());
             const Value &b = group["bbox"][1];
             vec3 bb = vec3(b[0].asDouble(), b[1].asDouble(), b[2].asDouble());
-            bboxOffset = aa;
-            bboxScale = (bb - aa) / group["resolution"].asDouble();
+            double resolution = group["resolution"].asDouble();
+            vec3 mm = bb - aa;
+            double am = std::max(mm[0], std::max(mm[1], mm[2]));
+            orthonormalize = mat4to3(scaleMatrix(
+                        am * mm / resolution)).cast<float>();
+            model = translationMatrix(aa) * scaleMatrix(1.0 / am);
         }
 
-        vec3 point(sint32 a, sint32 b, sint32 c) const
+        Point convertPoint(const Value &v) const
         {
-            return vec3(a, b, c).cwiseProduct(bboxScale) + bboxOffset;
+            vec3f p(v[0].asUInt(), v[1].asUInt(), v[2].asUInt());
+            p = orthonormalize * p;
+            return Point({ p[0], p[1], p[2] });
         }
 
-        vec3 point(uint32 a[3]) const
-        {
-            return point(a[0], a[1], a[2]);
-        }
-
-        vec3 point(const Value &v) const
-        {
-            return point(v[0].asUInt(), v[1].asUInt(), v[2].asUInt());
-        }
-
-        mat4 model() const
-        {
-            return translationMatrix(bboxOffset) * scaleMatrix(bboxScale);
-        }
+        mat4 model;
 
     private:
-        vec3 bboxScale;
-        vec3 bboxOffset;
-
+        mat3f orthonormalize;
     };
+
     boost::optional<Group> group;
     boost::optional<Type> type;
 

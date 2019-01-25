@@ -335,8 +335,8 @@ void RendererImpl::render()
         };
         vec3f cornerDirs[4];
         for (uint32 i = 0; i < 4; i++)
-            cornerDirs[i] = normalize(vec4to3(cornerDirsD[i], true)
-                - camPos).cast<float>();
+            cornerDirs[i] = normalize(vec3(vec4to3(cornerDirsD[i], true)
+                - camPos)).cast<float>();
 
         shaderBackground->bind();
         for (uint32 i = 0; i < 4; i++)
@@ -390,13 +390,13 @@ void RendererImpl::render()
         glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
         CHECK_GL("copied the depth (resolved multisampling)");
     }
-    glDisable(GL_DEPTH_TEST);
 
     // render geodata
     renderGeodata();
     CHECK_GL("rendered geodata");
 
     // render infographics
+    glDisable(GL_DEPTH_TEST);
     shaderInfographic->bind();
     for (const DrawSimpleTask &t : draws->infographics)
         drawInfographic(t);
@@ -550,6 +550,8 @@ void RendererImpl::initialize()
     {
         uboAtm = std::make_shared<UniformBuffer>();
     }
+
+    initializeGeodata();
 }
 
 void RendererImpl::finalize()
@@ -745,7 +747,8 @@ void RendererImpl::getWorldPosition(const double screenPos[2], double worldPos[3
         depth = depth * 2 - 1;
         x = x / widthPrev * 2 - 1;
         y = y / heightPrev * 2 - 1;
-        vec3 res = vec4to3(viewProj.inverse() * vec4(x, y, depth, 1), true);
+        vec3 res = vec4to3(vec4(viewProj.inverse()
+                * vec4(x, y, depth, 1)), true);
         for (int i = 0; i < 3; i++)
             worldPos[i] = res[i];
     }

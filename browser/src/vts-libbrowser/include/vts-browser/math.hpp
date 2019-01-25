@@ -59,7 +59,18 @@ VTS_API vec3 normalize(const vec3 &a);
 VTS_API vec3 anyPerpendicular(const vec3 &v);
 VTS_API vec3 min(const vec3 &a, const vec3 &b);
 VTS_API vec3 max(const vec3 &a, const vec3 &b);
-VTS_API vec3 interpolate(vec3 a, vec3 b, double f);
+VTS_API vec3 interpolate(const vec3 &a, const vec3 &b, double f);
+
+VTS_API vec3f cross(const vec3f &a, const vec3f &b);
+VTS_API float dot(const vec3f &a, const vec3f &b);
+VTS_API float dot(const vec2f &a, const vec2f &b);
+VTS_API float length(const vec3f &a);
+VTS_API float length(const vec2f &a);
+VTS_API vec3f normalize(const vec3f &a);
+VTS_API vec3f anyPerpendicular(const vec3f &v);
+VTS_API vec3f min(const vec3f &a, const vec3f &b);
+VTS_API vec3f max(const vec3f &a, const vec3f &b);
+VTS_API vec3f interpolate(const vec3f &a, const vec3f &b, double f);
 
 VTS_API mat4 frustumMatrix(double left, double right,
                            double bottom, double top,
@@ -86,10 +97,10 @@ VTS_API vec3 vec4to3(vec4 v, bool division = false);
 VTS_API vec3 vec2to3(vec2 v, double w);
 VTS_API vec2 vec3to2(vec3 v, bool division = false);
 
-VTS_API vec4f vec3to4f(vec3f v, float w);
-VTS_API vec3f vec4to3f(vec4f v, bool division = false);
-VTS_API vec3f vec2to3f(vec2f v, float w);
-VTS_API vec2f vec3to2f(vec3f v, bool division = false);
+VTS_API vec4f vec3to4(vec3f v, float w);
+VTS_API vec3f vec4to3(vec4f v, bool division = false);
+VTS_API vec3f vec2to3(vec2f v, float w);
+VTS_API vec2f vec3to2(vec3f v, bool division = false);
 
 VTS_API vec2ui16 vec2to2ui16(vec2 v, bool normalized = true);
 VTS_API vec2ui16 vec2to2ui16(vec2f v, bool normalized = true);

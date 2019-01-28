@@ -27,7 +27,7 @@
 #ifndef RENDERER_COMMON_H_uisgzfw
 #define RENDERER_COMMON_H_uisgzfw
 
-#include "foundation_common.h"
+#include "foundationCommon.h"
 
 #ifdef __cplusplus
 extern "C" {

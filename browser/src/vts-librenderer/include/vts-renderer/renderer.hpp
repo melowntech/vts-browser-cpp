@@ -27,7 +27,7 @@
 #ifndef RENDERER_HPP_sghvfwjfn
 #define RENDERER_HPP_sghvfwjfn
 
-#include "renderer_common.h"
+#include "rendererCommon.h"
 #include "foundation.hpp"
 
 namespace vts

@@ -27,7 +27,7 @@
 #ifndef RENDERER_H_crfweifh
 #define RENDERER_H_crfweifh
 
-#include "renderer_common.h"
+#include "rendererCommon.h"
 #include "foundation.h"
 
 #ifdef __cplusplus

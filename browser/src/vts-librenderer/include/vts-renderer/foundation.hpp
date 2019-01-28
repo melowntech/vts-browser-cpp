@@ -27,7 +27,7 @@
 #ifndef FOUNDATION_HPP_wefwghefi
 #define FOUNDATION_HPP_wefwghefi
 
-#include "foundation_common.h"
+#include "foundationCommon.h"
 #include <vts-browser/foundation.hpp>
 
 #ifndef VTSR_INCLUDE_GL

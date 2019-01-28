@@ -679,6 +679,11 @@ struct geoContext
             for (int i = 0; i < 3; i++)
                 spec.commonData.zBufferOffset[i] = arr[i].asFloat();
         }
+        else
+        {
+            for (int i = 0; i < 3; i++)
+                spec.commonData.zBufferOffset[i] = 0;
+        }
 
         // visibility
         if (layer["visibility"])

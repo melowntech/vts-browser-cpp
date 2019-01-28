@@ -24,21 +24,50 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FOUNDATION_COMMON_H_fwghkfwe
-#define FOUNDATION_COMMON_H_fwghkfwe
+#ifndef CAMERA_COMMON_H_desgjjgf
+#define CAMERA_COMMON_H_desgjjgf
 
-#ifdef VTSR_INCLUDE_GL
-#include <glad/glad.h>
+#include "foundation.h"
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#include <vts-browser/foundation_common.h>
+typedef struct vtsCDrawSurfaceBase
+{
+    float mv[16];
+    float uvm[9];
+    float color[4];
+    float uvClip[4];
+    float center[3];
+    bool externalUv;
+    bool flatShading;
+} vtsCDrawSurfaceBase;
 
-#ifdef VTSR_BUILD_STATIC
-#define VTSR_API
-#elif VTSR_BUILD_SHARED
-#define VTSR_API VTS_API_EXPORT
-#else
-#define VTSR_API VTS_API_IMPORT
+typedef struct vtsCDrawGeodataBase
+{
+    char _dummy; // C requires that a struct or union has at least one member
+} vtsCDrawGeodataBase;
+
+typedef struct vtsCDrawSimpleBase
+{
+    float mv[16];
+    float uvm[9];
+    float color[4];
+} vtsCDrawSimpleBase;
+
+typedef struct vtsCCameraBase
+{
+    double view[16];
+    double proj[16];
+    double eye[3];
+    double tagretDistance;
+    //double altitudeOverEllipsoid;
+    //double altitudeOverSurface;
+} vtsCCameraBase;
+
+#ifdef __cplusplus
+} // extern C
 #endif
 
 #endif

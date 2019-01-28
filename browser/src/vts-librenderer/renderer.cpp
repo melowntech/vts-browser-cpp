@@ -151,6 +151,7 @@ void RendererImpl::render()
 
     assert(shaderSurface);
     view = rawToMat4(draws->camera.view);
+    viewInv = view.inverse();
     proj = rawToMat4(draws->camera.proj);
     viewProj = proj * view;
 

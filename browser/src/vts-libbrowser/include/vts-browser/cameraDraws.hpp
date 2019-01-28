@@ -30,7 +30,7 @@
 #include <vector>
 #include <memory>
 
-#include "camera_common.h"
+#include "cameraCommon.h"
 
 namespace vts
 {

@@ -580,10 +580,10 @@ void CameraImpl::renderUpdate()
     viewProjActual = apiProj * viewActual;
     if (!options.debugDetachedCamera)
     {
-        vec3 off = normalize(vec3(target - eye)) * options.cullingOffsetDistance;
+        vec3 forward = normalize(vec3(target - eye));
+        vec3 off = forward * options.cullingOffsetDistance;
         viewProjCulling = apiProj * lookAt(eye - off, target, up);
         viewProjRender = viewProjActual;
-        vec3 forward = normalize(vec3(target - eye));
         perpendicularUnitVector
             = normalize(cross(cross(up, forward), forward));
         forwardUnitVector = forward;
@@ -630,6 +630,7 @@ void CameraImpl::renderUpdate()
         matToRaw(viewActual, c.view);
         matToRaw(apiProj, c.proj);
         vecToRaw(eye, c.eye);
+        c.tagretDistance = length(vec3(target - eye));
     }
 
     // traverse and generate draws
@@ -665,8 +666,6 @@ void computeNearFar(double &near_, double &far_, double altitude,
     double ground = major + (altitude == altitude ? altitude : 0.0);
     double l = projected ? cameraPos[2] + major : length(cameraPos);
     double a = std::max(1.0, l - ground);
-    //LOG(info4) << "altitude: " << altitude << ", ground: " << ground
-    //           << ", camera: " << l << ", above: " << a;
 
     if (a > 2 * major)
     {

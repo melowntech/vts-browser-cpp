@@ -27,7 +27,7 @@
 #ifndef FOUNDATION_HPP_kjebnj
 #define FOUNDATION_HPP_kjebnj
 
-#include "foundation_common.h"
+#include "foundationCommon.h"
 
 namespace vts
 {

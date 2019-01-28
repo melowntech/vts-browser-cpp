@@ -86,6 +86,26 @@ void RendererImpl::renderGeodata()
 
     shaderGeodata->bind();
 
+    // the offset is applied as multiplicator in clip-space
+    //   and is dependant on near and far planes
+    //   which are different here than in the js browser
+    //   therefore a different method should be found
+    /*
+    vec3 zBufferOffsetValues;
+    {
+        vec3 up1 = normalize(rawToVec3(draws->camera.eye)); // todo projected systems
+        vec3 up2 = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
+        double tiltFactor = std::acos(std::max(
+            dot(up1, up2), 0.0)) / M_PI_2;
+
+        double distance = draws->camera.tagretDistance;
+        double distanceFactor = 1 / std::max(1.0,
+            std::log(distance) / std::log(1.04));
+
+        zBufferOffsetValues = vec3(1, distanceFactor, tiltFactor);
+    }
+    */
+
     for (const DrawGeodataTask &t : draws->geodata)
     {
         Geodata *g = (Geodata*)t.geodata.get();
@@ -93,12 +113,25 @@ void RendererImpl::renderGeodata()
         if (!msh)
             return;
 
+        /*
+        mat4 depthOffset;
+        {
+            vec3 zbo = rawToVec3(g->spec.commonData.zBufferOffset)
+                                            .cast<double>();
+            double off = dot(zbo, zBufferOffsetValues) * 0.0001;
+            double off2 = (off + 1) * 2 - 1;
+            depthOffset = scaleMatrix(vec3(1, 1, off2));
+        }
+        */
+
         // transformation
         mat4 model = rawToMat4(g->spec.model);
         shaderGeodata->uniformMat4(0,
                 mat4f((view * model).cast<float>()).data());
-        shaderGeodata->uniformMat4(1,
-                mat4f((proj * view * model).cast<float>()).data());
+        mat4 mvp = viewProj * model;
+        //mat4 mvpz = depthOffset * mvp;
+        mat4 mvpz = mvp;
+        shaderGeodata->uniformMat4(1, mat4f(mvpz.cast<float>()).data());
 
         // common data
         shaderGeodata->uniform(2, (int)g->spec.type);

@@ -27,7 +27,7 @@
 #ifndef CAMERA_H_sdjigsauzf
 #define CAMERA_H_sdjigsauzf
 
-#include "camera_common.h"
+#include "cameraCommon.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -27,7 +27,7 @@
 #ifndef FOUNDATION_H_wxqsezu
 #define FOUNDATION_H_wxqsezu
 
-#include "foundation_common.h"
+#include "foundationCommon.h"
 #include <vts-browser/foundation.h>
 
 #ifdef __cplusplus

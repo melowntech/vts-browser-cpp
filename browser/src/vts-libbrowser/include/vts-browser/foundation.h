@@ -27,7 +27,7 @@
 #ifndef FOUNDATION_H_dehgjdgn
 #define FOUNDATION_H_dehgjdgn
 
-#include "foundation_common.h"
+#include "foundationCommon.h"
 #include <stdbool.h>
 
 #ifdef __cplusplus

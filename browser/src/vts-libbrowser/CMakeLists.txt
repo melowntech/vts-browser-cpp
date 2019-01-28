@@ -31,8 +31,8 @@ define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus
 
 set(PUB_HDR_LIST
     # C/C++ API
-    include/vts-browser/foundation_common.h
-    include/vts-browser/camera_common.h
+    include/vts-browser/foundationCommon.h
+    include/vts-browser/cameraCommon.h
     # C++ API
     include/vts-browser/boostProgramOptions.hpp
     include/vts-browser/buffer.hpp

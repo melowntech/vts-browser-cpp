@@ -122,6 +122,7 @@ public:
     vec3 cameraPosPhys;
     vec3 focusPosPhys;
     vec3 eye, target, up;
+    double diskNominalDistance;
     uint32 windowWidth;
     uint32 windowHeight;
 

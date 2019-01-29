@@ -44,6 +44,7 @@ OldDraw::OldDraw(const TileId &id) : trav(id), orig(id), age(0)
 
 CameraImpl::CameraImpl(MapImpl *map, Camera *cam) :
     map(map), camera(cam),
+    diskNominalDistance(0),
     windowWidth(0), windowHeight(0)
 {}
 
@@ -182,7 +183,7 @@ double CameraImpl::coarsenessValue(TraverseNode *trav)
         double dist = distanceToDisk(trav->diskNormalPhys,
             trav->diskHeightsPhys, trav->diskHalfAngle,
             cameraPosPhys);
-        double v = texelSize * windowHeight / dist;
+        double v = texelSize * diskNominalDistance / dist;
         assert(v == v && v > 0);
         return v;
     }
@@ -571,6 +572,7 @@ void CameraImpl::renderUpdate()
         vts::frustumPlanes(viewProjCulling, cullingPlanes);
         cameraPosPhys = eye;
         focusPosPhys = target;
+        diskNominalDistance =  windowHeight * apiProj(1, 1) * 0.5;
     }
     else
     {

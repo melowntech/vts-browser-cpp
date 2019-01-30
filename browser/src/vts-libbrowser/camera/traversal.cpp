@@ -137,6 +137,7 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
     assert(trav->layer);
     assert(!trav->meta);
     assert(trav->childs.empty());
+    assert(!trav->determined);
     assert(trav->rendersEmpty());
     assert(!trav->parent || trav->parent->meta);
 
@@ -307,20 +308,17 @@ void CameraImpl::travDetermineMetaImpl(TraverseNode *trav)
         // disks
         if (trav->nodeInfo.distanceFromRoot() > 4)
         {
-            vec2 exU = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
-            vec2 exL = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
-            vec3 sds = vec2to3(vec2((exU + exL) * 0.5),
-                double(trav->meta->geomExtents.z.min));
+            vec2 sds2 = vec2((fu + fl) * 0.5);
+            vec3 sds = vec2to3(sds2, double(trav->meta->geomExtents.z.min));
             vec3 vn1 = map->convertor->convert(sds,
                 trav->nodeInfo.node(), Srs::Physical);
             trav->diskNormalPhys = vn1.normalized();
             trav->diskHeightsPhys[0] = vn1.norm();
-            sds = vec2to3(vec2((exU + exL) * 0.5),
-                double(trav->meta->geomExtents.z.max));
+            sds = vec2to3(sds2, double(trav->meta->geomExtents.z.max));
             vec3 vn2 = map->convertor->convert(sds,
                 trav->nodeInfo.node(), Srs::Physical);
             trav->diskHeightsPhys[1] = vn2.norm();
-            sds = vec2to3(exU, double(trav->meta->geomExtents.z.min));
+            sds = vec2to3(fu, double(trav->meta->geomExtents.z.min));
             vec3 vc = map->convertor->convert(sds,
                 trav->nodeInfo.node(), Srs::Physical);
             trav->diskHalfAngle = std::acos(dot(trav->diskNormalPhys,
@@ -343,13 +341,16 @@ void CameraImpl::travDetermineMetaImpl(TraverseNode *trav)
             trav->cornersPhys[i] = f.cwiseProduct(ed) + el;
         }
     }
+    else
+    {
+        LOG(warn3) << "Tile <" << trav->nodeInfo.nodeId()
+            << "> is missing both extents and geomExtents";
+    }
 
     // aabb
     if (trav->nodeInfo.distanceFromRoot() > 2)
     {
-        trav->aabbPhys[0]
-                = trav->aabbPhys[1]
-                = trav->cornersPhys[0];
+        trav->aabbPhys[0] = trav->aabbPhys[1] = trav->cornersPhys[0];
         for (const vec3 &it : trav->cornersPhys)
         {
             trav->aabbPhys[0] = min(trav->aabbPhys[0], it);
@@ -361,9 +362,9 @@ void CameraImpl::travDetermineMetaImpl(TraverseNode *trav)
     if (vtslibs::vts::GeomExtents::validSurrogate(
                 trav->meta->geomExtents.surrogate))
     {
-        vec2 exU = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
-        vec2 exL = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
-        vec3 sds = vec2to3(vec2((exU + exL) * 0.5),
+        vec2 fl = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
+        vec2 fu = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
+        vec3 sds = vec2to3(vec2((fl + fu) * 0.5),
                            double(trav->meta->geomExtents.surrogate));
         trav->surrogatePhys = map->convertor->convert(sds,
                             trav->nodeInfo.node(), Srs::Physical);
@@ -375,7 +376,9 @@ void CameraImpl::travDetermineMetaImpl(TraverseNode *trav)
 bool CameraImpl::travDetermineDraws(TraverseNode *trav)
 {
     assert(trav->meta);
-    assert(trav->surface);
+    touchDraws(trav);
+    if (!trav->surface || trav->determined)
+        return trav->determined;
     assert(trav->rendersEmpty());
 
     // statistics
@@ -385,9 +388,9 @@ bool CameraImpl::travDetermineDraws(TraverseNode *trav)
     updateNodePriority(trav);
 
     if (trav->layer->isGeodata())
-        return travDetermineDrawsGeodata(trav);
-
-    return travDetermineDrawsSurface(trav);
+        return trav->determined = travDetermineDrawsGeodata(trav);
+    else
+        return trav->determined = travDetermineDrawsSurface(trav);
 }
 
 bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
@@ -411,10 +414,12 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
     {
     case Validity::Invalid:
         trav->surface = nullptr;
+        trav->touchResource = nullptr;
         UTILITY_FALLTHROUGH;
     case Validity::Indeterminate:
         return false;
     case Validity::Valid:
+        trav->touchResource = meshAgg;
         break;
     }
 
@@ -509,16 +514,17 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
         }
     }
 
+    assert(!trav->determined);
+    assert(trav->rendersEmpty());
+    assert(trav->colliders.empty());
+
     if (determined)
     {
-        assert(trav->rendersEmpty());
-
         // renders
         std::swap(trav->opaque, newOpaque);
         std::swap(trav->transparent, newTransparent);
 
         // colliders
-        assert(trav->colliders.empty());
         for (uint32 subMeshIndex = 0, e = meshAgg->submeshes.size();
             subMeshIndex != e; subMeshIndex++)
         {
@@ -533,12 +539,6 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
         // credits
         trav->credits.insert(trav->credits.end(),
                              newCredits.begin(), newCredits.end());
-
-        // validity
-        if (trav->rendersEmpty())
-            trav->surface = nullptr;
-        else
-            trav->touchResource = meshAgg;
     }
 
     return determined;
@@ -563,31 +563,28 @@ bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
             || features.first == Validity::Indeterminate)
         return false;
 
-    std::shared_ptr<GeodataTile> geo = map->getGeodata(geoName + "#$!gpu");
+    std::shared_ptr<GeodataTile> geo = map->getGeodata(geoName + "#$!tile");
     geo->updatePriority(trav->priority);
-    if (geo->update(style.second, features.second, trav->id().lod))
-        map->resources.queUpload.push(geo);
+    geo->update(style.second, features.second, trav->id().lod);
     switch (map->getResourceValidity(geo))
     {
     case Validity::Invalid:
         trav->surface = nullptr;
+        trav->touchResource = nullptr;
         UTILITY_FALLTHROUGH;
     case Validity::Indeterminate:
         return false;
     case Validity::Valid:
+        trav->touchResource = geo;
         break;
     }
 
     // determined
+    assert(!trav->determined);
     assert(trav->rendersEmpty());
-
     for (auto it : geo->renders)
         trav->geodata.push_back(it);
 
-    if (trav->rendersEmpty())
-        trav->surface = nullptr;
-    else
-        trav->touchResource = geo;
     return true;
 }
 
@@ -617,13 +614,10 @@ void CameraImpl::travModeHierarchical(TraverseNode *trav, bool loadOnly)
     if (!travInit(trav))
         return;
 
-    // the resources may not be unloaded (eg. by collision probes)
-    //   or the rendering will stop
+    // the resources may not be unloaded
     trav->lastRenderTime = trav->lastAccessTime;
 
-    touchDraws(trav);
-    if (trav->surface && trav->rendersEmpty())
-        travDetermineDraws(trav);
+    travDetermineDraws(trav);
 
     if (loadOnly)
         return;
@@ -633,7 +627,7 @@ void CameraImpl::travModeHierarchical(TraverseNode *trav, bool loadOnly)
 
     if (coarsenessTest(trav) || trav->childs.empty())
     {
-        if (!trav->rendersEmpty())
+        if (trav->determined)
             renderNode(trav);
         return;
     }
@@ -646,14 +640,14 @@ void CameraImpl::travModeHierarchical(TraverseNode *trav, bool loadOnly)
             ok = false;
             continue;
         }
-        if (t->surface && t->rendersEmpty())
+        if (t->surface && !t->determined)
             ok = false;
     }
 
     for (auto &t : trav->childs)
         travModeHierarchical(t.get(), !ok);
 
-    if (!ok && !trav->rendersEmpty())
+    if (!ok && trav->determined)
         renderNode(trav);
 }
 
@@ -667,10 +661,7 @@ void CameraImpl::travModeFlat(TraverseNode *trav)
 
     if (coarsenessTest(trav) || trav->childs.empty())
     {
-        touchDraws(trav);
-        if (trav->surface && trav->rendersEmpty())
-            travDetermineDraws(trav);
-        if (!trav->rendersEmpty())
+        if (travDetermineDraws(trav))
             renderNode(trav);
         return;
     }
@@ -701,7 +692,7 @@ bool CameraImpl::travModeStable(TraverseNode *trav, int mode)
 
     if (mode == 2)
     {
-        if (!trav->rendersEmpty())
+        if (trav->determined)
         {
             touchDraws(trav);
             renderNode(trav);
@@ -713,19 +704,20 @@ bool CameraImpl::travModeStable(TraverseNode *trav, int mode)
 
     if (coarsenessTest(trav) || trav->childs.empty())
     {
-        touchDraws(trav);
-        if (trav->surface && trav->rendersEmpty())
-            travDetermineDraws(trav);
+        travDetermineDraws(trav);
         if (mode == 1)
-            return !trav->rendersEmpty();
-        if (!trav->rendersEmpty())
+        {
+            trav->lastRenderTime = map->renderTickIndex;
+            return trav->determined;
+        }
+        if (trav->determined)
             renderNode(trav);
         else for (auto &t : trav->childs)
             travModeStable(t.get(), 2);
         return true;
     }
 
-    if (mode == 0 && !trav->rendersEmpty())
+    if (mode == 0 && trav->determined)
     {
         bool ok = true;
         for (auto &t : trav->childs)
@@ -765,7 +757,7 @@ bool CameraImpl::travModeBalanced(TraverseNode *trav, bool renderOnly)
 
     if (renderOnly)
     {
-        if (!trav->rendersEmpty())
+        if (trav->determined)
         {
             touchDraws(trav);
             renderNode(trav);
@@ -775,10 +767,7 @@ bool CameraImpl::travModeBalanced(TraverseNode *trav, bool renderOnly)
     else if (coarsenessTest(trav) || trav->childs.empty())
     {
         gridPreloadRequest(trav);
-        touchDraws(trav);
-        if (trav->surface && trav->rendersEmpty())
-            travDetermineDraws(trav);
-        if (!trav->rendersEmpty())
+        if (travDetermineDraws(trav))
         {
             renderNode(trav);
             return true;
@@ -818,10 +807,7 @@ void CameraImpl::travModeFixed(TraverseNode *trav)
     if (trav->id().lod >= options.fixedTraversalLod
         || trav->childs.empty())
     {
-        touchDraws(trav);
-        if (trav->surface && trav->rendersEmpty())
-            travDetermineDraws(trav);
-        if (!trav->rendersEmpty())
+        if (travDetermineDraws(trav))
             renderNode(trav);
         return;
     }

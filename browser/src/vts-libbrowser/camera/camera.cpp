@@ -228,8 +228,13 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     assert(trav && orig);
     assert(trav->meta);
     assert(trav->surface);
-    assert(!trav->rendersEmpty());
+    assert(trav->determined);
     assert(trav->rendersReady());
+
+    trav->lastRenderTime = map->renderTickIndex;
+    orig->lastRenderTime = map->renderTickIndex;
+    if (trav->rendersEmpty())
+        return;
 
     // statistics
     statistics.nodesRenderedTotal++;
@@ -238,7 +243,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
 
     bool isSubNode = trav != orig;
 
-    // draws
+    // surfaces
     if (options.lodBlending)
         currentDraws.emplace_back(trav, orig);
     else
@@ -302,6 +307,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
                 task.color = vec4f(0, 0, 1, 1);
                 break;
             default:
+                task.color = vec4f(1, 1, 1, 1);
                 break;
             }
         }
@@ -359,7 +365,7 @@ bool findNodeCoarser(TraverseNode *&trav, TraverseNode *orig)
     if (!trav->parent)
         return false;
     trav = trav->parent;
-    if (!trav->rendersEmpty() && trav->rendersReady())
+    if (trav->determined && trav->rendersReady())
         return true;
     else
         return findNodeCoarser(trav, orig);
@@ -398,8 +404,15 @@ void CameraImpl::renderNodeDraws(TraverseNode *trav,
     TraverseNode *orig, float opacity)
 {
     assert(trav && orig);
-    assert(!trav->rendersEmpty());
+    assert(trav->meta);
+    assert(trav->surface);
+    assert(trav->determined);
     assert(trav->rendersReady());
+
+    trav->lastRenderTime = map->renderTickIndex;
+    orig->lastRenderTime = map->renderTickIndex;
+    if (trav->rendersEmpty())
+        return;
 
     vec4f uvClip;
     if (trav == orig)
@@ -441,9 +454,6 @@ void CameraImpl::renderNodeDraws(TraverseNode *trav,
 
     for (const RenderSurfaceTask &r : trav->transparent)
         draws.transparent.emplace_back(convert(r, uvClip, opacity));
-
-    trav->lastRenderTime = map->renderTickIndex;
-    orig->lastRenderTime = map->renderTickIndex;
 }
 
 namespace
@@ -557,7 +567,7 @@ void CameraImpl::resolveBlending(TraverseNode *root,
     {
         TraverseNode *trav = findTravById(root, b.trav);
         TraverseNode *orig = findTravById(trav, b.orig);
-        if (!orig || trav->rendersEmpty())
+        if (!orig || !trav->determined)
             continue;
         renderNodeDraws(trav, orig, blendingOpacity(b.age,
                                     options.lodBlendingDuration));

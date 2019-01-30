@@ -72,7 +72,7 @@ FetchTask::ResourceType GeodataTile::resourceType() const
     return FetchTask::ResourceType::Undefined;
 }
 
-bool GeodataTile::update(const std::string &s, const std::string &f, uint32 l)
+void GeodataTile::update(const std::string &s, const std::string &f, uint32 l)
 {
     switch ((Resource::State)state)
     {
@@ -87,14 +87,14 @@ bool GeodataTile::update(const std::string &s, const std::string &f, uint32 l)
             features = f;
             lod = l;
             state = Resource::State::downloaded;
-            return true;
+            map->resources.queUpload.push(shared_from_this());
+            return;
         }
         break;
     default:
         // nothing
         break;
     }
-    return false;
 }
 
 GpuGeodataSpec::GpuGeodataSpec()

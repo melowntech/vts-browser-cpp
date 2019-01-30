@@ -33,16 +33,14 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <queue>
-#include <array>
 #include <thread>
 #include <boost/utility/in_place_factory.hpp>
-#include <vts-libs/vts/urltemplate.hpp>
+#include <dbglog/dbglog.hpp>
 #include <vts-libs/vts/nodeinfo.hpp>
-#include <vts-libs/vts/mapconfig.hpp>
 #include <vts-libs/vts/urltemplate.hpp>
+#include <vts-libs/vts/mapconfig.hpp>
 #include <vts-libs/vts/metatile.hpp>
 #include <vts-libs/vts/tsmap.hpp>
-#include <dbglog/dbglog.hpp>
 
 #include "include/vts-browser/celestial.hpp"
 #include "include/vts-browser/search.hpp"
@@ -67,6 +65,7 @@ using vtslibs::vts::NodeInfo;
 using vtslibs::vts::TileId;
 using vtslibs::vts::UrlTemplate;
 
+class Resource;
 class MapLayer;
 class MapImpl;
 class CameraImpl;
@@ -94,7 +93,7 @@ public:
     const std::string name;
     MapImpl *const map;
     std::shared_ptr<vtslibs::registry::BoundLayer::Availability> availTest;
-    std::weak_ptr<class Resource> resource;
+    std::weak_ptr<Resource> resource;
     uint32 redirectionsCount;
 };
 
@@ -108,7 +107,7 @@ public:
     sint64 expires;
 };
 
-class Resource
+class Resource : public std::enable_shared_from_this<Resource>
 {
 public:
     enum class State
@@ -329,7 +328,7 @@ public:
     GeodataTile(MapImpl *map, const std::string &name);
     void load() override;
     FetchTask::ResourceType resourceType() const override;
-    bool update(const std::string &style, const std::string &features,
+    void update(const std::string &style, const std::string &features,
         uint32 lod);
 
     std::vector<RenderGeodataTask> renders;
@@ -482,6 +481,7 @@ public:
     const uint32 hash;
 
     // metadata
+    std::vector<vtslibs::registry::CreditId> credits;
     std::vector<std::shared_ptr<MetaTile>> metaTiles;
     boost::optional<vtslibs::vts::MetaNode> meta;
     boost::optional<Obb> obb;
@@ -489,10 +489,11 @@ public:
     vec3 aabbPhys[2];
     boost::optional<vec3> surrogatePhys;
     boost::optional<float> surrogateNav;
-    const SurfaceInfo *surface;
     vec3 diskNormalPhys;
     vec2 diskHeightsPhys;
+    const SurfaceInfo *surface;
     double diskHalfAngle;
+    bool determined; // draws are fully loaded (draws may be empty)
 
     uint32 lastAccessTime;
     uint32 lastRenderTime;
@@ -500,7 +501,6 @@ public:
 
     // renders
     std::shared_ptr<Resource> touchResource;
-    std::vector<vtslibs::registry::CreditId> credits;
     std::vector<RenderSurfaceTask> opaque;
     std::vector<RenderSurfaceTask> transparent;
     std::vector<RenderGeodataTask> geodata;

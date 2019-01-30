@@ -158,11 +158,7 @@ void CameraImpl::gridPreloadProcess(TraverseNode *trav,
         if (t.lod == myId.lod)
         {
             assert(t == myId);
-            touchDraws(trav);
-            if (trav->surface && trav->rendersEmpty())
-                travDetermineDraws(trav);
-
-            // the resources may not be unloaded by other traversals
+            travDetermineDraws(trav);
             trav->lastRenderTime = trav->lastAccessTime;
         }
         else

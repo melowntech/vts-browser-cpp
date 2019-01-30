@@ -36,7 +36,8 @@ TraverseNode::TraverseNode(vts::MapLayer *layer, TraverseNode *parent,
       hash(std::hash<vts::TileId>()(id())),
       surface(nullptr),
       lastAccessTime(0), lastRenderTime(0),
-      priority(nan1())
+      priority(nan1()),
+      determined(false)
 {
     // initialize corners to NAN
     {
@@ -82,11 +83,12 @@ void TraverseNode::clearRenders()
     geodata.clear();
     colliders.clear();
     touchResource.reset();
+    determined = false;
 }
 
 bool TraverseNode::rendersReady() const
 {
-    assert(!rendersEmpty());
+    assert(determined);
     for (auto &it : opaque)
         if (!it.ready())
             return false;

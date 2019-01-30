@@ -232,12 +232,22 @@ void MapImpl::traverseClearing(TraverseNode *trav)
     if (std::max(trav->lastAccessTime, trav->lastRenderTime) + 5
                 < renderTickIndex)
     {
-        trav->clearAll();
+        if (trav->meta)
+            trav->clearAll();
+        assert(trav->childs.empty());
+        assert(trav->rendersEmpty());
+        assert(!trav->surface);
+        assert(!trav->determined);
         return;
     }
 
     if (trav->lastRenderTime + 5 < renderTickIndex)
-        trav->clearRenders();
+    {
+        if (trav->determined)
+            trav->clearRenders();
+        assert(trav->rendersEmpty());
+        assert(!trav->determined);
+    }
 
     for (auto &it : trav->childs)
         traverseClearing(it.get());

@@ -352,7 +352,7 @@ struct geoContext
         for (sint32 index = searchArray.size() - 1; index >= 0; index--)
         {
             double v1 = evaluate(searchArray[index][0]).asDouble();
-            if (v > v1)
+            if (v < v1)
                 continue;
             if (Linear)
             {
@@ -661,7 +661,7 @@ struct geoContext
     void processFeatureCommon(const Value &layer, GpuGeodataSpec &spec,
         boost::optional<sint32> zOverride)
     {
-        // model
+        // model matrix
         matToRaw(group->model, spec.model);
 
         // z-index

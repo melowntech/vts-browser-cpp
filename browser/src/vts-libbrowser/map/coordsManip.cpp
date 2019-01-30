@@ -34,7 +34,7 @@
 #include <GeographicLib/Geodesic.hpp>
 #include <ogr_spatialref.h>
 
-#include "coordsManip.hpp"
+#include "../coordsManip.hpp"
 
 #include <gdalwarper.h>
 #include <proj_api.h>

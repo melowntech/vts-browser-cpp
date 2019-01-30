@@ -24,10 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "utilities/json.hpp"
-#include "include/vts-browser/mapOptions.hpp"
-#include "include/vts-browser/cameraOptions.hpp"
-#include "include/vts-browser/navigationOptions.hpp"
+#include "../utilities/json.hpp"
+#include "../include/vts-browser/mapOptions.hpp"
+#include "../include/vts-browser/cameraOptions.hpp"
+#include "../include/vts-browser/navigationOptions.hpp"
 
 namespace vts
 {

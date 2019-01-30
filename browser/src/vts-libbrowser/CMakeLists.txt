@@ -71,6 +71,16 @@ set(PUB_HDR_LIST
 )
 
 set(SRC_LIST
+    api/boostProgramOptions.cpp
+    api/buffer.cpp
+    api/exceptions.cpp
+    api/log.cpp
+    api/mapApiC.cpp
+    api/mapApiCpp.cpp
+    api/math.cpp
+    api/mathColor.cpp
+    api/options.cpp
+    api/statistics.cpp
     camera/boundLayers.cpp
     camera/camera.cpp
     camera/camera.hpp
@@ -85,6 +95,13 @@ set(SRC_LIST
     image/image.hpp
     image/jpeg.cpp
     image/png.cpp
+    map/atmosphereDensityTexture.cpp
+    map/celestialBody.cpp
+    map/coordsManip.cpp
+    map/credits.cpp
+    map/map.cpp
+    map/mapLayer.cpp
+    map/search.cpp
     navigation/altitude.cpp
     navigation/navigation.cpp
     navigation/navigation.hpp
@@ -111,27 +128,10 @@ set(SRC_LIST
     utilities/threadName.cpp
     utilities/threadName.hpp
     utilities/threadQueue.hpp
-    atmosphereDensityTexture.cpp
-    boostProgramOptions.cpp
-    buffer.cpp
-    celestialBody.cpp
-    credits.cpp
-    credits.hpp
-    coordsManip.cpp
     coordsManip.hpp
-    exceptions.cpp
-    log.cpp
-    map.cpp
+    credits.hpp
     map.hpp
-    mapApiC.cpp
     mapApiC.hpp
-    mapApiCpp.cpp
-    mapLayer.cpp
-    math.cpp
-    mathColor.cpp
-    options.cpp
-    search.cpp
-    statistics.cpp
     ${EXTRA_SRC_LIST}
 )
 

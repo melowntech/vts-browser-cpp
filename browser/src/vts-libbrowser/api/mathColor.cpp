@@ -24,7 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "include/vts-browser/math.hpp"
+#include "../include/vts-browser/math.hpp"
 
 namespace vts
 {

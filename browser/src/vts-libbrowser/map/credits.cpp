@@ -26,8 +26,8 @@
 
 #include <vts-libs/vts/mapconfig.hpp>
 
-#include "credits.hpp"
-#include "utilities/json.hpp"
+#include "../credits.hpp"
+#include "../utilities/json.hpp"
 
 namespace vts
 {

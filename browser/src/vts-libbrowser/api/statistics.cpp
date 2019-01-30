@@ -24,9 +24,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "utilities/json.hpp"
-#include "include/vts-browser/mapStatistics.hpp"
-#include "include/vts-browser/cameraStatistics.hpp"
+#include "../utilities/json.hpp"
+#include "../include/vts-browser/mapStatistics.hpp"
+#include "../include/vts-browser/cameraStatistics.hpp"
 
 namespace vts
 {

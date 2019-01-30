@@ -26,8 +26,8 @@
 
 #include <utility/uri.hpp>
 
-#include "map.hpp"
-#include "navigation/navigation.hpp"
+#include "../map.hpp"
+#include "../navigation/navigation.hpp"
 
 namespace vts
 {

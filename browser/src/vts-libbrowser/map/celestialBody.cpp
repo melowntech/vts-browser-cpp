@@ -27,8 +27,8 @@
 #include <ogr_spatialref.h>
 #include <vts-libs/vts/atmospheredensitytexture.hpp>
 
-#include "map.hpp"
-#include "utilities/json.hpp"
+#include "../map.hpp"
+#include "../utilities/json.hpp"
 
 namespace vts
 {

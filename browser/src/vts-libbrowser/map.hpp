@@ -65,6 +65,7 @@ using vtslibs::vts::NodeInfo;
 using vtslibs::vts::TileId;
 using vtslibs::vts::UrlTemplate;
 
+class Map;
 class Resource;
 class MapLayer;
 class MapImpl;
@@ -85,7 +86,7 @@ enum class Validity
 class FetchTaskImpl : public FetchTask
 {
 public:
-    FetchTaskImpl(const std::shared_ptr<class Resource> &resource);
+    FetchTaskImpl(const std::shared_ptr<Resource> &resource);
     void fetchDone() override;
 
     bool performAvailTest() const;
@@ -592,12 +593,12 @@ private:
 class MapImpl
 {
 public:
-    MapImpl(class Map *map,
+    MapImpl(Map *map,
             const MapCreateOptions &options,
             const std::shared_ptr<Fetcher> &fetcher);
     ~MapImpl();
 
-    class Map *const map;
+    Map *const map;
     const MapCreateOptions createOptions;
     Credits credits;
     MapCallbacks callbacks;
@@ -607,7 +608,7 @@ public:
     std::shared_ptr<Mapconfig> mapconfig;
     std::shared_ptr<CoordManip> convertor;
     std::vector<std::shared_ptr<MapLayer>> layers;
-    std::vector<std::weak_ptr<class CameraImpl>> cameras;
+    std::vector<std::weak_ptr<CameraImpl>> cameras;
     std::string mapconfigPath;
     std::string mapconfigView;
     double lastElapsedFrameTime;

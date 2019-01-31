@@ -27,33 +27,46 @@
 #ifndef CAMERA_HPP_sd456g
 #define CAMERA_HPP_sd456g
 
-#include "../map.hpp"
+#include <memory>
+#include <vector>
+#include <unordered_map>
+#include <map>
 
-#include "../include/vts-browser/camera.hpp"
-#include "../include/vts-browser/cameraCredits.hpp"
-#include "../include/vts-browser/cameraDraws.hpp"
-#include "../include/vts-browser/cameraOptions.hpp"
-#include "../include/vts-browser/cameraStatistics.hpp"
+#include <vts-libs/registry/referenceframe.hpp>
 
-namespace std
-{
+#include "include/vts-browser/cameraCredits.hpp"
+#include "include/vts-browser/cameraDraws.hpp"
+#include "include/vts-browser/cameraOptions.hpp"
+#include "include/vts-browser/cameraStatistics.hpp"
+#include "include/vts-browser/math.hpp"
 
-template<>
-struct hash<vts::TileId>
-{
-    size_t operator()(const vts::TileId &x) const
-    {
-        size_t r = std::hash<vtslibs::storage::Lod>()(x.lod) << 1;
-        r ^= std::hash<vts::TileId::index_type>()(x.x) << 1;
-        r ^= std::hash<vts::TileId::index_type>()(x.y);
-        return r;
-    }
-};
+#include "subtileMerger.hpp"
 
-} // namespace std
+namespace vtslibs { namespace vts {
+class NodeInfo;
+} }
 
 namespace vts
 {
+
+enum class Validity;
+
+class MapImpl;
+class Camera;
+class TraverseNode;
+class NavigationImpl;
+class RenderSurfaceTask;
+class RenderGeodataTask;
+class RenderSimpleTask;
+class GpuTexture;
+class DrawSurfaceTask;
+class DrawGeodataTask;
+class DrawSimpleTask;
+class MapLayer;
+class BoundParamInfo;
+
+using vtslibs::vts::NodeInfo;
+using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
 
 class CurrentDraw
 {
@@ -79,19 +92,6 @@ class CameraMapLayer
 {
 public:
     std::vector<OldDraw> blendDraws;
-};
-
-class SubtilesMerger
-{
-public:
-    struct Subtile
-    {
-        TraverseNode *orig;
-        vec4f uvClip;
-        Subtile(TraverseNode *orig, const vec4f &uvClip);
-    };
-    std::vector<Subtile> subtiles;
-    void resolve(TraverseNode *trav, CameraImpl *impl);
 };
 
 class CameraImpl
@@ -129,7 +129,7 @@ public:
     CameraImpl(MapImpl *map, Camera *cam);
     void clear();
     Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
-                           BoundParamInfo::List &boundList, double priority);
+        std::vector<BoundParamInfo> &boundList, double priority);
     void touchDraws(TraverseNode *trav);
     bool visibilityTest(TraverseNode *trav);
     bool coarsenessTest(TraverseNode *trav);

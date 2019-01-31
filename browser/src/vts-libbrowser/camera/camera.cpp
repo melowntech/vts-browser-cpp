@@ -24,7 +24,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "camera.hpp"
+#include <unordered_set>
+
+#include "../camera.hpp"
+#include "../traverseNode.hpp"
+#include "../renderTasks.hpp"
+#include "../map.hpp"
+#include "../gpuResource.hpp"
+#include "../renderInfos.hpp"
+#include "../mapLayer.hpp"
+#include "../mapConfig.hpp"
+#include "../credits.hpp"
+#include "../coordsManip.hpp"
+#include "../hashTileId.hpp"
 
 namespace vts
 {
@@ -348,7 +360,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
 
     // credits
     for (auto &it : trav->credits)
-        map->credits.hit(trav->layer->creditScope, it,
+        map->credits->hit(trav->layer->creditScope, it,
                              trav->nodeInfo.distanceFromRoot());
 }
 
@@ -661,7 +673,7 @@ void CameraImpl::renderUpdate()
     sortOpaqueFrontToBack();
 
     // update camera credits
-    map->credits.tick(credits);
+    map->credits->tick(credits);
 }
 
 namespace

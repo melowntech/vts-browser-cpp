@@ -24,10 +24,20 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <utility/uri.hpp>
+#include "../include/vts-browser/exceptions.hpp"
+#include "../include/vts-browser/cameraDraws.hpp"
+#include "../include/vts-browser/cameraOptions.hpp"
+#include "../include/vts-browser/cameraStatistics.hpp"
 
+#include "../navigation.hpp"
+#include "../camera.hpp"
+#include "../traverseNode.hpp"
+#include "../mapConfig.hpp"
+#include "../mapLayer.hpp"
+#include "../authConfig.hpp"
+#include "../credits.hpp"
+#include "../coordsManip.hpp"
 #include "../map.hpp"
-#include "../navigation/navigation.hpp"
 
 namespace vts
 {
@@ -95,7 +105,7 @@ void MapImpl::purgeMapconfig()
     mapconfig.reset();
     mapconfigAvailable = false;
 
-    credits.purge();
+    credits->purge();
     resources.searchTasks.clear();
     convertor.reset();
     body = MapCelestialBody();
@@ -181,7 +191,7 @@ bool MapImpl::prerequisitesCheck()
             createOptions.customSrs1,
             createOptions.customSrs2);
 
-        credits.merge(mapconfig.get());
+        credits->merge(mapconfig.get());
         initializeNavigation();
         mapconfig->initializeCelestialBody();
 

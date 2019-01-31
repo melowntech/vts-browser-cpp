@@ -26,7 +26,11 @@
 
 #include <vts-libs/vts/mapconfig-json.hpp>
 
+#include "../mapConfig.hpp"
 #include "../map.hpp"
+#include "../fetchTask.hpp"
+#include "../credits.hpp"
+#include "../renderInfos.hpp"
 
 namespace vts
 {
@@ -130,7 +134,7 @@ BoundInfo *Mapconfig::getBoundInfo(const std::string &id)
             // merge credits
             for (auto &c : r->credits)
                 if (c.second)
-                    map->credits.merge(*c.second);
+                    map->credits->merge(*c.second);
         }
         else
         {
@@ -163,7 +167,7 @@ FreeInfo *Mapconfig::getFreeInfo(const std::string &id)
             // merge credits
             for (auto &c : r->credits)
                 if (c.second)
-                    map->credits.merge(*c.second);
+                    map->credits->merge(*c.second);
         }
         else
         {

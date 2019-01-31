@@ -26,7 +26,9 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include "camera.hpp"
+#include "../mapLayer.hpp"
+#include "../map.hpp"
+#include "../mapConfig.hpp"
 
 namespace vts
 {

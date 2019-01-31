@@ -24,7 +24,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "camera.hpp"
+#include "../camera.hpp"
+#include "../renderTasks.hpp"
+#include "../gpuResource.hpp"
 
 namespace vts
 {

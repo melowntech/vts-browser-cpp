@@ -26,16 +26,17 @@
 
 #include <cstring>
 #include <map>
-#include <boost/filesystem.hpp>
-#include <dbglog/dbglog.hpp>
-
-#include "../include/vts-browser/buffer.hpp"
 
 #ifdef _WIN32
 #include <windows.h> // GetCurrentProcessId
 #else
 #include <unistd.h> // getpid
 #endif
+
+#include <boost/filesystem.hpp>
+#include <dbglog/dbglog.hpp>
+
+#include "../include/vts-browser/buffer.hpp"
 
 void initializeBrowserData();
 namespace

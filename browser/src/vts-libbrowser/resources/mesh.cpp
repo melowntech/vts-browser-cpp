@@ -24,8 +24,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "../map.hpp"
+#include <dbglog/dbglog.hpp>
+#include <vts-libs/vts/mesh.hpp>
+#include <vts-libs/vts/meshio.hpp>
+
 #include "../utilities/obj.hpp"
+#include "../gpuResource.hpp"
+#include "../fetchTask.hpp"
+#include "../map.hpp"
+#include "cache.hpp"
 
 namespace vts
 {

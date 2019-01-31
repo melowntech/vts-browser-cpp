@@ -24,11 +24,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "../map.hpp"
-#include "../image/image.hpp"
-#include "../include/vts-browser/log.hpp"
-
+#include <dbglog/dbglog.hpp>
 #include <vts-libs/vts/atmospheredensitytexture.hpp>
+
+#include "../include/vts-browser/log.hpp"
+#include "../include/vts-browser/celestial.hpp"
+
+#include "../image/image.hpp"
+#include "../gpuResource.hpp"
+#include "../fetchTask.hpp"
+#include "../map.hpp"
+#include "../mapConfig.hpp"
 
 namespace vts
 {

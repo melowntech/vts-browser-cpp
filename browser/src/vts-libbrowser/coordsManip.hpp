@@ -30,12 +30,18 @@
 #include <string>
 #include <memory>
 
-#include <vts-libs/vts/mapconfig.hpp>
+#include <vts-libs/registry/referenceframe.hpp>
 
 #include "include/vts-browser/math.hpp"
 
+namespace vtslibs { namespace vts {
+    struct MapConfig;
+} }
+
 namespace vts
 {
+
+using Node = vtslibs::registry::ReferenceFrame::Division::Node;
 
 class CoordManip
 {
@@ -53,11 +59,8 @@ public:
     vec3 searchToNav(const vec3 &value);
 
     virtual vec3 convert(const vec3 &value, Srs from, Srs to) = 0;
-    virtual vec3 convert(const vec3 &value,
-            const vtslibs::registry::ReferenceFrame::Division::Node &from,
-            Srs to) = 0;
-    virtual vec3 convert(const vec3 &value, Srs from,
-            const vtslibs::registry::ReferenceFrame::Division::Node &to) = 0;
+    virtual vec3 convert(const vec3 &value, const Node &from, Srs to) = 0;
+    virtual vec3 convert(const vec3 &value, Srs from, const Node &to) = 0;
 
     virtual vec3 geoDirect(const vec3 &position, double distance,
                               double azimuthIn, double &azimuthOut) = 0;

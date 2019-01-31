@@ -25,7 +25,11 @@
  */
 
 #include "../include/vts-browser/log.hpp"
+
+#include "../fetchTask.hpp"
 #include "../map.hpp"
+#include "../authConfig.hpp"
+#include "cache.hpp"
 
 namespace vts
 {

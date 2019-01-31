@@ -29,17 +29,15 @@
 #include <functional>
 
 #include <boost/utility/in_place_factory.hpp>
-
-#include <vts-libs/vts/csconvertor.hpp>
 #include <GeographicLib/Geodesic.hpp>
 #include <ogr_spatialref.h>
-
-#include "../coordsManip.hpp"
-
 #include <gdalwarper.h>
 #include <proj_api.h>
 
-#define Node vtslibs::registry::ReferenceFrame::Division::Node
+#include <vts-libs/vts/csconvertor.hpp>
+#include <vts-libs/vts/mapconfig.hpp>
+
+#include "../coordsManip.hpp"
 
 namespace vts
 {

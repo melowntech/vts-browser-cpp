@@ -24,7 +24,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "camera.hpp"
+#include "../camera.hpp"
+#include "../traverseNode.hpp"
+#include "../renderTasks.hpp"
 
 namespace vts
 {

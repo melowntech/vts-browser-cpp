@@ -83,12 +83,10 @@ set(SRC_LIST
     api/statistics.cpp
     camera/boundLayers.cpp
     camera/camera.cpp
-    camera/camera.hpp
     camera/cameraApi.cpp
     camera/draws.cpp
     camera/geodata.cpp
     camera/grids.cpp
-    camera/surfaceStack.cpp
     camera/traversal.cpp
     camera/traverseNode.cpp
     image/image.cpp
@@ -102,9 +100,9 @@ set(SRC_LIST
     map/map.cpp
     map/mapLayer.cpp
     map/search.cpp
+    map/surfaceStack.cpp
     navigation/altitude.cpp
     navigation/navigation.cpp
-    navigation/navigation.hpp
     navigation/navigationApi.cpp
     navigation/piha.cpp
     navigation/piha.hpp
@@ -128,10 +126,30 @@ set(SRC_LIST
     utilities/threadName.cpp
     utilities/threadName.hpp
     utilities/threadQueue.hpp
+    authConfig.hpp
+    camera.hpp
     coordsManip.hpp
     credits.hpp
+    fetchTask.hpp
+    geodata.hpp
+    gpuResource.hpp
+    hashTileId.hpp
     map.hpp
     mapApiC.hpp
+    mapConfig.hpp
+    mapLayer.hpp
+    metaTile.hpp
+    navigation.hpp
+    navTile.hpp
+    renderInfos.hpp
+    renderTasks.hpp
+    resource.hpp
+    searchTask.hpp
+    subtileMerger.hpp
+    tilesetMapping.hpp
+    traverseNode.hpp
+	validity.hpp
+
     ${EXTRA_SRC_LIST}
 )
 

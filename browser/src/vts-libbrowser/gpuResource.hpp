@@ -24,74 +24,76 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dbglog/dbglog.hpp>
+#ifndef GPURESOURCES_HPP_m1nbr6779
+#define GPURESOURCES_HPP_m1nbr6779
 
-#include "../include/vts-browser/log.hpp"
-#include "../utilities/threadName.hpp"
+#include "include/vts-browser/math.hpp"
+#include "resource.hpp"
 
 namespace vts
 {
 
-void setLogMask(const std::string &mask)
-{
-    dbglog::set_mask(mask);
-}
-
-void setLogMask(LogLevel mask)
-{
-    dbglog::set_mask((dbglog::level)mask);
-}
-
-void setLogConsole(bool enable)
-{
-    dbglog::log_console(enable);
-}
-
-void setLogFile(const std::string &filename)
-{
-    dbglog::log_file(filename);
-}
-
-void setLogThreadName(const std::string &name)
-{
-    dbglog::thread_id(name);
-    setThreadName((name.c_str()));
-}
-
-namespace
-{
-
-class LogSink : public dbglog::Sink
+class GpuMesh : public Resource
 {
 public:
-    LogSink(LogLevel mask, std::function<void(const std::string&)> callback)
-        : Sink((dbglog::level)mask, "app log sink"), callback(callback)
-    {}
-
-    virtual void write(const std::string &line)
-    {
-        callback(line);
-    }
-
-    std::function<void(const std::string&)> callback;
+    GpuMesh(MapImpl *map, const std::string &name);
+    void load() override;
+    FetchTask::ResourceType resourceType() const override;
 };
 
-} // namespace
-
-void addLogSink(LogLevel mask, std::function<void(const std::string&)> callback)
+class GpuTexture : public Resource
 {
-    auto s = boost::shared_ptr<LogSink>(new LogSink(mask, callback));
-    dbglog::add_sink(s);
-}
+public:
+    GpuTexture(MapImpl *map, const std::string &name);
+    void load() override;
+    FetchTask::ResourceType resourceType() const override;
+    GpuTextureSpec::FilterMode filterMode;
+    GpuTextureSpec::WrapMode wrapMode;
+};
 
-void clearLogSinks()
+class GpuAtmosphereDensityTexture : public GpuTexture
 {
-    dbglog::clear_sinks();
-}
+public:
+    GpuAtmosphereDensityTexture(MapImpl *map, const std::string &name);
+    void load() override;
+};
 
-void log(LogLevel level, const std::string &message)
+class GpuFont : public Resource
 {
-    LOGR((dbglog::level)level) << message;
-}
+public:
+    GpuFont(MapImpl *map, const std::string &name);
+    void load() override;
+    FetchTask::ResourceType resourceType() const override;
+};
+
+class GpuGeodata
+{
+public:
+    ResourceInfo info;
+};
+
+class MeshPart
+{
+public:
+    MeshPart();
+    std::shared_ptr<GpuMesh> renderable;
+    mat4 normToPhys;
+    uint32 textureLayer;
+    uint32 surfaceReference;
+    bool internalUv;
+    bool externalUv;
+};
+
+class MeshAggregate : public Resource
+{
+public:
+    MeshAggregate(MapImpl *map, const std::string &name);
+    void load() override;
+    FetchTask::ResourceType resourceType() const override;
+
+    std::vector<MeshPart> submeshes;
+};
 
 } // namespace vts
+
+#endif

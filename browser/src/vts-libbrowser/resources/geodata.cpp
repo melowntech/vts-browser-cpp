@@ -24,6 +24,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dbglog/dbglog.hpp>
+
+#include "../geodata.hpp"
+#include "../fetchTask.hpp"
+#include "../renderTasks.hpp"
 #include "../map.hpp"
 
 namespace vts

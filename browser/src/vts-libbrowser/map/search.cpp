@@ -24,10 +24,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <utility/uri.hpp>
+#include "../include/vts-browser/search.hpp"
 
-#include "../map.hpp"
 #include "../utilities/json.hpp"
+#include "../searchTask.hpp"
+#include "../coordsManip.hpp"
+#include "../fetchTask.hpp"
+#include "../mapConfig.hpp"
+#include "../map.hpp"
 
 namespace vts
 {

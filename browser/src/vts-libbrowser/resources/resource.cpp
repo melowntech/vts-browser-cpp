@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../resource.hpp"
+#include "../fetchTask.hpp"
 #include "../map.hpp"
 
 namespace vts
@@ -40,18 +42,20 @@ bool FetchTaskImpl::performAvailTest() const
 {
     if (!availTest)
         return true;
-    switch (availTest->type)
+    auto at = std::static_pointer_cast<vtslibs::registry
+        ::BoundLayer::Availability>(availTest);
+    switch (at->type)
     {
     case vtslibs::registry::BoundLayer::Availability::Type::negativeCode:
-        if (availTest->codes.find(reply.code) == availTest->codes.end())
+        if (at->codes.find(reply.code) == at->codes.end())
             return false;
         break;
     case vtslibs::registry::BoundLayer::Availability::Type::negativeType:
-        if (availTest->mime == reply.contentType)
+        if (at->mime == reply.contentType)
             return false;
         break;
     case vtslibs::registry::BoundLayer::Availability::Type::negativeSize:
-        if (reply.content.size() <= (unsigned)availTest->size)
+        if (reply.content.size() <= (unsigned)at->size)
             return false;
         break;
     }
@@ -107,11 +111,11 @@ void Resource::updatePriority(float p)
         priority = p;
 }
 
-void Resource::updateAvailability(const std::shared_ptr<vtslibs::registry
-    ::BoundLayer::Availability> &availTest)
+void Resource::updateAvailability(const std::shared_ptr<void> &availTest)
 {
     if (!fetch)
-        fetch = std::make_shared<FetchTaskImpl>(map->resources.resources[name]);
+        fetch = std::make_shared<FetchTaskImpl>(
+                    map->resources.resources[name]);
     if (!fetch->availTest)
         fetch->availTest = availTest;
 }

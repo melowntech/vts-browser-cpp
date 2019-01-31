@@ -24,8 +24,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "camera.hpp"
 #include "../include/vts-browser/map.hpp"
+#include "../include/vts-browser/camera.hpp"
+
+#include "../camera.hpp"
+#include "../map.hpp"
 
 namespace vts
 {

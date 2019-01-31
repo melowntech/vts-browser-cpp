@@ -24,6 +24,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../mapLayer.hpp"
+#include "../mapConfig.hpp"
+#include "../tilesetMapping.hpp"
+#include "../traverseNode.hpp"
+#include "../geodata.hpp"
 #include "../map.hpp"
 
 namespace vts

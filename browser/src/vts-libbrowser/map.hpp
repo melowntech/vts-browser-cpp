@@ -27,76 +27,56 @@
 #ifndef MAP_HPP_cvukikljqwdf
 #define MAP_HPP_cvukikljqwdf
 
-#include <memory>
-#include <string>
-#include <atomic>
 #include <unordered_map>
-#include <unordered_set>
 #include <queue>
+#include <vector>
+#include <atomic>
 #include <thread>
-#include <boost/utility/in_place_factory.hpp>
-#include <dbglog/dbglog.hpp>
-#include <vts-libs/vts/nodeinfo.hpp>
-#include <vts-libs/vts/urltemplate.hpp>
-#include <vts-libs/vts/mapconfig.hpp>
-#include <vts-libs/vts/metatile.hpp>
-#include <vts-libs/vts/tsmap.hpp>
 
-#include "include/vts-browser/celestial.hpp"
-#include "include/vts-browser/search.hpp"
-#include "include/vts-browser/math.hpp"
-#include "include/vts-browser/exceptions.hpp"
-#include "include/vts-browser/resources.hpp"
-#include "include/vts-browser/fetcher.hpp"
-#include "include/vts-browser/mapCallbacks.hpp"
-#include "include/vts-browser/mapOptions.hpp"
+#include <vts-libs/registry/referenceframe.hpp>
+
 #include "include/vts-browser/mapStatistics.hpp"
+#include "include/vts-browser/mapOptions.hpp"
+#include "include/vts-browser/mapCallbacks.hpp"
+#include "include/vts-browser/celestial.hpp"
+#include "include/vts-browser/math.hpp"
+#include "include/vts-browser/buffer.hpp"
 
-#include "resources/cache.hpp"
-#include "credits.hpp"
-#include "coordsManip.hpp"
-#include "utilities/array.hpp"
 #include "utilities/threadQueue.hpp"
+#include "validity.hpp"
 
 namespace vts
 {
 
-using vtslibs::vts::NodeInfo;
-using vtslibs::vts::TileId;
-using vtslibs::vts::UrlTemplate;
-
 class Map;
-class Resource;
+class Fetcher;
+class Mapconfig;
+class CoordManip;
 class MapLayer;
-class MapImpl;
 class CameraImpl;
-class NavigationImpl;
+class GpuAtmosphereDensityTexture;
+class Cache;
+class AuthConfig;
+class SearchTask;
+class GpuTexture;
+class GpuMesh;
+class MetaTile;
+class NavTile;
+class MeshAggregate;
+class ExternalBoundLayer;
+class ExternalFreeLayer;
+class BoundMetaTile;
+class SearchTaskImpl;
+class TilesetMapping;
+class GeodataFeatures;
+class GeodataStylesheet;
+class GeodataTile;
+class Resource;
+class TraverseNode;
+class Credits;
+class FetchTaskImpl;
 
-class RenderSurfaceTask;
-class RenderGeodataTask;
-class RenderSimpleTask;
-
-enum class Validity
-{
-    Indeterminate,
-    Invalid,
-    Valid,
-};
-
-class FetchTaskImpl : public FetchTask
-{
-public:
-    FetchTaskImpl(const std::shared_ptr<Resource> &resource);
-    void fetchDone() override;
-
-    bool performAvailTest() const;
-
-    const std::string name;
-    MapImpl *const map;
-    std::shared_ptr<vtslibs::registry::BoundLayer::Availability> availTest;
-    std::weak_ptr<Resource> resource;
-    uint32 redirectionsCount;
-};
+using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
 
 class CacheWriteData
 {
@@ -106,488 +86,6 @@ public:
     Buffer buffer;
     std::string name;
     sint64 expires;
-};
-
-class Resource : public std::enable_shared_from_this<Resource>
-{
-public:
-    enum class State
-    {
-        initializing,
-        checkCache,
-        startDownload,
-        downloading,
-        downloaded,
-        uploading, // to gpu memory
-        ready,
-        errorFatal,
-        errorRetry,
-        availFail,
-    };
-
-    Resource(MapImpl *map, const std::string &name);
-    Resource(const Resource &other) = delete;
-    Resource &operator = (const Resource &other) = delete;
-    virtual ~Resource();
-    virtual void load() = 0;
-    virtual FetchTask::ResourceType resourceType() const = 0;
-    bool allowDiskCache() const;
-    static bool allowDiskCache(FetchTask::ResourceType type);
-    void updatePriority(float priority);
-    void updateAvailability(const std::shared_ptr<vtslibs::registry
-        ::BoundLayer::Availability> &availTest);
-    void forceRedownload();
-    operator bool() const; // return state == ready
-
-    const std::string name;
-    MapImpl *const map;
-    std::atomic<State> state;
-    ResourceInfo info;
-    std::shared_ptr<FetchTaskImpl> fetch;
-    std::time_t retryTime;
-    uint32 retryNumber;
-    uint32 lastAccessTick;
-    float priority;
-};
-
-std::ostream &operator << (std::ostream &stream, Resource::State state);
-
-class GpuMesh : public Resource
-{
-public:
-    GpuMesh(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-};
-
-class GpuTexture : public Resource
-{
-public:
-    GpuTexture(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-    GpuTextureSpec::FilterMode filterMode;
-    GpuTextureSpec::WrapMode wrapMode;
-};
-
-class GpuAtmosphereDensityTexture : public GpuTexture
-{
-public:
-    GpuAtmosphereDensityTexture(MapImpl *map, const std::string &name);
-    void load() override;
-};
-
-class GpuFont : public Resource
-{
-public:
-    GpuFont(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-};
-
-class GpuGeodata
-{
-public:
-    ResourceInfo info;
-};
-
-class AuthConfig : public Resource
-{
-public:
-    AuthConfig(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-    void checkTime();
-    void authorize(const std::shared_ptr<Resource> &);
-
-private:
-    std::string token;
-    std::unordered_set<std::string> hostnames;
-    uint64 timeValid;
-    uint64 timeParsed;
-};
-
-class ExternalBoundLayer : public Resource,
-    public vtslibs::registry::BoundLayer
-{
-public:
-    ExternalBoundLayer(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-};
-
-class ExternalFreeLayer : public Resource,
-    public vtslibs::registry::FreeLayer
-{
-public:
-    ExternalFreeLayer(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-};
-
-class BoundMetaTile : public Resource
-{
-public:
-    BoundMetaTile(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-
-    uint8 flags[vtslibs::registry::BoundLayer::rasterMetatileWidth
-        * vtslibs::registry::BoundLayer::rasterMetatileHeight];
-};
-
-class MetaTile : public Resource, public vtslibs::vts::MetaTile
-{
-public:
-    MetaTile(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-};
-
-class MeshPart
-{
-public:
-    MeshPart();
-    std::shared_ptr<GpuMesh> renderable;
-    mat4 normToPhys;
-    uint32 textureLayer;
-    uint32 surfaceReference;
-    bool internalUv;
-    bool externalUv;
-};
-
-class MeshAggregate : public Resource
-{
-public:
-    MeshAggregate(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-
-    std::vector<MeshPart> submeshes;
-};
-
-class NavTile : public Resource
-{
-public:
-    NavTile(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-
-    std::vector<unsigned char> data;
-
-    static vec2 sds2px(const vec2 &point, const math::Extents2 &extents);
-};
-
-class SearchTaskImpl : public Resource
-{
-public:
-    SearchTaskImpl(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-
-    Buffer data;
-    const std::string validityUrl;
-    const std::string validitySrs;
-};
-
-class TilesetMapping : public Resource
-{
-public:
-    TilesetMapping(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-
-    vtslibs::vts::TilesetReferencesList dataRaw;
-};
-
-class GeodataFeatures : public Resource
-{
-public:
-    GeodataFeatures(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-
-    std::string data;
-};
-
-class GeodataStylesheet : public Resource
-{
-public:
-    GeodataStylesheet(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-
-    std::string data;
-
-    std::map<std::string, std::shared_ptr<GpuFont>> fonts;
-    std::map<std::string, std::shared_ptr<GpuTexture>> textures;
-};
-
-class GeodataTile : public Resource
-{
-public:
-    GeodataTile(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-    void update(const std::string &style, const std::string &features,
-        uint32 lod);
-
-    std::vector<RenderGeodataTask> renders;
-
-private:
-    uint32 lod;
-    std::string style;
-    std::string features;
-};
-
-class BoundInfo : public vtslibs::registry::BoundLayer
-{
-public:
-    BoundInfo(const vtslibs::registry::BoundLayer &bl,
-        const std::string &url);
-
-    std::shared_ptr<vtslibs::registry::BoundLayer::Availability>
-        availability;
-    UrlTemplate urlExtTex;
-    UrlTemplate urlMeta;
-    UrlTemplate urlMask;
-};
-
-class FreeInfo : public vtslibs::registry::FreeLayer
-{
-public:
-    FreeInfo(const vtslibs::registry::FreeLayer &fl,
-        const std::string &url);
-
-    std::string url; // external free layer url
-
-    std::shared_ptr<GeodataStylesheet> stylesheet;
-    std::string overrideStyle;
-    std::string overrideGeodata; // monolithic only
-};
-
-class BoundParamInfo : public vtslibs::registry::View::BoundLayerParams
-{
-public:
-    typedef std::vector<BoundParamInfo> List;
-
-    BoundParamInfo(const vtslibs::registry::View::BoundLayerParams &params);
-    mat3f uvMatrix() const;
-    Validity prepare(const NodeInfo &nodeInfo, CameraImpl *impl,
-        uint32 subMeshIndex, double priority);
-
-    std::shared_ptr<GpuTexture> textureColor;
-    std::shared_ptr<GpuTexture> textureMask;
-    const BoundInfo *bound;
-    bool transparent;
-
-private:
-    Validity prepareDepth(CameraImpl *impl, double priority);
-
-    UrlTemplate::Vars orig;
-    sint32 depth;
-};
-
-class SurfaceInfo
-{
-public:
-    SurfaceInfo();
-    SurfaceInfo(const vtslibs::vts::SurfaceCommonConfig &surface,
-        const std::string &parentPath);
-    SurfaceInfo(const vtslibs::registry::FreeLayer::MeshTiles &surface,
-        const std::string &parentPath);
-    SurfaceInfo(const vtslibs::registry::FreeLayer::GeodataTiles &surface,
-        const std::string &parentPath);
-    SurfaceInfo(const vtslibs::registry::FreeLayer::Geodata &surface,
-        const std::string &parentPath);
-
-    UrlTemplate urlMeta;
-    UrlTemplate urlMesh;
-    UrlTemplate urlIntTex;
-    UrlTemplate urlGeodata;
-    vtslibs::vts::TilesetIdList name;
-    vec3f color;
-    bool alien;
-};
-
-class SurfaceStack
-{
-public:
-    void print();
-    void colorize();
-
-    void generateVirtual(MapImpl *map,
-        const vtslibs::vts::VirtualSurfaceConfig *virtualSurface);
-    void generateTileset(MapImpl *map,
-        const std::vector<std::string> &vsId,
-        const vtslibs::vts::TilesetReferencesList &dataRaw);
-    void generateReal(MapImpl *map);
-    void generateFree(MapImpl *map, const FreeInfo &freeLayer);
-
-    std::vector<SurfaceInfo> surfaces;
-};
-
-class RenderSurfaceTask
-{
-public:
-    std::shared_ptr<GpuMesh> mesh;
-    std::shared_ptr<GpuTexture> textureColor;
-    std::shared_ptr<GpuTexture> textureMask;
-    mat4 model;
-    mat3f uvm;
-    vec4f color;
-    bool externalUv;
-    bool flatShading;
-
-    RenderSurfaceTask();
-    bool ready() const;
-};
-
-class RenderGeodataTask
-{
-public:
-    std::shared_ptr<GpuGeodata> geodata;
-
-    RenderGeodataTask();
-    bool ready() const;
-};
-
-class RenderSimpleTask
-{
-public:
-    std::shared_ptr<GpuMesh> mesh;
-    std::shared_ptr<GpuTexture> textureColor;
-    mat4 model;
-    mat3f uvm;
-    vec4f color;
-
-    RenderSimpleTask();
-    bool ready() const;
-};
-
-class TraverseNode
-{
-public:
-    struct Obb
-    {
-        mat4 rotInv;
-        vec3 points[2];
-    };
-
-    // traversal
-    Array<std::shared_ptr<TraverseNode>, 4> childs;
-    MapLayer *const layer;
-    TraverseNode *const parent;
-    const NodeInfo nodeInfo;
-    const uint32 hash;
-
-    // metadata
-    std::vector<vtslibs::registry::CreditId> credits;
-    std::vector<std::shared_ptr<MetaTile>> metaTiles;
-    boost::optional<vtslibs::vts::MetaNode> meta;
-    boost::optional<Obb> obb;
-    vec3 cornersPhys[8];
-    vec3 aabbPhys[2];
-    boost::optional<vec3> surrogatePhys;
-    boost::optional<float> surrogateNav;
-    vec3 diskNormalPhys;
-    vec2 diskHeightsPhys;
-    const SurfaceInfo *surface;
-    double diskHalfAngle;
-    bool determined; // draws are fully loaded (draws may be empty)
-
-    uint32 lastAccessTime;
-    uint32 lastRenderTime;
-    float priority;
-
-    // renders
-    std::shared_ptr<Resource> touchResource;
-    std::vector<RenderSurfaceTask> opaque;
-    std::vector<RenderSurfaceTask> transparent;
-    std::vector<RenderGeodataTask> geodata;
-    std::vector<RenderSimpleTask> colliders;
-
-    TraverseNode(MapLayer *layer, TraverseNode *parent,
-        const NodeInfo &nodeInfo);
-    ~TraverseNode();
-    void clearAll();
-    void clearRenders();
-    bool rendersReady() const;
-    bool rendersEmpty() const;
-    TileId id() const { return nodeInfo.nodeId(); }
-};
-
-class MapLayer
-{
-public:
-    // main surface stack
-    MapLayer(MapImpl *map);
-    // free layer
-    MapLayer(MapImpl *map, const std::string &name,
-        const vtslibs::registry::View::FreeLayerParams &params);
-
-    bool prerequisitesCheck();
-    bool isGeodata();
-
-    BoundParamInfo::List boundList(
-        const SurfaceInfo *surface, sint32 surfaceReference);
-
-    vtslibs::registry::View::Surfaces boundLayerParams;
-
-    std::string freeLayerName;
-    boost::optional<FreeInfo> freeLayer;
-    boost::optional<vtslibs::registry::View::FreeLayerParams> freeLayerParams;
-
-    SurfaceStack surfaceStack;
-    boost::optional<SurfaceStack> tilesetStack;
-
-    std::shared_ptr<TraverseNode> traverseRoot;
-
-    MapImpl *const map;
-    Credits::Scope creditScope;
-
-private:
-    bool prerequisitesCheckMainSurfaces();
-    bool prerequisitesCheckFreeLayer();
-};
-
-class Mapconfig : public Resource, public vtslibs::vts::MapConfig
-{
-public:
-    class BrowserOptions
-    {
-    public:
-        BrowserOptions();
-
-        std::string searchUrl;
-        std::string searchSrs;
-        double autorotate;
-        bool searchFilter;
-    };
-
-    Mapconfig(MapImpl *map, const std::string &name);
-    void load() override;
-    FetchTask::ResourceType resourceType() const override;
-    vtslibs::registry::Srs::Type navigationSrsType() const;
-
-    void consolidateView();
-    void initializeCelestialBody();
-    bool isEarth() const;
-
-    BoundInfo *getBoundInfo(const std::string &id);
-    FreeInfo *getFreeInfo(const std::string &id);
-    vtslibs::vts::SurfaceCommonConfig *findGlue(
-        const vtslibs::vts::Glue::Id &id);
-    vtslibs::vts::SurfaceCommonConfig *findSurface(
-        const std::string &id);
-
-    BrowserOptions browserOptions;
-
-    std::shared_ptr<GpuAtmosphereDensityTexture> atmosphereDensityTexture;
-
-private:
-    std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;
-    std::unordered_map<std::string, std::shared_ptr<FreeInfo>> freeInfos;
 };
 
 class MapImpl
@@ -600,13 +98,13 @@ public:
 
     Map *const map;
     const MapCreateOptions createOptions;
-    Credits credits;
     MapCallbacks callbacks;
     MapStatistics statistics;
     MapRuntimeOptions options;
     MapCelestialBody body;
     std::shared_ptr<Mapconfig> mapconfig;
     std::shared_ptr<CoordManip> convertor;
+    std::shared_ptr<Credits> credits;
     std::vector<std::shared_ptr<MapLayer>> layers;
     std::vector<std::weak_ptr<CameraImpl>> cameras;
     std::string mapconfigPath;
@@ -725,13 +223,11 @@ public:
     void updateAtmosphereDensity();
     double getMapRenderProgress();
     bool getMapRenderComplete();
-    vtslibs::vts::TileId roundId(TileId nodeId);
+    TileId roundId(TileId nodeId);
 };
 
-bool testAndThrow(Resource::State state, const std::string &message);
 std::string convertPath(const std::string &path,
                         const std::string &parent);
-TraverseNode *findTravById(TraverseNode *trav, const TileId &what);
 
 } // namespace vts
 

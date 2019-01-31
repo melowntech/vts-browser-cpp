@@ -24,9 +24,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <utility/uri.hpp>
-
-#include "camera.hpp"
+#include "../renderInfos.hpp"
+#include "../camera.hpp"
+#include "../mapConfig.hpp"
+#include "../map.hpp"
+#include "../validity.hpp"
+#include "../gpuResource.hpp"
+#include "../metaTile.hpp"
 
 namespace vts
 {

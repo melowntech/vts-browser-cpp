@@ -24,74 +24,35 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dbglog/dbglog.hpp>
+#ifndef FETCHTASK_hpp_SER68T7ZJ
+#define FETCHTASK_hpp_SER68T7ZJ
 
-#include "../include/vts-browser/log.hpp"
-#include "../utilities/threadName.hpp"
+#include <memory>
+#include <string>
+
+#include "include/vts-browser/fetcher.hpp"
 
 namespace vts
 {
 
-void setLogMask(const std::string &mask)
-{
-    dbglog::set_mask(mask);
-}
+class MapImpl;
+class Resource;
 
-void setLogMask(LogLevel mask)
-{
-    dbglog::set_mask((dbglog::level)mask);
-}
-
-void setLogConsole(bool enable)
-{
-    dbglog::log_console(enable);
-}
-
-void setLogFile(const std::string &filename)
-{
-    dbglog::log_file(filename);
-}
-
-void setLogThreadName(const std::string &name)
-{
-    dbglog::thread_id(name);
-    setThreadName((name.c_str()));
-}
-
-namespace
-{
-
-class LogSink : public dbglog::Sink
+class FetchTaskImpl : public FetchTask
 {
 public:
-    LogSink(LogLevel mask, std::function<void(const std::string&)> callback)
-        : Sink((dbglog::level)mask, "app log sink"), callback(callback)
-    {}
+    FetchTaskImpl(const std::shared_ptr<Resource> &resource);
+    void fetchDone() override;
 
-    virtual void write(const std::string &line)
-    {
-        callback(line);
-    }
+    bool performAvailTest() const;
 
-    std::function<void(const std::string&)> callback;
+    const std::string name;
+    MapImpl *const map;
+    std::shared_ptr<void> availTest; // vtslibs::registry::BoundLayer::Availability
+    std::weak_ptr<Resource> resource;
+    uint32 redirectionsCount;
 };
 
-} // namespace
-
-void addLogSink(LogLevel mask, std::function<void(const std::string&)> callback)
-{
-    auto s = boost::shared_ptr<LogSink>(new LogSink(mask, callback));
-    dbglog::add_sink(s);
-}
-
-void clearLogSinks()
-{
-    dbglog::clear_sinks();
-}
-
-void log(LogLevel level, const std::string &message)
-{
-    LOGR((dbglog::level)level) << message;
-}
-
 } // namespace vts
+
+#endif

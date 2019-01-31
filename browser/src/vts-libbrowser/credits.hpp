@@ -27,15 +27,13 @@
 #ifndef CREDITS_HPP_edfgvbbnk
 #define CREDITS_HPP_edfgvbbnk
 
-#include <vts-libs/registry.hpp>
+#include <vts-libs/registry/referenceframe.hpp>
 
 #include "include/vts-browser/cameraCredits.hpp"
 
 namespace vtslibs { namespace vts {
-
 struct Mapconfig;
-
-}} // namespace vtslibs::vts
+} }
 
 namespace vts
 {

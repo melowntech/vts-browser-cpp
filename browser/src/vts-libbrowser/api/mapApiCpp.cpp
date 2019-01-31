@@ -27,10 +27,16 @@
 #include <vts-libs/registry/json.hpp>
 #include <vts-libs/registry/io.hpp>
 
-#include "../utilities/json.hpp"
 #include "../include/vts-browser/map.hpp"
 #include "../include/vts-browser/view.hpp"
+#include "../utilities/json.hpp"
+#include "../resources/cache.hpp"
 #include "../map.hpp"
+#include "../mapConfig.hpp"
+#include "../gpuResource.hpp"
+#include "../renderInfos.hpp"
+#include "../coordsManip.hpp"
+#include "../credits.hpp"
 
 namespace vts
 {
@@ -560,6 +566,7 @@ MapImpl::MapImpl(Map *map, const MapCreateOptions &options,
             = std::thread(&MapImpl::resourcesAtmosphereGeneratorEntry, this);
     resources.fetching.thr
             = std::thread(&MapImpl::resourcesDownloadsEntry, this);
+    credits = std::make_shared<Credits>();
 }
 
 MapImpl::~MapImpl()

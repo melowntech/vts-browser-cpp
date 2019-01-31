@@ -26,9 +26,12 @@
 
 #include <ctime>
 #include <jsoncpp/json.hpp>
+#include <dbglog/dbglog.hpp>
 
 #include "../include/vts-browser/exceptions.hpp"
-#include "../map.hpp"
+
+#include "../authConfig.hpp"
+#include "../fetchTask.hpp"
 
 namespace vts
 {

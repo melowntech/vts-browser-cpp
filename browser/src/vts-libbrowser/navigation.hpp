@@ -27,13 +27,16 @@
 #ifndef NAVIGATION_HPP_sdgr7h8tz9jl9
 #define NAVIGATION_HPP_sdgr7h8tz9jl9
 
-#include "../camera/camera.hpp"
+#include <vts-libs/registry/referenceframe.hpp>
 
-#include "../include/vts-browser/navigation.hpp"
-#include "../include/vts-browser/navigationOptions.hpp"
+#include "include/vts-browser/math.hpp"
+#include "include/vts-browser/navigationOptions.hpp"
 
 namespace vts
 {
+
+class CameraImpl;
+class Navigation;
 
 class NavigationImpl
 {

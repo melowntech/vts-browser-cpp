@@ -25,6 +25,14 @@
  */
 
 #include "../map.hpp"
+#include "../gpuResource.hpp"
+#include "../authConfig.hpp"
+#include "../mapConfig.hpp"
+#include "../metaTile.hpp"
+#include "../navTile.hpp"
+#include "../searchTask.hpp"
+#include "../tilesetMapping.hpp"
+#include "../geodata.hpp"
 
 namespace vts
 {

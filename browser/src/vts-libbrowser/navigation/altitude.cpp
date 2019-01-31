@@ -24,7 +24,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "navigation.hpp"
+#include "../camera.hpp"
+#include "../navigation.hpp"
+#include "../traverseNode.hpp"
+#include "../coordsManip.hpp"
+#include "../mapLayer.hpp"
+#include "../mapConfig.hpp"
+#include "../map.hpp"
 
 namespace vts
 {

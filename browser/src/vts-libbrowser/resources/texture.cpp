@@ -24,8 +24,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "../map.hpp"
+#include <dbglog/dbglog.hpp>
+
 #include "../image/image.hpp"
+#include "../gpuResource.hpp"
+#include "../fetchTask.hpp"
+#include "../map.hpp"
+#include "cache.hpp"
 
 namespace vts
 {

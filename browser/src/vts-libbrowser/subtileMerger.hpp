@@ -24,74 +24,32 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dbglog/dbglog.hpp>
+#ifndef SUBTILEMERGER_HPP_sdfg4df5
+#define SUBTILEMERGER_HPP_sdfg4df5
 
-#include "../include/vts-browser/log.hpp"
-#include "../utilities/threadName.hpp"
+#include <vector>
+
+#include "include/vts-browser/math.hpp"
 
 namespace vts
 {
 
-void setLogMask(const std::string &mask)
-{
-    dbglog::set_mask(mask);
-}
+class TraverseNode;
+class CameraImpl;
 
-void setLogMask(LogLevel mask)
-{
-    dbglog::set_mask((dbglog::level)mask);
-}
-
-void setLogConsole(bool enable)
-{
-    dbglog::log_console(enable);
-}
-
-void setLogFile(const std::string &filename)
-{
-    dbglog::log_file(filename);
-}
-
-void setLogThreadName(const std::string &name)
-{
-    dbglog::thread_id(name);
-    setThreadName((name.c_str()));
-}
-
-namespace
-{
-
-class LogSink : public dbglog::Sink
+class SubtilesMerger
 {
 public:
-    LogSink(LogLevel mask, std::function<void(const std::string&)> callback)
-        : Sink((dbglog::level)mask, "app log sink"), callback(callback)
-    {}
-
-    virtual void write(const std::string &line)
+    struct Subtile
     {
-        callback(line);
-    }
-
-    std::function<void(const std::string&)> callback;
+        TraverseNode *orig;
+        vec4f uvClip;
+        Subtile(TraverseNode *orig, const vec4f &uvClip);
+    };
+    std::vector<Subtile> subtiles;
+    void resolve(TraverseNode *trav, CameraImpl *impl);
 };
 
-} // namespace
-
-void addLogSink(LogLevel mask, std::function<void(const std::string&)> callback)
-{
-    auto s = boost::shared_ptr<LogSink>(new LogSink(mask, callback));
-    dbglog::add_sink(s);
-}
-
-void clearLogSinks()
-{
-    dbglog::clear_sinks();
-}
-
-void log(LogLevel level, const std::string &message)
-{
-    LOGR((dbglog::level)level) << message;
-}
-
 } // namespace vts
+
+#endif

@@ -24,7 +24,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "navigation.hpp"
+#include "../include/vts-browser/camera.hpp"
+
+#include "../navigation.hpp"
+#include "../camera.hpp"
+#include "../mapConfig.hpp"
+#include "../map.hpp"
+#include "../coordsManip.hpp"
+#include "../renderTasks.hpp"
+#include "../gpuResource.hpp"
 #include "piha.hpp"
 
 namespace vts

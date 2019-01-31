@@ -25,7 +25,6 @@
  */
 
 #include "../include/vts-browser/math.hpp"
-#include "../include/vts-browser/map.hpp"
 
 namespace vts
 {

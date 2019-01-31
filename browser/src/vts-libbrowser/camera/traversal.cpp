@@ -24,7 +24,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "camera.hpp"
+#include "../camera.hpp"
+#include "../traverseNode.hpp"
+#include "../gpuResource.hpp"
+#include "../renderTasks.hpp"
+#include "../geodata.hpp"
+#include "../coordsManip.hpp"
+#include "../metaTile.hpp"
+#include "../mapLayer.hpp"
+#include "../mapConfig.hpp"
+#include "../map.hpp"
 
 namespace vts
 {
@@ -466,7 +475,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
                     assert(l);
                     for (auto &it : l->credits)
                     {
-                        auto c = map->credits.find(it.first);
+                        auto c = map->credits->find(it.first);
                         if (c)
                             newCredits.push_back(*c);
                     }

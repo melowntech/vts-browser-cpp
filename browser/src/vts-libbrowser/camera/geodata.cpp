@@ -24,8 +24,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "camera.hpp"
+#include "../include/vts-browser/exceptions.hpp"
+
 #include "../utilities/json.hpp"
+#include "../camera.hpp"
+#include "../gpuResource.hpp"
+#include "../geodata.hpp"
+#include "../renderTasks.hpp"
+#include "../map.hpp"
 
 namespace vts
 {

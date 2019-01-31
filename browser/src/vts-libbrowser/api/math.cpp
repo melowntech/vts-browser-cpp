@@ -26,7 +26,6 @@
 
 #include <dbglog/dbglog.hpp>
 
-#include "../include/vts-browser/map.hpp"
 #include "../include/vts-browser/math.hpp"
 
 namespace vts

@@ -24,16 +24,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "camera.hpp"
+#include "../camera.hpp"
+#include "../traverseNode.hpp"
+#include "../renderTasks.hpp"
+#include "../hashTileId.hpp"
 
 namespace vts
 {
 
-TraverseNode::TraverseNode(vts::MapLayer *layer, TraverseNode *parent,
+TraverseNode::TraverseNode(MapLayer *layer, TraverseNode *parent,
                            const NodeInfo &nodeInfo)
     : layer(layer), parent(parent),
       nodeInfo(nodeInfo),
-      hash(std::hash<vts::TileId>()(id())),
+      hash(std::hash<TileId>()(id())),
       surface(nullptr),
       lastAccessTime(0), lastRenderTime(0),
       priority(nan1()),

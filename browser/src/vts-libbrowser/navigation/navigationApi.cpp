@@ -28,9 +28,14 @@
 #include <vts-libs/registry/io.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "../include/vts-browser/map.hpp"
-#include "navigation.hpp"
+#include "../include/vts-browser/camera.hpp"
+#include "../include/vts-browser/navigation.hpp"
+
 #include "../utilities/json.hpp"
+#include "../navigation.hpp"
+#include "../camera.hpp"
+#include "../mapConfig.hpp"
+#include "../map.hpp"
 
 namespace vts
 {

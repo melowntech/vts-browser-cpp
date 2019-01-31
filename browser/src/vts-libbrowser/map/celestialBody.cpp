@@ -26,12 +26,17 @@
 
 #include <ogr_spatialref.h>
 #include <vts-libs/vts/atmospheredensitytexture.hpp>
+#include <vts-libs/vts/urltemplate.hpp>
 
-#include "../map.hpp"
+#include "../include/vts-browser/celestial.hpp"
 #include "../utilities/json.hpp"
+#include "../mapConfig.hpp"
+#include "../map.hpp"
 
 namespace vts
 {
+
+using UrlTemplate = vtslibs::vts::UrlTemplate;
 
 MapCelestialBody::MapCelestialBody() :
     majorRadius(0), minorRadius(0)

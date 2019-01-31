@@ -117,7 +117,7 @@ D convert(CameraImpl *impl, const R &task)
         result.mesh = task.mesh->info.userData;
     if (task.textureColor)
         result.texColor = task.textureColor->info.userData;
-    mat4f mv = (impl->viewActual * task.model).cast<float>();
+    mat4f mv = mat4(impl->viewActual * task.model).cast<float>();
     matToRaw(mv, result.mv);
     matToRaw(task.uvm, result.uvm);
     vecToRaw(task.color, result.color);

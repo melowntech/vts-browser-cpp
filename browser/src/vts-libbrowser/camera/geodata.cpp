@@ -339,6 +339,9 @@ struct geoContext
         LOGTHROW(fatal, std::logic_error)
             << "interpolate is not yet implemented";
         throw;
+        (void)a;
+        (void)b;
+        (void)f;
     }
 
     template<bool Linear>
@@ -362,7 +365,7 @@ struct geoContext
                 continue;
             if (Linear)
             {
-                if (index + 1 < searchArray.size())
+                if (index + 1u < searchArray.size())
                 {
                     double v2 = evaluate(searchArray[index + 1][0]).asDouble();
                     return interpolate(

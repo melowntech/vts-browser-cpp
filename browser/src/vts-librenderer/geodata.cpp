@@ -44,7 +44,8 @@ public:
 
         mesh = std::make_shared<Mesh>();
         ResourceInfo mshInfo;
-        mesh->load(mshInfo, spec.createMesh());
+        GpuMeshSpec mshSpc = spec.createMesh();
+        mesh->load(mshInfo, mshSpc);
         info.gpuMemoryCost += mshInfo.gpuMemoryCost;
         info.ramMemoryCost += mshInfo.ramMemoryCost;
         std::vector<std::array<float, 3>>().swap(spec.coordinates);

@@ -51,6 +51,8 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec)
 {
     clear();
     // todo
+    (void)info;
+    (void)spec;
 }
 
 void Font::load(GpuFontSpec &spec)

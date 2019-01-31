@@ -266,6 +266,7 @@ GpuMeshSpec GpuGeodataSpec::createMesh() const
     case Type::PackedPointLabelIcon:
     case Type::Triangles:
         return createMeshPoints();
+    case Type::Invalid: break;
     }
     return GpuMeshSpec();
 }

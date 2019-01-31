@@ -38,7 +38,8 @@ namespace
 
     bool runSystemCommand(const std::string &cmd)
     {
-        vts::log(vts::LogLevel::info1, std::string() + "Running command: <" + cmd + ">");
+        vts::log(vts::LogLevel::info1, std::string()
+                 + "Running command: <" + cmd + ">");
         auto res = std::system(cmd.c_str());
         std::ostringstream ss;
         ss << "Result of System call: " << res;
@@ -65,11 +66,22 @@ std::string editor(const std::string &name, const std::string &value)
     {
         vts::writeLocalFileBuffer(tmpName, vts::Buffer(value));
 #ifdef _WIN32
-        if (!runSystemCommand(std::string() + "notepad++.exe -multiInst -notabbar -nosession -noPlugin " + tmpName))
-            if (!runSystemCommand(std::string() + "%EDITOR% " + tmpName))
+        if (getenv("EDITOR"))
+            runSystemCommand(std::string() + "%EDITOR% " + tmpName);
+        else
+        {
+            if (!runSystemCommand(std::string() + "notepad++.exe -multiInst -notabbar -nosession -noPlugin " + tmpName))
                 runSystemCommand(std::string() + "notepad.exe " + tmpName);
+        }
 #else
-        runSystemCommand(std::string() + "xterm -e $EDITOR " + tmpName);
+        if (getenv("EDITOR"))
+            runSystemCommand(std::string() + "xterm -e $EDITOR " + tmpName);
+        else
+        {
+            if (!runSystemCommand(std::string() + "gedit " + tmpName))
+                if (!runSystemCommand(std::string() + "xterm -e nano " + tmpName))
+                    runSystemCommand(std::string() + "xterm -e vim " + tmpName);
+        }
 #endif // _WIN32
         result = vts::readLocalFileBuffer(tmpName).str();
     }

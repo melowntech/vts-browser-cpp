@@ -33,6 +33,7 @@
 #include "../searchTask.hpp"
 #include "../tilesetMapping.hpp"
 #include "../geodata.hpp"
+#include "../renderTasks.hpp"
 
 namespace vts
 {

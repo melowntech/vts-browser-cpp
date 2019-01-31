@@ -107,6 +107,8 @@ void touchDraws(MapImpl *map, const RenderSurfaceTask &task)
 
 void touchDraws(MapImpl *map, const RenderGeodataTask &task)
 {
+    (void)map;
+    (void)task;
     // geodata are not a resource
 }
 

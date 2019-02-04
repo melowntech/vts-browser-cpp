@@ -77,7 +77,8 @@ void RendererImpl::clearGlState()
     checkGlImpl("cleared gl state");
 }
 
-RendererImpl::RendererImpl() : draws(nullptr), body(nullptr),
+RendererImpl::RendererImpl(Renderer *rendererApi)
+    : rendererApi(rendererApi), draws(nullptr), body(nullptr),
     atmosphereDensityTexture(nullptr),
     widthPrev(0), heightPrev(0), antialiasingPrev(0),
     projected(false)
@@ -145,20 +146,8 @@ void RendererImpl::enableClipDistance(bool enable)
     }
 }
 
-void RendererImpl::render()
+void RendererImpl::updateFramebuffers()
 {
-    CHECK_GL("pre-frame check");
-
-    assert(shaderSurface);
-    view = rawToMat4(draws->camera.view);
-    viewInv = view.inverse();
-    proj = rawToMat4(draws->camera.proj);
-    viewProj = proj * view;
-
-    if (options.width <= 0 || options.height <= 0)
-        return;
-
-    // update framebuffer texture
     if (options.width != widthPrev || options.height != heightPrev
         || options.antialiasingSamples != antialiasingPrev)
     {
@@ -188,12 +177,12 @@ void RendererImpl::render()
         if (antialiasingPrev > 1)
         {
             glTexImage2DMultisample(vars.textureTargetType,
-                antialiasingPrev, GL_DEPTH_COMPONENT32,
+                antialiasingPrev, GL_DEPTH24_STENCIL8,
                 options.width, options.height, GL_TRUE);
         }
         else
         {
-            glTexImage2D(vars.textureTargetType, 0, GL_DEPTH_COMPONENT32,
+            glTexImage2D(vars.textureTargetType, 0, GL_DEPTH24_STENCIL8,
                 options.width, options.height,
                 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
             glTexParameteri(vars.textureTargetType,
@@ -209,9 +198,9 @@ void RendererImpl::render()
         {
             glGenTextures(1, &vars.depthReadTexId);
             glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32,
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24,
                 options.width, options.height,
-                0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+                0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
                 GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
@@ -269,7 +258,7 @@ void RendererImpl::render()
         glDeleteFramebuffers(1, &vars.frameRenderBufferId);
         glGenFramebuffers(1, &vars.frameRenderBufferId);
         glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
             vars.textureTargetType, vars.depthRenderTexId, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
             vars.textureTargetType, vars.colorRenderTexId, 0);
@@ -285,6 +274,22 @@ void RendererImpl::render()
 
         CHECK_GL("update frame buffer");
     }
+}
+
+void RendererImpl::render()
+{
+    CHECK_GL("pre-frame check");
+
+    assert(shaderSurface);
+    view = rawToMat4(draws->camera.view);
+    viewInv = view.inverse();
+    proj = rawToMat4(draws->camera.proj);
+    viewProj = proj * view;
+
+    if (options.width <= 0 || options.height <= 0)
+        return;
+
+    updateFramebuffers();
 
     // initialize opengl
     glViewport(0, 0, options.width, options.height);
@@ -299,7 +304,8 @@ void RendererImpl::render()
     glPolygonOffset(0, -1000);
 #endif
     glClearColor(0, 0, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
+        | GL_STENCIL_BUFFER_BIT);
     CHECK_GL("initialized opengl");
 
     // update atmosphere
@@ -771,7 +777,7 @@ RenderVariables::RenderVariables()
 
 Renderer::Renderer()
 {
-    impl = std::make_shared<RendererImpl>();
+    impl = std::make_shared<RendererImpl>(this);
 }
 
 Renderer::~Renderer()

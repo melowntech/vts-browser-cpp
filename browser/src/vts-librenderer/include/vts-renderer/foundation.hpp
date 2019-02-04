@@ -50,7 +50,13 @@ VTSR_API void checkGlFramebuffer(uint32 target);
 
 // initialize all gl functions
 // should be called once after the gl context has been created
+// (this will also install debug callback automatically)
 VTSR_API void loadGlFunctions(GLADloadproc functionLoader);
+
+// install OpenGL debug callback
+// this applies to OpenGL context that is currently bound to this thread
+// does nothing if the context is not debuggable
+VTSR_API void installGlDebugCallback();
 
 } } // namespace vts::renderer
 

@@ -203,22 +203,17 @@ void loadGlFunctions(GLADloadproc functionLoader)
 #endif
     checkGlImpl("loadGlFunctions");
 
-//#ifndef VTSR_OPENGLES
-    if (GLAD_GL_KHR_debug)
-        glDebugMessageCallback(&openglErrorCallback, nullptr);
+    installGlDebugCallback();
 
     if (GLAD_GL_EXT_texture_filter_anisotropic)
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropySamples);
     else
         maxAnisotropySamples = 1;
 
-    if (GLAD_GL_EXT_texture_filter_anisotropic)
-        glGetIntegerv(GL_MAX_SAMPLES, (GLint*)&maxAntialiasingSamples);
-    else
-        maxAntialiasingSamples = 0.f;
+    maxAntialiasingSamples = 0;
+    glGetIntegerv(GL_MAX_SAMPLES, (GLint*)&maxAntialiasingSamples);
 
     checkGlImpl("load gl extensions and attributes");
-//#endif
 
     vts::log(vts::LogLevel::info2, std::string("OpenGL vendor: ")
                                         + (char*)glGetString(GL_VENDOR));
@@ -228,6 +223,25 @@ void loadGlFunctions(GLADloadproc functionLoader)
                                         + (char*)glGetString(GL_VERSION));
     vts::log(vts::LogLevel::info2, std::string("OpenGL glsl: ")
                         + (char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
+    {
+        std::stringstream ss;
+        ss << "GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT: " << maxAnisotropySamples
+            << ", GL_MAX_SAMPLES: " << maxAntialiasingSamples
+            << ", GL_KHR_debug: " << GLAD_GL_KHR_debug;
+        vts::log(vts::LogLevel::info1, ss.str());
+    }
+}
+
+void installGlDebugCallback()
+{
+    if (GLAD_GL_KHR_debug)
+    {
+        vts::log(vts::LogLevel::info1, "Installing OpenGL debug callback");
+        glDebugMessageCallback(&openglErrorCallback, nullptr);
+    }
+    else
+        vts::log(vts::LogLevel::info1,
+                "OpenGL debug callback is not available");
 }
 
 } } // namespace vts renderer

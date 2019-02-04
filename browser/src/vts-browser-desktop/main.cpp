@@ -139,7 +139,9 @@ int main(int argc, char *argv[])
             navigation->options() = navOptions;
             DataThread data(window, dataContext, &map);
             MainWindow main(window, renderContext,
-                &map, camera.get(), navigation.get(), appOptions, renderOptions);
+                &map, camera.get(), navigation.get(),
+                appOptions, renderOptions);
+            data.start();
             main.run();
         }
 

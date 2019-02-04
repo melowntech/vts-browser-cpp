@@ -57,12 +57,12 @@ void FetchTaskImpl::fetchDone()
     if (reply.code >= 400 || reply.code < 200)
     {
         if (reply.code == FetchTask::ExtraCodes::ProhibitedContent)
-        {
             state = Resource::State::errorFatal;
-        }
         else
         {
-            LOG(err2) << "Error downloading <" << name
+            const auto r = resource.lock();
+            LOGR(r && r->retryNumber < 2 ? dbglog::err1 : dbglog::err2)
+                << "Error downloading <" << name
                 << ">, http code " << reply.code;
             state = Resource::State::errorRetry;
         }
@@ -480,7 +480,8 @@ void MapImpl::resourcesCheckInitialized()
             {
                 r->retryTime = (1 << r->retryNumber)
                     * options.fetchFirstRetryTimeOffset + current;
-                LOG(warn2) << "Resource <" << r->name
+                LOGR(r->retryNumber < 2 ? dbglog::warn1 : dbglog::warn2)
+                    << "Resource <" << r->name
                     << "> may retry in "
                     << (r->retryTime - current) << " seconds";
                 break;

@@ -274,6 +274,7 @@ GLenum findInternalFormat(const GpuTextureSpec &spec)
         case 3: return GL_RGB8;
         case 4: return GL_RGBA8;
         }
+        break;
     case GpuTypeEnum::Short:
     case GpuTypeEnum::UnsignedShort:
         switch (spec.components)
@@ -283,6 +284,7 @@ GLenum findInternalFormat(const GpuTextureSpec &spec)
         case 3: return GL_RGB16;
         case 4: return GL_RGBA16;
         }
+        break;
     case GpuTypeEnum::Int:
         switch (spec.components)
         {
@@ -291,6 +293,7 @@ GLenum findInternalFormat(const GpuTextureSpec &spec)
         case 3: return GL_RGB32I;
         case 4: return GL_RGBA32I;
         }
+        break;
     case GpuTypeEnum::UnsignedInt:
         switch (spec.components)
         {
@@ -299,6 +302,16 @@ GLenum findInternalFormat(const GpuTextureSpec &spec)
         case 3: return GL_RGB32UI;
         case 4: return GL_RGBA32UI;
         }
+        break;
+    case GpuTypeEnum::HalfFloat:
+        switch (spec.components)
+        {
+        case 1: return GL_R16F;
+        case 2: return GL_RG16F;
+        case 3: return GL_RGB16F;
+        case 4: return GL_RGBA16F;
+        }
+        break;
     case GpuTypeEnum::Float:
         switch (spec.components)
         {
@@ -307,6 +320,7 @@ GLenum findInternalFormat(const GpuTextureSpec &spec)
         case 3: return GL_RGB32F;
         case 4: return GL_RGBA32F;
         }
+        break;
     }
     throw std::invalid_argument("cannot deduce texture internal format");
 }
@@ -324,17 +338,30 @@ GLenum findFormat(const GpuTextureSpec &spec)
     }
 }
 
-GLenum magFilter(const GpuTextureSpec &spec)
+GpuTextureSpec::FilterMode magFilter(
+    const GpuTextureSpec::FilterMode &filterMode)
 {
-    if (spec.filterMode == GpuTextureSpec::FilterMode::Nearest)
-        return (GLenum)GpuTextureSpec::FilterMode::Nearest;
-    return (GLenum)GpuTextureSpec::FilterMode::Linear;
+    switch (filterMode)
+    {
+    case GpuTextureSpec::FilterMode::Nearest:
+    case GpuTextureSpec::FilterMode::NearestMipmapNearest:
+    case GpuTextureSpec::FilterMode::LinearMipmapNearest:
+        return GpuTextureSpec::FilterMode::Nearest;
+    case GpuTextureSpec::FilterMode::Linear:
+    case GpuTextureSpec::FilterMode::LinearMipmapLinear:
+    case GpuTextureSpec::FilterMode::NearestMipmapLinear:
+        return GpuTextureSpec::FilterMode::Linear;
+    default:
+        throw std::invalid_argument("invalid texture filter mode "
+            "(in coversion for magnification filter)");
+    }
 }
 
 } // namespace
 
 void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec)
 {
+    //CHECK_GL("sanity check at beginning of loading texture");
     assert(spec.buffer.size() == spec.width * spec.height
            * spec.components * gpuTypeSize(spec.type)
            || spec.buffer.size() == 0);
@@ -348,7 +375,7 @@ void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
         (GLenum)spec.filterMode);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-        magFilter(spec));
+        (GLenum)magFilter(spec.filterMode));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
         (GLenum)spec.wrapMode);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
@@ -423,31 +450,33 @@ Mesh::~Mesh()
 
 void Mesh::bind()
 {
-    assert(vbo > 0);
     if (vao)
         glBindVertexArray(vao);
     else
     {
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+        if (vbo)
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            for (unsigned i = 0; i < spec.attributes.size(); i++)
+            {
+                GpuMeshSpec::VertexAttribute &a = spec.attributes[i];
+                if (a.enable)
+                {
+                    glEnableVertexAttribArray(i);
+                    glVertexAttribPointer(i, a.components, (GLenum)a.type,
+                                          a.normalized ? GL_TRUE : GL_FALSE,
+                                          a.stride, (void*)(intptr_t)a.offset);
+                }
+                else
+                    glDisableVertexAttribArray(i);
+            }
+        }
 
         if (vio)
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vio);
-
-        for (unsigned i = 0; i < spec.attributes.size(); i++)
-        {
-            GpuMeshSpec::VertexAttribute &a = spec.attributes[i];
-            if (a.enable)
-            {
-                glEnableVertexAttribArray(i);
-                glVertexAttribPointer(i, a.components, (GLenum)a.type,
-                                      a.normalized ? GL_TRUE : GL_FALSE,
-                                      a.stride, (void*)(intptr_t)a.offset);
-            }
-            else
-                glDisableVertexAttribArray(i);
-        }
     }
     CHECK_GL("bind mesh");
 }
@@ -469,16 +498,19 @@ void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp)
     GLuint vao = 0;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER,
+    if (spec.verticesCount)
+    {
+        glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER,
                  spec.vertices.size(), spec.vertices.data(), GL_STATIC_DRAW);
+    }
     if (spec.indicesCount)
     {
         glGenBuffers(1, &vio);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vio);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                     spec.indices.size(), spec.indices.data(), GL_STATIC_DRAW);
+                 spec.indices.size(), spec.indices.data(), GL_STATIC_DRAW);
     }
     glBindVertexArray(0);
     glDeleteVertexArrays(1, &vao);

@@ -48,6 +48,7 @@ public:
         vts::Map *map);
     ~DataThread();
 
+    void start();
     void run();
 
 private:

@@ -129,10 +129,12 @@ VTS_API void frustumPlanes(const mat4 &vp, vec4 planes[6]);
 VTS_API vec3f convertRgbToHsv(const vec3f &inColor);
 VTS_API vec3f convertHsvToRgb(const vec3f &inColor);
 
+VTS_API vec2 rawToVec2(const double v[2]);
 VTS_API vec3 rawToVec3(const double v[3]);
 VTS_API vec4 rawToVec4(const double v[4]);
 VTS_API mat3 rawToMat3(const double v[9]);
 VTS_API mat4 rawToMat4(const double v[16]);
+VTS_API vec2f rawToVec2(const float v[2]);
 VTS_API vec3f rawToVec3(const float v[3]);
 VTS_API vec4f rawToVec4(const float v[4]);
 VTS_API mat3f rawToMat3(const float v[9]);

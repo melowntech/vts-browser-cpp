@@ -758,19 +758,15 @@ struct geoContext
             break;
         case Type::Line:
         {
-            const Value &la = feature->feature["lines"];
-            for (const Value &l : la)
+            const Value &array1 = feature->feature["lines"];
+            for (const Value &array2 : array1)
             {
-                if (l.size() == 0)
+                if (array2.empty())
                     continue;
-                data.coordinates.push_back(convertPoint(l[0]));
-                for (const Value &pv : l)
-                {
-                    Point c = convertPoint(pv);
-                    for (int j = 0; j < 2; j++)
-                        data.coordinates.push_back(c);
-                }
-                data.coordinates.push_back(convertPoint(l[l.size() - 1]));
+                std::vector<Point> v; // separate lines
+                for (const Value &point : array2)
+                    v.push_back(convertPoint(point));
+                data.coordinates.push_back(v);
             }
         } break;
         case Type::Polygon:
@@ -794,22 +790,21 @@ struct geoContext
         switch (*type)
         {
         case Type::Point:
-        {
-            const Value &pa = feature->feature["points"];
-            for (const Value &p : pa)
-            {
-                for (const Value &pv : p)
-                    data.coordinates.push_back(convertPoint(pv));
-            }
-        } break;
         case Type::Line:
         {
-            const Value &la = feature->feature["lines"];
-            for (const Value &l : la)
+            const Value &array1 = feature->feature[
+                *type == Type::Point ? "points"
+                    : *type == Type::Line ? "lines"
+                    : ""];
+            std::vector<Point> v; // merge all points into single array
+            for (const Value &array2 : array1)
             {
-                for (const Value &pv : l)
-                    data.coordinates.push_back(convertPoint(pv));
+                if (array2.empty())
+                    continue;
+                for (const Value &point : array2)
+                    v.push_back(convertPoint(point));
             }
+            data.coordinates.push_back(v);
         } break;
         case Type::Polygon:
         {
@@ -852,10 +847,10 @@ struct geoContext
             vec3 bb = vec3(b[0].asDouble(), b[1].asDouble(), b[2].asDouble());
             double resolution = group["resolution"].asDouble();
             vec3 mm = bb - aa;
-            double am = std::max(mm[0], std::max(mm[1], mm[2]));
+            //double am = std::max(mm[0], std::max(mm[1], mm[2]));
             orthonormalize = mat4to3(scaleMatrix(
-                        am * mm / resolution)).cast<float>();
-            model = translationMatrix(aa) * scaleMatrix(1.0 / am);
+                        mm / resolution)).cast<float>();
+            model = translationMatrix(aa) * scaleMatrix(1);
         }
 
         Point convertPoint(const Value &v) const

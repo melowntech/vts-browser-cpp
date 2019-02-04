@@ -652,7 +652,8 @@ public:
                     nk_label(&ctx, "", NK_TEXT_RIGHT);
 
                     // balanced grids
-                    if (c.traverseModeSurfaces == TraverseMode::Balanced)
+                    if (c.traverseModeSurfaces == TraverseMode::Balanced
+                        || c.traverseModeGeodata == TraverseMode::Balanced)
                     {
                         // balancedGridLodOffset
                         nk_label(&ctx, "Grid offset:", NK_TEXT_LEFT);
@@ -666,6 +667,25 @@ public:
                         c.balancedGridNeighborsDistance = nk_slide_int(&ctx,
                             0, c.balancedGridNeighborsDistance, 3, 1);
                         sprintf(buffer, "%d", c.balancedGridNeighborsDistance);
+                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                    }
+
+                    // fixed traversal
+                    if (c.traverseModeSurfaces == TraverseMode::Fixed
+                        || c.traverseModeGeodata == TraverseMode::Fixed)
+                    {
+                        // fixedTraversalLod
+                        nk_label(&ctx, "Fixed Lod:", NK_TEXT_LEFT);
+                        c.fixedTraversalLod = nk_slide_int(&ctx,
+                            0, c.fixedTraversalLod, 30, 1);
+                        sprintf(buffer, "%d", c.fixedTraversalLod);
+                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                        // fixedTraversalDistance
+                        nk_label(&ctx, "Fixed Distance:", NK_TEXT_LEFT);
+                        c.fixedTraversalDistance = nk_slide_float(&ctx,
+                            100, c.fixedTraversalDistance, 10000, 100);
+                        sprintf(buffer, "%5.0f", c.fixedTraversalDistance);
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                     }
 

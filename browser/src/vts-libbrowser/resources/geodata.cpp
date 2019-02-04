@@ -122,153 +122,25 @@ visibility(nan1()), culling(nan1()), zIndex(0)
 
 GpuMeshSpec GpuGeodataSpec::createMeshPoints() const
 {
+    uint32 linesCount = coordinates.size();
+    uint32 totalVertices = 0;
+    for (uint32 li = 0; li < linesCount; li++)
+        totalVertices += coordinates[li].size();
     GpuMeshSpec spec;
-    spec.verticesCount = coordinates.size();
+    spec.verticesCount = totalVertices;
     spec.vertices.allocate(spec.verticesCount * sizeof(vec3f));
-    memcpy(spec.vertices.data(), coordinates.data(), spec.vertices.size());
+    vec3f *out = (vec3f*)spec.vertices.data();
+    for (uint32 li = 0; li < linesCount; li++)
+    {
+        memcpy(out, coordinates[li].data(),
+                coordinates[li].size() * sizeof(vec3f));
+        out += coordinates[li].size();
+    }
     spec.attributes[0].enable = true;
     spec.attributes[0].components = 3;
     spec.attributes[0].type = GpuTypeEnum::Float;
     spec.faceMode = GpuMeshSpec::FaceMode::Points;
     return spec;
-}
-
-GpuMeshSpec GpuGeodataSpec::createMeshLines() const
-{
-    GpuMeshSpec spec;
-    spec.verticesCount = coordinates.size();
-    spec.vertices.allocate(spec.verticesCount * sizeof(vec3f));
-    memcpy(spec.vertices.data(), coordinates.data(), spec.vertices.size());
-    spec.attributes[0].enable = true;
-    spec.attributes[0].components = 3;
-    spec.attributes[0].type = GpuTypeEnum::Float;
-    spec.faceMode = GpuMeshSpec::FaceMode::Lines;
-    return spec;
-}
-
-namespace
-{
-
-vec3f localUp(const mat4 &model, const mat4 &modelInv, const vec3f &p)
-{
-    vec3 dl = p.cast<double>();
-    vec3 dw = vec4to3(vec4(model * vec3to4(dl, 1)));
-    vec3 upw = normalize(dw);
-    vec3 tw = dw + upw;
-    vec3 tl = vec4to3(vec4(modelInv * vec3to4(tw, 1)));
-    return (tl - dl).cast<float>();
-}
-
-
-GpuMeshSpec createMeshLineWorld(const GpuGeodataSpec &geo)
-{
-    uint32 linesCount = geo.coordinates.size() / 2;
-    uint32 trianglesCount = linesCount * 2;
-
-    std::vector<vec3f> vertices;
-    vertices.reserve(trianglesCount * 3);
-    std::vector<uint16> indices;
-    indices.reserve(trianglesCount * 3);
-
-    const mat4 model = rawToMat4(geo.model);
-    const mat4 modelInv = model.inverse();
-
-    for (uint32 li = 0; li < linesCount; li++)
-    {
-        std::array<float, 3> aa = geo.coordinates[li * 2 + 0];
-        std::array<float, 3> bb = geo.coordinates[li * 2 + 1];
-        vec3f a(aa[0], aa[1], aa[2]), b(bb[0], bb[1], bb[2]);
-        if (a == b)
-            continue;
-        vec3f c = (a + b) * 0.5;
-        vec3f up = localUp(model, modelInv, c);
-        float localMeter = length(up);
-        up = normalize(up);
-        vec3f forward = normalize(vec3f(b - a));
-        vec3f side = normalize(cross(forward, up));
-        float scale = geo.unionData.line.width * localMeter * 0.5;
-        forward *= scale;
-        side *= scale;
-        uint32 ib = vertices.size();
-
-        /*
-               0----------------------------------------------------7    
-              /                                                      \   
-             /                                                        \  
-            1                                                          6 
-            |  a                                                    b  | 
-            2                                                          5 
-             \                                                        /  
-              \                                                      /   
-               3----------------------------------------------------4    
-        */
-
-        vertices.push_back(a - side);
-        vertices.push_back(a - forward * 0.7 - side * 0.5);
-        vertices.push_back(a - forward * 0.7 + side * 0.5);
-        vertices.push_back(a + side);
-
-        vertices.push_back(b + side);
-        vertices.push_back(b + forward * 0.7 + side * 0.5);
-        vertices.push_back(b + forward * 0.7 - side * 0.5);
-        vertices.push_back(b - side);
-
-        indices.push_back(ib + 0);
-        indices.push_back(ib + 1);
-        indices.push_back(ib + 7);
-        indices.push_back(ib + 1);
-        indices.push_back(ib + 6);
-        indices.push_back(ib + 7);
-        indices.push_back(ib + 1);
-        indices.push_back(ib + 2);
-        indices.push_back(ib + 6);
-        indices.push_back(ib + 2);
-        indices.push_back(ib + 5);
-        indices.push_back(ib + 6);
-        indices.push_back(ib + 2);
-        indices.push_back(ib + 3);
-        indices.push_back(ib + 5);
-        indices.push_back(ib + 3);
-        indices.push_back(ib + 4);
-        indices.push_back(ib + 5);
-    }
-
-    GpuMeshSpec spec;
-    spec.verticesCount = vertices.size();
-    spec.vertices.allocate(vertices.size() * sizeof(vec3f));
-    memcpy(spec.vertices.data(), vertices.data(), spec.vertices.size());
-    spec.indicesCount = indices.size();
-    spec.indices.allocate(indices.size() * sizeof(uint16));
-    memcpy(spec.indices.data(), indices.data(), spec.indices.size());
-    spec.attributes[0].enable = true;
-    spec.attributes[0].components = 3;
-    spec.attributes[0].type = GpuTypeEnum::Float;
-    spec.faceMode = GpuMeshSpec::FaceMode::Triangles;
-    return spec;
-}
-
-} // namespace
-
-GpuMeshSpec GpuGeodataSpec::createMesh() const
-{
-    // todo
-    switch (type)
-    {
-    case Type::LineWorld:
-        return createMeshLineWorld(*this);
-    case Type::LineLabel:
-    case Type::LineScreen:
-        return createMeshLines();
-    case Type::PointScreen:
-    case Type::PointWorld:
-    case Type::PointLabel:
-    case Type::Icon:
-    case Type::PackedPointLabelIcon:
-    case Type::Triangles:
-        return createMeshPoints();
-    case Type::Invalid: break;
-    }
-    return GpuMeshSpec();
 }
 
 } // namespace vts

@@ -166,7 +166,8 @@ std::ostream &operator << (std::ostream &stream, Resource::State state)
             stream << "availFail";
             break;
         default:
-            LOGTHROW(fatal, std::invalid_argument) << "invalid resource state enum";
+            LOGTHROW(fatal, std::invalid_argument)
+                << "invalid resource state enum";
             throw;
     }
     return stream;
@@ -181,13 +182,15 @@ uint32 gpuTypeSize(GpuTypeEnum type)
         return 1;
     case GpuTypeEnum::Short:
     case GpuTypeEnum::UnsignedShort:
+    case GpuTypeEnum::HalfFloat:
         return 2;
     case GpuTypeEnum::Int:
     case GpuTypeEnum::UnsignedInt:
     case GpuTypeEnum::Float:
         return 4;
     default:
-        LOGTHROW(fatal, std::invalid_argument) << "invalid gpu type enum";
+        LOGTHROW(fatal, std::invalid_argument)
+            << "invalid gpu type enum";
         throw;
     }
 }

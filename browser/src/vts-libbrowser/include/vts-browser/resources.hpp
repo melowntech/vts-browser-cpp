@@ -46,6 +46,7 @@ enum class GpuTypeEnum
     UnsignedShort = 0x1403,
     Int = 0x1404, // four bytes
     UnsignedInt = 0x1405,
+    HalfFloat = 0x140B, // two bytes
     Float = 0x1406, // four bytes
 };
 
@@ -305,23 +306,14 @@ public:
 
     GpuGeodataSpec();
 
-    // generate mesh converting each coordinate pair into single point
+    // generate mesh with all points
     // for debugging purposes
     GpuMeshSpec createMeshPoints() const;
 
-    // generate mesh converting each pair of coordinate pairs into single line
-    // for debugging purposes
-    GpuMeshSpec createMeshLines() const;
-
-    // generate mesh with respect to the type
-    // this is designed to be used with the rendering library
-    //   (or a compatible rendering algorithm)
-    GpuMeshSpec createMesh() const;
-
     std::shared_ptr<void> font;
     std::shared_ptr<void> texture;
-    std::vector<std::array<float, 3>> coordinates;
-    std::string texts; // zero terminated array of zero terminated strings
+    std::vector<std::vector<std::array<float, 3>>> coordinates;
+    std::vector<std::string> texts;
     double model[16];
     UnionData unionData;
     CommonData commonData;

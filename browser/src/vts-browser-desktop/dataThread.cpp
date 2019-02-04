@@ -29,23 +29,29 @@
 #include <vts-browser/log.hpp>
 #include <vts-browser/fetcher.hpp>
 #include <SDL2/SDL.h>
+#include <vts-renderer/foundation.hpp>
 #include "dataThread.hpp"
 
 DataThread::DataThread(struct SDL_Window *window, void *dataContext,
             vts::Map *map) :
     map(map), window(window), context(dataContext)
-{
-    thr = std::thread(&DataThread::run, this);
-}
+{}
 
 DataThread::~DataThread()
 {
-    thr.join();
+    if (thr.joinable())
+        thr.join();
+}
+
+void DataThread::start()
+{
+    thr = std::thread(&DataThread::run, this);
 }
 
 void DataThread::run()
 {
     vts::setLogThreadName("data");
     SDL_GL_MakeCurrent(window, context);
+    vts::renderer::installGlDebugCallback();
     map->dataAllRun();
 }

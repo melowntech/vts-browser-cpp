@@ -71,6 +71,7 @@ public:
     void free();
 
     char *data() const { return data_; }
+    char *dataEnd() const { return data_ + size_; }
     uint32 size() const { return size_; }
 
 private:

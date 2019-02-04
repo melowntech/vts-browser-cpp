@@ -32,52 +32,254 @@
 namespace vts { namespace renderer
 {
 
+namespace
+{
+
+} // namespace
+
 namespace priv
 {
 
 class Geodata
 {
 public:
-    void load(ResourceInfo &info, GpuGeodataSpec &specp)
+    Geodata() : renderer(nullptr), info(nullptr)
+    {}
+
+    void load(RendererImpl *renderer, ResourceInfo &info, GpuGeodataSpec &specp)
     {
+        //CHECK_GL("sanity check at beginning of loading geodata");
+
         this->spec = std::move(specp);
+        this->info = &info;
+        this->renderer = renderer;
 
-        mesh = std::make_shared<Mesh>();
-        ResourceInfo mshInfo;
-        GpuMeshSpec mshSpc = spec.createMesh();
-        mesh->load(mshInfo, mshSpc);
-        info.gpuMemoryCost += mshInfo.gpuMemoryCost;
-        info.ramMemoryCost += mshInfo.ramMemoryCost;
-        std::vector<std::array<float, 3>>().swap(spec.coordinates);
+        model = rawToMat4(spec.model);
+        modelInv = model.inverse();
 
-        texture = std::static_pointer_cast<Texture>(spec.texture);
-        font = std::static_pointer_cast<Font>(spec.font);
+        switch (spec.type)
+        {
+        case GpuGeodataSpec::Type::Invalid:
+            break; // do nothing
+        case GpuGeodataSpec::Type::LineScreen:
+        case GpuGeodataSpec::Type::LineWorld:
+            loadLine();
+            break;
+        case GpuGeodataSpec::Type::PointScreen:
+        case GpuGeodataSpec::Type::PointWorld:
+            loadPoint();
+            break;
+        case GpuGeodataSpec::Type::LineLabel:
+        case GpuGeodataSpec::Type::PointLabel:
+        case GpuGeodataSpec::Type::Icon:
+        case GpuGeodataSpec::Type::PackedPointLabelIcon:
+        case GpuGeodataSpec::Type::Triangles:
+            // todo
+            break;
+        }
+
+        // free some memory
+        std::vector<std::vector<std::array<float, 3>>>()
+            .swap(spec.coordinates);
+        std::vector<std::string>().swap(spec.texts);
 
         info.ramMemoryCost += sizeof(spec);
+        this->info = nullptr;
+        this->renderer = nullptr;
+
+        CHECK_GL("load geodata");
     }
 
     GpuGeodataSpec spec;
     std::shared_ptr<Mesh> mesh;
+    std::shared_ptr<UniformBuffer> uniform;
     std::shared_ptr<Texture> texture;
     std::shared_ptr<Font> font;
+    mat4 model;
+    mat4 modelInv;
+    RendererImpl *renderer;
+    ResourceInfo *info;
+
+    void addMemory(ResourceInfo &other)
+    {
+        info->ramMemoryCost += other.ramMemoryCost;
+        info->gpuMemoryCost += other.gpuMemoryCost;
+    }
+
+    vec3f localUp(const vec3f &p) const
+    {
+        vec3 dl = p.cast<double>();
+        vec3 dw = vec4to3(vec4(model * vec3to4(dl, 1)));
+        vec3 upw = normalize(dw);
+        vec3 tw = dw + upw;
+        vec3 tl = vec4to3(vec4(modelInv * vec3to4(tw, 1)));
+        return (tl - dl).cast<float>();
+    }
+
+    uint32 getTotalPoints() const
+    {
+        uint32 totalPoints = 0;
+        uint32 linesCount = spec.coordinates.size();
+        for (uint32 li = 0; li < linesCount; li++)
+            totalPoints += spec.coordinates[li].size();
+        return totalPoints;
+    }
+
+    void loadLine()
+    {
+        uint32 totalPoints = getTotalPoints(); // example: 7
+        uint32 linesCount = spec.coordinates.size(); // 2
+        uint32 segmentsCount = totalPoints - linesCount; // 5
+        uint32 jointsCount = segmentsCount - linesCount; // 3
+        uint32 trianglesCount = (segmentsCount + jointsCount) * 2; // 16
+        uint32 indicesCount = trianglesCount * 3; // 48
+        // point index = (vertex index / 4 + vertex index % 2)
+        // corner = vertex index % 4
+
+        Buffer texBuffer;
+        Buffer indBuffer;
+
+        // prepare texture buffer and mesh indices
+        {
+            texBuffer.resize(totalPoints * sizeof(vec3f) * 2);
+            vec3f *bufPos = (vec3f*)texBuffer.data();
+            vec3f *bufUps = (vec3f*)texBuffer.data() + totalPoints;
+            vec3f *texBufHalf = bufUps;
+
+            indBuffer.resize(indicesCount * sizeof(uint16));
+            uint16 *bufInd = (uint16*)indBuffer.data();
+            uint16 current = 0;
+
+            for (uint32 li = 0; li < linesCount; li++)
+            {
+                const std::vector<std::array<float, 3>> &points
+                    = spec.coordinates[li];
+                uint32 pointsCount = points.size();
+                for (uint32 pi = 0; pi < pointsCount; pi++)
+                {
+                    vec3f p = rawToVec3(points[pi].data());
+                    vec3f u = localUp(p);
+                    *bufPos++ = p;
+                    *bufUps++ = u;
+                    if (pi > 1)
+                    { // add joint
+                        *bufInd++ = current + 1 - 4;
+                        *bufInd++ = current + 4 - 4;
+                        *bufInd++ = current + 6 - 4;
+                        *bufInd++ = current + 1 - 4;
+                        *bufInd++ = current + 6 - 4;
+                        *bufInd++ = current + 3 - 4;
+                    }
+                    if (pi > 0)
+                    { // add segment
+                        *bufInd++ = current + 0;
+                        *bufInd++ = current + 1;
+                        *bufInd++ = current + 3;
+                        *bufInd++ = current + 0;
+                        *bufInd++ = current + 3;
+                        *bufInd++ = current + 2;
+                        current += 4;
+                    }
+                }
+                current += 4; // make a gap
+            }
+
+            assert(bufPos == texBufHalf);
+            assert(bufUps == (vec3f*)texBuffer.dataEnd());
+            assert(bufInd == (uint16*)indBuffer.dataEnd());
+        }
+
+        // prepare the texture
+        {
+            GpuTextureSpec tex;
+            tex.buffer = std::move(texBuffer);
+            tex.width = totalPoints;
+            tex.height = 2;
+            tex.components = 3;
+            tex.internalFormat = GL_RGB32F;
+            tex.type = GpuTypeEnum::Float;
+            tex.filterMode = GpuTextureSpec::FilterMode::Nearest;
+            tex.wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
+            ResourceInfo ri;
+            renderer->rendererApi->loadTexture(ri, tex);
+            this->texture = std::static_pointer_cast<Texture>(ri.userData);
+            addMemory(ri);
+        }
+
+        // prepare the mesh
+        {
+            GpuMeshSpec msh;
+            msh.faceMode = GpuMeshSpec::FaceMode::Triangles;
+            msh.indices = std::move(indBuffer);
+            msh.indicesCount = indicesCount;
+            ResourceInfo ri;
+            renderer->rendererApi->loadMesh(ri, msh);
+            this->mesh = std::static_pointer_cast<Mesh>(ri.userData);
+            addMemory(ri);
+        }
+
+        // prepare UBO
+        {
+            struct UboLineData
+            {
+                vec4f color;
+                vec4f visibilityRelative;
+                vec4f zBufferOffsetPlusCulling;
+                vec4f visibilityAbsolutePlusVisibility;
+                vec4f typePlusUnitsPlusWidth;
+            };
+            UboLineData uboLineData;
+
+            uboLineData.color = rawToVec4(spec.unionData.line.color);
+            uboLineData.visibilityRelative
+                = rawToVec4(spec.commonData.visibilityRelative);
+            for (int i = 0; i < 3; i++)
+                uboLineData.zBufferOffsetPlusCulling[i]
+                    = spec.commonData.zBufferOffset[i];
+            uboLineData.zBufferOffsetPlusCulling[3]
+                = spec.commonData.culling;
+            for (int i = 0; i < 2; i++)
+                uboLineData.visibilityAbsolutePlusVisibility[i]
+                    = spec.commonData.visibilityAbsolute[i];
+            uboLineData.visibilityAbsolutePlusVisibility[3]
+                = spec.commonData.visibility;
+            uboLineData.typePlusUnitsPlusWidth
+                = vec4f((float)spec.type, (float)spec.unionData.line.units
+                    , spec.unionData.line.width, 0.f);
+
+            uniform = std::make_shared<UniformBuffer>();
+            uniform->bind();
+            uniform->load(uboLineData);
+            info->gpuMemoryCost += sizeof(uboLineData);
+        }
+    }
+
+    void loadPoint()
+    {
+        // todo
+    }
 };
 
 void RendererImpl::initializeGeodata()
 {
-    // load shader geodata
+    // load shader geodata line
     {
-        shaderGeodata = std::make_shared<Shader>();
-        shaderGeodata->loadInternal(
-            "data/shaders/geodata.vert.glsl",
-            "data/shaders/geodata.frag.glsl");
-        shaderGeodata->loadUniformLocations(
-            {
-                // rendering
-                "uniMv", "uniMvp",
-                // common
-                "uniType", "uniColor"
+        shaderGeodataLine = std::make_shared<Shader>();
+        shaderGeodataLine->loadInternal(
+            "data/shaders/geodataLine.vert.glsl",
+            "data/shaders/geodataLine.frag.glsl");
+        shaderGeodataLine->loadUniformLocations({
+                "uniMvp"
+            });
+        shaderGeodataLine->bindTextureLocations({
+                { "texLineData", 0 }
+            });
+        shaderGeodataLine->bindUniformBlockLocations({
+                { "uboLineData", 0 }
             });
     }
+
+    CHECK_GL("initialize geodata");
 }
 
 void RendererImpl::renderGeodata()
@@ -85,101 +287,55 @@ void RendererImpl::renderGeodata()
     //glDisable(GL_CULL_FACE);
     glDepthMask(GL_FALSE);
 
-    shaderGeodata->bind();
+    glStencilFunc(GL_EQUAL, 0, 0xFF);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 
-    // the offset is applied as multiplicator in clip-space
-    //   and is dependant on near and far planes
-    //   which are different here than in the js browser
-    //   therefore a different method should be found
-    /*
-    vec3 zBufferOffsetValues;
-    {
-        vec3 up1 = normalize(rawToVec3(draws->camera.eye)); // todo projected systems
-        vec3 up2 = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
-        double tiltFactor = std::acos(std::max(
-            dot(up1, up2), 0.0)) / M_PI_2;
-
-        double distance = draws->camera.tagretDistance;
-        double distanceFactor = 1 / std::max(1.0,
-            std::log(distance) / std::log(1.04));
-
-        zBufferOffsetValues = vec3(1, distanceFactor, tiltFactor);
-    }
-    */
-
+    // split geodata into zIndex arrays
+    std::array<std::vector<DrawGeodataTask>, 520> zIndexArrays;
     for (const DrawGeodataTask &t : draws->geodata)
     {
         Geodata *g = (Geodata*)t.geodata.get();
-        Mesh *msh = (Mesh*)g->mesh.get();
-        if (!msh)
-            return;
-
-        /*
-        mat4 depthOffset;
-        {
-            vec3 zbo = rawToVec3(g->spec.commonData.zBufferOffset)
-                                            .cast<double>();
-            double off = dot(zbo, zBufferOffsetValues) * 0.0001;
-            double off2 = (off + 1) * 2 - 1;
-            depthOffset = scaleMatrix(vec3(1, 1, off2));
-        }
-        */
-
-        // transformation
-        mat4 model = rawToMat4(g->spec.model);
-        shaderGeodata->uniformMat4(0,
-                mat4f((view * model).cast<float>()).data());
-        mat4 mvp = viewProj * model;
-        //mat4 mvpz = depthOffset * mvp;
-        mat4 mvpz = mvp;
-        shaderGeodata->uniformMat4(1, mat4f(mvpz.cast<float>()).data());
-
-        // common data
-        shaderGeodata->uniform(2, (int)g->spec.type);
-
-        // union data
-        switch (g->spec.type)
-        {
-        case GpuGeodataSpec::Type::LineScreen:
-        {
-            glLineWidth(g->spec.unionData.line.width);
-            shaderGeodata->uniformVec4(3,
-                rawToVec4(g->spec.unionData.line.color).data());
-        } break;
-        case GpuGeodataSpec::Type::LineWorld:
-        {
-            shaderGeodata->uniformVec4(3,
-                rawToVec4(g->spec.unionData.line.color).data());
-        } break;
-        case GpuGeodataSpec::Type::PointScreen:
-        {
-            glPointSize(g->spec.unionData.point.radius);
-            shaderGeodata->uniformVec4(3,
-                rawToVec4(g->spec.unionData.point.color).data());
-        } break;
-        case GpuGeodataSpec::Type::PointWorld:
-        {
-            shaderGeodata->uniformVec4(3,
-                rawToVec4(g->spec.unionData.point.color).data());
-        } break;
-        default:
-        {
-            shaderGeodata->uniformVec4(2, vec4f(1,1,1,1).data());
-        }
-        }
-
-        // dispatch
-        msh->bind();
-        msh->dispatch();
-
-        // debug
-        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        //msh->dispatch();
-        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        sint32 zi = g->spec.commonData.zIndex;
+        assert(zi >= -256 && zi <= 256);
+        zIndexArrays[zi + 256].push_back(t);
     }
 
-    glLineWidth(1);
-    glPointSize(1);
+    // iterate over zIndex arrays
+    for (auto &tasksArray : zIndexArrays)
+    {
+        if (tasksArray.empty())
+            continue;
+
+        // iterate over geodata in one zIndex array
+        for (const DrawGeodataTask &t : tasksArray)
+        {
+            Geodata *g = (Geodata*)t.geodata.get();
+            switch (g->spec.type)
+            {
+            case GpuGeodataSpec::Type::LineScreen:
+            case GpuGeodataSpec::Type::LineWorld:
+            {
+                shaderGeodataLine->bind();
+                shaderGeodataLine->uniformMat4(0,
+                    mat4f(mat4(viewProj * rawToMat4(g->spec.model))
+                        .cast<float>()).data());
+                g->uniform->bindToIndex(0);
+                g->texture->bind();
+                Mesh *msh = g->mesh.get();
+                msh->bind();
+                glEnable(GL_STENCIL_TEST);
+                msh->dispatch();
+                glDisable(GL_STENCIL_TEST);
+                //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                //msh->dispatch();
+                //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            } break;
+            default:
+            {
+            } break;
+            }
+        }
+    }
 
     glDepthMask(GL_TRUE);
     //glEnable(GL_CULL_FACE);
@@ -190,7 +346,7 @@ void RendererImpl::renderGeodata()
 void Renderer::loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec)
 {
     auto r = std::make_shared<Geodata>();
-    r->load(info, spec);
+    r->load(&*impl, info, spec);
     info.userData = r;
 }
 

@@ -621,6 +621,11 @@ void frustumPlanes(const mat4 &vp, vec4 planes[6])
     planes[5] = c3 - c2;
 }
 
+vec2 rawToVec2(const double v[2])
+{
+    return vec2(v[0], v[1]);
+}
+
 vec3 rawToVec3(const double v[3])
 {
     return vec3(v[0], v[1], v[2]);
@@ -645,6 +650,11 @@ mat4 rawToMat4(const double v[16])
     for (int i = 0; i < 16; i++)
         at(r, i) = v[i];
     return r;
+}
+
+vec2f rawToVec2(const float v[2])
+{
+    return vec2f(v[0], v[1]);
 }
 
 vec3f rawToVec3(const float v[3])

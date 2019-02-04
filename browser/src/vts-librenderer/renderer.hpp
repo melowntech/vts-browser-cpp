@@ -57,6 +57,8 @@ extern float maxAnisotropySamples;
 class RendererImpl
 {
 public:
+    Renderer *const rendererApi;
+
     RenderVariables vars;
     RenderOptions options;
 
@@ -66,7 +68,7 @@ public:
     std::shared_ptr<class ShaderAtm> shaderBackground;
     std::shared_ptr<Shader> shaderInfographic;
     std::shared_ptr<Shader> shaderCopyDepth;
-    std::shared_ptr<Shader> shaderGeodata;
+    std::shared_ptr<Shader> shaderGeodataLine;
     std::shared_ptr<Mesh> meshQuad; // positions: -1 .. 1
     std::shared_ptr<Mesh> meshRect; // positions: 0 .. 1
     std::shared_ptr<UniformBuffer> uboAtm;
@@ -88,11 +90,12 @@ public:
 
     static void clearGlState();
 
-    RendererImpl();
+    RendererImpl(Renderer *rendererApi);
     ~RendererImpl();
     void drawSurface(const DrawSurfaceTask &t);
     void drawInfographic(const DrawSimpleTask &t);
     void enableClipDistance(bool enable);
+    void updateFramebuffers();
     void renderGeodata();
     void render();
     void initializeGeodata();

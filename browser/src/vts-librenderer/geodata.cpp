@@ -48,8 +48,6 @@ public:
 
     void load(RendererImpl *renderer, ResourceInfo &info, GpuGeodataSpec &specp)
     {
-        //CHECK_GL("sanity check at beginning of loading geodata");
-
         this->spec = std::move(specp);
         this->info = &info;
         this->renderer = renderer;
@@ -269,15 +267,20 @@ void RendererImpl::initializeGeodata()
             "data/shaders/geodataLine.vert.glsl",
             "data/shaders/geodataLine.frag.glsl");
         shaderGeodataLine->loadUniformLocations({
-                "uniMvp"
+                "uniMvp",
+                "uniMvpInv",
+                "uniMvInv"
             });
         shaderGeodataLine->bindTextureLocations({
                 { "texLineData", 0 }
             });
         shaderGeodataLine->bindUniformBlockLocations({
-                { "uboLineData", 0 }
+                { "uboCameraData", 0 },
+                { "uboLineData", 1 }
             });
     }
+
+    uboGeodataCamera = std::make_shared<UniformBuffer>();
 
     CHECK_GL("initialize geodata");
 }
@@ -289,6 +292,22 @@ void RendererImpl::renderGeodata()
 
     glStencilFunc(GL_EQUAL, 0, 0xFF);
     glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+
+    // initialize camera data
+    {
+        struct UboCameraData
+        {
+            mat4f proj;
+            vec4f cameraParams; // screen height in pixels, view extent in meters
+        } ubo;
+
+        ubo.proj = proj.cast<float>();
+        ubo.cameraParams = vec4f(heightPrev, draws->camera.viewExtent, 0, 0);
+
+        uboGeodataCamera->bind();
+        uboGeodataCamera->load(ubo);
+        uboGeodataCamera->bindToIndex(0);
+    }
 
     // split geodata into zIndex arrays
     std::array<std::vector<DrawGeodataTask>, 520> zIndexArrays;
@@ -316,10 +335,15 @@ void RendererImpl::renderGeodata()
             case GpuGeodataSpec::Type::LineWorld:
             {
                 shaderGeodataLine->bind();
+                mat4 mvp = mat4(viewProj * rawToMat4(g->spec.model));
                 shaderGeodataLine->uniformMat4(0,
-                    mat4f(mat4(viewProj * rawToMat4(g->spec.model))
-                        .cast<float>()).data());
-                g->uniform->bindToIndex(0);
+                    mat4f(mvp.cast<float>()).data());
+                shaderGeodataLine->uniformMat4(1,
+                    mat4f(mat4(mvp.inverse()).cast<float>()).data());
+                shaderGeodataLine->uniformMat3(2,
+                    mat3f(mat4to3(mat4((view * rawToMat4(g->spec.model))
+                        .inverse())).cast<float>()).data());
+                g->uniform->bindToIndex(1);
                 g->texture->bind();
                 Mesh *msh = g->mesh.get();
                 msh->bind();

@@ -745,6 +745,21 @@ struct geoContext
                 spec.unionData.line.units = GpuGeodataSpec::Units::Meters;
             else if (Validating)
                 THROW << "Invalid line-width-units";
+            if (Validating)
+            {
+                if (spec.type == GpuGeodataSpec::Type::LineWorld
+                    && spec.unionData.line.units
+                    == GpuGeodataSpec::Units::Pixels)
+                    THROW
+                        << "Invalid combination of line-width-units"
+                        << " (pixels) and line-flat (true)";
+                if (spec.type == GpuGeodataSpec::Type::LineScreen
+                    && spec.unionData.line.units
+                    == GpuGeodataSpec::Units::Meters)
+                    THROW
+                        << "Invalid combination of line-width-units"
+                        << " (meters) and line-flat (false)";
+            }
         }
         else if (spec.type == GpuGeodataSpec::Type::LineWorld)
             spec.unionData.line.units = GpuGeodataSpec::Units::Meters;

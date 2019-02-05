@@ -1090,7 +1090,7 @@ public:
                 catch (const std::exception &)
                 {
                     for (int i = 0; i < 3; i++)
-                        n[i] = std::numeric_limits<double>::quiet_NaN();
+                        n[i] = nan1();
                 }
                 nk_label(&ctx, "X:", NK_TEXT_LEFT);
                 sprintf(buffer, "%.8f", n[0]);
@@ -1175,6 +1175,27 @@ public:
                 if (nk_button_label(&ctx, "Copy to clipboard"))
                     SDL_SetClipboardText(
                             window->navigation->getPositionUrl().c_str());
+            }
+
+            // camera
+            if (nk_tree_push(&ctx, NK_TREE_TAB, "Camera", NK_MINIMIZED))
+            {
+                float ratio[] = { width * 0.5f, width * 0.5f };
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+                const auto &c = window->camera->draws().camera;
+                nk_label(&ctx, "Target Distance:", NK_TEXT_LEFT);
+                sprintf(buffer, "%.8f", c.tagretDistance);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                nk_label(&ctx, "View Extent:", NK_TEXT_LEFT);
+                sprintf(buffer, "%.8f", c.viewExtent);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                nk_label(&ctx, "Altitude Over Ellipsoid:", NK_TEXT_LEFT);
+                sprintf(buffer, "%.8f", c.altitudeOverEllipsoid);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                nk_label(&ctx, "Altitude Over Surface:", NK_TEXT_LEFT);
+                sprintf(buffer, "%.8f", c.altitudeOverSurface);
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                nk_tree_pop(&ctx);
             }
 
             // auto movement

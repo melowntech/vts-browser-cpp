@@ -160,7 +160,7 @@ public:
     void renderUpdate(double elapsedTime);
     bool prerequisitesCheck();
     void initializeNavigation();
-    bool getPositionAltitude(double &result, const vec3 &navPos,
+    bool getSurfaceAltitude(double &result, const vec3 &navPos,
         double samples);
     std::pair<Validity, const std::string &> getActualGeoStyle(
         const std::string &name);

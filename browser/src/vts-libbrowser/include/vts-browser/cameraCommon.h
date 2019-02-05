@@ -44,11 +44,6 @@ typedef struct vtsCDrawSurfaceBase
     bool flatShading;
 } vtsCDrawSurfaceBase;
 
-typedef struct vtsCDrawGeodataBase
-{
-    char _dummy; // C requires that a struct or union has at least one member
-} vtsCDrawGeodataBase;
-
 typedef struct vtsCDrawSimpleBase
 {
     float mv[16];
@@ -60,10 +55,11 @@ typedef struct vtsCCameraBase
 {
     double view[16];
     double proj[16];
-    double eye[3];
-    double tagretDistance;
-    //double altitudeOverEllipsoid;
-    //double altitudeOverSurface;
+    double eye[3]; // position in world (physical) space
+    double tagretDistance; // distance of the eye to center of orbit
+    double viewExtent; // window height projected to world at the target distance
+    double altitudeOverEllipsoid; // altitude of the eye over ellipsoid
+    double altitudeOverSurface; // altitude of the eye over surface
 } vtsCCameraBase;
 
 #ifdef __cplusplus

@@ -361,7 +361,6 @@ GpuTextureSpec::FilterMode magFilter(
 
 void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec)
 {
-    //CHECK_GL("sanity check at beginning of loading texture");
     assert(spec.buffer.size() == spec.width * spec.height
            * spec.components * gpuTypeSize(spec.type)
            || spec.buffer.size() == 0);

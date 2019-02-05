@@ -81,7 +81,7 @@ TraverseNode *findTravSds(TraverseNode *where,
 } // namespace
 
 
-bool MapImpl::getPositionAltitude(double &result,
+bool MapImpl::getSurfaceAltitude(double &result,
             const vec3 &navPos, double samples)
 {
     assert(convertor);
@@ -193,7 +193,7 @@ void NavigationImpl::updatePositionAltitude(double fadeOutFactor)
         return;
 
     double altitude;
-    if (!camera->map->getPositionAltitude(altitude, targetPoint,
+    if (!camera->map->getSurfaceAltitude(altitude, targetPoint,
             position.verticalExtent
             / options.navigationSamplesPerViewExtent))
         return;

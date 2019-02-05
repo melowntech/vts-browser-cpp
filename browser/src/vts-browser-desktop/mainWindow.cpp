@@ -358,7 +358,7 @@ void MainWindow::run()
         {
             appOptions.screenshotOnFullRender = false;
             makeScreenshot();
-            gui.visible(false);
+            gui.visible(true);
         }
         if (appOptions.closeOnFullRender && renderCompleted)
             shouldClose = true;

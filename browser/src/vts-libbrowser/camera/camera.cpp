@@ -657,6 +657,18 @@ void CameraImpl::renderUpdate()
         matToRaw(apiProj, c.proj);
         vecToRaw(eye, c.eye);
         c.tagretDistance = length(vec3(target - eye));
+        c.viewExtent = c.tagretDistance / (c.proj[5] * 0.5);
+
+        // altitudes
+        {
+            vec3 navPos = map->convertor->physToNav(eye);
+            c.altitudeOverEllipsoid = navPos[2];
+            double tmp;
+            if (map->getSurfaceAltitude(tmp, navPos, 10))
+                c.altitudeOverSurface = c.altitudeOverEllipsoid - tmp;
+            else
+                c.altitudeOverSurface = nan1();
+        }
     }
 
     // traverse and generate draws
@@ -711,12 +723,12 @@ void computeNearFar(double &near_, double &far_, double altitude,
 
 void CameraImpl::suggestedNearFar(double &near_, double &far_)
 {
-    bool projected = map->mapconfig->navigationSrsType()
-        == vtslibs::registry::Srs::Type::projected;
     vec3 navPos = map->convertor->physToNav(eye);
     double altitude;
-    if (!map->getPositionAltitude(altitude, navPos, 10))
-        altitude = std::numeric_limits<double>::quiet_NaN();
+    if (!map->getSurfaceAltitude(altitude, navPos, 10))
+        altitude = nan1();
+    bool projected = map->mapconfig->navigationSrsType()
+        == vtslibs::registry::Srs::Type::projected;
     computeNearFar(near_, far_, altitude, map->body,
         projected, eye, target - eye);
 }

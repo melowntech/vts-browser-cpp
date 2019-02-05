@@ -71,6 +71,7 @@ public:
     std::shared_ptr<Shader> shaderGeodataLine;
     std::shared_ptr<Mesh> meshQuad; // positions: -1 .. 1
     std::shared_ptr<Mesh> meshRect; // positions: 0 .. 1
+    std::shared_ptr<UniformBuffer> uboGeodataCamera;
     std::shared_ptr<UniformBuffer> uboAtm;
 
     const CameraDraws *draws;

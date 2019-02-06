@@ -113,11 +113,20 @@ void Resource::updatePriority(float p)
 
 void Resource::updateAvailability(const std::shared_ptr<void> &availTest)
 {
-    if (!fetch)
-        fetch = std::make_shared<FetchTaskImpl>(
-                    map->resources.resources[name]);
-    if (!fetch->availTest)
-        fetch->availTest = availTest;
+    auto f = fetch;
+    if (f)
+    {
+        if (!f->availTest)
+            f->availTest = availTest;
+        assert(f->availTest == availTest);
+    }
+    else
+    {
+        f = std::make_shared<FetchTaskImpl>(
+            map->resources.resources[name]);
+        f->availTest = availTest;
+        fetch = f;
+    }
 }
 
 void Resource::forceRedownload()

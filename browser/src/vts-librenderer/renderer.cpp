@@ -282,12 +282,14 @@ void RendererImpl::render()
 
     assert(shaderSurface);
     view = rawToMat4(draws->camera.view);
-    viewInv = view.inverse();
     proj = rawToMat4(draws->camera.proj);
-    viewProj = proj * view;
 
-    if (options.width <= 0 || options.height <= 0)
+    if (options.width <= 0 || options.height <= 0
+        || proj(0, 0) == 0)
         return;
+
+    viewInv = view.inverse();
+    viewProj = proj * view;
 
     updateFramebuffers();
 

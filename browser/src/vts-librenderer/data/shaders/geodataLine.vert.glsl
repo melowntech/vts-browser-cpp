@@ -9,8 +9,7 @@ layout(std140) uniform uboLineData
 {
     vec4 uniColor;
     vec4 uniVisibilityRelative;
-    vec4 uniZBufferOffsetPlusCulling;
-    vec4 uniVisibilityAbsolutePlusVisibility;
+    vec4 uniVisibilityAbsolutePlusVisibilityPlusCulling;
     vec4 uniTypePlusUnitsPlusWidth;
 };
 
@@ -61,6 +60,5 @@ void main()
         s = -s;
     p += s * scale * uniTypePlusUnitsPlusWidth[2] * 0.5;
     gl_Position = uniMvp * vec4(p, 1.0);
-    gl_Position[2] -= 100.0; // todo
 }
 

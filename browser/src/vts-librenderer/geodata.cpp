@@ -222,8 +222,7 @@ public:
             {
                 vec4f color;
                 vec4f visibilityRelative;
-                vec4f zBufferOffsetPlusCulling;
-                vec4f visibilityAbsolutePlusVisibility;
+                vec4f visibilityAbsolutePlusVisibilityPlusCulling;
                 vec4f typePlusUnitsPlusWidth;
             };
             UboLineData uboLineData;
@@ -231,15 +230,12 @@ public:
             uboLineData.color = rawToVec4(spec.unionData.line.color);
             uboLineData.visibilityRelative
                 = rawToVec4(spec.commonData.visibilityRelative);
-            for (int i = 0; i < 3; i++)
-                uboLineData.zBufferOffsetPlusCulling[i]
-                    = spec.commonData.zBufferOffset[i];
-            uboLineData.zBufferOffsetPlusCulling[3]
-                = spec.commonData.culling;
             for (int i = 0; i < 2; i++)
-                uboLineData.visibilityAbsolutePlusVisibility[i]
+                uboLineData.visibilityAbsolutePlusVisibilityPlusCulling[i]
                     = spec.commonData.visibilityAbsolute[i];
-            uboLineData.visibilityAbsolutePlusVisibility[3]
+            uboLineData.visibilityAbsolutePlusVisibilityPlusCulling[2]
+                = spec.commonData.culling;
+            uboLineData.visibilityAbsolutePlusVisibilityPlusCulling[3]
                 = spec.commonData.visibility;
             uboLineData.typePlusUnitsPlusWidth
                 = vec4f((float)spec.type, (float)spec.unionData.line.units
@@ -293,6 +289,48 @@ void RendererImpl::renderGeodata()
     glStencilFunc(GL_EQUAL, 0, 0xFF);
     glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 
+    // z-buffer-offset global data
+    vec3 zBufferOffsetValues;
+    mat4 davidProj, davidProjInv;
+    {
+        vec3 up1 = normalize(rawToVec3(draws->camera.eye)); // todo projected systems
+        vec3 up2 = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
+        double tiltFactor = std::acos(std::max(
+            dot(up1, up2), 0.0)) / M_PI_2;
+        double distance = draws->camera.tagretDistance;
+        double distanceFactor = 1 / std::max(1.0,
+            std::log(distance) / std::log(1.04));
+        zBufferOffsetValues = vec3(1, distanceFactor, tiltFactor);
+
+        // here comes the anti-david trick
+        // note: David is the developer behind vts-browser-js
+        //          he also designed the geodata styling rules
+        // unfortunately, he designed zbuffer-offset in a way
+        //   that only works with his perspective projection
+        // therefore we simulate his projection,
+        //   apply the offset an undo his projection
+        // this way the parameters work as expected
+        //   and the values already in z-buffer are valid too
+
+        double factor = std::max(draws->camera.altitudeOverEllipsoid,
+            draws->camera.tagretDistance) / 600000;
+        double davidNear = std::max(2.0, factor * 40);
+        double davidFar = 600000 * std::max(1.0, factor) * 20;
+
+        // this decomposition works with the most basic projection matrix only
+        double fov = 2 * radToDeg(std::atan(1 / proj(1, 1)));
+        double aspect = proj(1, 1) / proj(0, 0);
+        double myNear = proj(2, 3) / (proj(2, 2) - 1);
+        double myFar = proj(2, 3) / (proj(2, 2) + 1);
+
+        assert(perspectiveMatrix(fov, aspect,
+            myNear, myFar).isApprox(proj, 1e-10));
+
+        davidProj = perspectiveMatrix(fov, aspect,
+            davidNear, davidFar);
+        davidProjInv = davidProj.inverse();
+    }
+
     // initialize camera data
     {
         struct UboCameraData
@@ -329,13 +367,26 @@ void RendererImpl::renderGeodata()
         for (const DrawGeodataTask &t : tasksArray)
         {
             Geodata *g = (Geodata*)t.geodata.get();
+
+            mat4 depthOffsetProj;
+            {
+                vec3 zbo = rawToVec3(g->spec.commonData.zBufferOffset)
+                    .cast<double>();
+                double off = dot(zbo, zBufferOffsetValues) * 0.0001;
+                double off2 = (off + 1) * 2 - 1;
+                mat4 s = scaleMatrix(vec3(1, 1, off2));
+                // apply anti-david measures
+                depthOffsetProj = proj * davidProjInv * s * davidProj;
+            }
+
             switch (g->spec.type)
             {
             case GpuGeodataSpec::Type::LineScreen:
             case GpuGeodataSpec::Type::LineWorld:
             {
                 shaderGeodataLine->bind();
-                mat4 mvp = mat4(viewProj * rawToMat4(g->spec.model));
+                mat4 model = rawToMat4(g->spec.model);
+                mat4 mvp = mat4(depthOffsetProj * view * model);
                 shaderGeodataLine->uniformMat4(0,
                     mat4f(mvp.cast<float>()).data());
                 shaderGeodataLine->uniformMat4(1,

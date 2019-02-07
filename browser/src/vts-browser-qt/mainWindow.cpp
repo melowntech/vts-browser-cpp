@@ -28,7 +28,6 @@
 #include <QGuiApplication>
 #include <QMouseEvent>
 #include <QWheelEvent>
-#include <vts-browser/fetcher.hpp>
 #include <vts-browser/map.hpp>
 #include <vts-browser/mapOptions.hpp>
 #include <vts-browser/camera.hpp>
@@ -47,10 +46,11 @@ void *openglFunctionPointerProc(const char *name)
 MainWindow::MainWindow()
 {
     QSurfaceFormat format;
-    format.setRenderableType(QSurfaceFormat::OpenGL);
     format.setVersion(3, 3);
     format.setProfile(QSurfaceFormat::CoreProfile);
+#ifndef NDEBUG
     format.setOption(QSurfaceFormat::DebugContext);
+#endif
     format.setDepthBufferSize(0);
     format.setStencilBufferSize(0);
     setFormat(format);
@@ -67,8 +67,7 @@ MainWindow::MainWindow()
 
     vts::MapCreateOptions mapopts;
     mapopts.clientId = "vts-browser-qt";
-    map = std::make_shared<vts::Map>(mapopts,
-                vts::Fetcher::create(vts::FetcherOptions()));
+    map = std::make_shared<vts::Map>(mapopts);
     map->setMapconfigPath(
             "https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json",

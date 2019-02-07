@@ -143,6 +143,7 @@ public:
             vec3f *bufPos = (vec3f*)texBuffer.data();
             vec3f *bufUps = (vec3f*)texBuffer.data() + totalPoints;
             vec3f *texBufHalf = bufUps;
+            (void)texBufHalf;
 
             indBuffer.resize(indicesCount * sizeof(uint16));
             uint16 *bufInd = (uint16*)indBuffer.data();
@@ -322,6 +323,8 @@ void RendererImpl::renderGeodata()
         double aspect = proj(1, 1) / proj(0, 0);
         double myNear = proj(2, 3) / (proj(2, 2) - 1);
         double myFar = proj(2, 3) / (proj(2, 2) + 1);
+        (void)myNear;
+        (void)myFar;
 
         assert(perspectiveMatrix(fov, aspect,
             myNear, myFar).isApprox(proj, 1e-10));

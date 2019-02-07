@@ -105,25 +105,37 @@ if(NOT VTS_BROWSER_TYPE STREQUAL "MODULE")
         add_subdirectory(src/vts-browser-ios)
         set(VS_STARTUP_PROJECT vts-browser-ios)
     else()
-        # find SDL
+        # desktop apps (SDL)
         cmake_policy(SET CMP0004 OLD) # because SDL installed on some systems has improperly configured libraries
         find_package(SDL2 REQUIRED)
-        include_directories(SYSTEM ${SDL2_INCLUDE_DIR})
+        if((TARGET SDL2) OR (DEFINED SDL2_LIBRARIES))
+            include_directories(SYSTEM ${SDL2_INCLUDE_DIR})
 
-        # minimal application
-        message(STATUS "including vts-browser-minimal")
-        add_subdirectory(src/vts-browser-minimal-c)
-        add_subdirectory(src/vts-browser-minimal-cpp)
+            # minimal application
+            message(STATUS "including vts-browser-minimal")
+            add_subdirectory(src/vts-browser-minimal-c)
+            add_subdirectory(src/vts-browser-minimal-cpp)
 
-        # desktop application
-        message(STATUS "including vts-browser-desktop")
-        add_subdirectory(src/nuklear)
-        add_subdirectory(src/vts-browser-desktop)
-        set(VS_STARTUP_PROJECT vts-browser-desktop)
+            # desktop application
+            message(STATUS "including vts-browser-desktop")
+            add_subdirectory(src/nuklear)
+            add_subdirectory(src/vts-browser-desktop)
+            set(VS_STARTUP_PROJECT vts-browser-desktop)
 
-        # two cameras
-        message(STATUS "including vts-browser-two-cameras")
-        add_subdirectory(src/vts-browser-two-cameras)
+            # two cameras
+            message(STATUS "including vts-browser-two-cameras")
+            add_subdirectory(src/vts-browser-two-cameras)
+        else()
+            message(WARNING "SDL was not found, many example applications will be skipped")
+        endif()
+
+        # desktop apps (Qt)
+        find_package(Qt5 COMPONENTS Core Gui)
+        if(TARGET Qt5::Gui)
+            # Qt application
+            message(STATUS "including vts-browser-qt")
+            add_subdirectory(src/vts-browser-qt)
+        endif()
     endif()
 
     # vts csharp libraries

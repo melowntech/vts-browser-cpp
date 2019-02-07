@@ -636,7 +636,7 @@ struct geoContext
             return;
 
         // visible
-        if (layer["visible"])
+        if (!layer["visible"].empty())
             if (!evaluate(layer["visible"]).asBool())
                 return;
 
@@ -662,7 +662,7 @@ struct geoContext
         // next-pass
         {
             auto np = layer["next-pass"];
-            if (np)
+            if (!np.empty())
                 processFeature(np[1].asString(), np[0].asInt());
         }
     }
@@ -676,11 +676,11 @@ struct geoContext
         // z-index
         if (zOverride)
             spec.commonData.zIndex = *zOverride;
-        else if (layer["z-index"])
+        else if (!layer["z-index"].empty())
             spec.commonData.zIndex = evaluate(layer["z-index"]).asInt();
 
         // zbuffer-offset
-        if (layer["zbuffer-offset"])
+        if (!layer["zbuffer-offset"].empty())
         {
             Value arr = evaluate(layer["zbuffer-offset"]);
             validateArrayLength(arr, 3, 3,
@@ -695,12 +695,12 @@ struct geoContext
         }
 
         // visibility
-        if (layer["visibility"])
+        if (!layer["visibility"].empty())
             spec.commonData.visibility
                 = evaluate(layer["visibility"]).asFloat();
 
         // visibility-abs
-        if (layer["visibility-abs"])
+        if (!layer["visibility-abs"].empty())
         {
             Value arr = evaluate(layer["visibility-abs"]);
             validateArrayLength(arr, 2, 2,
@@ -710,7 +710,7 @@ struct geoContext
         }
 
         // visibility-rel
-        if (layer["visibility-rel"])
+        if (!layer["visibility-rel"].empty())
         {
             Value arr = evaluate(layer["visibility-rel"]);
             validateArrayLength(arr, 4, 4,
@@ -720,7 +720,7 @@ struct geoContext
         }
 
         // culling
-        if (layer["culling"])
+        if (!layer["culling"].empty())
             spec.commonData.culling = evaluate(layer["culling"]).asFloat();
     }
 
@@ -734,7 +734,7 @@ struct geoContext
             spec.unionData.line.color);
         spec.unionData.line.width
             = evaluate(layer["line-width"]).asFloat();
-        if (layer["line-width-units"])
+        if (!layer["line-width-units"].empty())
         {
             std::string units = evaluate(layer["line-width-units"]).asString();
             if (units == "ratio")

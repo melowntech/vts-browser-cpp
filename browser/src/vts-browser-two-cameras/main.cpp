@@ -27,7 +27,6 @@
 #include <vts-browser/map.hpp>
 #include <vts-browser/mapOptions.hpp>
 #include <vts-browser/log.hpp>
-#include <vts-browser/fetcher.hpp>
 #include <vts-browser/camera.hpp>
 #include <vts-browser/navigation.hpp>
 #include <vts-renderer/renderer.hpp>
@@ -84,8 +83,7 @@ int main(int, char *[])
     vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
     render.initialize();
 
-    map = std::make_shared<vts::Map>(vts::MapCreateOptions(),
-                vts::Fetcher::create(vts::FetcherOptions()));
+    map = std::make_shared<vts::Map>();
     cam1 = map->camera();
     cam2 = map->camera();
     nav1 = cam1->navigation();

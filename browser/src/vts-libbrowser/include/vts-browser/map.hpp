@@ -37,12 +37,17 @@
 namespace vts
 {
 
+class MapCreateOptions;
+class Fetcher;
+
 // fundamental class which orchestrates all the vts tasks
 class VTS_API Map
 {
 public:
-    Map(const class MapCreateOptions &options,
-        const std::shared_ptr<class Fetcher> &fetcher);
+    Map();
+    Map(const MapCreateOptions &options);
+    Map(const MapCreateOptions &options,
+        const std::shared_ptr<Fetcher> &fetcher);
     ~Map();
 
     // mapconfigPath: url to mapconfig

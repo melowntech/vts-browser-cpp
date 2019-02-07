@@ -122,7 +122,16 @@ MapView::BoundLayerInfo::BoundLayerInfo(const std::string &id) :
     id(id), alpha(1)
 {}
 
-Map::Map(const MapCreateOptions &options, const std::shared_ptr<Fetcher> &fetcher)
+Map::Map() :
+    Map(MapCreateOptions(), Fetcher::create(FetcherOptions()))
+{}
+
+Map::Map(const MapCreateOptions &options) : 
+    Map(options, Fetcher::create(FetcherOptions()))
+{}
+
+Map::Map(const MapCreateOptions &options,
+    const std::shared_ptr<Fetcher> &fetcher)
 {
     LOG(info3) << "Creating map";
     impl = std::make_shared<MapImpl>(this, options, fetcher);

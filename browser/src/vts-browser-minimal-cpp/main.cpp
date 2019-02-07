@@ -27,7 +27,6 @@
 #include <vts-browser/map.hpp>
 #include <vts-browser/mapOptions.hpp>
 #include <vts-browser/log.hpp>
-#include <vts-browser/fetcher.hpp>
 #include <vts-browser/camera.hpp>
 #include <vts-browser/navigation.hpp>
 #include <vts-renderer/renderer.hpp>
@@ -103,8 +102,7 @@ int main(int, char *[])
     render.initialize();
 
     // create instance of the vts::Map class
-    map = std::make_shared<vts::Map>(vts::MapCreateOptions(),
-                vts::Fetcher::create(vts::FetcherOptions()));
+    map = std::make_shared<vts::Map>();
 
     // acquire a camera and navigation handles
     cam = map->camera();

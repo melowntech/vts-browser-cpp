@@ -107,7 +107,7 @@ if(NOT VTS_BROWSER_TYPE STREQUAL "MODULE")
     else()
         # desktop apps (SDL)
         cmake_policy(SET CMP0004 OLD) # because SDL installed on some systems has improperly configured libraries
-        find_package(SDL2 REQUIRED)
+        find_package(SDL2 QUIET)
         if((TARGET SDL2) OR (DEFINED SDL2_LIBRARIES))
             include_directories(SYSTEM ${SDL2_INCLUDE_DIR})
 
@@ -130,7 +130,7 @@ if(NOT VTS_BROWSER_TYPE STREQUAL "MODULE")
         endif()
 
         # desktop apps (Qt)
-        find_package(Qt5 COMPONENTS Core Gui)
+        find_package(Qt5 COMPONENTS Core Gui QUIET)
         if(TARGET Qt5::Gui)
             # Qt application
             message(STATUS "including vts-browser-qt")

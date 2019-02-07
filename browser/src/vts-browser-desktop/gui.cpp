@@ -1505,7 +1505,7 @@ public:
                                 {
                                     std::string v = window->map
                                         ->getResourceFreeLayerStyle(ln);
-                                    v = editor(ln + ".style", v);
+                                    v = editor(ln + ".style.json", v);
                                     window->map
                                         ->setResourceFreeLayerStyle(ln, v);
                                 }
@@ -1518,7 +1518,7 @@ public:
                                 {
                                     std::string v = window->map
                                         ->getResourceFreeLayerGeodata(ln);
-                                    v = editor(ln + ".geo", v);
+                                    v = editor(ln + ".geo.json", v);
                                     window->map
                                         ->setResourceFreeLayerGeodata(ln, v);
                                 }

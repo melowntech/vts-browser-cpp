@@ -28,7 +28,6 @@
 #include <vts-browser/camera.h>
 #include <vts-browser/navigation.h>
 #include <vts-browser/log.h>
-#include <vts-browser/fetcher.h>
 #include <vts-renderer/renderer.h>
 
 #define SDL_MAIN_HANDLED

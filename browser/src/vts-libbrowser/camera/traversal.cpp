@@ -116,21 +116,29 @@ bool CameraImpl::generateMonolithicGeodataTrav(TraverseNode *trav)
 
     // extents
     {
-        vec3 el = vecFromUblas<vec3>
-            (map->mapconfig->referenceFrame.division.extents.ll);
-        vec3 eu = vecFromUblas<vec3>
-            (map->mapconfig->referenceFrame.division.extents.ur);
-        vec3 ed = eu - el;
-        ed = vec3(1 / ed[0], 1 / ed[1], 1 / ed[2]);
-        trav->meta->extents.ll = vecToUblas<math::Point3>(
-            (vecFromUblas<vec3>(g.extents.ll) - el).cwiseProduct(ed));
-        trav->meta->extents.ur = vecToUblas<math::Point3>(
-            (vecFromUblas<vec3>(g.extents.ur) - el).cwiseProduct(ed));
+        if (g.extents.ll != g.extents.ur)
+        {
+            vec3 el = vecFromUblas<vec3>
+                (map->mapconfig->referenceFrame.division.extents.ll);
+            vec3 eu = vecFromUblas<vec3>
+                (map->mapconfig->referenceFrame.division.extents.ur);
+            vec3 ed = eu - el;
+            ed = vec3(1 / ed[0], 1 / ed[1], 1 / ed[2]);
+            trav->meta->extents.ll = vecToUblas<math::Point3>(
+                (vecFromUblas<vec3>(g.extents.ll) - el).cwiseProduct(ed));
+            trav->meta->extents.ur = vecToUblas<math::Point3>(
+                (vecFromUblas<vec3>(g.extents.ur) - el).cwiseProduct(ed));
+            trav->aabbPhys[0] = vecFromUblas<vec3>(g.extents.ll);
+            trav->aabbPhys[1] = vecFromUblas<vec3>(g.extents.ur);
+        }
+        else
+        {
+            const auto &e = map->mapconfig->referenceFrame.division.extents;
+            trav->meta->extents = e;
+            trav->aabbPhys[0] = vecFromUblas<vec3>(e.ll);
+            trav->aabbPhys[1] = vecFromUblas<vec3>(e.ur);
+        }
     }
-
-    // aabb
-    trav->aabbPhys[0] = vecFromUblas<vec3>(g.extents.ll);
-    trav->aabbPhys[1] = vecFromUblas<vec3>(g.extents.ur);
 
     // other
     trav->meta->displaySize = g.displaySize;
@@ -847,6 +855,8 @@ void CameraImpl::traverseRender(TraverseNode *trav)
     case TraverseMode::Fixed:
         travModeFixed(trav);
         break;
+    default:
+        assert(false);
     }
 }
 

@@ -25,6 +25,7 @@
  */
 
 #include "../include/vts-browser/exceptions.hpp"
+#include "../include/vts-browser/log.hpp"
 
 #include "../utilities/json.hpp"
 #include "../camera.hpp"
@@ -219,15 +220,11 @@ struct geoContext
             this->feature.reset();
         }
 
-        // convert cache into actual render tasks
+        // put cache into queue for upload
+        data->specsToUpload.clear();
         for (const GpuGeodataSpec &spec : cacheData)
-        {
-            RenderGeodataTask t;
-            t.geodata = std::make_shared<GpuGeodata>();
-            data->map->callbacks.loadGeodata(t.geodata->info,
-                                const_cast<GpuGeodataSpec&>(spec));
-            data->renders.push_back(t);
-        }
+            data->specsToUpload.push_back(
+                std::move(const_cast<GpuGeodataSpec&>(spec)));
     }
 
     Value resolveInheritance(const Value &orig)
@@ -906,34 +903,68 @@ struct geoContext
 void GeodataTile::load()
 {
     LOG(info2) << "Loading (gpu) geodata <" << name << ">";
-    renders.clear();
 
     // this resource is not meant to be downloaded
     assert(!fetch);
 
-    // empty sources
-    if (style.empty() || features.empty())
-        return;
-
-    // process
-    if (map->options.debugValidateGeodataStyles)
+    // upload
+    renders.clear();
+    for (auto &spec : specsToUpload)
     {
-        geoContext<true> ctx(this, style, features, lod);
-        ctx.process();
+        RenderGeodataTask t;
+        t.geodata = std::make_shared<GpuGeodata>();
+        map->callbacks.loadGeodata(t.geodata->info, spec);
+        renders.push_back(t);
     }
-    else
-    {
-        geoContext<false> ctx(this, style, features, lod);
-        ctx.process();
-    }
+    specsToUpload.clear();
 
     // memory consumption
-    info.ramMemoryCost += sizeof(*this)
+    info.ramMemoryCost = sizeof(*this)
         + renders.size() * sizeof(RenderGeodataTask);
     for (const RenderGeodataTask &it : renders)
     {
         info.gpuMemoryCost += it.geodata->info.gpuMemoryCost;
         info.ramMemoryCost += it.geodata->info.ramMemoryCost;
+    }
+}
+
+void GeodataTile::process()
+{
+    LOG(info2) << "Processing geodata <" << name << ">";
+
+    if (map->options.debugValidateGeodataStyles)
+    {
+        geoContext<true> ctx(this, *style, *features, lod);
+        ctx.process();
+    }
+    else
+    {
+        geoContext<false> ctx(this, *style, *features, lod);
+        ctx.process();
+    }
+
+    state = Resource::State::downloaded;
+    map->resources.queUpload.push(weak_from_this());
+}
+
+void MapImpl::resourcesGeodataProcessorEntry()
+{
+    setLogThreadName("geodata processor");
+    while (!resources.queGeodata.stopped())
+    {
+        std::weak_ptr<GeodataTile> w;
+        resources.queGeodata.waitPop(w);
+        std::shared_ptr<GeodataTile> r = w.lock();
+        if (!r)
+            continue;
+        try
+        {
+            r->process();
+        }
+        catch (const std::exception &)
+        {
+            r->state = Resource::State::errorFatal;
+        }
     }
 }
 

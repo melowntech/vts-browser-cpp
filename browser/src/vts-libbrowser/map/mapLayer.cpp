@@ -163,7 +163,8 @@ bool MapLayer::prerequisitesCheckFreeLayer()
 namespace
 {
 
-static const std::string empty;
+static const std::shared_ptr<const std::string> empty
+    = std::make_shared<const std::string>("");
 
 MapLayer *getLayer(MapImpl *map, const std::string &name)
 {
@@ -177,13 +178,13 @@ MapLayer *getLayer(MapImpl *map, const std::string &name)
 
 } // namespace
 
-std::pair<Validity, const std::string &> MapImpl::getActualGeoStyle(
-        const std::string &name)
+std::pair<Validity, std::shared_ptr<const std::string>>
+    MapImpl::getActualGeoStyle(const std::string &name)
 {
     FreeInfo *f = mapconfig->getFreeInfo(name);
     if (!f)
         return { Validity::Indeterminate, empty };
-    if (!f->overrideStyle.empty())
+    if (f->overrideStyle)
         return { Validity::Valid, f->overrideStyle };
     if (!f->stylesheet)
     {
@@ -218,8 +219,9 @@ std::pair<Validity, const std::string &> MapImpl::getActualGeoStyle(
     return { getResourceValidity(f->stylesheet), f->stylesheet->data };
 }
 
-std::pair<Validity, const std::string &> MapImpl::getActualGeoFeatures(
-        const std::string &name, const std::string &geoName, float priority)
+std::pair<Validity, std::shared_ptr<const std::string>>
+    MapImpl::getActualGeoFeatures(const std::string &name,
+        const std::string &geoName, float priority)
 {
     MapLayer *layer = getLayer(this, name);
     if (!layer)
@@ -227,7 +229,7 @@ std::pair<Validity, const std::string &> MapImpl::getActualGeoFeatures(
 
     assert(layer->freeLayer);
     if (layer->freeLayer->type == vtslibs::registry::FreeLayer::Type::geodata
-            && !layer->freeLayer->overrideGeodata.empty())
+            && layer->freeLayer->overrideGeodata)
         return { Validity::Valid, layer->freeLayer->overrideGeodata };
 
     if (geoName.empty())
@@ -238,8 +240,8 @@ std::pair<Validity, const std::string &> MapImpl::getActualGeoFeatures(
     return { getResourceValidity(g), g->data };
 }
 
-std::pair<Validity, const std::string &> MapImpl::getActualGeoFeatures(
-        const std::string &name)
+std::pair<Validity, std::shared_ptr<const std::string>>
+    MapImpl::getActualGeoFeatures(const std::string &name)
 {
     MapLayer *layer = getLayer(this, name);
     assert(layer->freeLayer->type

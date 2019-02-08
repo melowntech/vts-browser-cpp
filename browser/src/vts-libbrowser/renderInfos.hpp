@@ -68,8 +68,8 @@ public:
     std::string url; // external free layer url
 
     std::shared_ptr<GeodataStylesheet> stylesheet;
-    std::string overrideStyle;
-    std::string overrideGeodata; // monolithic only
+    std::shared_ptr<const std::string> overrideStyle;
+    std::shared_ptr<const std::string> overrideGeodata; // monolithic only
 };
 
 class BoundParamInfo : public vtslibs::registry::View::BoundLayerParams

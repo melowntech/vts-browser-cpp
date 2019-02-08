@@ -375,7 +375,7 @@ std::string Map::getResourceFreeLayerGeodata(const std::string &name) const
         return "";
     auto r = impl->getActualGeoFeatures(name);
     if (r.first == Validity::Valid)
-        return r.second;
+        return *r.second;
     return "";
 }
 
@@ -387,7 +387,14 @@ void Map::setResourceFreeLayerGeodata(const std::string &name,
         LOGTHROW(err4, std::logic_error)
                 << "Map is not yet available.";
     }
-    impl->mapconfig->getFreeInfo(name)->overrideGeodata = value;
+    auto &v = impl->mapconfig->getFreeInfo(name)->overrideGeodata;
+    if (!v || *v != value)
+    {
+        if (value.empty())
+            v.reset();
+        else
+            v = std::make_shared<const std::string>(value);
+    }
     purgeViewCache();
 }
 
@@ -403,7 +410,7 @@ std::string Map::getResourceFreeLayerStyle(const std::string &name) const
     }
     auto r = impl->getActualGeoStyle(name);
     if (r.first == Validity::Valid)
-        return r.second;
+        return *r.second;
     return "";
 }
 
@@ -420,7 +427,14 @@ void Map::setResourceFreeLayerStyle(const std::string &name,
                 << "Map is not yet available.";
         throw;
     }
-    impl->mapconfig->getFreeInfo(name)->overrideStyle = value;
+    auto &v = impl->mapconfig->getFreeInfo(name)->overrideStyle;
+    if (!v || *v != value)
+    {
+        if (value.empty())
+            v.reset();
+        else
+            v = std::make_shared<const std::string>(value);
+    }
     purgeViewCache();
 }
 
@@ -573,6 +587,8 @@ MapImpl::MapImpl(Map *map, const MapCreateOptions &options,
     resources.thrCacheWriter = std::thread(&MapImpl::cacheWriteEntry, this);
     resources.thrAtmosphereGenerator
             = std::thread(&MapImpl::resourcesAtmosphereGeneratorEntry, this);
+    resources.thrGeodataProcessor
+            = std::thread(&MapImpl::resourcesGeodataProcessorEntry, this);
     resources.fetching.thr
             = std::thread(&MapImpl::resourcesDownloadsEntry, this);
     credits = std::make_shared<Credits>();
@@ -584,9 +600,11 @@ MapImpl::~MapImpl()
     resources.queCacheWrite.terminate();
     resources.queUpload.terminate();
     resources.queAtmosphere.terminate();
+    resources.queGeodata.terminate();
     resources.thrCacheReader.join();
     resources.thrCacheWriter.join();
     resources.thrAtmosphereGenerator.join();
+    resources.thrGeodataProcessor.join();
     resources.fetching.stop = true;
     resources.fetching.con.notify_all();
     resources.fetching.thr.join();

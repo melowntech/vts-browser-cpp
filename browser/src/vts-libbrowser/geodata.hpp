@@ -34,6 +34,7 @@ namespace vts
 
 class GpuFont;
 class GpuTexture;
+class GpuGeodataSpec;
 class RenderGeodataTask;
 
 class GeodataFeatures : public Resource
@@ -43,7 +44,7 @@ public:
     void load() override;
     FetchTask::ResourceType resourceType() const override;
 
-    std::string data;
+    std::shared_ptr<const std::string> data;
 };
 
 class GeodataStylesheet : public Resource
@@ -53,7 +54,7 @@ public:
     void load() override;
     FetchTask::ResourceType resourceType() const override;
 
-    std::string data;
+    std::shared_ptr<const std::string> data;
 
     std::map<std::string, std::shared_ptr<GpuFont>> fonts;
     std::map<std::string, std::shared_ptr<GpuTexture>> textures;
@@ -65,15 +66,18 @@ public:
     GeodataTile(MapImpl *map, const std::string &name);
     void load() override;
     FetchTask::ResourceType resourceType() const override;
-    void update(const std::string &style, const std::string &features,
-        uint32 lod);
+    void update(const std::shared_ptr<const std::string> &style,
+                const std::shared_ptr<const std::string> &features,
+                uint32 lod);
+    void process();
 
     std::vector<RenderGeodataTask> renders;
+    std::vector<GpuGeodataSpec> specsToUpload;
 
 private:
     uint32 lod;
-    std::string style;
-    std::string features;
+    std::shared_ptr<const std::string> style;
+    std::shared_ptr<const std::string> features;
 };
 
 } // namespace vts

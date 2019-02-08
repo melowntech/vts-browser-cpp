@@ -320,7 +320,7 @@ void MapImpl::resourcesDownloadsEntry()
     {
         std::vector<std::weak_ptr<Resource>> res1;
         {
-            boost::mutex::scoped_lock lock(resources.fetching.mut);
+            std::unique_lock<std::mutex> lock(resources.fetching.mut);
             resources.fetching.con.wait(lock);
             res1.swap(resources.fetching.resources);
         }
@@ -518,7 +518,7 @@ void MapImpl::resourcesStartDownloads()
             res.push_back(r);
     }
     {
-        boost::mutex::scoped_lock lock(resources.fetching.mut);
+        std::lock_guard<std::mutex> lock(resources.fetching.mut);
         res.swap(resources.fetching.resources);
     }
     resources.fetching.con.notify_one();

@@ -29,7 +29,9 @@
 
 #include <list>
 #include <atomic>
-#include <boost/thread.hpp>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 namespace vts
 {
@@ -43,7 +45,7 @@ namespace vts
         void push(const T &v)
         {
             {
-                boost::mutex::scoped_lock lock(mut);
+                std::lock_guard<std::mutex> lock(mut);
                 q.push_back(v);
             }
             con.notify_one();
@@ -52,7 +54,7 @@ namespace vts
         void push(T &&v)
         {
             {
-                boost::mutex::scoped_lock lock(mut);
+                std::lock_guard<std::mutex> lock(mut);
                 q.push_back(std::move(v));
             }
             con.notify_one();
@@ -60,7 +62,7 @@ namespace vts
 
         bool tryPop(T &v)
         {
-            boost::mutex::scoped_lock lock(mut);
+            std::lock_guard<std::mutex> lock(mut);
             if (q.empty() || stop)
                 return false;
             v = std::move(q.front());
@@ -70,7 +72,7 @@ namespace vts
 
         bool waitPop(T &v)
         {
-            boost::mutex::scoped_lock lock(mut);
+            std::unique_lock<std::mutex> lock(mut);
             while (q.empty() && !stop)
                 con.wait(lock);
             if (q.empty())
@@ -82,7 +84,10 @@ namespace vts
 
         void terminate()
         {
-            stop = true;
+            {
+                std::lock_guard<std::mutex> lock(mut);
+                stop = true;
+            }
             con.notify_all();
         }
 
@@ -94,8 +99,8 @@ namespace vts
     private:
         std::atomic<bool> stop;
         std::list<T> q;
-        mutable boost::mutex mut;
-        boost::condition_variable con;
+        mutable std::mutex mut;
+        std::condition_variable con;
     };
 }
 

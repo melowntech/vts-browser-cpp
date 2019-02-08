@@ -130,17 +130,19 @@ public:
         ThreadQueue<std::weak_ptr<Resource>> queUpload;
         ThreadQueue<CacheWriteData> queCacheWrite;
         ThreadQueue<std::weak_ptr<GpuAtmosphereDensityTexture>> queAtmosphere;
+        ThreadQueue<std::weak_ptr<GeodataTile>> queGeodata;
         std::thread thrCacheReader;
         std::thread thrCacheWriter;
         std::thread thrAtmosphereGenerator;
+        std::thread thrGeodataProcessor;
 
         class Fetching
         {
         public:
             std::vector<std::weak_ptr<Resource>> resources;
             std::thread thr;
-            boost::mutex mut;
-            boost::condition_variable con;
+            std::mutex mut;
+            std::condition_variable con;
             std::atomic<bool> stop;
             Fetching();
         } fetching;
@@ -162,13 +164,13 @@ public:
     void initializeNavigation();
     bool getSurfaceAltitude(double &result, const vec3 &navPos,
         double samples);
-    std::pair<Validity, const std::string &> getActualGeoStyle(
-        const std::string &name);
-    std::pair<Validity, const std::string &> getActualGeoFeatures(
-        const std::string &name, const std::string &geoName,
-        float priority);
-    std::pair<Validity, const std::string &> getActualGeoFeatures(
-        const std::string &name);
+    std::pair<Validity, std::shared_ptr<const std::string>>
+        getActualGeoStyle(const std::string &name);
+    std::pair<Validity, std::shared_ptr<const std::string>>
+        getActualGeoFeatures(const std::string &name,
+            const std::string &geoName, float priority);
+    std::pair<Validity, std::shared_ptr<const std::string>>
+        getActualGeoFeatures(const std::string &name);
     void traverseClearing(TraverseNode *trav);
 
     // resources methods
@@ -187,6 +189,7 @@ public:
     void resourcesUpdateStatistics();
     void resourcesDownloadsEntry();
     void resourcesAtmosphereGeneratorEntry();
+    void resourcesGeodataProcessorEntry();
     void resourceUploadProcess(const std::shared_ptr<Resource> &r);
 
     void cacheWriteEntry();

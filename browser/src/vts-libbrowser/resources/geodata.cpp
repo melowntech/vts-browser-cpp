@@ -41,7 +41,8 @@ GeodataFeatures::GeodataFeatures(vts::MapImpl *map, const std::string &name) :
 void GeodataFeatures::load()
 {
     LOG(info2) << "Loading geodata features <" << name << ">";
-    data = std::move(fetch->reply.content.str());
+    data = std::make_shared<const std::string>(
+        std::move(fetch->reply.content.str()));
 }
 
 FetchTask::ResourceType GeodataFeatures::resourceType() const
@@ -58,7 +59,8 @@ GeodataStylesheet::GeodataStylesheet(MapImpl *map, const std::string &name) :
 void GeodataStylesheet::load()
 {
     LOG(info2) << "Loading geodata stylesheet <" << name << ">";
-    data = std::move(fetch->reply.content.str());
+    data = std::make_shared<const std::string>(
+        std::move(fetch->reply.content.str()));
 }
 
 FetchTask::ResourceType GeodataStylesheet::resourceType() const
@@ -77,13 +79,15 @@ FetchTask::ResourceType GeodataTile::resourceType() const
     return FetchTask::ResourceType::Undefined;
 }
 
-void GeodataTile::update(const std::string &s, const std::string &f, uint32 l)
+void GeodataTile::update(const std::shared_ptr<const std::string> &s,
+    const std::shared_ptr<const std::string> &f, uint32 l)
 {
     switch ((Resource::State)state)
     {
     case Resource::State::initializing:
-        state = Resource::State::ready; // if left in initializing, it would attempt to download it
+        state = Resource::State::availFail; // if left in initializing, it would attempt to download it
         UTILITY_FALLTHROUGH;
+    case Resource::State::availFail:
     case Resource::State::errorFatal: // allow reloading when sources change, even if it failed before
     case Resource::State::ready:
         if (style != s || features != f || lod != l)
@@ -91,8 +95,9 @@ void GeodataTile::update(const std::string &s, const std::string &f, uint32 l)
             style = s;
             features = f;
             lod = l;
-            state = Resource::State::downloaded;
-            map->resources.queUpload.push(shared_from_this());
+            state = Resource::State::downloading;
+            map->resources.queGeodata.push(
+                std::dynamic_pointer_cast<GeodataTile>(shared_from_this()));
             return;
         }
         break;

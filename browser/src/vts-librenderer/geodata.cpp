@@ -309,7 +309,7 @@ void RendererImpl::renderGeodata()
         // unfortunately, he designed zbuffer-offset in a way
         //   that only works with his perspective projection
         // therefore we simulate his projection,
-        //   apply the offset an undo his projection
+        //   apply the offset and undo his projection
         // this way the parameters work as expected
         //   and the values already in z-buffer are valid too
 

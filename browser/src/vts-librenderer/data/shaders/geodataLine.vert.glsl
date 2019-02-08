@@ -50,7 +50,15 @@ void main()
     u = normalize(u);
     if (int(uniTypePlusUnitsPlusWidth[1]) == 3) // ratio
     {
-        // todo
+        switch (int(uniTypePlusUnitsPlusWidth[0]))
+        {
+        case 1: // LineScreen
+            scale *= uniCameraParams[0]; // screen height in pixels
+            break;
+        case 2: // LineWorld
+            scale *= uniCameraParams[1]; // view extent in meters
+            break;
+        }
     }
     vec3 f = normalize(o - p);
     if ((gl_VertexID % 2) == 1)
@@ -60,5 +68,7 @@ void main()
         s = -s;
     p += s * scale * uniTypePlusUnitsPlusWidth[2] * 0.5;
     gl_Position = uniMvp * vec4(p, 1.0);
+    // avoid culling geodata by near camera plane
+    gl_Position.z = max(gl_Position.z, -gl_Position.w + 1e-7);
 }
 

@@ -944,7 +944,7 @@ void GeodataTile::process()
     }
 
     state = Resource::State::downloaded;
-    map->resources.queUpload.push(weak_from_this());
+    map->resources.queUpload.push(shared_from_this());
 }
 
 void MapImpl::resourcesGeodataProcessorEntry()

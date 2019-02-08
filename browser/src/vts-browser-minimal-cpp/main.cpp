@@ -24,27 +24,49 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <vts-browser/log.hpp>
 #include <vts-browser/map.hpp>
 #include <vts-browser/mapOptions.hpp>
-#include <vts-browser/log.hpp>
 #include <vts-browser/camera.hpp>
 #include <vts-browser/navigation.hpp>
 #include <vts-renderer/renderer.hpp>
+
+#include <thread>
 
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
 SDL_Window *window;
 SDL_GLContext renderContext;
-vts::renderer::Renderer render;
+SDL_GLContext dataContext;
+std::shared_ptr<vts::renderer::Renderer> render;
 std::shared_ptr<vts::Map> map;
 std::shared_ptr<vts::Camera> cam;
 std::shared_ptr<vts::Navigation> nav;
+std::thread dataThread;
 bool shouldClose = false;
+
+void dataEntry()
+{
+    vts::setLogThreadName("data");
+
+    // the browser uses separate thread for uploading resources to gpu memory
+    //   this thread must have access to an OpenGL context
+    //   and the context must be shared with the one used for rendering
+    SDL_GL_MakeCurrent(window, dataContext);
+    vts::renderer::installGlDebugCallback();
+
+    // this will block until map->renderFinalize
+    //   is called in the rendering thread
+    map->dataAllRun();
+
+    SDL_GL_DeleteContext(dataContext);
+    dataContext = nullptr;
+}
 
 void updateResolution()
 {
-    vts::renderer::RenderOptions &ro = render.options();
+    vts::renderer::RenderOptions &ro = render->options();
     SDL_GL_GetDrawableSize(window, (int*)&ro.width,
                                    (int*)&ro.height);
     cam->setViewportSize(ro.width, ro.height);
@@ -71,6 +93,8 @@ int main(int, char *[])
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                         SDL_GL_CONTEXT_PROFILE_CORE);
+    // enable sharing resources between multiple OpenGL contexts
+    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
 
     // create window
     vts::log(vts::LogLevel::info3, "Creating window");
@@ -87,45 +111,49 @@ int main(int, char *[])
         throw std::runtime_error("Failed to create window");
     }
 
-    // create OpenGL context
-    vts::log(vts::LogLevel::info3, "Creating OpenGL context");
+    // create OpenGL contexts
+    vts::log(vts::LogLevel::info3, "Creating OpenGL contexts");
+    dataContext = SDL_GL_CreateContext(window);
     renderContext = SDL_GL_CreateContext(window);
-    // bind the OpenGL context to current thread
-    SDL_GL_MakeCurrent(window, renderContext);
     SDL_GL_SetSwapInterval(1); // enable v-sync
-
-    // notify the vts renderer library on how to load OpenGL function pointers
-    vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
-
-    // and initialize the renderer library
-    // this will load required shaders and other local files
-    render.initialize();
 
     // create instance of the vts::Map class
     map = std::make_shared<vts::Map>();
 
-    // acquire a camera and navigation handles
+    // make vts renderer library load OpenGL function pointers
+    // this calls installGlDebugCallback for the current context too
+    vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
+
+    // initialize the renderer library
+    // this will load required shaders and other local files
+    render = std::make_shared<vts::renderer::Renderer>();
+    render->initialize();
+
+    // set required callbacks for creating mesh and texture resources
+    render->bindLoadFunctions(map.get());
+
+    // launch the data thread
+    dataThread = std::thread(&dataEntry);
+
+    // create a camera and acquire its navigation handle
     cam = map->camera();
     nav = cam->navigation();
 
-    // set required callbacks for creating mesh and texture resources
-    render.bindLoadFunctions(map.get());
-
-    // initialize the render preparation component of the map
+    // initialize the map for rendering
     updateResolution();
     map->renderInitialize();
-    map->dataInitialize();
 
-    // configure an url to the map that should be displayed
+    // pass a mapconfig url to the map
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
 
-    // acquire current time to measure how long each frame takes
+    // acquire current time (for measuring how long each frame takes)
     uint32 lastRenderTime = SDL_GetTicks();
 
-    // keep processing window events
+    // main event loop
     while (!shouldClose)
     {
+        // process events
         {
             SDL_Event event;
             while (SDL_PollEvent(&event))
@@ -155,55 +183,31 @@ int main(int, char *[])
             }
         }
 
-        // update downloads
-        map->dataUpdate();
-
-        // check if window size has changed
-        updateResolution();
-
         // update navigation etc.
+        updateResolution();
         uint32 currentRenderTime = SDL_GetTicks();
         map->renderUpdate((currentRenderTime - lastRenderTime) * 1e-3);
         cam->renderUpdate();
         lastRenderTime = currentRenderTime;
 
         // actually render the map
-        render.render(cam.get());
-
-        // present the rendered image to the screen
+        render->render(cam.get());
         SDL_GL_SwapWindow(window);
     }
 
-    // release all rendering related data
-    render.finalize();
+    // release all
+    nav.reset();
+    cam.reset();
+    map->renderFinalize();
+    dataThread.join();
+    render->finalize();
+    render.reset();
+    map.reset();
 
-    // release camera and navigation
-    if (nav)
-        nav.reset();
-    if (cam)
-        cam.reset();
-
-    // release the map
-    if (map)
-    {
-        map->dataFinalize();
-        map->renderFinalize();
-        map.reset();
-    }
-
-    // free the OpenGL context
-    if (renderContext)
-    {
-        SDL_GL_DeleteContext(renderContext);
-        renderContext = nullptr;
-    }
-
-    // release the window
-    if (window)
-    {
-        SDL_DestroyWindow(window);
-        window = nullptr;
-    }
+    SDL_GL_DeleteContext(renderContext);
+    renderContext = nullptr;
+    SDL_DestroyWindow(window);
+    window = nullptr;
 
     return 0;
 }

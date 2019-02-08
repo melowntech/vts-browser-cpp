@@ -31,19 +31,33 @@
 #include <vts-browser/navigation.hpp>
 #include <vts-renderer/renderer.hpp>
 
+#include <thread>
+
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
 SDL_Window *window;
 SDL_GLContext renderContext;
-vts::renderer::Renderer render;
+SDL_GLContext dataContext;
+std::shared_ptr<vts::renderer::Renderer> render;
 std::shared_ptr<vts::Map> map;
 std::shared_ptr<vts::Camera> cam1;
 std::shared_ptr<vts::Camera> cam2;
 std::shared_ptr<vts::Navigation> nav1;
 std::shared_ptr<vts::Navigation> nav2;
 std::shared_ptr<vts::Navigation> navLast;
+std::thread dataThread;
 bool shouldClose = false;
+
+void dataEntry()
+{
+    vts::setLogThreadName("data");
+    SDL_GL_MakeCurrent(window, dataContext);
+    vts::renderer::installGlDebugCallback();
+    map->dataAllRun();
+    SDL_GL_DeleteContext(dataContext);
+    dataContext = nullptr;
+}
 
 int main(int, char *[])
 {
@@ -61,6 +75,7 @@ int main(int, char *[])
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                         SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
 
     vts::log(vts::LogLevel::info3, "Creating window");
     {
@@ -77,20 +92,22 @@ int main(int, char *[])
     }
 
     vts::log(vts::LogLevel::info3, "Creating OpenGL context");
+    dataContext = SDL_GL_CreateContext(window);
     renderContext = SDL_GL_CreateContext(window);
-    SDL_GL_MakeCurrent(window, renderContext);
     SDL_GL_SetSwapInterval(1);
     vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
-    render.initialize();
 
     map = std::make_shared<vts::Map>();
+    dataThread = std::thread(&dataEntry);
+    render = std::make_shared<vts::renderer::Renderer>();
+    render->initialize();
+    render->bindLoadFunctions(map.get());
+
     cam1 = map->camera();
     cam2 = map->camera();
     nav1 = cam1->navigation();
     nav2 = cam2->navigation();
-    render.bindLoadFunctions(map.get());
     map->renderInitialize();
-    map->dataInitialize();
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
 
@@ -109,7 +126,7 @@ int main(int, char *[])
                     break;
                 case SDL_MOUSEMOTION:
                 {
-                    navLast = event.motion.x < (sint32)render.options().width
+                    navLast = event.motion.x < (sint32)render->options().width
                         ? nav1 : nav2;
                     double p[3] = { (double)event.motion.xrel,
                                 (double)event.motion.yrel, 0 };
@@ -139,51 +156,37 @@ int main(int, char *[])
         }
 
         uint32 currentRenderTime = SDL_GetTicks();
-        map->dataUpdate();
         map->renderUpdate((currentRenderTime - lastRenderTime) * 1e-3);
         cam1->renderUpdate();
         cam2->renderUpdate();
         lastRenderTime = currentRenderTime;
 
-        auto &ro = render.options();
+        auto &ro = render->options();
         ro.width = w / 2;
         ro.height = h;
         ro.targetViewportX = 0;
         ro.targetViewportY = 0;
         ro.targetViewportW = w / 2;
         ro.targetViewportH = h;
-        render.render(cam1.get());
+        render->render(cam1.get());
         ro.targetViewportX = w / 2;
-        render.render(cam2.get());
+        render->render(cam2.get());
 
         SDL_GL_SwapWindow(window);
     }
 
-    render.finalize();
-    if (nav1)
-        nav1.reset();
-    if (nav2)
-        nav2.reset();
-    if (cam1)
-        cam1.reset();
-    if (cam2)
-        cam2.reset();
-    if (map)
-    {
-        map->dataFinalize();
-        map->renderFinalize();
-        map.reset();
-    }
-    if (renderContext)
-    {
-        SDL_GL_DeleteContext(renderContext);
-        renderContext = nullptr;
-    }
-    if (window)
-    {
-        SDL_DestroyWindow(window);
-        window = nullptr;
-    }
+    render->finalize();
+    nav1.reset();
+    nav2.reset();
+    cam1.reset();
+    cam2.reset();
+    map->renderFinalize();
+    dataThread.join();
+    map.reset();
+    SDL_GL_DeleteContext(renderContext);
+    renderContext = nullptr;
+    SDL_DestroyWindow(window);
+    window = nullptr;
 
     return 0;
 }

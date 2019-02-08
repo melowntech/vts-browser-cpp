@@ -28,6 +28,7 @@
 #include <QGuiApplication>
 #include <QMouseEvent>
 #include <QWheelEvent>
+#include <vts-browser/log.hpp>
 #include <vts-browser/map.hpp>
 #include <vts-browser/mapOptions.hpp>
 #include <vts-browser/camera.hpp>
@@ -97,6 +98,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::dataEntry()
 {
+    vts::setLogThreadName("data");
     gl2 = std::make_shared<Gl>(this);
     gl2->setShareContext(gl.get());
     gl2->initialize();

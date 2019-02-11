@@ -60,11 +60,11 @@ public:
         case GpuGeodataSpec::Type::Invalid:
             break; // do nothing
         case GpuGeodataSpec::Type::LineScreen:
-        case GpuGeodataSpec::Type::LineWorld:
+        case GpuGeodataSpec::Type::LineFlat:
             loadLine();
             break;
         case GpuGeodataSpec::Type::PointScreen:
-        case GpuGeodataSpec::Type::PointWorld:
+        case GpuGeodataSpec::Type::PointFlat:
             loadPoint();
             break;
         case GpuGeodataSpec::Type::LineLabel:
@@ -121,6 +121,37 @@ public:
         for (uint32 li = 0; li < linesCount; li++)
             totalPoints += spec.coordinates[li].size();
         return totalPoints;
+    }
+
+    void prepareTextureForLinesAndPoints(Buffer &&texBuffer,
+                uint32 totalPoints)
+    {
+        GpuTextureSpec tex;
+        tex.buffer = std::move(texBuffer);
+        tex.width = totalPoints;
+        tex.height = 2;
+        tex.components = 3;
+        tex.internalFormat = GL_RGB32F;
+        tex.type = GpuTypeEnum::Float;
+        tex.filterMode = GpuTextureSpec::FilterMode::Nearest;
+        tex.wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
+        ResourceInfo ri;
+        renderer->rendererApi->loadTexture(ri, tex);
+        this->texture = std::static_pointer_cast<Texture>(ri.userData);
+        addMemory(ri);
+    }
+
+    void prepareMeshForLinesAndPoints(Buffer &&indBuffer,
+                uint32 indicesCount)
+    {
+        GpuMeshSpec msh;
+        msh.faceMode = GpuMeshSpec::FaceMode::Triangles;
+        msh.indices = std::move(indBuffer);
+        msh.indicesCount = indicesCount;
+        ResourceInfo ri;
+        renderer->rendererApi->loadMesh(ri, msh);
+        this->mesh = std::static_pointer_cast<Mesh>(ri.userData);
+        addMemory(ri);
     }
 
     void loadLine()
@@ -189,33 +220,10 @@ public:
         }
 
         // prepare the texture
-        {
-            GpuTextureSpec tex;
-            tex.buffer = std::move(texBuffer);
-            tex.width = totalPoints;
-            tex.height = 2;
-            tex.components = 3;
-            tex.internalFormat = GL_RGB32F;
-            tex.type = GpuTypeEnum::Float;
-            tex.filterMode = GpuTextureSpec::FilterMode::Nearest;
-            tex.wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
-            ResourceInfo ri;
-            renderer->rendererApi->loadTexture(ri, tex);
-            this->texture = std::static_pointer_cast<Texture>(ri.userData);
-            addMemory(ri);
-        }
+        prepareTextureForLinesAndPoints(std::move(texBuffer), totalPoints);
 
         // prepare the mesh
-        {
-            GpuMeshSpec msh;
-            msh.faceMode = GpuMeshSpec::FaceMode::Triangles;
-            msh.indices = std::move(indBuffer);
-            msh.indicesCount = indicesCount;
-            ResourceInfo ri;
-            renderer->rendererApi->loadMesh(ri, msh);
-            this->mesh = std::static_pointer_cast<Mesh>(ri.userData);
-            addMemory(ri);
-        }
+        prepareMeshForLinesAndPoints(std::move(indBuffer), indicesCount);
 
         // prepare UBO
         {
@@ -251,7 +259,89 @@ public:
 
     void loadPoint()
     {
-        // todo
+        uint32 totalPoints = getTotalPoints();
+        uint32 trianglesCount = totalPoints * 2;
+        uint32 indicesCount = trianglesCount * 3;
+
+        Buffer texBuffer;
+        Buffer indBuffer;
+
+        // prepare texture buffer and mesh indices
+        {
+            texBuffer.resize(totalPoints * sizeof(vec3f) * 2);
+            vec3f *bufPos = (vec3f*)texBuffer.data();
+            vec3f *bufUps = (vec3f*)texBuffer.data() + totalPoints;
+            vec3f *texBufHalf = bufUps;
+            (void)texBufHalf;
+
+            indBuffer.resize(indicesCount * sizeof(uint16));
+            uint16 *bufInd = (uint16*)indBuffer.data();
+            uint16 current = 0;
+
+            for (uint32 li = 0, lin = spec.coordinates.size();
+                                    li < lin; li++)
+            {
+                const std::vector<std::array<float, 3>> &points
+                    = spec.coordinates[li];
+                for (uint32 pi = 0, pin = points.size();
+                                pi < pin; pi++)
+                {
+                    vec3f p = rawToVec3(points[pi].data());
+                    vec3f u = localUp(p);
+                    *bufPos++ = p;
+                    *bufUps++ = u;
+                    *bufInd++ = current + 0;
+                    *bufInd++ = current + 1;
+                    *bufInd++ = current + 3;
+                    *bufInd++ = current + 0;
+                    *bufInd++ = current + 3;
+                    *bufInd++ = current + 2;
+                    current += 4;
+                }
+            }
+
+            assert(bufPos == texBufHalf);
+            assert(bufUps == (vec3f*)texBuffer.dataEnd());
+            assert(bufInd == (uint16*)indBuffer.dataEnd());
+        }
+
+        // prepare the texture
+        prepareTextureForLinesAndPoints(std::move(texBuffer), totalPoints);
+
+        // prepare the mesh
+        prepareMeshForLinesAndPoints(std::move(indBuffer), indicesCount);
+
+        // prepare UBO
+        {
+            struct UboPointData
+            {
+                vec4f color;
+                vec4f visibilityRelative;
+                vec4f visibilityAbsolutePlusVisibilityPlusCulling;
+                vec4f typePlusRadius;
+            };
+            UboPointData uboPointData;
+
+            uboPointData.color = rawToVec4(spec.unionData.point.color);
+            uboPointData.visibilityRelative
+                = rawToVec4(spec.commonData.visibilityRelative);
+            for (int i = 0; i < 2; i++)
+                uboPointData.visibilityAbsolutePlusVisibilityPlusCulling[i]
+                = spec.commonData.visibilityAbsolute[i];
+            uboPointData.visibilityAbsolutePlusVisibilityPlusCulling[2]
+                = spec.commonData.culling;
+            uboPointData.visibilityAbsolutePlusVisibilityPlusCulling[3]
+                = spec.commonData.visibility;
+            uboPointData.typePlusRadius
+                = vec4f((float)spec.type,
+                    (float)spec.unionData.point.radius
+                    , 0.f, 0.f);
+
+            uniform = std::make_shared<UniformBuffer>();
+            uniform->bind();
+            uniform->load(uboPointData);
+            info->gpuMemoryCost += sizeof(uboPointData);
+        }
     }
 };
 
@@ -274,6 +364,26 @@ void RendererImpl::initializeGeodata()
         shaderGeodataLine->bindUniformBlockLocations({
                 { "uboCameraData", 0 },
                 { "uboLineData", 1 }
+            });
+    }
+
+    // load shader geodata point
+    {
+        shaderGeodataPoint = std::make_shared<Shader>();
+        shaderGeodataPoint->loadInternal(
+            "data/shaders/geodataPoint.vert.glsl",
+            "data/shaders/geodataPoint.frag.glsl");
+        shaderGeodataPoint->loadUniformLocations({
+                "uniMvp",
+                "uniMvpInv",
+                "uniMvInv"
+            });
+        shaderGeodataPoint->bindTextureLocations({
+                { "texPointData", 0 }
+            });
+        shaderGeodataPoint->bindUniformBlockLocations({
+                { "uboCameraData", 0 },
+                { "uboPointData", 1 }
             });
     }
 
@@ -382,20 +492,43 @@ void RendererImpl::renderGeodata()
                 depthOffsetProj = proj * davidProjInv * s * davidProj;
             }
 
+            mat4 model = rawToMat4(g->spec.model);
+            mat4 mvp = mat4(depthOffsetProj * view * model);
+
             switch (g->spec.type)
             {
             case GpuGeodataSpec::Type::LineScreen:
-            case GpuGeodataSpec::Type::LineWorld:
+            case GpuGeodataSpec::Type::LineFlat:
             {
                 shaderGeodataLine->bind();
-                mat4 model = rawToMat4(g->spec.model);
-                mat4 mvp = mat4(depthOffsetProj * view * model);
                 shaderGeodataLine->uniformMat4(0,
                     mat4f(mvp.cast<float>()).data());
                 shaderGeodataLine->uniformMat4(1,
                     mat4f(mat4(mvp.inverse()).cast<float>()).data());
                 shaderGeodataLine->uniformMat3(2,
-                    mat3f(mat4to3(mat4((view * rawToMat4(g->spec.model))
+                    mat3f(mat4to3(mat4((view * model)
+                        .inverse())).cast<float>()).data());
+                g->uniform->bindToIndex(1);
+                g->texture->bind();
+                Mesh *msh = g->mesh.get();
+                msh->bind();
+                glEnable(GL_STENCIL_TEST);
+                msh->dispatch();
+                glDisable(GL_STENCIL_TEST);
+                //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                //msh->dispatch();
+                //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            } break;
+            case GpuGeodataSpec::Type::PointScreen:
+            case GpuGeodataSpec::Type::PointFlat:
+            {
+                shaderGeodataPoint->bind();
+                shaderGeodataPoint->uniformMat4(0,
+                    mat4f(mvp.cast<float>()).data());
+                shaderGeodataPoint->uniformMat4(1,
+                    mat4f(mat4(mvp.inverse()).cast<float>()).data());
+                shaderGeodataPoint->uniformMat3(2,
+                    mat3f(mat4to3(mat4((view * model)
                         .inverse())).cast<float>()).data());
                 g->uniform->bindToIndex(1);
                 g->texture->bind();

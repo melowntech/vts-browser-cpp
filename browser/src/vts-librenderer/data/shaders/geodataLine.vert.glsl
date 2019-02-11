@@ -42,7 +42,7 @@ void main()
         u = uniMvInv * vec3(0.0, 0.0, 1.0);
         scale = length(pixelUp(p) - p); // pixels
         break;
-    case 2: // LineWorld
+    case 2: // LineFlat
         u = texelFetch(texLineData, ivec2(pointIndex, 1), 0).xyz;
         scale = length(u); // meters
         break;
@@ -55,7 +55,7 @@ void main()
         case 1: // LineScreen
             scale *= uniCameraParams[0]; // screen height in pixels
             break;
-        case 2: // LineWorld
+        case 2: // LineFlat
             scale *= uniCameraParams[1]; // view extent in meters
             break;
         }

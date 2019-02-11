@@ -186,10 +186,10 @@ public:
     {
         Invalid,
         LineScreen,
-        LineWorld,
+        LineFlat,
         LineLabel,
         PointScreen,
-        PointWorld,
+        PointFlat,
         PointLabel,
         Icon,
         PackedPointLabelIcon,

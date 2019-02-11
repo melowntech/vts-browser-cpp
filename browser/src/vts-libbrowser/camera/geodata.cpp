@@ -724,7 +724,7 @@ struct geoContext
     void processFeatureLine(const Value &layer, GpuGeodataSpec spec)
     {
         if (evaluate(layer["line-flat"]).asBool())
-            spec.type = GpuGeodataSpec::Type::LineWorld;
+            spec.type = GpuGeodataSpec::Type::LineFlat;
         else
             spec.type = GpuGeodataSpec::Type::LineScreen;
         vecToRaw(convertColor(layer["line-color"]),
@@ -744,7 +744,7 @@ struct geoContext
                 THROW << "Invalid line-width-units";
             if (Validating)
             {
-                if (spec.type == GpuGeodataSpec::Type::LineWorld
+                if (spec.type == GpuGeodataSpec::Type::LineFlat
                     && spec.unionData.line.units
                     == GpuGeodataSpec::Units::Pixels)
                     THROW
@@ -758,7 +758,7 @@ struct geoContext
                         << " (meters) and line-flat (false)";
             }
         }
-        else if (spec.type == GpuGeodataSpec::Type::LineWorld)
+        else if (spec.type == GpuGeodataSpec::Type::LineFlat)
             spec.unionData.line.units = GpuGeodataSpec::Units::Meters;
         else
             spec.unionData.line.units = GpuGeodataSpec::Units::Pixels;
@@ -791,7 +791,7 @@ struct geoContext
     void processFeaturePoint(const Value &layer, GpuGeodataSpec spec)
     {
         if (evaluate(layer["point-flat"]).asBool())
-            spec.type = GpuGeodataSpec::Type::PointWorld;
+            spec.type = GpuGeodataSpec::Type::PointFlat;
         else
             spec.type = GpuGeodataSpec::Type::PointScreen;
         vecToRaw(convertColor(layer["point-color"]),

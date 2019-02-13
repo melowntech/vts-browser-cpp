@@ -70,7 +70,7 @@ public:
         case GpuGeodataSpec::Type::LineLabel:
         case GpuGeodataSpec::Type::PointLabel:
         case GpuGeodataSpec::Type::Icon:
-        case GpuGeodataSpec::Type::PackedPointLabelIcon:
+        case GpuGeodataSpec::Type::PackedLabelIcon:
         case GpuGeodataSpec::Type::Triangles:
             // todo
             break;
@@ -78,7 +78,7 @@ public:
 
         // free some memory
         std::vector<std::vector<std::array<float, 3>>>()
-            .swap(spec.coordinates);
+            .swap(spec.positions);
         std::vector<std::string>().swap(spec.texts);
 
         info.ramMemoryCost += sizeof(spec);
@@ -117,9 +117,9 @@ public:
     uint32 getTotalPoints() const
     {
         uint32 totalPoints = 0;
-        uint32 linesCount = spec.coordinates.size();
+        uint32 linesCount = spec.positions.size();
         for (uint32 li = 0; li < linesCount; li++)
-            totalPoints += spec.coordinates[li].size();
+            totalPoints += spec.positions[li].size();
         return totalPoints;
     }
 
@@ -157,7 +157,7 @@ public:
     void loadLine()
     {
         uint32 totalPoints = getTotalPoints(); // example: 7
-        uint32 linesCount = spec.coordinates.size(); // 2
+        uint32 linesCount = spec.positions.size(); // 2
         uint32 segmentsCount = totalPoints - linesCount; // 5
         uint32 jointsCount = segmentsCount - linesCount; // 3
         uint32 trianglesCount = (segmentsCount + jointsCount) * 2; // 16
@@ -183,7 +183,7 @@ public:
             for (uint32 li = 0; li < linesCount; li++)
             {
                 const std::vector<std::array<float, 3>> &points
-                    = spec.coordinates[li];
+                    = spec.positions[li];
                 uint32 pointsCount = points.size();
                 for (uint32 pi = 0; pi < pointsCount; pi++)
                 {
@@ -278,11 +278,11 @@ public:
             uint16 *bufInd = (uint16*)indBuffer.data();
             uint16 current = 0;
 
-            for (uint32 li = 0, lin = spec.coordinates.size();
+            for (uint32 li = 0, lin = spec.positions.size();
                                     li < lin; li++)
             {
                 const std::vector<std::array<float, 3>> &points
-                    = spec.coordinates[li];
+                    = spec.positions[li];
                 for (uint32 pi = 0, pin = points.size();
                                 pi < pin; pi++)
                 {

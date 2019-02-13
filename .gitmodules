@@ -40,3 +40,6 @@
 [submodule "externals/proj-data"]
 	path = externals/proj-data
 	url = https://github.com/Melown/proj-data.git
+[submodule "externals/SheenBidi"]
+	path = externals/SheenBidi
+	url = https://github.com/Tehreer/SheenBidi.git

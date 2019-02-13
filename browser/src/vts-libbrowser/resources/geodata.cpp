@@ -125,27 +125,4 @@ visibility(nan1()), culling(nan1()), zIndex(0)
     vecToRaw(vec2f(nan2().cast<float>()), visibilityAbsolute);
 }
 
-GpuMeshSpec GpuGeodataSpec::createMeshPoints() const
-{
-    uint32 linesCount = coordinates.size();
-    uint32 totalVertices = 0;
-    for (uint32 li = 0; li < linesCount; li++)
-        totalVertices += coordinates[li].size();
-    GpuMeshSpec spec;
-    spec.verticesCount = totalVertices;
-    spec.vertices.allocate(spec.verticesCount * sizeof(vec3f));
-    vec3f *out = (vec3f*)spec.vertices.data();
-    for (uint32 li = 0; li < linesCount; li++)
-    {
-        memcpy(out, coordinates[li].data(),
-                coordinates[li].size() * sizeof(vec3f));
-        out += coordinates[li].size();
-    }
-    spec.attributes[0].enable = true;
-    spec.attributes[0].components = 3;
-    spec.attributes[0].type = GpuTypeEnum::Float;
-    spec.faceMode = GpuMeshSpec::FaceMode::Points;
-    return spec;
-}
-
 } // namespace vts

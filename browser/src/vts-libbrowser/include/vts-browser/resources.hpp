@@ -192,7 +192,7 @@ public:
         PointFlat,
         PointLabel,
         Icon,
-        PackedPointLabelIcon,
+        PackedLabelIcon,
         Triangles,
     };
 
@@ -276,7 +276,7 @@ public:
         TextAlign textAlign;
     };
 
-    struct VTS_API PackedPointLabelIcon
+    struct VTS_API PackedLabelIcon
     {
         PointLabel pointlabel;
         Icon icon;
@@ -289,7 +289,7 @@ public:
         LineLabel lineLabel;
         Point point;
         PointLabel pointLabel;
-        PackedPointLabelIcon packedPointLabelIcon;
+        PackedLabelIcon packedLabelIcon;
         UnionData();
     };
 
@@ -306,13 +306,10 @@ public:
 
     GpuGeodataSpec();
 
-    // generate mesh with all points
-    // for debugging purposes
-    GpuMeshSpec createMeshPoints() const;
-
-    std::shared_ptr<void> font;
-    std::shared_ptr<void> texture;
-    std::vector<std::vector<std::array<float, 3>>> coordinates;
+    //std::vector<std::shared_ptr<void>> fonts;
+    std::vector<std::shared_ptr<void>> bitmaps;
+    std::vector<std::vector<std::array<float, 3>>> positions;
+    std::vector<std::vector<std::array<float, 2>>> uvs;
     std::vector<std::string> texts;
     double model[16];
     UnionData unionData;

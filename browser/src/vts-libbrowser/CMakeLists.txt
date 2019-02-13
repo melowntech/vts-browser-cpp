@@ -1,4 +1,14 @@
 
+include_directories(SYSTEM externals)
+add_subdirectory(externals)
+
+find_package(ZLIB REQUIRED)
+include_directories(SYSTEM ${ZLIB_INCLUDE_DIRS})
+find_package(PNG REQUIRED)
+include_directories(SYSTEM ${PNG_INCLUDE_DIRS})
+find_package(JPEG REQUIRED)
+include_directories(SYSTEM ${JPEG_INCLUDE_DIRS})
+
 set(EXTRA_SRC_LIST)
 set(EXTRA_LIB_DEPS)
 set(EXTRA_LIB_MODULES)
@@ -18,13 +28,6 @@ else()
     list(APPEND EXTRA_LIB_MODULES http)
     list(APPEND EXTRA_SRC_LIST fetcher/curl.cpp)
 endif()
-
-find_package(ZLIB REQUIRED)
-find_package(PNG REQUIRED)
-find_package(JPEG REQUIRED)
-include_directories(SYSTEM ${ZLIB_INCLUDE_DIRS})
-include_directories(SYSTEM ${PNG_INCLUDE_DIRS})
-include_directories(SYSTEM ${JPEG_INCLUDE_DIRS})
 
 define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus
     jsoncpp ZLIB PNG JPEG ${EXTRA_LIB_MODULES})
@@ -148,7 +151,7 @@ set(SRC_LIST
     subtileMerger.hpp
     tilesetMapping.hpp
     traverseNode.hpp
-	validity.hpp
+    validity.hpp
 
     ${EXTRA_SRC_LIST}
 )

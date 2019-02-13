@@ -4,8 +4,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
 
 set(glad_SOURCES
-	glad.c
-	KHR/khrplatform.h
+    glad.c
+    KHR/khrplatform.h
 )
 
 add_library(glad STATIC ${glad_SOURCES})

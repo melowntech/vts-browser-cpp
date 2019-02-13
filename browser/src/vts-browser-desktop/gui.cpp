@@ -142,7 +142,7 @@ public:
             nk_font_atlas_init_default(&atlas);
             nk_font_atlas_begin(&atlas);
             Buffer buffer = readInternalMemoryBuffer(
-                        "data/fonts/roboto-regular.ttf");
+                        "data/fonts/Roboto-Regular.ttf");
             font = nk_font_atlas_add_from_memory(&atlas,
                 buffer.data(), buffer.size(), 14, &cfg);
             GpuTextureSpec spec;

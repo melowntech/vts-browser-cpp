@@ -12,7 +12,7 @@ if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "64 bit generator is required.")
 endif()
 
-# by default, this is OSS build (can be overriden by customer machinery)
+# by default, this is OSS build (can be overridden by customer machinery)
 set(BUILDSYS_DEFAULT_CUSTOMER_NAME oss)
 include(buildsys/cmake/buildsys.cmake)
 buildsys_fix_symlinks(${CMAKE_CURRENT_SOURCE_DIR})
@@ -28,48 +28,13 @@ include(cmake/buildsys_pack_data.cmake)
 enable_hidden_visibility()
 
 # find 3rd party dependencies
-message(STATUS "looking for 3rd-party dependencies")
 find_package(Boost 1.46 REQUIRED
     COMPONENTS thread program_options filesystem system
     date_time serialization regex chrono iostreams)
 link_directories(${Boost_LIBRARY_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-find_package(GDAL 2 REQUIRED)
-include_directories(SYSTEM ${GDAL_INCLUDE_DIR})
-find_package(Proj REQUIRED)
-include_directories(SYSTEM ${PROJ_INCLUDE_DIR})
-find_package(GeographicLib REQUIRED)
-include_directories(SYSTEM ${GEOGRAPHICLIB_INCLUDE_DIR})
-find_package(JsonCPP REQUIRED)
-include_directories(SYSTEM ${JSONCPP_INCLUDE_DIR})
 find_package(Eigen3 REQUIRED)
 include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
-
-# vts dependencies
-message(STATUS "including vts dependencies")
-add_subdirectory(src/dbglog)
-add_subdirectory(src/utility)
-add_subdirectory(src/math)
-add_subdirectory(src/geometry)
-add_subdirectory(src/imgproc)
-add_subdirectory(src/jsoncpp)
-add_subdirectory(src/geo)
-add_subdirectory(src/half)
-buildsys_ide_groups(dbglog deps)
-buildsys_ide_groups(utility deps)
-buildsys_ide_groups(math deps)
-buildsys_ide_groups(geometry deps)
-buildsys_ide_groups(imgproc deps)
-buildsys_ide_groups(jsoncpp deps)
-buildsys_ide_groups(geo deps)
-buildsys_ide_groups(half deps)
-
-# vts libs
-message(STATUS "including vts libs")
-buildsys_nobuild_target(vts-libs-core)
-buildsys_nobuild_target(vts-libs)
-add_subdirectory(src/vts-libs)
-buildsys_ide_groups(vts-libs-nucleus deps)
 
 # libraries type
 set(VTS_BROWSER_TYPE FRAMEWORK CACHE STRING "Type of browser libraries")
@@ -103,7 +68,6 @@ if(NOT VTS_BROWSER_TYPE STREQUAL "MODULE")
         # ios application
         message(STATUS "including vts-browser-ios")
         add_subdirectory(src/vts-browser-ios)
-        set(VS_STARTUP_PROJECT vts-browser-ios)
     else()
         # desktop apps (SDL)
         cmake_policy(SET CMP0004 OLD) # because SDL installed on some systems has improperly configured libraries
@@ -118,9 +82,7 @@ if(NOT VTS_BROWSER_TYPE STREQUAL "MODULE")
 
             # desktop application
             message(STATUS "including vts-browser-desktop")
-            add_subdirectory(src/nuklear)
             add_subdirectory(src/vts-browser-desktop)
-            set(VS_STARTUP_PROJECT vts-browser-desktop)
 
             # two cameras
             message(STATUS "including vts-browser-two-cameras")

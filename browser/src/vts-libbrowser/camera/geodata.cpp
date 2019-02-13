@@ -778,7 +778,7 @@ struct geoContext
                 std::vector<Point> v; // separate lines
                 for (const Value &point : array2)
                     v.push_back(convertPoint(point));
-                data.coordinates.push_back(v);
+                data.positions.push_back(v);
             }
         } break;
         case Type::Polygon:
@@ -816,7 +816,7 @@ struct geoContext
                 for (const Value &point : array2)
                     v.push_back(convertPoint(point));
             }
-            data.coordinates.push_back(v);
+            data.positions.push_back(v);
         } break;
         case Type::Polygon:
         {

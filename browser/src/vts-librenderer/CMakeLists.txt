@@ -1,4 +1,13 @@
-define_module(LIBRARY vts-renderer DEPENDS vts-browser glad)
+
+find_package(Freetype REQUIRED)
+include_directories(SYSTEM ${FREETYPE_INCLUDE_DIR})
+find_package(HarfBuzz REQUIRED)
+include_directories(SYSTEM ${HARFBUZZ_INCLUDE_DIR})
+
+buildsys_fix_symlinks(${CMAKE_CURRENT_SOURCE_DIR}/externals)
+add_subdirectory(externals/sheenbidi)
+
+define_module(LIBRARY vts-renderer DEPENDS vts-browser glad freetype harfbuzz SheenBidi)
 
 set(PUB_HDR_LIST
     include/vts-renderer/foundationCommon.h

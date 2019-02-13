@@ -1,4 +1,6 @@
 
+add_subdirectory(externals/nuklear)
+
 define_module(BINARY vts-browser-desktop DEPENDS
     vts-browser vts-renderer
     nuklear glad SDL2 THREADS Boost_PROGRAM_OPTIONS)
@@ -18,7 +20,7 @@ set(SRC_LIST
 set(DATA_LIST
     data/shaders/gui.frag.glsl
     data/shaders/gui.vert.glsl
-    data/fonts/roboto-regular.ttf
+    data/fonts/Roboto-Regular.ttf
     data/textures/gwen.png
 )
 

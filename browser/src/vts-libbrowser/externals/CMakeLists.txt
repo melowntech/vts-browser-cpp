@@ -49,3 +49,7 @@ buildsys_nobuild_target(vts-libs-core)
 buildsys_nobuild_target(vts-libs)
 add_subdirectory(vts-libs)
 buildsys_ide_groups(vts-libs-nucleus deps)
+
+# additional fixes
+target_include_directories(jsoncpp SYSTEM INTERFACE ${JSONCPP_INCLUDE_DIR})
+target_include_directories(geo SYSTEM INTERFACE ${GDAL_INCLUDE_DIR})

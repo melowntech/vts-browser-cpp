@@ -1,6 +1,6 @@
 
 define_module(BINARY vts-browser-minimal-cpp DEPENDS
-    vts-browser vts-renderer SDL2)
+    vts-browser vts-renderer SDL2 THREADS)
 
 set(SRC_LIST
     main.cpp

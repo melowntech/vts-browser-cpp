@@ -266,12 +266,13 @@ public:
     struct VTS_API PointLabel
     {
         Stick stick;
+        float outline[4];
         float color[4];
         float color2[4];
         float margin[2];
+        float offset[2];
         float size;
         float width;
-        float offset;
         Origin origin;
         TextAlign textAlign;
     };
@@ -308,9 +309,9 @@ public:
 
     //std::vector<std::shared_ptr<void>> fonts;
     std::vector<std::shared_ptr<void>> bitmaps;
+    std::vector<std::string> texts;
     std::vector<std::vector<std::array<float, 3>>> positions;
     std::vector<std::vector<std::array<float, 2>>> uvs;
-    std::vector<std::string> texts;
     double model[16];
     UnionData unionData;
     CommonData commonData;

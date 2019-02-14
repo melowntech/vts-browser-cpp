@@ -15,7 +15,6 @@ endif()
 # by default, this is OSS build (can be overridden by customer machinery)
 set(BUILDSYS_DEFAULT_CUSTOMER_NAME oss)
 include(buildsys/cmake/buildsys.cmake)
-buildsys_fix_symlinks(${CMAKE_CURRENT_SOURCE_DIR})
 
 # bump shared libraries version here
 set(vts-browser_SO_VERSION 0.0.0)
@@ -35,6 +34,7 @@ link_directories(${Boost_LIBRARY_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 find_package(Eigen3 REQUIRED)
 include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
+add_subdirectory(externals/utfcpp)
 
 # libraries type
 set(VTS_BROWSER_TYPE FRAMEWORK CACHE STRING "Type of browser libraries")
@@ -59,7 +59,7 @@ include_directories(src/vts-libbrowser/include)
 if(NOT VTS_BROWSER_TYPE STREQUAL "MODULE")
     # vts renderer library
     message(STATUS "including vts renderer library")
-    add_subdirectory(src/glad)
+    add_subdirectory(externals/glad)
     add_subdirectory(src/vts-librenderer)
     include_directories(src/vts-librenderer/include)
 

@@ -43,3 +43,6 @@
 [submodule "externals/SheenBidi"]
 	path = externals/SheenBidi
 	url = https://github.com/Tehreer/SheenBidi.git
+[submodule "externals/utfcpp"]
+	path = externals/utfcpp
+	url = https://github.com/nemtrif/utfcpp.git

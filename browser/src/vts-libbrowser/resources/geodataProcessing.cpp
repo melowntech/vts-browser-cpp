@@ -28,11 +28,12 @@
 #include "../include/vts-browser/log.hpp"
 
 #include "../utilities/json.hpp"
-#include "../camera.hpp"
 #include "../gpuResource.hpp"
 #include "../geodata.hpp"
 #include "../renderTasks.hpp"
 #include "../map.hpp"
+
+#include <utf8.h>
 
 namespace vts
 {
@@ -54,11 +55,60 @@ struct GpuGeodataSpecComparator
         int s = memcmp(&a.unionData, &b.unionData, sizeof(a.unionData));
         if (s != 0)
             return s < 0;
-        return memcmp(a.model, b.model, sizeof(float) * 16) < 0;
+        return memcmp(a.model, b.model, sizeof(a.model)) < 0;
     }
 };
 
 #define THROW LOGTHROW(err3, GeodataValidationException)
+
+bool hasLatin(const std::string &s)
+{
+    auto it = s.begin();
+    const auto e = s.end();
+    while (it != e)
+    {
+        uint32 c = utf8::next(it, e);
+        if ((c >= 0x41 && c <= 0x5a)
+            || (c >= 0x61 && c <= 0x7a)
+            || ((c >= 0xc0 && c <= 0xff) && c != 0xd7 && c != 0xf7)
+            || (c >= 0x100 && c <= 0x17f))
+            return true;
+    }
+    return false;
+}
+
+bool isCjk(const std::string &s)
+{
+    auto it = s.begin();
+    const auto e = s.end();
+    while (it != e)
+    {
+        uint32 c = utf8::next(it, e);
+        if (!((c >= 0x4E00 && c <= 0x62FF) || (c >= 0x6300 && c <= 0x77FF) ||
+            (c >= 0x7800 && c <= 0x8CFF) || (c >= 0x8D00 && c <= 0x9FFF) ||
+            (c >= 0x3400 && c <= 0x4DBF) || (c >= 0x20000 && c <= 0x215FF) ||
+            (c >= 0x21600 && c <= 0x230FF) || (c >= 0x23100 && c <= 0x245FF) ||
+            (c >= 0x24600 && c <= 0x260FF) || (c >= 0x26100 && c <= 0x275FF) ||
+            (c >= 0x27600 && c <= 0x290FF) || (c >= 0x29100 && c <= 0x2A6DF) ||
+            (c >= 0x2A700 && c <= 0x2B73F) || (c >= 0x2B740 && c <= 0x2B81F) ||
+            (c >= 0x2B820 && c <= 0x2CEAF) || (c >= 0x2CEB0 && c <= 0x2EBEF) ||
+            (c >= 0xF900 && c <= 0xFAFF) || (c >= 0x3300 && c <= 0x33FF) ||
+            (c >= 0xFE30 && c <= 0xFE4F) || (c >= 0xF900 && c <= 0xFAFF) ||
+            (c >= 0x2F800 && c <= 0x2FA1F) ||
+            (c >= 0x0 && c <= 0x40) || (c >= 0xa0 && c <= 0xbf)))
+            return false;
+    }
+    return true;
+}
+
+bool isLayerStyleRequired(const Value &v)
+{
+    if (v.isNull())
+        return false;
+    if (v.isConvertibleTo(Json::ValueType::booleanValue))
+        return v.asBool();
+    return true;
+}
 
 template<bool Validating>
 struct geoContext
@@ -72,22 +122,50 @@ struct geoContext
 
     typedef std::array<float, 3> Point;
 
-    Point convertPoint(const Value &v)
+    Point convertPoint(const Value &p) const
     {
-        if (Validating)
-            validateArrayLength(v, 3, 3, "Point must have 3 coordinates");
-        return group->convertPoint(v);
+        return group->convertPoint(evaluate(p));
     }
 
-    vec4f convertColor(const Value &v)
+    vec4f convertColor(const Value &p) const
     {
+        Value v = evaluate(p);
+        validateArrayLength(v, 4, 4, "Color must have 4 components");
         return vec4f(v[0].asInt(), v[1].asInt(), v[2].asInt(), v[3].asInt())
                 / 255.f;
     }
 
-    void validateArrayLength(const Value &value,
-                             uint32 minimum, uint32 maximum, // inclusive range
-                             const std::string &message)
+    vec4f convertVector4(const Value &p) const
+    {
+        Value v = evaluate(p);
+        validateArrayLength(v, 4, 4, "Expected 4 components");
+        return vec4f(v[0].asFloat(), v[1].asFloat(),
+            v[2].asFloat(), v[3].asFloat());
+    }
+
+    vec2f convertVector2(const Value &p) const
+    {
+        Value v = evaluate(p);
+        validateArrayLength(v, 2, 2, "Expected 2 components");
+        return vec2f(v[0].asFloat(), v[1].asFloat());
+    }
+
+    GpuGeodataSpec::Stick convertStick(const Value &p) const
+    {
+        Value v = evaluate(p);
+        validateArrayLength(v, 7, 7, "Stick must have 7 components");
+        GpuGeodataSpec::Stick s;
+        s.maxHeight = v[0].asFloat();
+        s.minHeight = v[1].asFloat();
+        s.width = v[2].asFloat();
+        vecToRaw(vec4f(vec4f(v[3].asInt(), v[4].asInt(), v[5].asInt(),
+            v[6].asInt()) / 255.f), s.color);
+        return s;
+    }
+
+    static void validateArrayLength(const Value &value,
+            uint32 minimum, uint32 maximum, // inclusive range
+            const std::string &message)
     {
         if (Validating)
         {
@@ -105,17 +183,8 @@ struct geoContext
           lod(lod)
     {}
 
-    bool isLayerStyleRequired(const Value &v)
-    {
-        if (v.isNull())
-            return false;
-        if (v.isConvertibleTo(Json::ValueType::booleanValue))
-            return v.asBool();
-        return true;
-    }
-
     // defines which style layers are candidates for a specific feature type
-    std::vector<std::string> filterLayersByType(Type t)
+    std::vector<std::string> filterLayersByType(Type t) const
     {
         std::vector<std::string> result;
         const auto allLayerNames = style["layers"].getMemberNames();
@@ -215,10 +284,11 @@ struct geoContext
                     for (const std::string &layerName : layers)
                         processFeature(layerName);
                 }
+                this->feature.reset();
             }
             this->type.reset();
-            this->feature.reset();
         }
+        this->group.reset();
 
         // put cache into queue for upload
         data->specsToUpload.clear();
@@ -227,7 +297,7 @@ struct geoContext
                 std::move(const_cast<GpuGeodataSpec&>(spec)));
     }
 
-    Value resolveInheritance(const Value &orig)
+    Value resolveInheritance(const Value &orig) const
     {
         if (!orig["inheritance"])
             return orig;
@@ -251,7 +321,7 @@ struct geoContext
     }
 
     // solves @constants, $properties and #identifiers
-    Value replacement(const std::string &name)
+    Value replacement(const std::string &name) const
     {
         if (Validating)
         {
@@ -268,7 +338,7 @@ struct geoContext
         return replacementInternal(name);
     }
 
-    Value replacementInternal(const std::string &name)
+    Value replacementInternal(const std::string &name) const
     {
         assert(group);
         assert(type);
@@ -280,10 +350,10 @@ struct geoContext
         case '@': // constant
             return evaluate(style["constants"][name]);
         case '$': // property
-            return feature->properties[name.substr(1)];
+            return (*feature)["properties"][name.substr(1)];
         case '#': // identifier
             if (name == "#id")
-                return feature->properties["name"];
+                return (*feature)["properties"]["name"];
             if (name == "#group")
                 return group->group["id"];
             if (name == "#type")
@@ -313,7 +383,7 @@ struct geoContext
     }
 
     // solves functions and string expansion
-    Value evaluate(const Value &expression)
+    Value evaluate(const Value &expression) const
     {
         if (Validating)
         {
@@ -331,7 +401,18 @@ struct geoContext
         return evaluateInternal(expression);
     }
 
-    Value interpolate(const Value &a, const Value &b, double f)
+    Value evaluateInternal(const Value &expression) const
+    {
+        if (expression.isArray())
+            return evaluateArray(expression);
+        if (expression.isObject())
+            return evaluateObject(expression);
+        if (expression.isString())
+            return evaluateString(expression.asString());
+        return expression;
+    }
+
+    static Value interpolate(const Value &a, const Value &b, double f)
     {
         LOGTHROW(fatal, std::logic_error)
             << "interpolate is not yet implemented";
@@ -342,7 +423,7 @@ struct geoContext
     }
 
     template<bool Linear>
-    Value evaluatePairsArray(const Value &what, const Value &searchArray)
+    Value evaluatePairsArray(const Value &what, const Value &searchArray) const
     {
         if (Validating)
         {
@@ -376,118 +457,134 @@ struct geoContext
         return evaluate(searchArray[0][1]);
     }
 
-    Value evaluateInternal(const Value &expression)
+    Value evaluateArray(const Value &expression) const
     {
-        if (expression.isArray())
+        Value r(expression);
+        for (Value &it : r)
+            it = evaluate(it);
+        return r;
+    }
+
+    // evaluate function
+    Value evaluateObject(const Value &expression) const
+    {
+        if (Validating)
         {
-            Value r(expression);
-            for (Value &it : r)
-                it = evaluate(it);
-            return r;
+            if (expression.size() != 1)
+                THROW << "Function must have exactly one member";
+        }
+        const std::string fnc = expression.getMemberNames()[0];
+
+        // 'sgn', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'abs', 'deg2rad', 'rad2deg'
+
+        // 'add', 'sub', 'mul', 'div', 'pow', 'atan2'
+
+        // 'min', 'max'
+
+        // 'if'
+        if (fnc == "if")
+        {
+            Value arr = expression["if"];
+            validateArrayLength(arr, 3, 3, "'if' must have 3 values");
+            if (filter(arr[0]))
+                return evaluate(arr[1]);
+            else
+                return evaluate(arr[2]);
         }
 
-        if (expression.isObject())
+        // 'strlen', 'str2num', 'lowercase', 'uppercase', 'capitalize'
+
+        // 'has-fonts', 'has-latin', 'is-cjk'
+        if (fnc == "has-latin")
+            return hasLatin(evaluate(expression[fnc]).asString());
+        if (fnc == "is-cjk")
+            return isCjk(evaluate(expression[fnc]).asString());
+
+        // 'discrete', 'discrete2', 'linear', 'linear2'
+        if (fnc == "discrete")
+            return evaluatePairsArray<false>(lod, expression[fnc]);
+        if (fnc == "discrete2")
+            return evaluatePairsArray<false>(expression[fnc][0],
+                expression[fnc][1]);
+        if (fnc == "linear")
+            return evaluatePairsArray<true>(lod, expression[fnc]);
+        if (fnc == "linear2")
+            return evaluatePairsArray<true>(expression[fnc][0],
+                expression[fnc][1]);
+
+        // 'lod-scaled'
+        if (fnc == "lod-scaled")
         {
-            if (Validating)
-            {
-                if (expression.size() != 1)
-                    THROW << "Function must have exactly one member";
-            }
-            const std::string fnc = expression.getMemberNames()[0];
-
-            // 'sgn', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'abs', 'deg2rad', 'rad2deg'
-
-            // 'add', 'sub', 'mul', 'div', 'pow', 'atan2'
-
-            // 'min', 'max'
-
-            // 'if'
-
-            // 'strlen', 'str2num', 'lowercase', 'uppercase', 'capitalize'
-
-            // 'has-fonts', 'has-latin', 'is-cjk'
-
-            // 'discrete', 'discrete2', 'linear', 'linear2'
-            if (fnc == "discrete")
-                return evaluatePairsArray<false>(lod, expression[fnc]);
-            if (fnc == "discrete2")
-                return evaluatePairsArray<false>(expression[fnc][0],
-                                                 expression[fnc][1]);
-            if (fnc == "linear")
-                return evaluatePairsArray<true>(lod, expression[fnc]);
-            if (fnc == "linear2")
-                return evaluatePairsArray<true>(expression[fnc][0],
-                                                expression[fnc][1]);
-
-            // 'lod-scaled'
-            if (fnc == "lod-scaled")
-            {
-                Value arr = evaluate(expression["lod-scaled"]);
-                validateArrayLength(arr, 2, 3,
-                    "lod-scaled must have 2 or 3 values");
-                float l = arr[0].asFloat();
-                float v = arr[1].asFloat();
-                float bf = arr.size() == 3 ? arr[2].asFloat() : 1;
-                return Value(std::pow(2 * bf, l - lod) * v);
-            }
-
-            // unknown
-            if (Validating)
-                THROW << "Unknown function <" << fnc << ">";
+            Value arr = evaluate(expression["lod-scaled"]);
+            validateArrayLength(arr, 2, 3,
+                "lod-scaled must have 2 or 3 values");
+            float l = arr[0].asFloat();
+            float v = arr[1].asFloat();
+            float bf = arr.size() == 3 ? arr[2].asFloat() : 1;
+            return Value(std::pow(2 * bf, l - lod) * v);
         }
 
-        if (expression.isString())
-        {
-            std::string s = expression.asString();
-            // find '{'
-            auto start = s.find("{");
-            if (start != s.npos)
-            {
-                auto last = start, end = start;
-                uint32 cnt = 1;
-                while (cnt > 0)
-                {
-                    end = s.find("}", last + 1);
-                    if (Validating)
-                    {
-                        if (end == s.npos)
-                            THROW << "Unmatched <{> in <"
-                                  << expression.toStyledString() << ">";
-                    }
-                    auto open = s.find("{", last + 1);
-                    if (end > open)
-                    {
-                        last = open;
-                        cnt++;
-                    }
-                    else
-                    {
-                        last = end;
-                        cnt--;
-                    }
-                }
-                std::string mid = s.substr(start + 1, end - start - 1);
-                std::string res = s.substr(0, start - 1)
-                        + evaluate(stringToJson(mid)).asString()
-                        + s.substr(end + 1);
-                return evaluate(res);
-            }
-            // find '}'
-            if (Validating)
-            {
-                auto end = s.find("}");
-                if (end != s.npos)
-                    THROW << "Unmatched <}> in <"
-                          << expression.toStyledString() << ">";
-            }
-            // apply replacements
-            return replacement(s);
-        }
+        // unknown
+        if (Validating)
+            THROW << "Unknown function <" << fnc << ">";
         return expression;
     }
 
+    // string processing
+    Value evaluateString(const std::string &s) const
+    {
+        if (Validating)
+        {
+            try
+            {
+                return evaluateStringInternal(s);
+            }
+            catch (...)
+            {
+                LOG(info3) << "In evaluation of string <"
+                    << s << ">";
+                throw;
+            }
+        }
+        return evaluateStringInternal(s);
+    }
+
+    Value evaluateStringInternal(const std::string &s) const
+    {
+        // find '{'
+        std::size_t start = s.find("{");
+        if (start != s.npos)
+        {
+            std::size_t end = s.find("}", start);
+            if (Validating && end == s.size())
+                THROW << "Missing <}> in <" << s << ">";
+            std::size_t originalStart = start;
+            (void)originalStart;
+            start = s.rfind("{", end - 1);
+            assert(start >= originalStart && start < end);
+            std::string subs = s.substr(start + 1, end - start - 1);
+            subs = evaluate(subs).asString();
+            std::string res;
+            if (start > 0)
+                res += s.substr(0, start - 1);
+            res += subs;
+            if (end < s.size())
+                res += s.substr(end + 1);
+            return evaluate(res);
+        }
+        // find '}'
+        if (Validating)
+        {
+            auto end = s.find("}");
+            if (end != s.npos)
+                THROW << "Unmatched <}> in <" << s << ">";
+        }
+        // apply replacements
+        return replacement(s);
+    }
+
     // evaluation of expressions whose result is boolean
-    bool filter(const Value &expression)
+    bool filter(const Value &expression) const
     {
         if (Validating)
         {
@@ -505,7 +602,7 @@ struct geoContext
         return filterInternal(expression);
     }
 
-    bool filterInternal(const Value &expression)
+    bool filterInternal(const Value &expression) const
     {
         if (Validating)
         {
@@ -615,7 +712,10 @@ struct geoContext
             }
             catch (...)
             {
-                LOG(info3) << "In layer <" << layerName << ">";
+                LOG(info3)
+                    << "In feature <" << feature->toStyledString()
+                    << "> in layer <" << layerName << ">: <"
+                    << style["layers"][layerName].toStyledString() << ">";
                 throw;
             }
         }
@@ -645,6 +745,8 @@ struct geoContext
             processFeatureLine(layer, spec);
 
         // line-label
+        if (evaluate(layer["line-label"]).asBool())
+            processFeatureLineLabel(layer, spec);
 
         // point
         if (evaluate(layer["point"]).asBool())
@@ -652,7 +754,9 @@ struct geoContext
 
         // icon
 
-        // label
+        // point label
+        if (evaluate(layer["label"]).asBool())
+            processFeaturePointLabel(layer, spec);
 
         // polygon
 
@@ -665,7 +769,7 @@ struct geoContext
     }
 
     void processFeatureCommon(const Value &layer, GpuGeodataSpec &spec,
-        boost::optional<sint32> zOverride)
+        boost::optional<sint32> zOverride) const
     {
         // model matrix
         matToRaw(group->model, spec.model);
@@ -763,29 +867,9 @@ struct geoContext
         else
             spec.unionData.line.units = GpuGeodataSpec::Units::Pixels;
         GpuGeodataSpec &data = findSpecData(spec);
-        switch (*type)
-        {
-        case Type::Point:
-            // nothing
-            break;
-        case Type::Line:
-        {
-            const Value &array1 = feature->feature["lines"];
-            for (const Value &array2 : array1)
-            {
-                if (array2.empty())
-                    continue;
-                std::vector<Point> v; // separate lines
-                for (const Value &point : array2)
-                    v.push_back(convertPoint(point));
-                data.positions.push_back(v);
-            }
-        } break;
-        case Type::Polygon:
-        {
-            // todo
-        } break;
-        }
+        const auto arr = getFeaturePositions();
+        data.positions.reserve(data.positions.size() + arr.size());
+        data.positions.insert(data.positions.end(), arr.begin(), arr.end());
     }
 
     void processFeaturePoint(const Value &layer, GpuGeodataSpec spec)
@@ -799,30 +883,65 @@ struct geoContext
         spec.unionData.point.radius
             = evaluate(layer["point-radius"]).asFloat();
         GpuGeodataSpec &data = findSpecData(spec);
-        switch (*type)
+        const auto arr = getFeaturePositions();
+        data.positions.reserve(data.positions.size() + arr.size());
+        data.positions.insert(data.positions.end(), arr.begin(), arr.end());
+    }
+
+    void processFeatureLineLabel(const Value &layer, GpuGeodataSpec spec)
+    {
+        // todo
+    }
+
+    void processFeaturePointLabel(const Value &layer, GpuGeodataSpec spec)
+    {
+        spec.type = GpuGeodataSpec::Type::PointLabel;
+        vecToRaw(layer["label-color"].empty()
+            ? vec4f(0, 0, 0, 1)
+            : convertColor(layer["label-color"]),
+            spec.unionData.pointLabel.color);
+        vecToRaw(layer["label-color2"].empty()
+            ? vec4f(0, 0, 0, 1)
+            : convertColor(layer["label-color2"]),
+            spec.unionData.pointLabel.color2);
+        vecToRaw(layer["label-outline"].empty()
+            ? vec4f(0.25, 0.75, 2.2, 2.2)
+            : convertVector4(layer["label-outline"]),
+            spec.unionData.pointLabel.outline);
+        vecToRaw(layer["label-offset"].empty()
+            ? vec2f(0, 0)
+            : convertVector2(layer["label-offset"]),
+            spec.unionData.pointLabel.offset);
+        if (layer["label-no-overlap"].empty()
+            || evaluate(layer["label-no-overlap"]).asBool())
         {
-        case Type::Point:
-        case Type::Line:
-        {
-            const Value &array1 = feature->feature[
-                *type == Type::Point ? "points"
-                    : *type == Type::Line ? "lines"
-                    : ""];
-            std::vector<Point> v; // merge all points into single array
-            for (const Value &array2 : array1)
-            {
-                if (array2.empty())
-                    continue;
-                for (const Value &point : array2)
-                    v.push_back(convertPoint(point));
-            }
-            data.positions.push_back(v);
-        } break;
-        case Type::Polygon:
-        {
-            // todo
-        } break;
+            vecToRaw(layer["label-no-overlap-margin"].empty()
+                ? vec2f(5, 5)
+                : convertVector2(layer["label-no-overlap-margin"]),
+                spec.unionData.pointLabel.margin);
         }
+        spec.unionData.pointLabel.size
+            = layer["label-size"].empty()
+            ? 10
+            : evaluate(layer["label-size"]).asFloat();
+        spec.unionData.pointLabel.width
+            = layer["label-width"].empty()
+            ? 200
+            : evaluate(layer["label-width"]).asFloat();
+        if (!layer["label-stick"].empty())
+            spec.unionData.pointLabel.stick
+                = convertStick(layer["label-stick"]);
+        // todo: align, origin
+        GpuGeodataSpec &data = findSpecData(spec);
+        const auto arr = getFeaturePositions();
+        data.positions.reserve(data.positions.size() + arr.size());
+        data.positions.insert(data.positions.end(), arr.begin(), arr.end());
+        std::string source = layer["label-source"].empty()
+            ? "$name" : evaluate(layer["label-source"]).asString();
+        std::string text = evaluate(source).asString();
+        data.texts.reserve(data.texts.size() + arr.size());
+        for (const auto &a : arr)
+            data.texts.push_back(text);
     }
 
     GpuGeodataSpec &findSpecData(const GpuGeodataSpec &spec)
@@ -867,9 +986,20 @@ struct geoContext
 
         Point convertPoint(const Value &v) const
         {
+            validateArrayLength(v, 3, 3, "Point must have 3 coordinates");
             vec3f p(v[0].asUInt(), v[1].asUInt(), v[2].asUInt());
             p = orthonormalize * p;
             return Point({ p[0], p[1], p[2] });
+        }
+
+        std::vector<Point> convertArray(const Value &v, bool relative) const
+        {
+            (void)relative; // todo
+            std::vector<Point> a;
+            a.reserve(v.size());
+            for (const Value &p : v)
+                a.push_back(convertPoint(p));
+            return a;
         }
 
         mat4 model;
@@ -880,17 +1010,37 @@ struct geoContext
 
     boost::optional<Group> group;
     boost::optional<Type> type;
+    boost::optional<const Value &> feature;
 
-    struct Feature
+    std::vector<std::vector<Point>> getFeaturePositions() const
     {
-        const Value &feature;
-        const Value &properties;
-
-        Feature(const Value &feature)
-            : feature(feature), properties(feature["properties"])
-        {}
-    };
-    boost::optional<Feature> feature;
+        std::vector<std::vector<Point>> result;
+        switch (*type)
+        {
+        case Type::Point:
+        {
+            const Value &array1 = (*feature)["points"];
+            result.push_back(
+                group->convertArray(array1, false));
+            // todo d-points
+        } break;
+        case Type::Line:
+        {
+            const Value &array1 = (*feature)["lines"];
+            for (const Value &array2 : array1)
+            {
+                result.push_back(
+                    group->convertArray(array2, false));
+            }
+            // todo d-lines
+        } break;
+        case Type::Polygon:
+        {
+            // todo
+        } break;
+        }
+        return result;
+    }
 
     // cache data
     //   temporary data generated while processing features

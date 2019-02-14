@@ -68,7 +68,11 @@ public:
             loadPoint();
             break;
         case GpuGeodataSpec::Type::LineLabel:
+            // todo
+            break;
         case GpuGeodataSpec::Type::PointLabel:
+            loadPointLabel();
+            break;
         case GpuGeodataSpec::Type::Icon:
         case GpuGeodataSpec::Type::PackedLabelIcon:
         case GpuGeodataSpec::Type::Triangles:
@@ -342,6 +346,11 @@ public:
             uniform->load(uboPointData);
             info->gpuMemoryCost += sizeof(uboPointData);
         }
+    }
+
+    void loadPointLabel()
+    {
+        // todo
     }
 };
 

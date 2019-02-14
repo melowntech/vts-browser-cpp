@@ -30,7 +30,7 @@ else()
 endif()
 
 define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus
-    jsoncpp ZLIB PNG JPEG ${EXTRA_LIB_MODULES})
+    jsoncpp ZLIB PNG JPEG utf8cpp ${EXTRA_LIB_MODULES})
 
 set(PUB_HDR_LIST
     # C/C++ API
@@ -88,7 +88,6 @@ set(SRC_LIST
     camera/camera.cpp
     camera/cameraApi.cpp
     camera/draws.cpp
-    camera/geodata.cpp
     camera/grids.cpp
     camera/traversal.cpp
     camera/traverseNode.cpp
@@ -113,7 +112,8 @@ set(SRC_LIST
     resources/cache.cpp
     resources/cache.hpp
     resources/fetcher.cpp
-    resources/geodata.cpp
+    resources/geodataProcessing.cpp
+    resources/geodataResources.cpp
     resources/manager.cpp
     resources/mapConfig.cpp
     resources/mesh.cpp

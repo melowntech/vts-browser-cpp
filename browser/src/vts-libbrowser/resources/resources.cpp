@@ -183,9 +183,24 @@ std::shared_ptr<GeodataStylesheet> MapImpl::getGeoStyle(
     return getMapResource<GeodataStylesheet>(this, name);
 }
 
+std::shared_ptr<GeodataStylesheet> MapImpl::newGeoStyle(
+        const std::string &value)
+{
+    auto res = getGeoStyle(value);
+    res->data = value;
+    res->dependenciesLoaded = false;
+    res->state = Resource::State::ready;
+    return res;
+}
+
 std::shared_ptr<GeodataTile> MapImpl::getGeodata(const std::string &name)
 {
     return getMapResource<GeodataTile>(this, name);
+}
+
+std::shared_ptr<GpuFont> MapImpl::getFont(const std::string &name)
+{
+    return getMapResource<GpuFont>(this, name);
 }
 
 } // namespace vts

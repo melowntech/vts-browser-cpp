@@ -175,10 +175,11 @@ struct geoContext
         }
     }
 
-    geoContext(GeodataTile *data, const std::string &style,
+    geoContext(GeodataTile *data, const GeodataStylesheet *style,
                const std::string &features, uint32 lod)
         : data(data),
-          style(stringToJson(style)),
+          stylesheet(style),
+          style(stringToJson(style->data)),
           features(stringToJson(features)),
           lod(lod)
     {}
@@ -958,6 +959,7 @@ struct geoContext
     //   data given from the outside world
 
     GeodataTile *const data;
+    const GeodataStylesheet *const stylesheet;
     Value style;
     Value features;
     const uint32 lod;
@@ -1084,12 +1086,12 @@ void GeodataTile::process()
 
     if (map->options.debugValidateGeodataStyles)
     {
-        geoContext<true> ctx(this, *style, *features, lod);
+        geoContext<true> ctx(this, style.get(), *features, lod);
         ctx.process();
     }
     else
     {
-        geoContext<false> ctx(this, *style, *features, lod);
+        geoContext<false> ctx(this, style.get(), *features, lod);
         ctx.process();
     }
 

@@ -32,6 +32,8 @@
 namespace vts
 {
 
+enum class Validity;
+
 class GpuFont;
 class GpuTexture;
 class GpuGeodataSpec;
@@ -52,12 +54,13 @@ class GeodataStylesheet : public Resource
 public:
     GeodataStylesheet(MapImpl *map, const std::string &name);
     void load() override;
+    Validity dependencies();
     FetchTask::ResourceType resourceType() const override;
 
-    std::shared_ptr<const std::string> data;
-
+    std::string data;
     std::map<std::string, std::shared_ptr<GpuFont>> fonts;
-    std::map<std::string, std::shared_ptr<GpuTexture>> textures;
+    std::map<std::string, std::shared_ptr<GpuTexture>> bitmaps;
+    bool dependenciesLoaded;
 };
 
 class GeodataTile : public Resource
@@ -66,7 +69,7 @@ public:
     GeodataTile(MapImpl *map, const std::string &name);
     void load() override;
     FetchTask::ResourceType resourceType() const override;
-    void update(const std::shared_ptr<const std::string> &style,
+    void update(const std::shared_ptr<GeodataStylesheet> &style,
                 const std::shared_ptr<const std::string> &features,
                 uint32 lod);
     void process();
@@ -76,7 +79,7 @@ public:
 
 private:
     uint32 lod;
-    std::shared_ptr<const std::string> style;
+    std::shared_ptr<GeodataStylesheet> style;
     std::shared_ptr<const std::string> features;
 };
 

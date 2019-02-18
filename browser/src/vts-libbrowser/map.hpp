@@ -75,6 +75,7 @@ class Resource;
 class TraverseNode;
 class Credits;
 class FetchTaskImpl;
+class GpuFont;
 
 using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
 
@@ -164,7 +165,7 @@ public:
     void initializeNavigation();
     bool getSurfaceAltitude(double &result, const vec3 &navPos,
         double samples);
-    std::pair<Validity, std::shared_ptr<const std::string>>
+    std::pair<Validity, std::shared_ptr<GeodataStylesheet>>
         getActualGeoStyle(const std::string &name);
     std::pair<Validity, std::shared_ptr<const std::string>>
         getActualGeoFeatures(const std::string &name,
@@ -218,7 +219,9 @@ public:
     std::shared_ptr<TilesetMapping> getTilesetMapping(const std::string &name);
     std::shared_ptr<GeodataFeatures> getGeoFeatures(const std::string &name);
     std::shared_ptr<GeodataStylesheet> getGeoStyle(const std::string &name);
+    std::shared_ptr<GeodataStylesheet> newGeoStyle(const std::string &value);
     std::shared_ptr<GeodataTile> getGeodata(const std::string &name);
+    std::shared_ptr<GpuFont> getFont(const std::string &name);
 
     std::shared_ptr<SearchTask> search(const std::string &query,
                                        const double point[3]);

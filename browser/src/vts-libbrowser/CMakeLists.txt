@@ -112,6 +112,7 @@ set(SRC_LIST
     resources/cache.cpp
     resources/cache.hpp
     resources/fetcher.cpp
+    resources/font.cpp
     resources/geodataProcessing.cpp
     resources/geodataResources.cpp
     resources/manager.cpp

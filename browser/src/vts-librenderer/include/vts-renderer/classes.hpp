@@ -116,7 +116,6 @@ public:
     Font();
     ~Font();
     void clear();
-    void bind();
     void load(ResourceInfo &info, GpuFontSpec &spec);
     void load(GpuFontSpec &spec);
 

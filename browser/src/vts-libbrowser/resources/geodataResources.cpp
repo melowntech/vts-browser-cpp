@@ -30,6 +30,8 @@
 #include "../fetchTask.hpp"
 #include "../renderTasks.hpp"
 #include "../map.hpp"
+#include "../gpuResource.hpp"
+#include "../utilities/json.hpp"
 
 namespace vts
 {
@@ -51,7 +53,7 @@ FetchTask::ResourceType GeodataFeatures::resourceType() const
 }
 
 GeodataStylesheet::GeodataStylesheet(MapImpl *map, const std::string &name) :
-    Resource(map, name)
+    Resource(map, name), dependenciesLoaded(false)
 {
     priority = std::numeric_limits<float>::infinity();
 }
@@ -59,8 +61,73 @@ GeodataStylesheet::GeodataStylesheet(MapImpl *map, const std::string &name) :
 void GeodataStylesheet::load()
 {
     LOG(info2) << "Loading geodata stylesheet <" << name << ">";
-    data = std::make_shared<const std::string>(
-        std::move(fetch->reply.content.str()));
+    data = std::move(fetch->reply.content.str());
+    dependenciesLoaded = false;
+}
+
+namespace
+{
+
+Validity merge(Validity a, Validity b)
+{
+    switch (a)
+    {
+    case Validity::Valid:
+        return b;
+    case Validity::Indeterminate:
+        switch (b)
+        {
+        case Validity::Valid:
+        case Validity::Indeterminate:
+            return Validity::Indeterminate;
+        case Validity::Invalid:
+            return Validity::Invalid;
+        }
+        break;
+    case Validity::Invalid:
+        return Validity::Invalid;
+    }
+    return Validity::Invalid;
+}
+
+} // namespace
+
+Validity GeodataStylesheet::dependencies()
+{
+    if (!dependenciesLoaded)
+    {
+        dependenciesLoaded = true;
+        fonts.clear();
+        bitmaps.clear();
+        Json::Value s = stringToJson(data);
+        for (const auto &n : s["fonts"].getMemberNames())
+        {
+            std::string p = s["fonts"][n].asString();
+            p = convertPath(p, map->mapconfigPath);
+            fonts[n] = map->getFont(p);
+        }
+        for (const auto &n : s["bitmaps"].getMemberNames())
+        {
+            std::string p = s["bitmaps"][n].asString();
+            p = convertPath(p, map->mapconfigPath);
+            bitmaps[n] = map->getTexture(p);
+        }
+    }
+
+    Validity valid = Validity::Valid;
+    for (const auto &it : fonts)
+    {
+        auto r = std::static_pointer_cast<Resource>(it.second);
+        map->touchResource(r);
+        valid = merge(valid, map->getResourceValidity(r));
+    }
+    for (const auto &it : bitmaps)
+    {
+        auto r = std::static_pointer_cast<Resource>(it.second);
+        map->touchResource(r);
+        valid = merge(valid, map->getResourceValidity(r));
+    }
+    return valid;
 }
 
 FetchTask::ResourceType GeodataStylesheet::resourceType() const
@@ -79,15 +146,14 @@ FetchTask::ResourceType GeodataTile::resourceType() const
     return FetchTask::ResourceType::Undefined;
 }
 
-void GeodataTile::update(const std::shared_ptr<const std::string> &s,
+void GeodataTile::update(const std::shared_ptr<GeodataStylesheet> &s,
     const std::shared_ptr<const std::string> &f, uint32 l)
 {
     switch ((Resource::State)state)
     {
     case Resource::State::initializing:
-        state = Resource::State::availFail; // if left in initializing, it would attempt to download it
+        state = Resource::State::errorFatal; // if left in initializing, it would attempt to download it
         UTILITY_FALLTHROUGH;
-    case Resource::State::availFail:
     case Resource::State::errorFatal: // allow reloading when sources change, even if it failed before
     case Resource::State::ready:
         if (style != s || features != f || lod != l)

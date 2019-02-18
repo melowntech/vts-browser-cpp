@@ -170,10 +170,19 @@ public:
     FaceMode faceMode;
 };
 
+// handle that provides the application with access
+//   to individual texture planes
+class VTS_API FontHandle
+{
+public:
+    virtual std::shared_ptr<void> requestTexture(uint32 index) = 0;
+};
+
 // information about font passed to loadFont callback
 class VTS_API GpuFontSpec
 {
 public:
+    std::weak_ptr<FontHandle> handle;
     std::string name;
     Buffer data;
 };
@@ -305,9 +314,10 @@ public:
         CommonData();
     };
 
+    std::vector<std::shared_ptr<void>> fonts;
+
     GpuGeodataSpec();
 
-    //std::vector<std::shared_ptr<void>> fonts;
     std::vector<std::shared_ptr<void>> bitmaps;
     std::vector<std::string> texts;
     std::vector<std::vector<std::array<float, 3>>> positions;

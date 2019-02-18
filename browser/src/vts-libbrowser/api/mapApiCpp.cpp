@@ -37,6 +37,7 @@
 #include "../renderInfos.hpp"
 #include "../coordsManip.hpp"
 #include "../credits.hpp"
+#include "../geodata.hpp"
 
 namespace vts
 {
@@ -410,7 +411,7 @@ std::string Map::getResourceFreeLayerStyle(const std::string &name) const
     }
     auto r = impl->getActualGeoStyle(name);
     if (r.first == Validity::Valid)
-        return *r.second;
+        return r.second->data;
     return "";
 }
 
@@ -427,14 +428,8 @@ void Map::setResourceFreeLayerStyle(const std::string &name,
                 << "Map is not yet available.";
         throw;
     }
-    auto &v = impl->mapconfig->getFreeInfo(name)->overrideStyle;
-    if (!v || *v != value)
-    {
-        if (value.empty())
-            v.reset();
-        else
-            v = std::make_shared<const std::string>(value);
-    }
+    auto &v = impl->mapconfig->getFreeInfo(name)->stylesheet;
+    v = impl->newGeoStyle(value);
     purgeViewCache();
 }
 

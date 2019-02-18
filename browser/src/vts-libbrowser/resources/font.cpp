@@ -24,44 +24,54 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "renderer.hpp"
+#include <dbglog/dbglog.hpp>
+#include <sstream>
 
-namespace vts { namespace renderer
+#include "../gpuResource.hpp"
+#include "../fetchTask.hpp"
+#include "../map.hpp"
+
+namespace vts
 {
 
-Font::Font()
-{}
-
-Font::~Font()
+GpuFont::GpuFont(MapImpl *map, const std::string &name) :
+    Resource(map, name)
 {
-    clear();
+    priority = std::numeric_limits<float>::infinity();
 }
 
-void Font::clear()
+void GpuFont::load()
 {
-    // todo
+    LOG(info2) << "Loading font <" << name << ">";
+
+    GpuFontSpec spec;
+    spec.data = std::move(fetch->reply.content);
+    spec.handle = std::dynamic_pointer_cast<FontHandle>(shared_from_this());
+    spec.name = name;
+    map->callbacks.loadFont(info, spec);
 }
 
-void Font::load(ResourceInfo &info, GpuFontSpec &spec)
+std::shared_ptr<void> GpuFont::requestTexture(uint32 index)
 {
-    clear();
-    // todo
-    (void)info;
-    (void)spec;
+    map->touchResource(shared_from_this());
+    if (texturePlanes.size() <= index)
+        texturePlanes.resize(index + 1);
+    auto t = texturePlanes[index].lock();
+    if (!t)
+    {
+        std::stringstream ss;
+        ss << this->name << index;
+        std::string n = ss.str();
+        texturePlanes[index] = t = map->getTexture(n);
+    }
+    if (*t)
+        return t->info.userData;
+    return nullptr;
 }
 
-void Font::load(GpuFontSpec &spec)
+FetchTask::ResourceType GpuFont::resourceType() const
 {
-    ResourceInfo info;
-    load(info, spec);
+    return FetchTask::ResourceType::Font;
 }
 
-void Renderer::loadFont(ResourceInfo &info, GpuFontSpec &spec)
-{
-    auto r = std::make_shared<Font>();
-    r->load(info, spec);
-    info.userData = r;
-}
-
-} } // namespace vts renderer
-
+} // namespace vts

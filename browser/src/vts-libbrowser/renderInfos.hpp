@@ -68,7 +68,6 @@ public:
     std::string url; // external free layer url
 
     std::shared_ptr<GeodataStylesheet> stylesheet;
-    std::shared_ptr<const std::string> overrideStyle;
     std::shared_ptr<const std::string> overrideGeodata; // monolithic only
 };
 

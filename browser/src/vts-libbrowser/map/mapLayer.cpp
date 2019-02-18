@@ -163,9 +163,6 @@ bool MapLayer::prerequisitesCheckFreeLayer()
 namespace
 {
 
-static const std::shared_ptr<const std::string> empty
-    = std::make_shared<const std::string>("");
-
 MapLayer *getLayer(MapImpl *map, const std::string &name)
 {
     for (auto &it : map->layers)
@@ -178,14 +175,12 @@ MapLayer *getLayer(MapImpl *map, const std::string &name)
 
 } // namespace
 
-std::pair<Validity, std::shared_ptr<const std::string>>
+std::pair<Validity, std::shared_ptr<GeodataStylesheet>>
     MapImpl::getActualGeoStyle(const std::string &name)
 {
     FreeInfo *f = mapconfig->getFreeInfo(name);
     if (!f)
-        return { Validity::Indeterminate, empty };
-    if (f->overrideStyle)
-        return { Validity::Valid, f->overrideStyle };
+        return { Validity::Indeterminate, {} };
     if (!f->stylesheet)
     {
         std::string url;
@@ -209,14 +204,32 @@ std::pair<Validity, std::shared_ptr<const std::string>>
                 break;
             }
             if (url.empty())
-                return { Validity::Invalid, empty };
+                return { Validity::Invalid, {} };
             url = convertPath(url, f->url);
         }
         assert(!url.empty());
         f->stylesheet = getGeoStyle(url);
     }
     touchResource(f->stylesheet);
-    return { getResourceValidity(f->stylesheet), f->stylesheet->data };
+    switch (getResourceValidity(f->stylesheet))
+    {
+    case Validity::Invalid:
+        return { Validity::Invalid, {} };
+    case Validity::Indeterminate:
+        return { Validity::Indeterminate, {} };
+    case Validity::Valid:
+        break;
+    }
+    switch (f->stylesheet->dependencies())
+    {
+    case Validity::Invalid:
+        return { Validity::Invalid, {} };
+    case Validity::Indeterminate:
+        return { Validity::Indeterminate, {} };
+    case Validity::Valid:
+        break;
+    }
+    return { Validity::Valid, f->stylesheet };
 }
 
 std::pair<Validity, std::shared_ptr<const std::string>>
@@ -225,7 +238,7 @@ std::pair<Validity, std::shared_ptr<const std::string>>
 {
     MapLayer *layer = getLayer(this, name);
     if (!layer)
-        return { Validity::Invalid, empty };
+        return { Validity::Invalid, {} };
 
     assert(layer->freeLayer);
     if (layer->freeLayer->type == vtslibs::registry::FreeLayer::Type::geodata
@@ -233,7 +246,7 @@ std::pair<Validity, std::shared_ptr<const std::string>>
         return { Validity::Valid, layer->freeLayer->overrideGeodata };
 
     if (geoName.empty())
-        return { Validity::Invalid, empty };
+        return { Validity::Invalid, {} };
 
     auto g = getGeoFeatures(geoName);
     g->updatePriority(priority);

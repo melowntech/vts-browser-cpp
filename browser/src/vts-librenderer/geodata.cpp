@@ -32,11 +32,6 @@
 namespace vts { namespace renderer
 {
 
-namespace
-{
-
-} // namespace
-
 namespace priv
 {
 

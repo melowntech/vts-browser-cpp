@@ -109,4 +109,3 @@ if(NOT VTS_BROWSER_TYPE STREQUAL "MODULE")
         add_subdirectory(src/vts-browser-minimal-cs)
     endif()
 endif()
-

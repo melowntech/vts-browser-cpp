@@ -88,17 +88,17 @@ namespace detail
 {
 
 // a convenient buffer wrapper that allows to treat the buffer as a stream
-// the buffer must outlive the wrapper and must not be modified
-class VTS_API Wrapper : protected std::streambuf, public std::istream
+// the buffer must outlive the wrapper and may not be modified
+class VTS_API BufferStream : protected std::streambuf, public std::istream
 {
 public:
-    Wrapper(const Buffer &b);
+    BufferStream(const Buffer &b);
     uint32 position() const;
 };
 
 VTS_API void addInternalMemoryData(const std::string name,
                                    const unsigned char *data, size_t size);
-VTS_API bool existsInternalMemoryBuffer(const std::string &path);
+VTS_API bool existsInternalMemoryData(const std::string &path);
 
 } // detail
 

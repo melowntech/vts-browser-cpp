@@ -85,7 +85,7 @@ void AuthConfig::load()
     {
         Json::Value root;
         {
-            detail::Wrapper w(fetch->reply.content);
+            detail::BufferStream w(fetch->reply.content);
             w >> root;
         }
         int status = root["status"].asInt();

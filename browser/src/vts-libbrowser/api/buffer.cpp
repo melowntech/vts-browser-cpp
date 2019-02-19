@@ -231,13 +231,13 @@ Buffer readInternalMemoryBuffer(const std::string &path)
 namespace detail
 {
 
-Wrapper::Wrapper(const Buffer &b) : std::istream(this)
+BufferStream::BufferStream(const Buffer &b) : std::istream(this)
 {
     setg(b.data(), b.data(), b.data() + b.size());
     exceptions(std::istream::badbit | std::istream::failbit);
 }
 
-uint32 Wrapper::position() const
+uint32 BufferStream::position() const
 {
     return gptr() - eback();
 }
@@ -245,11 +245,11 @@ uint32 Wrapper::position() const
 void addInternalMemoryData(const std::string name,
                            const unsigned char *data, size_t size)
 {
-    assert(!existsInternalMemoryBuffer(name));
+    assert(!existsInternalMemoryData(name));
     dataMap()[name] = std::make_pair(size, data);
 }
 
-bool existsInternalMemoryBuffer(const std::string &path)
+bool existsInternalMemoryData(const std::string &path)
 {
     return dataMap().find(path) != dataMap().end();
 }

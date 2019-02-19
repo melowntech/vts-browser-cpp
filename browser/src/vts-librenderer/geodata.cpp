@@ -25,6 +25,7 @@
  */
 
 #include "renderer.hpp"
+#include "font.hpp"
 
 #include <vts-browser/resources.hpp>
 #include <vts-browser/cameraDraws.hpp>

@@ -59,7 +59,7 @@ void Mapconfig::load()
 
     // load
     {
-        detail::Wrapper w(fetch->reply.content);
+        detail::BufferStream w(fetch->reply.content);
         vtslibs::vts::loadMapConfig(*this, w, name);
     }
 

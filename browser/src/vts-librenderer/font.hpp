@@ -24,58 +24,43 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <geometry/parse-obj.hpp>
+#ifndef FONT_HPP_sdr7f7jk4
+#define FONT_HPP_sdr7f7jk4
 
-#include "../include/vts-browser/math.hpp"
-#include "obj.hpp"
+#include <hb-ft.h>
 
-namespace vts
+namespace vts { namespace renderer
 {
 
-void decodeObj(const Buffer &in, uint32 &outFaceMode,
-               Buffer &outVertices, Buffer &,
-               uint32 &vertices, uint32 &indices)
+namespace priv
 {
-    geometry::Obj obj;
-    detail::BufferStream w(in);
-    if (!obj.parse(w))
-    {
-        LOGTHROW(err1, std::runtime_error) << "failed to decode obj file";
-    }
 
-    // find face mode
-    outFaceMode = 3;
-    for (geometry::Obj::Facet &of : obj.facets)
-    {
-        int v[3];
-        for (uint32 i = 0; i < 3; i++)
-            v[i] = of.v[i];
-        std::sort(v, v + 3);
-        uint32 j = std::unique(v, v + 3) - v;
-        outFaceMode = std::min(outFaceMode, j);
-    }
+struct Glyph
+{
+    vec4f uvs;
+    uint16 fileIndex;
+    uint8 plane;
+};
 
-    struct F
-    {
-        vec3f vertex;
-        vec2f uvs;
-    };
-    outVertices = Buffer(obj.facets.size() * sizeof(F) * outFaceMode);
-    F *fs = (F*)outVertices.data();
-    for (auto &of : obj.facets)
-    {
-        for (uint32 i = 0; i < outFaceMode; i++)
-        {
-            fs->vertex = vecFromUblas<vec3f>(obj.vertices[of.v[i]]);
-            if (of.t[i] >= 0)
-                fs->uvs = vecFromUblas<vec3f>(obj.texcoords[of.t[i]]).head(2);
-            else
-                fs->uvs = vec2f(0, 0);
-            fs++;
-        }
-    }
-    vertices = obj.facets.size() * outFaceMode;
-    indices = 0;
-}
+class Font
+{
+public:
+    Font();
+    ~Font();
+    void load(ResourceInfo &info, GpuFontSpec &spec);
+    void load(GpuFontSpec &spec);
 
-} // namespace vts
+    std::weak_ptr<vts::FontHandle> fontHandle;
+    FT_Face face;
+    hb_font_t *font;
+    uint16 textureWidth;
+    uint16 textureHeight;
+    uint16 filesCount;
+    std::vector<Glyph> glyphs;
+};
+
+} // namespace priv
+
+} } // namespace vts::renderer
+
+#endif

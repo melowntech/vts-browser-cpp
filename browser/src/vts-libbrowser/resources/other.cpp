@@ -45,7 +45,7 @@ MetaTile::MetaTile(vts::MapImpl *map, const std::string &name) :
 void MetaTile::load()
 {
     LOG(info2) << "Loading meta tile <" << name << ">";
-    detail::Wrapper w(fetch->reply.content);
+    detail::BufferStream w(fetch->reply.content);
     *(vtslibs::vts::MetaTile*)this
             = vtslibs::vts::loadMetaTile(w, 5, name);
     info.ramMemoryCost += sizeof(*this);
@@ -119,7 +119,7 @@ ExternalBoundLayer::ExternalBoundLayer(MapImpl *map, const std::string &name)
 
 void ExternalBoundLayer::load()
 {
-    detail::Wrapper w(fetch->reply.content);
+    detail::BufferStream w(fetch->reply.content);
     *(vtslibs::registry::BoundLayer*)this
             = vtslibs::registry::loadBoundLayer(w, name);
 }
@@ -137,7 +137,7 @@ ExternalFreeLayer::ExternalFreeLayer(MapImpl *map, const std::string &name)
 
 void ExternalFreeLayer::load()
 {
-    detail::Wrapper w(fetch->reply.content);
+    detail::BufferStream w(fetch->reply.content);
     *(vtslibs::registry::FreeLayer*)this
             = vtslibs::registry::loadFreeLayer(w, name);
 }

@@ -110,18 +110,6 @@ private:
     uint32 vao, vbo, vio;
 };
 
-class VTSR_API Font
-{
-public:
-    Font();
-    ~Font();
-    void clear();
-    void load(ResourceInfo &info, GpuFontSpec &spec);
-    void load(GpuFontSpec &spec);
-
-private:
-};
-
 class VTSR_API UniformBuffer
 {
 public:

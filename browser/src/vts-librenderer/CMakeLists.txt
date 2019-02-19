@@ -3,11 +3,12 @@ find_package(Freetype REQUIRED)
 include_directories(SYSTEM ${FREETYPE_INCLUDE_DIR})
 find_package(HarfBuzz REQUIRED)
 include_directories(SYSTEM ${HARFBUZZ_INCLUDE_DIR})
+include_directories(externals/utility)
 
 buildsys_fix_symlinks(${CMAKE_CURRENT_SOURCE_DIR}/externals)
 add_subdirectory(externals/sheenbidi)
 
-define_module(LIBRARY vts-renderer DEPENDS vts-browser glad FREETYPE HarfBuzz SheenBidi utf8cpp)
+define_module(LIBRARY vts-renderer DEPENDS vts-browser utility glad FREETYPE HarfBuzz SheenBidi utf8cpp)
 
 set(PUB_HDR_LIST
     include/vts-renderer/foundationCommon.h
@@ -22,6 +23,7 @@ set(PUB_HDR_LIST
 set(SRC_LIST
     classes.cpp
     font.cpp
+    font.hpp
     foundation.cpp
     geodata.cpp
     renderer.cpp

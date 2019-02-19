@@ -122,7 +122,7 @@ void MeshAggregate::load()
 {
     LOG(info2) << "Loading (aggregated) mesh <" << name << ">";
 
-    detail::Wrapper w(fetch->reply.content);
+    detail::BufferStream w(fetch->reply.content);
     vtslibs::vts::NormalizedSubMesh::list meshes = vtslibs::vts::
             loadMeshProperNormalized(w, name);
 

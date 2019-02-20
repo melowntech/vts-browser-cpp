@@ -49,6 +49,8 @@ set(DATA_LIST
     data/shaders/geodataLine.vert.glsl
     data/shaders/geodataPoint.frag.glsl
     data/shaders/geodataPoint.vert.glsl
+    data/shaders/geodataPointLabel.frag.glsl
+    data/shaders/geodataPointLabel.vert.glsl
     data/textures/compas.png
 )
 

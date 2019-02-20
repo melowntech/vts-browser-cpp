@@ -35,7 +35,6 @@ namespace vts
 
 class Map;
 class Camera;
-class MapDraws;
 class MapCelestialBody;
 class ResourceInfo;
 class GpuTextureSpec;

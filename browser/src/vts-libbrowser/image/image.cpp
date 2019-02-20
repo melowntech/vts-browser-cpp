@@ -38,10 +38,17 @@ void decodeImage(const Buffer &in, Buffer &out,
         LOGTHROW(err1, std::runtime_error) << "insufficient image data";
     static const unsigned char pngSignature[]
             = { 137, 80, 78, 71, 13, 10, 26, 10 };
-    if (memcmp(in.data(), pngSignature, 8) == 0)
+    static const unsigned char jpegSignature[]
+        = { 0xFF, 0xD8, 0xFF };
+    if (memcmp(in.data(), pngSignature, sizeof(pngSignature)) == 0)
         decodePng(in, out, width, height, components);
-    else
+    else if (memcmp(in.data(), jpegSignature, sizeof(jpegSignature)) == 0)
         decodeJpeg(in, out, width, height, components);
+    else
+    {
+        out = in.copy();
+        width = height = components = 0;
+    }
 }
 
 } // namespace vts

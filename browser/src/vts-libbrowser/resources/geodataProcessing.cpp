@@ -55,7 +55,10 @@ struct GpuGeodataSpecComparator
         int s = memcmp(&a.unionData, &b.unionData, sizeof(a.unionData));
         if (s != 0)
             return s < 0;
-        return memcmp(a.model, b.model, sizeof(a.model)) < 0;
+        int m = memcmp(a.model, b.model, sizeof(a.model));
+        if (m != 0)
+            return m < 0;
+        return a.fontCascade < b.fontCascade;
     }
 };
 
@@ -723,6 +726,31 @@ struct geoContext
         return processFeatureInternal(layerName, zOverride);
     }
 
+    void addFont(const std::string &name,
+        std::vector<std::shared_ptr<void>> &output) const
+    {
+        auto it = stylesheet->fonts.find(name);
+        if (it == stylesheet->fonts.end())
+            THROW << "Could not find font <" << name << ">";
+        output.push_back(it->second->info.userData);
+    }
+
+    void findFonts(const Value &expression,
+        std::vector<std::shared_ptr<void>> &output) const
+    {
+        if (!expression.empty())
+        {
+            Value v = evaluate(expression);
+            validateArrayLength(v, 1, -1, "Fonts must be an array");
+            for (const Value &nj : v)
+            {
+                std::string n = nj.asString();
+                addFont(n, output);
+            }
+        }
+        addFont("#default", output);
+    }
+
     void processFeatureInternal(const std::string &layerName,
                         boost::optional<sint32> zOverride
                                 = boost::optional<sint32>())
@@ -896,6 +924,7 @@ struct geoContext
 
     void processFeaturePointLabel(const Value &layer, GpuGeodataSpec spec)
     {
+        findFonts(layer["label-font"], spec.fontCascade);
         spec.type = GpuGeodataSpec::Type::PointLabel;
         vecToRaw(layer["label-color"].empty()
             ? vec4f(0, 0, 0, 1)

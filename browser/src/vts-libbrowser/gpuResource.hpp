@@ -65,7 +65,7 @@ public:
     void load() override;
     std::shared_ptr<void> requestTexture(uint32 index) override;
     FetchTask::ResourceType resourceType() const override;
-    std::vector<std::weak_ptr<GpuTexture>> texturePlanes;
+    std::vector<std::shared_ptr<GpuTexture>> texturePlanes;
 };
 
 class GpuGeodata

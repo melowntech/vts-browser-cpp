@@ -2,7 +2,7 @@
 layout(std140) uniform uboCameraData
 {
     mat4 uniProj;
-    vec4 uniCameraParams; // screen height in pixels, view extent in meters
+    vec4 uniCameraParams; // screen width in pixels, screen height in pixels, view extent in meters
 };
 
 layout(std140) uniform uboPointData
@@ -23,7 +23,7 @@ vec3 pixelUp(vec3 a)
 {
     vec4 b = uniMvp * vec4(a, 1.0);
     vec3 c = b.xyz / b.w;
-    c[1] += 1.0 / uniCameraParams[0];
+    c[1] += 1.0 / uniCameraParams[1];
     vec4 d = uniMvpInv * vec4(c, 1.0);
     return d.xyz / d.w;
 }
@@ -32,7 +32,7 @@ vec3 pixelLeft(vec3 a)
 {
     vec4 b = uniMvp * vec4(a, 1.0);
     vec3 c = b.xyz / b.w;
-    c[0] += 1.0 / uniCameraParams[0];
+    c[0] += 1.0 / uniCameraParams[1];
     vec4 d = uniMvpInv * vec4(c, 1.0);
     return d.xyz / d.w;
 }

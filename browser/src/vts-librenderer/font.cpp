@@ -104,15 +104,16 @@ Font::~Font()
 
 void Font::load(ResourceInfo &info, GpuFontSpec &spec)
 {
+    fontData = std::move(spec.data);
     fontHandle = spec.handle;
 
     if (FT_New_Memory_Face(ftLibrary,
-        (FT_Byte*)spec.data.data(), spec.data.size(),
+        (FT_Byte*)fontData.data(), fontData.size(),
         0, &face))
         throw std::runtime_error("Failed loading the font with FreeType");
 
-    vts::detail::BufferStream w(spec.data);
-    w.ignore(findCustomTablesOffset(spec.data));
+    vts::detail::BufferStream w(fontData);
+    w.ignore(findCustomTablesOffset(fontData));
     {
         uint8 version;
         bin::read(w, version);
@@ -135,7 +136,7 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec)
     // generate glyphs table
     {
         glyphs.resize(face->num_glyphs);
-        for (uint32 i = 0; i < face->num_glyphs; i++)
+        for (sint32 i = 0; i < face->num_glyphs; i++)
         {
             // w 6bit | h 6bit | sx sign 1bit | abs sx 6bit | sy sign 1bit | abs sy 6bit | plane 2bit
             uint32 v1;
@@ -150,7 +151,7 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec)
             uint8 gh = (v1 >> 16) & 63;
             uint8 gx = (v2 >> 8) & 255;
             uint8 gy = v2 & 255;
-            g.uvs = vec4f(gx, gy, gx + gw, gy + gh) / (textureWidth - 1);
+            g.uvs = vec4f(gx, gy + gh, gx + gw, gy) / (textureWidth - 1);
         }
     }
 

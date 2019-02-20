@@ -182,7 +182,7 @@ public:
 class VTS_API GpuFontSpec
 {
 public:
-    std::weak_ptr<FontHandle> handle;
+    std::shared_ptr<FontHandle> handle;
     std::string name;
     Buffer data;
 };
@@ -314,14 +314,18 @@ public:
         CommonData();
     };
 
-    std::vector<std::shared_ptr<void>> fonts;
-
     GpuGeodataSpec();
 
-    std::vector<std::shared_ptr<void>> bitmaps;
-    std::vector<std::string> texts;
+    // positions
     std::vector<std::vector<std::array<float, 3>>> positions;
     std::vector<std::vector<std::array<float, 2>>> uvs;
+
+    // properties per position-segment
+    std::vector<std::shared_ptr<void>> bitmaps;
+    std::vector<std::string> texts;
+
+    // global properties
+    std::vector<std::shared_ptr<void>> fontCascade;
     double model[16];
     UnionData unionData;
     CommonData commonData;

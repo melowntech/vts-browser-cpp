@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <map>
+
 #include "renderer.hpp"
 #include "font.hpp"
 
@@ -36,13 +38,23 @@ namespace vts { namespace renderer
 namespace priv
 {
 
-class Geodata
+class GeodataBase
 {
 public:
-    Geodata() : renderer(nullptr), info(nullptr)
+    GeodataBase() : renderer(nullptr), info(nullptr)
     {}
 
-    void load(RendererImpl *renderer, ResourceInfo &info, GpuGeodataSpec &specp)
+    GpuGeodataSpec spec;
+    RendererImpl *renderer;
+    ResourceInfo *info;
+    mat4 model;
+    mat4 modelInv;
+
+    virtual void load(RendererImpl *renderer, ResourceInfo &info,
+        GpuGeodataSpec &specp) = 0;
+
+    void loadInit(RendererImpl *renderer, ResourceInfo &info,
+        GpuGeodataSpec &specp)
     {
         this->spec = std::move(specp);
         this->info = &info;
@@ -50,53 +62,25 @@ public:
 
         model = rawToMat4(spec.model);
         modelInv = model.inverse();
+    }
 
-        switch (spec.type)
-        {
-        case GpuGeodataSpec::Type::Invalid:
-            break; // do nothing
-        case GpuGeodataSpec::Type::LineScreen:
-        case GpuGeodataSpec::Type::LineFlat:
-            loadLine();
-            break;
-        case GpuGeodataSpec::Type::PointScreen:
-        case GpuGeodataSpec::Type::PointFlat:
-            loadPoint();
-            break;
-        case GpuGeodataSpec::Type::LineLabel:
-            // todo
-            break;
-        case GpuGeodataSpec::Type::PointLabel:
-            loadPointLabel();
-            break;
-        case GpuGeodataSpec::Type::Icon:
-        case GpuGeodataSpec::Type::PackedLabelIcon:
-        case GpuGeodataSpec::Type::Triangles:
-            // todo
-            break;
-        }
-
+    void loadFinish()
+    {
         // free some memory
         std::vector<std::vector<std::array<float, 3>>>()
             .swap(spec.positions);
+        std::vector<std::vector<std::array<float, 2>>>()
+            .swap(spec.uvs);
+        std::vector<std::shared_ptr<void>>().swap(spec.bitmaps);
         std::vector<std::string>().swap(spec.texts);
+        std::vector<std::shared_ptr<void>>().swap(spec.fontCascade);
 
-        info.ramMemoryCost += sizeof(spec);
-        this->info = nullptr;
-        this->renderer = nullptr;
+        info->ramMemoryCost += sizeof(spec);
+        info = nullptr;
+        renderer = nullptr;
 
         CHECK_GL("load geodata");
     }
-
-    GpuGeodataSpec spec;
-    std::shared_ptr<Mesh> mesh;
-    std::shared_ptr<UniformBuffer> uniform;
-    std::shared_ptr<Texture> texture;
-    std::shared_ptr<Font> font;
-    mat4 model;
-    mat4 modelInv;
-    RendererImpl *renderer;
-    ResourceInfo *info;
 
     void addMemory(ResourceInfo &other)
     {
@@ -122,9 +106,42 @@ public:
             totalPoints += spec.positions[li].size();
         return totalPoints;
     }
+};
+
+class GeodataGeometry : public GeodataBase
+{
+public:
+    std::shared_ptr<Mesh> mesh;
+    std::shared_ptr<Texture> texture;
+    std::shared_ptr<UniformBuffer> uniform;
+
+    void load(RendererImpl *renderer, ResourceInfo &info,
+        GpuGeodataSpec &specp) override
+    {
+        loadInit(renderer, info, specp);
+
+        switch (spec.type)
+        {
+        case GpuGeodataSpec::Type::LineScreen:
+        case GpuGeodataSpec::Type::LineFlat:
+            loadLine();
+            break;
+        case GpuGeodataSpec::Type::PointScreen:
+        case GpuGeodataSpec::Type::PointFlat:
+            loadPoint();
+            break;
+        case GpuGeodataSpec::Type::Triangles:
+            // todo
+            break;
+        default:
+            throw std::invalid_argument("invalid geodata type");
+        }
+
+        loadFinish();
+    }
 
     void prepareTextureForLinesAndPoints(Buffer &&texBuffer,
-                uint32 totalPoints)
+        uint32 totalPoints)
     {
         GpuTextureSpec tex;
         tex.buffer = std::move(texBuffer);
@@ -142,7 +159,7 @@ public:
     }
 
     void prepareMeshForLinesAndPoints(Buffer &&indBuffer,
-                uint32 indicesCount)
+        uint32 indicesCount)
     {
         GpuMeshSpec msh;
         msh.faceMode = GpuMeshSpec::FaceMode::Triangles;
@@ -241,7 +258,7 @@ public:
                 = rawToVec4(spec.commonData.visibilityRelative);
             for (int i = 0; i < 2; i++)
                 uboLineData.visibilityAbsolutePlusVisibilityPlusCulling[i]
-                    = spec.commonData.visibilityAbsolute[i];
+                = spec.commonData.visibilityAbsolute[i];
             uboLineData.visibilityAbsolutePlusVisibilityPlusCulling[2]
                 = spec.commonData.culling;
             uboLineData.visibilityAbsolutePlusVisibilityPlusCulling[3]
@@ -279,12 +296,12 @@ public:
             uint16 current = 0;
 
             for (uint32 li = 0, lin = spec.positions.size();
-                                    li < lin; li++)
+                li < lin; li++)
             {
                 const std::vector<std::array<float, 3>> &points
                     = spec.positions[li];
                 for (uint32 pi = 0, pin = points.size();
-                                pi < pin; pi++)
+                    pi < pin; pi++)
                 {
                     vec3f p = rawToVec3(points[pi].data());
                     vec3f u = localUp(p);
@@ -334,7 +351,7 @@ public:
                 = spec.commonData.visibility;
             uboPointData.typePlusRadius
                 = vec4f((float)spec.type,
-                    (float)spec.unionData.point.radius
+                (float)spec.unionData.point.radius
                     , 0.f, 0.f);
 
             uniform = std::make_shared<UniformBuffer>();
@@ -343,10 +360,200 @@ public:
             info->gpuMemoryCost += sizeof(uboPointData);
         }
     }
+};
+
+struct Word
+{
+    std::vector<vec4f> advances; // x advance, y advance, x offset, y offset
+    std::vector<uint16> glyphIndices;
+    std::shared_ptr<Font> font;
+    std::shared_ptr<Mesh> mesh;
+    std::shared_ptr<Texture> texture;
+    uint16 fileIndex;
+};
+
+struct Text
+{
+    std::vector<Word> words;
+    vec3f position; // model space
+};
+
+class GeodataText : public GeodataBase
+{
+public:
+    std::vector<std::shared_ptr<Font>> fontCascade;
+    std::vector<Text> texts;
+
+    void generateWords(Text &t, const std::string &s)
+    {
+        // todo
+        // bidi
+        // split
+        // harfbuzz
+        // while contains tofu and has additional font available
+        //   split
+        //   harfbuzz
+
+        // split the string into individual glyphs
+        {
+            hb_buffer_t *buffer = hb_buffer_create();
+
+            std::shared_ptr<Font> fnt = fontCascade[0];
+
+            hb_buffer_add_utf8(buffer, s.data(), s.length(), 0, -1);
+            hb_buffer_guess_segment_properties(buffer);
+            hb_shape(fnt->font, buffer, nullptr, 0);
+
+            uint32 len = hb_buffer_get_length(buffer);
+            hb_glyph_info_t *info
+                = hb_buffer_get_glyph_infos(buffer, nullptr);
+            hb_glyph_position_t *pos
+                = hb_buffer_get_glyph_positions(buffer, nullptr);
+
+            for (uint32 i = 0; i < len; i++)
+            {
+                uint16 g = info[i].codepoint;
+                assert(g < fnt->glyphs.size());
+                Word w;
+                w.font = fnt;
+                w.fileIndex = fnt->glyphs[g].fileIndex;
+                w.glyphIndices.push_back(g);
+                w.advances.push_back(vec4f(
+                    pos[i].x_advance, pos[i].y_advance,
+                    pos[i].x_offset, pos[i].y_offset
+                ) / 64);
+                t.words.push_back(w);
+            }
+
+            hb_buffer_destroy(buffer);
+        }
+
+        // merge consecutive words that share font and fileIndex
+        {
+            // todo
+        }
+
+        // global layouts & generate meshes
+        {
+            float xx = 0;
+            for (auto &w : t.words)
+            {
+                static const uint32 stride = sizeof(float) * 5;
+                GpuMeshSpec s;
+                s.verticesCount = w.glyphIndices.size() * 4;
+                s.indicesCount = w.glyphIndices.size() * 6;
+                s.vertices.allocate(s.verticesCount * stride);
+                s.indices.resize(s.indicesCount * sizeof(uint16));
+                float *fit = (float*)s.vertices.data();
+                uint16 *iit = (uint16*)s.indices.data();
+                uint16 ii = 0;
+                for (uint32 i = 0, e = w.advances.size(); i != e; i++)
+                {
+                    float px = xx + w.advances[i][2];
+                    float py = w.advances[i][3];
+                    float pw = 50;
+                    float ph = 50; // todo
+                    const auto &g = w.font->glyphs[w.glyphIndices[i]];
+                    // 2--3
+                    // |  |
+                    // 0--1
+                    *fit++ = px; *fit++ = py; *fit++ = g.uvs[0]; *fit++ = g.uvs[1]; *(sint32*)fit++ = g.plane;
+                    *fit++ = px + pw; *fit++ = py; *fit++ = g.uvs[2]; *fit++ = g.uvs[1]; *(sint32*)fit++ = g.plane;
+                    *fit++ = px; *fit++ = py + ph; *fit++ = g.uvs[0]; *fit++ = g.uvs[3]; *(sint32*)fit++ = g.plane;
+                    *fit++ = px + pw; *fit++ = py + ph; *fit++ = g.uvs[2]; *fit++ = g.uvs[3]; *(sint32*)fit++ = g.plane;
+                    // 0-1-2
+                    // 1-3-2
+                    *iit++ = ii + 0; *iit++ = ii + 1; *iit++ = ii + 2;
+                    *iit++ = ii + 1; *iit++ = ii + 3; *iit++ = ii + 2;
+                    xx += w.advances[i][0];
+                    ii += 4;
+                }
+                assert(fit == (float*)s.vertices.dataEnd());
+                assert(iit == (uint16*)s.indices.dataEnd());
+                s.faceMode = GpuMeshSpec::FaceMode::Triangles;
+                s.attributes[0].enable = true;
+                s.attributes[0].components = 2;
+                s.attributes[0].type = GpuTypeEnum::Float;
+                s.attributes[0].offset = 0;
+                s.attributes[0].stride = stride;
+                s.attributes[1].enable = true;
+                s.attributes[1].components = 2;
+                s.attributes[1].type = GpuTypeEnum::Float;
+                s.attributes[1].offset = sizeof(float) * 2;
+                s.attributes[1].stride = stride;
+                s.attributes[2].enable = true;
+                s.attributes[2].components = 1;
+                s.attributes[2].type = GpuTypeEnum::Int;
+                s.attributes[2].offset = sizeof(float) * 4;
+                s.attributes[2].stride = stride;
+                w.mesh = std::make_shared<Mesh>();
+                ResourceInfo inf;
+                w.mesh->load(inf, s);
+                addMemory(inf);
+            }
+        }
+    }
+
+    void load(RendererImpl *renderer, ResourceInfo &info,
+        GpuGeodataSpec &specp) override
+    {
+        loadInit(renderer, info, specp);
+
+        copyFonts();
+        switch (spec.type)
+        {
+        case GpuGeodataSpec::Type::PointLabel:
+            loadPointLabel();
+            break;
+        case GpuGeodataSpec::Type::LineLabel:
+            loadLineLabel();
+            break;
+        default:
+            throw std::invalid_argument("invalid geodata type");
+        }
+
+        loadFinish();
+    }
+
+    void copyFonts()
+    {
+        fontCascade.reserve(spec.fontCascade.size());
+        for (auto &i : spec.fontCascade)
+            fontCascade.push_back(std::static_pointer_cast<Font>(i));
+    }
 
     void loadPointLabel()
     {
+        assert(spec.texts.size() == spec.positions.size());
+        for (uint32 i = 0, e = spec.texts.size(); i != e; i++)
+        {
+            Text t;
+            generateWords(t, spec.texts[i]);
+            t.position = rawToVec3(spec.positions[i][0].data());
+            texts.push_back(std::move(t));
+        }
+    }
+
+    void loadLineLabel()
+    {
         // todo
+    }
+
+    bool checkTextures()
+    {
+        bool ok = true;
+        for (auto &t : texts)
+        {
+            for (auto &w : t.words)
+            {
+                if (w.texture)
+                    continue;
+                w.texture = std::static_pointer_cast<Texture>(
+                    w.font->fontHandle->requestTexture(w.fileIndex));
+                ok = ok && !!w.texture;
+            }
+        }
+        return ok;
     }
 };
 
@@ -392,9 +599,71 @@ void RendererImpl::initializeGeodata()
             });
     }
 
+    // load shader geodata point label
+    {
+        shaderGeodataPointLabel = std::make_shared<Shader>();
+        shaderGeodataPointLabel->loadInternal(
+            "data/shaders/geodataPointLabel.vert.glsl",
+            "data/shaders/geodataPointLabel.frag.glsl");
+        shaderGeodataPointLabel->loadUniformLocations({
+                "uniMvp",
+                "uniPosition"
+            });
+        shaderGeodataPointLabel->bindTextureLocations({
+                { "texGlyphs", 0 }
+            });
+        shaderGeodataPointLabel->bindUniformBlockLocations({
+                { "uboCameraData", 0 }
+            });
+    }
+
     uboGeodataCamera = std::make_shared<UniformBuffer>();
 
     CHECK_GL("initialize geodata");
+}
+
+void initializeZBufferOffsetValues(vec3 &zBufferOffsetValues,
+        mat4 &davidProj, mat4 &davidProjInv,
+        CameraDraws *draws, const mat4 &viewInv, const mat4 &proj)
+{
+    vec3 up1 = normalize(rawToVec3(draws->camera.eye)); // todo projected systems
+    vec3 up2 = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
+    double tiltFactor = std::acos(std::max(
+        dot(up1, up2), 0.0)) / M_PI_2;
+    double distance = draws->camera.tagretDistance;
+    double distanceFactor = 1 / std::max(1.0,
+        std::log(distance) / std::log(1.04));
+    zBufferOffsetValues = vec3(1, distanceFactor, tiltFactor);
+
+    // here comes the anti-david trick
+    // note: David is the developer behind vts-browser-js
+    //          he also designed the geodata styling rules
+    // unfortunately, he designed zbuffer-offset in a way
+    //   that only works with his perspective projection
+    // therefore we simulate his projection,
+    //   apply the offset and undo his projection
+    // this way the parameters work as expected
+    //   and the values already in z-buffer are valid too
+
+    double factor = std::max(draws->camera.altitudeOverEllipsoid,
+        draws->camera.tagretDistance) / 600000;
+    double davidNear = std::max(2.0, factor * 40);
+    double davidFar = 600000 * std::max(1.0, factor) * 20;
+
+    // this decomposition works with the most basic projection matrix only
+    double fov = 2 * radToDeg(std::atan(1 / proj(1, 1)));
+    double aspect = proj(1, 1) / proj(0, 0);
+    double myNear = proj(2, 3) / (proj(2, 2) - 1);
+    double myFar = proj(2, 3) / (proj(2, 2) + 1);
+    (void)myNear;
+    (void)myFar;
+
+    assert(perspectiveMatrix(fov, aspect,
+        myNear, myFar).isApprox(proj, 1e-10));
+
+    davidProj = perspectiveMatrix(fov, aspect,
+        davidNear, davidFar);
+    davidProjInv = davidProj.inverse();
 }
 
 void RendererImpl::renderGeodata()
@@ -408,148 +677,126 @@ void RendererImpl::renderGeodata()
     // z-buffer-offset global data
     vec3 zBufferOffsetValues;
     mat4 davidProj, davidProjInv;
-    {
-        vec3 up1 = normalize(rawToVec3(draws->camera.eye)); // todo projected systems
-        vec3 up2 = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
-        double tiltFactor = std::acos(std::max(
-            dot(up1, up2), 0.0)) / M_PI_2;
-        double distance = draws->camera.tagretDistance;
-        double distanceFactor = 1 / std::max(1.0,
-            std::log(distance) / std::log(1.04));
-        zBufferOffsetValues = vec3(1, distanceFactor, tiltFactor);
-
-        // here comes the anti-david trick
-        // note: David is the developer behind vts-browser-js
-        //          he also designed the geodata styling rules
-        // unfortunately, he designed zbuffer-offset in a way
-        //   that only works with his perspective projection
-        // therefore we simulate his projection,
-        //   apply the offset and undo his projection
-        // this way the parameters work as expected
-        //   and the values already in z-buffer are valid too
-
-        double factor = std::max(draws->camera.altitudeOverEllipsoid,
-            draws->camera.tagretDistance) / 600000;
-        double davidNear = std::max(2.0, factor * 40);
-        double davidFar = 600000 * std::max(1.0, factor) * 20;
-
-        // this decomposition works with the most basic projection matrix only
-        double fov = 2 * radToDeg(std::atan(1 / proj(1, 1)));
-        double aspect = proj(1, 1) / proj(0, 0);
-        double myNear = proj(2, 3) / (proj(2, 2) - 1);
-        double myFar = proj(2, 3) / (proj(2, 2) + 1);
-        (void)myNear;
-        (void)myFar;
-
-        assert(perspectiveMatrix(fov, aspect,
-            myNear, myFar).isApprox(proj, 1e-10));
-
-        davidProj = perspectiveMatrix(fov, aspect,
-            davidNear, davidFar);
-        davidProjInv = davidProj.inverse();
-    }
+    initializeZBufferOffsetValues(zBufferOffsetValues,
+        davidProj, davidProjInv,
+        draws, viewInv, proj);
 
     // initialize camera data
     {
         struct UboCameraData
         {
             mat4f proj;
-            vec4f cameraParams; // screen height in pixels, view extent in meters
+            vec4f cameraParams; // screen width in pixels, screen height in pixels, view extent in meters
         } ubo;
 
         ubo.proj = proj.cast<float>();
-        ubo.cameraParams = vec4f(heightPrev, draws->camera.viewExtent, 0, 0);
+        ubo.cameraParams = vec4f(widthPrev, heightPrev,
+                draws->camera.viewExtent, 0);
 
         uboGeodataCamera->bind();
         uboGeodataCamera->load(ubo);
         uboGeodataCamera->bindToIndex(0);
     }
 
-    // split geodata into zIndex arrays
-    std::array<std::vector<DrawGeodataTask>, 520> zIndexArrays;
+    std::sort(draws->geodata.begin(), draws->geodata.end(),
+        [](const DrawGeodataTask &a, const DrawGeodataTask &b)
+    {
+        return ((GeodataBase*)a.geodata.get())->spec.commonData.zIndex
+            < ((GeodataBase*)b.geodata.get())->spec.commonData.zIndex;
+    });
+
+    // iterate over geodata
     for (const DrawGeodataTask &t : draws->geodata)
     {
-        Geodata *g = (Geodata*)t.geodata.get();
-        sint32 zi = g->spec.commonData.zIndex;
-        assert(zi >= -256 && zi <= 256);
-        zIndexArrays[zi + 256].push_back(t);
-    }
+        GeodataBase *gg = (GeodataBase*)t.geodata.get();
 
-    // iterate over zIndex arrays
-    for (auto &tasksArray : zIndexArrays)
-    {
-        if (tasksArray.empty())
-            continue;
-
-        // iterate over geodata in one zIndex array
-        for (const DrawGeodataTask &t : tasksArray)
+        mat4 depthOffsetProj;
         {
-            Geodata *g = (Geodata*)t.geodata.get();
+            vec3 zbo = rawToVec3(gg->spec.commonData.zBufferOffset)
+                .cast<double>();
+            double off = dot(zbo, zBufferOffsetValues) * 0.0001;
+            double off2 = (off + 1) * 2 - 1;
+            mat4 s = scaleMatrix(vec3(1, 1, off2));
+            // apply anti-david measures
+            depthOffsetProj = proj * davidProjInv * s * davidProj;
+        }
 
-            mat4 depthOffsetProj;
+        mat4 model = rawToMat4(gg->spec.model);
+        mat4 mvp = mat4(depthOffsetProj * view * model);
+
+        switch (gg->spec.type)
+        {
+        case GpuGeodataSpec::Type::LineScreen:
+        case GpuGeodataSpec::Type::LineFlat:
+        {
+            GeodataGeometry *g = static_cast<GeodataGeometry*>(gg);
+            shaderGeodataLine->bind();
+            shaderGeodataLine->uniformMat4(0,
+                mat4f(mvp.cast<float>()).data());
+            shaderGeodataLine->uniformMat4(1,
+                mat4f(mat4(mvp.inverse()).cast<float>()).data());
+            shaderGeodataLine->uniformMat3(2,
+                mat3f(mat4to3(mat4((view * model)
+                    .inverse())).cast<float>()).data());
+            g->uniform->bindToIndex(1);
+            g->texture->bind();
+            Mesh *msh = g->mesh.get();
+            msh->bind();
+            glEnable(GL_STENCIL_TEST);
+            msh->dispatch();
+            glDisable(GL_STENCIL_TEST);
+            //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            //msh->dispatch();
+            //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        } break;
+        case GpuGeodataSpec::Type::PointScreen:
+        case GpuGeodataSpec::Type::PointFlat:
+        {
+            GeodataGeometry *g = static_cast<GeodataGeometry*>(gg);
+            shaderGeodataPoint->bind();
+            shaderGeodataPoint->uniformMat4(0,
+                mat4f(mvp.cast<float>()).data());
+            shaderGeodataPoint->uniformMat4(1,
+                mat4f(mat4(mvp.inverse()).cast<float>()).data());
+            shaderGeodataPoint->uniformMat3(2,
+                mat3f(mat4to3(mat4((view * model)
+                    .inverse())).cast<float>()).data());
+            g->uniform->bindToIndex(1);
+            g->texture->bind();
+            Mesh *msh = g->mesh.get();
+            msh->bind();
+            glEnable(GL_STENCIL_TEST);
+            msh->dispatch();
+            glDisable(GL_STENCIL_TEST);
+            //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            //msh->dispatch();
+            //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        } break;
+        case GpuGeodataSpec::Type::PointLabel:
+        {
+            GeodataText *g = static_cast<GeodataText*>(gg);
+            if (!g->checkTextures())
+                continue;
+            shaderGeodataPointLabel->bind();
+            shaderGeodataPointLabel->uniformMat4(0,
+                mat4f(mvp.cast<float>()).data());
+            for (auto &t : g->texts)
             {
-                vec3 zbo = rawToVec3(g->spec.commonData.zBufferOffset)
-                    .cast<double>();
-                double off = dot(zbo, zBufferOffsetValues) * 0.0001;
-                double off2 = (off + 1) * 2 - 1;
-                mat4 s = scaleMatrix(vec3(1, 1, off2));
-                // apply anti-david measures
-                depthOffsetProj = proj * davidProjInv * s * davidProj;
+                shaderGeodataPointLabel->uniformVec3(1, t.position.data());
+                for (auto &w : t.words)
+                {
+                    w.texture->bind();
+                    w.mesh->bind();
+                    w.mesh->dispatch();
+                    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                    //w.mesh->dispatch();
+                    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                }
             }
-
-            mat4 model = rawToMat4(g->spec.model);
-            mat4 mvp = mat4(depthOffsetProj * view * model);
-
-            switch (g->spec.type)
-            {
-            case GpuGeodataSpec::Type::LineScreen:
-            case GpuGeodataSpec::Type::LineFlat:
-            {
-                shaderGeodataLine->bind();
-                shaderGeodataLine->uniformMat4(0,
-                    mat4f(mvp.cast<float>()).data());
-                shaderGeodataLine->uniformMat4(1,
-                    mat4f(mat4(mvp.inverse()).cast<float>()).data());
-                shaderGeodataLine->uniformMat3(2,
-                    mat3f(mat4to3(mat4((view * model)
-                        .inverse())).cast<float>()).data());
-                g->uniform->bindToIndex(1);
-                g->texture->bind();
-                Mesh *msh = g->mesh.get();
-                msh->bind();
-                glEnable(GL_STENCIL_TEST);
-                msh->dispatch();
-                glDisable(GL_STENCIL_TEST);
-                //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                //msh->dispatch();
-                //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            } break;
-            case GpuGeodataSpec::Type::PointScreen:
-            case GpuGeodataSpec::Type::PointFlat:
-            {
-                shaderGeodataPoint->bind();
-                shaderGeodataPoint->uniformMat4(0,
-                    mat4f(mvp.cast<float>()).data());
-                shaderGeodataPoint->uniformMat4(1,
-                    mat4f(mat4(mvp.inverse()).cast<float>()).data());
-                shaderGeodataPoint->uniformMat3(2,
-                    mat3f(mat4to3(mat4((view * model)
-                        .inverse())).cast<float>()).data());
-                g->uniform->bindToIndex(1);
-                g->texture->bind();
-                Mesh *msh = g->mesh.get();
-                msh->bind();
-                glEnable(GL_STENCIL_TEST);
-                msh->dispatch();
-                glDisable(GL_STENCIL_TEST);
-                //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                //msh->dispatch();
-                //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            } break;
-            default:
-            {
-            } break;
-            }
+        } break;
+        default:
+        {
+        } break;
         }
     }
 
@@ -561,9 +808,23 @@ void RendererImpl::renderGeodata()
 
 void Renderer::loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec)
 {
-    auto r = std::make_shared<Geodata>();
-    r->load(&*impl, info, spec);
-    info.userData = r;
+    switch (spec.type)
+    {
+    case GpuGeodataSpec::Type::PointLabel:
+    case GpuGeodataSpec::Type::LineLabel:
+    {
+        auto r = std::make_shared<GeodataText>();
+        r->load(&*impl, info, spec);
+        info.userData = r;
+    } break;
+    default:
+    {
+
+        auto r = std::make_shared<GeodataGeometry>();
+        r->load(&*impl, info, spec);
+        info.userData = r;
+    } break;
+    }
 }
 
 } } // namespace vts renderer

@@ -2,7 +2,7 @@
 layout(std140) uniform uboCameraData
 {
     mat4 uniProj;
-    vec4 uniCameraParams; // screen height in pixels, view extent in meters
+    vec4 uniCameraParams; // screen width in pixels, screen height in pixels, view extent in meters
 };
 
 layout(std140) uniform uboLineData
@@ -53,10 +53,10 @@ void main()
         switch (int(uniTypePlusUnitsPlusWidth[0]))
         {
         case 1: // LineScreen
-            scale *= uniCameraParams[0]; // screen height in pixels
+            scale *= uniCameraParams[1]; // screen height in pixels
             break;
         case 2: // LineFlat
-            scale *= uniCameraParams[1]; // view extent in meters
+            scale *= uniCameraParams[2]; // view extent in meters
             break;
         }
     }

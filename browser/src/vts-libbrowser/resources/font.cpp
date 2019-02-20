@@ -53,17 +53,26 @@ void GpuFont::load()
 
 std::shared_ptr<void> GpuFont::requestTexture(uint32 index)
 {
-    map->touchResource(shared_from_this());
     if (texturePlanes.size() <= index)
         texturePlanes.resize(index + 1);
-    auto t = texturePlanes[index].lock();
+    auto t = texturePlanes[index];
     if (!t)
     {
+        // David, who made initial geodata (and fonts) implementation,
+        //   had a strong aesthetic feelings about how to name the textures:
+        //   something.fnt is THE header
+        //   something.fnt0 and something.fnt1 are skipped
+        //   something.fnt2 is the first texture (at index 0)
+        // We honor the offset
+        //   not because it would not work
+        //   but because we understand his reasoning, right?
         std::stringstream ss;
-        ss << this->name << index;
+        ss << this->name << (index + 2);
         std::string n = ss.str();
         texturePlanes[index] = t = map->getTexture(n);
     }
+    else
+        map->touchResource(t);
     if (*t)
         return t->info.userData;
     return nullptr;

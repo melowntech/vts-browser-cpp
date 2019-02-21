@@ -364,12 +364,12 @@ public:
 
 struct Word
 {
-    std::vector<vec4f> advances; // x advance, y advance, x offset, y offset
-    std::vector<uint16> glyphIndices;
     std::shared_ptr<Font> font;
     std::shared_ptr<Mesh> mesh;
     std::shared_ptr<Texture> texture;
     uint16 fileIndex;
+    Word() : fileIndex(-1)
+    {}
 };
 
 struct Text
@@ -395,6 +395,18 @@ public:
         //   split
         //   harfbuzz
 
+        struct Glyph
+        {
+            std::shared_ptr<Font> font;
+            vec2f advance;
+            vec2f offset;
+            vec2f position;
+            uint16 glyphIndex;
+        };
+
+        std::vector<Glyph> glyphs;
+        glyphs.reserve(s.length() * 2);
+
         // split the string into individual glyphs
         {
             hb_buffer_t *buffer = hb_buffer_create();
@@ -413,85 +425,112 @@ public:
 
             for (uint32 i = 0; i < len; i++)
             {
-                uint16 g = info[i].codepoint;
-                assert(g < fnt->glyphs.size());
-                Word w;
-                w.font = fnt;
-                w.fileIndex = fnt->glyphs[g].fileIndex;
-                w.glyphIndices.push_back(g);
-                w.advances.push_back(vec4f(
-                    pos[i].x_advance, pos[i].y_advance,
-                    pos[i].x_offset, pos[i].y_offset
-                ) / 64);
-                t.words.push_back(w);
+                uint16 gi = info[i].codepoint;
+                assert(gi < fnt->glyphs.size());
+                Glyph g;
+                g.font = fnt;
+                g.glyphIndex = gi;
+                g.advance = vec2f(pos[i].x_advance, pos[i].y_advance) / 64;
+                g.offset = vec2f(pos[i].x_offset, pos[i].y_offset) / 64;
+                glyphs.push_back(g);
             }
 
             hb_buffer_destroy(buffer);
         }
 
-        // merge consecutive words that share font and fileIndex
-        {
-            // todo
-        }
-
-        // global layouts & generate meshes
+        // global layout
         {
             float xx = 0;
-            for (auto &w : t.words)
+            float yy = 0;
+            for (Glyph &g : glyphs)
             {
-                static const uint32 stride = sizeof(float) * 5;
-                GpuMeshSpec s;
-                s.verticesCount = w.glyphIndices.size() * 4;
-                s.indicesCount = w.glyphIndices.size() * 6;
-                s.vertices.allocate(s.verticesCount * stride);
-                s.indices.resize(s.indicesCount * sizeof(uint16));
-                float *fit = (float*)s.vertices.data();
-                uint16 *iit = (uint16*)s.indices.data();
-                uint16 ii = 0;
-                for (uint32 i = 0, e = w.advances.size(); i != e; i++)
-                {
-                    const auto &g = w.font->glyphs[w.glyphIndices[i]];
-                    float px = (xx + w.advances[i][2] + g.world[0]);
-                    float py = (w.advances[i][3] - g.world[3] - g.world[1]);
-                    float pw = g.world[2];
-                    float ph = g.world[3];
-                    // 2--3
-                    // |  |
-                    // 0--1
-                    *fit++ = px; *fit++ = py; *fit++ = g.uvs[0]; *fit++ = g.uvs[1]; *(sint32*)fit++ = g.plane;
-                    *fit++ = px + pw; *fit++ = py; *fit++ = g.uvs[2]; *fit++ = g.uvs[1]; *(sint32*)fit++ = g.plane;
-                    *fit++ = px; *fit++ = py + ph; *fit++ = g.uvs[0]; *fit++ = g.uvs[3]; *(sint32*)fit++ = g.plane;
-                    *fit++ = px + pw; *fit++ = py + ph; *fit++ = g.uvs[2]; *fit++ = g.uvs[3]; *(sint32*)fit++ = g.plane;
-                    // 0-1-2
-                    // 1-3-2
-                    *iit++ = ii + 0; *iit++ = ii + 1; *iit++ = ii + 2;
-                    *iit++ = ii + 1; *iit++ = ii + 3; *iit++ = ii + 2;
-                    xx += w.advances[i][0];
-                    ii += 4;
-                }
-                assert(fit == (float*)s.vertices.dataEnd());
-                assert(iit == (uint16*)s.indices.dataEnd());
-                s.faceMode = GpuMeshSpec::FaceMode::Triangles;
-                s.attributes[0].enable = true;
-                s.attributes[0].components = 2;
-                s.attributes[0].type = GpuTypeEnum::Float;
-                s.attributes[0].offset = 0;
-                s.attributes[0].stride = stride;
-                s.attributes[1].enable = true;
-                s.attributes[1].components = 2;
-                s.attributes[1].type = GpuTypeEnum::Float;
-                s.attributes[1].offset = sizeof(float) * 2;
-                s.attributes[1].stride = stride;
-                s.attributes[2].enable = true;
-                s.attributes[2].components = 1;
-                s.attributes[2].type = GpuTypeEnum::Int;
-                s.attributes[2].offset = sizeof(float) * 4;
-                s.attributes[2].stride = stride;
-                w.mesh = std::make_shared<Mesh>();
-                ResourceInfo inf;
-                w.mesh->load(inf, s);
-                addMemory(inf);
+                const auto &f = g.font->glyphs[g.glyphIndex];
+                float px = xx + g.offset[0] + f.world[0];
+                float py = yy + g.offset[1] - f.world[3] - f.world[1];
+                g.position = vec2f(px, py);
+                xx += g.advance[0];
+                yy += g.advance[1];
             }
+            // todo alignment
+        }
+
+        // sort into groups
+        struct WordCompare
+        {
+            bool operator () (const Word &a, const Word &b) const
+            {
+                if (a.font == b.font)
+                    return a.fileIndex < b.fileIndex;
+                return a.font < b.font;
+            }
+        };
+        std::map<Word, std::vector<Glyph>, WordCompare> groups;
+        {
+            for (const Glyph &g : glyphs)
+            {
+                Word w;
+                w.font = g.font;
+                w.fileIndex = g.font->glyphs[g.glyphIndex].fileIndex;
+                groups[w].push_back(g);
+            }
+        }
+
+        // generate meshes
+        for (auto &grp : groups)
+        {
+            GpuMeshSpec s;
+            static const uint32 stride = sizeof(float) * 5;
+            s.verticesCount = grp.second.size() * 4;
+            s.indicesCount = grp.second.size() * 6;
+            s.vertices.allocate(s.verticesCount * stride);
+            s.indices.resize(s.indicesCount * sizeof(uint16));
+            float *fit = (float*)s.vertices.data();
+            uint16 *iit = (uint16*)s.indices.data();
+            uint16 ii = 0;
+            for (const auto &g : grp.second)
+            {
+                const auto &f = g.font->glyphs[g.glyphIndex];
+                float px = g.position[0];
+                float py = g.position[1];
+                float pw = f.world[2];
+                float ph = f.world[3];
+                // 2--3
+                // |  |
+                // 0--1
+                *fit++ = px; *fit++ = py; *fit++ = f.uvs[0]; *fit++ = f.uvs[1]; *(sint32*)fit++ = f.plane;
+                *fit++ = px + pw; *fit++ = py; *fit++ = f.uvs[2]; *fit++ = f.uvs[1]; *(sint32*)fit++ = f.plane;
+                *fit++ = px; *fit++ = py + ph; *fit++ = f.uvs[0]; *fit++ = f.uvs[3]; *(sint32*)fit++ = f.plane;
+                *fit++ = px + pw; *fit++ = py + ph; *fit++ = f.uvs[2]; *fit++ = f.uvs[3]; *(sint32*)fit++ = f.plane;
+                // 0-1-2
+                // 1-3-2
+                *iit++ = ii + 0; *iit++ = ii + 1; *iit++ = ii + 2;
+                *iit++ = ii + 1; *iit++ = ii + 3; *iit++ = ii + 2;
+                ii += 4;
+            }
+            assert(fit == (float*)s.vertices.dataEnd());
+            assert(iit == (uint16*)s.indices.dataEnd());
+            s.faceMode = GpuMeshSpec::FaceMode::Triangles;
+            s.attributes[0].enable = true;
+            s.attributes[0].components = 2;
+            s.attributes[0].type = GpuTypeEnum::Float;
+            s.attributes[0].offset = 0;
+            s.attributes[0].stride = stride;
+            s.attributes[1].enable = true;
+            s.attributes[1].components = 2;
+            s.attributes[1].type = GpuTypeEnum::Float;
+            s.attributes[1].offset = sizeof(float) * 2;
+            s.attributes[1].stride = stride;
+            s.attributes[2].enable = true;
+            s.attributes[2].components = 1;
+            s.attributes[2].type = GpuTypeEnum::Int;
+            s.attributes[2].offset = sizeof(float) * 4;
+            s.attributes[2].stride = stride;
+            Word w(grp.first);
+            w.mesh = std::make_shared<Mesh>();
+            ResourceInfo inf;
+            w.mesh->load(inf, s);
+            addMemory(inf);
+            t.words.push_back(std::move(w));
         }
     }
 
@@ -812,16 +851,16 @@ void RendererImpl::renderGeodata()
             shaderGeodataPointLabel->uniformMat4(0,
                 mat4f(mvp.cast<float>()).data());
             g->uniform->bindToIndex(1);
-            for (int pass = 0; pass < 2; pass++)
+            for (auto &t : g->texts)
             {
-                shaderGeodataPointLabel->uniform(3, pass);
-                for (auto &t : g->texts)
+                shaderGeodataPointLabel->uniformVec3(1, t.position.data());
+                for (int pass = 0; pass < 2; pass++)
                 {
-                    shaderGeodataPointLabel->uniformVec3(1, t.position.data());
+                    shaderGeodataPointLabel->uniform(3, pass);
                     for (auto &w : t.words)
                     {
                         shaderGeodataPointLabel->uniform(2, options.textScale
-                            * g->spec.unionData.pointLabel.size / w.font->size);
+                           * g->spec.unionData.pointLabel.size / w.font->size);
                         w.texture->bind();
                         w.mesh->bind();
                         w.mesh->dispatch();

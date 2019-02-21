@@ -357,6 +357,22 @@ GpuTextureSpec::FilterMode magFilter(
     }
 }
 
+bool gpuTypeInteger(GpuTypeEnum type)
+{
+    switch (type)
+    {
+    case GpuTypeEnum::Byte:
+    case GpuTypeEnum::UnsignedByte:
+    case GpuTypeEnum::Short:
+    case GpuTypeEnum::UnsignedShort:
+    case GpuTypeEnum::Int:
+    case GpuTypeEnum::UnsignedInt:
+        return true;
+    default:
+        return false;
+    }
+}
+
 } // namespace
 
 void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec)
@@ -472,9 +488,15 @@ void Mesh::bind()
                 if (a.enable)
                 {
                     glEnableVertexAttribArray(i);
-                    glVertexAttribPointer(i, a.components, (GLenum)a.type,
-                                          a.normalized ? GL_TRUE : GL_FALSE,
-                                          a.stride, (void*)(intptr_t)a.offset);
+                    if (gpuTypeInteger(a.type) && !a.normalized)
+                        glVertexAttribIPointer(i,
+                            a.components, (GLenum)a.type,
+                            a.stride, (void*)(intptr_t)a.offset);
+                    else
+                        glVertexAttribPointer(i,
+                            a.components, (GLenum)a.type,
+                            a.normalized ? GL_TRUE : GL_FALSE,
+                            a.stride, (void*)(intptr_t)a.offset);
                 }
                 else
                     glDisableVertexAttribArray(i);

@@ -767,6 +767,7 @@ void RendererImpl::getWorldPosition(const double screenPos[2], double worldPos[3
 RenderOptions::RenderOptions()
 {
     memset(this, 0, sizeof(*this));
+    textScale = 1.5;
     antialiasingSamples = 1;
     renderAtmosphere = true;
     colorToTargetFrameBuffer = true;

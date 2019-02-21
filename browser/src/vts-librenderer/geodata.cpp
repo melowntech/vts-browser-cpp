@@ -383,6 +383,7 @@ class GeodataText : public GeodataBase
 public:
     std::vector<std::shared_ptr<Font>> fontCascade;
     std::vector<Text> texts;
+    std::shared_ptr<UniformBuffer> uniform;
 
     void generateWords(Text &t, const std::string &s)
     {
@@ -449,11 +450,11 @@ public:
                 uint16 ii = 0;
                 for (uint32 i = 0, e = w.advances.size(); i != e; i++)
                 {
-                    float px = xx + w.advances[i][2];
-                    float py = w.advances[i][3];
-                    float pw = 50;
-                    float ph = 50; // todo
                     const auto &g = w.font->glyphs[w.glyphIndices[i]];
+                    float px = (xx + w.advances[i][2] + g.world[0]);
+                    float py = (w.advances[i][3] - g.world[3] - g.world[1]);
+                    float pw = g.world[2];
+                    float ph = g.world[3];
                     // 2--3
                     // |  |
                     // 0--1
@@ -532,6 +533,30 @@ public:
             t.position = rawToVec3(spec.positions[i][0].data());
             texts.push_back(std::move(t));
         }
+
+        // prepare ubo
+        {
+            struct UboPointLabelData
+            {
+                vec4f colors[2];
+                vec4f outline;
+            };
+            UboPointLabelData uboPointLabelData;
+
+            uboPointLabelData.colors[0]
+                = rawToVec4(spec.unionData.pointLabel.color);
+            uboPointLabelData.colors[1]
+                = rawToVec4(spec.unionData.pointLabel.color2);
+            float os = std::sqrt(2) / spec.unionData.pointLabel.size;
+            uboPointLabelData.outline
+                = rawToVec4(spec.unionData.pointLabel.outline)
+                .cwiseProduct(vec4f(1, 1, os, os));
+
+            uniform = std::make_shared<UniformBuffer>();
+            uniform->bind();
+            uniform->load(uboPointLabelData);
+            info->gpuMemoryCost += sizeof(uboPointLabelData);
+        }
     }
 
     void loadLineLabel()
@@ -607,13 +632,16 @@ void RendererImpl::initializeGeodata()
             "data/shaders/geodataPointLabel.frag.glsl");
         shaderGeodataPointLabel->loadUniformLocations({
                 "uniMvp",
-                "uniPosition"
+                "uniPosition",
+                "uniScale",
+                "uniPass"
             });
         shaderGeodataPointLabel->bindTextureLocations({
                 { "texGlyphs", 0 }
             });
         shaderGeodataPointLabel->bindUniformBlockLocations({
-                { "uboCameraData", 0 }
+                { "uboCameraData", 0 },
+                { "uboPointLabelData", 1 }
             });
     }
 
@@ -673,6 +701,8 @@ void RendererImpl::renderGeodata()
 
     glStencilFunc(GL_EQUAL, 0, 0xFF);
     glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // z-buffer-offset global data
     vec3 zBufferOffsetValues;
@@ -774,25 +804,31 @@ void RendererImpl::renderGeodata()
         } break;
         case GpuGeodataSpec::Type::PointLabel:
         {
+            glEnable(GL_BLEND);
             GeodataText *g = static_cast<GeodataText*>(gg);
             if (!g->checkTextures())
                 continue;
             shaderGeodataPointLabel->bind();
             shaderGeodataPointLabel->uniformMat4(0,
                 mat4f(mvp.cast<float>()).data());
-            for (auto &t : g->texts)
+            g->uniform->bindToIndex(1);
+            for (int pass = 0; pass < 2; pass++)
             {
-                shaderGeodataPointLabel->uniformVec3(1, t.position.data());
-                for (auto &w : t.words)
+                shaderGeodataPointLabel->uniform(3, pass);
+                for (auto &t : g->texts)
                 {
-                    w.texture->bind();
-                    w.mesh->bind();
-                    w.mesh->dispatch();
-                    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                    //w.mesh->dispatch();
-                    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                    shaderGeodataPointLabel->uniformVec3(1, t.position.data());
+                    for (auto &w : t.words)
+                    {
+                        shaderGeodataPointLabel->uniform(2, options.textScale
+                            * g->spec.unionData.pointLabel.size / w.font->size);
+                        w.texture->bind();
+                        w.mesh->bind();
+                        w.mesh->dispatch();
+                    }
                 }
             }
+            glDisable(GL_BLEND);
         } break;
         default:
         {

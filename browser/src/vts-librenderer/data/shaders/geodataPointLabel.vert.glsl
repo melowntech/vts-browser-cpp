@@ -7,6 +7,7 @@ layout(std140) uniform uboCameraData
 
 uniform mat4 uniMvp;
 uniform vec3 uniPosition;
+uniform float uniScale;
 
 layout(location = 0) in vec2 inPosition;
 layout(location = 1) in vec2 inUv;
@@ -20,6 +21,6 @@ void main()
     varUv = inUv;
     varPlane = inPlane;
     gl_Position = uniMvp * vec4(uniPosition, 1.0);
-    gl_Position.xy += gl_Position.w * inPosition / uniCameraParams.xy;
+    gl_Position.xy += uniScale * gl_Position.w * inPosition / uniCameraParams.xy;
 }
 

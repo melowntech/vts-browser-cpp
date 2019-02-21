@@ -927,7 +927,7 @@ struct geoContext
         findFonts(layer["label-font"], spec.fontCascade);
         spec.type = GpuGeodataSpec::Type::PointLabel;
         vecToRaw(layer["label-color"].empty()
-            ? vec4f(0, 0, 0, 1)
+            ? vec4f(1, 1, 1, 1)
             : convertColor(layer["label-color"]),
             spec.unionData.pointLabel.color);
         vecToRaw(layer["label-color2"].empty()

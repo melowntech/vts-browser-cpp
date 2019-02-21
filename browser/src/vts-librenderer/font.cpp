@@ -122,14 +122,13 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec)
     bin::read(w, textureHeight);
     swapEndian(textureWidth);
     swapEndian(textureHeight);
-    uint8 size;
     bin::read(w, size);
     {
         uint8 flags;
         bin::read(w, flags);
     }
 
-    if (FT_Set_Char_Size(face, size * 64, size * 64, 0, 0))
+    if (FT_Set_Pixel_Sizes(face, 0, size))
         throw std::runtime_error("FT_Set_Char_Size");
     font = hb_ft_font_create(face, nullptr);
 
@@ -151,7 +150,10 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec)
             uint8 gh = (v1 >> 16) & 63;
             uint8 gx = (v2 >> 8) & 255;
             uint8 gy = v2 & 255;
+            sint8 sx = ((v1 >> 9) & 63) * (((v1 >> 15) & 1) ? -1 : 1);
+            sint8 sy = ((v1 >> 2) & 63) * (((v1 >> 8) & 1) ? -1 : 1);
             g.uvs = vec4f(gx, gy + gh, gx + gw, gy) / (textureWidth - 1);
+            g.world = vec4f(sx, sy, gw, gh);
         }
     }
 

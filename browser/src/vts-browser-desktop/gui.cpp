@@ -750,6 +750,15 @@ public:
                             0, mr.targetResourcesMemoryKB / 1024, 2048, 32);
                     sprintf(buffer, "%3d", mr.targetResourcesMemoryKB / 1024);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                    // text scale
+                    {
+                        float &s = window->render.options().textScale;
+                        nk_label(&ctx, "Text Scale:", NK_TEXT_LEFT);
+                        s = nk_slide_float(&ctx, 0.2, s, 5, 0.1);
+                        sprintf(buffer, "%3.1f", s);
+                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                    }
                 }
 
                 // end group

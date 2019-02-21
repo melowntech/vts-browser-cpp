@@ -36,6 +36,9 @@ extern "C" {
 // options provided from the application (you set these)
 typedef struct vtsCRenderOptionsBase
 {
+    // additional scaling of text rendering
+    float textScale;
+
     // render resolution in pixels
     uint32 width;
     uint32 height;

@@ -37,7 +37,8 @@ namespace priv
 
 struct Glyph
 {
-    vec4f uvs; // min x, min y, max x, max y
+    vec4f uvs; // min x, max y, max x, min y
+    vec4f world; // x offset, y offset, width, height
     uint16 fileIndex;
     uint8 plane; // 0 .. 3
 };
@@ -52,12 +53,13 @@ public:
 
     Buffer fontData;
     std::shared_ptr<vts::FontHandle> fontHandle;
+    std::vector<Glyph> glyphs;
     FT_Face face;
     hb_font_t *font;
     uint16 textureWidth;
     uint16 textureHeight;
     uint16 filesCount;
-    std::vector<Glyph> glyphs;
+    uint8 size;
 };
 
 } // namespace priv

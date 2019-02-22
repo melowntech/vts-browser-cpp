@@ -32,10 +32,15 @@
 #include <vts-browser/resources.hpp>
 #include <vts-browser/cameraDraws.hpp>
 
+extern "C"
+{
+#include <SheenBidi.h>
+}
+
 namespace vts { namespace renderer
 {
 
-namespace priv
+namespace
 {
 
 class GeodataBase
@@ -378,6 +383,128 @@ struct Text
     vec3f position; // model space
 };
 
+struct TmpGlyph
+{
+    std::shared_ptr<Font> font;
+    vec2f position;
+    vec2f offset;
+    float advance;
+    uint16 glyphIndex;
+};
+
+std::vector<std::vector<TmpGlyph>> textToGlyphs(
+    const std::string &s,
+    const std::vector<std::shared_ptr<Font>> &fontCascade)
+{
+    std::vector<std::vector<TmpGlyph>> lines;
+
+    SBCodepointSequence codepoints
+        = { SBStringEncodingUTF8, (void*)s.data(), s.length() };
+    SBAlgorithmRef bidiAlgorithm
+        = SBAlgorithmCreate(&codepoints);
+    SBUInteger paragraphStart = 0;
+    while (true)
+    {
+        SBParagraphRef paragraph
+            = SBAlgorithmCreateParagraph(bidiAlgorithm,
+                paragraphStart, INT32_MAX, SBLevelDefaultLTR);
+        if (!paragraph)
+            break;
+        SBUInteger paragraphLength = SBParagraphGetLength(paragraph);
+        SBUInteger lineStart = paragraphStart;
+        paragraphStart += paragraphLength;
+
+        while (true)
+        {
+            SBLineRef paragraphLine = SBParagraphCreateLine(paragraph,
+                lineStart, paragraphLength);
+            if (!paragraphLine)
+                break;
+            SBUInteger lineLength = SBLineGetLength(paragraphLine);
+            lineStart += lineLength;
+            paragraphLength -= lineLength;
+
+            SBUInteger runCount = SBLineGetRunCount(paragraphLine);
+            const SBRun *runArray = SBLineGetRunsPtr(paragraphLine);
+
+            std::vector<TmpGlyph> line;
+            line.reserve(lineLength);
+
+            for (uint32 runIndex = 0; runIndex < runCount; runIndex++)
+            {
+                const SBRun *run = runArray + runIndex;
+
+                // todo iterate over fonts to fill in tofus
+                std::shared_ptr<Font> fnt = fontCascade[0];
+
+                // harfbuzz does not handle the character for line break
+                auto runLength = run->length;
+                if (s[run->offset + runLength - 1] == '\n')
+                    runLength--;
+
+                hb_buffer_t *buffer = hb_buffer_create();
+                hb_buffer_add_utf8(buffer,
+                    (char*)codepoints.stringBuffer, codepoints.stringLength,
+                    run->offset, runLength);
+                hb_buffer_set_direction(buffer, (run->level % 2) == 0
+                    ? HB_DIRECTION_LTR : HB_DIRECTION_RTL);
+                hb_buffer_guess_segment_properties(buffer);
+                hb_shape(fnt->font, buffer, nullptr, 0);
+
+                uint32 len = hb_buffer_get_length(buffer);
+                hb_glyph_info_t *info
+                    = hb_buffer_get_glyph_infos(buffer, nullptr);
+                hb_glyph_position_t *pos
+                    = hb_buffer_get_glyph_positions(buffer, nullptr);
+
+                for (uint32 i = 0; i < len; i++)
+                {
+                    assert(pos[i].y_advance == 0);
+                    uint16 gi = info[i].codepoint;
+                    assert(gi < fnt->glyphs.size());
+                    TmpGlyph g;
+                    g.font = fnt;
+                    g.glyphIndex = gi;
+                    g.advance = pos[i].x_advance / 64.f;
+                    g.offset = vec2f(pos[i].x_offset, pos[i].y_offset) / 64;
+                    line.push_back(g);
+                }
+
+                hb_buffer_destroy(buffer);
+            }
+
+            lines.push_back(std::move(line));
+        }
+    }
+
+    return lines;
+}
+
+vec2f textLayout(float maxWidth, float align, vec2f origin,
+    std::vector<std::vector<TmpGlyph>> &lines)
+{
+    float yy = 0;
+    for (std::vector<TmpGlyph> &glyphs : lines)
+    {
+        float xx = 0;
+        for (TmpGlyph &g : glyphs)
+        {
+            const auto &f = g.font->glyphs[g.glyphIndex];
+            float px = xx + g.offset[0] + f.world[0];
+            float py = yy + g.offset[1] - f.world[3] - f.world[1];
+            g.position = vec2f(px, py);
+            xx += g.advance;
+        }
+        yy -= 30; // todo wtf is line height?
+    }
+
+    // todo align
+
+    // todo origin
+
+    return vec2f(maxWidth, yy); // todo add line height
+}
+
 class GeodataText : public GeodataBase
 {
 public:
@@ -385,74 +512,13 @@ public:
     std::vector<Text> texts;
     std::shared_ptr<UniformBuffer> uniform;
 
-    void generateWords(Text &t, const std::string &s)
+    std::vector<Word> generateWords(const std::string &s,
+        float maxWidth, float align, vec2f origin)
     {
-        // todo
-        // bidi
-        // split
-        // harfbuzz
-        // while contains tofu and has additional font available
-        //   split
-        //   harfbuzz
-
-        struct Glyph
-        {
-            std::shared_ptr<Font> font;
-            vec2f advance;
-            vec2f offset;
-            vec2f position;
-            uint16 glyphIndex;
-        };
-
-        std::vector<Glyph> glyphs;
-        glyphs.reserve(s.length() * 2);
-
-        // split the string into individual glyphs
-        {
-            hb_buffer_t *buffer = hb_buffer_create();
-
-            std::shared_ptr<Font> fnt = fontCascade[0];
-
-            hb_buffer_add_utf8(buffer, s.data(), s.length(), 0, -1);
-            hb_buffer_guess_segment_properties(buffer);
-            hb_shape(fnt->font, buffer, nullptr, 0);
-
-            uint32 len = hb_buffer_get_length(buffer);
-            hb_glyph_info_t *info
-                = hb_buffer_get_glyph_infos(buffer, nullptr);
-            hb_glyph_position_t *pos
-                = hb_buffer_get_glyph_positions(buffer, nullptr);
-
-            for (uint32 i = 0; i < len; i++)
-            {
-                uint16 gi = info[i].codepoint;
-                assert(gi < fnt->glyphs.size());
-                Glyph g;
-                g.font = fnt;
-                g.glyphIndex = gi;
-                g.advance = vec2f(pos[i].x_advance, pos[i].y_advance) / 64;
-                g.offset = vec2f(pos[i].x_offset, pos[i].y_offset) / 64;
-                glyphs.push_back(g);
-            }
-
-            hb_buffer_destroy(buffer);
-        }
-
-        // global layout
-        {
-            float xx = 0;
-            float yy = 0;
-            for (Glyph &g : glyphs)
-            {
-                const auto &f = g.font->glyphs[g.glyphIndex];
-                float px = xx + g.offset[0] + f.world[0];
-                float py = yy + g.offset[1] - f.world[3] - f.world[1];
-                g.position = vec2f(px, py);
-                xx += g.advance[0];
-                yy += g.advance[1];
-            }
-            // todo alignment
-        }
+        std::vector<std::vector<TmpGlyph>> lines
+            = textToGlyphs(s, fontCascade);
+        vec2f finalSize
+            = textLayout(maxWidth, align, origin, lines);
 
         // sort into groups
         struct WordCompare
@@ -464,9 +530,10 @@ public:
                 return a.font < b.font;
             }
         };
-        std::map<Word, std::vector<Glyph>, WordCompare> groups;
+        std::map<Word, std::vector<TmpGlyph>, WordCompare> groups;
+        for (const std::vector<TmpGlyph> &glyphs : lines)
         {
-            for (const Glyph &g : glyphs)
+            for (const TmpGlyph &g : glyphs)
             {
                 Word w;
                 w.font = g.font;
@@ -476,6 +543,7 @@ public:
         }
 
         // generate meshes
+        std::vector<Word> words;
         for (auto &grp : groups)
         {
             GpuMeshSpec s;
@@ -530,8 +598,9 @@ public:
             ResourceInfo inf;
             w.mesh->load(inf, s);
             addMemory(inf);
-            t.words.push_back(std::move(w));
+            words.push_back(std::move(w));
         }
+        return words;
     }
 
     void load(RendererImpl *renderer, ResourceInfo &info,
@@ -567,8 +636,55 @@ public:
         assert(spec.texts.size() == spec.positions.size());
         for (uint32 i = 0, e = spec.texts.size(); i != e; i++)
         {
+            float align = 0.5;
+            switch (spec.unionData.pointLabel.textAlign)
+            {
+            case GpuGeodataSpec::TextAlign::Left:
+                align = 0;
+                break;
+            case GpuGeodataSpec::TextAlign::Right:
+                align = 1;
+                break;
+            default:
+                break;
+            }
+            vec2f origin = vec2f(0.5, 1);
+            switch (spec.unionData.pointLabel.origin)
+            {
+            case GpuGeodataSpec::Origin::TopLeft:
+                origin = vec2f(0, 0);
+                break;
+            case GpuGeodataSpec::Origin::TopRight:
+                origin = vec2f(1, 0);
+                break;
+            case GpuGeodataSpec::Origin::TopCenter:
+                origin = vec2f(0.5, 0);
+                break;
+            case GpuGeodataSpec::Origin::CenterLeft:
+                origin = vec2f(0, 0.5);
+                break;
+            case GpuGeodataSpec::Origin::CenterRight:
+                origin = vec2f(1, 0.5);
+                break;
+            case GpuGeodataSpec::Origin::CenterCenter:
+                origin = vec2f(0.5, 0.5);
+                break;
+            case GpuGeodataSpec::Origin::BottomLeft:
+                origin = vec2f(0, 1);
+                break;
+            case GpuGeodataSpec::Origin::BottomRight:
+                origin = vec2f(1, 1);
+                break;
+            case GpuGeodataSpec::Origin::BottomCenter:
+                origin = vec2f(0.5, 1);
+                break;
+            default:
+                break;
+            }
             Text t;
-            generateWords(t, spec.texts[i]);
+            t.words = generateWords(spec.texts[i],
+                spec.unionData.pointLabel.width,
+                align, origin);
             t.position = rawToVec3(spec.positions[i][0].data());
             texts.push_back(std::move(t));
         }
@@ -620,6 +736,11 @@ public:
         return ok;
     }
 };
+
+} // namespace
+
+namespace priv
+{
 
 void RendererImpl::initializeGeodata()
 {

@@ -166,6 +166,48 @@ struct geoContext
         return s;
     }
 
+    GpuGeodataSpec::Origin convertOrigin(const Value &p) const
+    {
+        Value v = evaluate(p);
+        std::string s = v.asString();
+        if (s == "top-left")
+            return GpuGeodataSpec::Origin::TopLeft;
+        if (s == "top-right")
+            return GpuGeodataSpec::Origin::TopRight;
+        if (s == "top-center")
+            return GpuGeodataSpec::Origin::TopCenter;
+        if (s == "center-left")
+            return GpuGeodataSpec::Origin::CenterLeft;
+        if (s == "center-right")
+            return GpuGeodataSpec::Origin::CenterRight;
+        if (s == "center-center")
+            return GpuGeodataSpec::Origin::CenterCenter;
+        if (s == "bottom-left")
+            return GpuGeodataSpec::Origin::BottomLeft;
+        if (s == "bottom-right")
+            return GpuGeodataSpec::Origin::BottomRight;
+        if (s == "bottom-center")
+            return GpuGeodataSpec::Origin::BottomCenter;
+        if (Validating)
+            THROW << "Invalid origin";
+        return GpuGeodataSpec::Origin::Invalid;
+    }
+
+    GpuGeodataSpec::TextAlign convertTextAlign(const Value &p) const
+    {
+        Value v = evaluate(p);
+        std::string s = v.asString();
+        if (s == "left")
+            return GpuGeodataSpec::TextAlign::Left;
+        if (s == "right")
+            return GpuGeodataSpec::TextAlign::Right;
+        if (s == "center")
+            return GpuGeodataSpec::TextAlign::Center;
+        if (Validating)
+            THROW << "Invalid text align";
+        return GpuGeodataSpec::TextAlign::Invalid;
+    }
+
     static void validateArrayLength(const Value &value,
             uint32 minimum, uint32 maximum, // inclusive range
             const std::string &message)
@@ -560,7 +602,7 @@ struct geoContext
         if (start != s.npos)
         {
             std::size_t end = s.find("}", start);
-            if (Validating && end == s.size())
+            if (Validating && end == s.npos)
                 THROW << "Missing <}> in <" << s << ">";
             std::size_t originalStart = start;
             (void)originalStart;
@@ -570,7 +612,7 @@ struct geoContext
             subs = evaluate(subs).asString();
             std::string res;
             if (start > 0)
-                res += s.substr(0, start - 1);
+                res += s.substr(0, start);
             res += subs;
             if (end < s.size())
                 res += s.substr(end + 1);
@@ -958,17 +1000,23 @@ struct geoContext
             = layer["label-width"].empty()
             ? 200
             : evaluate(layer["label-width"]).asFloat();
+        spec.unionData.pointLabel.origin
+            = layer["label-origin"].empty()
+            ? GpuGeodataSpec::Origin::BottomCenter
+            : convertOrigin(layer["label-origin"]);
+        spec.unionData.pointLabel.textAlign
+            = layer["label-align"].empty()
+            ? GpuGeodataSpec::TextAlign::Center
+            : convertTextAlign(layer["label-align"]);
         if (!layer["label-stick"].empty())
             spec.unionData.pointLabel.stick
                 = convertStick(layer["label-stick"]);
-        // todo: align, origin
         GpuGeodataSpec &data = findSpecData(spec);
         const auto arr = getFeaturePositions();
         data.positions.reserve(data.positions.size() + arr.size());
         data.positions.insert(data.positions.end(), arr.begin(), arr.end());
-        std::string source = layer["label-source"].empty()
-            ? "$name" : evaluate(layer["label-source"]).asString();
-        std::string text = evaluate(source).asString();
+        std::string text = evaluate(layer["label-source"].empty()
+            ? "$name" : layer["label-source"]).asString();
         data.texts.reserve(data.texts.size() + arr.size());
         for (const auto &a : arr)
             data.texts.push_back(text);

@@ -992,8 +992,8 @@ public:
                 nk_tree_pop(&ctx);
             }
 
-            // draw calls
-            if (nk_tree_push(&ctx, NK_TREE_TAB, "Draw calls",
+            // task counts
+            if (nk_tree_push(&ctx, NK_TREE_TAB, "Task counts",
                              NK_MINIMIZED))
             {
                 float ratio[] = { width * 0.5f, width * 0.5f };

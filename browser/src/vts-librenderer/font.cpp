@@ -93,7 +93,8 @@ uint32 findCustomTablesOffset(const vts::Buffer &buf)
 namespace vts { namespace renderer
 {
 
-Font::Font() : face(nullptr), font(nullptr), filesCount(0)
+Font::Font() : face(nullptr), font(nullptr),
+avgAsc(0), textureWidth(0), textureHeight(0), filesCount(0), size(0)
 {}
 
 Font::~Font()
@@ -154,7 +155,9 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec)
             sint8 sy = ((v1 >> 2) & 63) * (((v1 >> 8) & 1) ? -1 : 1);
             g.uvs = vec4f(gx, gy + gh, gx + gw, gy) / (textureWidth - 1);
             g.world = vec4f(sx, sy, gw, gh);
+            avgAsc += gw;
         }
+        avgAsc /= face->num_glyphs;
     }
 
     // find glyphs file indices

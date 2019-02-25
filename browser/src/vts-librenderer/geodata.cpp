@@ -25,6 +25,7 @@
  */
 
 #include <map>
+#include <list>
 
 #include "renderer.hpp"
 #include "font.hpp"
@@ -381,6 +382,9 @@ struct Text
 {
     std::vector<Word> words;
     vec3f position; // model space
+
+    Text() : position(0, 0, 0)
+    {}
 };
 
 struct TmpGlyph
@@ -390,13 +394,26 @@ struct TmpGlyph
     vec2f offset;
     float advance;
     uint16 glyphIndex;
+
+    TmpGlyph() : position(0, 0), offset(0, 0), advance(0), glyphIndex(0)
+    {}
 };
 
-std::vector<std::vector<TmpGlyph>> textToGlyphs(
+struct TmpLine
+{
+    std::vector<TmpGlyph> glyphs;
+    float width;
+    float height;
+
+    TmpLine() : width(0), height(0)
+    {}
+};
+
+std::vector<TmpLine> textToGlyphs(
     const std::string &s,
     const std::vector<std::shared_ptr<Font>> &fontCascade)
 {
-    std::vector<std::vector<TmpGlyph>> lines;
+    std::vector<TmpLine> lines;
 
     SBCodepointSequence codepoints
         = { SBStringEncodingUTF8, (void*)s.data(), s.length() };
@@ -427,82 +444,174 @@ std::vector<std::vector<TmpGlyph>> textToGlyphs(
             SBUInteger runCount = SBLineGetRunCount(paragraphLine);
             const SBRun *runArray = SBLineGetRunsPtr(paragraphLine);
 
-            std::vector<TmpGlyph> line;
-            line.reserve(lineLength);
+            TmpLine line;
+            line.glyphs.reserve(lineLength);
 
             for (uint32 runIndex = 0; runIndex < runCount; runIndex++)
             {
                 const SBRun *run = runArray + runIndex;
 
-                // todo iterate over fonts to fill in tofus
-                std::shared_ptr<Font> fnt = fontCascade[0];
+                // bidi is running, harf is buzzing
 
-                // harfbuzz does not handle the character for line break
-                auto runLength = run->length;
-                if (s[run->offset + runLength - 1] == '\n')
-                    runLength--;
-
-                hb_buffer_t *buffer = hb_buffer_create();
-                hb_buffer_add_utf8(buffer,
-                    (char*)codepoints.stringBuffer, codepoints.stringLength,
-                    run->offset, runLength);
-                hb_buffer_set_direction(buffer, (run->level % 2) == 0
-                    ? HB_DIRECTION_LTR : HB_DIRECTION_RTL);
-                hb_buffer_guess_segment_properties(buffer);
-                hb_shape(fnt->font, buffer, nullptr, 0);
-
-                uint32 len = hb_buffer_get_length(buffer);
-                hb_glyph_info_t *info
-                    = hb_buffer_get_glyph_infos(buffer, nullptr);
-                hb_glyph_position_t *pos
-                    = hb_buffer_get_glyph_positions(buffer, nullptr);
-
-                for (uint32 i = 0; i < len; i++)
+                struct Buzz
                 {
-                    assert(pos[i].y_advance == 0);
-                    uint16 gi = info[i].codepoint;
-                    assert(gi < fnt->glyphs.size());
-                    TmpGlyph g;
-                    g.font = fnt;
-                    g.glyphIndex = gi;
-                    g.advance = pos[i].x_advance / 64.f;
-                    g.offset = vec2f(pos[i].x_offset, pos[i].y_offset) / 64;
-                    line.push_back(g);
-                }
+                    SBUInteger offset;
+                    SBUInteger length;
+                    uint32 font;
+                    Buzz(const SBRun *run, sint32 o, sint32 l, uint32 f)
+                        : offset(o), length(std::abs(l)), font(f)
+                    {
+                        (void)run;
+                        assert(offset >= run->offset);
+                        assert((sint64)offset + (sint64)length
+                            <= (sint64)run->offset + (sint64)run->length);
+                    }
+                };
 
-                hb_buffer_destroy(buffer);
+                std::list<Buzz> runs;
+                runs.emplace_back(run, run->offset,
+                    s[run->offset + run->length - 1] == '\n'
+                    ? run->length - 1 : run->length, 0);
+
+                while (!runs.empty())
+                {
+                    Buzz r = runs.front();
+                    runs.pop_front();
+
+                    bool terminal = r.font >= fontCascade.size();
+                    std::shared_ptr<Font> fnt = fontCascade
+                                    [terminal ? 0 : r.font];
+
+                    hb_buffer_t *buffer = hb_buffer_create();
+                    hb_buffer_add_utf8(buffer,
+                        (char*)codepoints.stringBuffer,
+                        codepoints.stringLength,
+                        r.offset, r.length);
+                    hb_buffer_set_direction(buffer, (run->level % 2) == 0
+                        ? HB_DIRECTION_LTR : HB_DIRECTION_RTL);
+                    hb_buffer_guess_segment_properties(buffer);
+                    hb_shape(fnt->font, buffer, nullptr, 0);
+
+                    uint32 len = hb_buffer_get_length(buffer);
+                    hb_glyph_info_t *info
+                        = hb_buffer_get_glyph_infos(buffer, nullptr);
+                    hb_glyph_position_t *pos
+                        = hb_buffer_get_glyph_positions(buffer, nullptr);
+
+                    if (!terminal)
+                    {
+                        bool hasTofu = false;
+                        for (uint32 i = 0; i < len; i++)
+                        {
+                            if (info[i].codepoint == 0)
+                            {
+                                hasTofu = true;
+                                break;
+                            }
+                        }
+
+                        if (hasTofu)
+                        {
+                            runs.reverse();
+                            bool lastTofu = info[0].codepoint == 0;
+                            sint32 lastCluster = info[0].cluster;
+                            for (uint32 i = 1; i < len; i++)
+                            {
+                                bool currentTofu = info[i].codepoint == 0;
+                                if (currentTofu != lastTofu)
+                                {
+                                    sint32 currentCluster
+                                        = info[i].cluster;
+                                    runs.emplace_back(run, lastCluster,
+                                        currentCluster - lastCluster,
+                                        r.font + lastTofu);
+                                    lastCluster = currentCluster;
+                                    lastTofu = currentTofu;
+                                }
+                            }
+                            {
+                                sint32 currentCluster
+                                    = r.offset + r.length;
+                                runs.emplace_back(run, lastCluster,
+                                    currentCluster - lastCluster,
+                                    r.font + lastTofu);
+                            }
+                            runs.reverse();
+                            hb_buffer_destroy(buffer);
+                            continue;
+                        }
+                    }
+
+                    for (uint32 i = 0; i < len; i++)
+                    {
+                        assert(pos[i].y_advance == 0);
+                        uint16 gi = info[i].codepoint;
+                        assert(gi < fnt->glyphs.size());
+                        TmpGlyph g;
+                        g.font = fnt;
+                        g.glyphIndex = gi;
+                        g.advance = pos[i].x_advance / 64.f;
+                        g.offset = vec2f(pos[i].x_offset,
+                                pos[i].y_offset) / 64;
+                        line.glyphs.push_back(g);
+                    }
+
+                    hb_buffer_destroy(buffer);
+                }
             }
 
             lines.push_back(std::move(line));
+            SBLineRelease(paragraphLine);
         }
+        SBParagraphRelease(paragraph);
     }
+    SBAlgorithmRelease(bidiAlgorithm);
 
     return lines;
 }
 
 vec2f textLayout(float maxWidth, float align, vec2f origin,
-    std::vector<std::vector<TmpGlyph>> &lines)
+    std::vector<TmpLine> &lines)
 {
-    float yy = 0;
-    for (std::vector<TmpGlyph> &glyphs : lines)
+    float w = 0;
+    float h = 0;
+    float maxAsc = 0;
+    for (TmpLine &line : lines)
     {
-        float xx = 0;
-        for (TmpGlyph &g : glyphs)
+        for (TmpGlyph &g : line.glyphs)
         {
+            maxAsc = std::max(maxAsc, g.font->avgAsc);
+            line.height = std::max(line.height, (float)g.font->size);
             const auto &f = g.font->glyphs[g.glyphIndex];
-            float px = xx + g.offset[0] + f.world[0];
-            float py = yy + g.offset[1] - f.world[3] - f.world[1];
+            float px = line.width + g.offset[0] + f.world[0];
+            float py = h + g.offset[1] - f.world[3] - f.world[1];
             g.position = vec2f(px, py);
-            xx += g.advance;
+            line.width += g.advance;
         }
-        yy -= 30; // todo wtf is line height?
+        line.height *= 1.5;
+        h -= line.height;
+        w = std::max(w, line.width);
     }
 
-    // todo align
+    // todo line wrap
 
-    // todo origin
+    // align
+    for (TmpLine &line : lines)
+    {
+        float dx = (w - line.width) * align;
+        for (TmpGlyph &g : line.glyphs)
+            g.position[0] += dx;
+    }
 
-    return vec2f(maxWidth, yy); // todo add line height
+    // origin
+    {
+        vec2f dp = vec2f(w, h).cwiseProduct(origin) + vec2f(0, maxAsc);
+        for (TmpLine &line : lines)
+            for (TmpGlyph &g : line.glyphs)
+                g.position -= dp;
+    }
+
+    return vec2f(w, h);
 }
 
 class GeodataText : public GeodataBase
@@ -515,10 +624,8 @@ public:
     std::vector<Word> generateWords(const std::string &s,
         float maxWidth, float align, vec2f origin)
     {
-        std::vector<std::vector<TmpGlyph>> lines
-            = textToGlyphs(s, fontCascade);
-        vec2f finalSize
-            = textLayout(maxWidth, align, origin, lines);
+        std::vector<TmpLine> lines = textToGlyphs(s, fontCascade);
+        textLayout(maxWidth, align, origin, lines);
 
         // sort into groups
         struct WordCompare
@@ -531,9 +638,9 @@ public:
             }
         };
         std::map<Word, std::vector<TmpGlyph>, WordCompare> groups;
-        for (const std::vector<TmpGlyph> &glyphs : lines)
+        for (TmpLine &line : lines)
         {
-            for (const TmpGlyph &g : glyphs)
+            for (const TmpGlyph &g : line.glyphs)
             {
                 Word w;
                 w.font = g.font;

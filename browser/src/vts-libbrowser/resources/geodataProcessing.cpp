@@ -949,10 +949,14 @@ struct geoContext
             spec.type = GpuGeodataSpec::Type::PointFlat;
         else
             spec.type = GpuGeodataSpec::Type::PointScreen;
-        vecToRaw(convertColor(layer["point-color"]),
+        vecToRaw(layer["point-color"].empty()
+            ? vec4f(1, 1, 1, 1)
+            : convertColor(layer["point-color"]),
             spec.unionData.point.color);
         spec.unionData.point.radius
-            = evaluate(layer["point-radius"]).asFloat();
+            = layer["point-radius"].empty()
+            ? 1
+            : evaluate(layer["point-radius"]).asFloat();
         GpuGeodataSpec &data = findSpecData(spec);
         const auto arr = getFeaturePositions();
         data.positions.reserve(data.positions.size() + arr.size());

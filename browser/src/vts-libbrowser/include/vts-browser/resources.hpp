@@ -175,6 +175,7 @@ public:
 class VTS_API FontHandle
 {
 public:
+    virtual ~FontHandle();
     virtual std::shared_ptr<void> requestTexture(uint32 index) = 0;
 };
 

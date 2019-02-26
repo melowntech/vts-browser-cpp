@@ -49,6 +49,8 @@ class GeodataBase
 public:
     GeodataBase() : renderer(nullptr), info(nullptr)
     {}
+    virtual ~GeodataBase()
+    {}
 
     GpuGeodataSpec spec;
     RendererImpl *renderer;
@@ -594,6 +596,7 @@ vec2f textLayout(float maxWidth, float align, vec2f origin,
     }
 
     // todo line wrap
+    (void)maxWidth;
 
     // align
     for (TmpLine &line : lines)

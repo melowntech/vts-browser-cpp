@@ -210,12 +210,10 @@ bool MapImpl::prerequisitesCheck()
         // main surface stack
         layers.push_back(std::make_shared<MapLayer>(this));
 
-#ifdef VTS_ENABLE_FREE_LAYERS
         // free layers
         for (const auto &it : mapconfig->view.freeLayers)
             layers.push_back(std::make_shared<MapLayer>(this, it.first,
                 it.second));
-#endif
     }
 
     // check all layers

@@ -34,6 +34,9 @@
 namespace vts
 {
 
+FontHandle::~FontHandle()
+{}
+
 GpuFont::GpuFont(MapImpl *map, const std::string &name) :
     Resource(map, name)
 {

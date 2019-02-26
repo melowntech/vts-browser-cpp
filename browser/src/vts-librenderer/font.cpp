@@ -174,6 +174,8 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec)
             last = curr;
         }
     }
+
+    (void)info; // todo
 }
 
 void Font::load(GpuFontSpec &spec)

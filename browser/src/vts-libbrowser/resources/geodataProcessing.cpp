@@ -98,7 +98,7 @@ bool isCjk(const std::string &s)
             (c >= 0xF900 && c <= 0xFAFF) || (c >= 0x3300 && c <= 0x33FF) ||
             (c >= 0xFE30 && c <= 0xFE4F) || (c >= 0xF900 && c <= 0xFAFF) ||
             (c >= 0x2F800 && c <= 0x2FA1F) ||
-            (c >= 0x0 && c <= 0x40) || (c >= 0xa0 && c <= 0xbf)))
+            (c <= 0x40) || (c >= 0xa0 && c <= 0xbf)))
             return false;
     }
     return true;
@@ -965,6 +965,8 @@ struct geoContext
 
     void processFeatureLineLabel(const Value &layer, GpuGeodataSpec spec)
     {
+        (void)layer;
+        (void)spec;
         // todo
     }
 
@@ -1023,7 +1025,10 @@ struct geoContext
             ? "$name" : layer["label-source"]).asString();
         data.texts.reserve(data.texts.size() + arr.size());
         for (const auto &a : arr)
+        {
+            (void)a; // is this suspicious?
             data.texts.push_back(text);
+        }
     }
 
     GpuGeodataSpec &findSpecData(const GpuGeodataSpec &spec)

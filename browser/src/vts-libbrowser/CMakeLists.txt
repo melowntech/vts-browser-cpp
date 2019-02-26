@@ -189,11 +189,6 @@ buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})
 buildsys_position_independent(${MODULE_LIBRARIES})
 buildsys_ide_groups(vts-browser libs)
 
-option(VTS_ENABLE_FREE_LAYERS "compile in support for free layers [WIP]")
-if(VTS_ENABLE_FREE_LAYERS)
-    target_compile_definitions(vts-browser PRIVATE VTS_ENABLE_FREE_LAYERS)
-endif()
-
 
 
 #######################################################################

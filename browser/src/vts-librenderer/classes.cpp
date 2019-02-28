@@ -231,7 +231,8 @@ void Shader::bindUniformBlockLocations(
     const std::vector<std::pair<const char *, uint32>> &binds)
 {
     for (auto &it : binds)
-        glUniformBlockBinding(id, glGetUniformBlockIndex(id, it.first), it.second);
+        glUniformBlockBinding(id,
+            glGetUniformBlockIndex(id, it.first), it.second);
 }
 
 Texture::Texture() :
@@ -587,7 +588,7 @@ void Renderer::loadMesh(ResourceInfo &info, GpuMeshSpec &spec)
 }
 
 UniformBuffer::UniformBuffer() :
-    ubo(0)
+    ubo(0), lastSize(0)
 {}
 
 UniformBuffer::~UniformBuffer()
@@ -600,6 +601,7 @@ void UniformBuffer::clear()
     if (ubo)
         glDeleteBuffers(1, &ubo);
     ubo = 0;
+    lastSize = 0;
 }
 
 void UniformBuffer::bind()
@@ -619,7 +621,13 @@ void UniformBuffer::bindToIndex(uint32 index)
 void UniformBuffer::load(size_t size, const void *data)
 {
     assert(ubo != 0);
-    glBufferData(GL_UNIFORM_BUFFER, size, data, GL_DYNAMIC_DRAW);
+    if (lastSize == size)
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, size, data);
+    else
+    {
+        glBufferData(GL_UNIFORM_BUFFER, size, data, GL_DYNAMIC_DRAW);
+        lastSize = size;
+    }
 }
 
 void UniformBuffer::load(const Buffer &buffer)

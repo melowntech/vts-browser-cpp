@@ -73,8 +73,9 @@ public:
     std::shared_ptr<Shader> shaderGeodataPointLabel;
     std::shared_ptr<Mesh> meshQuad; // positions: -1 .. 1
     std::shared_ptr<Mesh> meshRect; // positions: 0 .. 1
-    std::shared_ptr<UniformBuffer> uboGeodataCamera;
     std::shared_ptr<UniformBuffer> uboAtm;
+    std::shared_ptr<UniformBuffer> uboGeodataCamera;
+    std::shared_ptr<UniformBuffer> uboGeodataView;
 
     CameraDraws *draws;
     const MapCelestialBody *body;
@@ -99,15 +100,21 @@ public:
     void drawInfographic(const DrawSimpleTask &t);
     void enableClipDistance(bool enable);
     void updateFramebuffers();
-    void renderGeodata();
     void render();
-    void initializeGeodata();
     void initialize();
     void finalize();
     void updateAtmosphereBuffer();
     void renderCompass(const double screenPosSize[3],
         const double mapRotation[3]);
     void getWorldPosition(const double screenPos[2], double worldPos[3]);
+
+    void initializeGeodata();
+    void renderGeodata();
+    bool geodataTestVisibility(
+        const float visibility[4],
+        const vec3 &pos, const vec3f &up);
+    void initializeZBufferOffsetValues(vec3 &zBufferOffsetValues,
+        mat4 &davidProj, mat4 &davidProjInv);
 };
 
 } // namespace priv

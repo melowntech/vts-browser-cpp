@@ -571,8 +571,14 @@ void RendererImpl::finalize()
     shaderBackground.reset();
     shaderInfographic.reset();
     shaderCopyDepth.reset();
+    shaderGeodataLine.reset();
+    shaderGeodataPoint.reset();
+    shaderGeodataPointLabel.reset();
     meshQuad.reset();
     meshRect.reset();
+    uboAtm.reset();
+    uboGeodataCamera.reset();
+    uboGeodataView.reset();
 
     if (vars.frameRenderBufferId)
     {

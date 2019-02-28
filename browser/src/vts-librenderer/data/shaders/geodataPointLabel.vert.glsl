@@ -5,7 +5,14 @@ layout(std140) uniform uboCameraData
     vec4 uniCameraParams; // screen width in pixels, screen height in pixels, view extent in meters
 };
 
-uniform mat4 uniMvp;
+layout(std140) uniform uboViewData
+{
+    mat4 uniMvp;
+    mat4 uniMvpInv;
+    mat4 uniMv;
+    mat4 uniMvInv;
+};
+
 uniform vec3 uniPosition;
 uniform float uniScale;
 

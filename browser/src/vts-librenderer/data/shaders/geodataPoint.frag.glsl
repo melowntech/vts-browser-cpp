@@ -8,8 +8,11 @@ layout(std140) uniform uboPointData
 
 layout(location = 0) out vec4 outColor;
 
+in float varOpacity;
+
 void main()
 {
     outColor = uniColor;
+    outColor.a *= varOpacity;
 }
 

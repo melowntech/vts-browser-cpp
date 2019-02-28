@@ -131,6 +131,7 @@ public:
 
 private:
     uint32 ubo;
+    size_t lastSize;
 };
 
 } } // namespace vts::renderer

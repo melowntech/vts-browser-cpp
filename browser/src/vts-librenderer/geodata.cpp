@@ -71,12 +71,12 @@ public:
         model = rawToMat4(spec.model);
         modelInv = model.inverse();
 
-        //{
-        //    // culling (degrees to dot)
-        //    float &c = this->spec.commonData.visibilities[3];
-        //    if (c == c)
-        //        c = std::cos(c * M_PI / 180.0);
-        //}
+        {
+            // culling (degrees to dot)
+            float &c = this->spec.commonData.visibilities[3];
+            if (c == c)
+                c = std::cos(c * M_PI / 180.0);
+        }
     }
 
     void loadFinish()
@@ -851,33 +851,30 @@ public:
     }
 };
 
-bool testVisibility(
-    const RendererImpl *impl,
+} // namespace
+
+namespace priv
+{
+
+bool RendererImpl::geodataTestVisibility(
     const float visibility[4],
     const vec3 &pos, const vec3f &up)
 {
-    vec3 eye = rawToVec3(impl->draws->camera.eye);
+    vec3 eye = rawToVec3(draws->camera.eye);
     double distance = length(vec3(eye - pos));
     if (visibility[0] == visibility[0] && distance > visibility[0])
         return false;
-    distance *= 2 / impl->draws->camera.proj[5];
+    distance *= 2 / draws->camera.proj[5];
     if (visibility[1] == visibility[1] && distance < visibility[1])
         return false;
     if (visibility[2] == visibility[2] && distance > visibility[2])
         return false;
     vec3f f = normalize(vec3(eye - pos)).cast<float>();
-    float d = dot(f, up);
-    float l = std::cos(visibility[3] * M_PI / 180);
     if (visibility[3] == visibility[3]
-        && d < l)
+        && dot(f, up) < visibility[3])
         return false;
     return true;
 }
-
-} // namespace
-
-namespace priv
-{
 
 void RendererImpl::initializeGeodata()
 {
@@ -887,17 +884,13 @@ void RendererImpl::initializeGeodata()
         shaderGeodataLine->loadInternal(
             "data/shaders/geodataLine.vert.glsl",
             "data/shaders/geodataLine.frag.glsl");
-        shaderGeodataLine->loadUniformLocations({
-                "uniMvp",
-                "uniMvpInv",
-                "uniMvInv"
-            });
         shaderGeodataLine->bindTextureLocations({
                 { "texLineData", 0 }
             });
         shaderGeodataLine->bindUniformBlockLocations({
                 { "uboCameraData", 0 },
-                { "uboLineData", 1 }
+                { "uboViewData", 1 },
+                { "uboLineData", 2 }
             });
     }
 
@@ -907,17 +900,13 @@ void RendererImpl::initializeGeodata()
         shaderGeodataPoint->loadInternal(
             "data/shaders/geodataPoint.vert.glsl",
             "data/shaders/geodataPoint.frag.glsl");
-        shaderGeodataPoint->loadUniformLocations({
-                "uniMvp",
-                "uniMvpInv",
-                "uniMvInv"
-            });
         shaderGeodataPoint->bindTextureLocations({
                 { "texPointData", 0 }
             });
         shaderGeodataPoint->bindUniformBlockLocations({
                 { "uboCameraData", 0 },
-                { "uboPointData", 1 }
+                { "uboViewData", 1 },
+                { "uboPointData", 2 }
             });
     }
 
@@ -928,7 +917,6 @@ void RendererImpl::initializeGeodata()
             "data/shaders/geodataPointLabel.vert.glsl",
             "data/shaders/geodataPointLabel.frag.glsl");
         shaderGeodataPointLabel->loadUniformLocations({
-                "uniMvp",
                 "uniPosition",
                 "uniScale",
                 "uniPass"
@@ -938,18 +926,20 @@ void RendererImpl::initializeGeodata()
             });
         shaderGeodataPointLabel->bindUniformBlockLocations({
                 { "uboCameraData", 0 },
-                { "uboPointLabelData", 1 }
+                { "uboViewData", 1 },
+                { "uboPointLabelData", 2 }
             });
     }
 
     uboGeodataCamera = std::make_shared<UniformBuffer>();
+    uboGeodataView = std::make_shared<UniformBuffer>();
 
     CHECK_GL("initialize geodata");
 }
 
-void initializeZBufferOffsetValues(vec3 &zBufferOffsetValues,
-        mat4 &davidProj, mat4 &davidProjInv,
-        CameraDraws *draws, const mat4 &viewInv, const mat4 &proj)
+void RendererImpl::initializeZBufferOffsetValues(
+        vec3 &zBufferOffsetValues,
+        mat4 &davidProj, mat4 &davidProjInv)
 {
     vec3 up1 = normalize(rawToVec3(draws->camera.eye)); // todo projected systems
     vec3 up2 = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
@@ -1005,8 +995,7 @@ void RendererImpl::renderGeodata()
     vec3 zBufferOffsetValues;
     mat4 davidProj, davidProjInv;
     initializeZBufferOffsetValues(zBufferOffsetValues,
-        davidProj, davidProjInv,
-        draws, viewInv, proj);
+        davidProj, davidProjInv);
 
     // initialize camera data
     {
@@ -1049,7 +1038,30 @@ void RendererImpl::renderGeodata()
         }
 
         mat4 model = rawToMat4(gg->spec.model);
-        mat4 mvp = mat4(depthOffsetProj * view * model);
+        mat4 mv = view * model;
+        mat4 mvp = depthOffsetProj * mv;
+        mat4 mvInv = mv.inverse();
+        mat4 mvpInv = mvp.inverse();
+
+        // view ubo
+        {
+            struct UboViewData
+            {
+                mat4f mvp;
+                mat4f mvpInv;
+                mat4f mv;
+                mat4f mvInv;
+            } ubo;
+
+            ubo.mvp = mvp.cast<float>();
+            ubo.mvpInv = mvpInv.cast<float>();
+            ubo.mv = mv.cast<float>();
+            ubo.mvInv = mvInv.cast<float>();
+
+            uboGeodataView->bind();
+            uboGeodataView->load(ubo);
+            uboGeodataView->bindToIndex(1);
+        }
 
         switch (gg->spec.type)
         {
@@ -1058,14 +1070,7 @@ void RendererImpl::renderGeodata()
         {
             GeodataGeometry *g = static_cast<GeodataGeometry*>(gg);
             shaderGeodataLine->bind();
-            shaderGeodataLine->uniformMat4(0,
-                mat4f(mvp.cast<float>()).data());
-            shaderGeodataLine->uniformMat4(1,
-                mat4f(mat4(mvp.inverse()).cast<float>()).data());
-            shaderGeodataLine->uniformMat3(2,
-                mat3f(mat4to3(mat4((view * model)
-                    .inverse())).cast<float>()).data());
-            g->uniform->bindToIndex(1);
+            g->uniform->bindToIndex(2);
             g->texture->bind();
             Mesh *msh = g->mesh.get();
             msh->bind();
@@ -1081,14 +1086,7 @@ void RendererImpl::renderGeodata()
         {
             GeodataGeometry *g = static_cast<GeodataGeometry*>(gg);
             shaderGeodataPoint->bind();
-            shaderGeodataPoint->uniformMat4(0,
-                mat4f(mvp.cast<float>()).data());
-            shaderGeodataPoint->uniformMat4(1,
-                mat4f(mat4(mvp.inverse()).cast<float>()).data());
-            shaderGeodataPoint->uniformMat3(2,
-                mat3f(mat4to3(mat4((view * model)
-                    .inverse())).cast<float>()).data());
-            g->uniform->bindToIndex(1);
+            g->uniform->bindToIndex(2);
             g->texture->bind();
             Mesh *msh = g->mesh.get();
             msh->bind();
@@ -1106,24 +1104,28 @@ void RendererImpl::renderGeodata()
             if (!g->checkTextures())
                 continue;
             shaderGeodataPointLabel->bind();
-            shaderGeodataPointLabel->uniformMat4(0,
-                mat4f(mvp.cast<float>()).data());
-            g->uniform->bindToIndex(1);
+            g->uniform->bindToIndex(2);
+            std::shared_ptr<Texture> lastTexture;
             for (auto &t : g->texts)
             {
-                if (!testVisibility(this,
+                if (!geodataTestVisibility(
                     g->spec.commonData.visibilities,
                     t.worldPosition, t.worldUp))
                     continue;
-                shaderGeodataPointLabel->uniformVec3(1, t.modelPosition.data());
+                shaderGeodataPointLabel->uniformVec3(0,
+                    t.modelPosition.data());
                 for (int pass = 0; pass < 2; pass++)
                 {
-                    shaderGeodataPointLabel->uniform(3, pass);
+                    shaderGeodataPointLabel->uniform(2, pass);
                     for (auto &w : t.words)
                     {
-                        shaderGeodataPointLabel->uniform(2, options.textScale
+                        shaderGeodataPointLabel->uniform(1, options.textScale
                            * g->spec.unionData.pointLabel.size / w.font->size);
-                        w.texture->bind();
+                        if (w.texture != lastTexture)
+                        {
+                            w.texture->bind();
+                            lastTexture = w.texture;
+                        }
                         w.mesh->bind();
                         w.mesh->dispatch();
                     }

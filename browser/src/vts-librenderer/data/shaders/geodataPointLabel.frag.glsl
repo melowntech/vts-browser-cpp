@@ -1,5 +1,4 @@
 
-
 layout(std140) uniform uboPointLabelData
 {
     vec4 uniColors[2];

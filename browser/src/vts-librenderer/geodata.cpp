@@ -70,6 +70,13 @@ public:
 
         model = rawToMat4(spec.model);
         modelInv = model.inverse();
+
+        //{
+        //    // culling (degrees to dot)
+        //    float &c = this->spec.commonData.visibilities[3];
+        //    if (c == c)
+        //        c = std::cos(c * M_PI / 180.0);
+        //}
     }
 
     void loadFinish()
@@ -96,7 +103,7 @@ public:
         info->gpuMemoryCost += other.gpuMemoryCost;
     }
 
-    vec3f localUp(const vec3f &p) const
+    vec3f modelUp(const vec3f &p) const
     {
         vec3 dl = p.cast<double>();
         vec3 dw = vec4to3(vec4(model * vec3to4(dl, 1)));
@@ -104,6 +111,14 @@ public:
         vec3 tw = dw + upw;
         vec3 tl = vec4to3(vec4(modelInv * vec3to4(tw, 1)));
         return (tl - dl).cast<float>();
+    }
+
+    vec3f worldUp(vec3f &p) const
+    {
+        vec3 dl = p.cast<double>();
+        vec3 dw = vec4to3(vec4(model * vec3to4(dl, 1)));
+        vec3 upw = normalize(dw);
+        return upw.cast<float>();
     }
 
     uint32 getTotalPoints() const
@@ -213,7 +228,7 @@ public:
                 for (uint32 pi = 0; pi < pointsCount; pi++)
                 {
                     vec3f p = rawToVec3(points[pi].data());
-                    vec3f u = localUp(p);
+                    vec3f u = modelUp(p);
                     *bufPos++ = p;
                     *bufUps++ = u;
                     if (pi > 1)
@@ -255,22 +270,14 @@ public:
             struct UboLineData
             {
                 vec4f color;
-                vec4f visibilityRelative;
-                vec4f visibilityAbsolutePlusVisibilityPlusCulling;
+                vec4f visibilities;
                 vec4f typePlusUnitsPlusWidth;
             };
             UboLineData uboLineData;
 
             uboLineData.color = rawToVec4(spec.unionData.line.color);
-            uboLineData.visibilityRelative
-                = rawToVec4(spec.commonData.visibilityRelative);
-            for (int i = 0; i < 2; i++)
-                uboLineData.visibilityAbsolutePlusVisibilityPlusCulling[i]
-                = spec.commonData.visibilityAbsolute[i];
-            uboLineData.visibilityAbsolutePlusVisibilityPlusCulling[2]
-                = spec.commonData.culling;
-            uboLineData.visibilityAbsolutePlusVisibilityPlusCulling[3]
-                = spec.commonData.visibility;
+            uboLineData.visibilities
+                = rawToVec4(spec.commonData.visibilities);
             uboLineData.typePlusUnitsPlusWidth
                 = vec4f((float)spec.type, (float)spec.unionData.line.units
                     , spec.unionData.line.width, 0.f);
@@ -312,7 +319,7 @@ public:
                     pi < pin; pi++)
                 {
                     vec3f p = rawToVec3(points[pi].data());
-                    vec3f u = localUp(p);
+                    vec3f u = modelUp(p);
                     *bufPos++ = p;
                     *bufUps++ = u;
                     *bufInd++ = current + 0;
@@ -341,22 +348,14 @@ public:
             struct UboPointData
             {
                 vec4f color;
-                vec4f visibilityRelative;
-                vec4f visibilityAbsolutePlusVisibilityPlusCulling;
+                vec4f visibilities;
                 vec4f typePlusRadius;
             };
             UboPointData uboPointData;
 
             uboPointData.color = rawToVec4(spec.unionData.point.color);
-            uboPointData.visibilityRelative
-                = rawToVec4(spec.commonData.visibilityRelative);
-            for (int i = 0; i < 2; i++)
-                uboPointData.visibilityAbsolutePlusVisibilityPlusCulling[i]
-                = spec.commonData.visibilityAbsolute[i];
-            uboPointData.visibilityAbsolutePlusVisibilityPlusCulling[2]
-                = spec.commonData.culling;
-            uboPointData.visibilityAbsolutePlusVisibilityPlusCulling[3]
-                = spec.commonData.visibility;
+            uboPointData.visibilities
+                = rawToVec4(spec.commonData.visibilities);
             uboPointData.typePlusRadius
                 = vec4f((float)spec.type,
                 (float)spec.unionData.point.radius
@@ -383,9 +382,11 @@ struct Word
 struct Text
 {
     std::vector<Word> words;
-    vec3f position; // model space
+    vec3 worldPosition;
+    vec3f modelPosition;
+    vec3f worldUp;
 
-    Text() : position(0, 0, 0)
+    Text() : worldPosition(0, 0, 0), modelPosition(0, 0, 0), worldUp(0, 0, 0)
     {}
 };
 
@@ -795,7 +796,10 @@ public:
             t.words = generateWords(spec.texts[i],
                 spec.unionData.pointLabel.width,
                 align, origin);
-            t.position = rawToVec3(spec.positions[i][0].data());
+            t.modelPosition = rawToVec3(spec.positions[i][0].data());
+            t.worldPosition = vec4to3(vec4(rawToMat4(spec.model)
+                            * vec3to4(t.modelPosition, 1).cast<double>()));
+            t.worldUp = worldUp(t.modelPosition);
             texts.push_back(std::move(t));
         }
 
@@ -846,6 +850,29 @@ public:
         return ok;
     }
 };
+
+bool testVisibility(
+    const RendererImpl *impl,
+    const float visibility[4],
+    const vec3 &pos, const vec3f &up)
+{
+    vec3 eye = rawToVec3(impl->draws->camera.eye);
+    double distance = length(vec3(eye - pos));
+    if (visibility[0] == visibility[0] && distance > visibility[0])
+        return false;
+    distance *= 2 / impl->draws->camera.proj[5];
+    if (visibility[1] == visibility[1] && distance < visibility[1])
+        return false;
+    if (visibility[2] == visibility[2] && distance > visibility[2])
+        return false;
+    vec3f f = normalize(vec3(eye - pos)).cast<float>();
+    float d = dot(f, up);
+    float l = std::cos(visibility[3] * M_PI / 180);
+    if (visibility[3] == visibility[3]
+        && d < l)
+        return false;
+    return true;
+}
 
 } // namespace
 
@@ -1084,7 +1111,11 @@ void RendererImpl::renderGeodata()
             g->uniform->bindToIndex(1);
             for (auto &t : g->texts)
             {
-                shaderGeodataPointLabel->uniformVec3(1, t.position.data());
+                if (!testVisibility(this,
+                    g->spec.commonData.visibilities,
+                    t.worldPosition, t.worldUp))
+                    continue;
+                shaderGeodataPointLabel->uniformVec3(1, t.modelPosition.data());
                 for (int pass = 0; pass < 2; pass++)
                 {
                     shaderGeodataPointLabel->uniform(3, pass);

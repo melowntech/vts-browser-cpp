@@ -158,8 +158,8 @@ struct geoContext
         Value v = evaluate(p);
         validateArrayLength(v, 7, 7, "Stick must have 7 components");
         GpuGeodataSpec::Stick s;
-        s.maxHeight = v[0].asFloat();
-        s.minHeight = v[1].asFloat();
+        s.heights[1] = v[0].asFloat();
+        s.heights[0] = v[1].asFloat();
         s.width = v[2].asFloat();
         vecToRaw(vec4f(vec4f(v[3].asInt(), v[4].asInt(), v[5].asInt(),
             v[6].asInt()) / 255.f), s.color);
@@ -868,8 +868,10 @@ struct geoContext
 
         // visibility
         if (!layer["visibility"].empty())
-            spec.commonData.visibility
+        {
+            spec.commonData.visibilities[0]
                 = evaluate(layer["visibility"]).asFloat();
+        }
 
         // visibility-abs
         if (!layer["visibility-abs"].empty())
@@ -878,7 +880,7 @@ struct geoContext
             validateArrayLength(arr, 2, 2,
                 "visibility-abs must have 2 values");
             for (int i = 0; i < 2; i++)
-                spec.commonData.visibilityAbsolute[i] = arr[i].asFloat();
+                spec.commonData.visibilities[i + 1] = arr[i].asFloat();
         }
 
         // visibility-rel
@@ -887,13 +889,28 @@ struct geoContext
             Value arr = evaluate(layer["visibility-rel"]);
             validateArrayLength(arr, 4, 4,
                 "visibility-rel must have 4 values");
-            for (int i = 0; i < 4; i++)
-                spec.commonData.visibilityRelative[i] = arr[i].asFloat();
+            float d = arr[0].asFloat() * arr[1].asFloat();
+            float v3 = arr[3].asFloat();
+            float v2 = arr[2].asFloat();
+            vec2f vr = vec2f(v3 <= 0 ? 0 : d / v3, v2 <= 0 ? 0 : d / v2);
+            float *vs = spec.commonData.visibilities;
+            if (vs[1] == vs[1])
+            {
+                // merge with visibility-abs
+                vs[1] = std::max(vs[1], vr[0]);
+                vs[2] = std::min(vs[2], vr[1]);
+            }
+            else
+            {
+                vs[1] = vr[0];
+                vs[2] = vr[1];
+            }
         }
 
         // culling
         if (!layer["culling"].empty())
-            spec.commonData.culling = evaluate(layer["culling"]).asFloat();
+            spec.commonData.visibilities[3]
+                = evaluate(layer["culling"]).asFloat();
     }
 
     void processFeatureLine(const Value &layer, GpuGeodataSpec spec)
@@ -1015,7 +1032,7 @@ struct geoContext
             ? GpuGeodataSpec::TextAlign::Center
             : convertTextAlign(layer["label-align"]);
         if (!layer["label-stick"].empty())
-            spec.unionData.pointLabel.stick
+            spec.commonData.stick
                 = convertStick(layer["label-stick"]);
         GpuGeodataSpec &data = findSpecData(spec);
         const auto arr = getFeaturePositions();

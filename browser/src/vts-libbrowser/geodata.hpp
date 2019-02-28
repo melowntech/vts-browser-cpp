@@ -60,6 +60,7 @@ public:
     std::string data;
     std::map<std::string, std::shared_ptr<GpuFont>> fonts;
     std::map<std::string, std::shared_ptr<GpuTexture>> bitmaps;
+    Validity dependenciesValidity;
     bool dependenciesLoaded;
 };
 

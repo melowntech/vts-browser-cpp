@@ -53,7 +53,9 @@ FetchTask::ResourceType GeodataFeatures::resourceType() const
 }
 
 GeodataStylesheet::GeodataStylesheet(MapImpl *map, const std::string &name) :
-    Resource(map, name), dependenciesLoaded(false)
+    Resource(map, name),
+    dependenciesValidity(Validity::Indeterminate),
+    dependenciesLoaded(false)
 {
     priority = std::numeric_limits<float>::infinity();
 }
@@ -96,10 +98,20 @@ Validity GeodataStylesheet::dependencies()
 {
     if (!dependenciesLoaded)
     {
+        dependenciesValidity = Validity::Indeterminate;
         dependenciesLoaded = true;
         fonts.clear();
         bitmaps.clear();
-        Json::Value s = stringToJson(data);
+        Json::Value s;
+        try
+        {
+            s = stringToJson(data);
+        }
+        catch (std::runtime_error &)
+        {
+            dependenciesValidity = Validity::Invalid;
+            return Validity::Invalid;
+        }
         for (const auto &n : s["fonts"].getMemberNames())
         {
             std::string p = s["fonts"][n].asString();
@@ -112,9 +124,10 @@ Validity GeodataStylesheet::dependencies()
             p = convertPath(p, map->mapconfigPath);
             bitmaps[n] = map->getTexture(p);
         }
+        dependenciesValidity = Validity::Valid;
     }
 
-    Validity valid = Validity::Valid;
+    Validity valid = dependenciesValidity;
     for (const auto &it : fonts)
     {
         auto r = std::static_pointer_cast<Resource>(it.second);
@@ -183,12 +196,15 @@ GpuGeodataSpec::UnionData::UnionData()
     memset(this, 0, sizeof(*this));
 }
 
-GpuGeodataSpec::CommonData::CommonData() :
-visibility(nan1()), culling(nan1()), zIndex(0)
+GpuGeodataSpec::CommonData::CommonData()
 {
-    vecToRaw(vec4f(nan4().cast<float>()), visibilityRelative);
+    // zero all including any potential paddings
+    //   this is important for binary comparisons of the entire struct
+    memset(this, 0, sizeof(*this));
+
+    stick.width = nan1();
+    vecToRaw(vec4f(nan4().cast<float>()), visibilities);
     vecToRaw(vec3f(nan3().cast<float>()), zBufferOffset);
-    vecToRaw(vec2f(nan2().cast<float>()), visibilityAbsolute);
 }
 
 } // namespace vts

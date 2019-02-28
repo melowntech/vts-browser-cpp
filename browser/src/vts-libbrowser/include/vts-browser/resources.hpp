@@ -239,14 +239,12 @@ public:
     struct VTS_API Stick
     {
         float color[4];
+        float heights[2];
         float width;
-        float minHeight;
-        float maxHeight;
     };
 
     struct VTS_API Icon
     {
-        Stick stick;
         float offset[2];
         float scale;
         Origin origin;
@@ -275,7 +273,6 @@ public:
 
     struct VTS_API PointLabel
     {
-        Stick stick;
         float outline[4];
         float color[4];
         float color2[4];
@@ -306,11 +303,9 @@ public:
 
     struct VTS_API CommonData
     {
-        float visibilityRelative[4];
+        Stick stick;
+        float visibilities[4]; // distance, view-min, view-max, culling
         float zBufferOffset[3];
-        float visibilityAbsolute[2];
-        float visibility;
-        float culling;
         sint32 zIndex;
         CommonData();
     };

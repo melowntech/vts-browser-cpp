@@ -186,7 +186,7 @@ std::shared_ptr<GeodataStylesheet> MapImpl::getGeoStyle(
 std::shared_ptr<GeodataStylesheet> MapImpl::newGeoStyle(
         const std::string &value)
 {
-    auto res = getGeoStyle(value);
+    auto res = getGeoStyle(std::string("GeodataStylesheet: ") + value);
     res->data = value;
     res->dependenciesLoaded = false;
     res->state = Resource::State::ready;

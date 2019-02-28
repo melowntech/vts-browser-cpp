@@ -220,16 +220,7 @@ std::pair<Validity, std::shared_ptr<GeodataStylesheet>>
     case Validity::Valid:
         break;
     }
-    switch (f->stylesheet->dependencies())
-    {
-    case Validity::Invalid:
-        return { Validity::Invalid, {} };
-    case Validity::Indeterminate:
-        return { Validity::Indeterminate, {} };
-    case Validity::Valid:
-        break;
-    }
-    return { Validity::Valid, f->stylesheet };
+    return { f->stylesheet->dependencies(), f->stylesheet };
 }
 
 std::pair<Validity, std::shared_ptr<const std::string>>

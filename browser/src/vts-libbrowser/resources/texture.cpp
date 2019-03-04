@@ -109,7 +109,7 @@ void GpuTexture::load()
     }
 
     spec.verticalFlip();
-    map->callbacks.loadTexture(info, spec);
+    map->callbacks.loadTexture(info, spec, name);
     info.ramMemoryCost += sizeof(*this);
 }
 

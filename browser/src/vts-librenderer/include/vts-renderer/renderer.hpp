@@ -77,10 +77,14 @@ public:
     void finalize();
 
     // can be directly bound to MapCallbacks
-    void loadTexture(ResourceInfo &info, GpuTextureSpec &spec);
-    void loadMesh(ResourceInfo &info, GpuMeshSpec &spec);
-    void loadFont(ResourceInfo &info, GpuFontSpec &spec);
-    void loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec);
+    void loadTexture(ResourceInfo &info, GpuTextureSpec &spec,
+        const std::string &debugId);
+    void loadMesh(ResourceInfo &info, GpuMeshSpec &spec,
+        const std::string &debugId);
+    void loadFont(ResourceInfo &info, GpuFontSpec &spec,
+        const std::string &debugId);
+    void loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec,
+        const std::string &debugId);
     void bindLoadFunctions(Map *map);
 
     RenderOptions &options();

@@ -42,15 +42,19 @@
 namespace vts
 {
 
-std::function<const char *(const char *)> projFinder;
+std::function<const char *(const char *)> &projFinderCallback()
+{
+    static std::function<const char *(const char *)> fnc;
+    return fnc;
+}
 
 namespace
 {
 
 const char *pjFind(const char *p)
 {
-    if (projFinder)
-        return projFinder(p);
+    if (projFinderCallback())
+        return projFinderCallback()(p);
     return nullptr;
 }
 

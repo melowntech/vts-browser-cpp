@@ -106,7 +106,7 @@ MainWindow::MainWindow(struct SDL_Window *window, void *renderContext,
         spec.attributes[1].components = 2;
         spec.attributes[1].offset = sizeof(vts::vec3f);
         vts::ResourceInfo info;
-        meshSphere->load(info, spec);
+        meshSphere->load(info, spec, "data/meshes/sphere.obj");
     }
 
     // load mesh line
@@ -123,7 +123,7 @@ MainWindow::MainWindow(struct SDL_Window *window, void *renderContext,
         spec.attributes[1].components = 2;
         spec.attributes[1].offset = sizeof(vts::vec3f);
         vts::ResourceInfo info;
-        meshLine->load(info, spec);
+        meshLine->load(info, spec, "data/meshes/line.obj");
     }
 }
 

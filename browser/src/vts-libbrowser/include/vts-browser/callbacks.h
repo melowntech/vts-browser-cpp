@@ -34,7 +34,7 @@ extern "C" {
 #endif
 
 typedef void(*vtsResourceCallbackType)(vtsHMap map, vtsHResource resource);
-typedef void(*vtsEmptyCallbackType)(vtsHMap map);
+typedef void(*vtsMapCallbackType)(vtsHMap map);
 typedef const char *(*vtsProjFinderCallbackType)(const char *name);
 
 VTS_API void vtsCallbacksLoadTexture(vtsHMap map,
@@ -43,11 +43,11 @@ VTS_API void vtsCallbacksLoadMesh(vtsHMap map,
     vtsResourceCallbackType callback);
 
 VTS_API void vtsCallbacksMapconfigAvailable(vtsHMap map,
-    vtsEmptyCallbackType callback);
+    vtsMapCallbackType callback);
 VTS_API void vtsCallbacksMapconfigReady(vtsHMap map,
-    vtsEmptyCallbackType callback);
+    vtsMapCallbackType callback);
 
-VTS_API void vtsProjFinder(vtsProjFinderCallbackType callback);
+VTS_API void vtsCallbacksProjFinder(vtsProjFinderCallbackType callback);
 
 #ifdef __cplusplus
 } // extern C

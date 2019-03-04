@@ -110,6 +110,8 @@ void Shader::load(const std::string &vertexShader,
 {
     clear();
     id = glCreateProgram();
+    if (GLAD_GL_KHR_debug && !debugId.empty())
+        glObjectLabel(GL_PROGRAM, id, debugId.length(), debugId.data());
     try
     {
         GLuint v = loadShader(preamble + vertexShader, GL_VERTEX_SHADER);
@@ -376,8 +378,11 @@ bool gpuTypeInteger(GpuTypeEnum type)
 
 } // namespace
 
-void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec)
+void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec,
+    const std::string &debugId)
 {
+    this->debugId = debugId;
+
     if (spec.width == 0 && spec.height == 0 && spec.components == 0
         && spec.buffer.size() > 0)
     {
@@ -392,6 +397,8 @@ void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec)
     clear();
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
+    if (GLAD_GL_KHR_debug && !debugId.empty())
+        glObjectLabel(GL_TEXTURE, id, debugId.length(), debugId.data());
     glTexImage2D(GL_TEXTURE_2D, 0, findInternalFormat(spec),
                  spec.width, spec.height, 0,
                  findFormat(spec), (GLenum)spec.type, spec.buffer.data());
@@ -428,12 +435,6 @@ void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec)
     info.gpuMemoryCost += spec.buffer.size();
 }
 
-void Texture::load(vts::GpuTextureSpec &spec)
-{
-    ResourceInfo info;
-    load(info, spec);
-}
-
 uint32 Texture::getId() const
 {
     return id;
@@ -444,10 +445,11 @@ bool Texture::getGrayscale() const
     return grayscale;
 }
 
-void Renderer::loadTexture(ResourceInfo &info, GpuTextureSpec &spec)
+void Renderer::loadTexture(ResourceInfo &info, GpuTextureSpec &spec,
+    const std::string &debugId)
 {
     auto r = std::make_shared<Texture>();
-    r->load(info, spec);
+    r->load(info, spec, debugId);
     info.userData = r;
 }
 
@@ -479,6 +481,9 @@ void Mesh::bind()
     {
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
+        if (GLAD_GL_KHR_debug && !debugId.empty())
+            glObjectLabel(GL_VERTEX_ARRAY, vao,
+                debugId.length(), debugId.data());
 
         if (vbo)
         {
@@ -520,8 +525,11 @@ void Mesh::dispatch()
     CHECK_GL("dispatch mesh");
 }
 
-void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp)
+void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp,
+    const std::string &debugId)
 {
+    this->debugId = debugId;
+
     clear();
     spec = std::move(specp);
     GLuint vao = 0;
@@ -531,6 +539,9 @@ void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp)
     {
         glGenBuffers(1, &vbo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        if (GLAD_GL_KHR_debug && !debugId.empty())
+            glObjectLabel(GL_BUFFER, vbo,
+                debugId.length(), debugId.data());
         glBufferData(GL_ARRAY_BUFFER,
                  spec.vertices.size(), spec.vertices.data(), GL_STATIC_DRAW);
     }
@@ -538,6 +549,9 @@ void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp)
     {
         glGenBuffers(1, &vio);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vio);
+        if (GLAD_GL_KHR_debug && !debugId.empty())
+            glObjectLabel(GL_BUFFER, vio,
+                debugId.length(), debugId.data());
         glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                  spec.indices.size(), spec.indices.data(), GL_STATIC_DRAW);
     }
@@ -549,12 +563,6 @@ void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp)
     info.gpuMemoryCost += spec.vertices.size() + spec.indices.size();
     spec.vertices.free();
     spec.indices.free();
-}
-
-void Mesh::load(GpuMeshSpec &spec)
-{
-    ResourceInfo info;
-    load(info, spec);
 }
 
 void Mesh::load(uint32 vao, uint32 vbo, uint32 vio)
@@ -580,10 +588,11 @@ uint32 Mesh::getVio() const
     return vio;
 }
 
-void Renderer::loadMesh(ResourceInfo &info, GpuMeshSpec &spec)
+void Renderer::loadMesh(ResourceInfo &info, GpuMeshSpec &spec,
+    const std::string &debugId)
 {
     auto r = std::make_shared<Mesh>();
-    r->load(info, spec);
+    r->load(info, spec, debugId);
     info.userData = r;
 }
 
@@ -604,17 +613,26 @@ void UniformBuffer::clear()
     lastSize = 0;
 }
 
-void UniformBuffer::bind()
+void UniformBuffer::bindInit()
 {
     if (ubo == 0)
+    {
         glGenBuffers(1, &ubo);
+        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+        if (GLAD_GL_KHR_debug && !debugId.empty())
+            glObjectLabel(GL_BUFFER, ubo, debugId.length(), debugId.data());
+    }
+}
+
+void UniformBuffer::bind()
+{
+    bindInit();
     glBindBuffer(GL_UNIFORM_BUFFER, ubo);
 }
 
 void UniformBuffer::bindToIndex(uint32 index)
 {
-    if (ubo == 0)
-        glGenBuffers(1, &ubo);
+    bindInit();
     glBindBufferBase(GL_UNIFORM_BUFFER, index, ubo);
 }
 

@@ -174,6 +174,9 @@ void RendererImpl::updateFramebuffers()
         glActiveTexture(GL_TEXTURE0 + 5);
         glGenTextures(1, &vars.depthRenderTexId);
         glBindTexture(vars.textureTargetType, vars.depthRenderTexId);
+        if (GLAD_GL_KHR_debug)
+            glObjectLabel(GL_TEXTURE, vars.depthRenderTexId,
+                -1, "depthRenderTexId");
         if (antialiasingPrev > 1)
         {
             glTexImage2DMultisample(vars.textureTargetType,
@@ -211,12 +214,18 @@ void RendererImpl::updateFramebuffers()
             vars.depthReadTexId = vars.depthRenderTexId;
             glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
         }
+        if (GLAD_GL_KHR_debug)
+            glObjectLabel(GL_TEXTURE, vars.depthReadTexId,
+                -1, "depthReadTexId");
         CHECK_GL("update depth texture for sampling");
 
         // color texture for rendering
         glActiveTexture(GL_TEXTURE0 + 7);
         glGenTextures(1, &vars.colorRenderTexId);
         glBindTexture(vars.textureTargetType, vars.colorRenderTexId);
+        if (GLAD_GL_KHR_debug)
+            glObjectLabel(GL_TEXTURE, vars.colorRenderTexId,
+                -1, "colorRenderTexId");
         if (antialiasingPrev > 1)
             glTexImage2DMultisample(
                 vars.textureTargetType, antialiasingPrev, GL_RGB8,
@@ -252,12 +261,18 @@ void RendererImpl::updateFramebuffers()
             vars.colorReadTexId = vars.colorRenderTexId;
             glBindTexture(GL_TEXTURE_2D, vars.colorReadTexId);
         }
+        if (GLAD_GL_KHR_debug)
+            glObjectLabel(GL_TEXTURE, vars.colorReadTexId,
+                -1, "colorReadTexId");
         CHECK_GL("update color texture for sampling");
 
         // render frame buffer
         glDeleteFramebuffers(1, &vars.frameRenderBufferId);
         glGenFramebuffers(1, &vars.frameRenderBufferId);
         glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
+        if (GLAD_GL_KHR_debug)
+            glObjectLabel(GL_FRAMEBUFFER, vars.frameRenderBufferId,
+                -1, "frameRenderBufferId");
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
             vars.textureTargetType, vars.depthRenderTexId, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
@@ -268,6 +283,9 @@ void RendererImpl::updateFramebuffers()
         glDeleteFramebuffers(1, &vars.frameReadBufferId);
         glGenFramebuffers(1, &vars.frameReadBufferId);
         glBindFramebuffer(GL_FRAMEBUFFER, vars.frameReadBufferId);
+        if (GLAD_GL_KHR_debug)
+            glObjectLabel(GL_FRAMEBUFFER, vars.frameReadBufferId,
+                -1, "frameReadBufferId");
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
             GL_TEXTURE_2D, vars.depthReadTexId, 0);
         checkGlFramebuffer(GL_FRAMEBUFFER);
@@ -457,12 +475,15 @@ void RendererImpl::initialize()
         vts::GpuTextureSpec spec(vts::readInternalMemoryBuffer(
             "data/textures/compas.png"));
         spec.verticalFlip();
-        texCompas->load(spec);
+        vts::ResourceInfo ri;
+        texCompas->load(ri, spec, "data/textures/compas.png");
     }
 
     // load shader texture
     {
         shaderTexture = std::make_shared<Shader>();
+        shaderTexture->debugId
+            = "data/shaders/texture.*.glsl";
         shaderTexture->loadInternal(
             "data/shaders/texture.vert.glsl",
             "data/shaders/texture.frag.glsl");
@@ -473,6 +494,8 @@ void RendererImpl::initialize()
     // load shader surface
     {
         shaderSurface = std::make_shared<ShaderAtm>();
+        shaderSurface->debugId
+            = "data/shaders/surface.*.glsl";
         Buffer vert = readInternalMemoryBuffer(
             "data/shaders/surface.vert.glsl");
         Buffer atm = readInternalMemoryBuffer(
@@ -489,6 +512,8 @@ void RendererImpl::initialize()
     // load shader background
     {
         shaderBackground = std::make_shared<ShaderAtm>();
+        shaderBackground->debugId
+            = "data/shaders/background.*.glsl";
         Buffer vert = readInternalMemoryBuffer(
             "data/shaders/background.vert.glsl");
         Buffer atm = readInternalMemoryBuffer(
@@ -504,6 +529,8 @@ void RendererImpl::initialize()
     // load shader infographic
     {
         shaderInfographic = std::make_shared<Shader>();
+        shaderInfographic->debugId
+            = "data/shaders/infographic.*.glsl";
         shaderInfographic->loadInternal(
             "data/shaders/infographic.vert.glsl",
             "data/shaders/infographic.frag.glsl");
@@ -516,6 +543,8 @@ void RendererImpl::initialize()
     // load shader copy depth
     {
         shaderCopyDepth = std::make_shared<Shader>();
+        shaderCopyDepth->debugId
+            = "data/shaders/copyDepth.*.glsl";
         shaderCopyDepth->loadInternal(
             "data/shaders/copyDepth.vert.glsl",
             "data/shaders/copyDepth.frag.glsl");
@@ -536,7 +565,8 @@ void RendererImpl::initialize()
         spec.attributes[1].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
         spec.attributes[1].components = 2;
         spec.attributes[1].offset = sizeof(vts::vec3f);
-        meshQuad->load(spec);
+        vts::ResourceInfo ri;
+        meshQuad->load(ri, spec, "data/meshes/quad.obj");
     }
 
     // load mesh rect
@@ -552,12 +582,14 @@ void RendererImpl::initialize()
         spec.attributes[1].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
         spec.attributes[1].components = 2;
         spec.attributes[1].offset = sizeof(vts::vec3f);
-        meshRect->load(spec);
+        vts::ResourceInfo ri;
+        meshRect->load(ri, spec, "data/meshes/rect.obj");
     }
 
     // create atmosphere ubo
     {
         uboAtm = std::make_shared<UniformBuffer>();
+        uboAtm->debugId = "uboAtm";
     }
 
     initializeGeodata();
@@ -805,13 +837,13 @@ void Renderer::finalize()
 void Renderer::bindLoadFunctions(Map *map)
 {
     map->callbacks().loadTexture = std::bind(&Renderer::loadTexture, this,
-            std::placeholders::_1, std::placeholders::_2);
+        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
     map->callbacks().loadMesh = std::bind(&Renderer::loadMesh, this,
-            std::placeholders::_1, std::placeholders::_2);
+        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
     map->callbacks().loadFont = std::bind(&Renderer::loadFont, this,
-        std::placeholders::_1, std::placeholders::_2);
+        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
     map->callbacks().loadGeodata = std::bind(&Renderer::loadGeodata, this,
-        std::placeholders::_1, std::placeholders::_2);
+        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 }
 
 RenderOptions &Renderer::options()

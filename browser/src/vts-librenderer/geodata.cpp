@@ -47,6 +47,8 @@ namespace
 class GeodataBase
 {
 public:
+    std::string debugId;
+
     GeodataBase() : renderer(nullptr), info(nullptr)
     {}
     virtual ~GeodataBase()
@@ -59,11 +61,13 @@ public:
     mat4 modelInv;
 
     virtual void load(RendererImpl *renderer, ResourceInfo &info,
-        GpuGeodataSpec &specp) = 0;
+        GpuGeodataSpec &specp, const std::string &debugId) = 0;
 
     void loadInit(RendererImpl *renderer, ResourceInfo &info,
-        GpuGeodataSpec &specp)
+        GpuGeodataSpec &specp, const std::string &debugId)
     {
+        this->debugId = debugId;
+
         this->spec = std::move(specp);
         this->info = &info;
         this->renderer = renderer;
@@ -139,9 +143,9 @@ public:
     std::shared_ptr<UniformBuffer> uniform;
 
     void load(RendererImpl *renderer, ResourceInfo &info,
-        GpuGeodataSpec &specp) override
+        GpuGeodataSpec &specp, const std::string &debugId) override
     {
-        loadInit(renderer, info, specp);
+        loadInit(renderer, info, specp, debugId);
 
         switch (spec.type)
         {
@@ -176,7 +180,7 @@ public:
         tex.filterMode = GpuTextureSpec::FilterMode::Nearest;
         tex.wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
         ResourceInfo ri;
-        renderer->rendererApi->loadTexture(ri, tex);
+        renderer->rendererApi->loadTexture(ri, tex, debugId);
         this->texture = std::static_pointer_cast<Texture>(ri.userData);
         addMemory(ri);
     }
@@ -189,7 +193,7 @@ public:
         msh.indices = std::move(indBuffer);
         msh.indicesCount = indicesCount;
         ResourceInfo ri;
-        renderer->rendererApi->loadMesh(ri, msh);
+        renderer->rendererApi->loadMesh(ri, msh, debugId);
         this->mesh = std::static_pointer_cast<Mesh>(ri.userData);
         addMemory(ri);
     }
@@ -283,6 +287,7 @@ public:
                     , spec.unionData.line.width, 0.f);
 
             uniform = std::make_shared<UniformBuffer>();
+            uniform->debugId = debugId;
             uniform->bind();
             uniform->load(uboLineData);
             info->gpuMemoryCost += sizeof(uboLineData);
@@ -362,6 +367,7 @@ public:
                     , 0.f, 0.f);
 
             uniform = std::make_shared<UniformBuffer>();
+            uniform->debugId = debugId;
             uniform->bind();
             uniform->load(uboPointData);
             info->gpuMemoryCost += sizeof(uboPointData);
@@ -707,7 +713,7 @@ public:
             Word w(grp.first);
             w.mesh = std::make_shared<Mesh>();
             ResourceInfo inf;
-            w.mesh->load(inf, s);
+            w.mesh->load(inf, s, debugId);
             addMemory(inf);
             words.push_back(std::move(w));
         }
@@ -715,9 +721,9 @@ public:
     }
 
     void load(RendererImpl *renderer, ResourceInfo &info,
-        GpuGeodataSpec &specp) override
+        GpuGeodataSpec &specp, const std::string &debugId) override
     {
-        loadInit(renderer, info, specp);
+        loadInit(renderer, info, specp, debugId);
 
         copyFonts();
         switch (spec.type)
@@ -822,6 +828,7 @@ public:
                 .cwiseProduct(vec4f(1, 1, os, os));
 
             uniform = std::make_shared<UniformBuffer>();
+            uniform->debugId = debugId;
             uniform->bind();
             uniform->load(uboPointLabelData);
             info->gpuMemoryCost += sizeof(uboPointLabelData);
@@ -881,6 +888,8 @@ void RendererImpl::initializeGeodata()
     // load shader geodata line
     {
         shaderGeodataLine = std::make_shared<Shader>();
+        shaderGeodataLine->debugId
+            = "data/shaders/geodataLine.*.glsl";
         shaderGeodataLine->loadInternal(
             "data/shaders/geodataLine.vert.glsl",
             "data/shaders/geodataLine.frag.glsl");
@@ -897,6 +906,8 @@ void RendererImpl::initializeGeodata()
     // load shader geodata point
     {
         shaderGeodataPoint = std::make_shared<Shader>();
+        shaderGeodataPoint->debugId
+            = "data/shaders/geodataPoint.*.glsl";
         shaderGeodataPoint->loadInternal(
             "data/shaders/geodataPoint.vert.glsl",
             "data/shaders/geodataPoint.frag.glsl");
@@ -913,6 +924,8 @@ void RendererImpl::initializeGeodata()
     // load shader geodata point label
     {
         shaderGeodataPointLabel = std::make_shared<Shader>();
+        shaderGeodataPointLabel->debugId
+            = "data/shaders/geodataPointLabel.*.glsl";
         shaderGeodataPointLabel->loadInternal(
             "data/shaders/geodataPointLabel.vert.glsl",
             "data/shaders/geodataPointLabel.frag.glsl");
@@ -932,7 +945,9 @@ void RendererImpl::initializeGeodata()
     }
 
     uboGeodataCamera = std::make_shared<UniformBuffer>();
+    uboGeodataCamera->debugId = "uboGeodataCamera";
     uboGeodataView = std::make_shared<UniformBuffer>();
+    uboGeodataView->debugId = "uboGeodataView";
 
     CHECK_GL("initialize geodata");
 }
@@ -1145,7 +1160,8 @@ void RendererImpl::renderGeodata()
 
 } // namespace priv
 
-void Renderer::loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec)
+void Renderer::loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec,
+    const std::string &debugId)
 {
     switch (spec.type)
     {
@@ -1153,14 +1169,14 @@ void Renderer::loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec)
     case GpuGeodataSpec::Type::LineLabel:
     {
         auto r = std::make_shared<GeodataText>();
-        r->load(&*impl, info, spec);
+        r->load(&*impl, info, spec, debugId);
         info.userData = r;
     } break;
     default:
     {
 
         auto r = std::make_shared<GeodataGeometry>();
-        r->load(&*impl, info, spec);
+        r->load(&*impl, info, spec, debugId);
         info.userData = r;
     } break;
     }

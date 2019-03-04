@@ -152,7 +152,8 @@ public:
             spec.buffer.allocate(spec.width * spec.height * spec.components);
             memcpy(spec.buffer.data(), img, spec.buffer.size());
             fontTexture = std::make_shared<Texture>();
-            fontTexture->load(spec);
+            vts::ResourceInfo ri;
+            fontTexture->load(ri, spec, "data/fonts/Roboto-Regular.ttf");
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             nk_font_atlas_end(&atlas, nk_handle_id(fontTexture->getId()),
@@ -190,6 +191,7 @@ public:
         // load shader
         {
             shader = std::make_shared<Shader>();
+            shader->debugId = "data/shaders/gui.*.glsl";
             Buffer vert = readInternalMemoryBuffer(
                         "data/shaders/gui.vert.glsl");
             Buffer frag = readInternalMemoryBuffer(
@@ -228,6 +230,7 @@ public:
                 sizeof(vertex), (void*)16);
             mesh = std::make_shared<Mesh>();
             mesh->load(vao, vbo, vio);
+            mesh->debugId = "guiMesh";
         }
 
         // load control options

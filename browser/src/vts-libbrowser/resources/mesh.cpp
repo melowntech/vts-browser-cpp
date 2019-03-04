@@ -84,7 +84,7 @@ void GpuMesh::load()
     spec.attributes[1].components = 2;
     spec.attributes[1].offset = sizeof(vec3f);
     spec.attributes[2] = spec.attributes[1];
-    map->callbacks.loadMesh(info, spec);
+    map->callbacks.loadMesh(info, spec, name);
     info.ramMemoryCost += sizeof(*this);
 }
 
@@ -133,10 +133,9 @@ void MeshAggregate::load()
     {
         vtslibs::vts::SubMesh &m = meshes[mi].submesh;
 
-        char tmp[10];
-        sprintf(tmp, "%d", mi);
-        std::shared_ptr<GpuMesh> gm = std::make_shared<GpuMesh>(map,
-            name + "#$!" + tmp);
+        std::stringstream ss;
+        ss << name << "#$!" << mi;
+        std::shared_ptr<GpuMesh> gm = std::make_shared<GpuMesh>(map, ss.str());
         gm->state = Resource::State::errorFatal;
 
         uint32 vertexSize = sizeof(vec3f);
@@ -222,9 +221,10 @@ void MeshAggregate::load()
         {
             static const std::string prefix = "extracted/";
             std::string b, c;
-            std::string path = prefix
-                    + convertNameToFolderAndFile(this->name, b, c)
-                    + "_" + tmp + ".obj";
+            std::string path = convertNameToFolderAndFile(this->name, b, c);
+            std::stringstream ss;
+            ss << prefix << path << "_" << mi << ".obj";
+            path = ss.str();
             if (!boost::filesystem::exists(path))
             {
                 boost::filesystem::create_directories(prefix + b);
@@ -254,7 +254,7 @@ void MeshAggregate::load()
             }
         }
 
-        map->callbacks.loadMesh(gm->info, spec);
+        map->callbacks.loadMesh(gm->info, spec, gm->name);
         gm->state = Resource::State::ready;
     }
 

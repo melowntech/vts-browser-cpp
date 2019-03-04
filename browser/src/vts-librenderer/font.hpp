@@ -46,10 +46,12 @@ struct Glyph
 class Font
 {
 public:
+    std::string debugId;
+
     Font();
     ~Font();
-    void load(ResourceInfo &info, GpuFontSpec &spec);
-    void load(GpuFontSpec &spec);
+    void load(ResourceInfo &info, GpuFontSpec &spec,
+        const std::string &debugId);
 
     Buffer fontData;
     std::shared_ptr<vts::FontHandle> fontHandle;

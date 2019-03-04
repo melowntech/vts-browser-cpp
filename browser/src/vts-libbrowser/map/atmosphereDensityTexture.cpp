@@ -123,7 +123,7 @@ void GpuAtmosphereDensityTexture::load()
     spec.filterMode = filterMode;
     spec.wrapMode = wrapMode;
     gray3ToRgb(spec);
-    map->callbacks.loadTexture(info, spec);
+    map->callbacks.loadTexture(info, spec, name);
     info.ramMemoryCost += sizeof(*this);
 }
 

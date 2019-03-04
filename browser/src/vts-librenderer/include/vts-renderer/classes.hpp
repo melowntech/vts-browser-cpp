@@ -40,6 +40,8 @@ namespace vts { namespace renderer
 class VTSR_API Shader
 {
 public:
+    std::string debugId;
+
     Shader();
     ~Shader();
     void clear();
@@ -76,12 +78,14 @@ private:
 class VTSR_API Texture
 {
 public:
+    std::string debugId;
+
     Texture();
     ~Texture();
     void clear();
     void bind();
-    void load(ResourceInfo &info, GpuTextureSpec &spec);
-    void load(GpuTextureSpec &spec);
+    void load(ResourceInfo &info, GpuTextureSpec &spec,
+            const std::string &debugId);
     uint32 getId() const;
     bool getGrayscale() const;
 
@@ -93,13 +97,15 @@ private:
 class VTSR_API Mesh
 {
 public:
+    std::string debugId;
+
     Mesh();
     ~Mesh();
     void clear();
     void bind();
     void dispatch();
-    void load(ResourceInfo &info, GpuMeshSpec &spec);
-    void load(GpuMeshSpec &spec);
+    void load(ResourceInfo &info, GpuMeshSpec &spec,
+        const std::string &debugId);
     void load(uint32 vao, uint32 vbo, uint32 vio);
     uint32 getVao() const;
     uint32 getVbo() const;
@@ -113,6 +119,8 @@ private:
 class VTSR_API UniformBuffer
 {
 public:
+    std::string debugId;
+
     UniformBuffer();
     ~UniformBuffer();
     void clear();
@@ -121,7 +129,7 @@ public:
     void load(size_t size, const void *data);
     void load(const Buffer &buffer);
 
-    template <typename T>
+    template <class T>
     void load(const T &structure)
     {
         load(sizeof(T), &structure);
@@ -132,6 +140,8 @@ public:
 private:
     uint32 ubo;
     size_t lastSize;
+
+    void bindInit();
 };
 
 } } // namespace vts::renderer

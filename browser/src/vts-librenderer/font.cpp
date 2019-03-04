@@ -103,8 +103,11 @@ Font::~Font()
     FT_Done_Face(face);
 }
 
-void Font::load(ResourceInfo &info, GpuFontSpec &spec)
+void Font::load(ResourceInfo &info, GpuFontSpec &spec,
+    const std::string &debugId)
 {
+    this->debugId = debugId;
+
     fontData = std::move(spec.data);
     fontHandle = spec.handle;
 
@@ -175,19 +178,16 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec)
         }
     }
 
-    (void)info; // todo
+    info.ramMemoryCost += sizeof(*this)
+        + fontData.size()
+        + glyphs.size() * sizeof(Glyph);
 }
 
-void Font::load(GpuFontSpec &spec)
-{
-    ResourceInfo info;
-    load(info, spec);
-}
-
-void Renderer::loadFont(ResourceInfo &info, GpuFontSpec &spec)
+void Renderer::loadFont(ResourceInfo &info, GpuFontSpec &spec,
+    const std::string &debugId)
 {
     auto r = std::make_shared<Font>();
-    r->load(info, spec);
+    r->load(info, spec, debugId);
     info.userData = r;
 }
 

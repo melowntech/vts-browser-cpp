@@ -45,6 +45,7 @@ VTS_API void vtsResourceSetUserData(vtsHResource resource, void *data,
                                     vtsResourceDeleterCallbackType deleter);
 VTS_API void vtsResourceSetMemoryCost(vtsHResource resource,
                                       uint32 ramMem, uint32 gpuMem);
+VTS_API const char *vtsResourceGetId(vtsHResource resource);
 
 // texture
 VTS_API void vtsTextureGetResolution(vtsHResource resource,

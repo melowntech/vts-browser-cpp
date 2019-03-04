@@ -1164,14 +1164,18 @@ void GeodataTile::load()
 
     // upload
     renders.clear();
+    renders.reserve(specsToUpload.size());
+    uint32 index = 0;
     for (auto &spec : specsToUpload)
     {
         RenderGeodataTask t;
         t.geodata = std::make_shared<GpuGeodata>();
-        map->callbacks.loadGeodata(t.geodata->info, spec);
+        std::stringstream ss;
+        ss << name << "#$!" << index++;
+        map->callbacks.loadGeodata(t.geodata->info, spec, ss.str());
         renders.push_back(t);
     }
-    specsToUpload.clear();
+    std::vector<GpuGeodataSpec>().swap(specsToUpload);
 
     // memory consumption
     info.ramMemoryCost = sizeof(*this)

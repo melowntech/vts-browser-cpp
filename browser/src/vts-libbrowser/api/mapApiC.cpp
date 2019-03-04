@@ -149,6 +149,7 @@ typedef struct vtsCFetcher
 
 typedef struct vtsCResource
 {
+    const std::string &id;
     vts::ResourceInfo *r;
     union Ptr
     {
@@ -156,7 +157,7 @@ typedef struct vtsCResource
         vts::GpuTextureSpec *t;
         Ptr() : m(nullptr) {}
     } ptr;
-    vtsCResource() : r(nullptr) {}
+    vtsCResource(const std::string &id) : id(id), r(nullptr) {}
 } vtsCResource;
 
 sint32 vtsErrCode()
@@ -962,6 +963,14 @@ void vtsResourceSetMemoryCost(vtsHResource resource,
     C_END
 }
 
+const char *vtsResourceGetId(vtsHResource resource)
+{
+    C_BEGIN
+    return vts::retStr(resource->id);
+    C_END
+    return nullptr;
+}
+
 void vtsTextureGetResolution(vtsHResource resource,
         uint32 *width, uint32 *height, uint32 *components)
 {
@@ -1083,7 +1092,7 @@ struct StateCallback
         (*callback)(map);
     }
     vtsHMap map;
-    vtsEmptyCallbackType callback;
+    vtsMapCallbackType callback;
 };
 
 } // namespace
@@ -1093,9 +1102,10 @@ void vtsCallbacksLoadTexture(vtsHMap map,
 {
     struct Callback
     {
-        void operator()(vts::ResourceInfo &r, vts::GpuTextureSpec &t)
+        void operator()(vts::ResourceInfo &r, vts::GpuTextureSpec &t,
+            const std::string &id)
         {
-            vtsCResource rc;
+            vtsCResource rc(id);
             rc.r = &r;
             rc.ptr.t = &t;
             (*callback)(map, &rc);
@@ -1116,9 +1126,10 @@ void vtsCallbacksLoadMesh(vtsHMap map,
 {
     struct Callback
     {
-        void operator()(vts::ResourceInfo &r, vts::GpuMeshSpec &m)
+        void operator()(vts::ResourceInfo &r, vts::GpuMeshSpec &m,
+            const std::string &id)
         {
-            vtsCResource rc;
+            vtsCResource rc(id);
             rc.r = &r;
             rc.ptr.m = &m;
             (*callback)(map, &rc);
@@ -1135,7 +1146,7 @@ void vtsCallbacksLoadMesh(vtsHMap map,
 }
 
 void vtsCallbacksMapconfigAvailable(vtsHMap map,
-                vtsEmptyCallbackType callback)
+                vtsMapCallbackType callback)
 {
     C_BEGIN
     StateCallback c;
@@ -1146,7 +1157,7 @@ void vtsCallbacksMapconfigAvailable(vtsHMap map,
 }
 
 void vtsCallbacksMapconfigReady(vtsHMap map,
-                vtsEmptyCallbackType callback)
+                vtsMapCallbackType callback)
 {
     C_BEGIN
     StateCallback c;
@@ -1167,9 +1178,9 @@ void vtsProjFinder(vtsProjFinderCallbackType callback)
         vtsProjFinderCallbackType callback;
     };
     C_BEGIN
-        Callback c;
+    Callback c;
     c.callback = callback;
-    vts::projFinder = c;
+    vts::projFinderCallback() = c;
     C_END
 }
 

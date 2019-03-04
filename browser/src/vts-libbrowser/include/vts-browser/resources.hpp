@@ -184,7 +184,6 @@ class VTS_API GpuFontSpec
 {
 public:
     std::shared_ptr<FontHandle> handle;
-    std::string name;
     Buffer data;
 };
 

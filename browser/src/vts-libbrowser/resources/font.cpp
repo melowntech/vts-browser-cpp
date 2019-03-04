@@ -50,8 +50,7 @@ void GpuFont::load()
     GpuFontSpec spec;
     spec.data = std::move(fetch->reply.content);
     spec.handle = std::dynamic_pointer_cast<FontHandle>(shared_from_this());
-    spec.name = name;
-    map->callbacks.loadFont(info, spec);
+    map->callbacks.loadFont(info, spec, name);
 }
 
 std::shared_ptr<void> GpuFont::requestTexture(uint32 index)

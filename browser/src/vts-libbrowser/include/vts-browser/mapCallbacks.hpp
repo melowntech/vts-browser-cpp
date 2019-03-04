@@ -39,23 +39,23 @@ class VTS_API MapCallbacks
 public:
     // function callback to upload a texture to gpu
     // invoked from Map::dataTick()
-    std::function<void(class ResourceInfo &, class GpuTextureSpec &)>
-        loadTexture;
+    std::function<void(class ResourceInfo &, class GpuTextureSpec &,
+        const std::string &id)> loadTexture;
 
     // function callback to upload a mesh to gpu
     // invoked from Map::dataTick()
-    std::function<void(class ResourceInfo &, class GpuMeshSpec &)>
-        loadMesh;
+    std::function<void(class ResourceInfo &, class GpuMeshSpec &,
+        const std::string &id)> loadMesh;
 
     // function callback to upload font to gpu
     // invoked from Map::dataTick()
-    std::function<void(class ResourceInfo &, class GpuFontSpec &)>
-        loadFont;
+    std::function<void(class ResourceInfo &, class GpuFontSpec &,
+        const std::string &id)> loadFont;
 
     // function callback to upload geodata to gpu
     // invoked from Map::dataTick()
-    std::function<void(class ResourceInfo &, class GpuGeodataSpec &)>
-        loadGeodata;
+    std::function<void(class ResourceInfo &, class GpuGeodataSpec &,
+        const std::string &id)> loadGeodata;
 
     // function callback when the mapconfig is downloaded
     // invoked from Map::renderTick()
@@ -70,7 +70,7 @@ public:
     std::function<void()> mapconfigReady;
 };
 
-VTS_API extern std::function<const char *(const char *)> projFinder;
+VTS_API std::function<const char *(const char *)> &projFinderCallback();
 
 } // namespace vts
 

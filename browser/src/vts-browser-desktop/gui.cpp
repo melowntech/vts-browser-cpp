@@ -793,6 +793,10 @@ public:
                 c.debugRenderSurrogates = nk_check_label(&ctx, "surrogates",
                                                     c.debugRenderSurrogates);
 
+                // render text margins
+                r.renderTextMargins = nk_check_label(&ctx, "text margins",
+                    r.renderTextMargins);
+
                 // render objective position
                 n.debugRenderObjectPosition = nk_check_label(&ctx,
                             "objective pos.", n.debugRenderObjectPosition);

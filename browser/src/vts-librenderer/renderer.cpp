@@ -586,6 +586,23 @@ void RendererImpl::initialize()
         meshRect->load(ri, spec, "data/meshes/rect.obj");
     }
 
+    // load mesh line
+    {
+        meshLine = std::make_shared<Mesh>();
+        vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
+            "data/meshes/line.obj"));
+        assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Lines);
+        spec.attributes[0].enable = true;
+        spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
+        spec.attributes[0].components = 3;
+        spec.attributes[1].enable = true;
+        spec.attributes[1].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
+        spec.attributes[1].components = 2;
+        spec.attributes[1].offset = sizeof(vts::vec3f);
+        vts::ResourceInfo ri;
+        meshLine->load(ri, spec, "data/meshes/line.obj");
+    }
+
     // create atmosphere ubo
     {
         uboAtm = std::make_shared<UniformBuffer>();
@@ -608,6 +625,7 @@ void RendererImpl::finalize()
     shaderGeodataPointLabel.reset();
     meshQuad.reset();
     meshRect.reset();
+    meshLine.reset();
     uboAtm.reset();
     uboGeodataCamera.reset();
     uboGeodataView.reset();

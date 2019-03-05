@@ -275,7 +275,7 @@ public:
         float outline[4];
         float color[4];
         float color2[4];
-        float margin[2];
+        float margin[4];
         float offset[2];
         float size;
         float width;

@@ -47,7 +47,6 @@ typedef struct vtsCDrawSurfaceBase
 typedef struct vtsCDrawSimpleBase
 {
     float mv[16];
-    float uvm[9];
     float color[4];
 } vtsCDrawSimpleBase;
 

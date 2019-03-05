@@ -381,6 +381,7 @@ struct Word
     std::shared_ptr<Mesh> mesh;
     std::shared_ptr<Texture> texture;
     uint16 fileIndex;
+
     Word() : fileIndex(-1)
     {}
 };
@@ -391,8 +392,12 @@ struct Text
     vec3 worldPosition;
     vec3f modelPosition;
     vec3f worldUp;
+    vec2f rectOrigin;
+    vec2f rectSize;
 
-    Text() : worldPosition(0, 0, 0), modelPosition(0, 0, 0), worldUp(0, 0, 0)
+    Text() : worldPosition(0, 0, 0), modelPosition(0, 0, 0), worldUp(0, 0, 0),
+        rectOrigin(nan2().cast<float>()),
+        rectSize(nan2().cast<float>())
     {}
 };
 
@@ -419,7 +424,7 @@ struct TmpLine
 };
 
 std::vector<TmpLine> textToGlyphs(
-    const std::string &s,
+    const std::string &s, float size,
     const std::vector<std::shared_ptr<Font>> &fontCascade)
 {
     std::vector<TmpLine> lines;
@@ -576,6 +581,15 @@ std::vector<TmpLine> textToGlyphs(
     }
     SBAlgorithmRelease(bidiAlgorithm);
 
+    for (auto &l : lines)
+    {
+        for (auto &g : l.glyphs)
+        {
+            g.advance *= size / g.font->size;
+            g.offset *= size / g.font->size;
+        }
+    }
+
     return lines;
 }
 
@@ -621,7 +635,155 @@ vec2f textLayout(float maxWidth, float align, vec2f origin,
                 g.position -= dp;
     }
 
-    return vec2f(w, h);
+    return vec2f(w, -h);
+}
+
+void textFindRect(Text &t, vec2f origin, const vec2f &size)
+{
+    origin[1] = 1 - origin[1];
+    t.rectOrigin = -origin.cwiseProduct(size);
+    t.rectSize = size;
+}
+
+std::vector<Word> textGenerateMeshes(std::vector<TmpLine> &lines,
+    float align, const vec2f &origin,
+    const std::string &debugId)
+{
+    // sort into groups
+    struct WordCompare
+    {
+        bool operator () (const Word &a, const Word &b) const
+        {
+            if (a.font == b.font)
+                return a.fileIndex < b.fileIndex;
+            return a.font < b.font;
+        }
+    };
+    std::map<Word, std::vector<TmpGlyph>, WordCompare> groups;
+    for (TmpLine &line : lines)
+    {
+        for (const TmpGlyph &g : line.glyphs)
+        {
+            Word w;
+            w.font = g.font;
+            w.fileIndex = g.font->glyphs[g.glyphIndex].fileIndex;
+            groups[w].push_back(g);
+        }
+    }
+
+    // generate meshes
+    std::vector<Word> words;
+    for (auto &grp : groups)
+    {
+        GpuMeshSpec s;
+        static const uint32 stride = sizeof(float) * 5;
+        s.verticesCount = grp.second.size() * 4;
+        s.indicesCount = grp.second.size() * 6;
+        s.vertices.allocate(s.verticesCount * stride);
+        s.indices.resize(s.indicesCount * sizeof(uint16));
+        float *fit = (float*)s.vertices.data();
+        uint16 *iit = (uint16*)s.indices.data();
+        uint16 ii = 0;
+        for (const auto &g : grp.second)
+        {
+            const auto &f = g.font->glyphs[g.glyphIndex];
+            float px = g.position[0];
+            float py = g.position[1];
+            float pw = f.world[2];
+            float ph = f.world[3];
+            // 2--3
+            // |  |
+            // 0--1
+            *fit++ = px; *fit++ = py; *fit++ = f.uvs[0]; *fit++ = f.uvs[1]; *(sint32*)fit++ = f.plane;
+            *fit++ = px + pw; *fit++ = py; *fit++ = f.uvs[2]; *fit++ = f.uvs[1]; *(sint32*)fit++ = f.plane;
+            *fit++ = px; *fit++ = py + ph; *fit++ = f.uvs[0]; *fit++ = f.uvs[3]; *(sint32*)fit++ = f.plane;
+            *fit++ = px + pw; *fit++ = py + ph; *fit++ = f.uvs[2]; *fit++ = f.uvs[3]; *(sint32*)fit++ = f.plane;
+            // 0-1-2
+            // 1-3-2
+            *iit++ = ii + 0; *iit++ = ii + 1; *iit++ = ii + 2;
+            *iit++ = ii + 1; *iit++ = ii + 3; *iit++ = ii + 2;
+            ii += 4;
+        }
+        assert(fit == (float*)s.vertices.dataEnd());
+        assert(iit == (uint16*)s.indices.dataEnd());
+        s.faceMode = GpuMeshSpec::FaceMode::Triangles;
+        s.attributes[0].enable = true;
+        s.attributes[0].components = 2;
+        s.attributes[0].type = GpuTypeEnum::Float;
+        s.attributes[0].offset = 0;
+        s.attributes[0].stride = stride;
+        s.attributes[1].enable = true;
+        s.attributes[1].components = 2;
+        s.attributes[1].type = GpuTypeEnum::Float;
+        s.attributes[1].offset = sizeof(float) * 2;
+        s.attributes[1].stride = stride;
+        s.attributes[2].enable = true;
+        s.attributes[2].components = 1;
+        s.attributes[2].type = GpuTypeEnum::Int;
+        s.attributes[2].offset = sizeof(float) * 4;
+        s.attributes[2].stride = stride;
+        Word w(grp.first);
+        w.mesh = std::make_shared<Mesh>();
+        ResourceInfo inf;
+        w.mesh->load(inf, s, debugId);
+        words.push_back(std::move(w));
+    }
+    return words;
+}
+
+float numericTextAlign(GpuGeodataSpec::TextAlign a)
+{
+    float align = 0.5;
+    switch (a)
+    {
+    case GpuGeodataSpec::TextAlign::Left:
+        align = 0;
+        break;
+    case GpuGeodataSpec::TextAlign::Right:
+        align = 1;
+        break;
+    default:
+        break;
+    }
+    return align;
+}
+
+vec2f numericTextOrigin(GpuGeodataSpec::Origin o)
+{
+    vec2f origin = vec2f(0.5, 1);
+    switch (o)
+    {
+    case GpuGeodataSpec::Origin::TopLeft:
+        origin = vec2f(0, 0);
+        break;
+    case GpuGeodataSpec::Origin::TopRight:
+        origin = vec2f(1, 0);
+        break;
+    case GpuGeodataSpec::Origin::TopCenter:
+        origin = vec2f(0.5, 0);
+        break;
+    case GpuGeodataSpec::Origin::CenterLeft:
+        origin = vec2f(0, 0.5);
+        break;
+    case GpuGeodataSpec::Origin::CenterRight:
+        origin = vec2f(1, 0.5);
+        break;
+    case GpuGeodataSpec::Origin::CenterCenter:
+        origin = vec2f(0.5, 0.5);
+        break;
+    case GpuGeodataSpec::Origin::BottomLeft:
+        origin = vec2f(0, 1);
+        break;
+    case GpuGeodataSpec::Origin::BottomRight:
+        origin = vec2f(1, 1);
+        break;
+    case GpuGeodataSpec::Origin::BottomCenter:
+        origin = vec2f(0.5, 1);
+        break;
+    default:
+        break;
+    }
+    return origin;
 }
 
 class GeodataText : public GeodataBase
@@ -630,95 +792,6 @@ public:
     std::vector<std::shared_ptr<Font>> fontCascade;
     std::vector<Text> texts;
     std::shared_ptr<UniformBuffer> uniform;
-
-    std::vector<Word> generateWords(const std::string &s,
-        float maxWidth, float align, vec2f origin)
-    {
-        std::vector<TmpLine> lines = textToGlyphs(s, fontCascade);
-        textLayout(maxWidth, align, origin, lines);
-
-        // sort into groups
-        struct WordCompare
-        {
-            bool operator () (const Word &a, const Word &b) const
-            {
-                if (a.font == b.font)
-                    return a.fileIndex < b.fileIndex;
-                return a.font < b.font;
-            }
-        };
-        std::map<Word, std::vector<TmpGlyph>, WordCompare> groups;
-        for (TmpLine &line : lines)
-        {
-            for (const TmpGlyph &g : line.glyphs)
-            {
-                Word w;
-                w.font = g.font;
-                w.fileIndex = g.font->glyphs[g.glyphIndex].fileIndex;
-                groups[w].push_back(g);
-            }
-        }
-
-        // generate meshes
-        std::vector<Word> words;
-        for (auto &grp : groups)
-        {
-            GpuMeshSpec s;
-            static const uint32 stride = sizeof(float) * 5;
-            s.verticesCount = grp.second.size() * 4;
-            s.indicesCount = grp.second.size() * 6;
-            s.vertices.allocate(s.verticesCount * stride);
-            s.indices.resize(s.indicesCount * sizeof(uint16));
-            float *fit = (float*)s.vertices.data();
-            uint16 *iit = (uint16*)s.indices.data();
-            uint16 ii = 0;
-            for (const auto &g : grp.second)
-            {
-                const auto &f = g.font->glyphs[g.glyphIndex];
-                float px = g.position[0];
-                float py = g.position[1];
-                float pw = f.world[2];
-                float ph = f.world[3];
-                // 2--3
-                // |  |
-                // 0--1
-                *fit++ = px; *fit++ = py; *fit++ = f.uvs[0]; *fit++ = f.uvs[1]; *(sint32*)fit++ = f.plane;
-                *fit++ = px + pw; *fit++ = py; *fit++ = f.uvs[2]; *fit++ = f.uvs[1]; *(sint32*)fit++ = f.plane;
-                *fit++ = px; *fit++ = py + ph; *fit++ = f.uvs[0]; *fit++ = f.uvs[3]; *(sint32*)fit++ = f.plane;
-                *fit++ = px + pw; *fit++ = py + ph; *fit++ = f.uvs[2]; *fit++ = f.uvs[3]; *(sint32*)fit++ = f.plane;
-                // 0-1-2
-                // 1-3-2
-                *iit++ = ii + 0; *iit++ = ii + 1; *iit++ = ii + 2;
-                *iit++ = ii + 1; *iit++ = ii + 3; *iit++ = ii + 2;
-                ii += 4;
-            }
-            assert(fit == (float*)s.vertices.dataEnd());
-            assert(iit == (uint16*)s.indices.dataEnd());
-            s.faceMode = GpuMeshSpec::FaceMode::Triangles;
-            s.attributes[0].enable = true;
-            s.attributes[0].components = 2;
-            s.attributes[0].type = GpuTypeEnum::Float;
-            s.attributes[0].offset = 0;
-            s.attributes[0].stride = stride;
-            s.attributes[1].enable = true;
-            s.attributes[1].components = 2;
-            s.attributes[1].type = GpuTypeEnum::Float;
-            s.attributes[1].offset = sizeof(float) * 2;
-            s.attributes[1].stride = stride;
-            s.attributes[2].enable = true;
-            s.attributes[2].components = 1;
-            s.attributes[2].type = GpuTypeEnum::Int;
-            s.attributes[2].offset = sizeof(float) * 4;
-            s.attributes[2].stride = stride;
-            Word w(grp.first);
-            w.mesh = std::make_shared<Mesh>();
-            ResourceInfo inf;
-            w.mesh->load(inf, s, debugId);
-            addMemory(inf);
-            words.push_back(std::move(w));
-        }
-        return words;
-    }
 
     void load(RendererImpl *renderer, ResourceInfo &info,
         GpuGeodataSpec &specp, const std::string &debugId) override
@@ -751,57 +824,17 @@ public:
     void loadPointLabel()
     {
         assert(spec.texts.size() == spec.positions.size());
+        float align = numericTextAlign(spec.unionData.pointLabel.textAlign);
+        vec2f origin = numericTextOrigin(spec.unionData.pointLabel.origin);
         for (uint32 i = 0, e = spec.texts.size(); i != e; i++)
         {
-            float align = 0.5;
-            switch (spec.unionData.pointLabel.textAlign)
-            {
-            case GpuGeodataSpec::TextAlign::Left:
-                align = 0;
-                break;
-            case GpuGeodataSpec::TextAlign::Right:
-                align = 1;
-                break;
-            default:
-                break;
-            }
-            vec2f origin = vec2f(0.5, 1);
-            switch (spec.unionData.pointLabel.origin)
-            {
-            case GpuGeodataSpec::Origin::TopLeft:
-                origin = vec2f(0, 0);
-                break;
-            case GpuGeodataSpec::Origin::TopRight:
-                origin = vec2f(1, 0);
-                break;
-            case GpuGeodataSpec::Origin::TopCenter:
-                origin = vec2f(0.5, 0);
-                break;
-            case GpuGeodataSpec::Origin::CenterLeft:
-                origin = vec2f(0, 0.5);
-                break;
-            case GpuGeodataSpec::Origin::CenterRight:
-                origin = vec2f(1, 0.5);
-                break;
-            case GpuGeodataSpec::Origin::CenterCenter:
-                origin = vec2f(0.5, 0.5);
-                break;
-            case GpuGeodataSpec::Origin::BottomLeft:
-                origin = vec2f(0, 1);
-                break;
-            case GpuGeodataSpec::Origin::BottomRight:
-                origin = vec2f(1, 1);
-                break;
-            case GpuGeodataSpec::Origin::BottomCenter:
-                origin = vec2f(0.5, 1);
-                break;
-            default:
-                break;
-            }
+            std::vector<TmpLine> lines = textToGlyphs(
+                spec.texts[i], spec.unionData.pointLabel.size, fontCascade);
+            vec2f rectSize = textLayout(
+                spec.unionData.pointLabel.width, align, origin, lines);
             Text t;
-            t.words = generateWords(spec.texts[i],
-                spec.unionData.pointLabel.width,
-                align, origin);
+            t.words = textGenerateMeshes(lines, align, origin, debugId);
+            textFindRect(t, origin, rectSize);
             t.modelPosition = rawToVec3(spec.positions[i][0].data());
             t.worldPosition = vec4to3(vec4(rawToMat4(spec.model)
                             * vec3to4(t.modelPosition, 1).cast<double>()));
@@ -1127,6 +1160,39 @@ void RendererImpl::renderGeodata()
                     g->spec.commonData.visibilities,
                     t.worldPosition, t.worldUp))
                     continue;
+                if (options.renderTextMargins)
+                {
+                    vts::DrawSimpleTask st;
+                    st.mesh = meshLine;
+                    vecToRaw(vec4f(1, 0, 0, 1), st.color);
+                    vec2f ss = vec2f(1.f / widthPrev, 1.f / heightPrev);
+                    mat4 vp = proj * view;
+                    mat4 vpInv = vp.inverse();
+                    vec4 sp = vp * vec3to4(t.worldPosition, 1);
+                    auto p = [&](const vec2f &a)
+                    {
+                        vec4 r = sp;
+                        for (int i = 0; i < 2; i++)
+                            r[i] += options.textScale * r[3] * a[i] * ss[i];
+                        r = vec3to4(vec4to3(r, true), 1);
+                        r = vpInv * r;
+                        return vec4to3(r, true);
+                    };
+                    auto r = [&](const vec2f &aa, const vec2f &bb)
+                    {
+                        vec2f a2 = t.rectOrigin + t.rectSize.cwiseProduct(aa);
+                        vec2f b2 = t.rectOrigin + t.rectSize.cwiseProduct(bb);
+                        vec3 a = p(a2);
+                        vec3 b = p(b2);
+                        mat4f mv = (view * lookAt(a, b)).cast<float>();
+                        matToRaw(mv, st.mv);
+                        draws->infographics.push_back(st);
+                    };
+                    r(vec2f(0, 0), vec2f(0, 1));
+                    r(vec2f(0, 1), vec2f(1, 1));
+                    r(vec2f(1, 1), vec2f(1, 0));
+                    r(vec2f(1, 0), vec2f(0, 0));
+                }
                 shaderGeodataPointLabel->uniformVec3(0,
                     t.modelPosition.data());
                 for (int pass = 0; pass < 2; pass++)
@@ -1134,8 +1200,7 @@ void RendererImpl::renderGeodata()
                     shaderGeodataPointLabel->uniform(2, pass);
                     for (auto &w : t.words)
                     {
-                        shaderGeodataPointLabel->uniform(1, options.textScale
-                           * g->spec.unionData.pointLabel.size / w.font->size);
+                        shaderGeodataPointLabel->uniform(1, options.textScale);
                         if (w.texture != lastTexture)
                         {
                             w.texture->bind();

@@ -1010,9 +1010,12 @@ struct geoContext
         if (layer["label-no-overlap"].empty()
             || evaluate(layer["label-no-overlap"]).asBool())
         {
-            vecToRaw(layer["label-no-overlap-margin"].empty()
-                ? vec2f(5, 5)
-                : convertVector2(layer["label-no-overlap-margin"]),
+            const Json::Value &lnom = layer["label-no-overlap-margin"];
+            vecToRaw(lnom.empty()
+                ? vec4f(5, 5, 0, 0)
+                : lnom.size() == 4
+                  ? convertVector4(lnom)
+                  : vec3to4(vec2to3(convertVector2(lnom), 0), 0),
                 spec.unionData.pointLabel.margin);
         }
         spec.unionData.pointLabel.size

@@ -117,7 +117,6 @@ D convert(CameraImpl *impl, const R &task)
         result.texColor = task.textureColor->info.userData;
     mat4f mv = mat4(impl->viewActual * task.model).cast<float>();
     matToRaw(mv, result.mv);
-    matToRaw(task.uvm, result.uvm);
     vecToRaw(task.color, result.color);
     return result;
 }
@@ -130,6 +129,7 @@ DrawSurfaceTask CameraImpl::convert(const RenderSurfaceTask &task)
         RenderSurfaceTask>(this, task);
     if (task.textureMask)
         result.texMask = task.textureMask->info.userData;
+    matToRaw(task.uvm, result.uvm);
     vecToRaw(vec4f(0, 0, 1, 1), result.uvClip);
     vec3f c = vec4to3(vec4(task.model * vec4(0, 0, 0, 1))).cast<float>();
     vecToRaw(c, result.center);

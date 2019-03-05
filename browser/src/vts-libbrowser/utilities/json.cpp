@@ -36,8 +36,9 @@ namespace vts
 
 Json::Value stringToJson(const std::string &s)
 {
-    std::shared_ptr<Json::CharReader> r(
-                Json::CharReaderBuilder().newCharReader());
+    Json::CharReaderBuilder builder;
+    builder.strictMode(&builder.settings_);
+    std::shared_ptr<Json::CharReader> r(builder.newCharReader());
     Json::Value val;
     std::string errs;
     if (!r->parse(s.data(), s.data() + s.size(), &val, &errs))
@@ -47,11 +48,7 @@ Json::Value stringToJson(const std::string &s)
 
 std::string jsonToString(const Json::Value &value)
 {
-    std::shared_ptr<Json::StreamWriter> w(
-                Json::StreamWriterBuilder().newStreamWriter());
-    std::ostringstream ss;
-    w->write(value, &ss);
-    return ss.str();
+    return Json::writeString(Json::StreamWriterBuilder(), value);
 }
 
 } // namespace vts

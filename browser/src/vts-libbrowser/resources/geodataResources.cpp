@@ -152,6 +152,14 @@ GeodataTile::GeodataTile(MapImpl *map, const std::string &name)
     : Resource(map, name), lod(0)
 {
     state = Resource::State::ready;
+
+    // initialize aabb to universe
+    {
+        double di = std::numeric_limits<double>::infinity();
+        vec3 vi(di, di, di);
+        aabbPhys[0] = -vi;
+        aabbPhys[1] = vi;
+    }
 }
 
 FetchTask::ResourceType GeodataTile::resourceType() const
@@ -159,8 +167,10 @@ FetchTask::ResourceType GeodataTile::resourceType() const
     return FetchTask::ResourceType::Undefined;
 }
 
-void GeodataTile::update(const std::shared_ptr<GeodataStylesheet> &s,
-    const std::shared_ptr<const std::string> &f, uint32 l)
+void GeodataTile::update(
+    const std::shared_ptr<GeodataStylesheet> &s,
+    const std::shared_ptr<const std::string> &f,
+    const vec3 ab[2], uint32 l)
 {
     switch ((Resource::State)state)
     {
@@ -169,10 +179,13 @@ void GeodataTile::update(const std::shared_ptr<GeodataStylesheet> &s,
         UTILITY_FALLTHROUGH;
     case Resource::State::errorFatal: // allow reloading when sources change, even if it failed before
     case Resource::State::ready:
-        if (style != s || features != f || lod != l)
+        if (style != s || features != f || lod != l
+            || ab[0] != aabbPhys[0] || ab[1] != aabbPhys[1])
         {
             style = s;
             features = f;
+            aabbPhys[0] = ab[0];
+            aabbPhys[1] = ab[1];
             lod = l;
             state = Resource::State::downloading;
             map->resources.queGeodata.push(

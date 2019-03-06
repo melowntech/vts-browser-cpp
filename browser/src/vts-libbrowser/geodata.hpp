@@ -27,6 +27,7 @@
 #ifndef GEODATA_HPP_o84d6
 #define GEODATA_HPP_o84d6
 
+#include "include/vts-browser/math.hpp"
 #include "resource.hpp"
 
 namespace vts
@@ -72,16 +73,17 @@ public:
     FetchTask::ResourceType resourceType() const override;
     void update(const std::shared_ptr<GeodataStylesheet> &style,
                 const std::shared_ptr<const std::string> &features,
-                uint32 lod);
+                const vec3 aabbPhys[2], uint32 lod);
     void process();
 
     std::vector<RenderGeodataTask> renders;
     std::vector<GpuGeodataSpec> specsToUpload;
 
 private:
-    uint32 lod;
     std::shared_ptr<GeodataStylesheet> style;
     std::shared_ptr<const std::string> features;
+    vec3 aabbPhys[2];
+    uint32 lod;
 };
 
 } // namespace vts

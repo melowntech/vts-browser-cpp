@@ -220,12 +220,15 @@ struct geoContext
         }
     }
 
-    geoContext(GeodataTile *data, const GeodataStylesheet *style,
-               const std::string &features, uint32 lod)
+    geoContext(GeodataTile *data,
+        const GeodataStylesheet *style,
+        const std::string &features,
+        const vec3 aabbPhys[2], uint32 lod)
         : data(data),
           stylesheet(style),
           style(stringToJson(style->data)),
           features(stringToJson(features)),
+          aabbPhys{ aabbPhys[0], aabbPhys[1] },
           lod(lod)
     {}
 
@@ -975,7 +978,8 @@ struct geoContext
             ? 1
             : evaluate(layer["point-radius"]).asFloat();
         GpuGeodataSpec &data = findSpecData(spec);
-        const auto arr = getFeaturePositions();
+        auto arr = getFeaturePositions();
+        cullOutsideFeatures(arr);
         data.positions.reserve(data.positions.size() + arr.size());
         data.positions.insert(data.positions.end(), arr.begin(), arr.end());
     }
@@ -1038,7 +1042,8 @@ struct geoContext
             spec.commonData.stick
                 = convertStick(layer["label-stick"]);
         GpuGeodataSpec &data = findSpecData(spec);
-        const auto arr = getFeaturePositions();
+        auto arr = getFeaturePositions();
+        cullOutsideFeatures(arr);
         data.positions.reserve(data.positions.size() + arr.size());
         data.positions.insert(data.positions.end(), arr.begin(), arr.end());
         std::string text = evaluate(layer["label-source"].empty()
@@ -1068,6 +1073,7 @@ struct geoContext
     const GeodataStylesheet *const stylesheet;
     Value style;
     Value features;
+    const vec3 aabbPhys[2];
     const uint32 lod;
 
     // processing data
@@ -1150,6 +1156,30 @@ struct geoContext
         return result;
     }
 
+    void cullOutsideFeatures(std::vector<std::vector<Point>> &fps) const
+    {
+        for (auto &v : fps)
+        {
+            v.erase(std::remove_if(v.begin(), v.end(),
+                [&](const Point &p) {
+                vec3 a = vec4to3(vec4(group->model
+                    * vec3to4(rawToVec3(p.data()).cast<double>(), 1.0)));
+                for (int i = 0; i < 3; i++)
+                {
+                    if (a[i] < aabbPhys[0][i])
+                        return true;
+                    if (a[i] > aabbPhys[1][i])
+                        return true;
+                }
+                return false;
+            }), v.end());
+        }
+        fps.erase(std::remove_if(fps.begin(), fps.end(),
+            [&](const std::vector<Point> &v) {
+            return v.empty();
+        }), fps.end());
+    }
+
     // cache data
     //   temporary data generated while processing features
 
@@ -1196,12 +1226,12 @@ void GeodataTile::process()
 
     if (map->options.debugValidateGeodataStyles)
     {
-        geoContext<true> ctx(this, style.get(), *features, lod);
+        geoContext<true> ctx(this, style.get(), *features, aabbPhys, lod);
         ctx.process();
     }
     else
     {
-        geoContext<false> ctx(this, style.get(), *features, lod);
+        geoContext<false> ctx(this, style.get(), *features, aabbPhys, lod);
         ctx.process();
     }
 

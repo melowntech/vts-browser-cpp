@@ -582,7 +582,8 @@ bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
 
     std::shared_ptr<GeodataTile> geo = map->getGeodata(geoName + "#$!tile");
     geo->updatePriority(trav->priority);
-    geo->update(style.second, features.second, trav->id().lod);
+    geo->update(style.second, features.second,
+        trav->aabbPhys, trav->id().lod);
     switch (map->getResourceValidity(geo))
     {
     case Validity::Invalid:

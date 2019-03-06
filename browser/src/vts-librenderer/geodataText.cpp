@@ -44,9 +44,10 @@ namespace
 struct TmpGlyph
 {
     std::shared_ptr<Font> font;
-    vec2f position;
-    vec2f offset;
-    float advance;
+    vec2f position; // screen units
+    vec2f size; // screen units
+    vec2f offset; // font units
+    float advance; // font units
     uint16 glyphIndex;
 
     TmpGlyph() : position(0, 0), offset(0, 0), advance(0), glyphIndex(0)
@@ -56,15 +57,14 @@ struct TmpGlyph
 struct TmpLine
 {
     std::vector<TmpGlyph> glyphs;
-    float width;
-    float height;
+    float width; // screen units
 
-    TmpLine() : width(0), height(0)
+    TmpLine() : width(0)
     {}
 };
 
 std::vector<TmpLine> textToGlyphs(
-    const std::string &s, float size,
+    const std::string &s,
     const std::vector<std::shared_ptr<Font>> &fontCascade)
 {
     std::vector<TmpLine> lines;
@@ -221,71 +221,98 @@ std::vector<TmpLine> textToGlyphs(
     }
     SBAlgorithmRelease(bidiAlgorithm);
 
-    for (auto &l : lines)
-    {
-        for (auto &g : l.glyphs)
-        {
-            g.advance *= size / g.font->size;
-            g.offset *= size / g.font->size;
-        }
-    }
-
     return lines;
 }
 
-vec2f textLayout(float maxWidth, float align, vec2f origin,
+void mergeRect(vec2f &ro, vec2f &rs, const vec2f &go, const vec2f &gs)
+{
+    assert(gs[0] >= 0 && gs[1] >= 0);
+    if (!(ro[0] == ro[0]))
+    {
+        ro = go;
+        rs = gs;
+        return;
+    }
+    assert(rs[0] >= 0 && rs[1] >= 0);
+    for (int i = 0; i < 2; i++)
+    {
+        float a = std::min(ro[i], go[i]);
+        float b = std::max(ro[i] + rs[i], go[i] + gs[i]);
+        ro[i] = a;
+        rs[i] = b - a;
+    }
+}
+
+vec2f textLayout(float size, float maxWidth, float align, vec2f origin,
     std::vector<TmpLine> &lines)
 {
-    float w = 0;
-    float h = 0;
-    float maxAsc = 0;
-    for (TmpLine &line : lines)
+    // find glyph positions
     {
-        for (TmpGlyph &g : line.glyphs)
+        vec2f o = vec2f(0, 0);
+        for (TmpLine &line : lines)
         {
-            maxAsc = std::max(maxAsc, g.font->avgAsc);
-            line.height = std::max(line.height, (float)g.font->size);
-            const auto &f = g.font->glyphs[g.glyphIndex];
-            float px = line.width + g.offset[0] + f.world[0];
-            float py = h + g.offset[1] - f.world[3] - f.world[1];
-            g.position = vec2f(px, py);
-            line.width += g.advance;
+            float ml = 0;
+            for (TmpGlyph &g : line.glyphs)
+            {
+                ml = std::max(ml, (float)g.font->size);
+                const auto &f = g.font->glyphs[g.glyphIndex];
+                g.position = (o + g.offset + f.offset) * size / g.font->size;
+                g.size = f.size * size / g.font->size;
+                o[0] += g.advance;
+            }
+            o[0] = 0;
+            o[1] -= ml * 1.5;
         }
-        line.height *= 1.5;
-        h -= line.height;
-        w = std::max(w, line.width);
     }
 
     // todo line wrap
     (void)maxWidth;
 
-    // align
+    // find text bounding box
+    vec2f ro = nan2().cast<float>(), rs = nan2().cast<float>();
     for (TmpLine &line : lines)
     {
-        float dx = (w - line.width) * align;
+        vec2f lo = nan2().cast<float>(), ls = nan2().cast<float>();
+        for (TmpGlyph &g : line.glyphs)
+            mergeRect(lo, ls, g.position, g.size);
+        line.width = ls[0] - lo[0];
+        mergeRect(ro, rs, lo, ls); // merge line box into global box
+    }
+
+    // subtract bounding box origin
+    for (TmpLine &line : lines)
+        for (TmpGlyph &g : line.glyphs)
+            g.position -= ro;
+    ro = vec2f(0, 0);
+
+    // origin (move all text as whole)
+    {
+        vec2f dp = rs.cwiseProduct(vec2f(-1, 1)).cwiseProduct(origin)
+            + rs.cwiseProduct(vec2f(0, -1));
+        for (TmpLine &line : lines)
+            for (TmpGlyph &g : line.glyphs)
+                g.position += dp;
+    }
+
+    // align (move each line independently)
+    for (TmpLine &line : lines)
+    {
+        float dx = (rs[0] - line.width) * align;
         for (TmpGlyph &g : line.glyphs)
             g.position[0] += dx;
     }
 
-    // origin
-    {
-        vec2f dp = vec2f(w, h).cwiseProduct(origin) + vec2f(0, maxAsc);
-        for (TmpLine &line : lines)
-            for (TmpGlyph &g : line.glyphs)
-                g.position -= dp;
-    }
-
-    return vec2f(w, -h);
+    return rs;
 }
 
-void textFindRect(Text &t, vec2f origin, const vec2f &size)
+void findRect(Text &t, vec2f origin, const vec2f &size)
 {
     origin[1] = 1 - origin[1];
     t.rectOrigin = -origin.cwiseProduct(size);
     t.rectSize = size;
 }
 
-std::vector<Word> textGenerateMeshes(std::vector<TmpLine> &lines,
+std::vector<Word> generateMeshes(std::vector<TmpLine> &lines,
     float align, const vec2f &origin,
     const std::string &debugId)
 {
@@ -329,8 +356,8 @@ std::vector<Word> textGenerateMeshes(std::vector<TmpLine> &lines,
             const auto &f = g.font->glyphs[g.glyphIndex];
             float px = g.position[0];
             float py = g.position[1];
-            float pw = f.world[2];
-            float ph = f.world[3];
+            float pw = g.size[0];
+            float ph = g.size[1];
             // 2--3
             // |  |
             // 0--1
@@ -371,7 +398,7 @@ std::vector<Word> textGenerateMeshes(std::vector<TmpLine> &lines,
     return words;
 }
 
-float numericTextAlign(GpuGeodataSpec::TextAlign a)
+float numericAlign(GpuGeodataSpec::TextAlign a)
 {
     float align = 0.5;
     switch (a)
@@ -388,7 +415,7 @@ float numericTextAlign(GpuGeodataSpec::TextAlign a)
     return align;
 }
 
-vec2f numericTextOrigin(GpuGeodataSpec::Origin o)
+vec2f numericOrigin(GpuGeodataSpec::Origin o)
 {
     vec2f origin = vec2f(0.5, 1);
     switch (o)
@@ -459,17 +486,19 @@ void GeodataText::copyFonts()
 void GeodataText::loadPointLabel()
 {
     assert(spec.texts.size() == spec.positions.size());
-    float align = numericTextAlign(spec.unionData.pointLabel.textAlign);
-    vec2f origin = numericTextOrigin(spec.unionData.pointLabel.origin);
+    float align = numericAlign(spec.unionData.pointLabel.textAlign);
+    vec2f origin = numericOrigin(spec.unionData.pointLabel.origin);
     for (uint32 i = 0, e = spec.texts.size(); i != e; i++)
     {
         std::vector<TmpLine> lines = textToGlyphs(
-            spec.texts[i], spec.unionData.pointLabel.size, fontCascade);
+            spec.texts[i], fontCascade);
         vec2f rectSize = textLayout(
-            spec.unionData.pointLabel.width, align, origin, lines);
+            spec.unionData.pointLabel.size,
+            spec.unionData.pointLabel.width,
+            align, origin, lines);
         Text t;
-        t.words = textGenerateMeshes(lines, align, origin, debugId);
-        textFindRect(t, origin, rectSize);
+        t.words = generateMeshes(lines, align, origin, debugId);
+        findRect(t, origin, rectSize);
         t.modelPosition = rawToVec3(spec.positions[i][0].data());
         t.worldPosition = vec4to3(vec4(rawToMat4(spec.model)
             * vec3to4(t.modelPosition, 1).cast<double>()));

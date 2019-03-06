@@ -94,7 +94,7 @@ namespace vts { namespace renderer
 {
 
 Font::Font() : face(nullptr), font(nullptr),
-avgAsc(0), textureWidth(0), textureHeight(0), filesCount(0), size(0)
+    textureWidth(0), textureHeight(0), filesCount(0), size(0)
 {}
 
 Font::~Font()
@@ -157,10 +157,9 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec,
             sint8 sx = ((v1 >> 9) & 63) * (((v1 >> 15) & 1) ? -1 : 1);
             sint8 sy = ((v1 >> 2) & 63) * (((v1 >> 8) & 1) ? -1 : 1);
             g.uvs = vec4f(gx, gy + gh, gx + gw, gy) / (textureWidth - 1);
-            g.world = vec4f(sx, sy, gw, gh);
-            avgAsc += gw;
+            g.offset = vec2f(sx, -sy - gh);
+            g.size = vec2f(gw, gh);
         }
-        avgAsc /= face->num_glyphs;
     }
 
     // find glyphs file indices

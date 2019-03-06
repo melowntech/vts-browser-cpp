@@ -26,9 +26,13 @@ set(SRC_LIST
     font.hpp
     foundation.cpp
     geodata.cpp
+	geodata.hpp
+    geodataGeometry.cpp
+    geodataText.cpp
     renderer.cpp
     renderer.hpp
     rendererApiC.cpp
+    rendererApiCpp.cpp
 )
 
 set(DATA_LIST

@@ -27,16 +27,10 @@
 #include "renderer.hpp"
 
 #include <vts-browser/resources.hpp>
-#include <vts-browser/map.hpp>
-#include <vts-browser/mapCallbacks.hpp>
-#include <vts-browser/camera.hpp>
 #include <vts-browser/cameraDraws.hpp>
 #include <vts-browser/celestial.hpp>
 
 namespace vts { namespace renderer
-{
-
-namespace priv
 {
 
 class ShaderAtm : public Shader
@@ -747,156 +741,76 @@ void RendererImpl::renderCompass(const double screenPosSize[3],
     meshQuad->dispatch();
 }
 
-void RendererImpl::getWorldPosition(const double screenPos[2], double worldPos[3])
-    {
-        double x = screenPos[0];
-        double y = screenPos[1];
-        y = heightPrev - y - 1;
+void RendererImpl::getWorldPosition(const double screenPos[2],
+    double worldPos[3])
+{
+    double x = screenPos[0];
+    double y = screenPos[1];
+    y = heightPrev - y - 1;
 
-        float depth = std::numeric_limits<float>::quiet_NaN();
+    float depth = std::numeric_limits<float>::quiet_NaN();
 #ifdef VTSR_OPENGLES
-        // opengl ES does not support reading depth with glReadPixels
-        {
-            clearGlState();
-            uint32 fbId = 0, texId = 0;
-
-            glGenTextures(1, &texId);
-            glBindTexture(GL_TEXTURE_2D, texId);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0,
-                GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-            glGenFramebuffers(1, &fbId);
-            glBindFramebuffer(GL_FRAMEBUFFER, fbId);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                GL_TEXTURE_2D, texId, 0);
-            checkGlFramebuffer(GL_FRAMEBUFFER);
-
-            shaderCopyDepth->bind();
-            int pos[2] = { (int)x, (int)y };
-            shaderCopyDepth->uniformVec2(0, pos);
-            glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
-            meshQuad->bind();
-            meshQuad->dispatch();
-
-            unsigned char res[4];
-            glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, res);
-            if (res[0] != 0 || res[1] != 0 || res[2] != 0 || res[3] != 0)
-            {
-                static const vec4 bitSh = vec4(1.0 / (256.0*256.0*256.0),
-                    1.0 / (256.0*256.0),
-                    1.0 / 256.0, 1.0);
-                depth = 0;
-                for (int i = 0; i < 4; i++)
-                    depth += res[i] * bitSh[i];
-                depth /= 255;
-            }
-
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glDeleteFramebuffers(1, &fbId);
-            glDeleteTextures(1, &texId);
-        }
-#else
-        {
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameReadBufferId);
-            glReadPixels((int)x, (int)y, 1, 1,
-                GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
-        }
-#endif
-        CHECK_GL("read depth");
+    // opengl ES does not support reading depth with glReadPixels
+    {
         clearGlState();
+        uint32 fbId = 0, texId = 0;
 
-        if (depth > 1 - 1e-7)
-            depth = std::numeric_limits<float>::quiet_NaN();
-        depth = depth * 2 - 1;
-        x = x / widthPrev * 2 - 1;
-        y = y / heightPrev * 2 - 1;
-        vec3 res = vec4to3(vec4(viewProj.inverse()
-                * vec4(x, y, depth, 1)), true);
-        for (int i = 0; i < 3; i++)
-            worldPos[i] = res[i];
+        glGenTextures(1, &texId);
+        glBindTexture(GL_TEXTURE_2D, texId);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0,
+            GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+        glGenFramebuffers(1, &fbId);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbId);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, texId, 0);
+        checkGlFramebuffer(GL_FRAMEBUFFER);
+
+        shaderCopyDepth->bind();
+        int pos[2] = { (int)x, (int)y };
+        shaderCopyDepth->uniformVec2(0, pos);
+        glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
+        meshQuad->bind();
+        meshQuad->dispatch();
+
+        unsigned char res[4];
+        glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, res);
+        if (res[0] != 0 || res[1] != 0 || res[2] != 0 || res[3] != 0)
+        {
+            static const vec4 bitSh = vec4(1.0 / (256.0*256.0*256.0),
+                1.0 / (256.0*256.0),
+                1.0 / 256.0, 1.0);
+            depth = 0;
+            for (int i = 0; i < 4; i++)
+                depth += res[i] * bitSh[i];
+            depth /= 255;
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glDeleteFramebuffers(1, &fbId);
+        glDeleteTextures(1, &texId);
     }
+#else
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameReadBufferId);
+        glReadPixels((int)x, (int)y, 1, 1,
+            GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+    }
+#endif
+    CHECK_GL("read depth");
+    clearGlState();
 
-} // namespace priv
-
-RenderOptions::RenderOptions()
-{
-    memset(this, 0, sizeof(*this));
-    textScale = 1.5;
-    antialiasingSamples = 1;
-    renderAtmosphere = true;
-    colorToTargetFrameBuffer = true;
-}
-
-RenderVariables::RenderVariables()
-{
-    memset(this, 0, sizeof(*this));
-}
-
-Renderer::Renderer()
-{
-    impl = std::make_shared<RendererImpl>(this);
-}
-
-Renderer::~Renderer()
-{}
-
-void Renderer::initialize()
-{
-    impl->initialize();
-}
-
-void Renderer::finalize()
-{
-    impl->finalize();
-}
-
-void Renderer::bindLoadFunctions(Map *map)
-{
-    map->callbacks().loadTexture = std::bind(&Renderer::loadTexture, this,
-        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-    map->callbacks().loadMesh = std::bind(&Renderer::loadMesh, this,
-        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-    map->callbacks().loadFont = std::bind(&Renderer::loadFont, this,
-        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-    map->callbacks().loadGeodata = std::bind(&Renderer::loadGeodata, this,
-        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-}
-
-RenderOptions &Renderer::options()
-{
-    return impl->options;
-}
-
-const RenderVariables &Renderer::variables() const
-{
-    return impl->vars;
-}
-
-void Renderer::render(Camera *cam)
-{
-    impl->draws = &cam->draws();
-    impl->body = &cam->map()->celestialBody();
-    impl->projected = cam->map()->getMapProjected();
-    impl->atmosphereDensityTexture
-        = (Texture*)cam->map()->atmosphereDensityTexture().get();
-    impl->render();
-    impl->draws = nullptr;
-    impl->body = nullptr;
-    impl->atmosphereDensityTexture = nullptr;
-}
-
-void Renderer::renderCompass(const double screenPosSize[3],
-                   const double mapRotation[3])
-{
-    impl->renderCompass(screenPosSize, mapRotation);
-}
-
-void Renderer::getWorldPosition(const double screenPosIn[2],
-                      double worldPosOut[3])
-{
-    impl->getWorldPosition(screenPosIn, worldPosOut);
+    if (depth > 1 - 1e-7)
+        depth = std::numeric_limits<float>::quiet_NaN();
+    depth = depth * 2 - 1;
+    x = x / widthPrev * 2 - 1;
+    y = y / heightPrev * 2 - 1;
+    vec3 res = vec4to3(vec4(viewProj.inverse()
+            * vec4(x, y, depth, 1)), true);
+    for (int i = 0; i < 3; i++)
+        worldPos[i] = res[i];
 }
 
 } } // namespace vts renderer

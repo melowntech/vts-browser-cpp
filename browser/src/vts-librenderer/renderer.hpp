@@ -48,9 +48,6 @@ class DrawSimpleTask;
 namespace renderer
 {
 
-namespace priv
-{
-
 extern uint32 maxAntialiasingSamples;
 extern float maxAnisotropySamples;
 
@@ -117,10 +114,6 @@ public:
     void initializeZBufferOffsetValues(vec3 &zBufferOffsetValues,
         mat4 &davidProj, mat4 &davidProjInv);
 };
-
-} // namespace priv
-
-using namespace priv;
 
 } // namespace renderer
 

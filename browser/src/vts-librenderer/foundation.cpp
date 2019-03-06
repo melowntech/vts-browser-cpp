@@ -29,6 +29,7 @@
 void initializeRenderData();
 namespace
 {
+
 class RenderDataInitializator
 {
 public:
@@ -37,18 +38,14 @@ public:
         initializeRenderData();
     }
 } renderDataInitializatorInstance;
+
 } // namespace
 
 namespace vts { namespace renderer
 {
 
-namespace priv
-{
-
 uint32 maxAntialiasingSamples = 1;
 float maxAnisotropySamples = 0.f;
-
-} // namespace priv
 
 void checkGlImpl(const char *name)
 {

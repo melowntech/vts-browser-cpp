@@ -32,9 +32,6 @@
 namespace vts { namespace renderer
 {
 
-namespace priv
-{
-
 struct Glyph
 {
     vec4f uvs; // min x, max y, max x, min y
@@ -64,8 +61,6 @@ public:
     uint16 filesCount;
     uint8 size;
 };
-
-} // namespace priv
 
 } } // namespace vts::renderer
 

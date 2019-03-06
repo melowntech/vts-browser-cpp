@@ -55,12 +55,7 @@ struct VTSR_API RenderVariables : public vtsCRenderVariablesBase
     RenderVariables();
 };
 
-namespace priv
-{
-
 class RendererImpl;
-
-} // namespace priv
 
 class VTSR_API Renderer
 {
@@ -102,7 +97,7 @@ public:
                           double worldPosOut[3]);
 
 private:
-    std::shared_ptr<priv::RendererImpl> impl;
+    std::shared_ptr<RendererImpl> impl;
 };
 
 } // namespace renderer

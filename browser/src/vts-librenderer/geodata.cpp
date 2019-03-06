@@ -24,877 +24,89 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <map>
-#include <list>
-
-#include "renderer.hpp"
-#include "font.hpp"
-
-#include <vts-browser/resources.hpp>
 #include <vts-browser/cameraDraws.hpp>
 
-extern "C"
-{
-#include <SheenBidi.h>
-}
+#include "geodata.hpp"
 
 namespace vts { namespace renderer
 {
 
-namespace
+GeodataBase::GeodataBase() : renderer(nullptr), info(nullptr)
+{}
+
+GeodataBase::~GeodataBase()
+{}
+
+void GeodataBase::loadInit(RendererImpl *renderer, ResourceInfo &info,
+    GpuGeodataSpec &specp, const std::string &debugId)
 {
+    this->debugId = debugId;
 
-class GeodataBase
-{
-public:
-    std::string debugId;
+    this->spec = std::move(specp);
+    this->info = &info;
+    this->renderer = renderer;
 
-    GeodataBase() : renderer(nullptr), info(nullptr)
-    {}
-    virtual ~GeodataBase()
-    {}
+    model = rawToMat4(spec.model);
+    modelInv = model.inverse();
 
-    GpuGeodataSpec spec;
-    RendererImpl *renderer;
-    ResourceInfo *info;
-    mat4 model;
-    mat4 modelInv;
-
-    virtual void load(RendererImpl *renderer, ResourceInfo &info,
-        GpuGeodataSpec &specp, const std::string &debugId) = 0;
-
-    void loadInit(RendererImpl *renderer, ResourceInfo &info,
-        GpuGeodataSpec &specp, const std::string &debugId)
     {
-        this->debugId = debugId;
-
-        this->spec = std::move(specp);
-        this->info = &info;
-        this->renderer = renderer;
-
-        model = rawToMat4(spec.model);
-        modelInv = model.inverse();
-
-        {
-            // culling (degrees to dot)
-            float &c = this->spec.commonData.visibilities[3];
-            if (c == c)
-                c = std::cos(c * M_PI / 180.0);
-        }
+        // culling (degrees to dot)
+        float &c = this->spec.commonData.visibilities[3];
+        if (c == c)
+            c = std::cos(c * M_PI / 180.0);
     }
-
-    void loadFinish()
-    {
-        // free some memory
-        std::vector<std::vector<std::array<float, 3>>>()
-            .swap(spec.positions);
-        std::vector<std::vector<std::array<float, 2>>>()
-            .swap(spec.uvs);
-        std::vector<std::shared_ptr<void>>().swap(spec.bitmaps);
-        std::vector<std::string>().swap(spec.texts);
-        std::vector<std::shared_ptr<void>>().swap(spec.fontCascade);
-
-        info->ramMemoryCost += sizeof(spec);
-        info = nullptr;
-        renderer = nullptr;
-
-        CHECK_GL("load geodata");
-    }
-
-    void addMemory(ResourceInfo &other)
-    {
-        info->ramMemoryCost += other.ramMemoryCost;
-        info->gpuMemoryCost += other.gpuMemoryCost;
-    }
-
-    vec3f modelUp(const vec3f &p) const
-    {
-        vec3 dl = p.cast<double>();
-        vec3 dw = vec4to3(vec4(model * vec3to4(dl, 1)));
-        vec3 upw = normalize(dw);
-        vec3 tw = dw + upw;
-        vec3 tl = vec4to3(vec4(modelInv * vec3to4(tw, 1)));
-        return (tl - dl).cast<float>();
-    }
-
-    vec3f worldUp(vec3f &p) const
-    {
-        vec3 dl = p.cast<double>();
-        vec3 dw = vec4to3(vec4(model * vec3to4(dl, 1)));
-        vec3 upw = normalize(dw);
-        return upw.cast<float>();
-    }
-
-    uint32 getTotalPoints() const
-    {
-        uint32 totalPoints = 0;
-        uint32 linesCount = spec.positions.size();
-        for (uint32 li = 0; li < linesCount; li++)
-            totalPoints += spec.positions[li].size();
-        return totalPoints;
-    }
-};
-
-class GeodataGeometry : public GeodataBase
-{
-public:
-    std::shared_ptr<Mesh> mesh;
-    std::shared_ptr<Texture> texture;
-    std::shared_ptr<UniformBuffer> uniform;
-
-    void load(RendererImpl *renderer, ResourceInfo &info,
-        GpuGeodataSpec &specp, const std::string &debugId) override
-    {
-        loadInit(renderer, info, specp, debugId);
-
-        switch (spec.type)
-        {
-        case GpuGeodataSpec::Type::LineScreen:
-        case GpuGeodataSpec::Type::LineFlat:
-            loadLine();
-            break;
-        case GpuGeodataSpec::Type::PointScreen:
-        case GpuGeodataSpec::Type::PointFlat:
-            loadPoint();
-            break;
-        case GpuGeodataSpec::Type::Triangles:
-            // todo
-            break;
-        default:
-            throw std::invalid_argument("invalid geodata type");
-        }
-
-        loadFinish();
-    }
-
-    void prepareTextureForLinesAndPoints(Buffer &&texBuffer,
-        uint32 totalPoints)
-    {
-        GpuTextureSpec tex;
-        tex.buffer = std::move(texBuffer);
-        tex.width = totalPoints;
-        tex.height = 2;
-        tex.components = 3;
-        tex.internalFormat = GL_RGB32F;
-        tex.type = GpuTypeEnum::Float;
-        tex.filterMode = GpuTextureSpec::FilterMode::Nearest;
-        tex.wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
-        ResourceInfo ri;
-        renderer->rendererApi->loadTexture(ri, tex, debugId);
-        this->texture = std::static_pointer_cast<Texture>(ri.userData);
-        addMemory(ri);
-    }
-
-    void prepareMeshForLinesAndPoints(Buffer &&indBuffer,
-        uint32 indicesCount)
-    {
-        GpuMeshSpec msh;
-        msh.faceMode = GpuMeshSpec::FaceMode::Triangles;
-        msh.indices = std::move(indBuffer);
-        msh.indicesCount = indicesCount;
-        ResourceInfo ri;
-        renderer->rendererApi->loadMesh(ri, msh, debugId);
-        this->mesh = std::static_pointer_cast<Mesh>(ri.userData);
-        addMemory(ri);
-    }
-
-    void loadLine()
-    {
-        uint32 totalPoints = getTotalPoints(); // example: 7
-        uint32 linesCount = spec.positions.size(); // 2
-        uint32 segmentsCount = totalPoints - linesCount; // 5
-        uint32 jointsCount = segmentsCount - linesCount; // 3
-        uint32 trianglesCount = (segmentsCount + jointsCount) * 2; // 16
-        uint32 indicesCount = trianglesCount * 3; // 48
-        // point index = (vertex index / 4 + vertex index % 2)
-        // corner = vertex index % 4
-
-        Buffer texBuffer;
-        Buffer indBuffer;
-
-        // prepare texture buffer and mesh indices
-        {
-            texBuffer.resize(totalPoints * sizeof(vec3f) * 2);
-            vec3f *bufPos = (vec3f*)texBuffer.data();
-            vec3f *bufUps = (vec3f*)texBuffer.data() + totalPoints;
-            vec3f *texBufHalf = bufUps;
-            (void)texBufHalf;
-
-            indBuffer.resize(indicesCount * sizeof(uint16));
-            uint16 *bufInd = (uint16*)indBuffer.data();
-            uint16 current = 0;
-
-            for (uint32 li = 0; li < linesCount; li++)
-            {
-                const std::vector<std::array<float, 3>> &points
-                    = spec.positions[li];
-                uint32 pointsCount = points.size();
-                for (uint32 pi = 0; pi < pointsCount; pi++)
-                {
-                    vec3f p = rawToVec3(points[pi].data());
-                    vec3f u = modelUp(p);
-                    *bufPos++ = p;
-                    *bufUps++ = u;
-                    if (pi > 1)
-                    { // add joint
-                        *bufInd++ = current + 1 - 4;
-                        *bufInd++ = current + 4 - 4;
-                        *bufInd++ = current + 6 - 4;
-                        *bufInd++ = current + 1 - 4;
-                        *bufInd++ = current + 6 - 4;
-                        *bufInd++ = current + 3 - 4;
-                    }
-                    if (pi > 0)
-                    { // add segment
-                        *bufInd++ = current + 0;
-                        *bufInd++ = current + 1;
-                        *bufInd++ = current + 3;
-                        *bufInd++ = current + 0;
-                        *bufInd++ = current + 3;
-                        *bufInd++ = current + 2;
-                        current += 4;
-                    }
-                }
-                current += 4; // make a gap
-            }
-
-            assert(bufPos == texBufHalf);
-            assert(bufUps == (vec3f*)texBuffer.dataEnd());
-            assert(bufInd == (uint16*)indBuffer.dataEnd());
-        }
-
-        // prepare the texture
-        prepareTextureForLinesAndPoints(std::move(texBuffer), totalPoints);
-
-        // prepare the mesh
-        prepareMeshForLinesAndPoints(std::move(indBuffer), indicesCount);
-
-        // prepare UBO
-        {
-            struct UboLineData
-            {
-                vec4f color;
-                vec4f visibilities;
-                vec4f typePlusUnitsPlusWidth;
-            };
-            UboLineData uboLineData;
-
-            uboLineData.color = rawToVec4(spec.unionData.line.color);
-            uboLineData.visibilities
-                = rawToVec4(spec.commonData.visibilities);
-            uboLineData.typePlusUnitsPlusWidth
-                = vec4f((float)spec.type, (float)spec.unionData.line.units
-                    , spec.unionData.line.width, 0.f);
-
-            uniform = std::make_shared<UniformBuffer>();
-            uniform->debugId = debugId;
-            uniform->bind();
-            uniform->load(uboLineData);
-            info->gpuMemoryCost += sizeof(uboLineData);
-        }
-    }
-
-    void loadPoint()
-    {
-        uint32 totalPoints = getTotalPoints();
-        uint32 trianglesCount = totalPoints * 2;
-        uint32 indicesCount = trianglesCount * 3;
-
-        Buffer texBuffer;
-        Buffer indBuffer;
-
-        // prepare texture buffer and mesh indices
-        {
-            texBuffer.resize(totalPoints * sizeof(vec3f) * 2);
-            vec3f *bufPos = (vec3f*)texBuffer.data();
-            vec3f *bufUps = (vec3f*)texBuffer.data() + totalPoints;
-            vec3f *texBufHalf = bufUps;
-            (void)texBufHalf;
-
-            indBuffer.resize(indicesCount * sizeof(uint16));
-            uint16 *bufInd = (uint16*)indBuffer.data();
-            uint16 current = 0;
-
-            for (uint32 li = 0, lin = spec.positions.size();
-                li < lin; li++)
-            {
-                const std::vector<std::array<float, 3>> &points
-                    = spec.positions[li];
-                for (uint32 pi = 0, pin = points.size();
-                    pi < pin; pi++)
-                {
-                    vec3f p = rawToVec3(points[pi].data());
-                    vec3f u = modelUp(p);
-                    *bufPos++ = p;
-                    *bufUps++ = u;
-                    *bufInd++ = current + 0;
-                    *bufInd++ = current + 1;
-                    *bufInd++ = current + 3;
-                    *bufInd++ = current + 0;
-                    *bufInd++ = current + 3;
-                    *bufInd++ = current + 2;
-                    current += 4;
-                }
-            }
-
-            assert(bufPos == texBufHalf);
-            assert(bufUps == (vec3f*)texBuffer.dataEnd());
-            assert(bufInd == (uint16*)indBuffer.dataEnd());
-        }
-
-        // prepare the texture
-        prepareTextureForLinesAndPoints(std::move(texBuffer), totalPoints);
-
-        // prepare the mesh
-        prepareMeshForLinesAndPoints(std::move(indBuffer), indicesCount);
-
-        // prepare UBO
-        {
-            struct UboPointData
-            {
-                vec4f color;
-                vec4f visibilities;
-                vec4f typePlusRadius;
-            };
-            UboPointData uboPointData;
-
-            uboPointData.color = rawToVec4(spec.unionData.point.color);
-            uboPointData.visibilities
-                = rawToVec4(spec.commonData.visibilities);
-            uboPointData.typePlusRadius
-                = vec4f((float)spec.type,
-                (float)spec.unionData.point.radius
-                    , 0.f, 0.f);
-
-            uniform = std::make_shared<UniformBuffer>();
-            uniform->debugId = debugId;
-            uniform->bind();
-            uniform->load(uboPointData);
-            info->gpuMemoryCost += sizeof(uboPointData);
-        }
-    }
-};
-
-struct Word
-{
-    std::shared_ptr<Font> font;
-    std::shared_ptr<Mesh> mesh;
-    std::shared_ptr<Texture> texture;
-    uint16 fileIndex;
-
-    Word() : fileIndex(-1)
-    {}
-};
-
-struct Text
-{
-    std::vector<Word> words;
-    vec3 worldPosition;
-    vec3f modelPosition;
-    vec3f worldUp;
-    vec2f rectOrigin;
-    vec2f rectSize;
-
-    Text() : worldPosition(0, 0, 0), modelPosition(0, 0, 0), worldUp(0, 0, 0),
-        rectOrigin(nan2().cast<float>()),
-        rectSize(nan2().cast<float>())
-    {}
-};
-
-struct TmpGlyph
-{
-    std::shared_ptr<Font> font;
-    vec2f position;
-    vec2f offset;
-    float advance;
-    uint16 glyphIndex;
-
-    TmpGlyph() : position(0, 0), offset(0, 0), advance(0), glyphIndex(0)
-    {}
-};
-
-struct TmpLine
-{
-    std::vector<TmpGlyph> glyphs;
-    float width;
-    float height;
-
-    TmpLine() : width(0), height(0)
-    {}
-};
-
-std::vector<TmpLine> textToGlyphs(
-    const std::string &s, float size,
-    const std::vector<std::shared_ptr<Font>> &fontCascade)
-{
-    std::vector<TmpLine> lines;
-
-    SBCodepointSequence codepoints
-        = { SBStringEncodingUTF8, (void*)s.data(), s.length() };
-    SBAlgorithmRef bidiAlgorithm
-        = SBAlgorithmCreate(&codepoints);
-    SBUInteger paragraphStart = 0;
-    while (true)
-    {
-        SBParagraphRef paragraph
-            = SBAlgorithmCreateParagraph(bidiAlgorithm,
-                paragraphStart, INT32_MAX, SBLevelDefaultLTR);
-        if (!paragraph)
-            break;
-        SBUInteger paragraphLength = SBParagraphGetLength(paragraph);
-        SBUInteger lineStart = paragraphStart;
-        paragraphStart += paragraphLength;
-
-        while (true)
-        {
-            SBLineRef paragraphLine = SBParagraphCreateLine(paragraph,
-                lineStart, paragraphLength);
-            if (!paragraphLine)
-                break;
-            SBUInteger lineLength = SBLineGetLength(paragraphLine);
-            lineStart += lineLength;
-            paragraphLength -= lineLength;
-
-            SBUInteger runCount = SBLineGetRunCount(paragraphLine);
-            const SBRun *runArray = SBLineGetRunsPtr(paragraphLine);
-
-            TmpLine line;
-            line.glyphs.reserve(lineLength);
-
-            for (uint32 runIndex = 0; runIndex < runCount; runIndex++)
-            {
-                const SBRun *run = runArray + runIndex;
-
-                // bidi is running, harf is buzzing
-
-                struct Buzz
-                {
-                    SBUInteger offset;
-                    SBUInteger length;
-                    uint32 font;
-                    Buzz(const SBRun *run, sint32 o, sint32 l, uint32 f)
-                        : offset(o), length(std::abs(l)), font(f)
-                    {
-                        (void)run;
-                        assert(offset >= run->offset);
-                        assert((sint64)offset + (sint64)length
-                            <= (sint64)run->offset + (sint64)run->length);
-                    }
-                };
-
-                std::list<Buzz> runs;
-                runs.emplace_back(run, run->offset,
-                    s[run->offset + run->length - 1] == '\n'
-                    ? run->length - 1 : run->length, 0);
-
-                while (!runs.empty())
-                {
-                    Buzz r = runs.front();
-                    runs.pop_front();
-
-                    bool terminal = r.font >= fontCascade.size();
-                    std::shared_ptr<Font> fnt = fontCascade
-                                    [terminal ? 0 : r.font];
-
-                    hb_buffer_t *buffer = hb_buffer_create();
-                    hb_buffer_add_utf8(buffer,
-                        (char*)codepoints.stringBuffer,
-                        codepoints.stringLength,
-                        r.offset, r.length);
-                    hb_buffer_set_direction(buffer, (run->level % 2) == 0
-                        ? HB_DIRECTION_LTR : HB_DIRECTION_RTL);
-                    hb_buffer_guess_segment_properties(buffer);
-                    hb_shape(fnt->font, buffer, nullptr, 0);
-
-                    uint32 len = hb_buffer_get_length(buffer);
-                    hb_glyph_info_t *info
-                        = hb_buffer_get_glyph_infos(buffer, nullptr);
-                    hb_glyph_position_t *pos
-                        = hb_buffer_get_glyph_positions(buffer, nullptr);
-
-                    if (!terminal)
-                    {
-                        bool hasTofu = false;
-                        for (uint32 i = 0; i < len; i++)
-                        {
-                            if (info[i].codepoint == 0)
-                            {
-                                hasTofu = true;
-                                break;
-                            }
-                        }
-
-                        if (hasTofu)
-                        {
-                            runs.reverse();
-                            bool lastTofu = info[0].codepoint == 0;
-                            sint32 lastCluster = info[0].cluster;
-                            for (uint32 i = 1; i < len; i++)
-                            {
-                                bool currentTofu = info[i].codepoint == 0;
-                                if (currentTofu != lastTofu)
-                                {
-                                    sint32 currentCluster
-                                        = info[i].cluster;
-                                    runs.emplace_back(run, lastCluster,
-                                        currentCluster - lastCluster,
-                                        r.font + lastTofu);
-                                    lastCluster = currentCluster;
-                                    lastTofu = currentTofu;
-                                }
-                            }
-                            {
-                                sint32 currentCluster
-                                    = r.offset + r.length;
-                                runs.emplace_back(run, lastCluster,
-                                    currentCluster - lastCluster,
-                                    r.font + lastTofu);
-                            }
-                            runs.reverse();
-                            hb_buffer_destroy(buffer);
-                            continue;
-                        }
-                    }
-
-                    for (uint32 i = 0; i < len; i++)
-                    {
-                        assert(pos[i].y_advance == 0);
-                        uint16 gi = info[i].codepoint;
-                        assert(gi < fnt->glyphs.size());
-                        TmpGlyph g;
-                        g.font = fnt;
-                        g.glyphIndex = gi;
-                        g.advance = pos[i].x_advance / 64.f;
-                        g.offset = vec2f(pos[i].x_offset,
-                                pos[i].y_offset) / 64;
-                        line.glyphs.push_back(g);
-                    }
-
-                    hb_buffer_destroy(buffer);
-                }
-            }
-
-            lines.push_back(std::move(line));
-            SBLineRelease(paragraphLine);
-        }
-        SBParagraphRelease(paragraph);
-    }
-    SBAlgorithmRelease(bidiAlgorithm);
-
-    for (auto &l : lines)
-    {
-        for (auto &g : l.glyphs)
-        {
-            g.advance *= size / g.font->size;
-            g.offset *= size / g.font->size;
-        }
-    }
-
-    return lines;
 }
 
-vec2f textLayout(float maxWidth, float align, vec2f origin,
-    std::vector<TmpLine> &lines)
+void GeodataBase::loadFinish()
 {
-    float w = 0;
-    float h = 0;
-    float maxAsc = 0;
-    for (TmpLine &line : lines)
-    {
-        for (TmpGlyph &g : line.glyphs)
-        {
-            maxAsc = std::max(maxAsc, g.font->avgAsc);
-            line.height = std::max(line.height, (float)g.font->size);
-            const auto &f = g.font->glyphs[g.glyphIndex];
-            float px = line.width + g.offset[0] + f.world[0];
-            float py = h + g.offset[1] - f.world[3] - f.world[1];
-            g.position = vec2f(px, py);
-            line.width += g.advance;
-        }
-        line.height *= 1.5;
-        h -= line.height;
-        w = std::max(w, line.width);
-    }
+    // free some memory
+    std::vector<std::vector<std::array<float, 3>>>()
+        .swap(spec.positions);
+    std::vector<std::vector<std::array<float, 2>>>()
+        .swap(spec.uvs);
+    std::vector<std::shared_ptr<void>>().swap(spec.bitmaps);
+    std::vector<std::string>().swap(spec.texts);
+    std::vector<std::shared_ptr<void>>().swap(spec.fontCascade);
 
-    // todo line wrap
-    (void)maxWidth;
+    info->ramMemoryCost += sizeof(spec);
+    info = nullptr;
+    renderer = nullptr;
 
-    // align
-    for (TmpLine &line : lines)
-    {
-        float dx = (w - line.width) * align;
-        for (TmpGlyph &g : line.glyphs)
-            g.position[0] += dx;
-    }
-
-    // origin
-    {
-        vec2f dp = vec2f(w, h).cwiseProduct(origin) + vec2f(0, maxAsc);
-        for (TmpLine &line : lines)
-            for (TmpGlyph &g : line.glyphs)
-                g.position -= dp;
-    }
-
-    return vec2f(w, -h);
+    CHECK_GL("load geodata");
 }
 
-void textFindRect(Text &t, vec2f origin, const vec2f &size)
+void GeodataBase::addMemory(ResourceInfo &other)
 {
-    origin[1] = 1 - origin[1];
-    t.rectOrigin = -origin.cwiseProduct(size);
-    t.rectSize = size;
+    info->ramMemoryCost += other.ramMemoryCost;
+    info->gpuMemoryCost += other.gpuMemoryCost;
 }
 
-std::vector<Word> textGenerateMeshes(std::vector<TmpLine> &lines,
-    float align, const vec2f &origin,
-    const std::string &debugId)
+vec3f GeodataBase::modelUp(const vec3f &p) const
 {
-    // sort into groups
-    struct WordCompare
-    {
-        bool operator () (const Word &a, const Word &b) const
-        {
-            if (a.font == b.font)
-                return a.fileIndex < b.fileIndex;
-            return a.font < b.font;
-        }
-    };
-    std::map<Word, std::vector<TmpGlyph>, WordCompare> groups;
-    for (TmpLine &line : lines)
-    {
-        for (const TmpGlyph &g : line.glyphs)
-        {
-            Word w;
-            w.font = g.font;
-            w.fileIndex = g.font->glyphs[g.glyphIndex].fileIndex;
-            groups[w].push_back(g);
-        }
-    }
-
-    // generate meshes
-    std::vector<Word> words;
-    for (auto &grp : groups)
-    {
-        GpuMeshSpec s;
-        static const uint32 stride = sizeof(float) * 5;
-        s.verticesCount = grp.second.size() * 4;
-        s.indicesCount = grp.second.size() * 6;
-        s.vertices.allocate(s.verticesCount * stride);
-        s.indices.resize(s.indicesCount * sizeof(uint16));
-        float *fit = (float*)s.vertices.data();
-        uint16 *iit = (uint16*)s.indices.data();
-        uint16 ii = 0;
-        for (const auto &g : grp.second)
-        {
-            const auto &f = g.font->glyphs[g.glyphIndex];
-            float px = g.position[0];
-            float py = g.position[1];
-            float pw = f.world[2];
-            float ph = f.world[3];
-            // 2--3
-            // |  |
-            // 0--1
-            *fit++ = px; *fit++ = py; *fit++ = f.uvs[0]; *fit++ = f.uvs[1]; *(sint32*)fit++ = f.plane;
-            *fit++ = px + pw; *fit++ = py; *fit++ = f.uvs[2]; *fit++ = f.uvs[1]; *(sint32*)fit++ = f.plane;
-            *fit++ = px; *fit++ = py + ph; *fit++ = f.uvs[0]; *fit++ = f.uvs[3]; *(sint32*)fit++ = f.plane;
-            *fit++ = px + pw; *fit++ = py + ph; *fit++ = f.uvs[2]; *fit++ = f.uvs[3]; *(sint32*)fit++ = f.plane;
-            // 0-1-2
-            // 1-3-2
-            *iit++ = ii + 0; *iit++ = ii + 1; *iit++ = ii + 2;
-            *iit++ = ii + 1; *iit++ = ii + 3; *iit++ = ii + 2;
-            ii += 4;
-        }
-        assert(fit == (float*)s.vertices.dataEnd());
-        assert(iit == (uint16*)s.indices.dataEnd());
-        s.faceMode = GpuMeshSpec::FaceMode::Triangles;
-        s.attributes[0].enable = true;
-        s.attributes[0].components = 2;
-        s.attributes[0].type = GpuTypeEnum::Float;
-        s.attributes[0].offset = 0;
-        s.attributes[0].stride = stride;
-        s.attributes[1].enable = true;
-        s.attributes[1].components = 2;
-        s.attributes[1].type = GpuTypeEnum::Float;
-        s.attributes[1].offset = sizeof(float) * 2;
-        s.attributes[1].stride = stride;
-        s.attributes[2].enable = true;
-        s.attributes[2].components = 1;
-        s.attributes[2].type = GpuTypeEnum::Int;
-        s.attributes[2].offset = sizeof(float) * 4;
-        s.attributes[2].stride = stride;
-        Word w(grp.first);
-        w.mesh = std::make_shared<Mesh>();
-        ResourceInfo inf;
-        w.mesh->load(inf, s, debugId);
-        words.push_back(std::move(w));
-    }
-    return words;
+    vec3 dl = p.cast<double>();
+    vec3 dw = vec4to3(vec4(model * vec3to4(dl, 1)));
+    vec3 upw = normalize(dw);
+    vec3 tw = dw + upw;
+    vec3 tl = vec4to3(vec4(modelInv * vec3to4(tw, 1)));
+    return (tl - dl).cast<float>();
 }
 
-float numericTextAlign(GpuGeodataSpec::TextAlign a)
+vec3f GeodataBase::worldUp(vec3f &p) const
 {
-    float align = 0.5;
-    switch (a)
-    {
-    case GpuGeodataSpec::TextAlign::Left:
-        align = 0;
-        break;
-    case GpuGeodataSpec::TextAlign::Right:
-        align = 1;
-        break;
-    default:
-        break;
-    }
-    return align;
+    vec3 dl = p.cast<double>();
+    vec3 dw = vec4to3(vec4(model * vec3to4(dl, 1)));
+    vec3 upw = normalize(dw);
+    return upw.cast<float>();
 }
 
-vec2f numericTextOrigin(GpuGeodataSpec::Origin o)
+uint32 GeodataBase::getTotalPoints() const
 {
-    vec2f origin = vec2f(0.5, 1);
-    switch (o)
-    {
-    case GpuGeodataSpec::Origin::TopLeft:
-        origin = vec2f(0, 0);
-        break;
-    case GpuGeodataSpec::Origin::TopRight:
-        origin = vec2f(1, 0);
-        break;
-    case GpuGeodataSpec::Origin::TopCenter:
-        origin = vec2f(0.5, 0);
-        break;
-    case GpuGeodataSpec::Origin::CenterLeft:
-        origin = vec2f(0, 0.5);
-        break;
-    case GpuGeodataSpec::Origin::CenterRight:
-        origin = vec2f(1, 0.5);
-        break;
-    case GpuGeodataSpec::Origin::CenterCenter:
-        origin = vec2f(0.5, 0.5);
-        break;
-    case GpuGeodataSpec::Origin::BottomLeft:
-        origin = vec2f(0, 1);
-        break;
-    case GpuGeodataSpec::Origin::BottomRight:
-        origin = vec2f(1, 1);
-        break;
-    case GpuGeodataSpec::Origin::BottomCenter:
-        origin = vec2f(0.5, 1);
-        break;
-    default:
-        break;
-    }
-    return origin;
+    uint32 totalPoints = 0;
+    uint32 linesCount = spec.positions.size();
+    for (uint32 li = 0; li < linesCount; li++)
+        totalPoints += spec.positions[li].size();
+    return totalPoints;
 }
-
-class GeodataText : public GeodataBase
-{
-public:
-    std::vector<std::shared_ptr<Font>> fontCascade;
-    std::vector<Text> texts;
-    std::shared_ptr<UniformBuffer> uniform;
-
-    void load(RendererImpl *renderer, ResourceInfo &info,
-        GpuGeodataSpec &specp, const std::string &debugId) override
-    {
-        loadInit(renderer, info, specp, debugId);
-
-        copyFonts();
-        switch (spec.type)
-        {
-        case GpuGeodataSpec::Type::PointLabel:
-            loadPointLabel();
-            break;
-        case GpuGeodataSpec::Type::LineLabel:
-            loadLineLabel();
-            break;
-        default:
-            throw std::invalid_argument("invalid geodata type");
-        }
-
-        loadFinish();
-    }
-
-    void copyFonts()
-    {
-        fontCascade.reserve(spec.fontCascade.size());
-        for (auto &i : spec.fontCascade)
-            fontCascade.push_back(std::static_pointer_cast<Font>(i));
-    }
-
-    void loadPointLabel()
-    {
-        assert(spec.texts.size() == spec.positions.size());
-        float align = numericTextAlign(spec.unionData.pointLabel.textAlign);
-        vec2f origin = numericTextOrigin(spec.unionData.pointLabel.origin);
-        for (uint32 i = 0, e = spec.texts.size(); i != e; i++)
-        {
-            std::vector<TmpLine> lines = textToGlyphs(
-                spec.texts[i], spec.unionData.pointLabel.size, fontCascade);
-            vec2f rectSize = textLayout(
-                spec.unionData.pointLabel.width, align, origin, lines);
-            Text t;
-            t.words = textGenerateMeshes(lines, align, origin, debugId);
-            textFindRect(t, origin, rectSize);
-            t.modelPosition = rawToVec3(spec.positions[i][0].data());
-            t.worldPosition = vec4to3(vec4(rawToMat4(spec.model)
-                            * vec3to4(t.modelPosition, 1).cast<double>()));
-            t.worldUp = worldUp(t.modelPosition);
-            texts.push_back(std::move(t));
-        }
-
-        // prepare ubo
-        {
-            struct UboPointLabelData
-            {
-                vec4f colors[2];
-                vec4f outline;
-            };
-            UboPointLabelData uboPointLabelData;
-
-            uboPointLabelData.colors[0]
-                = rawToVec4(spec.unionData.pointLabel.color);
-            uboPointLabelData.colors[1]
-                = rawToVec4(spec.unionData.pointLabel.color2);
-            float os = std::sqrt(2) / spec.unionData.pointLabel.size;
-            uboPointLabelData.outline
-                = rawToVec4(spec.unionData.pointLabel.outline)
-                .cwiseProduct(vec4f(1, 1, os, os));
-
-            uniform = std::make_shared<UniformBuffer>();
-            uniform->debugId = debugId;
-            uniform->bind();
-            uniform->load(uboPointLabelData);
-            info->gpuMemoryCost += sizeof(uboPointLabelData);
-        }
-    }
-
-    void loadLineLabel()
-    {
-        // todo
-    }
-
-    bool checkTextures()
-    {
-        bool ok = true;
-        for (auto &t : texts)
-        {
-            for (auto &w : t.words)
-            {
-                if (w.texture)
-                    continue;
-                w.texture = std::static_pointer_cast<Texture>(
-                    w.font->fontHandle->requestTexture(w.fileIndex));
-                ok = ok && !!w.texture;
-            }
-        }
-        return ok;
-    }
-};
-
-} // namespace
-
-namespace priv
-{
 
 bool RendererImpl::geodataTestVisibility(
     const float visibility[4],
@@ -1222,8 +434,6 @@ void RendererImpl::renderGeodata()
     glDepthMask(GL_TRUE);
     //glEnable(GL_CULL_FACE);
 }
-
-} // namespace priv
 
 void Renderer::loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec,
     const std::string &debugId)

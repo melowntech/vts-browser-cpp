@@ -197,9 +197,7 @@ void RendererImpl::initializeGeodata()
     CHECK_GL("initialize geodata");
 }
 
-void RendererImpl::initializeZBufferOffsetValues(
-        vec3 &zBufferOffsetValues,
-        mat4 &davidProj, mat4 &davidProjInv)
+void RendererImpl::initializeZBufferOffsetValues()
 {
     vec3 up1 = normalize(rawToVec3(draws->camera.eye)); // todo projected systems
     vec3 up2 = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
@@ -241,6 +239,60 @@ void RendererImpl::initializeZBufferOffsetValues(
     davidProjInv = davidProj.inverse();
 }
 
+void RendererImpl::initializeCameraDataUbo()
+{
+    struct UboCameraData
+    {
+        mat4f proj;
+        vec4f cameraParams; // screen width in pixels, screen height in pixels, view extent in meters
+    } ubo;
+
+    ubo.proj = proj.cast<float>();
+    ubo.cameraParams = vec4f(widthPrev, heightPrev,
+        draws->camera.viewExtent, 0);
+
+    uboGeodataCamera->bind();
+    uboGeodataCamera->load(ubo);
+    uboGeodataCamera->bindToIndex(0);
+}
+
+mat4 RendererImpl::depthOffsetProj(GeodataBase *gg) const
+{
+    vec3 zbo = rawToVec3(gg->spec.commonData.zBufferOffset)
+        .cast<double>();
+    double off = dot(zbo, zBufferOffsetValues) * 0.0001;
+    double off2 = (off + 1) * 2 - 1;
+    mat4 s = scaleMatrix(vec3(1, 1, off2));
+    return proj * davidProjInv * s * davidProj;
+}
+
+void RendererImpl::initializeViewDataUbo(GeodataBase *gg)
+{
+    mat4 model = rawToMat4(gg->spec.model);
+    mat4 mv = view * model;
+    mat4 mvp = depthOffsetProj(gg) * mv;
+    mat4 mvInv = mv.inverse();
+    mat4 mvpInv = mvp.inverse();
+
+    // view ubo
+    struct UboViewData
+    {
+        mat4f mvp;
+        mat4f mvpInv;
+        mat4f mv;
+        mat4f mvInv;
+    } ubo;
+
+    ubo.mvp = mvp.cast<float>();
+    ubo.mvpInv = mvpInv.cast<float>();
+    ubo.mv = mv.cast<float>();
+    ubo.mvInv = mvInv.cast<float>();
+
+    uboGeodataView->bind();
+    uboGeodataView->load(ubo);
+    uboGeodataView->bindToIndex(1);
+}
+
 void RendererImpl::renderGeodata()
 {
     //glDisable(GL_CULL_FACE);
@@ -251,28 +303,8 @@ void RendererImpl::renderGeodata()
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // z-buffer-offset global data
-    vec3 zBufferOffsetValues;
-    mat4 davidProj, davidProjInv;
-    initializeZBufferOffsetValues(zBufferOffsetValues,
-        davidProj, davidProjInv);
-
-    // initialize camera data
-    {
-        struct UboCameraData
-        {
-            mat4f proj;
-            vec4f cameraParams; // screen width in pixels, screen height in pixels, view extent in meters
-        } ubo;
-
-        ubo.proj = proj.cast<float>();
-        ubo.cameraParams = vec4f(widthPrev, heightPrev,
-                draws->camera.viewExtent, 0);
-
-        uboGeodataCamera->bind();
-        uboGeodataCamera->load(ubo);
-        uboGeodataCamera->bindToIndex(0);
-    }
+    initializeZBufferOffsetValues();
+    initializeCameraDataUbo();
 
     std::sort(draws->geodata.begin(), draws->geodata.end(),
         [](const DrawGeodataTask &a, const DrawGeodataTask &b)
@@ -286,48 +318,12 @@ void RendererImpl::renderGeodata()
     {
         GeodataBase *gg = (GeodataBase*)t.geodata.get();
 
-        mat4 depthOffsetProj;
-        {
-            vec3 zbo = rawToVec3(gg->spec.commonData.zBufferOffset)
-                .cast<double>();
-            double off = dot(zbo, zBufferOffsetValues) * 0.0001;
-            double off2 = (off + 1) * 2 - 1;
-            mat4 s = scaleMatrix(vec3(1, 1, off2));
-            // apply anti-david measures
-            depthOffsetProj = proj * davidProjInv * s * davidProj;
-        }
-
-        mat4 model = rawToMat4(gg->spec.model);
-        mat4 mv = view * model;
-        mat4 mvp = depthOffsetProj * mv;
-        mat4 mvInv = mv.inverse();
-        mat4 mvpInv = mvp.inverse();
-
-        // view ubo
-        {
-            struct UboViewData
-            {
-                mat4f mvp;
-                mat4f mvpInv;
-                mat4f mv;
-                mat4f mvInv;
-            } ubo;
-
-            ubo.mvp = mvp.cast<float>();
-            ubo.mvpInv = mvpInv.cast<float>();
-            ubo.mv = mv.cast<float>();
-            ubo.mvInv = mvInv.cast<float>();
-
-            uboGeodataView->bind();
-            uboGeodataView->load(ubo);
-            uboGeodataView->bindToIndex(1);
-        }
-
         switch (gg->spec.type)
         {
         case GpuGeodataSpec::Type::LineScreen:
         case GpuGeodataSpec::Type::LineFlat:
         {
+            initializeViewDataUbo(gg);
             GeodataGeometry *g = static_cast<GeodataGeometry*>(gg);
             shaderGeodataLine->bind();
             g->uniform->bindToIndex(2);
@@ -344,6 +340,7 @@ void RendererImpl::renderGeodata()
         case GpuGeodataSpec::Type::PointScreen:
         case GpuGeodataSpec::Type::PointFlat:
         {
+            initializeViewDataUbo(gg);
             GeodataGeometry *g = static_cast<GeodataGeometry*>(gg);
             shaderGeodataPoint->bind();
             g->uniform->bindToIndex(2);
@@ -359,13 +356,9 @@ void RendererImpl::renderGeodata()
         } break;
         case GpuGeodataSpec::Type::PointLabel:
         {
-            glEnable(GL_BLEND);
             GeodataText *g = static_cast<GeodataText*>(gg);
             if (!g->checkTextures())
                 continue;
-            shaderGeodataPointLabel->bind();
-            g->uniform->bindToIndex(2);
-            std::shared_ptr<Texture> lastTexture;
             for (auto &t : g->texts)
             {
                 if (!geodataTestVisibility(
@@ -373,57 +366,9 @@ void RendererImpl::renderGeodata()
                     t.worldPosition, t.worldUp))
                     continue;
                 if (options.renderTextMargins)
-                {
-                    vts::DrawSimpleTask st;
-                    st.mesh = meshLine;
-                    vecToRaw(vec4f(1, 0, 0, 1), st.color);
-                    vec2f ss = vec2f(1.f / widthPrev, 1.f / heightPrev);
-                    mat4 vp = proj * view;
-                    mat4 vpInv = vp.inverse();
-                    vec4 sp = vp * vec3to4(t.worldPosition, 1);
-                    auto p = [&](const vec2f &a)
-                    {
-                        vec4 r = sp;
-                        for (int i = 0; i < 2; i++)
-                            r[i] += options.textScale * r[3] * a[i] * ss[i];
-                        r = vec3to4(vec4to3(r, true), 1);
-                        r = vpInv * r;
-                        return vec4to3(r, true);
-                    };
-                    auto r = [&](const vec2f &aa, const vec2f &bb)
-                    {
-                        vec2f a2 = t.rectOrigin + t.rectSize.cwiseProduct(aa);
-                        vec2f b2 = t.rectOrigin + t.rectSize.cwiseProduct(bb);
-                        vec3 a = p(a2);
-                        vec3 b = p(b2);
-                        mat4f mv = (view * lookAt(a, b)).cast<float>();
-                        matToRaw(mv, st.mv);
-                        draws->infographics.push_back(st);
-                    };
-                    r(vec2f(0, 0), vec2f(0, 1));
-                    r(vec2f(0, 1), vec2f(1, 1));
-                    r(vec2f(1, 1), vec2f(1, 0));
-                    r(vec2f(1, 0), vec2f(0, 0));
-                }
-                shaderGeodataPointLabel->uniformVec3(0,
-                    t.modelPosition.data());
-                for (int pass = 0; pass < 2; pass++)
-                {
-                    shaderGeodataPointLabel->uniform(2, pass);
-                    for (auto &w : t.words)
-                    {
-                        shaderGeodataPointLabel->uniform(1, options.textScale);
-                        if (w.texture != lastTexture)
-                        {
-                            w.texture->bind();
-                            lastTexture = w.texture;
-                        }
-                        w.mesh->bind();
-                        w.mesh->dispatch();
-                    }
-                }
+                    renderTextMargin(t);
+                pointLabelsArray.emplace_back(g, &t);
             }
-            glDisable(GL_BLEND);
         } break;
         default:
         {
@@ -431,8 +376,129 @@ void RendererImpl::renderGeodata()
         }
     }
 
+    filterLabels();
+
+    glEnable(GL_BLEND);
+    renderPointLabels();
+    glDisable(GL_BLEND);
+
     glDepthMask(GL_TRUE);
     //glEnable(GL_CULL_FACE);
+}
+
+void RendererImpl::filterLabels()
+{
+    struct Rect
+    {
+        vec2f a, b;
+
+        Rect(const RendererImpl *impl, const Label &l)
+        {
+            vec2f ss = vec2f(1.f / impl->widthPrev, 1.f / impl->heightPrev);
+            vec4 sp = impl->viewProj * vec3to4(l.t->worldPosition, 1);
+            auto p = [&](const vec2f &a) -> vec2f
+            {
+                vec4 r = sp;
+                for (int i = 0; i < 2; i++)
+                    r[i] += impl->options.textScale * r[3] * a[i] * ss[i];
+                return vec3to2(vec4to3(r, true)).cast<float>();
+            };
+            a = p(l.t->rectOrigin);
+            b = p(l.t->rectOrigin + l.t->rectSize);
+        }
+
+        static bool overlaps(const Rect &a, const Rect &b)
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                if (a.b[i] < b.a[i])
+                    return false;
+                if (a.a[i] > b.b[i])
+                    return false;
+            }
+            return true;
+        }
+    };
+
+    std::vector<Rect> rects;
+    rects.reserve(pointLabelsArray.size());
+
+    pointLabelsArray.erase(std::remove_if(pointLabelsArray.begin(),
+        pointLabelsArray.end(), [&](const Label &l) {
+        Rect mr = Rect(this, l);
+        for (const Rect &r : rects)
+            if (Rect::overlaps(mr, r))
+                return true;
+        rects.push_back(mr);
+        return false;
+    }), pointLabelsArray.end());
+}
+
+void RendererImpl::renderTextMargin(const Text &t)
+{
+    vec2f ss = vec2f(1.f / widthPrev, 1.f / heightPrev);
+    vts::DrawSimpleTask st;
+    st.mesh = meshLine;
+    vecToRaw(vec4f(1, 0, 0, 1), st.color);
+    vec4 sp = viewProj * vec3to4(t.worldPosition, 1);
+    auto p = [&](const vec2f &a)
+    {
+        vec4 r = sp;
+        for (int i = 0; i < 2; i++)
+            r[i] += options.textScale * r[3] * a[i] * ss[i];
+        r = viewProjInv * r;
+        return vec4to3(r, true);
+    };
+    auto r = [&](const vec2f &aa, const vec2f &bb)
+    {
+        vec2f a2 = t.rectOrigin + t.rectSize.cwiseProduct(aa);
+        vec2f b2 = t.rectOrigin + t.rectSize.cwiseProduct(bb);
+        vec3 a = p(a2);
+        vec3 b = p(b2);
+        mat4f mv = (view * lookAt(a, b)).cast<float>();
+        matToRaw(mv, st.mv);
+        draws->infographics.push_back(st);
+    };
+    r(vec2f(0, 0), vec2f(0, 1));
+    r(vec2f(0, 1), vec2f(1, 1));
+    r(vec2f(1, 1), vec2f(1, 0));
+    r(vec2f(1, 0), vec2f(0, 0));
+}
+
+void RendererImpl::renderPointLabels()
+{
+    std::shared_ptr<Texture> lastTexture;
+    GeodataText *lastGeodata = nullptr;
+    shaderGeodataPointLabel->bind();
+    shaderGeodataPointLabel->uniform(1, options.textScale);
+    for (Label &l : pointLabelsArray)
+    {
+        GeodataText *g = l.g;
+        Text &t = *l.t;
+        if (g != lastGeodata)
+        {
+            initializeViewDataUbo(g);
+            lastGeodata = g;
+        }
+        g->uniform->bindToIndex(2);
+        shaderGeodataPointLabel->uniformVec3(0,
+            t.modelPosition.data());
+        for (int pass = 0; pass < 2; pass++)
+        {
+            shaderGeodataPointLabel->uniform(2, pass);
+            for (auto &w : t.words)
+            {
+                if (w.texture != lastTexture)
+                {
+                    w.texture->bind();
+                    lastTexture = w.texture;
+                }
+                w.mesh->bind();
+                w.mesh->dispatch();
+            }
+        }
+    }
+    pointLabelsArray.clear();
 }
 
 void Renderer::loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec,

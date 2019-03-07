@@ -305,11 +305,13 @@ vec2f textLayout(float size, float maxWidth, float align, vec2f origin,
     return rs;
 }
 
-void findRect(Text &t, vec2f origin, const vec2f &size)
+void findRect(Text &t, vec2f origin, const vec2f &size, const vec2f &margin)
 {
     origin[1] = 1 - origin[1];
     t.rectOrigin = -origin.cwiseProduct(size);
     t.rectSize = size;
+    t.rectOrigin -= margin;
+    t.rectSize += 2 * margin;
 }
 
 std::vector<Word> generateMeshes(std::vector<TmpLine> &lines,
@@ -498,7 +500,8 @@ void GeodataText::loadPointLabel()
             align, origin, lines);
         Text t;
         t.words = generateMeshes(lines, align, origin, debugId);
-        findRect(t, origin, rectSize);
+        findRect(t, origin, rectSize,
+            rawToVec2(spec.unionData.pointLabel.margin));
         t.modelPosition = rawToVec3(spec.positions[i][0].data());
         t.worldPosition = vec4to3(vec4(rawToMat4(spec.model)
             * vec3to4(t.modelPosition, 1).cast<double>()));

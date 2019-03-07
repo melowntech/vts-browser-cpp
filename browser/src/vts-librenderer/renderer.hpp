@@ -48,6 +48,19 @@ class DrawSimpleTask;
 namespace renderer
 {
 
+class GeodataBase;
+class GeodataText;
+struct Text;
+
+struct Label
+{
+    GeodataText *g;
+    Text *t;
+
+    Label(GeodataText *g, Text *t) : g(g), t(t)
+    {}
+};
+
 extern uint32 maxAntialiasingSamples;
 extern float maxAnisotropySamples;
 
@@ -78,16 +91,14 @@ public:
     CameraDraws *draws;
     const MapCelestialBody *body;
     Texture *atmosphereDensityTexture;
-
     mat4 view;
     mat4 viewInv;
     mat4 proj;
     mat4 viewProj;
-
+    mat4 viewProjInv;
     uint32 widthPrev;
     uint32 heightPrev;
     uint32 antialiasingPrev;
-
     bool projected;
 
     static void clearGlState();
@@ -106,13 +117,22 @@ public:
         const double mapRotation[3]);
     void getWorldPosition(const double screenPos[2], double worldPos[3]);
 
+    mat4 davidProj, davidProjInv;
+    vec3 zBufferOffsetValues;
+    std::vector<Label> pointLabelsArray;
+
     void initializeGeodata();
     void renderGeodata();
     bool geodataTestVisibility(
         const float visibility[4],
         const vec3 &pos, const vec3f &up);
-    void initializeZBufferOffsetValues(vec3 &zBufferOffsetValues,
-        mat4 &davidProj, mat4 &davidProjInv);
+    void initializeZBufferOffsetValues();
+    void initializeCameraDataUbo();
+    mat4 depthOffsetProj(GeodataBase *gg) const;
+    void initializeViewDataUbo(GeodataBase *gg);
+    void filterLabels();
+    void renderTextMargin(const Text &t);
+    void renderPointLabels();
 };
 
 } // namespace renderer

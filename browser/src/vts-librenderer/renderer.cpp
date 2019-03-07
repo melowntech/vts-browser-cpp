@@ -302,6 +302,7 @@ void RendererImpl::render()
 
     viewInv = view.inverse();
     viewProj = proj * view;
+    viewProjInv = viewProj.inverse();
 
     updateFramebuffers();
 

@@ -102,27 +102,38 @@ Validity GeodataStylesheet::dependencies()
         dependenciesLoaded = true;
         fonts.clear();
         bitmaps.clear();
-        Json::Value s;
         try
         {
-            s = stringToJson(data);
+            Json::Value s = stringToJson(data);
+            for (const auto &n : s["fonts"].getMemberNames())
+            {
+                std::string p = s["fonts"][n].asString();
+                p = convertPath(p, map->mapconfigPath);
+                fonts[n] = map->getFont(p);
+            }
+            if (fonts.find("#default") == fonts.end())
+            {
+                std::string p = map->createOptions.geodataFontFallback;
+                p = convertPath(p, map->mapconfigPath);
+                fonts["#default"] = map->getFont(p);
+            }
+            /*
+            for (const auto &n : s["bitmaps"].getMemberNames())
+            {
+                // todo bitmap may be an object with: url, filter, tiled
+                std::string p = s["bitmaps"][n].asString();
+                p = convertPath(p, map->mapconfigPath);
+                bitmaps[n] = map->getTexture(p);
+            }
+            */
         }
-        catch (std::runtime_error &)
+        catch (std::exception &e)
         {
+            LOG(err3) << "Failed parsing dependencies from stylesheet <"
+                << name << ">, with error <"
+                << e.what() << ">";
             dependenciesValidity = Validity::Invalid;
             return Validity::Invalid;
-        }
-        for (const auto &n : s["fonts"].getMemberNames())
-        {
-            std::string p = s["fonts"][n].asString();
-            p = convertPath(p, map->mapconfigPath);
-            fonts[n] = map->getFont(p);
-        }
-        for (const auto &n : s["bitmaps"].getMemberNames())
-        {
-            std::string p = s["bitmaps"][n].asString();
-            p = convertPath(p, map->mapconfigPath);
-            bitmaps[n] = map->getTexture(p);
         }
         dependenciesValidity = Validity::Valid;
     }

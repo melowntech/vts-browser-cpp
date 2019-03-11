@@ -52,6 +52,9 @@ public:
     // leave it empty to use default ($HOME/.cache/vts-browser)
     std::string cachePath;
 
+    // url to font to be used when stylesheet does not define default font
+    std::string geodataFontFallback;
+
     // search url/srs are usually provided in browser options in mapconfig
     // however, if they are not provided, these fallbacks are used
     std::string searchUrlFallback;

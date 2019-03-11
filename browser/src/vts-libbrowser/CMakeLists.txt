@@ -48,6 +48,7 @@ set(PUB_HDR_LIST
     include/vts-browser/exceptions.hpp
     include/vts-browser/fetcher.hpp
     include/vts-browser/foundation.hpp
+    include/vts-browser/geodata.hpp
     include/vts-browser/log.hpp
     include/vts-browser/map.hpp
     include/vts-browser/mapCallbacks.hpp

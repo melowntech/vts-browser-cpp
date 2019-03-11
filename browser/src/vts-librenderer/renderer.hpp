@@ -130,7 +130,7 @@ public:
     void initializeCameraDataUbo();
     mat4 depthOffsetProj(GeodataBase *gg) const;
     void initializeViewDataUbo(GeodataBase *gg);
-    void filterLabels();
+    void filterOverlappingLabels();
     void renderTextMargin(const Text &t);
     void renderPointLabels();
 };

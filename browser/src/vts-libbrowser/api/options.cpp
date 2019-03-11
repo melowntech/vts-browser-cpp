@@ -34,6 +34,8 @@ namespace vts
 
 MapCreateOptions::MapCreateOptions() :
     clientId("undefined-vts-browser-cpp"),
+    geodataFontFallback(
+        "//cdn.melown.com/libs/vtsjs/fonts/noto-basic/1.0.0/noto.fnt"),
     searchUrlFallback("https://eu-n1.windyty.com/search.php?format=json"
                        "&addressdetails=1&limit=20&q={value}"),
     searchSrsFallback("+proj=longlat +datum=WGS84 +nodefs"),
@@ -56,6 +58,7 @@ void MapCreateOptions::applyJson(const std::string &json)
     Json::Value v = stringToJson(json);
     AJ(clientId, asString);
     AJ(cachePath, asString);
+    AJ(geodataFontFallback, asString);
     AJ(searchUrlFallback, asString);
     AJ(searchSrsFallback, asString);
     AJ(customSrs1, asString);
@@ -71,6 +74,7 @@ std::string MapCreateOptions::toJson() const
     Json::Value v;
     TJ(clientId, asString);
     TJ(cachePath, asString);
+    TJ(geodataFontFallback, asString);
     TJ(searchUrlFallback, asString);
     TJ(searchSrsFallback, asString);
     TJ(customSrs1, asString);

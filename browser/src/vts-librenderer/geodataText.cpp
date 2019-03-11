@@ -63,6 +63,78 @@ struct TmpLine
     {}
 };
 
+struct AlgorithmHolder
+{
+    SBAlgorithmRef algorithm;
+
+    AlgorithmHolder(SBCodepointSequence *codepoints) : algorithm(nullptr)
+    {
+        algorithm = SBAlgorithmCreate(codepoints);
+    }
+
+    ~AlgorithmHolder()
+    {
+        SBAlgorithmRelease(algorithm);
+    }
+
+    SBAlgorithmRef operator () () { return algorithm; };
+};
+
+struct ParagraphHolder
+{
+    SBParagraphRef paragraph;
+
+    ParagraphHolder(SBAlgorithmRef bidiAlgorithm, SBUInteger paragraphStart)
+        : paragraph(nullptr)
+    {
+        paragraph = SBAlgorithmCreateParagraph(bidiAlgorithm,
+                paragraphStart, INT32_MAX, SBLevelDefaultLTR);
+    }
+
+    ~ParagraphHolder()
+    {
+        SBParagraphRelease(paragraph);
+    }
+
+    SBParagraphRef operator () () { return paragraph; };
+};
+
+struct LineHolder
+{
+    SBLineRef paragraphLine;
+
+    LineHolder(SBParagraphRef paragraph, SBUInteger lineStart,
+        SBUInteger paragraphLength) : paragraphLine(nullptr)
+    {
+        paragraphLine = SBParagraphCreateLine(paragraph,
+            lineStart, paragraphLength);
+    }
+
+    ~LineHolder()
+    {
+        SBLineRelease(paragraphLine);
+    }
+
+    SBLineRef operator () () { return paragraphLine; };
+};
+
+struct BufferHolder
+{
+    hb_buffer_t *buffer;
+
+    BufferHolder() : buffer(nullptr)
+    {
+        buffer = hb_buffer_create();
+    }
+
+    ~BufferHolder()
+    {
+        hb_buffer_destroy(buffer);
+    }
+
+    hb_buffer_t *operator () () { return buffer; };
+};
+
 std::vector<TmpLine> textToGlyphs(
     const std::string &s,
     const std::vector<std::shared_ptr<Font>> &fontCascade)
@@ -71,32 +143,28 @@ std::vector<TmpLine> textToGlyphs(
 
     SBCodepointSequence codepoints
         = { SBStringEncodingUTF8, (void*)s.data(), s.length() };
-    SBAlgorithmRef bidiAlgorithm
-        = SBAlgorithmCreate(&codepoints);
+    AlgorithmHolder bidiAlgorithm(&codepoints);
     SBUInteger paragraphStart = 0;
     while (true)
     {
-        SBParagraphRef paragraph
-            = SBAlgorithmCreateParagraph(bidiAlgorithm,
-                paragraphStart, INT32_MAX, SBLevelDefaultLTR);
-        if (!paragraph)
+        ParagraphHolder paragraph(bidiAlgorithm(), paragraphStart);
+        if (!paragraph())
             break;
-        SBUInteger paragraphLength = SBParagraphGetLength(paragraph);
+        SBUInteger paragraphLength = SBParagraphGetLength(paragraph());
         SBUInteger lineStart = paragraphStart;
         paragraphStart += paragraphLength;
 
         while (true)
         {
-            SBLineRef paragraphLine = SBParagraphCreateLine(paragraph,
-                lineStart, paragraphLength);
-            if (!paragraphLine)
+            LineHolder paragraphLine(paragraph(), lineStart, paragraphLength);
+            if (!paragraphLine())
                 break;
-            SBUInteger lineLength = SBLineGetLength(paragraphLine);
+            SBUInteger lineLength = SBLineGetLength(paragraphLine());
             lineStart += lineLength;
             paragraphLength -= lineLength;
 
-            SBUInteger runCount = SBLineGetRunCount(paragraphLine);
-            const SBRun *runArray = SBLineGetRunsPtr(paragraphLine);
+            SBUInteger runCount = SBLineGetRunCount(paragraphLine());
+            const SBRun *runArray = SBLineGetRunsPtr(paragraphLine());
 
             TmpLine line;
             line.glyphs.reserve(lineLength);
@@ -119,6 +187,13 @@ std::vector<TmpLine> textToGlyphs(
                         assert(offset >= run->offset);
                         assert((sint64)offset + (sint64)length
                             <= (sint64)run->offset + (sint64)run->length);
+                        // violating these asserts makes the thread loop indefinitely
+                        // todo fix the cause of this
+                        // meantime, throw exception to prevent the looping
+                        if (offset < run->offset
+                            || (sint64)offset + (sint64)length
+                                >(sint64)run->offset + (sint64)run->length)
+                            throw std::logic_error("buzzing outside bounds");
                     }
                 };
 
@@ -136,21 +211,21 @@ std::vector<TmpLine> textToGlyphs(
                     std::shared_ptr<Font> fnt = fontCascade
                                     [terminal ? 0 : r.font];
 
-                    hb_buffer_t *buffer = hb_buffer_create();
-                    hb_buffer_add_utf8(buffer,
+                    BufferHolder buffer;
+                    hb_buffer_add_utf8(buffer(),
                         (char*)codepoints.stringBuffer,
                         codepoints.stringLength,
                         r.offset, r.length);
-                    hb_buffer_set_direction(buffer, (run->level % 2) == 0
+                    hb_buffer_set_direction(buffer(), (run->level % 2) == 0
                         ? HB_DIRECTION_LTR : HB_DIRECTION_RTL);
-                    hb_buffer_guess_segment_properties(buffer);
-                    hb_shape(fnt->font, buffer, nullptr, 0);
+                    hb_buffer_guess_segment_properties(buffer());
+                    hb_shape(fnt->font, buffer(), nullptr, 0);
 
-                    uint32 len = hb_buffer_get_length(buffer);
+                    uint32 len = hb_buffer_get_length(buffer());
                     hb_glyph_info_t *info
-                        = hb_buffer_get_glyph_infos(buffer, nullptr);
+                        = hb_buffer_get_glyph_infos(buffer(), nullptr);
                     hb_glyph_position_t *pos
-                        = hb_buffer_get_glyph_positions(buffer, nullptr);
+                        = hb_buffer_get_glyph_positions(buffer(), nullptr);
 
                     if (!terminal)
                     {
@@ -191,7 +266,6 @@ std::vector<TmpLine> textToGlyphs(
                                     r.font + lastTofu);
                             }
                             runs.reverse();
-                            hb_buffer_destroy(buffer);
                             continue;
                         }
                     }
@@ -209,17 +283,16 @@ std::vector<TmpLine> textToGlyphs(
                                 pos[i].y_offset) / 64;
                         line.glyphs.push_back(g);
                     }
-
-                    hb_buffer_destroy(buffer);
                 }
             }
 
             lines.push_back(std::move(line));
-            SBLineRelease(paragraphLine);
         }
-        SBParagraphRelease(paragraph);
     }
-    SBAlgorithmRelease(bidiAlgorithm);
+
+    // erase empty lines
+    lines.erase(std::remove_if(lines.begin(), lines.end(),
+        [](const TmpLine &l) { return l.glyphs.empty(); }), lines.end());
 
     return lines;
 }

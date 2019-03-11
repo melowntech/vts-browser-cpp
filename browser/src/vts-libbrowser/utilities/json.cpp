@@ -38,6 +38,7 @@ Json::Value stringToJson(const std::string &s)
 {
     Json::CharReaderBuilder builder;
     builder.strictMode(&builder.settings_);
+    builder.settings_["allowSingleQuotes"] = true;
     std::shared_ptr<Json::CharReader> r(builder.newCharReader());
     Json::Value val;
     std::string errs;

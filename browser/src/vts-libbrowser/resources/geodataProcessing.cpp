@@ -104,6 +104,32 @@ bool isCjk(const std::string &s)
     return true;
 }
 
+uint32 strlen(const std::string &s)
+{
+    uint32 result = 0;
+    auto it = s.begin();
+    const auto e = s.end();
+    while (it != e)
+    {
+        utf8::next(it, e);
+        result++;
+    }
+    return result;
+}
+
+float str2num(const std::string &s)
+{
+    std::stringstream ss(s);
+    float f = nan1();
+    ss >> std::noskipws >> f;
+    if ((ss.rdstate() ^ std::ios_base::eofbit))
+    {
+        THROW << "Failed to convert string <"
+            << s << "> to number";
+    }
+    return f;
+}
+
 bool isLayerStyleRequired(const Value &v)
 {
     if (v.isNull())
@@ -156,13 +182,14 @@ struct geoContext
     GpuGeodataSpec::Stick convertStick(const Value &p) const
     {
         Value v = evaluate(p);
-        validateArrayLength(v, 7, 7, "Stick must have 7 components");
+        validateArrayLength(v, 7, 8, "Stick must have 7 or 8 components");
         GpuGeodataSpec::Stick s;
         s.heights[1] = v[0].asFloat();
         s.heights[0] = v[1].asFloat();
         s.width = v[2].asFloat();
         vecToRaw(vec4f(vec4f(v[3].asInt(), v[4].asInt(), v[5].asInt(),
             v[6].asInt()) / 255.f), s.color);
+        s.offset = v.size() > 7 ? v[7].asFloat() : 0;
         return s;
     }
 
@@ -283,7 +310,18 @@ struct geoContext
             }
             catch (const std::runtime_error &e)
             {
-                throw GeodataValidationException(e.what());
+                throw GeodataValidationException(
+                    std::string("runtime error: ") + e.what());
+            }
+            catch (const std::logic_error &e)
+            {
+                throw GeodataValidationException(
+                    std::string("logic error: ") + e.what());
+            }
+            catch (std::exception &e)
+            {
+                throw GeodataValidationException(
+                    std::string("unknown error: ") + e.what());
             }
         }
         return processInternal();
@@ -524,7 +562,9 @@ struct geoContext
         }
         const std::string fnc = expression.getMemberNames()[0];
 
-        // 'sgn', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'abs', 'deg2rad', 'rad2deg'
+        // 'sgn', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'abs', 'deg2rad', 'rad2deg', 'round'
+        if (fnc == "round")
+            return (sint32)std::round(evaluate(expression[fnc]).asFloat());
 
         // 'add', 'sub', 'mul', 'div', 'pow', 'atan2'
 
@@ -542,6 +582,16 @@ struct geoContext
         }
 
         // 'strlen', 'str2num', 'lowercase', 'uppercase', 'capitalize'
+        if (fnc == "strlen")
+            return strlen(evaluate(expression[fnc]).asString());
+        if (fnc == "str2num")
+            return str2num(evaluate(expression[fnc]).asString());
+        //if (fnc == "lowercase")
+        //    return lowercase(evaluate(expression[fnc]).asString());
+        //if (fnc == "uppercase")
+        //    return uppercase(evaluate(expression[fnc]).asString());
+        //if (fnc == "capitalize")
+        //    return capitalize(evaluate(expression[fnc]).asString());
 
         // 'has-fonts', 'has-latin', 'is-cjk'
         if (fnc == "has-latin")
@@ -604,15 +654,37 @@ struct geoContext
         std::size_t start = s.find("{");
         if (start != s.npos)
         {
-            std::size_t end = s.find("}", start);
-            if (Validating && end == s.npos)
-                THROW << "Missing <}> in <" << s << ">";
-            std::size_t originalStart = start;
-            (void)originalStart;
-            start = s.rfind("{", end - 1);
-            assert(start >= originalStart && start < end);
+            size_t e = s.length();
+            uint32 cnt = 1;
+            std::size_t end = start;
+            while (cnt > 0 && end + 1 < e)
+            {
+                end++;
+                switch (s[end])
+                {
+                case '{': cnt++; break;
+                case '}': cnt--; break;
+                default: break;
+                }
+            }
+            if (cnt > 0)
+                THROW << "Missing '}' in <" << s << ">";
+            if (end == start + 1)
+                THROW << "Invalid '{}' in <" << s << ">";
             std::string subs = s.substr(start + 1, end - start - 1);
-            subs = evaluate(subs).asString();
+            Json::Value v;
+            try
+            {
+                v = subs[0] == '{'
+                ? stringToJson(subs)
+                : Json::Value(subs);
+            }
+            catch (std::exception &e)
+            {
+                THROW << "Invalid json <" << subs
+                    << ">, message <" << e.what() << ">";
+            }
+            subs = evaluate(v).asString();
             std::string res;
             if (start > 0)
                 res += s.substr(0, start);
@@ -803,7 +875,8 @@ struct geoContext
         const Value &layer = style["layers"][layerName];
 
         // filter
-        if (!zOverride && !filter(layer["filter"]))
+        if (!zOverride && !layer["filter"].empty()
+            && !filter(layer["filter"]))
             return;
 
         // visible

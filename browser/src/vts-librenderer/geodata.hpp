@@ -27,6 +27,7 @@
 #ifndef GEODATA_HPP_erg546g4g14
 #define GEODATA_HPP_erg546g4g14
 
+#include <vts-browser/geodata.hpp>
 #include "renderer.hpp"
 
 namespace vts { namespace renderer

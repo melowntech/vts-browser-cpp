@@ -28,6 +28,7 @@
 #define GEODATA_HPP_o84d6
 
 #include "include/vts-browser/math.hpp"
+#include "include/vts-browser/geodata.hpp"
 #include "resource.hpp"
 
 namespace vts

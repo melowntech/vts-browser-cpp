@@ -376,7 +376,7 @@ void RendererImpl::renderGeodata()
         }
     }
 
-    filterLabels();
+    filterOverlappingLabels();
 
     glEnable(GL_BLEND);
     renderPointLabels();
@@ -386,7 +386,7 @@ void RendererImpl::renderGeodata()
     //glEnable(GL_CULL_FACE);
 }
 
-void RendererImpl::filterLabels()
+void RendererImpl::filterOverlappingLabels()
 {
     struct Rect
     {

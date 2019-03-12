@@ -29,5 +29,7 @@ void main()
     varPlane = inPlane;
     gl_Position = uniMvp * vec4(uniPosition, 1.0);
     gl_Position.xy += uniScale * gl_Position.w * inPosition / uniCameraParams.xy;
+    // avoid culling geodata by near camera plane
+    gl_Position.z = max(gl_Position.z, -gl_Position.w + 1e-7);
 }
 

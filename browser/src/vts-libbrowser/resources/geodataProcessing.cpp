@@ -117,10 +117,12 @@ uint32 strlen(const std::string &s)
     return result;
 }
 
-float str2num(const std::string &s)
+double str2num(const std::string &s)
 {
+    if (s.empty())
+        return nan1();
     std::stringstream ss(s);
-    float f = nan1();
+    double f = nan1();
     ss >> std::noskipws >> f;
     if ((ss.rdstate() ^ std::ios_base::eofbit))
     {
@@ -128,6 +130,21 @@ float str2num(const std::string &s)
             << s << "> to number";
     }
     return f;
+}
+
+std::string lowercase(const std::string &s)
+{
+    return s; // todo
+}
+
+std::string uppercase(const std::string &s)
+{
+    return s; // todo
+}
+
+std::string capitalize(const std::string &s)
+{
+    return s; // todo
 }
 
 bool isLayerStyleRequired(const Value &v)
@@ -150,6 +167,14 @@ struct geoContext
     };
 
     typedef std::array<float, 3> Point;
+
+    double convertToDouble(const Value &p) const
+    {
+        Value v = evaluate(p);
+        if (v.isString())
+            return str2num(v.asString());
+        return v.asDouble();
+    }
 
     Point convertPoint(const Value &p) const
     {
@@ -270,6 +295,11 @@ struct geoContext
             if (layer.isMember("filter") && layer["filter"].isArray()
                     && layer["filter"][0] == "skip")
                 continue;
+            if (layer.isMember("visibility-switch"))
+            {
+                result.push_back(layerName);
+                continue;
+            }
             bool line = isLayerStyleRequired(layer["line"]);
             bool point = isLayerStyleRequired(layer["point"]);
             bool icon = isLayerStyleRequired(layer["icon"]);
@@ -310,18 +340,15 @@ struct geoContext
             }
             catch (const std::runtime_error &e)
             {
-                throw GeodataValidationException(
-                    std::string("runtime error: ") + e.what());
+                THROW << "Runtime error <" <<  e.what() << ">";
             }
             catch (const std::logic_error &e)
             {
-                throw GeodataValidationException(
-                    std::string("logic error: ") + e.what());
+                THROW << "Logic error <" << e.what() << ">";
             }
             catch (std::exception &e)
             {
-                throw GeodataValidationException(
-                    std::string("unknown error: ") + e.what());
+                THROW << "General error <" << e.what() << ">";
             }
         }
         return processInternal();
@@ -369,7 +396,7 @@ struct geoContext
                     this->feature.emplace(feature);
                     // layers
                     for (const std::string &layerName : layers)
-                        processFeature(layerName);
+                        processFeatureName(layerName);
                 }
                 this->feature.reset();
             }
@@ -386,14 +413,16 @@ struct geoContext
 
     Value resolveInheritance(const Value &orig) const
     {
-        if (!orig["inheritance"])
+        if (!orig["inherit"])
             return orig;
 
         Value base = resolveInheritance(
-            style["layers"][orig["inheritance"].asString()]);
+            style["layers"][orig["inherit"].asString()]);
 
         for (auto n : orig.getMemberNames())
             base[n] = orig[n];
+
+        base.removeMember("inherit");
 
         return base;
     }
@@ -499,40 +528,82 @@ struct geoContext
         return expression;
     }
 
-    static Value interpolate(const Value &a, const Value &b, double f)
+    Value interpolate(const Value &a, const Value &b, double f) const
     {
-        LOGTHROW(fatal, std::logic_error)
-            << "interpolate is not yet implemented";
-        throw;
-        (void)a;
-        (void)b;
-        (void)f;
+        if (Validating)
+        {
+            if (a.isArray() != b.isArray())
+                THROW << "Cannot interpolate <" << a.toStyledString()
+                << "> and <" << b.toStyledString()
+                << "> because one is array and the other is not";
+            if (a.isArray() && a.size() != b.size())
+            {
+                THROW << "Cannot interpolate <" << a.toStyledString()
+                    << "> and <" << b.toStyledString()
+                    << "> because they have different number of elements";
+            }
+        }
+        if (a.isArray())
+        {
+            Value r;
+            Json::ArrayIndex cnt = a.size();
+            for (Json::ArrayIndex i = 0; i < cnt; i++)
+                r[i] = interpolate(a[i], b[i], f);
+            return r;
+        }
+        double aa = convertToDouble(a);
+        double bb = convertToDouble(b);
+        return aa + (bb - aa) * f;
     }
 
     template<bool Linear>
-    Value evaluatePairsArray(const Value &what, const Value &searchArray) const
+    Value evaluatePairsArray(const Value &what,
+        const Value &searchArray) const
     {
+        if (Validating)
+        {
+            try
+            {
+                return evaluatePairsArrayInternal<Linear>(what, searchArray);
+            }
+            catch (...)
+            {
+                LOG(info3) << "In search of <"
+                    << what.toStyledString()
+                    << "> in pairs array <"
+                    << searchArray.toStyledString() << ">";
+                throw;
+            }
+        }
+        return evaluatePairsArrayInternal<Linear>(what, searchArray);
+    }
+
+    template<bool Linear>
+    Value evaluatePairsArrayInternal(const Value &what,
+        const Value &searchArrayParam) const
+    {
+        const Value searchArray = evaluate(searchArrayParam);
         if (Validating)
         {
             if (!searchArray.isArray())
                 THROW << "Expected an array";
-            for (const auto p : searchArray)
+            for (const auto &p : searchArray)
             {
                 if (!p.isArray() || p.size() != 2)
                     THROW << "Expected an array with two elements";
             }
         }
-        double v = evaluate(what).asDouble();
+        double v = convertToDouble(evaluate(what));
         for (sint32 index = searchArray.size() - 1; index >= 0; index--)
         {
-            double v1 = evaluate(searchArray[index][0]).asDouble();
+            double v1 = convertToDouble(searchArray[index][0]);
             if (v < v1)
                 continue;
             if (Linear)
             {
                 if (index + 1u < searchArray.size())
                 {
-                    double v2 = evaluate(searchArray[index + 1][0]).asDouble();
+                    double v2 = convertToDouble(searchArray[index + 1][0]);
                     return interpolate(
                         evaluate(searchArray[index + 0][1]),
                         evaluate(searchArray[index + 1][1]),
@@ -562,19 +633,99 @@ struct geoContext
         }
         const std::string fnc = expression.getMemberNames()[0];
 
-        // 'sgn', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'abs', 'deg2rad', 'rad2deg', 'round'
+        // 'sgn', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'abs', 'deg2rad', 'rad2deg', 'log'
+        if (fnc == "sgn")
+        {
+            double v = convertToDouble(expression[fnc]);
+            if (v < 0) return -1;
+            if (v > 0) return 1;
+            return 0;
+        }
+        if (fnc == "sin")
+            return std::sin(convertToDouble(expression[fnc]));
+        if (fnc == "cos")
+            return std::cos(convertToDouble(expression[fnc]));
+        if (fnc == "tan")
+            return std::tan(convertToDouble(expression[fnc]));
+        if (fnc == "asin")
+            return std::asin(convertToDouble(expression[fnc]));
+        if (fnc == "acos")
+            return std::acos(convertToDouble(expression[fnc]));
+        if (fnc == "atan")
+            return std::atan(convertToDouble(expression[fnc]));
+        if (fnc == "sqrt")
+            return std::sqrt(convertToDouble(expression[fnc]));
+        if (fnc == "abs")
+            return std::abs(convertToDouble(expression[fnc]));
+        if (fnc == "deg2rad")
+            return convertToDouble(expression[fnc]) * M_PI / 180;
+        if (fnc == "rad2deg")
+            return convertToDouble(expression[fnc]) * 180 / M_PI;
+        if (fnc == "log")
+            return std::log(convertToDouble(expression[fnc]));
+
+        // 'round'
         if (fnc == "round")
-            return (sint32)std::round(evaluate(expression[fnc]).asFloat());
+            return (sint32)std::round(convertToDouble(expression[fnc]));
 
         // 'add', 'sub', 'mul', 'div', 'pow', 'atan2'
+#define COMP(NAME, OP) \
+        if (fnc == #NAME) \
+        { \
+            validateArrayLength(expression[#NAME], 2, 2, \
+               "Function '" #NAME "' is expecting an array with 2 elements."); \
+            double a = convertToDouble(expression[#NAME][0]); \
+            double b = convertToDouble(expression[#NAME][1]); \
+            return a OP b; \
+        }
+        COMP(add, +);
+        COMP(sub, -);
+        COMP(mul, *);
+        COMP(div, /);
+#undef COMP
+        if (fnc == "pow")
+        {
+            validateArrayLength(expression[fnc], 2, 2,
+                "Function 'pow' is expecting an array with 2 elements.");
+            double a = convertToDouble(expression[fnc][0]);
+            double b = convertToDouble(expression[fnc][1]);
+            return std::pow(a, b);
+        }
+        if (fnc == "atan2")
+        {
+            validateArrayLength(expression[fnc], 2, 2,
+                "Function 'atan2' is expecting an array with 2 elements.");
+            double a = convertToDouble(expression[fnc][0]);
+            double b = convertToDouble(expression[fnc][1]);
+            return std::atan2(a, b);
+        }
+
+        // 'clamp'
+        if (fnc == "clamp")
+        {
+            const Value &arr = expression[fnc];
+            validateArrayLength(arr, 3, 3,
+                "Function 'clamp' must have 3 values");
+            double f = convertToDouble(arr[0]);
+            double a = convertToDouble(arr[1]);
+            double b = convertToDouble(arr[2]);
+            if (Validating)
+            {
+                if (a >= b)
+                    THROW << "Function 'clamp' bound values <"
+                    << a << "> and <" << b << "> are invalid";
+            }
+            return std::max(a, std::min(f, b));
+        }
 
         // 'min', 'max'
 
         // 'if'
         if (fnc == "if")
         {
-            Value arr = expression["if"];
-            validateArrayLength(arr, 3, 3, "'if' must have 3 values");
+            const Value &arr = expression[fnc];
+            validateArrayLength(arr, 3, 3,
+                "Function 'if' must have 3 values");
             if (filter(arr[0]))
                 return evaluate(arr[1]);
             else
@@ -586,12 +737,12 @@ struct geoContext
             return strlen(evaluate(expression[fnc]).asString());
         if (fnc == "str2num")
             return str2num(evaluate(expression[fnc]).asString());
-        //if (fnc == "lowercase")
-        //    return lowercase(evaluate(expression[fnc]).asString());
-        //if (fnc == "uppercase")
-        //    return uppercase(evaluate(expression[fnc]).asString());
-        //if (fnc == "capitalize")
-        //    return capitalize(evaluate(expression[fnc]).asString());
+        if (fnc == "lowercase")
+            return lowercase(evaluate(expression[fnc]).asString());
+        if (fnc == "uppercase")
+            return uppercase(evaluate(expression[fnc]).asString());
+        if (fnc == "capitalize")
+            return capitalize(evaluate(expression[fnc]).asString());
 
         // 'has-fonts', 'has-latin', 'is-cjk'
         if (fnc == "has-latin")
@@ -616,7 +767,7 @@ struct geoContext
         {
             Value arr = evaluate(expression["lod-scaled"]);
             validateArrayLength(arr, 2, 3,
-                "lod-scaled must have 2 or 3 values");
+                "Function 'lod-scaled' must have 2 or 3 values");
             float l = arr[0].asFloat();
             float v = arr[1].asFloat();
             float bf = arr.size() == 3 ? arr[2].asFloat() : 1;
@@ -723,6 +874,29 @@ struct geoContext
         return filterInternal(expression);
     }
 
+    // some stylesheets contain an invalid aggregate filter
+    //   in which the tests are all enclosed in additional array
+    // this function tries to detect such cases and workaround it
+    // example:
+    //   invalid filter: ["all", [["has", "$foo"], ["has", "$bar"]]]
+    //   correct filter: ["all", ["has", "$foo"], ["has", "$bar"]]
+    const Value &aggregateFilterData(const Value &expression,
+        uint32 &start) const
+    {
+        if (expression.size() == 2
+            && expression[1].isArray()
+            && expression[1][0].isArray())
+        {
+            start = 0;
+            return expression[1];
+        }
+        else
+        {
+            start = 1;
+            return expression;
+        }
+    }
+
     bool filterInternal(const Value &expression) const
     {
         if (Validating)
@@ -736,22 +910,31 @@ struct geoContext
         if (cond == "skip")
         {
             validateArrayLength(expression, 1, 1,
-                    "Invalid filter (skip) array length.");
+                    "Invalid filter 'skip' array length.");
             return false;
         }
 
         // comparison filters
+        if (cond == "==" || cond == "!=")
+        {
+            validateArrayLength(expression, 3, 3, std::string()
+                + "Invalid filter '" + cond + "' array length.");
+            Value a = evaluate(expression[1]);
+            Value b = evaluate(expression[2]);
+            bool op = cond == "==";
+            if ((a.isString() || a.isNull()) && (b.isString() || b.isNull()))
+                return (a.asString() == b.asString()) == op;
+            return (convertToDouble(a) == convertToDouble(b)) == op;
+        }
 #define COMP(OP) \
         if (cond == #OP) \
         { \
             validateArrayLength(expression, 3, 3, \
-                    "Invalid filter (" #OP ") array length."); \
-            Value a = evaluate(expression[1]); \
-            Value b = evaluate(expression[2]); \
+                    "Invalid filter '" #OP "' array length."); \
+            double a = convertToDouble(expression[1]); \
+            double b = convertToDouble(expression[2]); \
             return a OP b; \
         }
-        COMP(==);
-        COMP(!=);
         COMP(>=);
         COMP(<=);
         COMP(>);
@@ -770,16 +953,16 @@ struct geoContext
         if (cond == "has")
         {
             validateArrayLength(expression, 2, -1,
-                    "Invalid filter (has) array length.");
+                    "Invalid filter 'has' array length.");
             Value a = expression[1];
-            return a != replacement(a.asString());
+            return !replacement(a.asString()).empty();
         }
 
         // in filters
         if (cond == "in")
         {
             validateArrayLength(expression, 2, -1,
-                    "Invalid filter (in) array length.");
+                    "Invalid filter 'in' array length.");
             std::string v = evaluate(expression[1]).asString();
             for (uint32 i = 2, e = expression.size(); i < e; i++)
             {
@@ -793,22 +976,28 @@ struct geoContext
         // aggregate filters
         if (cond == "all")
         {
-            for (uint32 i = 1, e = expression.size(); i < e; i++)
-                if (!filter(expression[i]))
+            uint32 start;
+            const Value &v = aggregateFilterData(expression, start);
+            for (uint32 i = start, e = v.size(); i < e; i++)
+                if (!filter(v[i]))
                     return false;
             return true;
         }
         if (cond == "any")
         {
-            for (uint32 i = 1, e = expression.size(); i < e; i++)
-                if (filter(expression[i]))
+            uint32 start;
+            const Value &v = aggregateFilterData(expression, start);
+            for (uint32 i = start, e = v.size(); i < e; i++)
+                if (filter(v[i]))
                     return true;
             return false;
         }
         if (cond == "none")
         {
-            for (uint32 i = 1, e = expression.size(); i < e; i++)
-                if (filter(expression[i]))
+            uint32 start;
+            const Value &v = aggregateFilterData(expression, start);
+            for (uint32 i = start, e = v.size(); i < e; i++)
+                if (filter(v[i]))
                     return false;
             return true;
         }
@@ -818,29 +1007,6 @@ struct geoContext
             THROW << "Unknown filter condition type.";
 
         return false;
-    }
-
-    // process single feature with specific style layer
-    void processFeature(const std::string &layerName,
-        boost::optional<sint32> zOverride
-        = boost::optional<sint32>())
-    {
-        if (Validating)
-        {
-            try
-            {
-                return processFeatureInternal(layerName, zOverride);
-            }
-            catch (...)
-            {
-                LOG(info3)
-                    << "In feature <" << feature->toStyledString()
-                    << "> in layer <" << layerName << ">: <"
-                    << style["layers"][layerName].toStyledString() << ">";
-                throw;
-            }
-        }
-        return processFeatureInternal(layerName, zOverride);
     }
 
     void addFont(const std::string &name,
@@ -868,23 +1034,126 @@ struct geoContext
         addFont("#default", output);
     }
 
-    void processFeatureInternal(const std::string &layerName,
-                        boost::optional<sint32> zOverride
-                                = boost::optional<sint32>())
+    // process single feature with specific style layer
+    void processFeatureName(const std::string &layerName)
     {
+        std::array<float, 2> tv;
+        tv[0] = -std::numeric_limits<float>::infinity();
+        tv[1] = +std::numeric_limits<float>::infinity();
         const Value &layer = style["layers"][layerName];
+        if (Validating)
+        {
+            try
+            {
+                return processFeature(layer, tv, {});
+            }
+            catch (...)
+            {
+                LOG(info3)
+                    << "In feature <" << feature->toStyledString()
+                    << "> and layer name <" << layerName << ">";
+                throw;
+            }
+        }
+        return processFeature(layer, tv, {});
+    }
 
+    void processFeature(const Value &layer,
+        std::array<float, 2> tileVisibility,
+        boost::optional<sint32> zOverride)
+    {
+        if (Validating)
+        {
+            try
+            {
+                return processFeatureInternal(layer,
+                    tileVisibility, zOverride);
+            }
+            catch (...)
+            {
+                LOG(info3) << "In layer <" << layer.toStyledString() << ">";
+                throw;
+            }
+        }
+        return processFeatureInternal(layer, tileVisibility, zOverride);
+    }
+
+    void processFeatureInternal(const Value &layer,
+        std::array<float, 2> tileVisibility,
+        boost::optional<sint32> zOverride)
+    {
         // filter
         if (!zOverride && !layer["filter"].empty()
             && !filter(layer["filter"]))
             return;
 
         // visible
-        if (!layer["visible"].empty())
-            if (!evaluate(layer["visible"]).asBool())
-                return;
+        if (!layer["visible"].empty()
+            && !evaluate(layer["visible"]).asBool())
+            return;
+
+        // next-pass
+        {
+            auto np = layer["next-pass"];
+            if (!np.empty())
+            {
+                std::string layerName = np[1].asString();
+                if (Validating)
+                {
+                    if (style["layers"][layerName].empty())
+                        THROW << "Invalid layer name <"
+                        << layerName << "> in next-pass";
+                }
+                processFeature(style["layers"][layerName],
+                    tileVisibility, np[0].asInt());
+            }
+        }
+
+        // visibility-switch
+        if (!layer["visibility-switch"].empty())
+        {
+            validateArrayLength(layer["visibility-switch"], 1, -1,
+                "Visibility-switch must be an array.");
+            float ve = -std::numeric_limits<float>::infinity();
+            for (const Value &vs : layer["visibility-switch"])
+            {
+                validateArrayLength(vs, 2, 2, "All visibility-switch "
+                    "elements must be arrays with 2 elements");
+                float a = evaluate(vs[0]).asFloat();
+                if (Validating)
+                {
+                    if (a <= ve)
+                        THROW << "Values in visibility-switch "
+                            "must be increasing";
+                }
+                if (!vs[1].empty())
+                {
+                    std::array<float, 2> tv;
+                    tv[0] = std::max(tileVisibility[0], ve);
+                    tv[1] = std::min(tileVisibility[1], a);
+                    if (tv[0] < tv[1])
+                    {
+                        std::string ln = evaluate(vs[1]).asString();
+                        Value l = layer;
+                        l.removeMember("filter");
+                        l.removeMember("visible");
+                        l.removeMember("next-pass");
+                        l.removeMember("visibility-switch");
+                        const Value &s = style["layers"][ln];
+                        for (auto n : s.getMemberNames())
+                            l[n] = s[n];
+                        l["filter"] = layer["filter"];
+                        processFeature(l, tv, zOverride);
+                    }
+                }
+                ve = a;
+            }
+            return;
+        }
 
         GpuGeodataSpec spec;
+        spec.commonData.tileVisibility[0] = tileVisibility[0];
+        spec.commonData.tileVisibility[1] = tileVisibility[1];
         processFeatureCommon(layer, spec, zOverride);
 
         // line
@@ -906,13 +1175,6 @@ struct geoContext
             processFeaturePointLabel(layer, spec);
 
         // polygon
-
-        // next-pass
-        {
-            auto np = layer["next-pass"];
-            if (!np.empty())
-                processFeature(np[1].asString(), np[0].asInt());
-        }
     }
 
     void processFeatureCommon(const Value &layer, GpuGeodataSpec &spec,
@@ -1174,7 +1436,7 @@ struct geoContext
         Point convertPoint(const Value &v) const
         {
             validateArrayLength(v, 3, 3, "Point must have 3 coordinates");
-            vec3f p(v[0].asUInt(), v[1].asUInt(), v[2].asUInt());
+            vec3f p(v[0].asFloat(), v[1].asFloat(), v[2].asFloat());
             p = orthonormalize * p;
             return Point({ p[0], p[1], p[2] });
         }

@@ -121,9 +121,8 @@ bool RendererImpl::geodataTestVisibility(
         return false;
     if (visibility[2] == visibility[2] && distance > visibility[2])
         return false;
-    vec3f f = normalize(vec3(eye - pos)).cast<float>();
     if (visibility[3] == visibility[3]
-        && dot(f, up) < visibility[3])
+        && dot(normalize(vec3(eye - pos)).cast<float>(), up) < visibility[3])
         return false;
     return true;
 }
@@ -317,6 +316,10 @@ void RendererImpl::renderGeodata()
     for (const DrawGeodataTask &t : draws->geodata)
     {
         GeodataBase *gg = (GeodataBase*)t.geodata.get();
+
+        if (draws->camera.viewExtent <  gg->spec.commonData.tileVisibility[0]
+         || draws->camera.viewExtent >= gg->spec.commonData.tileVisibility[1])
+            continue;
 
         switch (gg->spec.type)
         {

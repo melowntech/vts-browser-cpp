@@ -154,8 +154,9 @@ public:
     struct VTS_API CommonData
     {
         Stick stick;
-        float visibilities[4]; // distance, view-min, view-max, culling
+        float visibilities[4]; // feature distance, (altered) view-min, view-max, culling
         float zBufferOffset[3];
+        float tileVisibility[2]; // view extent range in which the tile is visible
         sint32 zIndex;
         CommonData();
     };

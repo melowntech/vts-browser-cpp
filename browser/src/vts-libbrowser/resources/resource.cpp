@@ -118,7 +118,6 @@ void Resource::updateAvailability(const std::shared_ptr<void> &availTest)
     {
         if (!f->availTest)
             f->availTest = availTest;
-        assert(f->availTest == availTest);
     }
     else
     {

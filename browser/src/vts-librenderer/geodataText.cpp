@@ -227,6 +227,7 @@ std::vector<TmpLine> textToGlyphs(
                     hb_glyph_position_t *pos
                         = hb_buffer_get_glyph_positions(buffer(), nullptr);
 
+                    /*
                     if (!terminal)
                     {
                         bool hasTofu = false;
@@ -269,6 +270,7 @@ std::vector<TmpLine> textToGlyphs(
                             continue;
                         }
                     }
+                    */
 
                     for (uint32 i = 0; i < len; i++)
                     {

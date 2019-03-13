@@ -180,24 +180,20 @@ std::vector<TmpLine> textToGlyphs(
                     SBUInteger offset;
                     SBUInteger length;
                     uint32 font;
-                    Buzz(const SBRun *run, sint32 o, sint32 l, uint32 f)
-                        : offset(o), length(std::abs(l)), font(f)
+                    Buzz(const SBRun *run, uint32 o, uint32 l, uint32 f)
+                        : offset(o), length(l), font(f)
                     {
                         (void)run;
                         assert(offset >= run->offset);
-                        assert((sint64)offset + (sint64)length
-                            <= (sint64)run->offset + (sint64)run->length);
-                        // violating these asserts makes the thread loop indefinitely
-                        // todo fix the cause of this
-                        // meantime, throw exception to prevent the looping
-                        if (offset < run->offset
-                            || (sint64)offset + (sint64)length
-                                >(sint64)run->offset + (sint64)run->length)
-                            throw std::logic_error("buzzing outside bounds");
+                        assert(offset + length <= run->offset + run->length);
                     }
                 };
 
+                // the text needs to be split into parts with different font
+
                 std::list<Buzz> runs;
+
+                // harfbuzz cannot handle new lines
                 runs.emplace_back(run, run->offset,
                     s[run->offset + run->length - 1] == '\n'
                     ? run->length - 1 : run->length, 0);
@@ -206,6 +202,8 @@ std::vector<TmpLine> textToGlyphs(
                 {
                     Buzz r = runs.front();
                     runs.pop_front();
+                    if (r.length == 0)
+                        continue;
 
                     bool terminal = r.font >= fontCascade.size();
                     std::shared_ptr<Font> fnt = fontCascade
@@ -227,9 +225,10 @@ std::vector<TmpLine> textToGlyphs(
                     hb_glyph_position_t *pos
                         = hb_buffer_get_glyph_positions(buffer(), nullptr);
 
-                    /*
                     if (!terminal)
                     {
+                        // we have another font available to use
+                        // se we search for tofus
                         bool hasTofu = false;
                         for (uint32 i = 0; i < len; i++)
                         {
@@ -240,38 +239,58 @@ std::vector<TmpLine> textToGlyphs(
                             }
                         }
 
+                        // if any tofu was found, split the text into parts
+                        // each part is either all tofu or no tofu
                         if (hasTofu)
                         {
+                            // RTL text has clusters in reverse order
+                            //   reverse it back to simplify the algorithm
+                            if ((run->level % 2) == 1)
+                                std::reverse(info, info + len);
+
                             runs.reverse();
                             bool lastTofu = info[0].codepoint == 0;
-                            sint32 lastCluster = info[0].cluster;
+                            bool hadTofu = lastTofu;
+                            uint32 lastCluster = info[0].cluster;
                             for (uint32 i = 1; i < len; i++)
                             {
+                                // there are rare situations where harfbuzz
+                                //   puts some tofus and non-tofus
+                                //   into same cluster,
+                                //   which prevents me to split them
+                                // for a lack of better ideas
+                                //   we send these sequences to next font
+                                //   without propper splitting
                                 bool currentTofu = info[i].codepoint == 0;
                                 if (currentTofu != lastTofu)
                                 {
-                                    sint32 currentCluster
+                                    uint32 currentCluster
                                         = info[i].cluster;
-                                    runs.emplace_back(run, lastCluster,
-                                        currentCluster - lastCluster,
-                                        r.font + lastTofu);
-                                    lastCluster = currentCluster;
+                                    if (currentCluster != lastCluster)
+                                    {
+                                        runs.emplace_back(run, lastCluster,
+                                            currentCluster - lastCluster,
+                                            r.font + hadTofu);
+                                        lastCluster = currentCluster;
+                                        hadTofu = currentTofu;
+                                    }
                                     lastTofu = currentTofu;
+                                    hadTofu = hadTofu || currentTofu;
                                 }
                             }
                             {
-                                sint32 currentCluster
+                                uint32 currentCluster
                                     = r.offset + r.length;
                                 runs.emplace_back(run, lastCluster,
                                     currentCluster - lastCluster,
-                                    r.font + lastTofu);
+                                    r.font + hadTofu);
                             }
                             runs.reverse();
                             continue;
                         }
                     }
-                    */
 
+                    // add glyphs information to output
                     for (uint32 i = 0; i < len; i++)
                     {
                         assert(pos[i].y_advance == 0);

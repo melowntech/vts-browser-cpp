@@ -24,86 +24,76 @@
 * POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef THREAD_QUEUE_gdf5g4d56f4ghd6h4
-#define THREAD_QUEUE_gdf5g4d56f4ghd6h4
+#include "../include/vts-browser/foundation.hpp"
+#include "case.hpp"
+#include "case/lower.hpp"
+#include "case/title.hpp"
+#include "case/upper.hpp"
 
-#include <list>
-#include <atomic>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
+#include <utf8.h>
 
 namespace vts
 {
 
-template<class T>
-class ThreadQueue
+void concatenate(std::string &r, const uint32 *v, uint32 c)
 {
-public:
-    ThreadQueue() : stop(false)
-    {}
-
-    void push(const T &v)
+    if (v)
     {
-        {
-            std::lock_guard<std::mutex> lock(mut);
-            q.push_back(v);
-        }
-        con.notify_one();
+        char a[30];
+        const uint32 *e = v;
+        while (*e)
+            e++;
+        auto b = utf8::utf32to8(v, e, a);
+        r += std::string(a, b);
     }
-
-    void push(T &&v)
+    else
     {
-        {
-            std::lock_guard<std::mutex> lock(mut);
-            q.push_back(std::move(v));
-        }
-        con.notify_one();
+        uint32 a[2] = { c, 0 };
+        concatenate(r, a, 0);
     }
+}
 
-    bool tryPop(T &v)
+std::string lowercase(const std::string &s)
+{
+    std::string r;
+    r.reserve(s.length() + 10);
+    auto it = s.begin();
+    const auto e = s.end();
+    while (it != e)
     {
-        std::lock_guard<std::mutex> lock(mut);
-        if (q.empty() || stop)
-            return false;
-        v = std::move(q.front());
-        q.pop_front();
-        return true;
+        uint32 c = utf8::next(it, e);
+        concatenate(r, unicodeLowerCase(c), c);
     }
+    return r;
+}
 
-    bool waitPop(T &v)
+std::string uppercase(const std::string &s)
+{
+    std::string r;
+    r.reserve(s.length() + 10);
+    auto it = s.begin();
+    const auto e = s.end();
+    while (it != e)
     {
-        std::unique_lock<std::mutex> lock(mut);
-        while (q.empty() && !stop)
-            con.wait(lock);
-        if (q.empty())
-            return false;
-        v = std::move(q.front());
-        q.pop_front();
-        return true;
+        uint32 c = utf8::next(it, e);
+        concatenate(r, unicodeUpperCase(c), c);
     }
+    return r;
+}
 
-    void terminate()
+std::string titlecase(const std::string &s)
+{
+    std::string r;
+    r.reserve(s.length() + 10);
+    auto it = s.begin();
+    const auto e = s.end();
+    while (it != e)
     {
-        {
-            std::lock_guard<std::mutex> lock(mut);
-            stop = true;
-        }
-        con.notify_all();
+        uint32 c = utf8::next(it, e);
+        // todo do titlecase if last was white character, otherwise lowercase
+        concatenate(r, unicodeUpperCase(c), c);
     }
-
-    bool stopped() const
-    {
-        return stop;
-    }
-
-private:
-    std::atomic<bool> stop;
-    std::list<T> q;
-    mutable std::mutex mut;
-    std::condition_variable con;
-};
+    return r;
+}
 
 } // namespace vts
-
-#endif

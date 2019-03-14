@@ -28,6 +28,7 @@
 #include "../include/vts-browser/log.hpp"
 
 #include "../utilities/json.hpp"
+#include "../utilities/case.hpp"
 #include "../gpuResource.hpp"
 #include "../geodata.hpp"
 #include "../renderTasks.hpp"
@@ -130,21 +131,6 @@ double str2num(const std::string &s)
             << s << "> to number";
     }
     return f;
-}
-
-std::string lowercase(const std::string &s)
-{
-    return s; // todo
-}
-
-std::string uppercase(const std::string &s)
-{
-    return s; // todo
-}
-
-std::string capitalize(const std::string &s)
-{
-    return s; // todo
 }
 
 bool isLayerStyleRequired(const Value &v)
@@ -742,7 +728,7 @@ struct geoContext
         if (fnc == "uppercase")
             return uppercase(evaluate(expression[fnc]).asString());
         if (fnc == "capitalize")
-            return capitalize(evaluate(expression[fnc]).asString());
+            return titlecase(evaluate(expression[fnc]).asString());
 
         // 'has-fonts', 'has-latin', 'is-cjk'
         if (fnc == "has-latin")

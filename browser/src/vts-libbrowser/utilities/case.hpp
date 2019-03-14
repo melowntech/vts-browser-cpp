@@ -24,13 +24,17 @@
 * POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef SET_THREAD_NAME_d5h4f6hj46
-#define SET_THREAD_NAME_d5h4f6hj46
+#ifndef CASE_HPP_dr5gh4789z
+#define CASE_HPP_dr5gh4789z
+
+#include <string>
 
 namespace vts
 {
 
-void setThreadName(const char *name);
+std::string lowercase(const std::string &s);
+std::string uppercase(const std::string &s);
+std::string titlecase(const std::string &s);
 
 } // namespace vts
 

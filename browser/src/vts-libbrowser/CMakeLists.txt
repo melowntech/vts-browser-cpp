@@ -123,7 +123,12 @@ set(SRC_LIST
     resources/resource.cpp
     resources/resources.cpp
     resources/texture.cpp
+    utilities/case/lower.hpp
+    utilities/case/title.hpp
+    utilities/case/upper.hpp
     utilities/array.hpp
+    utilities/case.cpp
+    utilities/case.hpp
     utilities/json.cpp
     utilities/json.hpp
     utilities/obj.cpp

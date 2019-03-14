@@ -172,7 +172,7 @@ struct geoContext
         Value v = evaluate(p);
         validateArrayLength(v, 4, 4, "Color must have 4 components");
         return vec4f(v[0].asInt(), v[1].asInt(), v[2].asInt(), v[3].asInt())
-                / 255.f;
+            / 255.f;
     }
 
     vec4f convertVector4(const Value &p) const
@@ -247,13 +247,13 @@ struct geoContext
     }
 
     static void validateArrayLength(const Value &value,
-            uint32 minimum, uint32 maximum, // inclusive range
-            const std::string &message)
+        uint32 minimum, uint32 maximum, // inclusive range
+        const std::string &message)
     {
         if (Validating)
         {
             if (!value.isArray() || value.size() < minimum
-                    || value.size() > maximum)
+                || value.size() > maximum)
                 THROW << message;
         }
     }
@@ -263,11 +263,11 @@ struct geoContext
         const std::string &features,
         const vec3 aabbPhys[2], uint32 lod)
         : data(data),
-          stylesheet(style),
-          style(stringToJson(style->data)),
-          features(stringToJson(features)),
-          aabbPhys{ aabbPhys[0], aabbPhys[1] },
-          lod(lod)
+        stylesheet(style),
+        style(stringToJson(style->data)),
+        features(stringToJson(features)),
+        aabbPhys{ aabbPhys[0], aabbPhys[1] },
+        lod(lod)
     {}
 
     // defines which style layers are candidates for a specific feature type
@@ -279,7 +279,7 @@ struct geoContext
         {
             Value layer = style["layers"][layerName];
             if (layer.isMember("filter") && layer["filter"].isArray()
-                    && layer["filter"][0] == "skip")
+                && layer["filter"][0] == "skip")
                 continue;
             if (layer.isMember("visibility-switch"))
             {
@@ -326,7 +326,7 @@ struct geoContext
             }
             catch (const std::runtime_error &e)
             {
-                THROW << "Runtime error <" <<  e.what() << ">";
+                THROW << "Runtime error <" << e.what() << ">";
             }
             catch (const std::logic_error &e)
             {
@@ -355,10 +355,10 @@ struct geoContext
         solveInheritance();
 
         static const std::vector<std::pair<Type, std::string>> allTypes
-                = { { Type::Point, "points" },
-                    { Type::Line, "lines" },
-                    { Type::Polygon, "polygons"}
-                   };
+            = { { Type::Point, "points" },
+                { Type::Line, "lines" },
+                { Type::Polygon, "polygons"}
+        };
 
         // style layers filtered by valid feature types
         std::map<Type, std::vector<std::string>> typedLayerNames;
@@ -476,7 +476,7 @@ struct geoContext
             {
                 // todo
                 LOGTHROW(fatal, std::logic_error)
-                        << "#tileSize is not yet implemented";
+                    << "#tileSize is not yet implemented";
             }
             return Value();
         default:
@@ -656,18 +656,18 @@ struct geoContext
 
         // 'add', 'sub', 'mul', 'div', 'pow', 'atan2'
 #define COMP(NAME, OP) \
-        if (fnc == #NAME) \
-        { \
-            validateArrayLength(expression[#NAME], 2, 2, \
-               "Function '" #NAME "' is expecting an array with 2 elements."); \
-            double a = convertToDouble(expression[#NAME][0]); \
-            double b = convertToDouble(expression[#NAME][1]); \
-            return a OP b; \
-        }
+if (fnc == #NAME) \
+{ \
+    validateArrayLength(expression[#NAME], 2, 2, \
+        "Function '" #NAME "' is expecting an array with 2 elements."); \
+    double a = convertToDouble(expression[#NAME][0]); \
+    double b = convertToDouble(expression[#NAME][1]); \
+    return a OP b; \
+}
         COMP(add, +);
         COMP(sub, -);
         COMP(mul, *);
-        COMP(div, /);
+        COMP(div, / );
 #undef COMP
         if (fnc == "pow")
         {
@@ -813,8 +813,8 @@ struct geoContext
             try
             {
                 v = subs[0] == '{'
-                ? stringToJson(subs)
-                : Json::Value(subs);
+                    ? stringToJson(subs)
+                    : Json::Value(subs);
             }
             catch (std::exception &e)
             {
@@ -896,7 +896,7 @@ struct geoContext
         if (cond == "skip")
         {
             validateArrayLength(expression, 1, 1,
-                    "Invalid filter 'skip' array length.");
+                "Invalid filter 'skip' array length.");
             return false;
         }
 
@@ -913,18 +913,18 @@ struct geoContext
             return (convertToDouble(a) == convertToDouble(b)) == op;
         }
 #define COMP(OP) \
-        if (cond == #OP) \
-        { \
-            validateArrayLength(expression, 3, 3, \
-                    "Invalid filter '" #OP "' array length."); \
-            double a = convertToDouble(expression[1]); \
-            double b = convertToDouble(expression[2]); \
-            return a OP b; \
-        }
-        COMP(>=);
-        COMP(<=);
-        COMP(>);
-        COMP(<);
+if (cond == #OP) \
+{ \
+    validateArrayLength(expression, 3, 3, \
+            "Invalid filter '" #OP "' array length."); \
+    double a = convertToDouble(expression[1]); \
+    double b = convertToDouble(expression[2]); \
+    return a OP b; \
+}
+        COMP(>= );
+        COMP(<= );
+        COMP(> );
+        COMP(< );
 #undef COMP
 
         // negative filters
@@ -939,7 +939,7 @@ struct geoContext
         if (cond == "has")
         {
             validateArrayLength(expression, 2, -1,
-                    "Invalid filter 'has' array length.");
+                "Invalid filter 'has' array length.");
             Value a = expression[1];
             return !replacement(a.asString()).empty();
         }
@@ -948,7 +948,7 @@ struct geoContext
         if (cond == "in")
         {
             validateArrayLength(expression, 2, -1,
-                    "Invalid filter 'in' array length.");
+                "Invalid filter 'in' array length.");
             std::string v = evaluate(expression[1]).asString();
             for (uint32 i = 2, e = expression.size(); i < e; i++)
             {
@@ -1069,12 +1069,12 @@ struct geoContext
         boost::optional<sint32> zOverride)
     {
         // filter
-        if (!zOverride && !layer["filter"].empty()
+        if (!zOverride && layer.isMember("filter")
             && !filter(layer["filter"]))
             return;
 
         // visible
-        if (!layer["visible"].empty()
+        if (layer.isMember("visible")
             && !evaluate(layer["visible"]).asBool())
             return;
 
@@ -1096,7 +1096,7 @@ struct geoContext
         }
 
         // visibility-switch
-        if (!layer["visibility-switch"].empty())
+        if (layer.isMember("visibility-switch"))
         {
             validateArrayLength(layer["visibility-switch"], 1, -1,
                 "Visibility-switch must be an array.");
@@ -1110,7 +1110,7 @@ struct geoContext
                 {
                     if (a <= ve)
                         THROW << "Values in visibility-switch "
-                            "must be increasing";
+                        "must be increasing";
                 }
                 if (!vs[1].empty())
                 {
@@ -1172,11 +1172,11 @@ struct geoContext
         // z-index
         if (zOverride)
             spec.commonData.zIndex = *zOverride;
-        else if (!layer["z-index"].empty())
+        else if (layer.isMember("z-index"))
             spec.commonData.zIndex = evaluate(layer["z-index"]).asInt();
 
         // zbuffer-offset
-        if (!layer["zbuffer-offset"].empty())
+        if (layer.isMember("zbuffer-offset"))
         {
             Value arr = evaluate(layer["zbuffer-offset"]);
             validateArrayLength(arr, 3, 3,
@@ -1191,14 +1191,14 @@ struct geoContext
         }
 
         // visibility
-        if (!layer["visibility"].empty())
+        if (layer.isMember("visibility"))
         {
             spec.commonData.visibilities[0]
                 = evaluate(layer["visibility"]).asFloat();
         }
 
         // visibility-abs
-        if (!layer["visibility-abs"].empty())
+        if (layer.isMember("visibility-abs"))
         {
             Value arr = evaluate(layer["visibility-abs"]);
             validateArrayLength(arr, 2, 2,
@@ -1208,7 +1208,7 @@ struct geoContext
         }
 
         // visibility-rel
-        if (!layer["visibility-rel"].empty())
+        if (layer.isMember("visibility-rel"))
         {
             Value arr = evaluate(layer["visibility-rel"]);
             validateArrayLength(arr, 4, 4,
@@ -1232,9 +1232,9 @@ struct geoContext
         }
 
         // culling
-        if (!layer["culling"].empty())
+        if (layer.isMember("culling"))
             spec.commonData.visibilities[3]
-                = evaluate(layer["culling"]).asFloat();
+            = evaluate(layer["culling"]).asFloat();
     }
 
     void processFeatureLine(const Value &layer, GpuGeodataSpec spec)
@@ -1247,7 +1247,7 @@ struct geoContext
             spec.unionData.line.color);
         spec.unionData.line.width
             = evaluate(layer["line-width"]).asFloat();
-        if (!layer["line-width-units"].empty())
+        if (layer.isMember("line-width-units"))
         {
             std::string units = evaluate(layer["line-width-units"]).asString();
             if (units == "ratio")
@@ -1264,14 +1264,14 @@ struct geoContext
                     && spec.unionData.line.units
                     == GpuGeodataSpec::Units::Pixels)
                     THROW
-                        << "Invalid combination of line-width-units"
-                        << " (pixels) and line-flat (true)";
+                    << "Invalid combination of line-width-units"
+                    << " (pixels) and line-flat (true)";
                 if (spec.type == GpuGeodataSpec::Type::LineScreen
                     && spec.unionData.line.units
                     == GpuGeodataSpec::Units::Meters)
                     THROW
-                        << "Invalid combination of line-width-units"
-                        << " (meters) and line-flat (false)";
+                    << "Invalid combination of line-width-units"
+                    << " (meters) and line-flat (false)";
             }
         }
         else if (spec.type == GpuGeodataSpec::Type::LineFlat)
@@ -1290,14 +1290,14 @@ struct geoContext
             spec.type = GpuGeodataSpec::Type::PointFlat;
         else
             spec.type = GpuGeodataSpec::Type::PointScreen;
-        vecToRaw(layer["point-color"].empty()
-            ? vec4f(1, 1, 1, 1)
-            : convertColor(layer["point-color"]),
+        vecToRaw(layer.isMember("point-color")
+            ? convertColor(layer["point-color"])
+            : vec4f(1, 1, 1, 1),
             spec.unionData.point.color);
         spec.unionData.point.radius
-            = layer["point-radius"].empty()
-            ? 1
-            : evaluate(layer["point-radius"]).asFloat();
+            = layer.isMember("point-radius")
+            ? evaluate(layer["point-radius"]).asFloat()
+            : 1;
         GpuGeodataSpec &data = findSpecData(spec);
         auto arr = getFeaturePositions();
         cullOutsideFeatures(arr);
@@ -1316,59 +1316,59 @@ struct geoContext
     {
         findFonts(layer["label-font"], spec.fontCascade);
         spec.type = GpuGeodataSpec::Type::PointLabel;
-        vecToRaw(layer["label-color"].empty()
-            ? vec4f(1, 1, 1, 1)
-            : convertColor(layer["label-color"]),
+        vecToRaw(layer.isMember("label-color")
+            ? convertColor(layer["label-color"])
+            : vec4f(1, 1, 1, 1),
             spec.unionData.pointLabel.color);
-        vecToRaw(layer["label-color2"].empty()
-            ? vec4f(0, 0, 0, 1)
-            : convertColor(layer["label-color2"]),
+        vecToRaw(layer.isMember("label-color2")
+            ? convertColor(layer["label-color2"])
+            : vec4f(0, 0, 0, 1),
             spec.unionData.pointLabel.color2);
-        vecToRaw(layer["label-outline"].empty()
-            ? vec4f(0.25, 0.75, 2.2, 2.2)
-            : convertVector4(layer["label-outline"]),
+        vecToRaw(layer.isMember("label-outline")
+            ? convertVector4(layer["label-outline"])
+            : vec4f(0.25, 0.75, 2.2, 2.2),
             spec.unionData.pointLabel.outline);
-        vecToRaw(layer["label-offset"].empty()
-            ? vec2f(0, 0)
-            : convertVector2(layer["label-offset"]),
+        vecToRaw(layer.isMember("label-offset")
+            ? convertVector2(layer["label-offset"])
+            : vec2f(0, 0),
             spec.unionData.pointLabel.offset);
-        if (layer["label-no-overlap"].empty()
+        if (!layer.isMember("label-no-overlap")
             || evaluate(layer["label-no-overlap"]).asBool())
         {
             const Json::Value &lnom = layer["label-no-overlap-margin"];
             vecToRaw(lnom.empty()
                 ? vec4f(5, 5, 0, 0)
                 : lnom.size() == 4
-                  ? convertVector4(lnom)
-                  : vec3to4(vec2to3(convertVector2(lnom), 0), 0),
+                ? convertVector4(lnom)
+                : vec3to4(vec2to3(convertVector2(lnom), 0), 0),
                 spec.unionData.pointLabel.margin);
         }
         spec.unionData.pointLabel.size
-            = layer["label-size"].empty()
-            ? 10
-            : evaluate(layer["label-size"]).asFloat();
+            = layer.isMember("label-size")
+            ? evaluate(layer["label-size"]).asFloat()
+            : 10;
         spec.unionData.pointLabel.width
-            = layer["label-width"].empty()
-            ? 200
-            : evaluate(layer["label-width"]).asFloat();
+            = layer.isMember("label-width")
+            ? evaluate(layer["label-width"]).asFloat()
+            : 200;
         spec.unionData.pointLabel.origin
-            = layer["label-origin"].empty()
-            ? GpuGeodataSpec::Origin::BottomCenter
-            : convertOrigin(layer["label-origin"]);
+            = layer.isMember("label-origin")
+            ? convertOrigin(layer["label-origin"])
+            : GpuGeodataSpec::Origin::BottomCenter;
         spec.unionData.pointLabel.textAlign
-            = layer["label-align"].empty()
-            ? GpuGeodataSpec::TextAlign::Center
-            : convertTextAlign(layer["label-align"]);
-        if (!layer["label-stick"].empty())
+            = layer.isMember("label-align")
+            ? convertTextAlign(layer["label-align"])
+            : GpuGeodataSpec::TextAlign::Center;
+        if (layer.isMember("label-stick"))
             spec.commonData.stick
-                = convertStick(layer["label-stick"]);
+            = convertStick(layer["label-stick"]);
         GpuGeodataSpec &data = findSpecData(spec);
         auto arr = getFeaturePositions();
         cullOutsideFeatures(arr);
         data.positions.reserve(data.positions.size() + arr.size());
         data.positions.insert(data.positions.end(), arr.begin(), arr.end());
-        std::string text = evaluate(layer["label-source"].empty()
-            ? "$name" : layer["label-source"]).asString();
+        std::string text = evaluate(layer.isMember("label-source")
+            ? layer["label-source"] : "$name").asString();
         data.texts.reserve(data.texts.size() + arr.size());
         for (const auto &a : arr)
         {
@@ -1415,7 +1415,7 @@ struct geoContext
             vec3 mm = bb - aa;
             //double am = std::max(mm[0], std::max(mm[1], mm[2]));
             orthonormalize = mat4to3(scaleMatrix(
-                        mm / resolution)).cast<float>();
+                mm / resolution)).cast<float>();
             model = translationMatrix(aa) * scaleMatrix(1);
         }
 
@@ -1561,24 +1561,24 @@ void GeodataTile::process()
 }
 
 void MapImpl::resourcesGeodataProcessorEntry()
-{
-    setLogThreadName("geodata processor");
-    while (!resources.queGeodata.stopped())
     {
-        std::weak_ptr<GeodataTile> w;
-        resources.queGeodata.waitPop(w);
-        std::shared_ptr<GeodataTile> r = w.lock();
-        if (!r)
-            continue;
-        try
+        setLogThreadName("geodata processor");
+        while (!resources.queGeodata.stopped())
         {
-            r->process();
-        }
-        catch (const std::exception &)
-        {
-            r->state = Resource::State::errorFatal;
+            std::weak_ptr<GeodataTile> w;
+            resources.queGeodata.waitPop(w);
+            std::shared_ptr<GeodataTile> r = w.lock();
+            if (!r)
+                continue;
+            try
+            {
+                r->process();
+            }
+            catch (const std::exception &)
+            {
+                r->state = Resource::State::errorFatal;
+            }
         }
     }
-}
 
 } // namespace vts

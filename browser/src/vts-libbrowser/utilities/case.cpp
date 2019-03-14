@@ -53,6 +53,35 @@ void concatenate(std::string &r, const uint32 *v, uint32 c)
     }
 }
 
+bool isWhitespace(uint32 v)
+{
+    if (v >= 9 && v <= 13)
+        return true;
+    if (v >= 8192 && v <= 8202)
+        return true;
+    switch (v)
+    {
+    case 32:
+    case 133:
+    case 160:
+    case 5760:
+    case 8232:
+    case 8233:
+    case 8239:
+    case 8287:
+    case 12288:
+    case 6158:
+    case 8203:
+    case 8204:
+    case 8205:
+    case 8288:
+    case 65279:
+        return true;
+    default:
+        return false;
+    }
+}
+
 std::string lowercase(const std::string &s)
 {
     std::string r;
@@ -83,6 +112,7 @@ std::string uppercase(const std::string &s)
 
 std::string titlecase(const std::string &s)
 {
+    bool white = true;
     std::string r;
     r.reserve(s.length() + 10);
     auto it = s.begin();
@@ -90,8 +120,11 @@ std::string titlecase(const std::string &s)
     while (it != e)
     {
         uint32 c = utf8::next(it, e);
-        // todo do titlecase if last was white character, otherwise lowercase
-        concatenate(r, unicodeUpperCase(c), c);
+        if (white)
+            concatenate(r, unicodeTitleCase(c), c);
+        else
+            concatenate(r, unicodeLowerCase(c), c);
+        white = isWhitespace(c);
     }
     return r;
 }

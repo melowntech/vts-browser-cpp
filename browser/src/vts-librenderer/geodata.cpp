@@ -176,15 +176,16 @@ void RendererImpl::initializeGeodata()
         shaderGeodataPointLabel->loadUniformLocations({
                 "uniPosition",
                 "uniScale",
-                "uniPass"
+                "uniPass",
+                "uniCoordinates",
+                "uniOutline"
             });
         shaderGeodataPointLabel->bindTextureLocations({
                 { "texGlyphs", 0 }
             });
         shaderGeodataPointLabel->bindUniformBlockLocations({
                 { "uboCameraData", 0 },
-                { "uboViewData", 1 },
-                { "uboPointLabelData", 2 }
+                { "uboViewData", 1 }
             });
     }
 
@@ -474,6 +475,7 @@ void RendererImpl::renderPointLabels()
     GeodataText *lastGeodata = nullptr;
     shaderGeodataPointLabel->bind();
     shaderGeodataPointLabel->uniform(1, options.textScale);
+    meshEmpty->bind();
     for (Label &l : pointLabelsArray)
     {
         GeodataText *g = l.g;
@@ -481,9 +483,9 @@ void RendererImpl::renderPointLabels()
         if (g != lastGeodata)
         {
             initializeViewDataUbo(g);
+            shaderGeodataPointLabel->uniformVec4(4, (float*)g->outline, 3);
             lastGeodata = g;
         }
-        g->uniform->bindToIndex(2);
         shaderGeodataPointLabel->uniformVec3(0,
             t.modelPosition.data());
         for (int pass = 0; pass < 2; pass++)
@@ -496,8 +498,9 @@ void RendererImpl::renderPointLabels()
                     w.texture->bind();
                     lastTexture = w.texture;
                 }
-                w.mesh->bind();
-                w.mesh->dispatch();
+                shaderGeodataPointLabel->uniformVec4(3,
+                    (float*)w.coordinates.data(), w.coordinates.size());
+                meshEmpty->dispatch(0, w.coordinates.size());
             }
         }
     }

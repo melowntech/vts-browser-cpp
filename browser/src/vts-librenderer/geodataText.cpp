@@ -409,8 +409,7 @@ void findRect(Text &t, vec2f origin, const vec2f &size, const vec2f &margin)
 }
 
 std::vector<Word> generateMeshes(std::vector<TmpLine> &lines,
-    float align, const vec2f &origin,
-    const std::string &debugId)
+    float align, const vec2f &origin)
 {
     // sort into groups
     struct WordCompare
@@ -434,61 +433,42 @@ std::vector<Word> generateMeshes(std::vector<TmpLine> &lines,
         }
     }
 
-    // generate meshes
+    // generate words
     std::vector<Word> words;
     for (auto &grp : groups)
     {
-        GpuMeshSpec s;
-        static const uint32 stride = sizeof(float) * 5;
-        s.verticesCount = grp.second.size() * 4;
-        s.indicesCount = grp.second.size() * 6;
-        s.vertices.allocate(s.verticesCount * stride);
-        s.indices.resize(s.indicesCount * sizeof(uint16));
-        float *fit = (float*)s.vertices.data();
-        uint16 *iit = (uint16*)s.indices.data();
-        uint16 ii = 0;
-        for (const auto &g : grp.second)
+        Word w(grp.first);
+        w.coordinates.reserve(grp.second.size() * 6);
+        for (const TmpGlyph &tg : grp.second)
         {
-            const auto &f = g.font->glyphs[g.glyphIndex];
-            float px = g.position[0];
-            float py = g.position[1];
-            float pw = g.size[0];
-            float ph = g.size[1];
+            const Glyph &g = tg.font->glyphs[tg.glyphIndex];
             // 2--3
             // |  |
             // 0--1
-            *fit++ = px; *fit++ = py; *fit++ = f.uvs[0]; *fit++ = f.uvs[1]; *(sint32*)fit++ = f.plane;
-            *fit++ = px + pw; *fit++ = py; *fit++ = f.uvs[2]; *fit++ = f.uvs[1]; *(sint32*)fit++ = f.plane;
-            *fit++ = px; *fit++ = py + ph; *fit++ = f.uvs[0]; *fit++ = f.uvs[3]; *(sint32*)fit++ = f.plane;
-            *fit++ = px + pw; *fit++ = py + ph; *fit++ = f.uvs[2]; *fit++ = f.uvs[3]; *(sint32*)fit++ = f.plane;
+            vec4f c[4];
+            for (int i = 0; i < 4; i++)
+            {
+                c[i][0] = tg.position[0] + ((i % 2) == 1 ? tg.size[0] : 0);
+                c[i][1] = tg.position[1] + ((i / 2) == 1 ? tg.size[1] : 0);
+                c[i][2] = g.uvs[0 + 2 * (i % 2)];
+                c[i][3] = g.uvs[1 + 2 * (i / 2)];
+                c[i][2] += g.plane * 2;
+            }
             // 0-1-2
             // 1-3-2
-            *iit++ = ii + 0; *iit++ = ii + 1; *iit++ = ii + 2;
-            *iit++ = ii + 1; *iit++ = ii + 3; *iit++ = ii + 2;
-            ii += 4;
+            w.coordinates.push_back(c[0]);
+            w.coordinates.push_back(c[1]);
+            w.coordinates.push_back(c[2]);
+            w.coordinates.push_back(c[1]);
+            w.coordinates.push_back(c[3]);
+            w.coordinates.push_back(c[2]);
+            // shader may handle at most 256 vertices at once
+            if (w.coordinates.size() >= 250)
+            {
+                words.push_back(w);
+                w.coordinates.clear();
+            }
         }
-        assert(fit == (float*)s.vertices.dataEnd());
-        assert(iit == (uint16*)s.indices.dataEnd());
-        s.faceMode = GpuMeshSpec::FaceMode::Triangles;
-        s.attributes[0].enable = true;
-        s.attributes[0].components = 2;
-        s.attributes[0].type = GpuTypeEnum::Float;
-        s.attributes[0].offset = 0;
-        s.attributes[0].stride = stride;
-        s.attributes[1].enable = true;
-        s.attributes[1].components = 2;
-        s.attributes[1].type = GpuTypeEnum::Float;
-        s.attributes[1].offset = sizeof(float) * 2;
-        s.attributes[1].stride = stride;
-        s.attributes[2].enable = true;
-        s.attributes[2].components = 1;
-        s.attributes[2].type = GpuTypeEnum::Int;
-        s.attributes[2].offset = sizeof(float) * 4;
-        s.attributes[2].stride = stride;
-        Word w(grp.first);
-        w.mesh = std::make_shared<Mesh>();
-        ResourceInfo inf;
-        w.mesh->load(inf, s, debugId);
         words.push_back(std::move(w));
     }
     return words;
@@ -593,39 +573,30 @@ void GeodataText::loadPointLabel()
             spec.unionData.pointLabel.width,
             align, origin, lines);
         Text t;
-        t.words = generateMeshes(lines, align, origin, debugId);
+        t.words = generateMeshes(lines, align, origin);
         findRect(t, origin, rectSize,
             rawToVec2(spec.unionData.pointLabel.margin));
         t.modelPosition = rawToVec3(spec.positions[i][0].data());
         t.worldPosition = vec4to3(vec4(rawToMat4(spec.model)
             * vec3to4(t.modelPosition, 1).cast<double>()));
         t.worldUp = worldUp(t.modelPosition);
+        for (const auto &w : t.words)
+        {
+            info->ramMemoryCost += w.coordinates.size()
+                * sizeof(decltype(w.coordinates[0]));
+        }
+        info->ramMemoryCost += t.words.size() * sizeof(decltype(t.words[0]));
         texts.push_back(std::move(t));
     }
+    info->ramMemoryCost += texts.size() * sizeof(decltype(texts[0]));
 
-    // prepare ubo
+    // prepare outline
     {
-        struct UboPointLabelData
-        {
-            vec4f colors[2];
-            vec4f outline;
-        };
-        UboPointLabelData uboPointLabelData;
-
-        uboPointLabelData.colors[0]
-            = rawToVec4(spec.unionData.pointLabel.color);
-        uboPointLabelData.colors[1]
-            = rawToVec4(spec.unionData.pointLabel.color2);
+        outline[0] = rawToVec4(spec.unionData.pointLabel.color);
+        outline[1] = rawToVec4(spec.unionData.pointLabel.color2);
         float os = std::sqrt(2) / spec.unionData.pointLabel.size;
-        uboPointLabelData.outline
-            = rawToVec4(spec.unionData.pointLabel.outline)
-            .cwiseProduct(vec4f(1, 1, os, os));
-
-        uniform = std::make_shared<UniformBuffer>();
-        uniform->debugId = debugId;
-        uniform->bind();
-        uniform->load(uboPointLabelData);
-        info->gpuMemoryCost += sizeof(uboPointLabelData);
+        outline[2] = rawToVec4(spec.unionData.pointLabel.outline)
+                        .cwiseProduct(vec4f(1, 1, os, os));
     }
 }
 

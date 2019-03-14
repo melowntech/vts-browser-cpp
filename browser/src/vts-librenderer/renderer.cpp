@@ -598,6 +598,15 @@ void RendererImpl::initialize()
         meshLine->load(ri, spec, "data/meshes/line.obj");
     }
 
+    // load mesh empty
+    {
+        meshEmpty = std::make_shared<Mesh>();
+        vts::GpuMeshSpec spec;
+        spec.faceMode = vts::GpuMeshSpec::FaceMode::Triangles;
+        vts::ResourceInfo ri;
+        meshEmpty->load(ri, spec, "meshEmpty");
+    }
+
     // create atmosphere ubo
     {
         uboAtm = std::make_shared<UniformBuffer>();
@@ -621,6 +630,7 @@ void RendererImpl::finalize()
     meshQuad.reset();
     meshRect.reset();
     meshLine.reset();
+    meshEmpty.reset();
     uboAtm.reset();
     uboGeodataCamera.reset();
     uboGeodataView.reset();

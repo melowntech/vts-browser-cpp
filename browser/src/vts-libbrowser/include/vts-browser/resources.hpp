@@ -166,6 +166,7 @@ public:
     uint32 verticesCount;
     uint32 indicesCount;
     FaceMode faceMode;
+    GpuTypeEnum indexMode;
 };
 
 // handle that provides the application with access

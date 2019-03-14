@@ -79,8 +79,8 @@ public:
 struct Word
 {
     std::shared_ptr<Font> font;
-    std::shared_ptr<Mesh> mesh;
     std::shared_ptr<Texture> texture;
+    std::vector<vec4f> coordinates;
     uint16 fileIndex;
 
     Word() : fileIndex(-1)
@@ -105,9 +105,9 @@ struct Text
 class GeodataText : public GeodataBase
 {
 public:
+    vec4f outline[3];
     std::vector<std::shared_ptr<Font>> fontCascade;
     std::vector<Text> texts;
-    std::shared_ptr<UniformBuffer> uniform;
 
     void load(RendererImpl *renderer, ResourceInfo &info,
         GpuGeodataSpec &specp, const std::string &debugId) override;

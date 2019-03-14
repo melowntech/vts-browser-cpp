@@ -38,12 +38,12 @@ namespace vts
 {
 
 GpuMeshSpec::GpuMeshSpec() : verticesCount(0), indicesCount(0),
-    faceMode(FaceMode::Triangles)
+    faceMode(FaceMode::Triangles), indexMode(GpuTypeEnum::UnsignedShort)
 {}
 
 GpuMeshSpec::GpuMeshSpec(const Buffer &buffer) :
     verticesCount(0), indicesCount(0),
-    faceMode(FaceMode::Triangles)
+    faceMode(FaceMode::Triangles), indexMode(GpuTypeEnum::UnsignedShort)
 {
     uint32 dummy;
     uint32 fm;

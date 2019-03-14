@@ -1,12 +1,7 @@
 
-layout(std140) uniform uboPointLabelData
-{
-    vec4 uniColors[2];
-    vec4 uniOutline;
-};
-
 uniform sampler2D texGlyphs;
 
+uniform vec4 uniOutline[3];
 uniform int uniPass;
 
 in vec2 varUv;
@@ -18,10 +13,10 @@ void main()
 {
     vec4 t4 = texture(texGlyphs, varUv);
     float t = t4[varPlane];
-    float c = uniOutline[uniPass];
-    float d = uniOutline[uniPass + 2];
+    float c = uniOutline[2][uniPass];
+    float d = uniOutline[2][uniPass + 2];
     float a = smoothstep(c - d, c + d, t);
-    outColor = uniColors[1 - uniPass];
+    outColor = uniOutline[1 - uniPass];
     outColor.a *= a;
 }
 

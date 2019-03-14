@@ -50,16 +50,18 @@ public:
               const std::string &fragmentShader);
     void loadInternal(const std::string &vertexName,
                       const std::string &fragmentName);
-    void uniformMat4(uint32 location, const float *value);
-    void uniformMat3(uint32 location, const float *value);
-    void uniformVec4(uint32 location, const float *value);
-    void uniformVec3(uint32 location, const float *value);
-    void uniformVec2(uint32 location, const float *value);
-    void uniformVec4(uint32 location, const int *value);
-    void uniformVec3(uint32 location, const int *value);
-    void uniformVec2(uint32 location, const int *value);
+    void uniformMat4(uint32 location, const float *value, uint32 count = 1);
+    void uniformMat3(uint32 location, const float *value, uint32 count = 1);
+    void uniformVec4(uint32 location, const float *value, uint32 count = 1);
+    void uniformVec3(uint32 location, const float *value, uint32 count = 1);
+    void uniformVec2(uint32 location, const float *value, uint32 count = 1);
+    void uniformVec4(uint32 location, const int *value, uint32 count = 1);
+    void uniformVec3(uint32 location, const int *value, uint32 count = 1);
+    void uniformVec2(uint32 location, const int *value, uint32 count = 1);
     void uniform(uint32 location, float value);
     void uniform(uint32 location, int value);
+    void uniform(uint32 location, const float *value, uint32 count);
+    void uniform(uint32 location, const int *value, uint32 count);
     uint32 getId() const;
 
     std::vector<uint32> uniformLocations;
@@ -104,6 +106,7 @@ public:
     void clear();
     void bind();
     void dispatch();
+    void dispatch(uint32 offset, uint32 count); // offset: number of indices/vertices to skip; count: number of indices/vertices to render
     void load(ResourceInfo &info, GpuMeshSpec &spec,
         const std::string &debugId);
     void load(uint32 vao, uint32 vbo, uint32 vio);
@@ -124,8 +127,8 @@ public:
     UniformBuffer();
     ~UniformBuffer();
     void clear();
-    void bind();
-    void bindToIndex(uint32 index);
+    void bind(); // use for uploading the data
+    void bindToIndex(uint32 index); // use for rendering
     void load(size_t size, const void *data);
     void load(const Buffer &buffer);
 

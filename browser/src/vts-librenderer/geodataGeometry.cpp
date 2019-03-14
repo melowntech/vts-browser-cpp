@@ -170,8 +170,8 @@ void GeodataGeometry::loadLine()
         uboLineData.visibilities
             = rawToVec4(spec.commonData.visibilities);
         uboLineData.typePlusUnitsPlusWidth
-            = vec4f((float)spec.type, (float)spec.unionData.line.units
-                , spec.unionData.line.width, 0.f);
+            = vec4f((float)spec.type, (float)spec.unionData.line.units,
+                spec.unionData.line.width, 0.f);
 
         uniform = std::make_shared<UniformBuffer>();
         uniform->debugId = debugId;

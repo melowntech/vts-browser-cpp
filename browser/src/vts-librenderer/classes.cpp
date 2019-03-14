@@ -155,56 +155,66 @@ void Shader::loadInternal(const std::string &vertexName,
     load(vert.str(), frag.str());
 }
 
-void Shader::uniformMat4(uint32 location, const float *value)
+void Shader::uniformMat4(uint32 location, const float *value, uint32 count)
 {
-    glUniformMatrix4fv(uniformLocations[location], 1, GL_FALSE, value);
+    glUniformMatrix4fv(uniformLocations[location], count, GL_FALSE, value);
 }
 
-void Shader::uniformMat3(uint32 location, const float *value)
+void Shader::uniformMat3(uint32 location, const float *value, uint32 count)
 {
-    glUniformMatrix3fv(uniformLocations[location], 1, GL_FALSE, value);
+    glUniformMatrix3fv(uniformLocations[location], count, GL_FALSE, value);
 }
 
-void Shader::uniformVec4(uint32 location, const float *value)
+void Shader::uniformVec4(uint32 location, const float *value, uint32 count)
 {
 	static_assert(sizeof(float) == sizeof(GLfloat), "incompatible types");
-    glUniform4fv(uniformLocations[location], 1, value);
+    glUniform4fv(uniformLocations[location], count, value);
 }
 
-void Shader::uniformVec3(uint32 location, const float *value)
+void Shader::uniformVec3(uint32 location, const float *value, uint32 count)
 {
-    glUniform3fv(uniformLocations[location], 1, value);
+    glUniform3fv(uniformLocations[location], count, value);
 }
 
-void Shader::uniformVec2(uint32 location, const float *value)
+void Shader::uniformVec2(uint32 location, const float *value, uint32 count)
 {
-    glUniform2fv(uniformLocations[location], 1, value);
+    glUniform2fv(uniformLocations[location], count, value);
 }
     
-void Shader::uniformVec4(uint32 location, const int *value)
+void Shader::uniformVec4(uint32 location, const int *value, uint32 count)
 {
 	static_assert(sizeof(int) == sizeof(GLint), "incompatible types");
-    glUniform4iv(uniformLocations[location], 1, value);
+    glUniform4iv(uniformLocations[location], count, value);
 }
 
-void Shader::uniformVec3(uint32 location, const int *value)
+void Shader::uniformVec3(uint32 location, const int *value, uint32 count)
 {
-    glUniform3iv(uniformLocations[location], 1, value);
+    glUniform3iv(uniformLocations[location], count, value);
 }
 
-void Shader::uniformVec2(uint32 location, const int *value)
+void Shader::uniformVec2(uint32 location, const int *value, uint32 count)
 {
-    glUniform2iv(uniformLocations[location], 1, value);
+    glUniform2iv(uniformLocations[location], count, value);
 }
 
-void Shader::uniform(uint32 location, const float value)
+void Shader::uniform(uint32 location, float value)
 {
     glUniform1f(uniformLocations[location], value);
 }
 
-void Shader::uniform(uint32 location, const int value)
+void Shader::uniform(uint32 location, int value)
 {
     glUniform1i(uniformLocations[location], value);
+}
+
+void Shader::uniform(uint32 location, const float *value, uint32 count)
+{
+    glUniform1fv(uniformLocations[location], count, value);
+}
+
+void Shader::uniform(uint32 location, const int *value, uint32 count)
+{
+    glUniform1iv(uniformLocations[location], count, value);
 }
 
 uint32 Shader::getId() const
@@ -519,9 +529,19 @@ void Mesh::dispatch()
 {
     if (spec.indicesCount > 0)
         glDrawElements((GLenum)spec.faceMode, spec.indicesCount,
-                       GL_UNSIGNED_SHORT, nullptr);
+                       (GLenum)spec.indexMode, nullptr);
     else
         glDrawArrays((GLenum)spec.faceMode, 0, spec.verticesCount);
+    CHECK_GL("dispatch mesh");
+}
+
+void Mesh::dispatch(uint32 offset, uint32 count)
+{
+    if (spec.indicesCount > 0)
+        glDrawElements((GLenum)spec.faceMode, count, (GLenum)spec.indexMode,
+            (void*)(std::size_t)(gpuTypeSize(spec.indexMode) * offset));
+    else
+        glDrawArrays((GLenum)spec.faceMode, offset, count);
     CHECK_GL("dispatch mesh");
 }
 
@@ -568,6 +588,10 @@ void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp,
 void Mesh::load(uint32 vao, uint32 vbo, uint32 vio)
 {
     clear();
+    {
+        GpuMeshSpec tmp;
+        std::swap(spec, tmp);
+    }
     this->vao = vao;
     this->vbo = vbo;
     this->vio = vio;

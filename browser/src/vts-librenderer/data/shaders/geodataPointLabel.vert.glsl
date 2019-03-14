@@ -16,19 +16,22 @@ layout(std140) uniform uboViewData
 uniform vec3 uniPosition;
 uniform float uniScale;
 
-layout(location = 0) in vec2 inPosition;
-layout(location = 1) in vec2 inUv;
-layout(location = 2) in int inPlane;
+// 0, 1: position
+// 2, 3: uv
+// 2: + plane index (multiplied by 2)
+uniform vec4 uniCoordinates[256];
 
 out vec2 varUv;
 flat out int varPlane;
 
 void main()
 {
-    varUv = inUv;
-    varPlane = inPlane;
+    vec2 pos = uniCoordinates[gl_VertexID].xy;
+    varPlane = int(uniCoordinates[gl_VertexID].z) / 2;
+    varUv = uniCoordinates[gl_VertexID].zw;
+    varUv.x -= float(varPlane * 2);
     gl_Position = uniMvp * vec4(uniPosition, 1.0);
-    gl_Position.xy += uniScale * gl_Position.w * inPosition / uniCameraParams.xy;
+    gl_Position.xy += uniScale * gl_Position.w * pos / uniCameraParams.xy;
     // avoid culling geodata by near camera plane
     gl_Position.z = max(gl_Position.z, -gl_Position.w + 1e-7);
 }

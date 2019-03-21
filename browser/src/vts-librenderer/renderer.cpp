@@ -414,6 +414,7 @@ public:
             glDisable(GL_BLEND);
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             shaderSurface->bind();
+            enableClipDistance(true);
             for (const DrawTask &it : draws->opaque)
             {
                 DrawTask t(it);
@@ -421,6 +422,7 @@ public:
                 t.color[0] = t.color[1] = t.color[2] = t.color[3] = 0;
                 drawSurface(t);
             }
+            enableClipDistance(false);
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             glEnable(GL_BLEND);
             CHECK_GL("rendered polygon edges");

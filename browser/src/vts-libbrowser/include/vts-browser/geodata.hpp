@@ -126,7 +126,6 @@ public:
         float outline[4];
         float color[4];
         float color2[4];
-        float margin[4];
         float offset[2];
         float size;
         float width;
@@ -154,10 +153,13 @@ public:
     struct VTS_API CommonData
     {
         Stick stick;
-        float visibilities[4]; // feature distance, (altered) view-min, view-max, culling
-        float zBufferOffset[3];
+        float visibilities[4]; // feature distance (meters), (altered) view-min, view-max, culling (degrees)
+        float zBufferOffset[3]; // do NOT ask for units here
         float tileVisibility[2]; // view extent range in which the tile is visible
+        float hysteresisDuration[2]; // seconds
+        float margin[2]; // horizontal, vertical (pixels)
         sint32 zIndex;
+        bool preventOverlap;
         CommonData();
     };
 
@@ -167,9 +169,10 @@ public:
     std::vector<std::vector<std::array<float, 3>>> positions;
     std::vector<std::vector<std::array<float, 2>>> uvs;
 
-    // properties per position-segment
+    // properties per item
     std::vector<std::shared_ptr<void>> bitmaps;
     std::vector<std::string> texts;
+    std::vector<std::string> hysteresisIds;
     std::vector<float> importances;
 
     // global properties

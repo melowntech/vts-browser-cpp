@@ -250,6 +250,11 @@ void Map::renderFinalize()
     impl->renderFinalize();
 }
 
+double Map::lastRenderUpdateElapsedTime() const
+{
+    return impl->lastElapsedFrameTime;
+}
+
 MapCallbacks &Map::callbacks()
 {
     return impl->callbacks;

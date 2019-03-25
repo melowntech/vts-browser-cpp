@@ -100,6 +100,7 @@ public:
     void renderInitialize();
     void renderUpdate(double elapsedTime); // seconds since last call
     void renderFinalize();
+    double lastRenderUpdateElapsedTime() const;
 
     // create new camera
     // you may have multiple cameras in single map

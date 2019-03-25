@@ -574,8 +574,7 @@ void GeodataText::loadPointLabel()
             align, origin, lines);
         Text t;
         t.words = generateMeshes(lines, align, origin);
-        findRect(t, origin, rectSize,
-            rawToVec2(spec.unionData.pointLabel.margin));
+        findRect(t, origin, rectSize, rawToVec2(spec.commonData.margin));
         t.modelPosition = rawToVec3(spec.positions[i][0].data());
         t.worldPosition = vec4to3(vec4(rawToMat4(spec.model)
             * vec3to4(t.modelPosition, 1).cast<double>()));

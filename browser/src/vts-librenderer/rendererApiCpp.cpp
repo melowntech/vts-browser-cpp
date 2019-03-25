@@ -94,6 +94,7 @@ void Renderer::render(Camera *cam)
     impl->projected = cam->map()->getMapProjected();
     impl->atmosphereDensityTexture
         = (Texture*)cam->map()->atmosphereDensityTexture().get();
+    impl->elapsedTime = cam->map()->lastRenderUpdateElapsedTime();
     impl->render();
     impl->draws = nullptr;
     impl->body = nullptr;

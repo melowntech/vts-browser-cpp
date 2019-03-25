@@ -27,9 +27,7 @@
 #ifndef RENDERER_HPP_deh4f6d4hj
 #define RENDERER_HPP_deh4f6d4hj
 
-#include <assert.h>
-#include <sstream>
-#include <iomanip>
+#include <unordered_map>
 
 #include <vts-browser/log.hpp>
 #include <vts-browser/math.hpp>
@@ -49,16 +47,24 @@ namespace renderer
 {
 
 class GeodataBase;
-class GeodataText;
 struct Text;
 
-struct Label
+struct Rect
 {
-    GeodataText *g;
-    Text *t;
+    vec2f a, b;
+    Rect();
+    bool valid() const;
+    static bool overlaps(const Rect &a, const Rect &b);
+};
 
-    Label(GeodataText *g, Text *t) : g(g), t(t)
-    {}
+struct GeodataJob
+{
+    Rect rect;
+    std::shared_ptr<GeodataBase> g;
+    uint32 itemIndex; // -1 means all
+    float importance;
+    float opacity;
+    GeodataJob(const std::shared_ptr<GeodataBase> &g, uint32 itemIndex);
 };
 
 extern uint32 maxAntialiasingSamples;
@@ -101,6 +107,7 @@ public:
     uint32 heightPrev;
     uint32 antialiasingPrev;
     bool projected;
+    double elapsedTime;
 
     static void clearGlState();
 
@@ -120,20 +127,24 @@ public:
 
     mat4 davidProj, davidProjInv;
     vec3 zBufferOffsetValues;
-    std::vector<Label> pointLabelsArray;
+    std::vector<GeodataJob> geodataJobs;
+    std::unordered_map<std::string, GeodataJob> hysteresisJobs;
 
     void initializeGeodata();
-    void renderGeodata();
     bool geodataTestVisibility(
         const float visibility[4],
         const vec3 &pos, const vec3f &up);
-    void initializeZBufferOffsetValues();
-    void initializeCameraDataUbo();
-    mat4 depthOffsetProj(GeodataBase *gg) const;
-    void initializeViewDataUbo(GeodataBase *gg);
-    void filterOverlappingLabels();
+    mat4 depthOffsetProj(const std::shared_ptr<GeodataBase> &gg) const;
+    void bindViewDataUbo(const std::shared_ptr<GeodataBase> &gg);
+    void renderGeodata();
+    void computeZBufferOffsetValues();
+    void bindCameraDataUbo();
+    void generateJobs();
+    void sortJobs();
+    void filterOverlappingJobs();
+    void processHysteresisJobs();
+    void renderJobs();
     void renderTextMargin(const Text &t);
-    void renderPointLabels();
 };
 
 } // namespace renderer

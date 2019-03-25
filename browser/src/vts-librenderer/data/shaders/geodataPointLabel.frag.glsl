@@ -3,6 +3,7 @@ uniform sampler2D texGlyphs;
 
 uniform vec4 uniOutline[3];
 uniform int uniPass;
+uniform float uniOpacity;
 
 in vec2 varUv;
 flat in int varPlane;
@@ -17,6 +18,6 @@ void main()
     float d = uniOutline[2][uniPass + 2];
     float a = smoothstep(c - d, c + d, t);
     outColor = uniOutline[1 - uniPass];
-    outColor.a *= a;
+    outColor.a *= a * uniOpacity;
 }
 

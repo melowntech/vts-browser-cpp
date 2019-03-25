@@ -348,7 +348,8 @@ struct geoContext
             if (features["version"].asInt() != 1)
             {
                 THROW << "Invalid geodata features <"
-                    << data->name << "> version.";
+                    << data->name << "> version <"
+                    << features["version"].asInt() << ">";
             }
         }
 
@@ -390,11 +391,41 @@ struct geoContext
         }
         this->group.reset();
 
+        if (Validating)
+            finalValidation();
+
         // put cache into queue for upload
         data->specsToUpload.clear();
         for (const GpuGeodataSpec &spec : cacheData)
             data->specsToUpload.push_back(
                 std::move(const_cast<GpuGeodataSpec&>(spec)));
+    }
+
+    void finalValidation()
+    {
+        for (const GpuGeodataSpec &spec : cacheData)
+        {
+            // validate that all vectors are of same length
+            {
+                uint32 itemsCount = 0;
+                auto &c = [&](std::size_t s)
+                {
+                    if (s)
+                    {
+                        if (itemsCount == 0)
+                            itemsCount = s;
+                        else if (itemsCount != s)
+                            THROW << "Failed final validation";
+                    }
+                };
+                c(spec.positions.size());
+                c(spec.uvs.size());
+                c(spec.bitmaps.size());
+                c(spec.texts.size());
+                c(spec.hysteresisIds.size());
+                c(spec.importances.size());
+            }
+        }
     }
 
     Value resolveInheritance(const Value &orig) const
@@ -1332,16 +1363,27 @@ if (cond == #OP) \
             ? convertVector2(layer["label-offset"])
             : vec2f(0, 0),
             spec.unionData.pointLabel.offset);
-        if (!layer.isMember("label-no-overlap")
-            || evaluate(layer["label-no-overlap"]).asBool())
+        spec.commonData.preventOverlap
+            = layer.isMember("label-no-overlap")
+            ? evaluate(layer["label-no-overlap"]).asBool()
+            : true;
+        vecToRaw(vec2f(5, 5), spec.commonData.margin);
+        if (layer.isMember("label-no-overlap-margin"))
         {
-            const Json::Value &lnom = layer["label-no-overlap-margin"];
-            vecToRaw(lnom.empty()
-                ? vec4f(5, 5, 0, 0)
-                : lnom.size() == 4
-                ? convertVector4(lnom)
-                : vec3to4(vec2to3(convertVector2(lnom), 0), 0),
-                spec.unionData.pointLabel.margin);
+            Json::Value lnom = evaluate(layer["label-no-overlap-margin"]);
+            switch (lnom.size())
+            {
+            case 2:
+            case 4:
+                // 4 values are valid, but we ignore the last two now
+                for (int i = 0; i < 2; i++)
+                    spec.commonData.margin[i] = lnom[i].asFloat();
+                break;
+            default:
+                if (Validating)
+                    THROW << "Invalid label-no-overlap-margin array size";
+                break;
+            }
         }
         spec.unionData.pointLabel.size
             = layer.isMember("label-size")
@@ -1362,18 +1404,39 @@ if (cond == #OP) \
         if (layer.isMember("label-stick"))
             spec.commonData.stick
             = convertStick(layer["label-stick"]);
+        std::string text = evaluate(layer.isMember("label-source")
+            ? layer["label-source"] : "$name").asString();
+        if (text.empty())
+            return;
+        std::string hysteresisId;
+        if (layer.isMember("hysteresis"))
+        {
+            Value arr = evaluate(layer["hysteresis"]);
+            validateArrayLength(arr, 4, 4,
+                "hysteresis must have 4 values");
+            spec.commonData.hysteresisDuration[0] = convertToDouble(arr[0]) / 1000.0;
+            spec.commonData.hysteresisDuration[1] = convertToDouble(arr[1]) / 1000.0;
+            hysteresisId = arr[2].asString();
+            if (hysteresisId.empty())
+            {
+                if (Validating)
+                    THROW << "Empty hysteresis id";
+                else
+                    hysteresisId = text;
+            }
+        }
         GpuGeodataSpec &data = findSpecData(spec);
         auto arr = getFeaturePositions();
         cullOutsideFeatures(arr);
         data.positions.reserve(data.positions.size() + arr.size());
         data.positions.insert(data.positions.end(), arr.begin(), arr.end());
-        std::string text = evaluate(layer.isMember("label-source")
-            ? layer["label-source"] : "$name").asString();
         data.texts.reserve(data.texts.size() + arr.size());
         for (const auto &a : arr)
         {
             (void)a; // is this suspicious?
             data.texts.push_back(text);
+            if (!hysteresisId.empty())
+                data.hysteresisIds.push_back(hysteresisId);
         }
     }
 

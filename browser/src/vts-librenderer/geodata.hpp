@@ -35,7 +35,7 @@ namespace vts { namespace renderer
 
 class Font;
 
-class GeodataBase
+class GeodataBase : public std::enable_shared_from_this<GeodataBase>
 {
 public:
     std::string debugId;

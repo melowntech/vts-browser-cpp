@@ -408,7 +408,7 @@ struct geoContext
             // validate that all vectors are of same length
             {
                 uint32 itemsCount = 0;
-                auto &c = [&](std::size_t s)
+                const auto &c = [&](std::size_t s)
                 {
                     if (s)
                     {

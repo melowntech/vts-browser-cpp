@@ -1,14 +1,18 @@
 
 find_package(Freetype REQUIRED)
-include_directories(SYSTEM ${FREETYPE_INCLUDE_DIR})
+include_directories(SYSTEM ${FREETYPE_INCLUDE_DIRS})
 find_package(HarfBuzz REQUIRED)
-include_directories(SYSTEM ${HARFBUZZ_INCLUDE_DIR})
+include_directories(SYSTEM "${HARFBUZZ_INCLUDE_DIR}")
+include_directories(SYSTEM "${HARFBUZZ_INCLUDE_DIR}/harfbuzz")
 include_directories(externals/utility)
 
 buildsys_fix_symlinks(${CMAKE_CURRENT_SOURCE_DIR}/externals)
 add_subdirectory(externals/sheenbidi)
 
 define_module(LIBRARY vts-renderer DEPENDS vts-browser utility glad FREETYPE HarfBuzz SheenBidi utf8cpp)
+
+include(../../cmake/print_all_variables.cmake)
+print_all_variables()
 
 set(PUB_HDR_LIST
     include/vts-renderer/foundationCommon.h
@@ -26,7 +30,7 @@ set(SRC_LIST
     font.hpp
     foundation.cpp
     geodata.cpp
-	geodata.hpp
+    geodata.hpp
     geodataGeometry.cpp
     geodataText.cpp
     renderer.cpp
@@ -60,7 +64,7 @@ set(DATA_LIST
 
 buildsys_pack_data(initializeRenderData)
 add_library(vts-renderer ${VTS_BROWSER_BUILD_LIBRARY} ${SRC_LIST} ${PUB_HDR_LIST} ${DATA_LIST})
-target_link_libraries(vts-renderer ${VTS_BROWSER_BUILD_VISIBILITY} initializeRenderData ${MODULE_LIBRARIES})
+target_link_libraries(vts-renderer ${VTS_BROWSER_BUILD_VISIBILITY} initializeRenderData ${MODULE_LIBRARIES} ${HARFBUZZ_LIBRARIES})
 target_compile_definitions(vts-renderer ${VTS_BROWSER_BUILD_VISIBILITY} VTSR_BUILD_${VTS_BROWSER_BUILD_MACRO})
 target_compile_definitions(vts-renderer PRIVATE VTSR_INCLUDE_GL ${MODULE_DEFINITIONS})
 set_target_properties(vts-renderer PROPERTIES

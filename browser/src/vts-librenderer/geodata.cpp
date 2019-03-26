@@ -461,14 +461,17 @@ void RendererImpl::processHysteresisJobs()
         const std::string &id = it.g->spec.hysteresisIds[it.itemIndex];
         auto hit = hysteresisJobs.find(id);
         if (hit != hysteresisJobs.end())
+        {
             it.opacity = hit->second.opacity;
+            hysteresisJobs.erase(hit);
+        }
         else
             it.opacity = 0;
         it.opacity +=
             + elapsedTime / it.g->spec.commonData.hysteresisDuration[0]
             + elapsedTime / it.g->spec.commonData.hysteresisDuration[1];
         it.opacity = std::min(it.opacity, 1.f);
-        hysteresisJobs.insert_or_assign(id, it);
+        hysteresisJobs.insert(std::make_pair(id, it));
         return true;
     }), geodataJobs.end());
 

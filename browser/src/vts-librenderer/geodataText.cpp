@@ -408,8 +408,7 @@ void findRect(Text &t, vec2f origin, const vec2f &size, const vec2f &margin)
     t.rectSize += 2 * margin;
 }
 
-std::vector<Word> generateMeshes(std::vector<TmpLine> &lines,
-    float align, const vec2f &origin)
+std::vector<Word> generateMeshes(std::vector<TmpLine> &lines)
 {
     // sort into groups
     struct WordCompare
@@ -573,7 +572,7 @@ void GeodataText::loadPointLabel()
             spec.unionData.pointLabel.width,
             align, origin, lines);
         Text t;
-        t.words = generateMeshes(lines, align, origin);
+        t.words = generateMeshes(lines);
         findRect(t, origin, rectSize, rawToVec2(spec.commonData.margin));
         t.modelPosition = rawToVec3(spec.positions[i][0].data());
         t.worldPosition = vec4to3(vec4(rawToMat4(spec.model)

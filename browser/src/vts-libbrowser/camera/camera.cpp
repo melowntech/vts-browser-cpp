@@ -105,6 +105,7 @@ void touchDraws(MapImpl *map, const RenderSurfaceTask &task)
         map->touchResource(task.textureMask);
 }
 
+/*
 void touchDraws(MapImpl *map, const RenderGeodataTask &task)
 {
     (void)map;
@@ -119,6 +120,7 @@ void touchDraws(MapImpl *map, const RenderSimpleTask &task)
     if (task.textureColor)
         map->touchResource(task.textureColor);
 }
+*/
 
 template<class T>
 void touchDraws(MapImpl *map, const std::vector<T> &renders)

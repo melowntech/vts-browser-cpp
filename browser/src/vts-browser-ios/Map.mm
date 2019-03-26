@@ -159,7 +159,7 @@ void mapInitialize()
                 spec.attributes[1].components = 2;
                 spec.attributes[1].offset = sizeof(vec3f);
                 scalesMeshQuad = std::make_shared<Mesh>();
-                scalesMeshQuad->load(info, spec);
+                scalesMeshQuad->load(info, spec, "data/meshes/rect.obj");
             }
 
             // load texture control areas
@@ -168,7 +168,7 @@ void mapInitialize()
                 ResourceInfo info;
                 GpuTextureSpec spec(buff);
                 textureControlAreas = std::make_shared<Texture>();
-                textureControlAreas->load(info, spec);
+                textureControlAreas->load(info, spec, "data/textures/border.png");
             }
 
             // load texture yaw
@@ -177,7 +177,7 @@ void mapInitialize()
                 ResourceInfo info;
                 GpuTextureSpec spec(buff);
                 scalesTextureYaw = std::make_shared<Texture>();
-                scalesTextureYaw->load(info, spec);
+                scalesTextureYaw->load(info, spec, "data/textures/scale-yaw.png");
             }
 
             // load texture pitch
@@ -186,7 +186,7 @@ void mapInitialize()
                 ResourceInfo info;
                 GpuTextureSpec spec(buff);
                 scalesTexturePitch = std::make_shared<Texture>();
-                scalesTexturePitch->load(info, spec);
+                scalesTexturePitch->load(info, spec, "data/textures/scale-pitch.png");
             }
 
             // load texture zoom
@@ -195,7 +195,7 @@ void mapInitialize()
                 ResourceInfo info;
                 GpuTextureSpec spec(buff);
                 scalesTextureZoom = std::make_shared<Texture>();
-                scalesTextureZoom->load(info, spec);
+                scalesTextureZoom->load(info, spec, "data/textures/scale-zoom.png");
             }
         }
 

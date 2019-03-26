@@ -30,7 +30,7 @@ float testVisibility(vec3 modelPos, vec3 modelUp)
     float distance = length(pos);
     if (uniVisibilities[0] == uniVisibilities[0] && distance > uniVisibilities[0])
         return 0.0;
-    distance *= 2 / uniProj[1][1];
+    distance *= 2.0 / uniProj[1][1];
     if (uniVisibilities[1] == uniVisibilities[1] && distance < uniVisibilities[1])
         return 0.0;
     if (uniVisibilities[2] == uniVisibilities[2] && distance > uniVisibilities[2])

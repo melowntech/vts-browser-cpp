@@ -59,6 +59,7 @@ public:
     {
         std::shared_ptr<FetchTask> task = task_;
         NSString *urlString = [NSString stringWithCString:task->query.url.c_str() encoding:NSUTF8StringEncoding];
+        urlString = [urlString stringByAddingPercentEncodingWithAllowedCharacters: NSCharacterSet.URLQueryAllowedCharacterSet];
             NSURL *url = [NSURL URLWithString:urlString];
         [[session dataTaskWithURL:url completionHandler:^(NSData *data, NSURLResponse *response, NSError *error)
         {

@@ -34,7 +34,8 @@
 
 @interface OptionsViewController ()
 
-@property (weak, nonatomic) IBOutlet UISegmentedControl *optTraversal;
+@property (weak, nonatomic) IBOutlet UISegmentedControl *optTraversalSurfaces;
+@property (weak, nonatomic) IBOutlet UISegmentedControl *optTraversalGeodata;
 @property (weak, nonatomic) IBOutlet UISlider *optQualityDegrad;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *optControlType;
 @property (weak, nonatomic) IBOutlet UISlider *optTouchSize;
@@ -113,7 +114,8 @@ void loadAppConfig()
 - (void)updateViewControls
 {
     // rendering
-    _optTraversal.selectedSegmentIndex = (int)camera->options().traverseModeSurfaces;
+    _optTraversalSurfaces.selectedSegmentIndex = (int)camera->options().traverseModeSurfaces;
+    _optTraversalGeodata.selectedSegmentIndex = (int)camera->options().traverseModeGeodata;
     _optQualityDegrad.value = camera->options().maxTexelToPixelScale;
     // controls
     _optTouchSize.enabled = extraConfig.controlType == 0;
@@ -133,9 +135,15 @@ void loadAppConfig()
     [self updateViewControls];
 }
 
-- (IBAction)optTraversalChanged:(UISegmentedControl *)sender
+- (IBAction)optTraversalSurfacesChanged:(UISegmentedControl *)sender
 {
     camera->options().traverseModeSurfaces = (vts::TraverseMode)sender.selectedSegmentIndex;
+    saveConfig();
+}
+
+- (IBAction)optTraversalGeodataChanged:(UISegmentedControl *)sender
+{
+    camera->options().traverseModeGeodata = (vts::TraverseMode)sender.selectedSegmentIndex;
     saveConfig();
 }
 

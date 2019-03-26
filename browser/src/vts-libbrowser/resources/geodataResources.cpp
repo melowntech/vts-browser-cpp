@@ -43,8 +43,7 @@ GeodataFeatures::GeodataFeatures(vts::MapImpl *map, const std::string &name) :
 void GeodataFeatures::load()
 {
     LOG(info2) << "Loading geodata features <" << name << ">";
-    data = std::make_shared<const std::string>(
-        std::move(fetch->reply.content.str()));
+    data = std::make_shared<const std::string>(fetch->reply.content.str());
 }
 
 FetchTask::ResourceType GeodataFeatures::resourceType() const
@@ -63,7 +62,7 @@ GeodataStylesheet::GeodataStylesheet(MapImpl *map, const std::string &name) :
 void GeodataStylesheet::load()
 {
     LOG(info2) << "Loading geodata stylesheet <" << name << ">";
-    data = std::move(fetch->reply.content.str());
+    data = fetch->reply.content.str();
     dependenciesLoaded = false;
 }
 

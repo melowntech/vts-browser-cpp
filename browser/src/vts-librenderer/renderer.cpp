@@ -181,7 +181,7 @@ void RendererImpl::updateFramebuffers()
         {
             glTexImage2D(vars.textureTargetType, 0, GL_DEPTH24_STENCIL8,
                 options.width, options.height,
-                0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
+                0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
             glTexParameteri(vars.textureTargetType,
                 GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(vars.textureTargetType,

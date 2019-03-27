@@ -80,15 +80,17 @@ struct Word
 {
     std::shared_ptr<Font> font;
     std::shared_ptr<Texture> texture;
-    std::vector<vec4f> coordinates;
     uint16 fileIndex;
+    uint16 coordinatesStart;
+    uint16 coordinatesCount;
 
-    Word() : fileIndex(-1)
+    Word() : fileIndex(-1), coordinatesStart(0), coordinatesCount(0)
     {}
 };
 
 struct Text
 {
+    std::vector<vec4f> coordinates;
     std::vector<Word> words;
     vec3 worldPosition;
     vec3f modelPosition;
@@ -105,7 +107,7 @@ struct Text
 class GeodataText : public GeodataBase
 {
 public:
-    vec4f outline[3];
+    vec4f outline;
     std::vector<std::shared_ptr<Font>> fontCascade;
     std::vector<Text> texts;
 

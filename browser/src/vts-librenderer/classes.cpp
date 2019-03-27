@@ -621,7 +621,7 @@ void Renderer::loadMesh(ResourceInfo &info, GpuMeshSpec &spec,
 }
 
 UniformBuffer::UniformBuffer() :
-    ubo(0), lastSize(0)
+    ubo(0), capacity(0)
 {}
 
 UniformBuffer::~UniformBuffer()
@@ -634,7 +634,7 @@ void UniformBuffer::clear()
     if (ubo)
         glDeleteBuffers(1, &ubo);
     ubo = 0;
-    lastSize = 0;
+    capacity = 0;
 }
 
 void UniformBuffer::bindInit()
@@ -660,21 +660,21 @@ void UniformBuffer::bindToIndex(uint32 index)
     glBindBufferBase(GL_UNIFORM_BUFFER, index, ubo);
 }
 
-void UniformBuffer::load(size_t size, const void *data)
+void UniformBuffer::load(const void *data, std::size_t size)
 {
     assert(ubo != 0);
-    if (lastSize == size)
+    if (size <= capacity)
         glBufferSubData(GL_UNIFORM_BUFFER, 0, size, data);
     else
     {
         glBufferData(GL_UNIFORM_BUFFER, size, data, GL_DYNAMIC_DRAW);
-        lastSize = size;
+        capacity = size;
     }
 }
 
 void UniformBuffer::load(const Buffer &buffer)
 {
-    load(buffer.size(), buffer.data());
+    load(buffer.data(), buffer.size());
 }
 
 uint32 UniformBuffer::getUbo() const

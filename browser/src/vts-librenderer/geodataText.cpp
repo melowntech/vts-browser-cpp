@@ -408,7 +408,7 @@ void findRect(Text &t, vec2f origin, const vec2f &size, const vec2f &margin)
     t.rectSize += 2 * margin;
 }
 
-std::vector<Word> generateMeshes(std::vector<TmpLine> &lines)
+Text generateTexts(std::vector<TmpLine> &lines)
 {
     // sort into groups
     struct WordCompare
@@ -433,44 +433,43 @@ std::vector<Word> generateMeshes(std::vector<TmpLine> &lines)
     }
 
     // generate words
-    std::vector<Word> words;
+    Text text;
+    text.coordinates.reserve(1020);
+    uint32 vertexIndex = 0;
     for (auto &grp : groups)
     {
         Word w(grp.first);
-        w.coordinates.reserve(grp.second.size() * 6);
+        w.coordinatesStart = vertexIndex;
         for (const TmpGlyph &tg : grp.second)
         {
             const Glyph &g = tg.font->glyphs[tg.glyphIndex];
             // 2--3
             // |  |
             // 0--1
-            vec4f c[4];
             for (int i = 0; i < 4; i++)
             {
-                c[i][0] = tg.position[0] + ((i % 2) == 1 ? tg.size[0] : 0);
-                c[i][1] = tg.position[1] + ((i / 2) == 1 ? tg.size[1] : 0);
-                c[i][2] = g.uvs[0 + 2 * (i % 2)];
-                c[i][3] = g.uvs[1 + 2 * (i / 2)];
-                c[i][2] += g.plane * 2;
+                vec4f c;
+                c[0] = tg.position[0] + ((i % 2) == 1 ? tg.size[0] : 0);
+                c[1] = tg.position[1] + ((i / 2) == 1 ? tg.size[1] : 0);
+                c[2] = g.uvs[0 + 2 * (i % 2)];
+                c[3] = g.uvs[1 + 2 * (i / 2)];
+                c[2] += g.plane * 2;
+                text.coordinates.push_back(c);
             }
-            // 0-1-2
-            // 1-3-2
-            w.coordinates.push_back(c[0]);
-            w.coordinates.push_back(c[1]);
-            w.coordinates.push_back(c[2]);
-            w.coordinates.push_back(c[1]);
-            w.coordinates.push_back(c[3]);
-            w.coordinates.push_back(c[2]);
-            // shader may handle at most 256 vertices at once
-            if (w.coordinates.size() >= 250)
+            w.coordinatesCount += 6;
+            vertexIndex += 6;
+
+            // todo better handle shader limit
+            if (text.coordinates.size() >= 1000)
             {
-                words.push_back(w);
-                w.coordinates.clear();
+                text.words.push_back(std::move(w));
+                return text;
             }
         }
-        words.push_back(std::move(w));
+        text.words.push_back(std::move(w));
     }
-    return words;
+    text.coordinates.shrink_to_fit();
+    return text;
 }
 
 float numericAlign(GpuGeodataSpec::TextAlign a)
@@ -571,29 +570,22 @@ void GeodataText::loadPointLabel()
             spec.unionData.pointLabel.size,
             spec.unionData.pointLabel.width,
             align, origin, lines);
-        Text t;
-        t.words = generateMeshes(lines);
+        Text t = generateTexts(lines);
         findRect(t, origin, rectSize, rawToVec2(spec.commonData.margin));
         t.modelPosition = rawToVec3(spec.positions[i][0].data());
         t.worldPosition = vec4to3(vec4(rawToMat4(spec.model)
             * vec3to4(t.modelPosition, 1).cast<double>()));
         t.worldUp = worldUp(t.modelPosition);
-        for (const auto &w : t.words)
-        {
-            info->ramMemoryCost += w.coordinates.size()
-                * sizeof(decltype(w.coordinates[0]));
-        }
-        info->ramMemoryCost += t.words.size() * sizeof(decltype(t.words[0]));
+        info->ramMemoryCost += t.coordinates.size() * sizeof(vec4f);
+        info->ramMemoryCost += t.words.size() * sizeof(Word);
         texts.push_back(std::move(t));
     }
     info->ramMemoryCost += texts.size() * sizeof(decltype(texts[0]));
 
     // prepare outline
     {
-        outline[0] = rawToVec4(spec.unionData.pointLabel.color);
-        outline[1] = rawToVec4(spec.unionData.pointLabel.color2);
         float os = std::sqrt(2) / spec.unionData.pointLabel.size;
-        outline[2] = rawToVec4(spec.unionData.pointLabel.outline)
+        outline = rawToVec4(spec.unionData.pointLabel.outline)
                         .cwiseProduct(vec4f(1, 1, os, os));
     }
 }

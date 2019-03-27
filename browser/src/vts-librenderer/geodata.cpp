@@ -179,19 +179,15 @@ void RendererImpl::initializeGeodata()
             "data/shaders/geodataPointLabel.vert.glsl",
             "data/shaders/geodataPointLabel.frag.glsl");
         shaderGeodataPointLabel->loadUniformLocations({
-                "uniPosition",
-                "uniScale",
-                "uniPass",
-                "uniCoordinates",
-                "uniOutline",
-                "uniOpacity"
+                "uniPass"
             });
         shaderGeodataPointLabel->bindTextureLocations({
                 { "texGlyphs", 0 }
             });
         shaderGeodataPointLabel->bindUniformBlockLocations({
                 { "uboCameraData", 0 },
-                { "uboViewData", 1 }
+                { "uboViewData", 1 },
+                { "uboText", 2 }
             });
     }
 
@@ -199,6 +195,8 @@ void RendererImpl::initializeGeodata()
     uboGeodataCamera->debugId = "uboGeodataCamera";
     uboGeodataView = std::make_shared<UniformBuffer>();
     uboGeodataView->debugId = "uboGeodataView";
+    uboGeodataText = std::make_shared<UniformBuffer>();
+    uboGeodataText->debugId = "uboGeodataText";
 
     CHECK_GL("initialize geodata");
 }
@@ -512,6 +510,14 @@ void RendererImpl::renderTextMargin(const Text &t)
 
 void RendererImpl::renderJobs()
 {
+    struct UboText
+    {
+        vec4f color[2];
+        vec4f outline;
+        vec4f position; // xyz, scale
+        vec4f coordinates[1020];
+    } uboText;
+
     for (const GeodataJob &job : geodataJobs)
     {
         const auto &gg = job.g;
@@ -521,7 +527,7 @@ void RendererImpl::renderJobs()
         case GpuGeodataSpec::Type::LineScreen:
         case GpuGeodataSpec::Type::LineFlat:
         {
-            assert(job.itemIndex == -1);
+            assert(job.itemIndex == (uint32)-1);
             bindViewDataUbo(gg);
             std::shared_ptr<GeodataGeometry> g
                 = std::static_pointer_cast<GeodataGeometry>(gg);
@@ -537,7 +543,7 @@ void RendererImpl::renderJobs()
         case GpuGeodataSpec::Type::PointScreen:
         case GpuGeodataSpec::Type::PointFlat:
         {
-            assert(job.itemIndex == -1);
+            assert(job.itemIndex == (uint32)-1);
             bindViewDataUbo(gg);
             std::shared_ptr<GeodataGeometry> g
                 = std::static_pointer_cast<GeodataGeometry>(gg);
@@ -555,21 +561,42 @@ void RendererImpl::renderJobs()
             std::shared_ptr<GeodataText> g
                 = std::static_pointer_cast<GeodataText>(gg);
             const auto &t = g->texts[job.itemIndex];
+
+            if (!geodataTestVisibility(
+                g->spec.commonData.visibilities,
+                t.worldPosition, t.worldUp))
+                continue;
+
+            uboText.color[0] = rawToVec4(g->spec.unionData.pointLabel.color);
+            uboText.color[1] = rawToVec4(g->spec.unionData.pointLabel.color2);
+            uboText.color[0][3] *= job.opacity;
+            uboText.color[1][3] *= job.opacity;
+            uboText.outline = g->outline;
+            uboText.position[0] = t.modelPosition[0];
+            uboText.position[1] = t.modelPosition[1];
+            uboText.position[2] = t.modelPosition[2];
+            uboText.position[3] = options.textScale;
+            {
+                vec4f *o = uboText.coordinates;
+                for (const vec4f &c : t.coordinates)
+                    *o++ = c;
+            }
+
             shaderGeodataPointLabel->bind();
-            shaderGeodataPointLabel->uniformVec3(0, t.modelPosition.data());
-            shaderGeodataPointLabel->uniform(1, options.textScale);
-            shaderGeodataPointLabel->uniformVec4(4, (float*)g->outline, 3);
-            shaderGeodataPointLabel->uniform(5, job.opacity);
             bindViewDataUbo(g);
+            uboGeodataText->bind();
+            uboGeodataText->load(&uboText,
+                16 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size());
+            uboGeodataText->bindToIndex(2);
+
             for (int pass = 0; pass < 2; pass++)
             {
-                shaderGeodataPointLabel->uniform(2, pass);
+                shaderGeodataPointLabel->uniform(0, pass);
                 for (auto &w : t.words)
                 {
                     w.texture->bind();
-                    shaderGeodataPointLabel->uniformVec4(3,
-                        (float*)w.coordinates.data(), w.coordinates.size());
-                    meshEmpty->dispatch(0, w.coordinates.size());
+                    meshEmpty->dispatch(w.coordinatesStart,
+                                        w.coordinatesCount);
                 }
             }
         } break;

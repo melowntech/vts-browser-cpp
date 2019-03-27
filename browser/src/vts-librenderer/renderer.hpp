@@ -94,6 +94,7 @@ public:
     std::shared_ptr<UniformBuffer> uboAtm;
     std::shared_ptr<UniformBuffer> uboGeodataCamera;
     std::shared_ptr<UniformBuffer> uboGeodataView;
+    std::shared_ptr<UniformBuffer> uboGeodataText;
 
     CameraDraws *draws;
     const MapCelestialBody *body;

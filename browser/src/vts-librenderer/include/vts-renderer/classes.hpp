@@ -129,20 +129,20 @@ public:
     void clear();
     void bind(); // use for uploading the data
     void bindToIndex(uint32 index); // use for rendering
-    void load(size_t size, const void *data);
+    void load(const void *data, std::size_t size);
     void load(const Buffer &buffer);
 
     template <class T>
     void load(const T &structure)
     {
-        load(sizeof(T), &structure);
+        load(&structure, sizeof(T));
     }
 
     uint32 getUbo() const;
 
 private:
     uint32 ubo;
-    size_t lastSize;
+    size_t capacity;
 
     void bindInit();
 };

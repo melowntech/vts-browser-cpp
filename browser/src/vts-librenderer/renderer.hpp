@@ -93,8 +93,6 @@ public:
     std::shared_ptr<Mesh> meshEmpty;
     std::shared_ptr<UniformBuffer> uboAtm;
     std::shared_ptr<UniformBuffer> uboGeodataCamera;
-    std::shared_ptr<UniformBuffer> uboGeodataView;
-    std::shared_ptr<UniformBuffer> uboGeodataText;
 
     CameraDraws *draws;
     const MapCelestialBody *body;
@@ -130,16 +128,18 @@ public:
     vec3 zBufferOffsetValues;
     std::vector<GeodataJob> geodataJobs;
     std::unordered_map<std::string, GeodataJob> hysteresisJobs;
+    class GeodataBase *lastUboViewPointer;
+    std::shared_ptr<UniformBuffer> lastUboView;
 
     void initializeGeodata();
     bool geodataTestVisibility(
         const float visibility[4],
         const vec3 &pos, const vec3f &up);
     mat4 depthOffsetProj(const std::shared_ptr<GeodataBase> &gg) const;
-    void bindViewDataUbo(const std::shared_ptr<GeodataBase> &gg);
+    void bindUboView(const std::shared_ptr<GeodataBase> &gg);
     void renderGeodata();
     void computeZBufferOffsetValues();
-    void bindCameraDataUbo();
+    void bindUboCamera();
     void generateJobs();
     void sortJobs();
     void filterOverlappingJobs();

@@ -48,8 +48,12 @@ public:
 
     void initializeAtmosphere()
     {
-        bindUniformBlockLocations({ {"uboAtm", 0} });
-        bindTextureLocations({ {"texAtmDensity", 4} });
+        bindUniformBlockLocations({
+                { "uboAtm", 0 }
+            });
+        bindTextureLocations({
+                { "texAtmDensity", 4 }
+            });
     }
 };
 
@@ -75,7 +79,8 @@ RendererImpl::RendererImpl(Renderer *rendererApi)
     : rendererApi(rendererApi), draws(nullptr), body(nullptr),
     atmosphereDensityTexture(nullptr),
     widthPrev(0), heightPrev(0), antialiasingPrev(0),
-    projected(false)
+    projected(false),
+    lastUboViewPointer(nullptr)
 {}
 
 RendererImpl::~RendererImpl()
@@ -87,17 +92,47 @@ void RendererImpl::drawSurface(const DrawSurfaceTask &t)
     Mesh *m = (Mesh*)t.mesh.get();
     if (!m || !tex)
         return;
-    shaderSurface->uniformMat4(1, t.mv);
-    shaderSurface->uniformMat3(2, t.uvm);
-    shaderSurface->uniformVec4(3, t.color);
-    shaderSurface->uniformVec4(4, t.uvClip);
-    int flags[4] = {
-        t.texMask ? 1 : -1,
-        tex->getGrayscale() ? 1 : -1,
-        t.flatShading ? 1 : -1,
-        t.externalUv ? 1 : -1
+
+    struct mat3x4f
+    {
+        vec4f data[3];
+        mat3x4f(){}
+        mat3x4f(const mat3f &m)
+        {
+            for (int y = 0; y < 3; y++)
+                for (int x = 0; x < 3; x++)
+                    data[y][x] = m(x, y);
+        }
     };
-    shaderSurface->uniformVec4(5, flags);
+
+    struct UboSurface
+    {
+        mat4f p;
+        mat4f mv;
+        mat3x4f uvMat;
+        vec4f uvClip;
+        vec4f color;
+        vec4si32 flags; // mask, monochromatic, flat shading, uv source
+    } uboSurface;
+
+    uboSurface.p = proj.cast<float>();
+    uboSurface.mv = rawToMat4(t.mv);
+    uboSurface.uvMat = mat3x4f(rawToMat3(t.uvm));
+    uboSurface.uvClip = rawToVec4(t.uvClip);
+    uboSurface.color = rawToVec4(t.color);
+    uboSurface.flags = vec4si32(
+                t.texMask ? 1 : -1,
+                tex->getGrayscale() ? 1 : -1,
+                t.flatShading ? 1 : -1,
+                t.externalUv ? 1 : -1
+                );
+
+    auto ubo = std::make_shared<UniformBuffer>();
+    ubo->debugId = "UboSurface";
+    ubo->bind();
+    ubo->load(uboSurface);
+    ubo->bindToIndex(1);
+
     if (t.texMask)
     {
         glActiveTexture(GL_TEXTURE0 + 1);
@@ -105,6 +140,7 @@ void RendererImpl::drawSurface(const DrawSurfaceTask &t)
         glActiveTexture(GL_TEXTURE0 + 0);
     }
     tex->bind();
+
     m->bind();
     m->dispatch();
 }
@@ -114,14 +150,30 @@ void RendererImpl::drawInfographic(const DrawSimpleTask &t)
     Mesh *m = (Mesh*)t.mesh.get();
     if (!m)
         return;
-    shaderInfographic->uniformMat4(1, t.mv);
-    shaderInfographic->uniformVec4(2, t.color);
-    shaderInfographic->uniform(3, (int)(!!t.texColor));
+
+    struct UboInfographics
+    {
+        mat4f mvp;
+        vec4f color;
+        vec4si32 useColorTexture;
+    } uboInfographics;
+
+    uboInfographics.mvp = proj.cast<float>() * rawToMat4(t.mv);
+    uboInfographics.color = rawToVec4(t.color);
+    uboInfographics.useColorTexture[0] = !!t.texColor;
+
+    auto ubo = std::make_shared<UniformBuffer>();
+    ubo->debugId = "UboInfographics";
+    ubo->bind();
+    ubo->load(uboInfographics);
+    ubo->bindToIndex(1);
+
     if (t.texColor)
     {
         Texture *tex = (Texture*)t.texColor.get();
         tex->bind();
     }
+
     m->bind();
     m->dispatch();
 }
@@ -326,13 +378,6 @@ void RendererImpl::render()
     // update atmosphere
     updateAtmosphereBuffer();
 
-    // update shaders
-    mat4f projf = rawToMat4(draws->camera.proj).cast<float>();
-    shaderInfographic->bind();
-    shaderInfographic->uniformMat4(0, projf.data());
-    shaderSurface->bind();
-    shaderSurface->uniformMat4(0, projf.data());
-
     // render opaque
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
@@ -484,8 +529,13 @@ void RendererImpl::initialize()
         shaderTexture->loadInternal(
             "data/shaders/texture.vert.glsl",
             "data/shaders/texture.frag.glsl");
-        shaderTexture->loadUniformLocations({ "uniMvp", "uniUvm" });
-        shaderTexture->bindTextureLocations({ {"uniTexture", 0} });
+        shaderTexture->loadUniformLocations({
+                "uniMvp",
+                "uniUvm"
+            });
+        shaderTexture->bindTextureLocations({
+                { "uniTexture", 0 }
+            });
     }
 
     // load shader surface
@@ -500,10 +550,31 @@ void RendererImpl::initialize()
         Buffer frag = readInternalMemoryBuffer(
             "data/shaders/surface.frag.glsl");
         shaderSurface->load(vert.str(), atm.str() + frag.str());
-        shaderSurface->loadUniformLocations({ "uniP", "uniMv", "uniUvMat",
-            "uniColor", "uniUvClip", "uniFlags" });
-        shaderSurface->bindTextureLocations({ {"texColor", 0}, {"texMask", 1} });
+        shaderSurface->bindUniformBlockLocations({
+                 { "uboSurface", 1 }
+             });
+        shaderSurface->bindTextureLocations({
+                { "texColor", 0 },
+                { "texMask", 1 }
+            });
         shaderSurface->initializeAtmosphere();
+    }
+
+    // load shader infographic
+    {
+        shaderInfographic = std::make_shared<Shader>();
+        shaderInfographic->debugId
+            = "data/shaders/infographic.*.glsl";
+        shaderInfographic->loadInternal(
+            "data/shaders/infographic.vert.glsl",
+            "data/shaders/infographic.frag.glsl");
+        shaderInfographic->bindUniformBlockLocations({
+                 { "uboInfographics", 1 }
+             });
+        shaderInfographic->bindTextureLocations({
+                { "texColor", 0 },
+                { "texDepth", 6 }
+            });
     }
 
     // load shader background
@@ -518,23 +589,13 @@ void RendererImpl::initialize()
         Buffer frag = readInternalMemoryBuffer(
             "data/shaders/background.frag.glsl");
         shaderBackground->load(vert.str(), atm.str() + frag.str());
-        shaderBackground->loadUniformLocations({ "uniCorners[0]",
-            "uniCorners[1]","uniCorners[2]","uniCorners[3]" });
+        shaderBackground->loadUniformLocations({
+                "uniCorners[0]",
+                "uniCorners[1]",
+                "uniCorners[2]",
+                "uniCorners[3]"
+            });
         shaderBackground->initializeAtmosphere();
-    }
-
-    // load shader infographic
-    {
-        shaderInfographic = std::make_shared<Shader>();
-        shaderInfographic->debugId
-            = "data/shaders/infographic.*.glsl";
-        shaderInfographic->loadInternal(
-            "data/shaders/infographic.vert.glsl",
-            "data/shaders/infographic.frag.glsl");
-        shaderInfographic->loadUniformLocations({ "uniP", "uniMv", "uniColor",
-                                                    "uniUseColorTexture" });
-        shaderInfographic->bindTextureLocations({ {"texColor", 0},
-                                                    {"texDepth", 6} });
     }
 
     // load shader copy depth
@@ -545,8 +606,12 @@ void RendererImpl::initialize()
         shaderCopyDepth->loadInternal(
             "data/shaders/copyDepth.vert.glsl",
             "data/shaders/copyDepth.frag.glsl");
-        shaderCopyDepth->loadUniformLocations({ "uniTexPos" });
-        shaderCopyDepth->bindTextureLocations({ {"texDepth", 0} });
+        shaderCopyDepth->loadUniformLocations({
+                "uniTexPos"
+            });
+        shaderCopyDepth->bindTextureLocations({
+                { "texDepth", 0 }
+            });
     }
 
     // load mesh quad
@@ -635,7 +700,7 @@ void RendererImpl::finalize()
     meshEmpty.reset();
     uboAtm.reset();
     uboGeodataCamera.reset();
-    uboGeodataView.reset();
+    lastUboView.reset();
 
     if (vars.frameRenderBufferId)
     {

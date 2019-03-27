@@ -193,10 +193,6 @@ void RendererImpl::initializeGeodata()
 
     uboGeodataCamera = std::make_shared<UniformBuffer>();
     uboGeodataCamera->debugId = "uboGeodataCamera";
-    uboGeodataView = std::make_shared<UniformBuffer>();
-    uboGeodataView->debugId = "uboGeodataView";
-    uboGeodataText = std::make_shared<UniformBuffer>();
-    uboGeodataText->debugId = "uboGeodataText";
 
     CHECK_GL("initialize geodata");
 }
@@ -230,8 +226,12 @@ mat4 RendererImpl::depthOffsetProj(const std::shared_ptr<GeodataBase> &gg) const
     return proj * davidProjInv * s * davidProj;
 }
 
-void RendererImpl::bindViewDataUbo(const std::shared_ptr<GeodataBase> &gg)
+void RendererImpl::bindUboView(const std::shared_ptr<GeodataBase> &gg)
 {
+    if (gg.get() == lastUboViewPointer)
+        return;
+    lastUboViewPointer = gg.get();
+
     mat4 model = rawToMat4(gg->spec.model);
     mat4 mv = view * model;
     mat4 mvp = depthOffsetProj(gg) * mv;
@@ -252,9 +252,11 @@ void RendererImpl::bindViewDataUbo(const std::shared_ptr<GeodataBase> &gg)
     ubo.mv = mv.cast<float>();
     ubo.mvInv = mvInv.cast<float>();
 
-    uboGeodataView->bind();
-    uboGeodataView->load(ubo);
-    uboGeodataView->bindToIndex(1);
+    lastUboView = std::make_shared<UniformBuffer>();
+    lastUboView->debugId = "UboViewData";
+    lastUboView->bind();
+    lastUboView->load(ubo);
+    lastUboView->bindToIndex(1);
 }
 
 void RendererImpl::renderGeodata()
@@ -269,7 +271,7 @@ void RendererImpl::renderGeodata()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     computeZBufferOffsetValues();
-    bindCameraDataUbo();
+    bindUboCamera();
     generateJobs();
     sortJobs();
     filterOverlappingJobs();
@@ -300,7 +302,7 @@ void RendererImpl::computeZBufferOffsetValues()
     // therefore we simulate his projection,
     //   apply the offset and undo his projection
     // this way the parameters work as expected
-    //   and the values already in z-buffer are valid too
+    //   and the values already in z-buffer are compatible
 
     double factor = std::max(draws->camera.altitudeOverEllipsoid,
         draws->camera.tagretDistance) / 600000;
@@ -323,7 +325,7 @@ void RendererImpl::computeZBufferOffsetValues()
     davidProjInv = davidProj.inverse();
 }
 
-void RendererImpl::bindCameraDataUbo()
+void RendererImpl::bindUboCamera()
 {
     struct UboCameraData
     {
@@ -528,7 +530,7 @@ void RendererImpl::renderJobs()
         case GpuGeodataSpec::Type::LineFlat:
         {
             assert(job.itemIndex == (uint32)-1);
-            bindViewDataUbo(gg);
+            bindUboView(gg);
             std::shared_ptr<GeodataGeometry> g
                 = std::static_pointer_cast<GeodataGeometry>(gg);
             shaderGeodataLine->bind();
@@ -544,7 +546,7 @@ void RendererImpl::renderJobs()
         case GpuGeodataSpec::Type::PointFlat:
         {
             assert(job.itemIndex == (uint32)-1);
-            bindViewDataUbo(gg);
+            bindUboView(gg);
             std::shared_ptr<GeodataGeometry> g
                 = std::static_pointer_cast<GeodataGeometry>(gg);
             shaderGeodataPoint->bind();
@@ -583,7 +585,9 @@ void RendererImpl::renderJobs()
             }
 
             shaderGeodataPointLabel->bind();
-            bindViewDataUbo(g);
+            bindUboView(gg);
+            auto uboGeodataText = std::make_shared<UniformBuffer>();
+            uboGeodataText->debugId = "UboText";
             uboGeodataText->bind();
             uboGeodataText->load(&uboText,
                 16 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size());
@@ -607,6 +611,9 @@ void RendererImpl::renderJobs()
     }
 
     geodataJobs.clear();
+
+    lastUboViewPointer = nullptr;
+    lastUboView.reset();
 }
 
 void Renderer::loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec,
@@ -623,7 +630,6 @@ void Renderer::loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec,
     } break;
     default:
     {
-
         auto r = std::make_shared<GeodataGeometry>();
         r->load(&*impl, info, spec, debugId);
         info.userData = r;

@@ -48,7 +48,19 @@ typedef Eigen::Matrix2d mat2;
 typedef Eigen::Matrix3d mat3;
 typedef Eigen::Matrix4d mat4;
 
+typedef Eigen::Matrix<sint16, 2, 1> vec2si16;
 typedef Eigen::Matrix<uint16, 2, 1> vec2ui16;
+typedef Eigen::Matrix<sint16, 3, 1> vec3si16;
+typedef Eigen::Matrix<uint16, 3, 1> vec3ui16;
+typedef Eigen::Matrix<sint16, 4, 1> vec4si16;
+typedef Eigen::Matrix<uint16, 4, 1> vec4ui16;
+
+typedef Eigen::Matrix<sint32, 2, 1> vec2si32;
+typedef Eigen::Matrix<uint32, 2, 1> vec2ui32;
+typedef Eigen::Matrix<sint32, 3, 1> vec3si32;
+typedef Eigen::Matrix<uint32, 3, 1> vec3ui32;
+typedef Eigen::Matrix<sint32, 4, 1> vec4si32;
+typedef Eigen::Matrix<uint32, 4, 1> vec4ui32;
 
 VTS_API vec3 cross(const vec3 &a, const vec3 &b);
 VTS_API double dot(const vec3 &a, const vec3 &b);

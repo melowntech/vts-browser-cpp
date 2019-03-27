@@ -2,8 +2,15 @@
 uniform sampler2D texColor;
 uniform sampler2D texMask;
 
-uniform vec4 uniColor;
-uniform ivec4 uniFlags; // mask, monochromatic, flat shading, uv source
+layout(std140) uniform uboSurface
+{
+    mat4 uniP;
+    mat4 uniMv;
+    mat3x4 uniUvMat;
+    vec4 uniUvClip;
+    vec4 uniColor;
+    ivec4 uniFlags; // mask, monochromatic, flat shading, uv source
+};
 
 in vec2 varUvTex;
 in vec3 varViewPosition;

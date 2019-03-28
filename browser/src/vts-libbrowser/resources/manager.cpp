@@ -378,7 +378,7 @@ bool MapImpl::resourcesTryRemove(std::shared_ptr<Resource> &r)
         }
         catch (...)
         {
-            LOGTHROW(fatal, std::runtime_error)
+            LOGTHROW(fatal, std::logic_error)
                     << "Exception in destructor";
         }
         r = w.lock();
@@ -463,11 +463,11 @@ void MapImpl::resourcesCheckInitialized()
     for (auto it : resources.resources)
     {
         const std::shared_ptr<Resource> &r = it.second;
-        if (r->lastAccessTick + 1 != renderTickIndex)
-            continue; // skip resources that were not accessed last tick
         switch ((Resource::State)r->state)
         {
         case Resource::State::errorRetry:
+            if (r->lastAccessTick + 1 != renderTickIndex)
+                continue; // skip resources that were not accessed last tick
             if (r->retryNumber >= options.maxFetchRetries)
             {
                 LOG(err3) << "All retries for resource <"
@@ -512,8 +512,6 @@ void MapImpl::resourcesStartDownloads()
     for (auto it : resources.resources)
     {
         const std::shared_ptr<Resource> &r = it.second;
-        if (r->lastAccessTick + 1 != renderTickIndex)
-            continue; // skip resources that were not accessed last tick
         if (r->state == Resource::State::startDownload)
             res.push_back(r);
     }
@@ -547,8 +545,20 @@ void MapImpl::resourcesUpdateStatistics()
             break;
         }
     }
-    statistics.resourcesActive = resources.resources.size();
-    statistics.resourcesDownloading = resources.downloads;
+    statistics.resourcesActive
+        = resources.resources.size();
+    statistics.resourcesDownloading
+        = resources.downloads;
+    statistics.resourcesQueueUpload
+        = resources.queUpload.estimateSize();
+    statistics.resourcesQueueCacheRead
+        = resources.queCacheRead.estimateSize();
+    statistics.resourcesQueueCacheWrite
+        = resources.queCacheWrite.estimateSize();
+    statistics.resourcesQueueAtmosphere
+        = resources.queAtmosphere.estimateSize();
+    statistics.resourcesQueueGeodata
+        = resources.queGeodata.estimateSize();
 }
 
 void MapImpl::resourceRenderInitialize()

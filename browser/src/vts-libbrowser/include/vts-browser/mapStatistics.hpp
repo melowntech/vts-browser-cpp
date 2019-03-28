@@ -40,23 +40,25 @@ public:
     MapStatistics();
     std::string toJson() const;
 
-    // global statistics
-
     uint32 resourcesDownloaded;
     uint32 resourcesDiskLoaded;
     uint32 resourcesProcessed;
     uint32 resourcesCreated;
     uint32 resourcesReleased;
     uint32 resourcesFailed;
-    uint32 renderTicks;
-
-    // current statistics
-
-    uint32 currentGpuMemUseKB;
-    uint32 currentRamMemUseKB;
     uint32 resourcesActive;
     uint32 resourcesDownloading;
     uint32 resourcesPreparing;
+    uint32 resourcesQueueUpload;
+    uint32 resourcesQueueCacheRead;
+    uint32 resourcesQueueCacheWrite;
+    uint32 resourcesQueueAtmosphere;
+    uint32 resourcesQueueGeodata;
+
+    uint32 currentGpuMemUseKB;
+    uint32 currentRamMemUseKB;
+
+    uint32 renderTicks;
 };
 
 } // namespace vts

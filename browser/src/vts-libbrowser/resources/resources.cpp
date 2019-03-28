@@ -49,8 +49,7 @@ std::shared_ptr<T> getMapResource(MapImpl *map, const std::string &name)
     if (it == map->resources.resources.end())
     {
         auto r = std::make_shared<T>(map, name);
-        map->resources.resources[name] = r;
-        it = map->resources.resources.find(name);
+        it = map->resources.resources.insert(std::make_pair(name, r)).first;
         map->statistics.resourcesCreated++;
     }
     assert(it->second);

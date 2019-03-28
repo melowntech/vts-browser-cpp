@@ -914,24 +914,16 @@ public:
             char buffer[256];
 
             // general
-            if (nk_tree_push(&ctx, NK_TREE_TAB, "General", NK_MAXIMIZED))
+            if (nk_tree_push(&ctx, NK_TREE_TAB, "Timing", NK_MAXIMIZED))
             {
                 float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
-                nk_label(&ctx, "Loading:", NK_TEXT_LEFT);
-                nk_prog(&ctx, (int)(
-                        1000 * window->map->getMapRenderProgress()),
-                        1000, false);
-
-                //S("Time map min:", window->timingMapSmooth.min(), " ms");
                 S("Time map avg:", window->timingMapSmooth.avg(), " ms");
                 S("Time map max:", window->timingMapSmooth.max(), " ms");
                 S("Time app:", window->timingAppProcess, " ms");
-                //S("Time frame min:", window->timingFrameSmooth.min(), " ms");
                 S("Time frame avg:", window->timingFrameSmooth.avg(), " ms");
                 S("Time frame max:", window->timingFrameSmooth.max(), " ms");
-                S("Render tick:", ms.renderTicks, "");
 
                 nk_tree_pop(&ctx);
             }
@@ -942,19 +934,48 @@ public:
                 float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
+                nk_label(&ctx, "Loading:", NK_TEXT_LEFT);
+                nk_prog(&ctx, (int)(
+                    1000 * window->map->getMapRenderProgress()),
+                    1000, false);
+
                 S("GPU memory:", ms.currentGpuMemUseKB / 1024, " MB");
                 S("RAM memory:", ms.currentRamMemUseKB / 1024, " MB");
                 S("Node meta updates:", cs.currentNodeMetaUpdates, "");
                 S("Node draw updates:", cs.currentNodeDrawsUpdates, "");
                 S("Preparing:", ms.resourcesPreparing, "");
                 S("Downloading:", ms.resourcesDownloading, "");
-                S("Downloaded:", ms.resourcesDownloaded, "");
-                S("Disk loaded:", ms.resourcesDiskLoaded, "");
-                S("Active:", ms.resourcesActive, "");
-                S("Processed:", ms.resourcesProcessed, "");
-                S("Created:", ms.resourcesCreated, "");
-                S("Released:", ms.resourcesReleased, "");
-                S("Failed:", ms.resourcesFailed, "");
+
+                if (nk_tree_push(&ctx, NK_TREE_TAB, "Queues",
+                    NK_MINIMIZED))
+                {
+                    float ratio2[] = { width * 0.45f, width * 0.45f };
+                    nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio2);
+
+                    S("Upload:", ms.resourcesQueueUpload, "");
+                    S("Geodata:", ms.resourcesQueueGeodata, "");
+                    S("Cache read:", ms.resourcesQueueCacheRead, "");
+                    S("Cache write:", ms.resourcesQueueCacheWrite, "");
+
+                    nk_tree_pop(&ctx);
+                }
+
+                if (nk_tree_push(&ctx, NK_TREE_TAB, "Total",
+                    NK_MINIMIZED))
+                {
+                    float ratio2[] = { width * 0.45f, width * 0.45f };
+                    nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio2);
+
+                    S("Active:", ms.resourcesActive, "");
+                    S("Downloaded:", ms.resourcesDownloaded, "");
+                    S("Disk loaded:", ms.resourcesDiskLoaded, "");
+                    S("Processed:", ms.resourcesProcessed, "");
+                    S("Created:", ms.resourcesCreated, "");
+                    S("Released:", ms.resourcesReleased, "");
+                    S("Failed:", ms.resourcesFailed, "");
+
+                    nk_tree_pop(&ctx);
+                }
 
                 nk_tree_pop(&ctx);
             }

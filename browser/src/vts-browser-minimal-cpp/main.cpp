@@ -66,9 +66,11 @@ void dataEntry()
 
 void updateResolution()
 {
-    vts::renderer::RenderOptions &ro = render->options();
-    SDL_GL_GetDrawableSize(window, (int*)&ro.width,
-                                   (int*)&ro.height);
+    int w = 0, h = 0;
+    SDL_GL_GetDrawableSize(window, &w, &h);
+    auto &ro = render->options();
+    ro.width = w;
+    ro.height = h;
     cam->setViewportSize(ro.width, ro.height);
 }
 

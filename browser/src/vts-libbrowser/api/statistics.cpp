@@ -38,29 +38,39 @@ MapStatistics::MapStatistics() :
     resourcesCreated(0),
     resourcesReleased(0),
     resourcesFailed(0),
-    renderTicks(0),
-    currentGpuMemUseKB(0),
-    currentRamMemUseKB(0),
     resourcesActive(0),
     resourcesDownloading(0),
-    resourcesPreparing(0)
+    resourcesPreparing(0),
+    resourcesQueueUpload(0),
+    resourcesQueueCacheRead(0),
+    resourcesQueueCacheWrite(0),
+    resourcesQueueAtmosphere(0),
+    resourcesQueueGeodata(0),
+    currentGpuMemUseKB(0),
+    currentRamMemUseKB(0),
+    renderTicks(0)
 {}
 
 std::string MapStatistics::toJson() const
 {
     Json::Value v;
-    TJ(resourcesDownloaded, asUInt);
-    TJ(resourcesDiskLoaded, asUInt);
-    TJ(resourcesProcessed, asUInt);
-    TJ(resourcesCreated, asUInt);
-    TJ(resourcesReleased, asUInt);
-    TJ(resourcesFailed, asUInt);
-    TJ(renderTicks, asUInt);
-    TJ(currentGpuMemUseKB, asUInt);
-    TJ(currentRamMemUseKB, asUInt);
-    TJ(resourcesActive, asUInt);
-    TJ(resourcesDownloading, asUInt);
-    TJ(resourcesPreparing, asUInt);
+    TJ(resourcesDownloaded, asUint);
+    TJ(resourcesDiskLoaded, asUint);
+    TJ(resourcesProcessed, asUint);
+    TJ(resourcesCreated, asUint);
+    TJ(resourcesReleased, asUint);
+    TJ(resourcesFailed, asUint);
+    TJ(resourcesActive, asUint);
+    TJ(resourcesDownloading, asUint);
+    TJ(resourcesPreparing, asUint);
+    TJ(resourcesQueueUpload, asUint);
+    TJ(resourcesQueueCacheRead, asUint);
+    TJ(resourcesQueueCacheWrite, asUint);
+    TJ(resourcesQueueAtmosphere, asUint);
+    TJ(resourcesQueueGeodata, asUint);
+    TJ(currentGpuMemUseKB, asUint);
+    TJ(currentRamMemUseKB, asUint);
+    TJ(renderTicks, asUint);
     return jsonToString(v);
 }
 

@@ -53,9 +53,11 @@ void check()
 
 void updateResolution()
 {
+    int w = 0, h = 0;
+    SDL_GL_GetDrawableSize(window, &w, &h);
     vtsCRenderOptionsBase *ro = vtsRendererOptions(render);
-    SDL_GL_GetDrawableSize(window, (int*)&ro->width,
-                                   (int*)&ro->height);
+    ro->width = w;
+    ro->height = h;
     vtsCameraSetViewportSize(cam, ro->width, ro->height);
     check();
 }
@@ -197,6 +199,7 @@ int main()
         // update navigation etc.
         uint32 currentRenderTime = SDL_GetTicks();
         vtsMapRenderUpdate(map, (currentRenderTime - lastRenderTime) * 1e-3);
+        check();
         vtsCameraRenderUpdate(cam);
         check();
         lastRenderTime = currentRenderTime;

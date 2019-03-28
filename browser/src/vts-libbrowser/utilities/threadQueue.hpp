@@ -97,6 +97,11 @@ public:
         return stop;
     }
 
+    uint32 estimateSize() const
+    {
+        return q.size();
+    }
+
 private:
     std::atomic<bool> stop;
     std::list<T> q;

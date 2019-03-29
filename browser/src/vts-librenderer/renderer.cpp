@@ -692,6 +692,7 @@ void RendererImpl::finalize()
     shaderBackground.reset();
     shaderInfographic.reset();
     shaderCopyDepth.reset();
+    shaderGeodataColor.reset();
     shaderGeodataLine.reset();
     shaderGeodataPoint.reset();
     shaderGeodataPointLabel.reset();

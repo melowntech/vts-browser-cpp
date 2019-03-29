@@ -34,14 +34,10 @@ namespace vts { namespace renderer
 GeodataBase::GeodataBase() : renderer(nullptr), info(nullptr)
 {}
 
-GeodataBase::~GeodataBase()
-{}
-
-void GeodataBase::loadInit(RendererImpl *renderer, ResourceInfo &info,
+void GeodataBase::load(RendererImpl *renderer, ResourceInfo &info,
     GpuGeodataSpec &specp, const std::string &debugId)
 {
     this->debugId = debugId;
-
     this->spec = std::move(specp);
     this->info = &info;
     this->renderer = renderer;
@@ -55,10 +51,32 @@ void GeodataBase::loadInit(RendererImpl *renderer, ResourceInfo &info,
         if (c == c)
             c = std::cos(c * M_PI / 180.0);
     }
-}
 
-void GeodataBase::loadFinish()
-{
+    copyFonts();
+
+    switch (spec.type)
+    {
+    case GpuGeodataSpec::Type::LineScreen:
+    case GpuGeodataSpec::Type::LineFlat:
+        loadLine();
+        break;
+    case GpuGeodataSpec::Type::PointScreen:
+    case GpuGeodataSpec::Type::PointFlat:
+        loadPoint();
+        break;
+    case GpuGeodataSpec::Type::Triangles:
+        // todo
+        break;
+    case GpuGeodataSpec::Type::PointLabel:
+        loadPointLabel();
+        break;
+    case GpuGeodataSpec::Type::LineLabel:
+        loadLineLabel();
+        break;
+    default:
+        throw std::invalid_argument("invalid geodata type");
+    }
+
     // free some memory
     std::vector<std::vector<std::array<float, 3>>>()
         .swap(spec.positions);
@@ -68,8 +86,8 @@ void GeodataBase::loadFinish()
     std::vector<std::string>().swap(spec.texts);
     std::vector<std::shared_ptr<void>>().swap(spec.fontCascade);
 
-    info->ramMemoryCost += sizeof(spec);
-    info = nullptr;
+    this->info->ramMemoryCost += sizeof(spec) + sizeof(*this);
+    this->info = nullptr;
     renderer = nullptr;
 
     CHECK_GL("load geodata");
@@ -135,6 +153,20 @@ GeodataJob::GeodataJob(const std::shared_ptr<GeodataBase> &g, uint32 itemIndex)
 
 void RendererImpl::initializeGeodata()
 {
+    // load shader geodata color
+    {
+        shaderGeodataColor = std::make_shared<Shader>();
+        shaderGeodataColor->debugId
+            = "data/shaders/geodataColor.*.glsl";
+        shaderGeodataColor->loadInternal(
+            "data/shaders/geodataColor.vert.glsl",
+            "data/shaders/geodataColor.frag.glsl");
+        shaderGeodataColor->loadUniformLocations({
+                "uniMvp",
+                "uniColor"
+            });
+    }
+
     // load shader geodata line
     {
         shaderGeodataLine = std::make_shared<Shader>();
@@ -217,25 +249,39 @@ bool RendererImpl::geodataTestVisibility(
     return true;
 }
 
-mat4 RendererImpl::depthOffsetCorrection(const std::shared_ptr<GeodataBase> &gg) const
+mat4 RendererImpl::depthOffsetCorrection(const std::shared_ptr<GeodataBase> &g) const
 {
-    vec3 zbo = rawToVec3(gg->spec.commonData.zBufferOffset)
-        .cast<double>();
+    vec3 zbo = rawToVec3(g->spec.commonData.zBufferOffset).cast<double>();
     double off = dot(zbo, zBufferOffsetValues) * 0.0001;
     double off2 = (off + 1) * 2 - 1;
     mat4 s = scaleMatrix(vec3(1, 1, off2));
     return davidProjInv * s * davidProj;
 }
 
-void RendererImpl::bindUboView(const std::shared_ptr<GeodataBase> &gg)
+void RendererImpl::renderGeodataQuad(const Rect &rect, float depth, const vec4f &color)
 {
-    if (gg.get() == lastUboViewPointer)
-        return;
-    lastUboViewPointer = gg.get();
+    shaderGeodataColor->bind();
+    shaderGeodataColor->uniformVec4(1, color.data());
+    vec3 p = vec2to3(vec2((rect.a + rect.b).cast<double>() * 0.5),
+        (double)depth);
+    vec2 s = vec2((rect.b - rect.a).cast<double>() * 0.5);
+    mat4 mvp = translationMatrix(p)
+        * scaleMatrix(vec2to3(s, 1));
+    mat4f mvpf = mvp.cast<float>();
+    shaderGeodataColor->uniformMat4(0, mvpf.data());
+    meshQuad->bind();
+    meshQuad->dispatch();
+}
 
-    mat4 model = rawToMat4(gg->spec.model);
+void RendererImpl::bindUboView(const std::shared_ptr<GeodataBase> &g)
+{
+    if (g.get() == lastUboViewPointer)
+        return;
+    lastUboViewPointer = g.get();
+
+    mat4 model = rawToMat4(g->spec.model);
     mat4 mv = view * model;
-    mat4 mvp = proj * depthOffsetCorrection(gg) * mv;
+    mat4 mvp = proj * depthOffsetCorrection(g) * mv;
     mat4 mvInv = mv.inverse();
     mat4 mvpInv = mvp.inverse();
 
@@ -347,14 +393,14 @@ void RendererImpl::generateJobs()
     geodataJobs.clear();
     for (const auto &t : draws->geodata)
     {
-        std::shared_ptr<GeodataBase> gg
+        std::shared_ptr<GeodataBase> g
             = std::static_pointer_cast<GeodataBase>(t.geodata);
 
-        if (draws->camera.viewExtent < gg->spec.commonData.tileVisibility[0]
-            || draws->camera.viewExtent >= gg->spec.commonData.tileVisibility[1])
+        if (draws->camera.viewExtent < g->spec.commonData.tileVisibility[0]
+            || draws->camera.viewExtent >= g->spec.commonData.tileVisibility[1])
             continue;
 
-        switch (gg->spec.type)
+        switch (g->spec.type)
         {
         case GpuGeodataSpec::Type::LineScreen:
         case GpuGeodataSpec::Type::LineFlat:
@@ -362,12 +408,10 @@ void RendererImpl::generateJobs()
         case GpuGeodataSpec::Type::PointFlat:
         {
             // one job for entire tile
-            geodataJobs.emplace_back(gg, uint32(-1));
+            geodataJobs.emplace_back(g, uint32(-1));
         } break;
         case GpuGeodataSpec::Type::PointLabel:
         {
-            std::shared_ptr<GeodataText> g
-                = std::static_pointer_cast<GeodataText>(gg);
             if (!g->checkTextures())
                 continue;
             // individual jobs for each text
@@ -378,10 +422,10 @@ void RendererImpl::generateJobs()
                     g->spec.commonData.visibilities,
                     t.worldPosition, t.worldUp))
                 {
-                    GeodataJob j(gg, index);
+                    GeodataJob j(g, index);
                     if (!g->spec.importances.empty())
                         j.importance = g->spec.importances[index];
-                    if (gg->spec.commonData.preventOverlap)
+                    if (g->spec.commonData.preventOverlap)
                     {
                         vec2f ss = vec2f(1.f / widthPrev, 1.f / heightPrev);
                         vec4 sp = viewProj * vec3to4(t.worldPosition, 1);
@@ -396,6 +440,11 @@ void RendererImpl::generateJobs()
                         };
                         j.rect.a = p(t.rectOrigin);
                         j.rect.b = p(t.rectOrigin + t.rectSize);
+                    }
+                    {
+                        vec4 p = vec4(0, 0, j.ndcZ, 1);
+                        p = proj * depthOffsetCorrection(g) * projInv * p;
+                        j.ndcZ = p[2] / p[3];
                     }
                     geodataJobs.push_back(std::move(j));
                 }
@@ -431,39 +480,31 @@ void RendererImpl::sortJobs()
 
 void RendererImpl::renderJobMargins()
 {
-    vts::DrawSimpleTask st;
-    st.mesh = meshQuad;
     uint32 cnt = geodataJobs.size();
-    typedef std::pair<vts::DrawSimpleTask, double> Quad;
+    struct Quad
+    {
+        Rect r;
+        vec4f c;
+        float z;
+        Quad(const Rect &r, const vec4f &c, float z) : r(r), c(c), z(z)
+        {}
+    };
     std::vector<Quad> quads;
     quads.reserve(cnt);
     uint32 i = 0;
     for (const GeodataJob &job : geodataJobs)
     {
-        if (job.itemIndex == (uint32)-1 || !job.rect.valid())
+        if (!job.rect.valid())
             continue;
         vec3f color = convertHsvToRgb(vec3f(float(i++) / cnt, 1, 1));
-        vecToRaw(vec3to4(color, 0.35f), st.color);
-        vec2f c = (job.rect.b + job.rect.a) * 0.5;
-        vec2f s = (job.rect.b - job.rect.a) * 0.5;
-        mat4 p = depthOffsetCorrection(job.g) * projInv;
-        double ndcZ = job.ndcZ;
-        {
-            vec4 a = (proj * p).inverse() * vec4(0, 0, -0.9999, 1);
-            double l = a[2] / a[3];
-            ndcZ = std::max(ndcZ, l);
-        }
-        mat4 m = p
-            * translationMatrix(vec2to3(vec2(c.cast<double>()), ndcZ))
-            * scaleMatrix(vec2to3(vec2(s.cast<double>()), 1));
-        matToRaw(mat4f(m.cast<float>()), st.mv);
-        quads.push_back(std::make_pair(st, ndcZ));
+        quads.emplace_back(job.rect, vec3to4(color, 0.35f), job.ndcZ);
     }
-    std::sort(quads.begin(), quads.end(), [](const Quad &a, const Quad &b) {
-            return a.second < b.second;
-        });
-    for (const Quad &d : quads)
-        draws->infographics.push_back(d.first);
+    std::sort(quads.begin(), quads.end(),
+        [](const Quad &a, const Quad &b) {
+        return a.z > b.z;
+    });
+    for (const Quad &a : quads)
+        renderGeodataQuad(a.r, a.z, a.c);
 }
 
 void RendererImpl::filterOverlappingJobs()
@@ -532,17 +573,15 @@ void RendererImpl::renderJobs()
 
     for (const GeodataJob &job : geodataJobs)
     {
-        const auto &gg = job.g;
+        const auto &g = job.g;
 
-        switch (gg->spec.type)
+        switch (g->spec.type)
         {
         case GpuGeodataSpec::Type::LineScreen:
         case GpuGeodataSpec::Type::LineFlat:
         {
             assert(job.itemIndex == (uint32)-1);
-            bindUboView(gg);
-            std::shared_ptr<GeodataGeometry> g
-                = std::static_pointer_cast<GeodataGeometry>(gg);
+            bindUboView(g);
             shaderGeodataLine->bind();
             g->uniform->bindToIndex(2);
             g->texture->bind();
@@ -556,9 +595,7 @@ void RendererImpl::renderJobs()
         case GpuGeodataSpec::Type::PointFlat:
         {
             assert(job.itemIndex == (uint32)-1);
-            bindUboView(gg);
-            std::shared_ptr<GeodataGeometry> g
-                = std::static_pointer_cast<GeodataGeometry>(gg);
+            bindUboView(g);
             shaderGeodataPoint->bind();
             g->uniform->bindToIndex(2);
             g->texture->bind();
@@ -570,8 +607,6 @@ void RendererImpl::renderJobs()
         } break;
         case GpuGeodataSpec::Type::PointLabel:
         {
-            std::shared_ptr<GeodataText> g
-                = std::static_pointer_cast<GeodataText>(gg);
             const auto &t = g->texts[job.itemIndex];
 
             if (!geodataTestVisibility(
@@ -594,8 +629,8 @@ void RendererImpl::renderJobs()
                     *o++ = c;
             }
 
+            bindUboView(g);
             shaderGeodataPointLabel->bind();
-            bindUboView(gg);
             auto uboGeodataText = std::make_shared<UniformBuffer>();
             uboGeodataText->debugId = "UboText";
             uboGeodataText->bind();
@@ -603,6 +638,7 @@ void RendererImpl::renderJobs()
                 16 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size());
             uboGeodataText->bindToIndex(2);
 
+            meshEmpty->bind();
             for (int pass = 0; pass < 2; pass++)
             {
                 shaderGeodataPointLabel->uniform(0, pass);
@@ -613,6 +649,26 @@ void RendererImpl::renderJobs()
                                         w.coordinatesCount);
                 }
             }
+
+            // render stick
+            {
+                const auto &s = g->spec.commonData.stick;
+                if (s.width == s.width)
+                {
+                    vec4f color = rawToVec4(g->spec.commonData.stick.color);
+                    color[3] *= job.opacity;
+                    vec2 pos = vec3to2(vec4to3(vec4(viewProj
+                        * vec3to4(t.worldPosition, 1)), true));
+                    vec2 scl = vec2(s.width / widthPrev,
+                        s.heights[1] / heightPrev) * 0.5;
+                    pos[1] -= scl[1];
+                    Rect r;
+                    r.a = (pos - scl).cast<float>();
+                    r.b = (pos + scl).cast<float>();
+                    renderGeodataQuad(r, job.ndcZ, color);
+                }
+            }
+
         } break;
         default:
         {
@@ -629,22 +685,9 @@ void RendererImpl::renderJobs()
 void Renderer::loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec,
     const std::string &debugId)
 {
-    switch (spec.type)
-    {
-    case GpuGeodataSpec::Type::PointLabel:
-    case GpuGeodataSpec::Type::LineLabel:
-    {
-        auto r = std::make_shared<GeodataText>();
-        r->load(&*impl, info, spec, debugId);
-        info.userData = r;
-    } break;
-    default:
-    {
-        auto r = std::make_shared<GeodataGeometry>();
-        r->load(&*impl, info, spec, debugId);
-        info.userData = r;
-    } break;
-    }
+    auto r = std::make_shared<GeodataBase>();
+    r->load(&*impl, info, spec, debugId);
+    info.userData = r;
 }
 
 } } // namespace vts renderer

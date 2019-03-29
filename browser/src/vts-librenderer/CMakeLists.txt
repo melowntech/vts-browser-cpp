@@ -53,6 +53,8 @@ set(DATA_LIST
     data/shaders/color.vert.glsl
     data/shaders/copyDepth.frag.glsl
     data/shaders/copyDepth.vert.glsl
+    data/shaders/geodataColor.frag.glsl
+    data/shaders/geodataColor.vert.glsl
     data/shaders/geodataLine.frag.glsl
     data/shaders/geodataLine.vert.glsl
     data/shaders/geodataPoint.frag.glsl

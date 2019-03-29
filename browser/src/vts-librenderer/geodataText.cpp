@@ -529,35 +529,14 @@ vec2f numericOrigin(GpuGeodataSpec::Origin o)
 
 } // namespace
 
-void GeodataText::load(RendererImpl *renderer, ResourceInfo &info,
-    GpuGeodataSpec &specp, const std::string &debugId)
-{
-    loadInit(renderer, info, specp, debugId);
-
-    copyFonts();
-    switch (spec.type)
-    {
-    case GpuGeodataSpec::Type::PointLabel:
-        loadPointLabel();
-        break;
-    case GpuGeodataSpec::Type::LineLabel:
-        loadLineLabel();
-        break;
-    default:
-        throw std::invalid_argument("invalid geodata type");
-    }
-
-    loadFinish();
-}
-
-void GeodataText::copyFonts()
+void GeodataBase::copyFonts()
 {
     fontCascade.reserve(spec.fontCascade.size());
     for (auto &i : spec.fontCascade)
         fontCascade.push_back(std::static_pointer_cast<Font>(i));
 }
 
-void GeodataText::loadPointLabel()
+void GeodataBase::loadPointLabel()
 {
     assert(spec.texts.size() == spec.positions.size());
     float align = numericAlign(spec.unionData.pointLabel.textAlign);
@@ -590,12 +569,12 @@ void GeodataText::loadPointLabel()
     }
 }
 
-void GeodataText::loadLineLabel()
+void GeodataBase::loadLineLabel()
 {
     // todo
 }
 
-bool GeodataText::checkTextures()
+bool GeodataBase::checkTextures()
 {
     bool ok = true;
     for (auto &t : texts)

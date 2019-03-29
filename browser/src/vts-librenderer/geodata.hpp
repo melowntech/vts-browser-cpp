@@ -35,47 +35,6 @@ namespace vts { namespace renderer
 
 class Font;
 
-class GeodataBase : public std::enable_shared_from_this<GeodataBase>
-{
-public:
-    std::string debugId;
-
-    GpuGeodataSpec spec;
-    RendererImpl *renderer;
-    ResourceInfo *info;
-    mat4 model;
-    mat4 modelInv;
-
-    GeodataBase();
-    virtual ~GeodataBase();
-    virtual void load(RendererImpl *renderer, ResourceInfo &info,
-        GpuGeodataSpec &specp, const std::string &debugId) = 0;
-    void loadInit(RendererImpl *renderer, ResourceInfo &info,
-        GpuGeodataSpec &specp, const std::string &debugId);
-    void loadFinish();
-    void addMemory(ResourceInfo &other);
-    vec3f modelUp(const vec3f &p) const;
-    vec3f worldUp(vec3f &p) const;
-    uint32 getTotalPoints() const;
-};
-
-class GeodataGeometry : public GeodataBase
-{
-public:
-    std::shared_ptr<Mesh> mesh;
-    std::shared_ptr<Texture> texture;
-    std::shared_ptr<UniformBuffer> uniform;
-
-    void load(RendererImpl *renderer, ResourceInfo &info,
-        GpuGeodataSpec &specp, const std::string &debugId) override;
-    void prepareTextureForLinesAndPoints(Buffer &&texBuffer,
-        uint32 totalPoints);
-    void prepareMeshForLinesAndPoints(Buffer &&indBuffer,
-        uint32 indicesCount);
-    void loadLine();
-    void loadPoint();
-};
-
 struct Word
 {
     std::shared_ptr<Font> font;
@@ -104,15 +63,38 @@ struct Text
     {}
 };
 
-class GeodataText : public GeodataBase
+class GeodataBase : public std::enable_shared_from_this<GeodataBase>
 {
 public:
+    std::string debugId;
+
+    GpuGeodataSpec spec;
+    RendererImpl *renderer;
+    ResourceInfo *info;
+    mat4 model;
+    mat4 modelInv;
+
+    std::shared_ptr<Mesh> mesh;
+    std::shared_ptr<Texture> texture;
+    std::shared_ptr<UniformBuffer> uniform;
+
     vec4f outline;
     std::vector<std::shared_ptr<Font>> fontCascade;
     std::vector<Text> texts;
 
+    GeodataBase();
     void load(RendererImpl *renderer, ResourceInfo &info,
-        GpuGeodataSpec &specp, const std::string &debugId) override;
+        GpuGeodataSpec &specp, const std::string &debugId);
+    void addMemory(ResourceInfo &other);
+    vec3f modelUp(const vec3f &p) const;
+    vec3f worldUp(vec3f &p) const;
+    uint32 getTotalPoints() const;
+    void prepareTextureForLinesAndPoints(Buffer &&texBuffer,
+        uint32 totalPoints);
+    void prepareMeshForLinesAndPoints(Buffer &&indBuffer,
+        uint32 indicesCount);
+    void loadLine();
+    void loadPoint();
     void copyFonts();
     void loadPointLabel();
     void loadLineLabel();

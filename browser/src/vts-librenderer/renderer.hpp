@@ -65,7 +65,7 @@ struct GeodataJob
     float importance;
     float opacity; // 1 .. 0
     float stick; // stick length (pixels)
-    float ndcZ; // -1 .. 1
+    float ndcZ;
     GeodataJob(const std::shared_ptr<GeodataBase> &g, uint32 itemIndex);
 };
 
@@ -86,6 +86,7 @@ public:
     std::shared_ptr<class ShaderAtm> shaderBackground;
     std::shared_ptr<Shader> shaderInfographic;
     std::shared_ptr<Shader> shaderCopyDepth;
+    std::shared_ptr<Shader> shaderGeodataColor;
     std::shared_ptr<Shader> shaderGeodataLine;
     std::shared_ptr<Shader> shaderGeodataPoint;
     std::shared_ptr<Shader> shaderGeodataPointLabel;
@@ -138,7 +139,8 @@ public:
     bool geodataTestVisibility(
         const float visibility[4],
         const vec3 &pos, const vec3f &up);
-    mat4 depthOffsetCorrection(const std::shared_ptr<GeodataBase> &gg) const;
+    mat4 depthOffsetCorrection(const std::shared_ptr<GeodataBase> &g) const;
+    void renderGeodataQuad(const Rect &rect, float depth, const vec4f &color);
     void bindUboView(const std::shared_ptr<GeodataBase> &gg);
     void renderGeodata();
     void computeZBufferOffsetValues();

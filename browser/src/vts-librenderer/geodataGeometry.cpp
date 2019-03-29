@@ -29,32 +29,7 @@
 namespace vts { namespace renderer
 {
 
-void GeodataGeometry::load(RendererImpl *renderer, ResourceInfo &info,
-    GpuGeodataSpec &specp, const std::string &debugId)
-{
-    loadInit(renderer, info, specp, debugId);
-
-    switch (spec.type)
-    {
-    case GpuGeodataSpec::Type::LineScreen:
-    case GpuGeodataSpec::Type::LineFlat:
-        loadLine();
-        break;
-    case GpuGeodataSpec::Type::PointScreen:
-    case GpuGeodataSpec::Type::PointFlat:
-        loadPoint();
-        break;
-    case GpuGeodataSpec::Type::Triangles:
-        // todo
-        break;
-    default:
-        throw std::invalid_argument("invalid geodata type");
-    }
-
-    loadFinish();
-}
-
-void GeodataGeometry::prepareTextureForLinesAndPoints(Buffer &&texBuffer,
+void GeodataBase::prepareTextureForLinesAndPoints(Buffer &&texBuffer,
     uint32 totalPoints)
 {
     GpuTextureSpec tex;
@@ -72,7 +47,7 @@ void GeodataGeometry::prepareTextureForLinesAndPoints(Buffer &&texBuffer,
     addMemory(ri);
 }
 
-void GeodataGeometry::prepareMeshForLinesAndPoints(Buffer &&indBuffer,
+void GeodataBase::prepareMeshForLinesAndPoints(Buffer &&indBuffer,
     uint32 indicesCount)
 {
     GpuMeshSpec msh;
@@ -85,7 +60,7 @@ void GeodataGeometry::prepareMeshForLinesAndPoints(Buffer &&indBuffer,
     addMemory(ri);
 }
 
-void GeodataGeometry::loadLine()
+void GeodataBase::loadLine()
 {
     uint32 totalPoints = getTotalPoints(); // example: 7
     uint32 linesCount = spec.positions.size(); // 2
@@ -181,7 +156,7 @@ void GeodataGeometry::loadLine()
     }
 }
 
-void GeodataGeometry::loadPoint()
+void GeodataBase::loadPoint()
 {
     uint32 totalPoints = getTotalPoints();
     uint32 trianglesCount = totalPoints * 2;

@@ -129,7 +129,8 @@ bool Rect::overlaps(const Rect &a, const Rect &b)
 }
 
 GeodataJob::GeodataJob(const std::shared_ptr<GeodataBase> &g, uint32 itemIndex)
-    : g(g), itemIndex(itemIndex), importance(0), opacity(1)
+    : g(g), itemIndex(itemIndex),
+    importance(0), opacity(1), stick(0), ndcZ(nan1())
 {}
 
 void RendererImpl::initializeGeodata()
@@ -216,14 +217,14 @@ bool RendererImpl::geodataTestVisibility(
     return true;
 }
 
-mat4 RendererImpl::depthOffsetProj(const std::shared_ptr<GeodataBase> &gg) const
+mat4 RendererImpl::depthOffsetCorrection(const std::shared_ptr<GeodataBase> &gg) const
 {
     vec3 zbo = rawToVec3(gg->spec.commonData.zBufferOffset)
         .cast<double>();
     double off = dot(zbo, zBufferOffsetValues) * 0.0001;
     double off2 = (off + 1) * 2 - 1;
     mat4 s = scaleMatrix(vec3(1, 1, off2));
-    return proj * davidProjInv * s * davidProj;
+    return davidProjInv * s * davidProj;
 }
 
 void RendererImpl::bindUboView(const std::shared_ptr<GeodataBase> &gg)
@@ -234,7 +235,7 @@ void RendererImpl::bindUboView(const std::shared_ptr<GeodataBase> &gg)
 
     mat4 model = rawToMat4(gg->spec.model);
     mat4 mv = view * model;
-    mat4 mvp = depthOffsetProj(gg) * mv;
+    mat4 mvp = proj * depthOffsetCorrection(gg) * mv;
     mat4 mvInv = mv.inverse();
     mat4 mvpInv = mvp.inverse();
 
@@ -267,18 +268,17 @@ void RendererImpl::renderGeodata()
     glStencilFunc(GL_EQUAL, 0, 0xFF);
     glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     computeZBufferOffsetValues();
     bindUboCamera();
     generateJobs();
+    offsetJobsWithSticks();
     sortJobs();
+    if (options.renderTextMargins)
+        renderJobMargins();
     filterOverlappingJobs();
     processHysteresisJobs();
     renderJobs();
 
-    glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);
     //glEnable(GL_CULL_FACE);
 }
@@ -378,9 +378,6 @@ void RendererImpl::generateJobs()
                     g->spec.commonData.visibilities,
                     t.worldPosition, t.worldUp))
                 {
-                    if (options.renderTextMargins)
-                        renderTextMargin(t);
-
                     GeodataJob j(gg, index);
                     if (!g->spec.importances.empty())
                         j.importance = g->spec.importances[index];
@@ -393,7 +390,9 @@ void RendererImpl::generateJobs()
                             vec4 r = sp;
                             for (int i = 0; i < 2; i++)
                                 r[i] += options.textScale * r[3]*a[i]*ss[i];
-                            return vec3to2(vec4to3(r, true)).cast<float>();
+                            vec3 r3 = vec4to3(r, true);
+                            j.ndcZ = r3[2];
+                            return vec3to2(r3).cast<float>();
                         };
                         j.rect.a = p(t.rectOrigin);
                         j.rect.b = p(t.rectOrigin + t.rectSize);
@@ -410,6 +409,11 @@ void RendererImpl::generateJobs()
     }
 }
 
+void RendererImpl::offsetJobsWithSticks()
+{
+    // todo
+}
+
 void RendererImpl::sortJobs()
 {
     // primary: z-index
@@ -423,6 +427,43 @@ void RendererImpl::sortJobs()
             return a.importance > b.importance;
         return az < bz;
     });
+}
+
+void RendererImpl::renderJobMargins()
+{
+    vts::DrawSimpleTask st;
+    st.mesh = meshQuad;
+    uint32 cnt = geodataJobs.size();
+    typedef std::pair<vts::DrawSimpleTask, double> Quad;
+    std::vector<Quad> quads;
+    quads.reserve(cnt);
+    uint32 i = 0;
+    for (const GeodataJob &job : geodataJobs)
+    {
+        if (job.itemIndex == (uint32)-1 || !job.rect.valid())
+            continue;
+        vec3f color = convertHsvToRgb(vec3f(float(i++) / cnt, 1, 1));
+        vecToRaw(vec3to4(color, 0.35f), st.color);
+        vec2f c = (job.rect.b + job.rect.a) * 0.5;
+        vec2f s = (job.rect.b - job.rect.a) * 0.5;
+        mat4 p = depthOffsetCorrection(job.g) * projInv;
+        double ndcZ = job.ndcZ;
+        {
+            vec4 a = (proj * p).inverse() * vec4(0, 0, -0.9999, 1);
+            double l = a[2] / a[3];
+            ndcZ = std::max(ndcZ, l);
+        }
+        mat4 m = p
+            * translationMatrix(vec2to3(vec2(c.cast<double>()), ndcZ))
+            * scaleMatrix(vec2to3(vec2(s.cast<double>()), 1));
+        matToRaw(mat4f(m.cast<float>()), st.mv);
+        quads.push_back(std::make_pair(st, ndcZ));
+    }
+    std::sort(quads.begin(), quads.end(), [](const Quad &a, const Quad &b) {
+            return a.second < b.second;
+        });
+    for (const Quad &d : quads)
+        draws->infographics.push_back(d.first);
 }
 
 void RendererImpl::filterOverlappingJobs()
@@ -477,37 +518,6 @@ void RendererImpl::processHysteresisJobs()
 
     for (const auto &it : hysteresisJobs)
         geodataJobs.push_back(it.second);
-}
-
-void RendererImpl::renderTextMargin(const Text &t)
-{
-    vec2f ss = vec2f(1.f / widthPrev, 1.f / heightPrev);
-    vts::DrawSimpleTask st;
-    st.mesh = meshLine;
-    vecToRaw(vec4f(1, 0, 0, 1), st.color);
-    vec4 sp = viewProj * vec3to4(t.worldPosition, 1);
-    auto p = [&](const vec2f &a)
-    {
-        vec4 r = sp;
-        for (int i = 0; i < 2; i++)
-            r[i] += options.textScale * r[3] * a[i] * ss[i];
-        r = viewProjInv * r;
-        return vec4to3(r, true);
-    };
-    auto r = [&](const vec2f &aa, const vec2f &bb)
-    {
-        vec2f a2 = t.rectOrigin + t.rectSize.cwiseProduct(aa);
-        vec2f b2 = t.rectOrigin + t.rectSize.cwiseProduct(bb);
-        vec3 a = p(a2);
-        vec3 b = p(b2);
-        mat4f mv = (view * lookAt(a, b)).cast<float>();
-        matToRaw(mv, st.mv);
-        draws->infographics.push_back(st);
-    };
-    r(vec2f(0, 0), vec2f(0, 1));
-    r(vec2f(0, 1), vec2f(1, 1));
-    r(vec2f(1, 1), vec2f(1, 0));
-    r(vec2f(1, 0), vec2f(0, 0));
 }
 
 void RendererImpl::renderJobs()

@@ -353,6 +353,7 @@ void RendererImpl::render()
         return;
 
     viewInv = view.inverse();
+    projInv = proj.inverse();
     viewProj = proj * view;
     viewProjInv = viewProj.inverse();
 

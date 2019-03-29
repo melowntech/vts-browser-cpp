@@ -105,7 +105,7 @@ bool isCjk(const std::string &s)
     return true;
 }
 
-uint32 strlen(const std::string &s)
+uint32 utf8len(const std::string &s)
 {
     uint32 result = 0;
     auto it = s.begin();
@@ -171,23 +171,23 @@ struct geoContext
     {
         Value v = evaluate(p);
         validateArrayLength(v, 4, 4, "Color must have 4 components");
-        return vec4f(v[0].asInt(), v[1].asInt(), v[2].asInt(), v[3].asInt())
-            / 255.f;
+        return vec4f(v[0].asInt(), v[1].asInt(),
+            v[2].asInt(), v[3].asInt()) / 255.f;
     }
 
     vec4f convertVector4(const Value &p) const
     {
         Value v = evaluate(p);
         validateArrayLength(v, 4, 4, "Expected 4 components");
-        return vec4f(v[0].asFloat(), v[1].asFloat(),
-            v[2].asFloat(), v[3].asFloat());
+        return vec4f(convertToDouble(v[0]), convertToDouble(v[1]),
+            convertToDouble(v[2]), convertToDouble(v[3]));
     }
 
     vec2f convertVector2(const Value &p) const
     {
         Value v = evaluate(p);
         validateArrayLength(v, 2, 2, "Expected 2 components");
-        return vec2f(v[0].asFloat(), v[1].asFloat());
+        return vec2f(convertToDouble(v[0]), convertToDouble(v[1]));
     }
 
     GpuGeodataSpec::Stick convertStick(const Value &p) const
@@ -195,12 +195,12 @@ struct geoContext
         Value v = evaluate(p);
         validateArrayLength(v, 7, 8, "Stick must have 7 or 8 components");
         GpuGeodataSpec::Stick s;
-        s.heights[1] = v[0].asFloat();
-        s.heights[0] = v[1].asFloat();
-        s.width = v[2].asFloat();
+        s.heights[1] = convertToDouble(v[0]);
+        s.heights[0] = convertToDouble(v[1]);
+        s.width = convertToDouble(v[2]);
         vecToRaw(vec4f(vec4f(v[3].asInt(), v[4].asInt(), v[5].asInt(),
             v[6].asInt()) / 255.f), s.color);
-        s.offset = v.size() > 7 ? v[7].asFloat() : 0;
+        s.offset = v.size() > 7 ? convertToDouble(v[7]) : 0;
         return s;
     }
 
@@ -391,8 +391,9 @@ struct geoContext
         }
         this->group.reset();
 
-        if (Validating)
-            finalValidation();
+#ifndef NDEBUG
+        finalValidation();
+#endif // !NDEBUG
 
         // put cache into queue for upload
         data->specsToUpload.clear();
@@ -415,7 +416,9 @@ struct geoContext
                         if (itemsCount == 0)
                             itemsCount = s;
                         else if (itemsCount != s)
-                            THROW << "Failed final validation";
+                        {
+                            assert(false);
+                        }
                     }
                 };
                 c(spec.positions.size());
@@ -450,7 +453,7 @@ struct geoContext
         Value ls;
         for (const std::string &n : style["layers"].getMemberNames())
             ls[n] = resolveInheritance(style["layers"][n]);
-        style["layers"] = ls;
+        style["layers"].swap(ls);
     }
 
     // solves @constants, $properties and #identifiers
@@ -506,8 +509,6 @@ struct geoContext
             if (name == "#tileSize")
             {
                 // todo
-                LOGTHROW(fatal, std::logic_error)
-                    << "#tileSize is not yet implemented";
             }
             return Value();
         default:
@@ -751,7 +752,7 @@ if (fnc == #NAME) \
 
         // 'strlen', 'str2num', 'lowercase', 'uppercase', 'capitalize'
         if (fnc == "strlen")
-            return strlen(evaluate(expression[fnc]).asString());
+            return utf8len(evaluate(expression[fnc]).asString());
         if (fnc == "str2num")
             return str2num(evaluate(expression[fnc]).asString());
         if (fnc == "lowercase")
@@ -785,9 +786,9 @@ if (fnc == #NAME) \
             Value arr = evaluate(expression["lod-scaled"]);
             validateArrayLength(arr, 2, 3,
                 "Function 'lod-scaled' must have 2 or 3 values");
-            float l = arr[0].asFloat();
-            float v = arr[1].asFloat();
-            float bf = arr.size() == 3 ? arr[2].asFloat() : 1;
+            float l = convertToDouble(arr[0]);
+            float v = convertToDouble(arr[1]);
+            float bf = arr.size() == 3 ? convertToDouble(arr[2]) : 1;
             return Value(std::pow(2 * bf, l - lod) * v);
         }
 
@@ -1062,7 +1063,7 @@ if (cond == #OP) \
         {
             try
             {
-                return processFeature(layer, tv, {});
+                return processFeatureInternal(layer, tv, {});
             }
             catch (...)
             {
@@ -1072,7 +1073,7 @@ if (cond == #OP) \
                 throw;
             }
         }
-        return processFeature(layer, tv, {});
+        return processFeatureInternal(layer, tv, {});
     }
 
     void processFeature(const Value &layer,
@@ -1117,7 +1118,7 @@ if (cond == #OP) \
                 std::string layerName = np[1].asString();
                 if (Validating)
                 {
-                    if (style["layers"][layerName].empty())
+                    if (!style["layers"].isMember(layerName))
                         THROW << "Invalid layer name <"
                         << layerName << "> in next-pass";
                 }
@@ -1151,6 +1152,12 @@ if (cond == #OP) \
                     if (tv[0] < tv[1])
                     {
                         std::string ln = evaluate(vs[1]).asString();
+                        if (Validating)
+                        {
+                            if (!style["layers"].isMember(ln))
+                                THROW << "Invalid layer name <"
+                                << ln << "> in visibility-switch";
+                        }
                         Value l = layer;
                         l.removeMember("filter");
                         l.removeMember("visible");
@@ -1225,7 +1232,7 @@ if (cond == #OP) \
         if (layer.isMember("visibility"))
         {
             spec.commonData.visibilities[0]
-                = evaluate(layer["visibility"]).asFloat();
+                = convertToDouble(layer["visibility"]);
         }
 
         // visibility-abs
@@ -1235,7 +1242,8 @@ if (cond == #OP) \
             validateArrayLength(arr, 2, 2,
                 "visibility-abs must have 2 values");
             for (int i = 0; i < 2; i++)
-                spec.commonData.visibilities[i + 1] = arr[i].asFloat();
+                spec.commonData.visibilities[i + 1]
+                    = convertToDouble(arr[i]);
         }
 
         // visibility-rel
@@ -1244,9 +1252,9 @@ if (cond == #OP) \
             Value arr = evaluate(layer["visibility-rel"]);
             validateArrayLength(arr, 4, 4,
                 "visibility-rel must have 4 values");
-            float d = arr[0].asFloat() * arr[1].asFloat();
-            float v3 = arr[3].asFloat();
-            float v2 = arr[2].asFloat();
+            float d = convertToDouble(arr[0]) * convertToDouble(arr[1]);
+            float v3 = convertToDouble(arr[3]);
+            float v2 = convertToDouble(arr[2]);
             vec2f vr = vec2f(v3 <= 0 ? 0 : d / v3, v2 <= 0 ? 0 : d / v2);
             float *vs = spec.commonData.visibilities;
             if (vs[1] == vs[1])
@@ -1265,7 +1273,7 @@ if (cond == #OP) \
         // culling
         if (layer.isMember("culling"))
             spec.commonData.visibilities[3]
-            = evaluate(layer["culling"]).asFloat();
+                = convertToDouble(layer["culling"]);
     }
 
     void processFeatureLine(const Value &layer, GpuGeodataSpec spec)
@@ -1277,7 +1285,7 @@ if (cond == #OP) \
         vecToRaw(convertColor(layer["line-color"]),
             spec.unionData.line.color);
         spec.unionData.line.width
-            = evaluate(layer["line-width"]).asFloat();
+            = convertToDouble(layer["line-width"]);
         if (layer.isMember("line-width-units"))
         {
             std::string units = evaluate(layer["line-width-units"]).asString();
@@ -1327,7 +1335,7 @@ if (cond == #OP) \
             spec.unionData.point.color);
         spec.unionData.point.radius
             = layer.isMember("point-radius")
-            ? evaluate(layer["point-radius"]).asFloat()
+            ? convertToDouble(layer["point-radius"])
             : 1;
         GpuGeodataSpec &data = findSpecData(spec);
         auto arr = getFeaturePositions();
@@ -1377,7 +1385,7 @@ if (cond == #OP) \
             case 4:
                 // 4 values are valid, but we ignore the last two now
                 for (int i = 0; i < 2; i++)
-                    spec.commonData.margin[i] = lnom[i].asFloat();
+                    spec.commonData.margin[i] = convertToDouble(lnom[i]);
                 break;
             default:
                 if (Validating)
@@ -1387,11 +1395,11 @@ if (cond == #OP) \
         }
         spec.unionData.pointLabel.size
             = layer.isMember("label-size")
-            ? evaluate(layer["label-size"]).asFloat()
+            ? convertToDouble(layer["label-size"])
             : 10;
         spec.unionData.pointLabel.width
             = layer.isMember("label-width")
-            ? evaluate(layer["label-width"]).asFloat()
+            ? convertToDouble(layer["label-width"])
             : 200;
         spec.unionData.pointLabel.origin
             = layer.isMember("label-origin")
@@ -1476,7 +1484,6 @@ if (cond == #OP) \
             vec3 bb = vec3(b[0].asDouble(), b[1].asDouble(), b[2].asDouble());
             double resolution = group["resolution"].asDouble();
             vec3 mm = bb - aa;
-            //double am = std::max(mm[0], std::max(mm[1], mm[2]));
             orthonormalize = mat4to3(scaleMatrix(
                 mm / resolution)).cast<float>();
             model = translationMatrix(aa) * scaleMatrix(1);
@@ -1485,7 +1492,7 @@ if (cond == #OP) \
         Point convertPoint(const Value &v) const
         {
             validateArrayLength(v, 3, 3, "Point must have 3 coordinates");
-            vec3f p(v[0].asFloat(), v[1].asFloat(), v[2].asFloat());
+            vec3f p = vec3f(v[0].asDouble(), v[1].asDouble(), v[2].asDouble());
             p = orthonormalize * p;
             return Point({ p[0], p[1], p[2] });
         }

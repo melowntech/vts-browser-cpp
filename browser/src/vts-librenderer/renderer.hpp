@@ -59,11 +59,13 @@ struct Rect
 
 struct GeodataJob
 {
-    Rect rect;
+    Rect rect; // ndc space
     std::shared_ptr<GeodataBase> g;
     uint32 itemIndex; // -1 means all
     float importance;
-    float opacity;
+    float opacity; // 1 .. 0
+    float stick; // stick length (pixels)
+    float ndcZ; // -1 .. 1
     GeodataJob(const std::shared_ptr<GeodataBase> &g, uint32 itemIndex);
 };
 
@@ -100,6 +102,7 @@ public:
     mat4 view;
     mat4 viewInv;
     mat4 proj;
+    mat4 projInv;
     mat4 viewProj;
     mat4 viewProjInv;
     uint32 widthPrev;
@@ -135,17 +138,18 @@ public:
     bool geodataTestVisibility(
         const float visibility[4],
         const vec3 &pos, const vec3f &up);
-    mat4 depthOffsetProj(const std::shared_ptr<GeodataBase> &gg) const;
+    mat4 depthOffsetCorrection(const std::shared_ptr<GeodataBase> &gg) const;
     void bindUboView(const std::shared_ptr<GeodataBase> &gg);
     void renderGeodata();
     void computeZBufferOffsetValues();
     void bindUboCamera();
     void generateJobs();
+    void offsetJobsWithSticks();
     void sortJobs();
+    void renderJobMargins();
     void filterOverlappingJobs();
     void processHysteresisJobs();
     void renderJobs();
-    void renderTextMargin(const Text &t);
 };
 
 } // namespace renderer

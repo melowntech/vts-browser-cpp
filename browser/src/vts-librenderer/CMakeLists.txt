@@ -11,9 +11,6 @@ add_subdirectory(externals/sheenbidi)
 
 define_module(LIBRARY vts-renderer DEPENDS vts-browser utility glad FREETYPE HarfBuzz SheenBidi utf8cpp)
 
-include(../../cmake/print_all_variables.cmake)
-print_all_variables()
-
 set(PUB_HDR_LIST
     include/vts-renderer/foundationCommon.h
     include/vts-renderer/foundation.h

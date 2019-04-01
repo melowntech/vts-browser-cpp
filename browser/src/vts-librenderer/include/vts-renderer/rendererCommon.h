@@ -56,7 +56,7 @@ typedef struct vtsCRenderOptionsBase
     uint32 antialiasingSamples; // two or more to enable multisampling
     bool renderAtmosphere;
     bool renderPolygonEdges;
-    bool renderTextMargins;
+    bool renderGeodataMargins;
 
     // where to copy the result (and resolve multisampling)
     bool colorToTargetFrameBuffer;

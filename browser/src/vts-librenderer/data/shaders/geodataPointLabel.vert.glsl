@@ -18,7 +18,8 @@ layout(std140) uniform uboText
     vec4 uniColor[2];
     vec4 uniOutline;
     vec4 uniPosition; // xyz, scale
-    vec4 uniCoordinates[1020];
+    vec4 uniOffset;
+    vec4 uniCoordinates[1000];
     // 0, 1: position
     // 2, 3: uv
     // 2: + plane index (multiplied by 2)
@@ -46,6 +47,7 @@ void main()
     varUv = coord.zw;
     varUv.x -= float(varPlane * 2);
     gl_Position = uniMvp * vec4(uniPosition.xyz, 1.0);
+    gl_Position.xy += gl_Position.w * uniOffset.xy / uniCameraParams.xy;
     gl_Position.xy += uniPosition.w * gl_Position.w * pos / uniCameraParams.xy;
     // avoid culling geodata by near camera plane
     gl_Position.z = max(gl_Position.z, -gl_Position.w + 1e-7);

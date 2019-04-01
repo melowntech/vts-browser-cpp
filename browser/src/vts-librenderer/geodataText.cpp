@@ -460,7 +460,7 @@ Text generateTexts(std::vector<TmpLine> &lines)
             vertexIndex += 6;
 
             // todo better handle shader limit
-            if (text.coordinates.size() >= 1000)
+            if (text.coordinates.size() >= 990)
             {
                 text.words.push_back(std::move(w));
                 return text;

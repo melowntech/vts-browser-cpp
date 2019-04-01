@@ -146,7 +146,8 @@ bool Rect::overlaps(const Rect &a, const Rect &b)
     return true;
 }
 
-GeodataJob::GeodataJob(const std::shared_ptr<GeodataBase> &g, uint32 itemIndex)
+GeodataJob::GeodataJob(const std::shared_ptr<GeodataBase> &g,
+    uint32 itemIndex)
     : g(g), itemIndex(itemIndex),
     importance(0), opacity(1), stick(0), ndcZ(nan1())
 {}
@@ -246,10 +247,14 @@ bool RendererImpl::geodataTestVisibility(
     if (visibility[3] == visibility[3]
         && dot(normalize(vec3(eye - pos)).cast<float>(), up) < visibility[3])
         return false;
+    vec4 sp = viewProj * vec3to4(pos, 1);
+    if (sp[2] < -sp[3] || sp[2] > sp[3])
+        return false; // near & far planes culling
     return true;
 }
 
-mat4 RendererImpl::depthOffsetCorrection(const std::shared_ptr<GeodataBase> &g) const
+mat4 RendererImpl::depthOffsetCorrection(
+    const std::shared_ptr<GeodataBase> &g) const
 {
     vec3 zbo = rawToVec3(g->spec.commonData.zBufferOffset).cast<double>();
     double off = dot(zbo, zBufferOffsetValues) * 0.0001;
@@ -258,7 +263,8 @@ mat4 RendererImpl::depthOffsetCorrection(const std::shared_ptr<GeodataBase> &g) 
     return davidProjInv * s * davidProj;
 }
 
-void RendererImpl::renderGeodataQuad(const Rect &rect, float depth, const vec4f &color)
+void RendererImpl::renderGeodataQuad(const Rect &rect,
+    float depth, const vec4f &color)
 {
     shaderGeodataColor->bind();
     shaderGeodataColor->uniformVec4(1, color.data());
@@ -317,12 +323,12 @@ void RendererImpl::renderGeodata()
     computeZBufferOffsetValues();
     bindUboCamera();
     generateJobs();
-    offsetJobsWithSticks();
-    sortJobs();
-    if (options.renderTextMargins)
-        renderJobMargins();
+    sortJobsByZIndexAndImportance();
+    if (options.renderGeodataMargins)
+        renderJobMargins(); // this color-codes the order, therefore it should go after the sort
     filterOverlappingJobs();
     processHysteresisJobs();
+    sortJobsBackToFront();
     renderJobs();
 
     glDepthMask(GL_TRUE);
@@ -414,41 +420,78 @@ void RendererImpl::generateJobs()
         {
             if (!g->checkTextures())
                 continue;
+
             // individual jobs for each text
-            uint32 index = 0;
-            for (auto &t : g->texts)
+            for (uint32 index = 0, indexEnd = g->texts.size();
+                index < indexEnd; index++)
             {
-                if (geodataTestVisibility(
+                const auto &t = g->texts[index];
+
+                if (!geodataTestVisibility(
                     g->spec.commonData.visibilities,
                     t.worldPosition, t.worldUp))
+                    continue;
+
+                GeodataJob j(g, index);
+
+                if (!g->spec.importances.empty())
+                    j.importance = g->spec.importances[index];
+                vec4 sp = viewProj * vec3to4(t.worldPosition, 1);
+
+                // ndcZ
                 {
-                    GeodataJob j(g, index);
-                    if (!g->spec.importances.empty())
-                        j.importance = g->spec.importances[index];
-                    if (g->spec.commonData.preventOverlap)
-                    {
-                        vec2f ss = vec2f(1.f / widthPrev, 1.f / heightPrev);
-                        vec4 sp = viewProj * vec3to4(t.worldPosition, 1);
-                        auto p = [&](const vec2f &a) -> vec2f
-                        {
-                            vec4 r = sp;
-                            for (int i = 0; i < 2; i++)
-                                r[i] += options.textScale * r[3]*a[i]*ss[i];
-                            vec3 r3 = vec4to3(r, true);
-                            j.ndcZ = r3[2];
-                            return vec3to2(r3).cast<float>();
-                        };
-                        j.rect.a = p(t.rectOrigin);
-                        j.rect.b = p(t.rectOrigin + t.rectSize);
-                    }
-                    {
-                        vec4 p = vec4(0, 0, j.ndcZ, 1);
-                        p = proj * depthOffsetCorrection(g) * projInv * p;
-                        j.ndcZ = p[2] / p[3];
-                    }
-                    geodataJobs.push_back(std::move(j));
+                    vec4 p = proj * depthOffsetCorrection(g) * projInv * sp;
+                    j.ndcZ = p[2] / p[3];
                 }
-                index++;
+
+                // rect
+                if (g->spec.commonData.preventOverlap)
+                {
+                    vec2f ss = vec2f(1.f / widthPrev, 1.f / heightPrev);
+                    vec2f off = vec2f(
+                        g->spec.unionData.pointLabel.offset[0],
+                        g->spec.unionData.pointLabel.offset[1]
+                    ).cwiseProduct(ss);
+                    auto p = [&](const vec2f &a) -> vec2f
+                    {
+                        vec4 r = sp;
+                        for (int i = 0; i < 2; i++)
+                            r[i] += options.textScale * r[3]*a[i]*ss[i];
+                        vec3 r3 = vec4to3(r, true);
+                        return vec3to2(r3).cast<float>() + off;
+                    };
+                    j.rect.a = p(t.rectOrigin);
+                    j.rect.b = p(t.rectOrigin + t.rectSize);
+                }
+
+                // stick
+                {
+                    const auto &s = g->spec.commonData.stick;
+                    if (s.width == s.width)
+                    {
+                        j.stick = s.heightMax;
+                        vec3f camForward
+                            = vec4to3(vec4(viewInv
+                            * vec4(0, 0, -1, 0)), false).cast<float>();
+                        vec3f camUp
+                            = vec4to3(vec4(viewInv
+                            * vec4(0, 1, 0, 0)), false).cast<float>();
+                        vec3f camDir = normalize(rawToVec3(
+                            draws->camera.eye)).cast<float>();
+                        j.stick *= std::max(0.f,
+                            (1 + dot(t.worldUp, camForward))
+                            * dot(camUp, camDir)
+                        );
+                        if (j.stick < s.heightThreshold)
+                            j.stick = 0;
+                        float ro = (j.stick > 0 ? j.stick + s.offset : 0)
+                            / heightPrev;
+                        j.rect.a[1] += ro;
+                        j.rect.b[1] += ro;
+                    }
+                }
+
+                geodataJobs.push_back(std::move(j));
             }
         } break;
         default:
@@ -458,24 +501,19 @@ void RendererImpl::generateJobs()
     }
 }
 
-void RendererImpl::offsetJobsWithSticks()
-{
-    // todo
-}
-
-void RendererImpl::sortJobs()
+void RendererImpl::sortJobsByZIndexAndImportance()
 {
     // primary: z-index
     // secondary: importance
     std::sort(geodataJobs.begin(), geodataJobs.end(),
         [](const GeodataJob &a, const GeodataJob &b)
-    {
-        auto az = a.g->spec.commonData.zIndex;
-        auto bz = b.g->spec.commonData.zIndex;
-        if (az == bz)
-            return a.importance > b.importance;
-        return az < bz;
-    });
+        {
+            auto az = a.g->spec.commonData.zIndex;
+            auto bz = b.g->spec.commonData.zIndex;
+            if (az == bz)
+                return a.importance > b.importance;
+            return az < bz;
+        });
 }
 
 void RendererImpl::renderJobMargins()
@@ -500,9 +538,10 @@ void RendererImpl::renderJobMargins()
         quads.emplace_back(job.rect, vec3to4(color, 0.35f), job.ndcZ);
     }
     std::sort(quads.begin(), quads.end(),
-        [](const Quad &a, const Quad &b) {
-        return a.z > b.z;
-    });
+        [](const Quad &a, const Quad &b)
+        {
+            return a.z > b.z;
+        });
     for (const Quad &a : quads)
         renderGeodataQuad(a.r, a.z, a.c);
 }
@@ -561,6 +600,15 @@ void RendererImpl::processHysteresisJobs()
         geodataJobs.push_back(it.second);
 }
 
+void RendererImpl::sortJobsBackToFront()
+{
+    std::sort(geodataJobs.begin(), geodataJobs.end(),
+        [](const GeodataJob &a, const GeodataJob &b)
+        {
+            return a.ndcZ > b.ndcZ;
+        });
+}
+
 void RendererImpl::renderJobs()
 {
     struct UboText
@@ -568,7 +616,8 @@ void RendererImpl::renderJobs()
         vec4f color[2];
         vec4f outline;
         vec4f position; // xyz, scale
-        vec4f coordinates[1020];
+        vec4f offset;
+        vec4f coordinates[1000];
     } uboText;
 
     for (const GeodataJob &job : geodataJobs)
@@ -623,6 +672,11 @@ void RendererImpl::renderJobs()
             uboText.position[1] = t.modelPosition[1];
             uboText.position[2] = t.modelPosition[2];
             uboText.position[3] = options.textScale;
+            uboText.offset = vec4f(g->spec.unionData.pointLabel.offset[0],
+                g->spec.unionData.pointLabel.offset[1], 0, 0);
+            if (job.stick)
+                uboText.offset[1] += job.stick
+                    + g->spec.commonData.stick.offset;
             {
                 vec4f *o = uboText.coordinates;
                 for (const vec4f &c : t.coordinates)
@@ -635,7 +689,7 @@ void RendererImpl::renderJobs()
             uboGeodataText->debugId = "UboText";
             uboGeodataText->bind();
             uboGeodataText->load(&uboText,
-                16 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size());
+                20 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size());
             uboGeodataText->bindToIndex(2);
 
             meshEmpty->bind();
@@ -653,18 +707,18 @@ void RendererImpl::renderJobs()
             // render stick
             {
                 const auto &s = g->spec.commonData.stick;
-                if (s.width == s.width)
+                if (job.stick > 0)
                 {
                     vec4f color = rawToVec4(g->spec.commonData.stick.color);
                     color[3] *= job.opacity;
-                    vec2 pos = vec3to2(vec4to3(vec4(viewProj
-                        * vec3to4(t.worldPosition, 1)), true));
-                    vec2 scl = vec2(s.width / widthPrev,
-                        s.heights[1] / heightPrev) * 0.5;
-                    pos[1] -= scl[1];
                     Rect r;
-                    r.a = (pos - scl).cast<float>();
-                    r.b = (pos + scl).cast<float>();
+                    r.a = r.b = vec3to2(vec4to3(vec4(viewProj
+                        * vec3to4(t.worldPosition, 1)), true)).cast<float>();
+                    float w = s.width / widthPrev;
+                    float h = job.stick / heightPrev;
+                    r.a[0] -= w;
+                    r.b[0] += w;
+                    r.b[1] += h;
                     renderGeodataQuad(r, job.ndcZ, color);
                 }
             }

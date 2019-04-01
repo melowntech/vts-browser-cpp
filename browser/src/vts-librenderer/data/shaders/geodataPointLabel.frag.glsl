@@ -6,10 +6,8 @@ layout(std140) uniform uboText
     vec4 uniColor[2];
     vec4 uniOutline;
     vec4 uniPosition; // xyz, scale
-    vec4 uniCoordinates[1020];
-    // 0, 1: position
-    // 2, 3: uv
-    // 2: + plane index (multiplied by 2)
+    vec4 uniOffset;
+    vec4 uniCoordinates[1000];
 };
 
 uniform int uniPass;

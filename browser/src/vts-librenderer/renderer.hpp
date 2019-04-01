@@ -146,11 +146,11 @@ public:
     void computeZBufferOffsetValues();
     void bindUboCamera();
     void generateJobs();
-    void offsetJobsWithSticks();
-    void sortJobs();
+    void sortJobsByZIndexAndImportance();
     void renderJobMargins();
     void filterOverlappingJobs();
     void processHysteresisJobs();
+    void sortJobsBackToFront();
     void renderJobs();
 };
 

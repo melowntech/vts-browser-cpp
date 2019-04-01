@@ -195,8 +195,8 @@ struct geoContext
         Value v = evaluate(p);
         validateArrayLength(v, 7, 8, "Stick must have 7 or 8 components");
         GpuGeodataSpec::Stick s;
-        s.heights[1] = convertToDouble(v[0]);
-        s.heights[0] = convertToDouble(v[1]);
+        s.heightMax = convertToDouble(v[0]);
+        s.heightThreshold = convertToDouble(v[1]);
         s.width = convertToDouble(v[2]);
         vecToRaw(vec4f(vec4f(v[3].asInt(), v[4].asInt(), v[5].asInt(),
             v[6].asInt()) / 255.f), s.color);
@@ -1371,6 +1371,7 @@ if (cond == #OP) \
             ? convertVector2(layer["label-offset"])
             : vec2f(0, 0),
             spec.unionData.pointLabel.offset);
+        spec.unionData.pointLabel.offset[1] *= -1;
         spec.commonData.preventOverlap
             = layer.isMember("label-no-overlap")
             ? evaluate(layer["label-no-overlap"]).asBool()

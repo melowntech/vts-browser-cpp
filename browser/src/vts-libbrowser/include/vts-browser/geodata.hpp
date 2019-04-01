@@ -88,7 +88,8 @@ public:
     struct VTS_API Stick
     {
         float color[4];
-        float heights[2];
+        float heightMax;
+        float heightThreshold;
         float width;
         float offset;
     };

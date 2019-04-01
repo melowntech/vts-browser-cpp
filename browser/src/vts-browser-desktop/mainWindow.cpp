@@ -216,9 +216,13 @@ bool MainWindow::processEvents()
         // north-up button
         if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_SPACE)
         {
-            navigation->setRotation({0,270,0});
-            navigation->options().navigationType = vts::NavigationType::Quick;
-            navigation->resetNavigationMode();
+            if (map->getMapconfigAvailable())
+            {
+                navigation->setRotation({0,270,0});
+                navigation->options().navigationType
+                        = vts::NavigationType::Quick;
+                navigation->resetNavigationMode();
+            }
         }
 
         // mouse wheel
@@ -410,6 +414,8 @@ void MainWindow::colorizeMarks()
 
 vts::vec3 MainWindow::getWorldPositionFromCursor()
 {
+    if (!map->getMapconfigAvailable())
+        return vts::nan3();
     int xx, yy;
     SDL_GetMouseState(&xx, &yy);
     double screenPos[2] = { (double)xx, (double)yy };

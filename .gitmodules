@@ -3,43 +3,43 @@
 	url = https://github.com/vurtun/nuklear.git
 [submodule "externals/buildsys/common"]
 	path = externals/buildsys/common
-	url = https://github.com/Melown/buildsys-common.git
+	url = https://github.com/melowntech/buildsys-common.git
 [submodule "externals/buildsys/cmake"]
 	path = externals/buildsys/cmake
-	url = https://github.com/Melown/buildsys-cmake.git
+	url = https://github.com/melowntech/buildsys-cmake.git
 [submodule "externals/libdbglog"]
 	path = externals/libdbglog
-	url = https://github.com/Melown/libdbglog.git
+	url = https://github.com/melowntech/libdbglog.git
 [submodule "externals/libgeo"]
 	path = externals/libgeo
-	url = https://github.com/Melown/libgeo.git
+	url = https://github.com/melowntech/libgeo.git
 [submodule "externals/libgeometry"]
 	path = externals/libgeometry
-	url = https://github.com/Melown/libgeometry.git
+	url = https://github.com/melowntech/libgeometry.git
 [submodule "externals/half"]
 	path = externals/half
-	url = https://github.com/Melown/half.git
+	url = https://github.com/melowntech/half.git
 [submodule "externals/libhttp"]
 	path = externals/libhttp
-	url = https://github.com/Melown/libhttp.git
+	url = https://github.com/melowntech/libhttp.git
 [submodule "externals/libimgproc"]
 	path = externals/libimgproc
-	url = https://github.com/Melown/libimgproc.git
+	url = https://github.com/melowntech/libimgproc.git
 [submodule "externals/libjsoncpp"]
 	path = externals/libjsoncpp
-	url = https://github.com/Melown/libjsoncpp.git
+	url = https://github.com/melowntech/libjsoncpp.git
 [submodule "externals/libmath"]
 	path = externals/libmath
-	url = https://github.com/Melown/libmath.git
+	url = https://github.com/melowntech/libmath.git
 [submodule "externals/libutility"]
 	path = externals/libutility
-	url = https://github.com/Melown/libutility.git
+	url = https://github.com/melowntech/libutility.git
 [submodule "externals/vts-libs"]
 	path = externals/vts-libs
-	url = https://github.com/Melown/vts-libs.git
+	url = https://github.com/melowntech/vts-libs.git
 [submodule "externals/proj-data"]
 	path = externals/proj-data
-	url = https://github.com/Melown/proj-data.git
+	url = https://github.com/melowntech/proj-data.git
 [submodule "externals/SheenBidi"]
 	path = externals/SheenBidi
 	url = https://github.com/Tehreer/SheenBidi.git

@@ -44,6 +44,24 @@ using Json::Value;
 namespace
 {
 
+typedef std::map<std::string, const Value> AmpVariables;
+
+struct AmpVarsScope
+{
+    AmpVariables &vars;
+    AmpVariables cache;
+
+    AmpVarsScope(AmpVariables &vars) : vars(vars)
+    {
+        std::swap(vars, cache);
+    }
+
+    ~AmpVarsScope()
+    {
+        std::swap(vars, cache);
+    }
+};
+
 struct GpuGeodataSpecComparator
 {
     bool operator () (const GpuGeodataSpec &a, const GpuGeodataSpec &b) const
@@ -267,7 +285,8 @@ struct geoContext
         style(stringToJson(style->data)),
         features(stringToJson(features)),
         aabbPhys{ aabbPhys[0], aabbPhys[1] },
-        lod(lod)
+        lod(lod),
+        currentLayer(nullptr)
     {}
 
     // defines which style layers are candidates for a specific feature type
@@ -487,6 +506,14 @@ struct geoContext
             return evaluate(style["constants"][name]);
         case '$': // property
             return (*feature)["properties"][name.substr(1)];
+        case '&': // ampersand variable
+        {
+            auto it = ampVariables.find(name);
+            if (it != ampVariables.end())
+                return it->second;
+            return const_cast<AmpVariables&>(ampVariables).emplace(
+                    name, evaluate((*currentLayer)[name])).first->second;
+        }
         case '#': // identifier
             if (name == "#id")
                 return (*feature)["properties"]["name"];
@@ -790,6 +817,21 @@ if (fnc == #NAME) \
             float v = convertToDouble(arr[1]);
             float bf = arr.size() == 3 ? convertToDouble(arr[2]) : 1;
             return Value(std::pow(2 * bf, l - lod) * v);
+        }
+
+        // 'log-scale'
+        if (fnc == "logScale" || fnc == "log-scale")
+        {
+            Value arr = evaluate(expression[fnc]);
+            validateArrayLength(arr, 2, 4,
+                "Function 'log-scale' must have 2 to 4 values");
+            double v = convertToDouble(arr[0]);
+            double m = convertToDouble(arr[1]);
+            double a = arr.size() > 2 ? convertToDouble(arr[2]) : 0;
+            double b = arr.size() > 3 ? convertToDouble(arr[3]) : 100;
+            v = std::min(v, m);
+            double p = (b - a) / std::log(m + 1);
+            return p * std::log(v + 1) + a;
         }
 
         // unknown
@@ -1100,6 +1142,9 @@ if (cond == #OP) \
         std::array<float, 2> tileVisibility,
         boost::optional<sint32> zOverride)
     {
+        currentLayer = &layer;
+        AmpVarsScope ampVarsScope(ampVariables);
+
         // filter
         if (!zOverride && layer.isMember("filter")
             && !filter(layer["filter"]))
@@ -1354,7 +1399,9 @@ if (cond == #OP) \
     void processFeaturePointLabel(const Value &layer, GpuGeodataSpec spec)
     {
         findFonts(layer["label-font"], spec.fontCascade);
+
         spec.type = GpuGeodataSpec::Type::PointLabel;
+
         vecToRaw(layer.isMember("label-color")
             ? convertColor(layer["label-color"])
             : vec4f(1, 1, 1, 1),
@@ -1363,19 +1410,23 @@ if (cond == #OP) \
             ? convertColor(layer["label-color2"])
             : vec4f(0, 0, 0, 1),
             spec.unionData.pointLabel.color2);
+
         vecToRaw(layer.isMember("label-outline")
             ? convertVector4(layer["label-outline"])
             : vec4f(0.25, 0.75, 2.2, 2.2),
             spec.unionData.pointLabel.outline);
+
         vecToRaw(layer.isMember("label-offset")
             ? convertVector2(layer["label-offset"])
             : vec2f(0, 0),
             spec.unionData.pointLabel.offset);
         spec.unionData.pointLabel.offset[1] *= -1;
+
         spec.commonData.preventOverlap
             = layer.isMember("label-no-overlap")
             ? evaluate(layer["label-no-overlap"]).asBool()
             : true;
+
         vecToRaw(vec2f(5, 5), spec.commonData.margin);
         if (layer.isMember("label-no-overlap-margin"))
         {
@@ -1394,29 +1445,37 @@ if (cond == #OP) \
                 break;
             }
         }
+        // todo override spec.commonData.margin by values from browserOptions
+
         spec.unionData.pointLabel.size
             = layer.isMember("label-size")
             ? convertToDouble(layer["label-size"])
             : 10;
+
         spec.unionData.pointLabel.width
             = layer.isMember("label-width")
             ? convertToDouble(layer["label-width"])
             : 200;
+
         spec.unionData.pointLabel.origin
             = layer.isMember("label-origin")
             ? convertOrigin(layer["label-origin"])
             : GpuGeodataSpec::Origin::BottomCenter;
+
         spec.unionData.pointLabel.textAlign
             = layer.isMember("label-align")
             ? convertTextAlign(layer["label-align"])
             : GpuGeodataSpec::TextAlign::Center;
+
         if (layer.isMember("label-stick"))
             spec.commonData.stick
             = convertStick(layer["label-stick"]);
+
         std::string text = evaluate(layer.isMember("label-source")
             ? layer["label-source"] : "$name").asString();
         if (text.empty())
             return;
+
         std::string hysteresisId;
         if (layer.isMember("hysteresis"))
         {
@@ -1434,6 +1493,15 @@ if (cond == #OP) \
                     hysteresisId = text;
             }
         }
+
+        float importance = nan1();
+        if (layer.isMember("importance-source"))
+            importance = convertToDouble(
+                evaluate(layer["importance-source"]));
+        if (layer.isMember("importance-weight"))
+            importance *= convertToDouble(
+                evaluate(layer["importance-weight"]));
+
         GpuGeodataSpec &data = findSpecData(spec);
         auto arr = getFeaturePositions();
         cullOutsideFeatures(arr);
@@ -1446,6 +1514,8 @@ if (cond == #OP) \
             data.texts.push_back(text);
             if (!hysteresisId.empty())
                 data.hysteresisIds.push_back(hysteresisId);
+            if (importance == importance)
+                data.importances.push_back(importance);
         }
     }
 
@@ -1576,6 +1646,8 @@ if (cond == #OP) \
     //   temporary data generated while processing features
 
     std::set<GpuGeodataSpec, GpuGeodataSpecComparator> cacheData;
+    AmpVariables ampVariables;
+    const Value *currentLayer;
 };
 
 } // namespace

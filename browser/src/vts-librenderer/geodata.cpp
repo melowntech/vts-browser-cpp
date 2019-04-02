@@ -436,6 +436,7 @@ void RendererImpl::generateJobs()
 
                 if (!g->spec.importances.empty())
                     j.importance = g->spec.importances[index];
+
                 vec4 sp = viewProj * vec3to4(t.worldPosition, 1);
 
                 // ndcZ

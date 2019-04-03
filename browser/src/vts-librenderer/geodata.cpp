@@ -326,7 +326,7 @@ void RendererImpl::renderGeodata()
     sortJobsByZIndexAndImportance();
     if (options.renderGeodataMargins)
         renderJobMargins(); // this color-codes the order, therefore it should go after the sort
-    filterOverlappingJobs();
+    filterJobs();
     processHysteresisJobs();
     sortJobsBackToFront();
     renderJobs();
@@ -435,7 +435,13 @@ void RendererImpl::generateJobs()
                 GeodataJob j(g, index);
 
                 if (!g->spec.importances.empty())
+                {
                     j.importance = g->spec.importances[index];
+                    j.importance
+                        -= g->spec.commonData.importanceDistanceFactor
+                        * std::log(length(vec3(t.worldPosition
+                            - rawToVec3(draws->camera.eye))));
+                }
 
                 vec4 sp = viewProj * vec3to4(t.worldPosition, 1);
 
@@ -535,7 +541,7 @@ void RendererImpl::renderJobMargins()
     {
         if (!job.rect.valid())
             continue;
-        vec3f color = convertHsvToRgb(vec3f(float(i++) / cnt, 1, 1));
+        vec3f color = convertToRainbowColor(1 - float(i++) / cnt);
         quads.emplace_back(job.rect, vec3to4(color, 0.35f), job.ndcZ);
     }
     std::sort(quads.begin(), quads.end(),
@@ -547,19 +553,27 @@ void RendererImpl::renderJobMargins()
         renderGeodataQuad(a.r, a.z, a.c);
 }
 
-void RendererImpl::filterOverlappingJobs()
+void RendererImpl::filterJobs()
 {
+    float pixels = widthPrev * heightPrev;
+    uint32 index = 0;
     std::vector<Rect> rects;
     rects.reserve(geodataJobs.size());
     geodataJobs.erase(std::remove_if(geodataJobs.begin(),
         geodataJobs.end(), [&](const GeodataJob &l) {
-        if (!l.rect.valid())
-            return false;
-        const Rect mr = l.rect;
-        for (const Rect &r : rects)
-            if (Rect::overlaps(mr, r))
-                return true;
-        rects.push_back(mr);
+        float sfpps = l.g->spec.commonData.screenFeaturesPerPixelSquared;
+        if (index > sfpps * pixels)
+            return true;
+        if (l.rect.valid())
+        {
+            const Rect mr = l.rect;
+            for (const Rect &r : rects)
+                if (Rect::overlaps(mr, r))
+                    return true;
+            rects.push_back(mr);
+        }
+        if (sfpps == sfpps)
+            index++;
         return false;
     }), geodataJobs.end());
 }

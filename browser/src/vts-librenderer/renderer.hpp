@@ -148,7 +148,7 @@ public:
     void generateJobs();
     void sortJobsByZIndexAndImportance();
     void renderJobMargins();
-    void filterOverlappingJobs();
+    void filterJobs();
     void processHysteresisJobs();
     void sortJobsBackToFront();
     void renderJobs();

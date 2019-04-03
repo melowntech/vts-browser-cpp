@@ -87,6 +87,7 @@ std::string MapCreateOptions::toJson() const
 }
 
 MapRuntimeOptions::MapRuntimeOptions() :
+    pixelsPerInch(96),
     renderTilesScale(1.001),
     targetResourcesMemoryKB(0),
     maxConcurrentDownloads(25),
@@ -112,6 +113,7 @@ MapRuntimeOptions::MapRuntimeOptions(const std::string &json)
 void MapRuntimeOptions::applyJson(const std::string &json)
 {
     Json::Value v = stringToJson(json);
+    AJ(pixelsPerInch, asDouble);
     AJ(renderTilesScale, asDouble);
     AJ(targetResourcesMemoryKB, asUInt);
     AJ(maxConcurrentDownloads, asUInt);
@@ -130,6 +132,7 @@ void MapRuntimeOptions::applyJson(const std::string &json)
 std::string MapRuntimeOptions::toJson() const
 {
     Json::Value v;
+    TJ(pixelsPerInch, asDouble);
     TJ(renderTilesScale, asDouble);
     TJ(targetResourcesMemoryKB, asUInt);
     TJ(maxConcurrentDownloads, asUInt);

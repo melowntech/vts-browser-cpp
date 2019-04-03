@@ -113,5 +113,43 @@ vec3f convertHsvToRgb(const vec3f &inColor)
     return outColor;
 }
 
+vec3f convertToRainbowColor(float inValue)
+{
+    float value = 4.0f * (1.0f - inValue);
+    value = clamp(value, 0, 4);
+    int band = int(value);
+    value -= band;
+    vec3f result;
+    switch (band)
+    {
+    case 0:
+        result[0] = 1;
+        result[1] = value;
+        result[2] = 0;
+        break;
+    case 1:
+        result[0] = 1.0f - value;
+        result[1] = 1;
+        result[2] = 0;
+        break;
+    case 2:
+        result[0] = 0;
+        result[1] = 1;
+        result[2] = value;
+        break;
+    case 3:
+        result[0] = 0;
+        result[1] = 1.0f - value;
+        result[2] = 1;
+        break;
+    default:
+        result[0] = value;
+        result[1] = 0;
+        result[2] = 1;
+        break;
+    }
+    return result;
+}
+
 } // namespace vts
 

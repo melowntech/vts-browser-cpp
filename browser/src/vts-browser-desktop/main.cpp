@@ -129,6 +129,18 @@ int main(int argc, char *argv[])
         void *dataContext = nullptr;
         initializeSdl(window, renderContext, dataContext);
 
+        // dpi
+        {
+            float vdpi = mapOptions.pixelsPerInch;
+            if (SDL_GetDisplayDPI(SDL_GetWindowDisplayIndex(window),
+                nullptr, nullptr, &vdpi) == 0)
+                mapOptions.pixelsPerInch = vdpi;
+            else
+                vts::log(vts::LogLevel::warn3,
+                    "Failed to retrieve monitor DPI");
+        }
+
+        // vts map and main loop entry
         {
             vts::Map map(createOptions,
                 vts::Fetcher::create(fetcherOptions));

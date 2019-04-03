@@ -159,6 +159,8 @@ public:
         float tileVisibility[2]; // view extent range in which the tile is visible
         float hysteresisDuration[2]; // seconds
         float margin[2]; // horizontal, vertical (pixels)
+        float importanceDistanceFactor;
+        float screenFeaturesPerPixelSquared;
         sint32 zIndex;
         bool preventOverlap;
         CommonData();

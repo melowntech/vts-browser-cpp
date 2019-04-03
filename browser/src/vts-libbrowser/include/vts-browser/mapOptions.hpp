@@ -95,6 +95,8 @@ public:
     void applyJson(const std::string &json);
     std::string toJson() const;
 
+    double pixelsPerInch;
+
     // relative scale of every tile.
     // small up-scale may reduce occasional holes on tile borders.
     double renderTilesScale;

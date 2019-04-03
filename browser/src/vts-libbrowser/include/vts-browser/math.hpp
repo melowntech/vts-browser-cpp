@@ -140,6 +140,7 @@ VTS_API void frustumPlanes(const mat4 &vp, vec4 planes[6]);
 
 VTS_API vec3f convertRgbToHsv(const vec3f &inColor);
 VTS_API vec3f convertHsvToRgb(const vec3f &inColor);
+VTS_API vec3f convertToRainbowColor(float inValue);
 
 VTS_API vec2 rawToVec2(const double v[2]);
 VTS_API vec3 rawToVec3(const double v[3]);

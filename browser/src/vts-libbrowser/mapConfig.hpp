@@ -33,6 +33,11 @@
 
 #include "resource.hpp"
 
+namespace Json
+{
+    class Value;
+}
+
 namespace vts
 {
 
@@ -66,6 +71,7 @@ public:
     public:
         BrowserOptions();
 
+        std::shared_ptr<Json::Value> value;
         std::string searchUrl;
         std::string searchSrs;
         double autorotate;

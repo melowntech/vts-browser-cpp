@@ -32,6 +32,7 @@
 #include "../gpuResource.hpp"
 #include "../geodata.hpp"
 #include "../renderTasks.hpp"
+#include "../mapConfig.hpp"
 #include "../map.hpp"
 
 #include <utf8.h>
@@ -276,18 +277,18 @@ struct geoContext
         }
     }
 
-    geoContext(GeodataTile *data,
-        const GeodataStylesheet *style,
-        const std::string &features,
-        const vec3 aabbPhys[2], uint32 lod)
+    geoContext(GeodataTile *data)
         : data(data),
-        stylesheet(style),
-        style(stringToJson(style->data)),
-        features(stringToJson(features)),
-        aabbPhys{ aabbPhys[0], aabbPhys[1] },
-        lod(lod),
+        stylesheet(data->style.get()),
+        style(stringToJson(data->style->data)),
+        features(stringToJson(*data->features)),
+        aabbPhys{ data->aabbPhys[0], data->aabbPhys[1] },
+        lod(data->lod),
         currentLayer(nullptr)
-    {}
+    {
+        if (data->map->mapconfig->browserOptions.value)
+            browserOptions = *data->map->mapconfig->browserOptions.value;
+    }
 
     // defines which style layers are candidates for a specific feature type
     std::vector<std::string> filterLayersByType(Type t) const
@@ -1445,7 +1446,6 @@ if (cond == #OP) \
                 break;
             }
         }
-        // todo override spec.commonData.margin by values from browserOptions
 
         spec.unionData.pointLabel.size
             = layer.isMember("label-size")
@@ -1482,8 +1482,10 @@ if (cond == #OP) \
             Value arr = evaluate(layer["hysteresis"]);
             validateArrayLength(arr, 4, 4,
                 "hysteresis must have 4 values");
-            spec.commonData.hysteresisDuration[0] = convertToDouble(arr[0]) / 1000.0;
-            spec.commonData.hysteresisDuration[1] = convertToDouble(arr[1]) / 1000.0;
+            spec.commonData.hysteresisDuration[0]
+                = convertToDouble(arr[0]) / 1000.0;
+            spec.commonData.hysteresisDuration[1]
+                = convertToDouble(arr[1]) / 1000.0;
             hysteresisId = arr[2].asString();
             if (hysteresisId.empty())
             {
@@ -1501,6 +1503,22 @@ if (cond == #OP) \
         if (layer.isMember("importance-weight"))
             importance *= convertToDouble(
                 evaluate(layer["importance-weight"]));
+
+        if (browserOptions.isMember("mapFeaturesReduceMode")
+            && browserOptions["mapFeaturesReduceMode"] == "scr-count7")
+        {
+            Value params = browserOptions["mapFeaturesReduceParams"];
+            float dpi = data->map->options.pixelsPerInch;
+
+            spec.commonData.margin[0] = spec.commonData.margin[1]
+                = convertToDouble(params[0]) * dpi;
+
+            spec.commonData.screenFeaturesPerPixelSquared
+                = convertToDouble(params[1]) / (dpi * dpi);
+
+            spec.commonData.importanceDistanceFactor
+                = convertToDouble(params[2]);
+        }
 
         GpuGeodataSpec &data = findSpecData(spec);
         auto arr = getFeaturePositions();
@@ -1534,6 +1552,7 @@ if (cond == #OP) \
 
     GeodataTile *const data;
     const GeodataStylesheet *const stylesheet;
+    Value browserOptions;
     Value style;
     Value features;
     const vec3 aabbPhys[2];
@@ -1690,12 +1709,12 @@ void GeodataTile::process()
 
     if (map->options.debugValidateGeodataStyles)
     {
-        geoContext<true> ctx(this, style.get(), *features, aabbPhys, lod);
+        geoContext<true> ctx(this);
         ctx.process();
     }
     else
     {
-        geoContext<false> ctx(this, style.get(), *features, aabbPhys, lod);
+        geoContext<false> ctx(this);
         ctx.process();
     }
 

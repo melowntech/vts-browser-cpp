@@ -228,6 +228,8 @@ GpuGeodataSpec::CommonData::CommonData()
     stick.width = nan1();
     vecToRaw(vec4f(nan4().cast<float>()), visibilities);
     vecToRaw(vec3f(nan3().cast<float>()), zBufferOffset);
+
+    screenFeaturesPerPixelSquared = nan1();
 }
 
 } // namespace vts

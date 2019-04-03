@@ -79,8 +79,6 @@ public:
 
     std::vector<RenderGeodataTask> renders;
     std::vector<GpuGeodataSpec> specsToUpload;
-
-private:
     std::shared_ptr<GeodataStylesheet> style;
     std::shared_ptr<const std::string> features;
     vec3 aabbPhys[2];

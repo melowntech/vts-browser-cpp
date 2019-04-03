@@ -75,22 +75,36 @@ void Mapconfig::load()
     auto bo(vtslibs::vts::browserOptions(*this));
     if (bo.isObject())
     {
-        Json::Value r = bo["rotate"];
-        if (r.isDouble())
-            browserOptions.autorotate = r.asDouble() * 0.1;
+        if (bo.isMember("rotate") && bo["rotate"].isDouble())
+            browserOptions.autorotate = bo["rotate"].asDouble() * 0.1;
+
         if (map->createOptions.browserOptionsSearchUrls)
         {
-            r = bo["controlSearchUrl"];
-            if (r.isString())
-                browserOptions.searchUrl = r.asString();
-            r = bo["controlSearchSrs"];
-            if (r.isString())
-                browserOptions.searchSrs = r.asString();
-            r = bo["controlSearchFilter"];
-            if (r.isBool())
-                browserOptions.searchFilter = r.asBool();
+            if (bo.isMember("controlSearchUrl"))
+                browserOptions.searchUrl
+                = bo["controlSearchUrl"].asString();
+            if (bo.isMember("controlSearchSrs"))
+                browserOptions.searchSrs
+                = bo["controlSearchSrs"].asString();
+            if (bo.isMember("controlSearchFilter"))
+                browserOptions.searchFilter
+                = bo["controlSearchFilter"].asBool();
         }
     }
+    else
+        bo = Json::objectValue;
+
+    if (!bo.isMember("mapFeaturesReduceMode"))
+    {
+        bo["mapFeaturesReduceMode"] = "scr-count7";
+        bo["mapFeaturesReduceParams"][0] = 0.05;
+        bo["mapFeaturesReduceParams"][1] = 0.15;
+        bo["mapFeaturesReduceParams"][2] = 11;
+        bo["mapFeaturesReduceParams"][3] = 1;
+        bo["mapFeaturesReduceParams"][4] = 1000;
+    }
+
+    browserOptions.value = std::make_shared<Json::Value>(bo);
 
     if (browserOptions.searchSrs.empty())
         browserOptions.searchUrl = "";

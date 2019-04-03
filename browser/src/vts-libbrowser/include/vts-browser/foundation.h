@@ -39,16 +39,16 @@ extern "C" {
 //   vtsErrCode() and vtsErrMsg()
 
 // 0 = no error
-VTS_API sint32 vtsErrCode();
+VTS_API sint32 vtsErrCode(void);
 
 // some error states may have associated an additional description of the error
-VTS_API const char *vtsErrMsg();
+VTS_API const char *vtsErrMsg(void);
 
 // helper for translating an error code into human readable message
 VTS_API const char *vtsErrCodeToName(sint32 code);
 
 // reset internal error state to ok
-VTS_API void vtsErrClear();
+VTS_API void vtsErrClear(void);
 
 // opaque structures and handles
 typedef struct vtsCFetcher *vtsHFetcher;

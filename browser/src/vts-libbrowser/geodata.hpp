@@ -31,6 +31,11 @@
 #include "include/vts-browser/geodata.hpp"
 #include "resource.hpp"
 
+namespace Json
+{
+    class Value;
+}
+
 namespace vts
 {
 
@@ -72,15 +77,18 @@ public:
     GeodataTile(MapImpl *map, const std::string &name);
     void load() override;
     FetchTask::ResourceType resourceType() const override;
-    void update(const std::shared_ptr<GeodataStylesheet> &style,
-                const std::shared_ptr<const std::string> &features,
-                const vec3 aabbPhys[2], uint32 lod);
+    void update(
+        const std::shared_ptr<GeodataStylesheet> &style,
+        const std::shared_ptr<const std::string> &features,
+        const std::shared_ptr<const Json::Value> &browserOptions,
+        const vec3 aabbPhys[2], uint32 lod);
     void process();
 
     std::vector<RenderGeodataTask> renders;
     std::vector<GpuGeodataSpec> specsToUpload;
     std::shared_ptr<GeodataStylesheet> style;
     std::shared_ptr<const std::string> features;
+    std::shared_ptr<const Json::Value> browserOptions;
     vec3 aabbPhys[2];
     uint32 lod;
 };

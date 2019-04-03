@@ -41,7 +41,7 @@ VTS_API void vtsLogSetConsole(bool enable);
 VTS_API void vtsLogSetFile(const char *filename);
 VTS_API void vtsLogSetThreadName(const char *name);
 VTS_API void vtsLogAddSink(uint32 mask, vtsLogCallbackType callback);
-VTS_API void vtsLogClearSinks();
+VTS_API void vtsLogClearSinks(void);
 
 // this function will never set an error
 // if anything happens during the logging, it is silently ignored

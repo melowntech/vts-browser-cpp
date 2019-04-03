@@ -160,13 +160,13 @@ typedef struct vtsCResource
     vtsCResource(const std::string &id) : id(id), r(nullptr) {}
 } vtsCResource;
 
-sint32 vtsErrCode()
+sint32 vtsErrCode(void)
 {
     vts::TlsState &s = vts::tlsState;
     return s.code;
 }
 
-const char *vtsErrMsg()
+const char *vtsErrMsg(void)
 {
     vts::TlsState &s = vts::tlsState;
     return s.msg.c_str();
@@ -208,7 +208,7 @@ const char *vtsErrCodeToName(sint32 code)
     }
 }
 
-void vtsErrClear()
+void vtsErrClear(void)
 {
     vts::TlsState &s = vts::tlsState;
     s.code = 0;
@@ -271,7 +271,7 @@ void vtsLogAddSink(uint32 mask, vtsLogCallbackType callback)
     C_END
 }
 
-void vtsLogClearSinks()
+void vtsLogClearSinks(void)
 {
     C_BEGIN
     vts::clearLogSinks();

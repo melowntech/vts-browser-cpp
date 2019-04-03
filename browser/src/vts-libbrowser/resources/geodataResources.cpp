@@ -180,6 +180,7 @@ FetchTask::ResourceType GeodataTile::resourceType() const
 void GeodataTile::update(
     const std::shared_ptr<GeodataStylesheet> &s,
     const std::shared_ptr<const std::string> &f,
+    const std::shared_ptr<const Json::Value> &b,
     const vec3 ab[2], uint32 l)
 {
     switch ((Resource::State)state)
@@ -189,11 +190,12 @@ void GeodataTile::update(
         UTILITY_FALLTHROUGH;
     case Resource::State::errorFatal: // allow reloading when sources change, even if it failed before
     case Resource::State::ready:
-        if (style != s || features != f || lod != l
-            || ab[0] != aabbPhys[0] || ab[1] != aabbPhys[1])
+        if (style != s || features != f || browserOptions != b
+            || lod != l || ab[0] != aabbPhys[0] || ab[1] != aabbPhys[1])
         {
             style = s;
             features = f;
+            browserOptions = b;
             aabbPhys[0] = ab[0];
             aabbPhys[1] = ab[1];
             lod = l;

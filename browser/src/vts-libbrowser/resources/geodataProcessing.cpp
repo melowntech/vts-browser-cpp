@@ -282,13 +282,11 @@ struct geoContext
         stylesheet(data->style.get()),
         style(stringToJson(data->style->data)),
         features(stringToJson(*data->features)),
+        browserOptions(*data->browserOptions),
         aabbPhys{ data->aabbPhys[0], data->aabbPhys[1] },
         lod(data->lod),
         currentLayer(nullptr)
-    {
-        if (data->map->mapconfig->browserOptions.value)
-            browserOptions = *data->map->mapconfig->browserOptions.value;
-    }
+    {}
 
     // defines which style layers are candidates for a specific feature type
     std::vector<std::string> filterLayersByType(Type t) const
@@ -1552,9 +1550,9 @@ if (cond == #OP) \
 
     GeodataTile *const data;
     const GeodataStylesheet *const stylesheet;
-    Value browserOptions;
     Value style;
     Value features;
+    Value browserOptions;
     const vec3 aabbPhys[2];
     const uint32 lod;
 

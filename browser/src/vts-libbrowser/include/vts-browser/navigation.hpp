@@ -37,11 +37,15 @@
 namespace vts
 {
 
+class CameraImpl;
+class Camera;
+class NavigationOptions;
+class NavigationImpl;
+
 class VTS_API Navigation
 {
 public:
-
-    Navigation(class CameraImpl *cam);
+    Navigation(CameraImpl *cam);
 
     void pan(const double value[3]);
     void pan(const std::array<double, 3> &lst);
@@ -76,12 +80,12 @@ public:
     std::string getPositionJson() const;
     std::string getPositionUrl() const;
 
-    class NavigationOptions &options();
-    class Camera *camera();
+    NavigationOptions &options();
+    Camera *camera();
 
 private:
-    std::shared_ptr<class NavigationImpl> impl;
-    friend class Camera;
+    std::shared_ptr<NavigationImpl> impl;
+    friend Camera;
 };
 
 } // namespace vts

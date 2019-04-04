@@ -35,11 +35,19 @@
 namespace vts
 {
 
+class MapImpl;
+class CameraCredits;
+class CameraDraws;
+class CameraOptions;
+class CameraStatistics;
+class Map;
+class Navigation;
+class CameraImpl;
+
 class VTS_API Camera
 {
 public:
-
-    Camera(class MapImpl *map);
+    Camera(MapImpl *map);
 
     void setViewportSize(uint32 width, uint32 height);
     void setView(const double eye[3], const double target[3],
@@ -61,19 +69,19 @@ public:
 
     void renderUpdate();
 
-    class CameraCredits &credits();
-    class CameraDraws &draws();
-    class CameraOptions &options();
-    class CameraStatistics &statistics();
-    class Map *map();
+    CameraCredits &credits();
+    CameraDraws &draws();
+    CameraOptions &options();
+    CameraStatistics &statistics();
+    Map *map();
 
     // create new navigation
     // only the last navigation created for this camera will be used
-    std::shared_ptr<class Navigation> navigation();
+    std::shared_ptr<Navigation> createNavigation();
 
 private:
-    std::shared_ptr<class CameraImpl> impl;
-    friend class Map;
+    std::shared_ptr<CameraImpl> impl;
+    friend Map;
 };
 
 } // namespace vts

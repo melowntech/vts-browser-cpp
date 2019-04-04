@@ -34,7 +34,7 @@ namespace vts { namespace renderer
 GeodataBase::GeodataBase() : renderer(nullptr), info(nullptr)
 {}
 
-void GeodataBase::load(RendererImpl *renderer, ResourceInfo &info,
+void GeodataBase::load(RenderContextImpl *renderer, ResourceInfo &info,
     GpuGeodataSpec &specp, const std::string &debugId)
 {
     this->debugId = debugId;
@@ -152,86 +152,7 @@ GeodataJob::GeodataJob(const std::shared_ptr<GeodataBase> &g,
     importance(0), opacity(1), stick(0), ndcZ(nan1())
 {}
 
-void RendererImpl::initializeGeodata()
-{
-    // load shader geodata color
-    {
-        shaderGeodataColor = std::make_shared<Shader>();
-        shaderGeodataColor->debugId
-            = "data/shaders/geodataColor.*.glsl";
-        shaderGeodataColor->loadInternal(
-            "data/shaders/geodataColor.vert.glsl",
-            "data/shaders/geodataColor.frag.glsl");
-        shaderGeodataColor->loadUniformLocations({
-                "uniMvp",
-                "uniColor"
-            });
-    }
-
-    // load shader geodata line
-    {
-        shaderGeodataLine = std::make_shared<Shader>();
-        shaderGeodataLine->debugId
-            = "data/shaders/geodataLine.*.glsl";
-        shaderGeodataLine->loadInternal(
-            "data/shaders/geodataLine.vert.glsl",
-            "data/shaders/geodataLine.frag.glsl");
-        shaderGeodataLine->bindTextureLocations({
-                { "texLineData", 0 }
-            });
-        shaderGeodataLine->bindUniformBlockLocations({
-                { "uboCameraData", 0 },
-                { "uboViewData", 1 },
-                { "uboLineData", 2 }
-            });
-    }
-
-    // load shader geodata point
-    {
-        shaderGeodataPoint = std::make_shared<Shader>();
-        shaderGeodataPoint->debugId
-            = "data/shaders/geodataPoint.*.glsl";
-        shaderGeodataPoint->loadInternal(
-            "data/shaders/geodataPoint.vert.glsl",
-            "data/shaders/geodataPoint.frag.glsl");
-        shaderGeodataPoint->bindTextureLocations({
-                { "texPointData", 0 }
-            });
-        shaderGeodataPoint->bindUniformBlockLocations({
-                { "uboCameraData", 0 },
-                { "uboViewData", 1 },
-                { "uboPointData", 2 }
-            });
-    }
-
-    // load shader geodata point label
-    {
-        shaderGeodataPointLabel = std::make_shared<Shader>();
-        shaderGeodataPointLabel->debugId
-            = "data/shaders/geodataPointLabel.*.glsl";
-        shaderGeodataPointLabel->loadInternal(
-            "data/shaders/geodataPointLabel.vert.glsl",
-            "data/shaders/geodataPointLabel.frag.glsl");
-        shaderGeodataPointLabel->loadUniformLocations({
-                "uniPass"
-            });
-        shaderGeodataPointLabel->bindTextureLocations({
-                { "texGlyphs", 0 }
-            });
-        shaderGeodataPointLabel->bindUniformBlockLocations({
-                { "uboCameraData", 0 },
-                { "uboViewData", 1 },
-                { "uboText", 2 }
-            });
-    }
-
-    uboGeodataCamera = std::make_shared<UniformBuffer>();
-    uboGeodataCamera->debugId = "uboGeodataCamera";
-
-    CHECK_GL("initialize geodata");
-}
-
-bool RendererImpl::geodataTestVisibility(
+bool RenderViewImpl::geodataTestVisibility(
     const float visibility[4],
     const vec3 &pos, const vec3f &up)
 {
@@ -253,7 +174,7 @@ bool RendererImpl::geodataTestVisibility(
     return true;
 }
 
-bool RendererImpl::geodataDepthVisibility(const vec3 &pos, float threshold)
+bool RenderViewImpl::geodataDepthVisibility(const vec3 &pos, float threshold)
 {
     if (!(threshold == threshold))
         return true;
@@ -268,7 +189,7 @@ bool RendererImpl::geodataDepthVisibility(const vec3 &pos, float threshold)
     return p3[2] < ((float*)depthBuffer.data())[index];
 }
 
-mat4 RendererImpl::depthOffsetCorrection(
+mat4 RenderViewImpl::depthOffsetCorrection(
     const std::shared_ptr<GeodataBase> &g) const
 {
     vec3 zbo = rawToVec3(g->spec.commonData.zBufferOffset).cast<double>();
@@ -278,23 +199,23 @@ mat4 RendererImpl::depthOffsetCorrection(
     return davidProjInv * s * davidProj;
 }
 
-void RendererImpl::renderGeodataQuad(const Rect &rect,
+void RenderViewImpl::renderGeodataQuad(const Rect &rect,
     float depth, const vec4f &color)
 {
-    shaderGeodataColor->bind();
-    shaderGeodataColor->uniformVec4(1, color.data());
+    context->shaderGeodataColor->bind();
+    context->shaderGeodataColor->uniformVec4(1, color.data());
     vec3 p = vec2to3(vec2((rect.a + rect.b).cast<double>() * 0.5),
         (double)depth);
     vec2 s = vec2((rect.b - rect.a).cast<double>() * 0.5);
     mat4 mvp = translationMatrix(p)
         * scaleMatrix(vec2to3(s, 1));
     mat4f mvpf = mvp.cast<float>();
-    shaderGeodataColor->uniformMat4(0, mvpf.data());
-    meshQuad->bind();
-    meshQuad->dispatch();
+    context->shaderGeodataColor->uniformMat4(0, mvpf.data());
+    context->meshQuad->bind();
+    context->meshQuad->dispatch();
 }
 
-void RendererImpl::bindUboView(const std::shared_ptr<GeodataBase> &g)
+void RenderViewImpl::bindUboView(const std::shared_ptr<GeodataBase> &g)
 {
     if (g.get() == lastUboViewPointer)
         return;
@@ -327,7 +248,7 @@ void RendererImpl::bindUboView(const std::shared_ptr<GeodataBase> &g)
     lastUboView->bindToIndex(1);
 }
 
-void RendererImpl::renderGeodata()
+void RenderViewImpl::renderGeodata()
 {
     //glDisable(GL_CULL_FACE);
     glDepthMask(GL_FALSE);
@@ -350,7 +271,7 @@ void RendererImpl::renderGeodata()
     //glEnable(GL_CULL_FACE);
 }
 
-void RendererImpl::computeZBufferOffsetValues()
+void RenderViewImpl::computeZBufferOffsetValues()
 {
     vec3 up1 = normalize(rawToVec3(draws->camera.eye)); // todo projected systems
     vec3 up2 = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
@@ -392,7 +313,7 @@ void RendererImpl::computeZBufferOffsetValues()
     davidProjInv = davidProj.inverse();
 }
 
-void RendererImpl::bindUboCamera()
+void RenderViewImpl::bindUboCamera()
 {
     struct UboCameraData
     {
@@ -409,7 +330,7 @@ void RendererImpl::bindUboCamera()
     uboGeodataCamera->bindToIndex(0);
 }
 
-void RendererImpl::generateJobs()
+void RenderViewImpl::generateJobs()
 {
     geodataJobs.clear();
     for (const auto &t : draws->geodata)
@@ -527,7 +448,7 @@ void RendererImpl::generateJobs()
     }
 }
 
-void RendererImpl::sortJobsByZIndexAndImportance()
+void RenderViewImpl::sortJobsByZIndexAndImportance()
 {
     // primary: z-index
     // secondary: importance
@@ -542,7 +463,7 @@ void RendererImpl::sortJobsByZIndexAndImportance()
         });
 }
 
-void RendererImpl::renderJobMargins()
+void RenderViewImpl::renderJobMargins()
 {
     uint32 cnt = geodataJobs.size();
     struct Quad
@@ -572,7 +493,7 @@ void RendererImpl::renderJobMargins()
         renderGeodataQuad(a.r, a.z, a.c);
 }
 
-void RendererImpl::filterJobs()
+void RenderViewImpl::filterJobs()
 {
     float pixels = widthPrev * heightPrev;
     uint32 index = 0;
@@ -597,7 +518,7 @@ void RendererImpl::filterJobs()
     }), geodataJobs.end());
 }
 
-void RendererImpl::processHysteresisJobs()
+void RenderViewImpl::processHysteresisJobs()
 {
     for (auto it = hysteresisJobs.begin(); it != hysteresisJobs.end(); )
     {
@@ -634,7 +555,7 @@ void RendererImpl::processHysteresisJobs()
         geodataJobs.push_back(it.second);
 }
 
-void RendererImpl::sortJobsBackToFront()
+void RenderViewImpl::sortJobsBackToFront()
 {
     std::sort(geodataJobs.begin(), geodataJobs.end(),
         [](const GeodataJob &a, const GeodataJob &b)
@@ -643,7 +564,7 @@ void RendererImpl::sortJobsBackToFront()
         });
 }
 
-void RendererImpl::renderJobs()
+void RenderViewImpl::renderJobs()
 {
     struct UboText
     {
@@ -665,7 +586,7 @@ void RendererImpl::renderJobs()
         {
             assert(job.itemIndex == (uint32)-1);
             bindUboView(g);
-            shaderGeodataLine->bind();
+            context->shaderGeodataLine->bind();
             g->uniform->bindToIndex(2);
             g->texture->bind();
             Mesh *msh = g->mesh.get();
@@ -679,7 +600,7 @@ void RendererImpl::renderJobs()
         {
             assert(job.itemIndex == (uint32)-1);
             bindUboView(g);
-            shaderGeodataPoint->bind();
+            context->shaderGeodataPoint->bind();
             g->uniform->bindToIndex(2);
             g->texture->bind();
             Mesh *msh = g->mesh.get();
@@ -718,7 +639,7 @@ void RendererImpl::renderJobs()
             }
 
             bindUboView(g);
-            shaderGeodataPointLabel->bind();
+            context->shaderGeodataPointLabel->bind();
             auto uboGeodataText = std::make_shared<UniformBuffer>();
             uboGeodataText->debugId = "UboText";
             uboGeodataText->bind();
@@ -726,15 +647,15 @@ void RendererImpl::renderJobs()
                 20 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size());
             uboGeodataText->bindToIndex(2);
 
-            meshEmpty->bind();
+            context->meshEmpty->bind();
             for (int pass = 0; pass < 2; pass++)
             {
-                shaderGeodataPointLabel->uniform(0, pass);
+                context->shaderGeodataPointLabel->uniform(0, pass);
                 for (auto &w : t.words)
                 {
                     w.texture->bind();
-                    meshEmpty->dispatch(w.coordinatesStart,
-                                        w.coordinatesCount);
+                    context->meshEmpty->dispatch(
+                        w.coordinatesStart, w.coordinatesCount);
                 }
             }
 
@@ -770,7 +691,7 @@ void RendererImpl::renderJobs()
     lastUboView.reset();
 }
 
-void Renderer::loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec,
+void RenderContext::loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec,
     const std::string &debugId)
 {
     auto r = std::make_shared<GeodataBase>();

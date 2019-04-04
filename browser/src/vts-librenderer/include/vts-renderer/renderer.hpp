@@ -45,6 +45,10 @@ class GpuGeodataSpec;
 namespace renderer
 {
 
+class RenderContext;
+class RenderViewImpl;
+class RenderContextImpl;
+
 struct VTSR_API RenderOptions : public vtsCRenderOptionsBase
 {
     RenderOptions();
@@ -55,13 +59,35 @@ struct VTSR_API RenderVariables : public vtsCRenderVariablesBase
     RenderVariables();
 };
 
-class RendererImpl;
-
-class VTSR_API Renderer
+class VTSR_API RenderView
 {
 public:
-    Renderer();
-    ~Renderer();
+    RenderView(RenderContextImpl *context, Camera *cam);
+
+    Camera *camera();
+    RenderOptions &options();
+    const RenderVariables &variables() const;
+    void render();
+
+    // reconstruct world position for mouse picking
+    // uses data from last call to render
+    // returns NaN if the position cannot be obtained
+    void getWorldPosition(const double screenPosIn[2],
+        double worldPosOut[3]);
+
+    void renderCompass(const double screenPosSize[3],
+        const double mapRotation[3]);
+
+private:
+    std::shared_ptr<RenderViewImpl> impl;
+    friend RenderContext;
+};
+
+class VTSR_API RenderContext
+{
+public:
+    RenderContext();
+    ~RenderContext();
 
     // load all shaders and initialize all state required for the rendering
     // should be called once after the gl functions were initialized
@@ -82,22 +108,12 @@ public:
         const std::string &debugId);
     void bindLoadFunctions(Map *map);
 
-    RenderOptions &options();
-    const RenderVariables &variables() const;
-
-    void render(Camera *cam);
-
-    void renderCompass(const double screenPosSize[3],
-                       const double mapRotation[3]);
-
-    // reconstruct world position for mouse picking
-    // uses data from last call to render
-    // returns NaN if the position cannot be obtained
-    void getWorldPosition(const double screenPosIn[2],
-                          double worldPosOut[3]);
+    // create new render view
+    // you may have multiple views in single render context
+    std::shared_ptr<RenderView> createView(Camera *cam);
 
 private:
-    std::shared_ptr<RendererImpl> impl;
+    std::shared_ptr<RenderContextImpl> impl;
 };
 
 } // namespace renderer

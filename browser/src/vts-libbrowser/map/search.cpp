@@ -154,12 +154,17 @@ double vtod(Json::Value &v)
 {
     if (v.type() == Json::ValueType::realValue)
         return v.asDouble();
-    double r = std::numeric_limits<double>::quiet_NaN();
-    sscanf(v.asString().c_str(), "%lf", &r);
-    return r;
+    std::stringstream ss(v.asString());
+    double f = nan1();
+    ss >> std::noskipws >> f;
+    if ((ss.rdstate() ^ std::ios_base::eofbit))
+        return nan1();
+    return f;
 }
 
-void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
+} // namespace
+
+void MapImpl::parseSearchResults(const std::shared_ptr<SearchTask> &task)
 {
     assert(!task->done);
     try
@@ -196,8 +201,8 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
             t.position[0] = vtod(it["lon"]);
             t.position[1] = vtod(it["lat"]);
             t.position[2] = 0;
-            searchToNav(map, t.position);
-            t.distance = distance(map, task->position, t.position);
+            searchToNav(this, t.position);
+            t.distance = distance(this, task->position, t.position);
             Json::Value bj = it["boundingbox"];
             if (bj.size() == 4)
             {
@@ -214,16 +219,16 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
                 t.radius = 0;
                 for (int i = 0; i < 4; i++)
                 {
-                    searchToNav(map, bbs[i]);
+                    searchToNav(this, bbs[i]);
                     t.radius = std::max(t.radius,
-                                        distance(map, t.position, bbs[i]));
+                                        distance(this, t.position, bbs[i]));
                 }
             }
             t.importance = vtod(it["importance"]);
             task->results.push_back(t);
         }
-        if (map->options.searchResultsFiltering)
-            filterSearchResults(map, task);
+        if (options.searchResultsFiltering)
+            filterSearchResults(this, task);
     }
     catch (const std::exception &e)
     {
@@ -233,8 +238,6 @@ void parseSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
                   << e.what() << ">";
     }
 }
-
-} // namespace
 
 SearchTaskImpl::SearchTaskImpl(MapImpl *map, const std::string &name) :
     Resource(map, name),
@@ -365,7 +368,7 @@ void MapImpl::updateSearch()
             case Validity::Invalid:
                 break;
             case Validity::Valid:
-                parseSearchResults(this, t);
+                parseSearchResults(t);
                 break;
             }
             t->done = true;

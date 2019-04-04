@@ -54,90 +54,111 @@ void vtsLoadGlFunctions(GLADloadproc functionLoader)
     C_END
 }
 
-typedef struct vtsCRenderer
+typedef struct vtsCRenderContext
 {
-    std::shared_ptr<vts::renderer::Renderer> p;
-} vtsCRenderer;
+    std::shared_ptr<vts::renderer::RenderContext> p;
+} vtsCRenderContext;
 
-vtsHRenderer vtsRendererCreate()
+typedef struct vtsCRenderView
+{
+    std::shared_ptr<vts::renderer::RenderView> p;
+} vtsCRenderView;
+
+vtsHRenderContext vtsRenderContextCreate()
 {
     C_BEGIN
-    vtsHRenderer r = new vtsCRenderer();
-    r->p = std::make_shared<vts::renderer::Renderer>();
+    vtsHRenderContext r = new vtsCRenderContext();
+    r->p = std::make_shared<vts::renderer::RenderContext>();
     return r;
     C_END
     return nullptr;
 }
 
-void vtsRendererDestroy(vtsHRenderer renderer)
+void vtsRenderContextDestroy(vtsHRenderContext context)
 {
     C_BEGIN
-    delete renderer;
+    delete context;
     C_END
 }
 
-void vtsRendererInitialize(vtsHRenderer renderer)
+void vtsRenderContextInitialize(vtsHRenderContext context)
 {
     C_BEGIN
-    renderer->p->initialize();
+    context->p->initialize();
     C_END
 }
 
-void vtsRendererFinalize(vtsHRenderer renderer)
+void vtsRenderContextFinalize(vtsHRenderContext context)
 {
     C_BEGIN
-    renderer->p->finalize();
+    context->p->finalize();
     C_END
 }
 
-void vtsRendererBindLoadFunctions(vtsHRenderer renderer,
-                                   vtsHMap map)
+void vtsRenderContextBindLoadFunctions(vtsHRenderContext context,
+    vtsHMap map)
 {
     C_BEGIN
-    renderer->p->bindLoadFunctions(map->p.get());
+    context->p->bindLoadFunctions(map->p.get());
     C_END
 }
 
-vtsCRenderOptionsBase *vtsRendererOptions(
-                                   vtsHRenderer renderer)
+vtsHRenderView vtsRenderContextCreateView(vtsHRenderContext context,
+    vtsHCamera camera)
 {
     C_BEGIN
-    return &renderer->p->options();
-    C_END
-    return nullptr;
-}
-
-const vtsCRenderVariablesBase *vtsRendererVariables(
-                                   vtsHRenderer renderer)
-{
-    C_BEGIN
-    return &renderer->p->variables();
+    vtsHRenderView r = new vtsCRenderView();
+    r->p = context->p->createView(camera->p.get());
+    return r;
     C_END
     return nullptr;
 }
 
-void vtsRendererRender(vtsHRenderer renderer, vtsHCamera camera)
+void vtsRenderViewDestroy(vtsHRenderView view)
 {
     C_BEGIN
-    renderer->p->render(camera->p.get());
+    delete view;
     C_END
 }
 
-void vtsRendererRenderCompas(vtsHRenderer renderer,
-                       const double screenPosSize[3],
-                       const double mapRotation[3])
+vtsCRenderOptionsBase *vtsRenderViewOptions(
+    vtsHRenderView view)
 {
     C_BEGIN
-    renderer->p->renderCompass(screenPosSize, mapRotation);
+    return &view->p->options();
+    C_END
+    return nullptr;
+}
+
+const vtsCRenderVariablesBase *vtsRenderViewVariables(
+    vtsHRenderView view)
+{
+    C_BEGIN
+    return &view->p->variables();
+    C_END
+    return nullptr;
+}
+
+void vtsRenderViewRender(vtsHRenderView view)
+{
+    C_BEGIN
+    view->p->render();
     C_END
 }
 
-void vtsRendererGetWorldPosition(vtsHRenderer renderer,
-                       const double screenPosIn[2],
-                       double worldPosOut[3])
+void vtsRenderViewRenderCompas(vtsHRenderView view,
+    const double screenPosSize[3], const double mapRotation[3])
 {
     C_BEGIN
-    renderer->p->getWorldPosition(screenPosIn, worldPosOut);
+    view->p->renderCompass(screenPosSize, mapRotation);
+    C_END
+}
+
+void vtsRenderViewGetWorldPosition(vtsHRenderView view,
+    const double screenPosIn[2], double worldPosOut[3])
+{
+    C_BEGIN
+    view->p->getWorldPosition(screenPosIn, worldPosOut);
     C_END
 }
 

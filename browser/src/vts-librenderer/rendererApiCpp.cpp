@@ -47,67 +47,86 @@ RenderVariables::RenderVariables()
     memset(this, 0, sizeof(*this));
 }
 
-Renderer::Renderer()
+RenderContext::RenderContext()
 {
-    impl = std::make_shared<RendererImpl>(this);
+    impl = std::make_shared<RenderContextImpl>(this);
 }
 
-Renderer::~Renderer()
+RenderContext::~RenderContext()
 {}
 
-void Renderer::initialize()
+void RenderContext::initialize()
 {
     impl->initialize();
 }
 
-void Renderer::finalize()
+void RenderContext::finalize()
 {
     impl->finalize();
 }
 
-void Renderer::bindLoadFunctions(Map *map)
+void RenderContext::bindLoadFunctions(Map *map)
 {
-    map->callbacks().loadTexture = std::bind(&Renderer::loadTexture, this,
+    assert(map);
+    map->callbacks().loadTexture = std::bind(&RenderContext::loadTexture, this,
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-    map->callbacks().loadMesh = std::bind(&Renderer::loadMesh, this,
+    map->callbacks().loadMesh = std::bind(&RenderContext::loadMesh, this,
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-    map->callbacks().loadFont = std::bind(&Renderer::loadFont, this,
+    map->callbacks().loadFont = std::bind(&RenderContext::loadFont, this,
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-    map->callbacks().loadGeodata = std::bind(&Renderer::loadGeodata, this,
+    map->callbacks().loadGeodata = std::bind(&RenderContext::loadGeodata, this,
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 }
 
-RenderOptions &Renderer::options()
+std::shared_ptr<RenderView> RenderContext::createView(Camera *cam)
+{
+    assert(cam);
+    return std::make_shared<RenderView>(impl.get(), cam);
+}
+
+RenderView::RenderView(RenderContextImpl *context, Camera *cam)
+{
+    assert(context);
+    assert(cam);
+    impl = std::make_shared<RenderViewImpl>(cam, this, context);
+}
+
+Camera *RenderView::camera()
+{
+    return impl->camera;
+}
+
+RenderOptions &RenderView::options()
 {
     return impl->options;
 }
 
-const RenderVariables &Renderer::variables() const
+const RenderVariables &RenderView::variables() const
 {
     return impl->vars;
 }
 
-void Renderer::render(Camera *cam)
+void RenderView::render()
 {
-    impl->draws = &cam->draws();
-    impl->body = &cam->map()->celestialBody();
-    impl->projected = cam->map()->getMapProjected();
+    impl->draws = &impl->camera->draws();
+    impl->body = &impl->camera->map()->celestialBody();
+    impl->projected = impl->camera->map()->getMapProjected();
     impl->atmosphereDensityTexture
-        = (Texture*)cam->map()->atmosphereDensityTexture().get();
-    impl->elapsedTime = cam->map()->lastRenderUpdateElapsedTime();
+        = (Texture*)impl->camera->map()->atmosphereDensityTexture().get();
+    impl->elapsedTime = impl->camera->map()->lastRenderUpdateElapsedTime();
     impl->render();
     impl->draws = nullptr;
     impl->body = nullptr;
     impl->atmosphereDensityTexture = nullptr;
 }
 
-void Renderer::renderCompass(const double screenPosSize[3],
+void RenderView::renderCompass(const double screenPosSize[3],
                    const double mapRotation[3])
 {
     impl->renderCompass(screenPosSize, mapRotation);
 }
 
-void Renderer::getWorldPosition(const double screenPosIn[2],
+void RenderView::getWorldPosition(const double screenPosIn[2],
                       double worldPosOut[3])
 {
     impl->getWorldPosition(screenPosIn, worldPosOut);

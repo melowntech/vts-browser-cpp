@@ -37,6 +37,9 @@
 namespace vts
 {
 
+class SearchTaskImpl;
+class MapImpl;
+
 class VTS_API SearchItem
 {
 public:
@@ -67,7 +70,9 @@ public:
     std::vector<SearchItem> results;
     std::atomic<bool> done;
 
-    std::shared_ptr<class SearchTaskImpl> impl;
+private:
+    std::shared_ptr<SearchTaskImpl> impl;
+    friend MapImpl;
 };
 
 } // namespace vts

@@ -40,7 +40,7 @@
 namespace vts
 {
 
-std::shared_ptr<Navigation> Camera::navigation()
+std::shared_ptr<Navigation> Camera::createNavigation()
 {
     auto r = std::make_shared<Navigation>(impl.get());
     impl->navigation = r->impl;
@@ -49,6 +49,7 @@ std::shared_ptr<Navigation> Camera::navigation()
 
 Navigation::Navigation(CameraImpl *cam)
 {
+    assert(cam);
     impl = std::make_shared<NavigationImpl>(cam, this);
 }
 

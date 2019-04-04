@@ -39,13 +39,15 @@
 SDL_Window *window;
 SDL_GLContext renderContext;
 SDL_GLContext dataContext;
-std::shared_ptr<vts::renderer::Renderer> render;
 std::shared_ptr<vts::Map> map;
 std::shared_ptr<vts::Camera> cam1;
 std::shared_ptr<vts::Camera> cam2;
 std::shared_ptr<vts::Navigation> nav1;
 std::shared_ptr<vts::Navigation> nav2;
 std::shared_ptr<vts::Navigation> navLast;
+std::shared_ptr<vts::renderer::RenderContext> context;
+std::shared_ptr<vts::renderer::RenderView> view1;
+std::shared_ptr<vts::renderer::RenderView> view2;
 std::thread dataThread;
 bool shouldClose = false;
 
@@ -99,14 +101,17 @@ int main(int, char *[])
 
     map = std::make_shared<vts::Map>();
     dataThread = std::thread(&dataEntry);
-    render = std::make_shared<vts::renderer::Renderer>();
-    render->initialize();
-    render->bindLoadFunctions(map.get());
+    context = std::make_shared<vts::renderer::RenderContext>();
+    context->initialize();
+    context->bindLoadFunctions(map.get());
 
-    cam1 = map->camera();
-    cam2 = map->camera();
-    nav1 = cam1->navigation();
-    nav2 = cam2->navigation();
+    cam1 = map->createCamera();
+    cam2 = map->createCamera();
+    nav1 = cam1->createNavigation();
+    nav2 = cam2->createNavigation();
+    view1 = context->createView(cam1.get());
+    view2 = context->createView(cam2.get());
+
     map->renderInitialize();
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
@@ -126,7 +131,7 @@ int main(int, char *[])
                     break;
                 case SDL_MOUSEMOTION:
                 {
-                    navLast = event.motion.x < (sint32)render->options().width
+                    navLast = event.motion.x < (sint32)view1->options().width
                         ? nav1 : nav2;
                     double p[3] = { (double)event.motion.xrel,
                                 (double)event.motion.yrel, 0 };
@@ -161,21 +166,29 @@ int main(int, char *[])
         cam2->renderUpdate();
         lastRenderTime = currentRenderTime;
 
-        auto &ro = render->options();
-        ro.width = w / 2;
-        ro.height = h;
-        ro.targetViewportX = 0;
-        ro.targetViewportY = 0;
-        ro.targetViewportW = w / 2;
-        ro.targetViewportH = h;
-        render->render(cam1.get());
-        ro.targetViewportX = w / 2;
-        render->render(cam2.get());
+        {
+            auto &ro = view1->options();
+            ro.width = w / 2;
+            ro.height = h;
+            ro.targetViewportX = 0;
+            ro.targetViewportY = 0;
+            ro.targetViewportW = w / 2;
+            ro.targetViewportH = h;
+        }
+        {
+            auto &ro = view2->options();
+            ro = view1->options();
+            ro.targetViewportX = w / 2;
+        }
+        view1->render();
+        view2->render();
 
         SDL_GL_SwapWindow(window);
     }
 
-    render->finalize();
+    view1.reset();
+    view2.reset();
+    context->finalize();
     nav1.reset();
     nav2.reset();
     cam1.reset();

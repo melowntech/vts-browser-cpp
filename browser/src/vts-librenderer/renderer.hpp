@@ -46,8 +46,25 @@ class DrawSimpleTask;
 namespace renderer
 {
 
+class RenderContextImpl;
 class GeodataBase;
 struct Text;
+
+class ShaderAtm : public Shader
+{
+public:
+    struct AtmBlock
+    {
+        mat4f uniAtmViewInv;
+        vec4f uniAtmColorHorizon;
+        vec4f uniAtmColorZenith;
+        vec4f uniAtmSizes; // atmosphere thickness (divided by major axis), major / minor axes ratio, inverze major axis
+        vec4f uniAtmCoefs; // horizontal exponent, colorGradientExponent
+        vec3f uniAtmCameraPosition; // world position of camera (divided by major axis)
+    };
+
+    void initializeAtmosphere();
+};
 
 struct Rect
 {
@@ -72,19 +89,83 @@ struct GeodataJob
 extern uint32 maxAntialiasingSamples;
 extern float maxAnisotropySamples;
 
-class RendererImpl
+void clearGlState();
+void enableClipDistance(bool enable);
+
+class RenderViewImpl
 {
 public:
-    Renderer *const rendererApi;
+    Camera *const camera;
+    RenderView *const api;
+    RenderContextImpl *const context;
 
     RenderVariables vars;
     RenderOptions options;
+    std::vector<GeodataJob> geodataJobs;
+    std::unordered_map<std::string, GeodataJob> hysteresisJobs;
+    std::shared_ptr<UniformBuffer> uboAtm;
+    std::shared_ptr<UniformBuffer> uboGeodataCamera;
+    std::shared_ptr<UniformBuffer> lastUboView;
+    vts::Buffer depthBuffer;
+    CameraDraws *draws;
+    const MapCelestialBody *body;
+    Texture *atmosphereDensityTexture;
+    GeodataBase *lastUboViewPointer;
+    mat4 view;
+    mat4 viewInv;
+    mat4 proj;
+    mat4 projInv;
+    mat4 viewProj;
+    mat4 viewProjInv;
+    mat4 davidProj;
+    mat4 davidProjInv;
+    vec3 zBufferOffsetValues;
+    uint32 widthPrev;
+    uint32 heightPrev;
+    uint32 antialiasingPrev;
+    double elapsedTime;
+    bool projected;
+
+    RenderViewImpl(Camera *camera, RenderView *api,
+        RenderContextImpl *context);
+    void drawSurface(const DrawSurfaceTask &t);
+    void drawInfographic(const DrawSimpleTask &t);
+    void updateFramebuffers();
+    void updateAtmosphereBuffer();
+    void getWorldPosition(const double screenPos[2], double worldPos[3]);
+    void renderCompass(const double screenPosSize[3],
+        const double mapRotation[3]);
+    void render();
+
+    bool geodataTestVisibility(
+        const float visibility[4],
+        const vec3 &pos, const vec3f &up);
+    bool geodataDepthVisibility(const vec3 &pos, float threshold);
+    mat4 depthOffsetCorrection(const std::shared_ptr<GeodataBase> &g) const;
+    void renderGeodataQuad(const Rect &rect, float depth, const vec4f &color);
+    void bindUboView(const std::shared_ptr<GeodataBase> &gg);
+    void computeZBufferOffsetValues();
+    void bindUboCamera();
+    void renderGeodata();
+    void generateJobs();
+    void sortJobsByZIndexAndImportance();
+    void renderJobMargins();
+    void filterJobs();
+    void processHysteresisJobs();
+    void sortJobsBackToFront();
+    void renderJobs();
+};
+
+class RenderContextImpl
+{
+public:
+    RenderContext *const api;
 
     std::shared_ptr<Texture> texCompas;
-    std::shared_ptr<Shader> shaderTexture;
-    std::shared_ptr<class ShaderAtm> shaderSurface;
-    std::shared_ptr<class ShaderAtm> shaderBackground;
+    std::shared_ptr<ShaderAtm> shaderSurface;
+    std::shared_ptr<ShaderAtm> shaderBackground;
     std::shared_ptr<Shader> shaderInfographic;
+    std::shared_ptr<Shader> shaderTexture;
     std::shared_ptr<Shader> shaderCopyDepth;
     std::shared_ptr<Shader> shaderGeodataColor;
     std::shared_ptr<Shader> shaderGeodataLine;
@@ -94,66 +175,10 @@ public:
     std::shared_ptr<Mesh> meshRect; // positions: 0 .. 1
     std::shared_ptr<Mesh> meshLine;
     std::shared_ptr<Mesh> meshEmpty;
-    std::shared_ptr<UniformBuffer> uboAtm;
-    std::shared_ptr<UniformBuffer> uboGeodataCamera;
 
-    CameraDraws *draws;
-    const MapCelestialBody *body;
-    Texture *atmosphereDensityTexture;
-    mat4 view;
-    mat4 viewInv;
-    mat4 proj;
-    mat4 projInv;
-    mat4 viewProj;
-    mat4 viewProjInv;
-    uint32 widthPrev;
-    uint32 heightPrev;
-    uint32 antialiasingPrev;
-    double elapsedTime;
-    bool projected;
-
-    static void clearGlState();
-
-    RendererImpl(Renderer *rendererApi);
-    ~RendererImpl();
-    void drawSurface(const DrawSurfaceTask &t);
-    void drawInfographic(const DrawSimpleTask &t);
-    void enableClipDistance(bool enable);
-    void updateFramebuffers();
-    void render();
+    RenderContextImpl(RenderContext *api);
     void initialize();
     void finalize();
-    void updateAtmosphereBuffer();
-    void renderCompass(const double screenPosSize[3],
-        const double mapRotation[3]);
-    void getWorldPosition(const double screenPos[2], double worldPos[3]);
-
-    mat4 davidProj, davidProjInv;
-    vec3 zBufferOffsetValues;
-    std::vector<GeodataJob> geodataJobs;
-    std::unordered_map<std::string, GeodataJob> hysteresisJobs;
-    class GeodataBase *lastUboViewPointer;
-    std::shared_ptr<UniformBuffer> lastUboView;
-    vts::Buffer depthBuffer;
-
-    void initializeGeodata();
-    bool geodataTestVisibility(
-        const float visibility[4],
-        const vec3 &pos, const vec3f &up);
-    bool geodataDepthVisibility(const vec3 &pos, float threshold);
-    mat4 depthOffsetCorrection(const std::shared_ptr<GeodataBase> &g) const;
-    void renderGeodataQuad(const Rect &rect, float depth, const vec4f &color);
-    void bindUboView(const std::shared_ptr<GeodataBase> &gg);
-    void renderGeodata();
-    void computeZBufferOffsetValues();
-    void bindUboCamera();
-    void generateJobs();
-    void sortJobsByZIndexAndImportance();
-    void renderJobMargins();
-    void filterJobs();
-    void processHysteresisJobs();
-    void sortJobsBackToFront();
-    void renderJobs();
 };
 
 } // namespace renderer

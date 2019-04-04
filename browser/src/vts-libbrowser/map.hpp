@@ -225,6 +225,8 @@ public:
 
     std::shared_ptr<SearchTask> search(const std::string &query,
                                        const double point[3]);
+    void parseSearchResults(const std::shared_ptr<SearchTask> &task);
+
     void updateSearch();
     void updateAtmosphereDensity();
     double getMapRenderProgress();

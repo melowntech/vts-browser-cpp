@@ -69,7 +69,7 @@ public:
     std::string debugId;
 
     GpuGeodataSpec spec;
-    RendererImpl *renderer;
+    RenderContextImpl *renderer;
     ResourceInfo *info;
     mat4 model;
     mat4 modelInv;
@@ -83,7 +83,7 @@ public:
     std::vector<Text> texts;
 
     GeodataBase();
-    void load(RendererImpl *renderer, ResourceInfo &info,
+    void load(RenderContextImpl *renderer, ResourceInfo &info,
         GpuGeodataSpec &specp, const std::string &debugId);
     void addMemory(ResourceInfo &other);
     vec3f modelUp(const vec3f &p) const;

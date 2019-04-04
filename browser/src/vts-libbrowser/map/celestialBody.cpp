@@ -106,16 +106,16 @@ void Mapconfig::initializeCelestialBody()
         map->body.name = "Earth";
         a.thickness = 100000;
         a.visibility = 100000;
-        a.colorHorizon = { 158, 206, 255, 255 };
-        a.colorZenith = { 62, 120, 229, 255 };
+        vecToRaw(vec4f(158, 206, 255, 255), a.colorHorizon);
+        vecToRaw(vec4f(62, 120, 229, 255), a.colorZenith);
     }
     else if (std::abs(map->body.majorRadius - 3396200) < 30000)
     {
         map->body.name = "Mars";
         a.thickness = 50000;
         a.visibility = 200000;
-        a.colorHorizon = { 115, 100, 74, 255 };
-        a.colorZenith = { 115, 100, 74, 255 };
+        vecToRaw(vec4f(115, 100, 74, 255), a.colorHorizon);
+        vecToRaw(vec4f(115, 100, 74, 255), a.colorZenith);
     }
     else
     {

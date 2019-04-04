@@ -474,7 +474,7 @@ vtsHCamera vtsCameraCreate(vtsHMap map)
 {
     C_BEGIN
     vtsHCamera r = new vtsCCamera();
-    r->p = map->p->camera();
+    r->p = map->p->createCamera();
     return r;
     C_END
     return nullptr;
@@ -725,7 +725,7 @@ vtsHNavigation vtsNavigationCreate(vtsHCamera cam)
 {
     C_BEGIN
     vtsHNavigation r = new vtsCNavigation();
-    r->p = cam->p->navigation();
+    r->p = cam->p->createNavigation();
     return r;
     C_END
     return nullptr;

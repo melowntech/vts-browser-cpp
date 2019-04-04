@@ -42,7 +42,7 @@ void GeodataBase::prepareTextureForLinesAndPoints(Buffer &&texBuffer,
     tex.filterMode = GpuTextureSpec::FilterMode::Nearest;
     tex.wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
     ResourceInfo ri;
-    renderer->rendererApi->loadTexture(ri, tex, debugId);
+    renderer->api->loadTexture(ri, tex, debugId);
     this->texture = std::static_pointer_cast<Texture>(ri.userData);
     addMemory(ri);
 }
@@ -55,7 +55,7 @@ void GeodataBase::prepareMeshForLinesAndPoints(Buffer &&indBuffer,
     msh.indices = std::move(indBuffer);
     msh.indicesCount = indicesCount;
     ResourceInfo ri;
-    renderer->rendererApi->loadMesh(ri, msh, debugId);
+    renderer->api->loadMesh(ri, msh, debugId);
     this->mesh = std::static_pointer_cast<Mesh>(ri.userData);
     addMemory(ri);
 }

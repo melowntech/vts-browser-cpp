@@ -27,7 +27,6 @@
 #ifndef CELESTIAL_HPP_eruiehowwedw
 #define CELESTIAL_HPP_eruiehowwedw
 
-#include <array>
 #include <string>
 #include "foundation.hpp"
 
@@ -40,12 +39,13 @@ public:
     std::string name;
     double majorRadius; // meters
     double minorRadius; // meters
+
     struct VTS_API Atmosphere
     {
         // color of the sky (RGBA 0..1) near the horizon
-        std::array<float, 4> colorHorizon;
+        float colorHorizon[4];
         // color of the sky (RGBA 0..1) directly overhead
-        std::array<float, 4> colorZenith;
+        float colorZenith[4];
 
         // Coefficient controlling the steepness of the color
         //   gradient between zenith and horizon.
@@ -76,6 +76,7 @@ public:
         double visibilityQuantile;
         Atmosphere();
     } atmosphere;
+
     MapCelestialBody();
 };
 

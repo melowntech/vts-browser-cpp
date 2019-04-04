@@ -39,10 +39,11 @@
 SDL_Window *window;
 SDL_GLContext renderContext;
 SDL_GLContext dataContext;
-std::shared_ptr<vts::renderer::Renderer> render;
 std::shared_ptr<vts::Map> map;
 std::shared_ptr<vts::Camera> cam;
 std::shared_ptr<vts::Navigation> nav;
+std::shared_ptr<vts::renderer::RenderContext> context;
+std::shared_ptr<vts::renderer::RenderView> view;
 std::thread dataThread;
 bool shouldClose = false;
 
@@ -68,7 +69,7 @@ void updateResolution()
 {
     int w = 0, h = 0;
     SDL_GL_GetDrawableSize(window, &w, &h);
-    auto &ro = render->options();
+    auto &ro = view->options();
     ro.width = w;
     ro.height = h;
     cam->setViewportSize(ro.width, ro.height);
@@ -126,20 +127,24 @@ int main(int, char *[])
     // this calls installGlDebugCallback for the current context too
     vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
 
-    // initialize the renderer library
-    // this will load required shaders and other local files
-    render = std::make_shared<vts::renderer::Renderer>();
-    render->initialize();
+    // create the renderer library context
+    context = std::make_shared<vts::renderer::RenderContext>();
+    
+    // load required shaders and other local files
+    context->initialize();
 
     // set required callbacks for creating mesh and texture resources
-    render->bindLoadFunctions(map.get());
+    context->bindLoadFunctions(map.get());
 
     // launch the data thread
     dataThread = std::thread(&dataEntry);
 
     // create a camera and acquire its navigation handle
-    cam = map->camera();
-    nav = cam->navigation();
+    cam = map->createCamera();
+    nav = cam->createNavigation();
+
+    // create renderer view
+    view = context->createView(cam.get());
 
     // initialize the map for rendering
     updateResolution();
@@ -193,17 +198,18 @@ int main(int, char *[])
         lastRenderTime = currentRenderTime;
 
         // actually render the map
-        render->render(cam.get());
+        view->render();
         SDL_GL_SwapWindow(window);
     }
 
     // release all
+    view.reset();
     nav.reset();
     cam.reset();
     map->renderFinalize();
     dataThread.join();
-    render->finalize();
-    render.reset();
+    context->finalize();
+    context.reset();
     map.reset();
 
     SDL_GL_DeleteContext(renderContext);

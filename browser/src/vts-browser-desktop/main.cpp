@@ -144,8 +144,8 @@ int main(int argc, char *argv[])
         {
             vts::Map map(createOptions,
                 vts::Fetcher::create(fetcherOptions));
-            auto camera = map.camera();
-            auto navigation = camera->navigation();
+            auto camera = map.createCamera();
+            auto navigation = camera->createNavigation();
             map.options() = mapOptions;
             camera->options() = camOptions;
             navigation->options() = navOptions;

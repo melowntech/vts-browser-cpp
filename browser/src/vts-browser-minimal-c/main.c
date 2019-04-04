@@ -35,7 +35,8 @@
 
 SDL_Window *window;
 SDL_GLContext renderContext;
-vtsHRenderer render;
+vtsHRenderContext context;
+vtsHRenderView view;
 vtsHMap map;
 vtsHCamera cam;
 vtsHNavigation nav;
@@ -55,7 +56,7 @@ void updateResolution()
 {
     int w = 0, h = 0;
     SDL_GL_GetDrawableSize(window, &w, &h);
-    vtsCRenderOptionsBase *ro = vtsRendererOptions(render);
+    vtsCRenderOptionsBase *ro = vtsRenderViewOptions(view);
     ro->width = w;
     ro->height = h;
     vtsCameraSetViewportSize(cam, ro->width, ro->height);
@@ -112,9 +113,9 @@ int main()
 
     // and initialize the renderer library
     // this will load required shaders and other local files
-    render = vtsRendererCreate();
+    context = vtsRenderContextCreate();
     check();
-    vtsRendererInitialize(render);
+    vtsRenderContextInitialize(context);
     check();
 
     // create instance of the vts::Map class
@@ -127,8 +128,12 @@ int main()
     nav = vtsNavigationCreate(cam);
     check();
 
+    // acquire render view for the camera
+    view = vtsRenderContextCreateView(context, cam);
+    check();
+
     // set required callbacks for creating mesh and texture resources
-    vtsRendererBindLoadFunctions(render, map);
+    vtsRenderContextBindLoadFunctions(context, map);
     check();
 
     // initialize the resource processing with default fetcher
@@ -205,7 +210,7 @@ int main()
         lastRenderTime = currentRenderTime;
 
         // actually render the map
-        vtsRendererRender(render, cam);
+        vtsRenderViewRender(view);
         check();
 
         // present the rendered image to the screen
@@ -213,18 +218,22 @@ int main()
     }
 
     // release all rendering related data
-    vtsRendererFinalize(render);
+    vtsRenderViewDestroy(view);
+    check();
+    vtsRenderContextFinalize(context);
+    check();
+    vtsRenderContextDestroy(context);
     check();
 
     // release the map
     vtsMapDataFinalize(map);
     check();
-    vtsRendererFinalize(render);
-    check();
     vtsNavigationDestroy(nav);
+    check();
     vtsCameraDestroy(cam);
+    check();
     vtsMapDestroy(map);
-    vtsRendererDestroy(render);
+    check();
 
     // free the OpenGL context
     if (renderContext)

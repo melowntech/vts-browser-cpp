@@ -38,8 +38,8 @@
 
 void MainWindow::makeScreenshot()
 {
-    vts::renderer::RenderOptions &ro = render.options();
-    const vts::renderer::RenderVariables &rv = render.variables();
+    vts::renderer::RenderOptions &ro = view->options();
+    const vts::renderer::RenderVariables &rv = view->variables();
     vts::GpuTextureSpec spec;
     spec.width = ro.width;
     spec.height = ro.height;

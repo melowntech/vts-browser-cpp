@@ -455,7 +455,7 @@ bool Texture::getGrayscale() const
     return grayscale;
 }
 
-void Renderer::loadTexture(ResourceInfo &info, GpuTextureSpec &spec,
+void RenderContext::loadTexture(ResourceInfo &info, GpuTextureSpec &spec,
     const std::string &debugId)
 {
     auto r = std::make_shared<Texture>();
@@ -612,7 +612,7 @@ uint32 Mesh::getVio() const
     return vio;
 }
 
-void Renderer::loadMesh(ResourceInfo &info, GpuMeshSpec &spec,
+void RenderContext::loadMesh(ResourceInfo &info, GpuMeshSpec &spec,
     const std::string &debugId)
 {
     auto r = std::make_shared<Mesh>();

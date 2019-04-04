@@ -89,8 +89,10 @@ MainWindow::MainWindow(struct SDL_Window *window, void *renderContext,
         vts::log(vts::LogLevel::info2, s.str());
     }
 
-    render.options() = renderOptions;
-    render.initialize();
+    context.initialize();
+    context.bindLoadFunctions(map);
+    view = context.createView(camera);
+    view->options() = renderOptions;
 
     // load mesh sphere
     {
@@ -132,13 +134,13 @@ MainWindow::~MainWindow()
     if (map)
         map->renderFinalize();
 
-    render.finalize();
+    context.finalize();
 }
 
 void MainWindow::renderFrame()
 {
-    vts::renderer::RenderOptions &ro = render.options();
-    render.render(camera);
+    vts::renderer::RenderOptions &ro = view->options();
+    view->render();
 
     // compas
     if (appOptions.renderCompas)
@@ -148,7 +150,7 @@ void MainWindow::renderFrame()
         double posSize[3] = { offset, offset, size };
         double rot[3];
         navigation->getRotationLimited(rot);
-        render.renderCompass(posSize, rot);
+        view->renderCompass(posSize, rot);
     }
 
     gui.render(ro.targetViewportW, ro.targetViewportH);
@@ -288,7 +290,7 @@ bool MainWindow::processEvents()
 
 void MainWindow::updateWindowSize()
 {
-    vts::renderer::RenderOptions &ro = render.options();
+    vts::renderer::RenderOptions &ro = view->options();
     SDL_GL_GetDrawableSize(window, (int*)&ro.width, (int*)&ro.height);
     ro.targetViewportW = ro.width;
     ro.targetViewportH = ro.height;
@@ -303,7 +305,6 @@ void MainWindow::run()
         map->purgeDiskCache();
 
     updateWindowSize();
-    render.bindLoadFunctions(map);
 
     setMapConfigPath(appOptions.paths[0]);
     map->renderInitialize();
@@ -420,7 +421,7 @@ vts::vec3 MainWindow::getWorldPositionFromCursor()
     SDL_GetMouseState(&xx, &yy);
     double screenPos[2] = { (double)xx, (double)yy };
     vts::vec3 result;
-    render.getWorldPosition(screenPos, result.data());
+    view->getWorldPosition(screenPos, result.data());
     return result;
 }
 

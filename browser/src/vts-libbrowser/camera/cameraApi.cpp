@@ -33,7 +33,7 @@
 namespace vts
 {
 
-std::shared_ptr<Camera> Map::camera()
+std::shared_ptr<Camera> Map::createCamera()
 {
     auto r = std::make_shared<Camera>(impl.get());
     impl->cameras.push_back(r->impl);
@@ -42,6 +42,7 @@ std::shared_ptr<Camera> Map::camera()
 
 Camera::Camera(MapImpl *map)
 {
+    assert(map);
     impl = std::make_shared<CameraImpl>(map, this);
 }
 

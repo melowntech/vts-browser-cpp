@@ -112,6 +112,8 @@ public:
     void setMapConfigPath(const MapPaths &paths);
 
     AppOptions appOptions;
+    vts::renderer::RenderContext context;
+    std::shared_ptr<vts::renderer::RenderView> view;
     std::shared_ptr<vts::renderer::Mesh> meshSphere;
     std::shared_ptr<vts::renderer::Mesh> meshLine;
     std::vector<Mark> marks;
@@ -123,7 +125,6 @@ public:
     vts::Map *const map;
     vts::Camera *const camera;
     vts::Navigation *const navigation;
-    vts::renderer::Renderer render;
     struct SDL_Window *window;
     void *renderContext;
 };

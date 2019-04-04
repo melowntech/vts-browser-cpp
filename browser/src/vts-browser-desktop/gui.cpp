@@ -436,7 +436,7 @@ public:
             CameraOptions &c = window->camera->options();
             NavigationOptions &n = window->navigation->options();
             AppOptions &a = window->appOptions;
-            renderer::RenderOptions &r = window->render.options();
+            renderer::RenderOptions &r = window->view->options();
             float width = nk_window_get_content_region_size(&ctx).x - 30;
             char buffer[256];
 
@@ -756,7 +756,7 @@ public:
 
                     // text scale
                     {
-                        float &s = window->render.options().textScale;
+                        float &s = window->view->options().textScale;
                         nk_label(&ctx, "Text Scale:", NK_TEXT_LEFT);
                         s = nk_slide_float(&ctx, 0.2, s, 5, 0.1);
                         sprintf(buffer, "%3.1f", s);

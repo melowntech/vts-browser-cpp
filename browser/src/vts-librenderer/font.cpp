@@ -182,7 +182,7 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec,
         + glyphs.size() * sizeof(Glyph);
 }
 
-void Renderer::loadFont(ResourceInfo &info, GpuFontSpec &spec,
+void RenderContext::loadFont(ResourceInfo &info, GpuFontSpec &spec,
     const std::string &debugId)
 {
     auto r = std::make_shared<Font>();

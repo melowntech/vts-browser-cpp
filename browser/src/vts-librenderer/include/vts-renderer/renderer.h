@@ -34,25 +34,28 @@
 extern "C" {
 #endif
 
-typedef struct vtsCRenderer *vtsHRenderer;
+typedef struct vtsCRenderContext *vtsHRenderContext;
+typedef struct vtsCRenderView *vtsHRenderView;
 
-VTSR_API vtsHRenderer vtsRendererCreate();
-VTSR_API void vtsRendererDestroy(vtsHRenderer renderer);
-VTSR_API void vtsRendererInitialize(vtsHRenderer renderer);
-VTSR_API void vtsRendererFinalize(vtsHRenderer renderer);
-VTSR_API void vtsRendererBindLoadFunctions(vtsHRenderer renderer,
-                                            vtsHMap map);
-VTSR_API vtsCRenderOptionsBase *vtsRendererOptions(
-                                            vtsHRenderer renderer);
-VTSR_API const vtsCRenderVariablesBase *vtsRendererVariables(
-                                            vtsHRenderer renderer);
-VTSR_API void vtsRendererRender(vtsHRenderer renderer, vtsHCamera camera);
-VTSR_API void vtsRendererRenderCompas(vtsHRenderer renderer,
-                                const double screenPosSize[3],
-                                const double mapRotation[3]);
-VTSR_API void vtsRendererGetWorldPosition(vtsHRenderer renderer,
-                                const double screenPosIn[2],
-                                double worldPosOut[3]);
+VTSR_API vtsHRenderContext vtsRenderContextCreate();
+VTSR_API void vtsRenderContextDestroy(vtsHRenderContext context);
+VTSR_API void vtsRenderContextInitialize(vtsHRenderContext context);
+VTSR_API void vtsRenderContextFinalize(vtsHRenderContext context);
+VTSR_API void vtsRenderContextBindLoadFunctions(vtsHRenderContext context,
+    vtsHMap map);
+VTSR_API vtsHRenderView vtsRenderContextCreateView(vtsHRenderContext context,
+    vtsHCamera camera);
+
+VTSR_API void vtsRenderViewDestroy(vtsHRenderView view);
+VTSR_API vtsCRenderOptionsBase *vtsRenderViewOptions(
+    vtsHRenderView view);
+VTSR_API const vtsCRenderVariablesBase *vtsRenderViewVariables(
+    vtsHRenderView view);
+VTSR_API void vtsRenderViewRender(vtsHRenderView view);
+VTSR_API void vtsRenderViewRenderCompas(vtsHRenderView view,
+    const double screenPosSize[3], const double mapRotation[3]);
+VTSR_API void vtsRenderViewGetWorldPosition(vtsHRenderView view,
+    const double screenPosIn[2], double worldPosOut[3]);
 
 #ifdef __cplusplus
 } // extern C

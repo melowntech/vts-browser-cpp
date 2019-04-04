@@ -30,10 +30,11 @@ set(SRC_LIST
     geodata.hpp
     geodataGeometry.cpp
     geodataText.cpp
-    renderer.cpp
     renderer.hpp
     rendererApiC.cpp
     rendererApiCpp.cpp
+    renderContext.cpp
+    renderView.cpp
 )
 
 set(DATA_LIST

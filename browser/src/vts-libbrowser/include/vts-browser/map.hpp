@@ -39,6 +39,14 @@ namespace vts
 
 class MapCreateOptions;
 class Fetcher;
+class Camera;
+class MapCallbacks;
+class MapStatistics;
+class MapRuntimeOptions;
+class MapCelestialBody;
+class MapView;
+class SearchTask;
+class MapImpl;
 
 // fundamental class which orchestrates all the vts tasks
 class VTS_API Map
@@ -104,12 +112,12 @@ public:
 
     // create new camera
     // you may have multiple cameras in single map
-    std::shared_ptr<class Camera> camera();
+    std::shared_ptr<Camera> createCamera();
 
-    class MapCallbacks &callbacks();
-    class MapStatistics &statistics();
-    class MapRuntimeOptions &options();
-    const class MapCelestialBody &celestialBody();
+    MapCallbacks &callbacks();
+    MapStatistics &statistics();
+    MapRuntimeOptions &options();
+    const MapCelestialBody &celestialBody();
     std::shared_ptr<void> atmosphereDensityTexture();
 
     // srs conversion
@@ -139,22 +147,22 @@ public:
     std::vector<std::string> getViewNames() const;
     std::string getViewCurrent() const;
     std::string getViewJson(const std::string &name) const;
-    class MapView getViewData(const std::string &name) const;
+    MapView getViewData(const std::string &name) const;
     void setViewCurrent(const std::string &name);
     void setViewJson(const std::string &name, const std::string &view);
-    void setViewData(const std::string &name, const class MapView &view);
+    void setViewData(const std::string &name, const MapView &view);
     void removeView(const std::string &name);
 
     // searching
     bool searchable() const;
-    std::shared_ptr<class SearchTask> search(const std::string &query);
-    std::shared_ptr<class SearchTask> search(const std::string &query,
+    std::shared_ptr<SearchTask> search(const std::string &query);
+    std::shared_ptr<SearchTask> search(const std::string &query,
                                 const double point[3]); // navigation srs
-    std::shared_ptr<class SearchTask> search(const std::string &query,
+    std::shared_ptr<SearchTask> search(const std::string &query,
                      const std::array<double, 3> &lst); // navigation srs
 
 private:
-    std::shared_ptr<class MapImpl> impl;
+    std::shared_ptr<MapImpl> impl;
 };
 
 } // namespace vts

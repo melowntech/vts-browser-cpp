@@ -114,7 +114,7 @@ enum class TraverseMode
     // Fixed mode completely changes how the traversal works
     //   it will use fixed selected lod (and some coarser where unavailable)
     //   and it will render everything up to some specified distance
-    // this mode is designed for use with colliders query
+    // this mode is designed for use with collider probes
     Fixed,
 };
 

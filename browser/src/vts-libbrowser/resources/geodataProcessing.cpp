@@ -1501,8 +1501,8 @@ if (cond == #OP) \
         if (layer.isMember("importance-weight"))
             importance *= convertToDouble(
                 evaluate(layer["importance-weight"]));
-
-        if (browserOptions.isMember("mapFeaturesReduceMode")
+        if (importance == importance
+            && browserOptions.isMember("mapFeaturesReduceMode")
             && browserOptions["mapFeaturesReduceMode"] == "scr-count7")
         {
             Value params = browserOptions["mapFeaturesReduceParams"];
@@ -1511,11 +1511,15 @@ if (cond == #OP) \
             spec.commonData.margin[0] = spec.commonData.margin[1]
                 = convertToDouble(params[0]) * dpi;
 
-            spec.commonData.screenFeaturesPerPixelSquared
+            spec.commonData.featuresLimitPerPixelSquared
                 = convertToDouble(params[1]) / (dpi * dpi);
 
             spec.commonData.importanceDistanceFactor
                 = convertToDouble(params[2]);
+
+            if (params[3].asInt())
+                spec.commonData.depthVisibilityThreshold
+                    = convertToDouble(params[4]);
         }
 
         GpuGeodataSpec &data = findSpecData(spec);

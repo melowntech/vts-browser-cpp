@@ -1,6 +1,5 @@
 
 uniform sampler2D texDepth;
-uniform ivec2 uniTexPos;
 
 out vec4 outDepth;
 
@@ -15,6 +14,6 @@ vec4 packFloatToVec4(float value)
 
 void main()
 {
-    outDepth = packFloatToVec4(texelFetch(texDepth, uniTexPos, 0).r);
+    outDepth = packFloatToVec4(texelFetch(texDepth, ivec2(gl_FragCoord), 0).r);
 }
 

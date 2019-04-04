@@ -109,8 +109,8 @@ public:
     uint32 widthPrev;
     uint32 heightPrev;
     uint32 antialiasingPrev;
-    bool projected;
     double elapsedTime;
+    bool projected;
 
     static void clearGlState();
 
@@ -134,11 +134,13 @@ public:
     std::unordered_map<std::string, GeodataJob> hysteresisJobs;
     class GeodataBase *lastUboViewPointer;
     std::shared_ptr<UniformBuffer> lastUboView;
+    vts::Buffer depthBuffer;
 
     void initializeGeodata();
     bool geodataTestVisibility(
         const float visibility[4],
         const vec3 &pos, const vec3f &up);
+    bool geodataDepthVisibility(const vec3 &pos, float threshold);
     mat4 depthOffsetCorrection(const std::shared_ptr<GeodataBase> &g) const;
     void renderGeodataQuad(const Rect &rect, float depth, const vec4f &color);
     void bindUboView(const std::shared_ptr<GeodataBase> &gg);

@@ -91,7 +91,7 @@ public:
                        const double mapRotation[3]);
 
     // reconstruct world position for mouse picking
-    // uses data from last call to render (requires access to opengl context)
+    // uses data from last call to render
     // returns NaN if the position cannot be obtained
     void getWorldPosition(const double screenPosIn[2],
                           double worldPosOut[3]);

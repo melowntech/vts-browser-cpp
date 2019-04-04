@@ -160,7 +160,8 @@ public:
         float hysteresisDuration[2]; // seconds
         float margin[2]; // horizontal, vertical (pixels)
         float importanceDistanceFactor;
-        float screenFeaturesPerPixelSquared;
+        float featuresLimitPerPixelSquared;
+        float depthVisibilityThreshold; // meters
         sint32 zIndex;
         bool preventOverlap;
         CommonData();

@@ -253,6 +253,21 @@ bool RendererImpl::geodataTestVisibility(
     return true;
 }
 
+bool RendererImpl::geodataDepthVisibility(const vec3 &pos, float threshold)
+{
+    if (!(threshold == threshold))
+        return true;
+    vec3 dir = normalize(vec3(rawToVec3(draws->camera.eye) - pos));
+    vec3 p3 = pos + dir * threshold;
+    vec4 p4 = viewProj * vec3to4(p3, 1);
+    p3 = vec4to3(p4, true) * 0.5 + vec3(0.5, 0.5, 0.5);
+    uint32 index = (uint32)(p3[0] * (widthPrev - 1))
+        + (uint32)(p3[1] * (heightPrev - 1)) * widthPrev;
+    if (index * sizeof(float) >= depthBuffer.size())
+        return true;
+    return p3[2] < ((float*)depthBuffer.data())[index];
+}
+
 mat4 RendererImpl::depthOffsetCorrection(
     const std::shared_ptr<GeodataBase> &g) const
 {
@@ -432,6 +447,10 @@ void RendererImpl::generateJobs()
                     t.worldPosition, t.worldUp))
                     continue;
 
+                if (!geodataDepthVisibility(t.worldPosition,
+                    g->spec.commonData.depthVisibilityThreshold))
+                    continue;
+
                 GeodataJob j(g, index);
 
                 if (!g->spec.importances.empty())
@@ -561,8 +580,8 @@ void RendererImpl::filterJobs()
     rects.reserve(geodataJobs.size());
     geodataJobs.erase(std::remove_if(geodataJobs.begin(),
         geodataJobs.end(), [&](const GeodataJob &l) {
-        float sfpps = l.g->spec.commonData.screenFeaturesPerPixelSquared;
-        if (index > sfpps * pixels)
+        float limitFactor = l.g->spec.commonData.featuresLimitPerPixelSquared;
+        if (index > limitFactor * pixels)
             return true;
         if (l.rect.valid())
         {
@@ -572,7 +591,7 @@ void RendererImpl::filterJobs()
                     return true;
             rects.push_back(mr);
         }
-        if (sfpps == sfpps)
+        if (limitFactor == limitFactor)
             index++;
         return false;
     }), geodataJobs.end());

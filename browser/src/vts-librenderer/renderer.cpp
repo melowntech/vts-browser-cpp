@@ -76,9 +76,14 @@ void RendererImpl::clearGlState()
 }
 
 RendererImpl::RendererImpl(Renderer *rendererApi)
-    : rendererApi(rendererApi), draws(nullptr), body(nullptr),
+    : rendererApi(rendererApi), 
+    draws(nullptr),
+    body(nullptr),
     atmosphereDensityTexture(nullptr),
-    widthPrev(0), heightPrev(0), antialiasingPrev(0),
+    widthPrev(0),
+    heightPrev(0),
+    antialiasingPrev(0),
+    elapsedTime(0),
     projected(false),
     lastUboViewPointer(nullptr)
 {}
@@ -461,6 +466,89 @@ void RendererImpl::render()
         CHECK_GL("copied the depth (resolved multisampling)");
     }
 
+    // copy the depth (to cpu)
+    {
+        float *depths = nullptr;
+        {
+            uint32 reqsiz = widthPrev * heightPrev * sizeof(float);
+            if (depthBuffer.size() < reqsiz)
+                depthBuffer.allocate(reqsiz);
+            depths = (float*)depthBuffer.data();
+        }
+#ifdef VTSR_OPENGLES
+        // opengl ES does not support reading depth with glReadPixels
+        {
+            clearGlState();
+            uint32 fbId = 0, texId = 0;
+
+            glGenTextures(1, &texId);
+            glBindTexture(GL_TEXTURE_2D, texId);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, widthPrev, heightPrev, 0,
+                GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+            glGenFramebuffers(1, &fbId);
+            glBindFramebuffer(GL_FRAMEBUFFER, fbId);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                GL_TEXTURE_2D, texId, 0);
+            checkGlFramebuffer(GL_FRAMEBUFFER);
+
+            shaderCopyDepth->bind();
+            glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
+            meshQuad->bind();
+            meshQuad->dispatch();
+
+            glReadPixels(0, 0, widthPrev, heightPrev,
+                GL_RGBA, GL_UNSIGNED_BYTE, depths);
+            for (uint32 y = 0; y < heightPrev; y++)
+            {
+                for (uint32 x = 0; x < widthPrev; x++)
+                {
+                    uint32 index = x + y * widthPrev;
+                    float *depth = depths + index;
+                    union U
+                    {
+                        float f;
+                        unsigned char c[4];
+                    } u;
+                    u.f = *depth;
+                    if (u.c[0] != 0 || u.c[1] != 0
+                        || u.c[2] != 0 || u.c[3] != 0)
+                    {
+                        static const vec4 bitSh = vec4(
+                            1.0 / (256.0*256.0*256.0),
+                            1.0 / (256.0*256.0),
+                            1.0 / 256.0, 1.0);
+                        *depth = 0;
+                        for (int i = 0; i < 4; i++)
+                            *depth += u.c[i] * bitSh[i];
+                        *depth /= 255;
+                    }
+                    else
+                        *depth = 1;
+                }
+            }
+
+            glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
+            glDeleteFramebuffers(1, &fbId);
+            glDeleteTextures(1, &texId);
+
+            glEnable(GL_BLEND);
+            glEnable(GL_DEPTH_TEST);
+        }
+#else
+        {
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameReadBufferId);
+            CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
+            glReadPixels(0, 0, widthPrev, heightPrev,
+                GL_DEPTH_COMPONENT, GL_FLOAT, depths);
+            glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
+        }
+#endif
+        CHECK_GL("read the depth (to cpu memory)");
+    }
+
     // render geodata
     renderGeodata();
     CHECK_GL("rendered geodata");
@@ -824,73 +912,21 @@ void RendererImpl::renderCompass(const double screenPosSize[3],
 void RendererImpl::getWorldPosition(const double screenPos[2],
     double worldPos[3])
 {
+    vecToRaw(nan3(), worldPos);
     double x = screenPos[0];
     double y = screenPos[1];
     y = heightPrev - y - 1;
-
-    float depth = std::numeric_limits<float>::quiet_NaN();
-#ifdef VTSR_OPENGLES
-    // opengl ES does not support reading depth with glReadPixels
-    {
-        clearGlState();
-        uint32 fbId = 0, texId = 0;
-
-        glGenTextures(1, &texId);
-        glBindTexture(GL_TEXTURE_2D, texId);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0,
-            GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-        glGenFramebuffers(1, &fbId);
-        glBindFramebuffer(GL_FRAMEBUFFER, fbId);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D, texId, 0);
-        checkGlFramebuffer(GL_FRAMEBUFFER);
-
-        shaderCopyDepth->bind();
-        int pos[2] = { (int)x, (int)y };
-        shaderCopyDepth->uniformVec2(0, pos);
-        glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
-        meshQuad->bind();
-        meshQuad->dispatch();
-
-        unsigned char res[4];
-        glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, res);
-        if (res[0] != 0 || res[1] != 0 || res[2] != 0 || res[3] != 0)
-        {
-            static const vec4 bitSh = vec4(1.0 / (256.0*256.0*256.0),
-                1.0 / (256.0*256.0),
-                1.0 / 256.0, 1.0);
-            depth = 0;
-            for (int i = 0; i < 4; i++)
-                depth += res[i] * bitSh[i];
-            depth /= 255;
-        }
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glDeleteFramebuffers(1, &fbId);
-        glDeleteTextures(1, &texId);
-    }
-#else
-    {
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameReadBufferId);
-        glReadPixels((int)x, (int)y, 1, 1,
-            GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
-    }
-#endif
-    CHECK_GL("read depth");
-    clearGlState();
-
+    uint32 index = (uint32)y * widthPrev + (uint32)x;
+    if (index * sizeof(float) >= depthBuffer.size())
+        return;
+    float depth = ((float*)depthBuffer.data())[index];
     if (depth > 1 - 1e-7)
-        depth = std::numeric_limits<float>::quiet_NaN();
+        return;
     depth = depth * 2 - 1;
     x = x / widthPrev * 2 - 1;
     y = y / heightPrev * 2 - 1;
-    vec3 res = vec4to3(vec4(viewProj.inverse()
-            * vec4(x, y, depth, 1)), true);
-    for (int i = 0; i < 3; i++)
-        worldPos[i] = res[i];
+    vecToRaw(vec4to3(vec4(viewProjInv
+        * vec4(x, y, depth, 1)), true), worldPos);
 }
 
 } } // namespace vts renderer

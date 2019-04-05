@@ -474,7 +474,7 @@ struct geoContext
         style["layers"].swap(ls);
     }
 
-    // solves @constants, $properties and #identifiers
+    // solves @constants, $properties, &variables and #identifiers
     Value replacement(const std::string &name) const
     {
         if (Validating)
@@ -510,6 +510,11 @@ struct geoContext
             auto it = ampVariables.find(name);
             if (it != ampVariables.end())
                 return it->second;
+            if (Validating)
+            {
+                if (!currentLayer->isMember(name))
+                    THROW << "Undefined variable <" << name << ">";
+            }
             return const_cast<AmpVariables&>(ampVariables).emplace(
                     name, evaluate((*currentLayer)[name])).first->second;
         }

@@ -23,6 +23,7 @@ set(PUB_HDR_LIST
 
 set(SRC_LIST
     classes.cpp
+	depthBuffer.cpp
     font.cpp
     font.hpp
     foundation.cpp

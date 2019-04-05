@@ -50,6 +50,33 @@ class RenderContextImpl;
 class GeodataBase;
 struct Text;
 
+// reading depth immediately requires implicit sync between cpu and gpu, which is wasteful
+//   instead, this buffer stores the depth into temporary pbo (pixel buffer object)
+//   and reads it to cpu in separate step (in next frame)
+class DepthBuffer
+{
+private:
+    static const uint32 PboCount = 2;
+    Buffer buffer;
+    uint32 index;
+    uint32 pbo[PboCount];
+    uint32 w[PboCount], h[PboCount];
+#ifdef VTSR_OPENGLES
+    std::shared_ptr<Texture> esTex;
+    uint32 esFbo;
+#endif
+
+public:
+    DepthBuffer();
+    ~DepthBuffer();
+
+    void performCopy(uint32 fbo, uint32 w, uint32 h);
+
+    // returns 0..1 in logarithmic depth
+    float valuePix(uint32 x, uint32 y); // pix in 0..(cw/ch-1)
+    float valueNdc(float x, float y); // ndc in -1..1
+};
+
 class ShaderAtm : public Shader
 {
 public:
@@ -101,12 +128,12 @@ public:
 
     RenderVariables vars;
     RenderOptions options;
+    DepthBuffer depthBuffer;
     std::vector<GeodataJob> geodataJobs;
     std::unordered_map<std::string, GeodataJob> hysteresisJobs;
     std::shared_ptr<UniformBuffer> uboAtm;
     std::shared_ptr<UniformBuffer> uboGeodataCamera;
     std::shared_ptr<UniformBuffer> lastUboView;
-    vts::Buffer depthBuffer;
     CameraDraws *draws;
     const MapCelestialBody *body;
     Texture *atmosphereDensityTexture;
@@ -120,8 +147,8 @@ public:
     mat4 davidProj;
     mat4 davidProjInv;
     vec3 zBufferOffsetValues;
-    uint32 widthPrev;
-    uint32 heightPrev;
+    uint32 width;
+    uint32 height;
     uint32 antialiasingPrev;
     double elapsedTime;
     bool projected;

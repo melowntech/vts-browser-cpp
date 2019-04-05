@@ -181,12 +181,7 @@ bool RenderViewImpl::geodataDepthVisibility(const vec3 &pos, float threshold)
     vec3 dir = normalize(vec3(rawToVec3(draws->camera.eye) - pos));
     vec3 p3 = pos + dir * threshold;
     vec4 p4 = viewProj * vec3to4(p3, 1);
-    p3 = vec4to3(p4, true) * 0.5 + vec3(0.5, 0.5, 0.5);
-    uint32 index = (uint32)(p3[0] * (widthPrev - 1))
-        + (uint32)(p3[1] * (heightPrev - 1)) * widthPrev;
-    if (index * sizeof(float) >= depthBuffer.size())
-        return true;
-    return p3[2] < ((float*)depthBuffer.data())[index];
+    return p3[2] * 0.5 + 0.5 < depthBuffer.valueNdc(p3[0], p3[1]);
 }
 
 mat4 RenderViewImpl::depthOffsetCorrection(
@@ -322,7 +317,7 @@ void RenderViewImpl::bindUboCamera()
     } ubo;
 
     ubo.proj = proj.cast<float>();
-    ubo.cameraParams = vec4f(widthPrev, heightPrev,
+    ubo.cameraParams = vec4f(width, height,
         draws->camera.viewExtent, 0);
 
     uboGeodataCamera->bind();
@@ -394,7 +389,7 @@ void RenderViewImpl::generateJobs()
                 // rect
                 if (g->spec.commonData.preventOverlap)
                 {
-                    vec2f ss = vec2f(1.f / widthPrev, 1.f / heightPrev);
+                    vec2f ss = vec2f(1.f / width, 1.f / height);
                     vec2f off = vec2f(
                         g->spec.unionData.pointLabel.offset[0],
                         g->spec.unionData.pointLabel.offset[1]
@@ -432,7 +427,7 @@ void RenderViewImpl::generateJobs()
                         if (j.stick < s.heightThreshold)
                             j.stick = 0;
                         float ro = (j.stick > 0 ? j.stick + s.offset : 0)
-                            / heightPrev;
+                            / height;
                         j.rect.a[1] += ro;
                         j.rect.b[1] += ro;
                     }
@@ -495,7 +490,7 @@ void RenderViewImpl::renderJobMargins()
 
 void RenderViewImpl::filterJobs()
 {
-    float pixels = widthPrev * heightPrev;
+    float pixels = width * height;
     uint32 index = 0;
     std::vector<Rect> rects;
     rects.reserve(geodataJobs.size());
@@ -669,8 +664,8 @@ void RenderViewImpl::renderJobs()
                     Rect r;
                     r.a = r.b = vec3to2(vec4to3(vec4(viewProj
                         * vec3to4(t.worldPosition, 1)), true)).cast<float>();
-                    float w = s.width / widthPrev;
-                    float h = job.stick / heightPrev;
+                    float w = s.width / width;
+                    float h = job.stick / height;
                     r.a[0] -= w;
                     r.b[0] += w;
                     r.b[1] += h;

@@ -61,6 +61,16 @@ void dataEntry()
     dataContext = nullptr;
 }
 
+void setOptions(vts::renderer::RenderOptions &ro, uint32 w, uint32 h)
+{
+    ro.width = w / 2;
+    ro.height = h;
+    ro.targetViewportX = 0;
+    ro.targetViewportY = 0;
+    ro.targetViewportW = w / 2;
+    ro.targetViewportH = h;
+}
+
 int main(int, char *[])
 {
     vts::log(vts::LogLevel::info3, "Initializing SDL library");
@@ -168,18 +178,14 @@ int main(int, char *[])
 
         {
             auto &ro = view1->options();
-            ro.width = w / 2;
-            ro.height = h;
-            ro.targetViewportX = 0;
-            ro.targetViewportY = 0;
-            ro.targetViewportW = w / 2;
-            ro.targetViewportH = h;
+            setOptions(ro, w, h);
         }
         {
             auto &ro = view2->options();
-            ro = view1->options();
+            setOptions(ro, w, h);
             ro.targetViewportX = w / 2;
         }
+
         view1->render();
         view2->render();
 

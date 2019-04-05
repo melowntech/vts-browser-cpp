@@ -57,6 +57,7 @@ set(PUB_HDR_LIST
     include/vts-browser/math.hpp
     include/vts-browser/navigation.hpp
     include/vts-browser/navigationOptions.hpp
+    include/vts-browser/perfMeter.hpp
     include/vts-browser/resources.hpp
     include/vts-browser/search.hpp
     include/vts-browser/view.hpp

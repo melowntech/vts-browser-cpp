@@ -14,6 +14,6 @@ vec4 packFloatToVec4(float value)
 
 void main()
 {
-    outDepth = packFloatToVec4(texelFetch(texDepth, ivec2(gl_FragCoord), 0).r);
+    outDepth = packFloatToVec4(texelFetch(texDepth, ivec2(gl_FragCoord) * 3, 0).r);
 }
 

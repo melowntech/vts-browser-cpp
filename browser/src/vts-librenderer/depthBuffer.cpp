@@ -30,72 +30,89 @@ namespace vts { namespace renderer
 {
 
 DepthBuffer::DepthBuffer()
-    : index(0), pbo{ 0, 0 }, w{ 0, 0 }, h{ 0, 0 }
-#ifdef VTSR_OPENGLES
-    , esFbo(0)
-#endif
+    : w{ 0,0 }, h{ 0,0 }, pbo{ 0,0 },
+    tw(0), th(0), fbo(0), tex(0), index(0)
 {
     glGenBuffers(PboCount, pbo);
-
-#ifdef VTSR_OPENGLES
-    esTex;
-    esFbo;
-#endif
+    glGenTextures(1, &tex);
+    glGenFramebuffers(1, &fbo);
 }
 
 DepthBuffer::~DepthBuffer()
 {
+    glDeleteFramebuffers(1, &fbo);
+    glDeleteTextures(1, &tex);
     glDeleteBuffers(PboCount, pbo);
-
-#ifdef VTSR_OPENGLES
-    esFbo;
-#endif
 }
 
-void DepthBuffer::performCopy(uint32 fbo, uint32 paramW, uint32 paramH)
+void DepthBuffer::performCopy(uint32 sourceTexture,
+    uint32 paramW, uint32 paramH)
 {
-    // copy framebuffer to pbo
+    paramW /= 3;
+    paramH /= 3;
+    glViewport(0, 0, paramW, paramH);
+
+    // copy depth to texture (perform conversion)
+
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    if (tw != paramW || th != paramH)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, paramW, paramH, 0,
+            GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, tex, 0);
+        checkGlFramebuffer(GL_FRAMEBUFFER);
+
+        CHECK_GL("read the depth (resize fbo and texture)");
+
+        tw = paramW;
+        th = paramH;
+    }
+
+    glBindTexture(GL_TEXTURE_2D, sourceTexture);
+    shaderCopyDepth->bind();
+    meshQuad->bind();
+    meshQuad->dispatch();
+
+    CHECK_GL("read the depth (conversion)");
+
+    // copy texture to pbo
 
     glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo[index]);
     if (w[index] != paramW || h[index] != paramH)
     {
         glBufferData(GL_PIXEL_PACK_BUFFER,
             paramW * paramH * sizeof(float),
-            nullptr, GL_STREAM_READ);
+            nullptr, GL_STATIC_READ);
         w[index] = paramW;
         h[index] = paramH;
     }
 
-#ifdef VTSR_OPENGLES
-    // opengl ES does not support reading depth with glReadPixels
-
-    // todo
-
-#else
-
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
-    CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
     glReadPixels(0, 0, w[index], h[index],
-        GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+        GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
-#endif
-
-    CHECK_GL("read the depth (framebuffer to pbo)");
+    CHECK_GL("read the depth (texture to pbo)");
 
     // copy gpu pbo to cpu buffer
+
     index = (index + 1) % PboCount;
 
-    float *depths = nullptr;
+    uint32 *depths = nullptr;
     {
-        uint32 reqsiz = w[index] * h[index] * sizeof(float);
+        uint32 reqsiz = w[index] * h[index] * sizeof(uint32);
         if (buffer.size() < reqsiz)
             buffer.allocate(reqsiz);
-        depths = (float*)buffer.data();
+        depths = (uint32*)buffer.data();
     }
 
     glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo[index]);
     glGetBufferSubData(GL_PIXEL_PACK_BUFFER, 0,
-        w[index] * h[index] * sizeof(float), depths);
+        w[index] * h[index] * sizeof(uint32), depths);
 
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
@@ -107,10 +124,28 @@ float DepthBuffer::valuePix(uint32 x, uint32 y)
     if (w[index] * h[index] == 0)
         return nan1();
     assert(x < w[index] && y < h[index]);
-    return ((float*)buffer.data())[x + y * w[index]];
+
+    // convert uint32 to float depth
+    union U
+    {
+        uint32 u;
+        float f;
+        unsigned char c[4];
+    } u;
+    u.f = ((float*)buffer.data())[x + y * w[index]];
+    if (u.u == 0)
+        return nan1();
+    static const vec4 bitSh = vec4(
+        1.0 / (256.0*256.0*256.0),
+        1.0 / (256.0*256.0),
+        1.0 / 256.0, 1.0);
+    float d = 0;
+    for (int i = 0; i < 4; i++)
+        d += u.c[i] * bitSh[i];
+    return d / 255.f;
 }
 
-float DepthBuffer::valueNdc(float x, float y)
+float DepthBuffer::value(float x, float y)
 {
     assert(x >= -1 && x <= 1 && y >= -1 && y <= 1);
     return valuePix((x * 0.5 + 0.5) * (w[index] - 1),

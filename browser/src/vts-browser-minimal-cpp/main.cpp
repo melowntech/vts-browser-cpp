@@ -129,9 +129,6 @@ int main(int, char *[])
 
     // create the renderer library context
     context = std::make_shared<vts::renderer::RenderContext>();
-    
-    // load required shaders and other local files
-    context->initialize();
 
     // set required callbacks for creating mesh and texture resources
     context->bindLoadFunctions(map.get());
@@ -208,7 +205,6 @@ int main(int, char *[])
     cam.reset();
     map->renderFinalize();
     dataThread.join();
-    context->finalize();
     context.reset();
     map.reset();
 

@@ -58,23 +58,26 @@ class DepthBuffer
 private:
     static const uint32 PboCount = 2;
     Buffer buffer;
-    uint32 index;
-    uint32 pbo[PboCount];
     uint32 w[PboCount], h[PboCount];
-#ifdef VTSR_OPENGLES
-    std::shared_ptr<Texture> esTex;
-    uint32 esFbo;
-#endif
+    uint32 pbo[PboCount];
+    uint32 tw, th;
+    uint32 fbo, tex;
+    uint32 index;
+
+    float valuePix(uint32 x, uint32 y);
 
 public:
     DepthBuffer();
     ~DepthBuffer();
 
-    void performCopy(uint32 fbo, uint32 w, uint32 h);
+    void performCopy(uint32 sourceTexture, uint32 w, uint32 h);
 
+    // xy in -1..1
     // returns 0..1 in logarithmic depth
-    float valuePix(uint32 x, uint32 y); // pix in 0..(cw/ch-1)
-    float valueNdc(float x, float y); // ndc in -1..1
+    float value(float x, float y);
+
+    std::shared_ptr<Shader> shaderCopyDepth;
+    std::shared_ptr<Mesh> meshQuad;
 };
 
 class ShaderAtm : public Shader
@@ -204,8 +207,7 @@ public:
     std::shared_ptr<Mesh> meshEmpty;
 
     RenderContextImpl(RenderContext *api);
-    void initialize();
-    void finalize();
+    ~RenderContextImpl();
 };
 
 } // namespace renderer

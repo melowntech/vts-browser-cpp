@@ -115,8 +115,6 @@ int main()
     // this will load required shaders and other local files
     context = vtsRenderContextCreate();
     check();
-    vtsRenderContextInitialize(context);
-    check();
 
     // create instance of the vts::Map class
     map = vtsMapCreate("", NULL);
@@ -219,8 +217,6 @@ int main()
 
     // release all rendering related data
     vtsRenderViewDestroy(view);
-    check();
-    vtsRenderContextFinalize(context);
     check();
     vtsRenderContextDestroy(context);
     check();

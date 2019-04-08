@@ -81,20 +81,6 @@ void vtsRenderContextDestroy(vtsHRenderContext context)
     C_END
 }
 
-void vtsRenderContextInitialize(vtsHRenderContext context)
-{
-    C_BEGIN
-    context->p->initialize();
-    C_END
-}
-
-void vtsRenderContextFinalize(vtsHRenderContext context)
-{
-    C_BEGIN
-    context->p->finalize();
-    C_END
-}
-
 void vtsRenderContextBindLoadFunctions(vtsHRenderContext context,
     vtsHMap map)
 {

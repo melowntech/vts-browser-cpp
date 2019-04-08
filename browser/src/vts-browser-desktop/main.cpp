@@ -128,6 +128,7 @@ int main(int argc, char *argv[])
         void *renderContext = nullptr;
         void *dataContext = nullptr;
         initializeSdl(window, renderContext, dataContext);
+        vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
 
         // dpi
         {

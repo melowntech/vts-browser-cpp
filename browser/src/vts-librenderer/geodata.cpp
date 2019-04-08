@@ -169,8 +169,9 @@ bool RenderViewImpl::geodataTestVisibility(
         && dot(normalize(vec3(eye - pos)).cast<float>(), up) < visibility[3])
         return false;
     vec4 sp = viewProj * vec3to4(pos, 1);
-    if (sp[2] < -sp[3] || sp[2] > sp[3])
-        return false; // near & far planes culling
+    for (uint32 i = 0; i < 3; i++)
+        if (sp[i] < -sp[3] || sp[i] > sp[3])
+            return false; // near & far planes culling
     return true;
 }
 
@@ -181,7 +182,8 @@ bool RenderViewImpl::geodataDepthVisibility(const vec3 &pos, float threshold)
     vec3 dir = normalize(vec3(rawToVec3(draws->camera.eye) - pos));
     vec3 p3 = pos + dir * threshold;
     vec4 p4 = viewProj * vec3to4(p3, 1);
-    return p3[2] * 0.5 + 0.5 < depthBuffer.valueNdc(p3[0], p3[1]);
+    p3 = vec4to3(p4, true);
+    return p3[2] * 0.5 + 0.5 < depthBuffer.value(p3[0], p3[1]);
 }
 
 mat4 RenderViewImpl::depthOffsetCorrection(

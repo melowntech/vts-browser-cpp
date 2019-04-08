@@ -86,16 +86,11 @@ private:
 class VTSR_API RenderContext
 {
 public:
-    RenderContext();
-    ~RenderContext();
-
     // load all shaders and initialize all state required for the rendering
-    // should be called once after the gl functions were initialized
-    void initialize();
+    RenderContext();
 
     // clear the loaded shaders etc.
-    // should be called once before the gl context is released
-    void finalize();
+    ~RenderContext();
 
     // can be directly bound to MapCallbacks
     void loadTexture(ResourceInfo &info, GpuTextureSpec &spec,

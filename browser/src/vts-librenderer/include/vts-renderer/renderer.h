@@ -39,8 +39,6 @@ typedef struct vtsCRenderView *vtsHRenderView;
 
 VTSR_API vtsHRenderContext vtsRenderContextCreate();
 VTSR_API void vtsRenderContextDestroy(vtsHRenderContext context);
-VTSR_API void vtsRenderContextInitialize(vtsHRenderContext context);
-VTSR_API void vtsRenderContextFinalize(vtsHRenderContext context);
 VTSR_API void vtsRenderContextBindLoadFunctions(vtsHRenderContext context,
     vtsHMap map);
 VTSR_API vtsHRenderView vtsRenderContextCreateView(vtsHRenderContext context,

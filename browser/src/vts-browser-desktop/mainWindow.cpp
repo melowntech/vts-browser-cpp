@@ -78,8 +78,6 @@ MainWindow::MainWindow(struct SDL_Window *window, void *renderContext,
     map(map), camera(camera), navigation(navigation),
     window(window), renderContext(renderContext)
 {
-    vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
-
     {
         int major = 0, minor = 0;
         SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &major);
@@ -89,7 +87,6 @@ MainWindow::MainWindow(struct SDL_Window *window, void *renderContext,
         vts::log(vts::LogLevel::info2, s.str());
     }
 
-    context.initialize();
     context.bindLoadFunctions(map);
     view = context.createView(camera);
     view->options() = renderOptions;
@@ -133,8 +130,6 @@ MainWindow::~MainWindow()
 {
     if (map)
         map->renderFinalize();
-
-    context.finalize();
 }
 
 void MainWindow::renderFrame()

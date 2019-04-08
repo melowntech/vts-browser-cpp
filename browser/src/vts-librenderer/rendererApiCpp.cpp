@@ -55,16 +55,6 @@ RenderContext::RenderContext()
 RenderContext::~RenderContext()
 {}
 
-void RenderContext::initialize()
-{
-    impl->initialize();
-}
-
-void RenderContext::finalize()
-{
-    impl->finalize();
-}
-
 void RenderContext::bindLoadFunctions(Map *map)
 {
     assert(map);

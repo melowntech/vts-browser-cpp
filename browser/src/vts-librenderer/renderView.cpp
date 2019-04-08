@@ -85,6 +85,8 @@ RenderViewImpl::RenderViewImpl(
     uboAtm->debugId = "uboAtm";
     uboGeodataCamera = std::make_shared<UniformBuffer>();
     uboGeodataCamera->debugId = "uboGeodataCamera";
+    depthBuffer.meshQuad = context->meshQuad;
+    depthBuffer.shaderCopyDepth = context->shaderCopyDepth;
 }
 
 void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
@@ -450,7 +452,9 @@ void RenderViewImpl::render()
 
     // copy the depth for future use
     clearGlState();
-    depthBuffer.performCopy(vars.frameReadBufferId, width, height);
+    depthBuffer.performCopy(vars.depthReadTexId, width, height);
+    glViewport(0, 0, options.width, options.height);
+    glScissor(0, 0, options.width, options.height);
     glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
     glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
@@ -575,7 +579,7 @@ void RenderViewImpl::getWorldPosition(const double screenPos[2],
     y = height - y - 1;
     x = x / width * 2 - 1;
     y = y / height * 2 - 1;
-    double z = depthBuffer.valueNdc(x, y) * 2 - 1;
+    double z = depthBuffer.value(x, y) * 2 - 1;
     vecToRaw(vec4to3(vec4(viewProjInv
         * vec4(x, y, z, 1)), true), worldPos);
 }

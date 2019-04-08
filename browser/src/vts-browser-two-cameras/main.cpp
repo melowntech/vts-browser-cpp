@@ -112,7 +112,6 @@ int main(int, char *[])
     map = std::make_shared<vts::Map>();
     dataThread = std::thread(&dataEntry);
     context = std::make_shared<vts::renderer::RenderContext>();
-    context->initialize();
     context->bindLoadFunctions(map.get());
 
     cam1 = map->createCamera();
@@ -194,7 +193,7 @@ int main(int, char *[])
 
     view1.reset();
     view2.reset();
-    context->finalize();
+    context.reset();
     nav1.reset();
     nav2.reset();
     cam1.reset();

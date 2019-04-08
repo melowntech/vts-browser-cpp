@@ -42,9 +42,6 @@ void ShaderAtm::initializeAtmosphere()
 }
 
 RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
-{}
-
-void RenderContextImpl::initialize()
 {
     // load texture compas
     {
@@ -285,23 +282,8 @@ void RenderContextImpl::initialize()
     CHECK_GL("initialize geodata");
 }
 
-void RenderContextImpl::finalize()
-{
-    texCompas.reset();
-    shaderTexture.reset();
-    shaderSurface.reset();
-    shaderBackground.reset();
-    shaderInfographic.reset();
-    shaderCopyDepth.reset();
-    shaderGeodataColor.reset();
-    shaderGeodataLine.reset();
-    shaderGeodataPoint.reset();
-    shaderGeodataPointLabel.reset();
-    meshQuad.reset();
-    meshRect.reset();
-    meshLine.reset();
-    meshEmpty.reset();
-}
+RenderContextImpl::~RenderContextImpl()
+{}
 
 } } // namespace vts renderer
 

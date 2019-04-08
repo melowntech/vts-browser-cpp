@@ -73,12 +73,12 @@ MainWindow::MainWindow()
             "https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json",
             "");
-    camera = map->camera();
-    navigation = camera->navigation();
+    camera = map->createCamera();
+    navigation = camera->createNavigation();
 
-    renderer = std::make_shared<vts::renderer::Renderer>();
-    renderer->bindLoadFunctions(map.get());
-    renderer->initialize();
+    context = std::make_shared<vts::renderer::RenderContext>();
+    context->bindLoadFunctions(map.get());
+    view = context->createView(camera.get());
 
     map->renderInitialize();
 
@@ -180,10 +180,10 @@ void MainWindow::tick()
         map->renderUpdate(elapsedTime);
         camera->setViewportSize(size.width(), size.height());
         camera->renderUpdate();
-        renderer->options().targetFrameBuffer = gl->defaultFramebufferObject();
-        renderer->options().width = size.width();
-        renderer->options().height = size.height();
-        renderer->render(camera.get());
+        view->options().targetFrameBuffer = gl->defaultFramebufferObject();
+        view->options().width = size.width();
+        view->options().height = size.height();
+        view->render();
 
 #ifdef NDEBUG
     }

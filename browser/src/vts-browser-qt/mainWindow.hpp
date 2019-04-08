@@ -40,7 +40,8 @@ namespace vts
 
     namespace renderer
     {
-        class Renderer;
+        class RenderContext;
+        class RenderView;
     }
 }
 
@@ -67,7 +68,8 @@ public:
     std::shared_ptr<vts::Map> map;
     std::shared_ptr<vts::Camera> camera;
     std::shared_ptr<vts::Navigation> navigation;
-    std::shared_ptr<vts::renderer::Renderer> renderer;
+    std::shared_ptr<vts::renderer::RenderContext> context;
+    std::shared_ptr<vts::renderer::RenderView> view;
 
     QPoint lastMousePosition;
     std::chrono::high_resolution_clock::time_point lastTime;

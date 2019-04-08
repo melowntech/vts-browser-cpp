@@ -49,7 +49,8 @@ struct ExtraConfig
 extern vts::Map *map;
 extern vts::Camera *camera;
 extern vts::Navigation *navigation;
-extern vts::renderer::Renderer render;
+extern vts::renderer::RenderContext *context;
+extern vts::renderer::RenderView *view;
 extern ExtraConfig extraConfig;
 
 void mapInitialize();

@@ -532,9 +532,9 @@ using namespace vts;
     [self progressUpdate];
 }
 
-- (void)glkView:(nonnull GLKView *)view drawInRect:(CGRect)rect
+- (void)glkView:(nonnull GLKView *)gview drawInRect:(CGRect)rect
 {
-    auto &ro = render.options();
+    auto &ro = view->options();
     
     {
         GLint fbo = 0;
@@ -542,13 +542,13 @@ using namespace vts;
         ro.targetFrameBuffer = fbo;
     }
 
-    render.render(camera);
+    view->render();
     glBindFramebuffer(GL_FRAMEBUFFER, ro.targetFrameBuffer);
 
     if (gotoPoint(0) == gotoPoint(0))
     {
         vec3 posWorld;
-        render.getWorldPosition(gotoPoint.data(), posWorld.data());
+        view->getWorldPosition(gotoPoint.data(), posWorld.data());
         if (posWorld(0) == posWorld(0))
         {
             double posNav[3];
@@ -561,12 +561,12 @@ using namespace vts;
         glBindFramebuffer(GL_FRAMEBUFFER, ro.targetFrameBuffer);
     }
 
-    mapRenderControls(view.contentScaleFactor, rect, _gestureViewLeft.frame, _gestureViewBottom.frame, _gestureViewRight.frame, _gestureViewCompas.frame);
+    mapRenderControls(gview.contentScaleFactor, rect, _gestureViewLeft.frame, _gestureViewBottom.frame, _gestureViewRight.frame, _gestureViewCompas.frame);
 
-    ro.targetViewportX = rect.origin.x * view.contentScaleFactor;
-    ro.targetViewportY = rect.origin.y * view.contentScaleFactor;
-    ro.width = rect.size.width * view.contentScaleFactor;
-    ro.height = rect.size.height * view.contentScaleFactor;
+    ro.targetViewportX = rect.origin.x * gview.contentScaleFactor;
+    ro.targetViewportY = rect.origin.y * gview.contentScaleFactor;
+    ro.width = rect.size.width * gview.contentScaleFactor;
+    ro.height = rect.size.height * gview.contentScaleFactor;
     camera->setViewportSize(ro.width, ro.height);
 }
 

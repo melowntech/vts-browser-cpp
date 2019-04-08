@@ -73,7 +73,8 @@ void loadAppConfig();
 Map *map;
 Camera *camera;
 Navigation *navigation;
-Renderer render;
+RenderContext *context;
+RenderView *view;
 ExtraConfig extraConfig; 
 
 namespace
@@ -89,6 +90,8 @@ namespace
     std::shared_ptr<Texture> scalesTextureZoom;
     std::shared_ptr<Camera> cameraPtr;
     std::shared_ptr<Navigation> navigationPtr;
+    std::shared_ptr<RenderContext> contextPtr;
+    std::shared_ptr<RenderView> viewPtr;
     TimerObj *timer;
 
     void *iosGlGetProcAddress(const char *name)
@@ -106,9 +109,9 @@ void mapInitialize()
         createOptions.diskCache = false;
         assert(!map);
         map = new Map(createOptions, vts::Fetcher::create(vts::FetcherOptions()));
-        cameraPtr = map->camera();
+        cameraPtr = map->createCamera();
         camera = cameraPtr.get();
-        navigationPtr = camera->navigation();
+        navigationPtr = camera->createNavigation();
         navigation = navigationPtr.get();
     }
 
@@ -123,8 +126,11 @@ void mapInitialize()
         [EAGLContext setCurrentContext:renderContext];
 
         loadGlFunctions(&iosGlGetProcAddress);
-        render.initialize();
-        render.bindLoadFunctions(map);
+        contextPtr = std::make_shared<RenderContext>();
+        context = contextPtr.get();
+        viewPtr = context->createView(camera);
+        view = viewPtr.get();
+        context->bindLoadFunctions(map);
         map->renderInitialize();
 
         // load data for rendering scales
@@ -404,7 +410,7 @@ void mapRenderControls(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw
         double posSize[3] = { (compas.origin.x + compas.size.width * 0.5) * retinaScale,
             (whole.size.height - (compas.origin.y + compas.size.height * 0.5)) * retinaScale,
             compas.size.width * retinaScale };
-        render.renderCompass(posSize, rotation);
+        view->renderCompass(posSize, rotation);
     }
 
     CHECK_GL("rendered scale");

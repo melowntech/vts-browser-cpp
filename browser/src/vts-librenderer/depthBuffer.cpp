@@ -102,20 +102,20 @@ void DepthBuffer::performCopy(uint32 sourceTexture,
 
     index = (index + 1) % PboCount;
 
-    uint32 *depths = nullptr;
-    {
-        uint32 reqsiz = w[index] * h[index] * sizeof(uint32);
-        if (buffer.size() < reqsiz)
-            buffer.allocate(reqsiz);
-        depths = (uint32*)buffer.data();
-    }
-
+    uint32 reqsiz = w[index] * h[index] * sizeof(uint32);
+    if (!reqsiz)
+        return;
+    if (buffer.size() < reqsiz)
+        buffer.allocate(reqsiz);
+    
     glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo[index]);
-    glGetBufferSubData(GL_PIXEL_PACK_BUFFER, 0,
-        w[index] * h[index] * sizeof(uint32), depths);
-
+    void *ptr = glMapBufferRange(GL_PIXEL_PACK_BUFFER,
+                                 0, reqsiz, GL_MAP_READ_BIT);
+    assert(ptr);
+    memcpy(buffer.data(), ptr, reqsiz);
+    glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-
+    
     CHECK_GL("read the depth (pbo to cpu)");
 }
 

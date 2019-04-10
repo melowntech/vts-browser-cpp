@@ -58,23 +58,27 @@ class DepthBuffer
 private:
     static const uint32 PboCount = 2;
     Buffer buffer;
+    mat4 conv[PboCount];
     uint32 w[PboCount], h[PboCount];
     uint32 pbo[PboCount];
     uint32 tw, th;
     uint32 fbo, tex;
     uint32 index;
 
-    float valuePix(uint32 x, uint32 y);
+    double valuePix(uint32 x, uint32 y);
 
 public:
     DepthBuffer();
     ~DepthBuffer();
 
-    void performCopy(uint32 sourceTexture, uint32 w, uint32 h);
+    const mat4 &getConv() const;
+
+    void performCopy(uint32 sourceTexture, uint32 w, uint32 h,
+        const mat4 &storeConv);
 
     // xy in -1..1
     // returns 0..1 in logarithmic depth
-    float value(float x, float y);
+    double value(double x, double y);
 
     std::shared_ptr<Shader> shaderCopyDepth;
     std::shared_ptr<Mesh> meshQuad;

@@ -30,7 +30,8 @@ namespace vts { namespace renderer
 {
 
 DepthBuffer::DepthBuffer()
-    : w{ 0,0 }, h{ 0,0 }, pbo{ 0,0 },
+    : conv{ identityMatrix4(), identityMatrix4() },
+    w{ 0,0 }, h{ 0,0 }, pbo{ 0,0 },
     tw(0), th(0), fbo(0), tex(0), index(0)
 {
     glGenBuffers(PboCount, pbo);
@@ -45,8 +46,14 @@ DepthBuffer::~DepthBuffer()
     glDeleteBuffers(PboCount, pbo);
 }
 
+const mat4 &DepthBuffer::getConv() const
+{
+    return conv[index];
+}
+
 void DepthBuffer::performCopy(uint32 sourceTexture,
-    uint32 paramW, uint32 paramH)
+    uint32 paramW, uint32 paramH,
+    const mat4 &storeConv)
 {
     paramW /= 3;
     paramH /= 3;
@@ -100,6 +107,7 @@ void DepthBuffer::performCopy(uint32 sourceTexture,
 
     // copy gpu pbo to cpu buffer
 
+    conv[index] = storeConv;
     index = (index + 1) % PboCount;
 
     uint32 reqsiz = w[index] * h[index] * sizeof(uint32);
@@ -119,7 +127,7 @@ void DepthBuffer::performCopy(uint32 sourceTexture,
     CHECK_GL("read the depth (pbo to cpu)");
 }
 
-float DepthBuffer::valuePix(uint32 x, uint32 y)
+double DepthBuffer::valuePix(uint32 x, uint32 y)
 {
     if (w[index] * h[index] == 0)
         return nan1();
@@ -132,6 +140,8 @@ float DepthBuffer::valuePix(uint32 x, uint32 y)
         float f;
         unsigned char c[4];
     } u;
+
+    /*
     u.f = ((float*)buffer.data())[x + y * w[index]];
     if (u.u == 0)
         return nan1();
@@ -139,15 +149,20 @@ float DepthBuffer::valuePix(uint32 x, uint32 y)
         1.0 / (256.0*256.0*256.0),
         1.0 / (256.0*256.0),
         1.0 / 256.0, 1.0);
-    float d = 0;
+    double d = 0;
     for (int i = 0; i < 4; i++)
         d += u.c[i] * bitSh[i];
-    return d / 255.f;
+    return d / 255;
+    */
+
+    u.u = ((uint32*)buffer.data())[x + y * w[index]];
+    return u.f;
 }
 
-float DepthBuffer::value(float x, float y)
+double DepthBuffer::value(double x, double y)
 {
-    assert(x >= -1 && x <= 1 && y >= -1 && y <= 1);
+    if (x < -1 || x > 1 || y < -1 || y > 1)
+        return nan1();
     return valuePix((x * 0.5 + 0.5) * (w[index] - 1),
         (y * 0.5 + 0.5) * (h[index] - 1));
 }

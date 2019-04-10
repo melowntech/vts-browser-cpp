@@ -452,7 +452,7 @@ void RenderViewImpl::render()
 
     // copy the depth for future use
     clearGlState();
-    depthBuffer.performCopy(vars.depthReadTexId, width, height);
+    depthBuffer.performCopy(vars.depthReadTexId, width, height, viewProj);
     glViewport(0, 0, options.width, options.height);
     glScissor(0, 0, options.width, options.height);
     glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);

@@ -6,7 +6,7 @@ layout(std140) uniform uboAtm
     mat4 uniAtmViewInv;
     vec4 uniAtmColorHorizon;
     vec4 uniAtmColorZenith;
-    vec4 uniAtmSizes; // atmosphere thickness (divided by major axis), major / minor axes ratio, inverze major axis
+    vec4 uniAtmSizes; // atmosphere thickness (divided by major axis), major / minor axes ratio, inverse major axis
     vec4 uniAtmCoefs; // horizontal exponent, colorGradientExponent
     vec3 uniAtmCameraPosition; // world position of camera (divided by major axis)
 };

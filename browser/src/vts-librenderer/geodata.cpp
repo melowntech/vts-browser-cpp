@@ -25,6 +25,7 @@
  */
 
 #include <vts-browser/cameraDraws.hpp>
+#include <vts-browser/celestial.hpp>
 
 #include "geodata.hpp"
 
@@ -175,15 +176,76 @@ bool RenderViewImpl::geodataTestVisibility(
     return true;
 }
 
+namespace
+{
+    double raySphereTest(const vec3 &orig, const vec3 &dir, double radius)
+    {
+        double radius2 = radius * radius;
+        vec3 L = -orig;
+        double tca = dot(L, dir);
+        double d2 = dot(L, L) - tca * tca;
+        if (d2 > radius2)
+            return nan1();
+        double thc = std::sqrt(radius2 - d2);
+        double t0 = tca - thc;
+        double t1 = tca + thc;
+        if (t0 > t1)
+            std::swap(t0, t1);
+        if (t0 < 0)
+        {
+            t0 = t1;
+            if (t0 < 0)
+                return nan1();
+        }
+        return t0;
+    }
+
+    double rayEllipsoidTest(const vec3 &orig, const vec3 &dir,
+        double radiusXY, double radiusZ)
+    {
+        double r = radiusXY / radiusZ;
+        vec3 o = vec3(orig[0], orig[1], orig[2] * r); // ellipsoid to sphere
+        vec3 d = vec3(dir[0], dir[1], dir[2] * r);
+        d = normalize(d);
+        double t = raySphereTest(o, d, radiusXY);
+        if (!(t == t))
+            return nan1();
+        vec3 p = o + d * t;
+        p = vec3(p[0], p[1], p[2] / r); // sphere to ellipsoid
+        return length(vec3(p - o));
+    }
+}
+
 bool RenderViewImpl::geodataDepthVisibility(const vec3 &pos, float threshold)
 {
     if (!(threshold == threshold))
         return true;
-    vec3 dir = normalize(vec3(rawToVec3(draws->camera.eye) - pos));
+
+    vec3 diff = vec3(rawToVec3(draws->camera.eye) - pos);
+    vec3 dir = normalize(diff);
+
+    // if the feature is very far, the depth buffer is not precise enough
+    // we compare it with ellipsoid instead
+    if (diff.squaredNorm() > 1e13)
+    {
+        double de = rayEllipsoidTest(rawToVec3(draws->camera.eye),
+            -dir, body->majorRadius, body->minorRadius);
+        if (!(de == de))
+            return true;
+        double df = length(diff);
+        return df < de + threshold;
+    }
+
+    // compare to the depth buffer
     vec3 p3 = pos + dir * threshold;
-    vec4 p4 = viewProj * vec3to4(p3, 1);
+    vec4 p4 = depthBuffer.getConv() * vec3to4(p3, 1);
     p3 = vec4to3(p4, true);
-    return p3[2] * 0.5 + 0.5 < depthBuffer.value(p3[0], p3[1]);
+    double d = depthBuffer.value(p3[0], p3[1]) * 2 - 1;
+    if (d == d)
+        return p3[2] < d;
+
+    // if the depth value is invalid (eg. sky), the feature is visible
+    return true;
 }
 
 mat4 RenderViewImpl::depthOffsetCorrection(

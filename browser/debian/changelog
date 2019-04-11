@@ -1,3 +1,9 @@
+vts-browser (0.19) melown-xenial; urgency=medium
+
+  * geodata part 1
+
+ -- Tomas Maly <tomas.maly@melown.com>  Thu, 11 Apr 2019 12:54:45 +0000
+
 vts-browser (0.18) melown-xenial; urgency=medium
 
   * lod blending

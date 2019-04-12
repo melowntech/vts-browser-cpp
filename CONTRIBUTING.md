@@ -31,7 +31,7 @@ You agree with the CLA by
  3. signing the document,
  4. scanning the signed document and emailing it to *community at melown.com*.
 
-This is only required once for your contributions to [all Melown repositories](https://github.com/Melown).
+This is only required once for your contributions to [all Melown repositories](https://github.com/melowntech).
 
 ## GitHub Commit Guidelines
 

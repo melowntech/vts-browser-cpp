@@ -5,7 +5,7 @@ You have multiple options:
 
  - Download (or build) and install all required dependencies yourself.
    Then use cmake.
- - (Recommended) Use [Build Wrapper](https://github.com/Melown/vts-browser-cpp-build-wrapper) instead.
+ - (Recommended) Use [Build Wrapper](https://github.com/melowntech/vts-browser-cpp-build-wrapper) instead.
    The wrapper has integrated build scripts for all dependencies making building the browser a peace of cake :D
 
 # Build for Linux Desktop
@@ -29,7 +29,8 @@ sudo apt install \
     libproj-dev \
     libgeographic-dev \
     libjsoncpp-dev \
-    libsdl2-dev
+    libsdl2-dev \
+    libfreetype6-dev
 ```
 
 Clone the git repository with all submodules.
@@ -37,7 +38,7 @@ The library build system is cmake based.
 However, for convenience, a make shortcut exists.
 
 ```bash
-git clone --recursive https://github.com/Melown/vts-browser-cpp.git
+git clone --recursive https://github.com/melowntech/vts-browser-cpp.git
 cd vts-browser-cpp/browser
 make
 ```
@@ -67,7 +68,7 @@ Clone the git repository with all submodules.
 Use cmake to generate xcode project.
 
 ```bash
-git clone --recursive https://github.com/Melown/vts-browser-cpp.git
+git clone --recursive https://github.com/melowntech/vts-browser-cpp.git
 cd vts-browser-cpp/browser
 mkdir build-osx
 cd build-osx
@@ -82,7 +83,7 @@ You have multiple options:
 
  - Build all required dependencies yourself.
    Then use cmake with -DCMAKE_TOOLCHAIN_FILE=\<path-to-our-ios.toolchain.cmake\>.
- - (Recommended) Use [Build Wrapper](https://github.com/Melown/vts-browser-cpp-build-wrapper) instead.
+ - (Recommended) Use [Build Wrapper](https://github.com/melowntech/vts-browser-cpp-build-wrapper) instead.
    The wrapper has integrated build scripts for all dependencies making building the browser a peace of cake :D
 
 # Recommended Folder Structure

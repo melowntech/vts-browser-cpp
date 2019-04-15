@@ -102,6 +102,7 @@ void DepthBuffer::performCopy(uint32 sourceTexture,
 
     glReadPixels(0, 0, w[index], h[index],
         GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
     CHECK_GL("read the depth (texture to pbo)");
 
@@ -115,7 +116,7 @@ void DepthBuffer::performCopy(uint32 sourceTexture,
         return;
     if (buffer.size() < reqsiz)
         buffer.allocate(reqsiz);
-    
+
     glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo[index]);
     void *ptr = glMapBufferRange(GL_PIXEL_PACK_BUFFER,
                                  0, reqsiz, GL_MAP_READ_BIT);
@@ -123,7 +124,7 @@ void DepthBuffer::performCopy(uint32 sourceTexture,
     memcpy(buffer.data(), ptr, reqsiz);
     glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-    
+
     CHECK_GL("read the depth (pbo to cpu)");
 }
 
@@ -140,20 +141,6 @@ double DepthBuffer::valuePix(uint32 x, uint32 y)
         float f;
         unsigned char c[4];
     } u;
-
-    /*
-    u.f = ((float*)buffer.data())[x + y * w[index]];
-    if (u.u == 0)
-        return nan1();
-    static const vec4 bitSh = vec4(
-        1.0 / (256.0*256.0*256.0),
-        1.0 / (256.0*256.0),
-        1.0 / 256.0, 1.0);
-    double d = 0;
-    for (int i = 0; i < 4; i++)
-        d += u.c[i] * bitSh[i];
-    return d / 255;
-    */
 
     u.u = ((uint32*)buffer.data())[x + y * w[index]];
     return u.f;

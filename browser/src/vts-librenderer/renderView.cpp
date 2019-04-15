@@ -44,6 +44,7 @@ void clearGlState()
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -323,6 +324,8 @@ void RenderViewImpl::updateFramebuffers()
                 -1, "frameReadBufferId");
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
             GL_TEXTURE_2D, vars.depthReadTexId, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, vars.colorReadTexId, 0);
         checkGlFramebuffer(GL_FRAMEBUFFER);
 
         CHECK_GL("update frame buffer");

@@ -104,7 +104,7 @@ void RenderView::render()
     impl->atmosphereDensityTexture
         = (Texture*)impl->camera->map()->atmosphereDensityTexture().get();
     impl->elapsedTime = impl->camera->map()->lastRenderUpdateElapsedTime();
-    impl->render();
+    impl->renderEntry();
     impl->draws = nullptr;
     impl->body = nullptr;
     impl->atmosphereDensityTexture = nullptr;

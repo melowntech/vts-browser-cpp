@@ -328,45 +328,17 @@ void RenderViewImpl::updateFramebuffers()
             GL_TEXTURE_2D, vars.colorReadTexId, 0);
         checkGlFramebuffer(GL_FRAMEBUFFER);
 
+        glActiveTexture(GL_TEXTURE0);
         CHECK_GL("update frame buffer");
     }
 }
 
-void RenderViewImpl::render()
+void RenderViewImpl::renderValid()
 {
-    CHECK_GL("pre-frame check");
-
-    assert(context->shaderSurface);
-    view = rawToMat4(draws->camera.view);
-    proj = rawToMat4(draws->camera.proj);
-
-    if (options.width <= 0 || options.height <= 0
-        || proj(0, 0) == 0)
-        return;
-
     viewInv = view.inverse();
     projInv = proj.inverse();
     viewProj = proj * view;
     viewProjInv = viewProj.inverse();
-
-    updateFramebuffers();
-
-    // initialize opengl
-    glViewport(0, 0, options.width, options.height);
-    glScissor(0, 0, options.width, options.height);
-    glActiveTexture(GL_TEXTURE0);
-    glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
-    CHECK_GL_FRAMEBUFFER(GL_FRAMEBUFFER);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_CULL_FACE);
-#ifndef VTSR_OPENGLES
-    glEnable(GL_POLYGON_OFFSET_LINE);
-    glPolygonOffset(0, -1000);
-#endif
-    glClearColor(0, 0, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
-        | GL_STENCIL_BUFFER_BIT);
-    CHECK_GL("initialized opengl");
 
     // update atmosphere
     updateAtmosphereBuffer();
@@ -424,6 +396,10 @@ void RenderViewImpl::render()
     {
         glDisable(GL_BLEND);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+#ifndef VTSR_OPENGLES
+        glEnable(GL_POLYGON_OFFSET_LINE);
+#endif
+        glPolygonOffset(0, -1000);
         context->shaderSurface->bind();
         enableClipDistance(true);
         for (const DrawSurfaceTask &it : draws->opaque)
@@ -434,10 +410,14 @@ void RenderViewImpl::render()
             drawSurface(t);
         }
         enableClipDistance(false);
+#ifndef VTSR_OPENGLES
+        glDisable(GL_POLYGON_OFFSET_LINE);
+#endif
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glEnable(GL_BLEND);
         CHECK_GL("rendered polygon edges");
     }
+    glPolygonOffset(0, 0);
 
     // copy the depth (resolve multisampling)
     if (vars.depthReadTexId != vars.depthRenderTexId)
@@ -487,6 +467,37 @@ void RenderViewImpl::render()
         glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
         CHECK_GL("copied the color to texture (resolving multisampling)");
     }
+}
+
+void RenderViewImpl::renderEntry()
+{
+    CHECK_GL("pre-frame check");
+    clearGlState();
+
+    assert(context->shaderSurface);
+    view = rawToMat4(draws->camera.view);
+    proj = rawToMat4(draws->camera.proj);
+
+    if (options.width <= 0 || options.height <= 0)
+        return;
+
+    updateFramebuffers();
+
+    // initialize opengl
+    glViewport(0, 0, options.width, options.height);
+    glScissor(0, 0, options.width, options.height);
+    glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
+    CHECK_GL_FRAMEBUFFER(GL_FRAMEBUFFER);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_CULL_FACE);
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
+        | GL_STENCIL_BUFFER_BIT);
+    CHECK_GL("initialized opengl");
+
+    // render
+    if (proj(0, 0) != 0)
+        renderValid();
 
     // copy the color to screen
     if (options.colorToTargetFrameBuffer)

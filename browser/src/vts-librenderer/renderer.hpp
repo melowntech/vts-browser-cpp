@@ -169,7 +169,8 @@ public:
     void getWorldPosition(const double screenPos[2], double worldPos[3]);
     void renderCompass(const double screenPosSize[3],
         const double mapRotation[3]);
-    void render();
+    void renderValid();
+    void renderEntry();
 
     bool geodataTestVisibility(
         const float visibility[4],

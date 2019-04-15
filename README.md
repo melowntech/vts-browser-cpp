@@ -1,4 +1,4 @@
-# VTS Browser CPP
+<img width="400" alt="VTS Browser JS" src="https://github.com/melowntech/assets/blob/master/vts-browser-cpp/vts-browser-cpp@2x.png?raw=true">
 
 [VTS Browser CPP](https://github.com/melown/vts-browser-cpp) is a collection of libraries
 that bring VTS client capabilities to your native applications.

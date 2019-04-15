@@ -37,6 +37,8 @@
 
 #include <utf8.h>
 
+#include <deque>
+
 namespace vts
 {
 
@@ -126,15 +128,22 @@ bool isCjk(const std::string &s)
 
 uint32 utf8len(const std::string &s)
 {
-    uint32 result = 0;
-    auto it = s.begin();
-    const auto e = s.end();
-    while (it != e)
-    {
-        utf8::next(it, e);
-        result++;
-    }
-    return result;
+    return utf8::distance(s.begin(), s.end());
+}
+
+std::string utf8trim(const std::string &s)
+{
+    std::deque<uint32> s8;
+    //s8.reserve(s.size());
+    utf8::utf8to32(s.begin(), s.end(), std::back_inserter(s8));
+    while (!s8.empty() && isWhitespace(s8[0]))
+        s8.pop_back();
+    while (!s8.empty() && isWhitespace(s8[s8.size() - 1]))
+        s8.pop_front();
+    std::string res;
+    res.reserve(s.size());
+    utf8::utf32to8(s8.begin(), s8.end(), std::back_inserter(res));
+    return res;
 }
 
 double str2num(const std::string &s)
@@ -781,7 +790,7 @@ if (fnc == #NAME) \
                 return evaluate(arr[2]);
         }
 
-        // 'strlen', 'str2num', 'lowercase', 'uppercase', 'capitalize'
+        // 'strlen', 'str2num', 'lowercase', 'uppercase', 'capitalize', 'trim'
         if (fnc == "strlen")
             return utf8len(evaluate(expression[fnc]).asString());
         if (fnc == "str2num")
@@ -792,6 +801,8 @@ if (fnc == #NAME) \
             return uppercase(evaluate(expression[fnc]).asString());
         if (fnc == "capitalize")
             return titlecase(evaluate(expression[fnc]).asString());
+        if (fnc == "trim")
+            return utf8trim(evaluate(expression[fnc]).asString());
 
         // 'has-fonts', 'has-latin', 'is-cjk'
         if (fnc == "has-latin")

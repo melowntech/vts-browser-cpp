@@ -32,6 +32,7 @@
 namespace vts
 {
 
+bool isWhitespace(uint32 v);
 std::string lowercase(const std::string &s);
 std::string uppercase(const std::string &s);
 std::string titlecase(const std::string &s);

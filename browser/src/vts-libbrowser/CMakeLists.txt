@@ -103,6 +103,7 @@ set(SRC_LIST
     map/credits.cpp
     map/map.cpp
     map/mapLayer.cpp
+    map/progress.cpp
     map/search.cpp
     map/surfaceStack.cpp
     navigation/altitude.cpp

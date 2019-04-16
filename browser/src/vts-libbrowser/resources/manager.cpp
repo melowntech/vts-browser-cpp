@@ -572,13 +572,15 @@ void MapImpl::resourceRenderFinalize()
 
 void MapImpl::resourceRenderUpdate()
 {
+    // resourcesPreparing is used to determine mapRenderComplete
+    resourcesUpdateStatistics();
+
     // split workload into multiple render frames
-    switch (renderTickIndex % 4)
+    switch (renderTickIndex % 3)
     {
     case 0: return resourcesRemoveOld();
     case 1: return resourcesCheckInitialized();
     case 2: return resourcesStartDownloads();
-    case 3: return resourcesUpdateStatistics();
     }
 }
 

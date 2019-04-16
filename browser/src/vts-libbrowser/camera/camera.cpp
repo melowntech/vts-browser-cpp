@@ -105,23 +105,6 @@ void touchDraws(MapImpl *map, const RenderSurfaceTask &task)
         map->touchResource(task.textureMask);
 }
 
-/*
-void touchDraws(MapImpl *map, const RenderGeodataTask &task)
-{
-    (void)map;
-    (void)task;
-    // geodata are not a resource
-}
-
-void touchDraws(MapImpl *map, const RenderSimpleTask &task)
-{
-    if (task.mesh)
-        map->touchResource(task.mesh);
-    if (task.textureColor)
-        map->touchResource(task.textureColor);
-}
-*/
-
 template<class T>
 void touchDraws(MapImpl *map, const std::vector<T> &renders)
 {
@@ -744,23 +727,6 @@ void CameraImpl::sortOpaqueFrontToBack()
         vec3 vb = rawToVec3(b.center).cast<double>() - e;
         return dot(va, va) < dot(vb, vb);
     });
-}
-
-bool MapImpl::getMapRenderComplete()
-{
-    if (statistics.resourcesPreparing > 0)
-        return false;
-    for (auto &camera : cameras)
-    {
-        auto cam = camera.lock();
-        if (cam)
-        {
-            if (cam->statistics.currentNodeMetaUpdates > 0
-                || cam->statistics.currentNodeDrawsUpdates > 0)
-                return false;
-        }
-    }
-    return true;
 }
 
 } // namespace vts

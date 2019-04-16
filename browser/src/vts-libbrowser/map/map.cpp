@@ -69,7 +69,7 @@ void MapImpl::renderUpdate(double elapsedTime)
 
     cameras.erase(std::remove_if(cameras.begin(), cameras.end(),
         [&](std::weak_ptr<CameraImpl> &camera) {
-        return !!camera.lock();
+        return !camera.lock();
     }), cameras.end());
 
     for (auto &it : layers)
@@ -259,21 +259,6 @@ void MapImpl::traverseClearing(TraverseNode *trav)
 
     for (auto &it : trav->childs)
         traverseClearing(it.get());
-}
-
-double MapImpl::getMapRenderProgress()
-{
-    uint32 active = statistics.resourcesPreparing;
-    if (active == 0)
-    {
-        resources.progressEstimationMaxResources = 0;
-        return 0;
-    }
-
-    resources.progressEstimationMaxResources
-            = std::max(resources.progressEstimationMaxResources, active);
-    return double(resources.progressEstimationMaxResources - active)
-            / resources.progressEstimationMaxResources;
 }
 
 TileId MapImpl::roundId(TileId nodeId)

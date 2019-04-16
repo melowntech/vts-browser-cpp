@@ -935,9 +935,12 @@ public:
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                 nk_label(&ctx, "Loading:", NK_TEXT_LEFT);
-                nk_prog(&ctx, (int)(
-                    1000 * window->map->getMapRenderProgress()),
-                    1000, false);
+                if (window->map->getMapRenderComplete())
+                    nk_label(&ctx, "done", NK_TEXT_RIGHT);
+                else
+                    nk_prog(&ctx, (int)(1000
+                        * window->map->getMapRenderProgress()),
+                        1000, false);
 
                 S("GPU memory:", ms.currentGpuMemUseKB / 1024, " MB");
                 S("RAM memory:", ms.currentRamMemUseKB / 1024, " MB");

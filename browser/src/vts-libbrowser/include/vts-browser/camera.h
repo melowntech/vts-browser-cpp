@@ -80,10 +80,10 @@ VTS_API void vtsDrawsCollidersGroup(vtsHCamera cam,
 // acquire individual draw tasks data
 VTS_API void vtsDrawsSurfaceTask(void *group, uint32 index,
     void **mesh, void **texColor, void **texMask,
-    vtsCDrawSurfaceBase **base);
+    vtsCDrawSurfaceBase **baseStruct);
 VTS_API void vtsDrawsSimpleTask(void *group, uint32 index,
     void **mesh, void **texColor,
-    vtsCDrawSimpleBase **base);
+    vtsCDrawSimpleBase **baseStruct);
 
 VTS_API const vtsCCameraBase *vtsDrawsCamera(vtsHCamera cam);
 

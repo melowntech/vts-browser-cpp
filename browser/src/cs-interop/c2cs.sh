@@ -31,10 +31,14 @@ awk -vRS=';' -vORS=';' '{gsub(/enum.*/,"")} 1' - | \
 
 # squash all parameters into single line
 awk -vRS=',\n' -vORS=',' '1' - | \
+awk -vRS='\\(\n' -vORS='(' '1' - | \
+
+# squash spaces
 tr -s " " | \
+sed 's/( /(/g' - | \
 
 # remove leftover ; and ,
-grep -v '^[;\,]*$' | \
+grep -v '^[;\,\(]*$' | \
 
 # remove empty lines
 grep -v '^ *$' | \
@@ -77,6 +81,9 @@ sed 's/\(const \)\?\([[:alnum:]]\+\) \([[:alnum:]]\+\)\[\]/IntPtr \3/g' - | \
 # parameter void*
 awk '{gsub(/void \*/,"IntPtr ")} 1' - | \
 
+# parameter struct*
+sed 's/\(vtsC[[:alnum:]]\+\) \*/IntPtr /g' - | \
+
 # parameter bool
 awk '{gsub(/bool /,"[MarshalAs(UnmanagedType.I1)] bool ")} 1' - | \
 
@@ -86,11 +93,11 @@ awk '{gsub(/boolret /,"bool ")} 1' - | \
 # ref parameter
 sed 's/\([[:alnum:]]\+\) \*\([[:alnum:]]\+\)/ref \1 \2/g' - | \
 
+# void parameter
+sed 's/(void)/()/g' - | \
+
 # static extern
 awk '{sub(/VTS_API/,"public static extern")} 1' - | \
-
-# replace double spaces
-sed 's/  / /' - | \
 
 # add empty lines
 awk '{sub(/;/,";\n")} 1' - | \

@@ -47,24 +47,24 @@ namespace vtsBrowserMinimalCs
 
         public void Init(object sender, EventArgs args)
         {
-            Renderer.LoadGlFunctions(VtsGL.AnyGlFnc);
+            RenderContext.LoadGlFunctions(VtsGL.AnyGlFnc);
             map = new Map("");
             cam = new Camera(map);
             nav = new Navigation(cam);
-            renderer = new Renderer();
+            renderContext = new RenderContext();
+            renderView = new RenderView(renderContext, cam);
             map.DataInitialize();
             map.RenderInitialize();
             map.SetMapconfigPath("https://cdn.melown.com/mario/store/melown2015/map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
-            renderer.Initialize();
-            renderer.BindLoadFunctions(map);
+            renderContext.BindLoadFunctions(map);
         }
 
         public void Fin(object sender, EventArgs args)
         {
-            renderer.Deinitialize();
             map.RenderDeinitialize();
             map.DataDeinitialize();
-            renderer = null;
+            renderContext = null;
+            renderView = null;
             nav = null;
             cam = null;
             map = null;
@@ -81,11 +81,11 @@ namespace vtsBrowserMinimalCs
             cam.SetViewportSize((uint)c.Width, (uint)c.Height);
             cam.RenderUpdate();
 
-            RenderOptions ro = renderer.Options;
+            RenderOptions ro = renderView.Options;
             ro.width = (uint)c.Width;
             ro.height = (uint)c.Height;
-            renderer.Options = ro;
-            renderer.Render(cam);
+            renderView.Options = ro;
+            renderView.Render();
         }
 
         public void MapMousePress(object sender, MouseEventArgs e)
@@ -120,6 +120,7 @@ namespace vtsBrowserMinimalCs
         public Map map;
         public Camera cam;
         public Navigation nav;
-        public Renderer renderer;
+        public RenderContext renderContext;
+        public RenderView renderView;
     }
 }

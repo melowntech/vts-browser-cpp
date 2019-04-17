@@ -36,10 +36,14 @@ namespace vts
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)] public double[] view;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)] public double[] proj;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)] public double[] eye;
+        [MarshalAs(UnmanagedType.R8)] public double targetDistance;
+        [MarshalAs(UnmanagedType.R8)] public double viewExtent;
+        [MarshalAs(UnmanagedType.R8)] public double altitudeOverEllipsoid;
+        [MarshalAs(UnmanagedType.R8)] public double altitudeOverSurface;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct DrawBase
+    public struct DrawSurfaceBase
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)] public float[] mv;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 9)] public float[] uvm;
@@ -50,12 +54,26 @@ namespace vts
         [MarshalAs(UnmanagedType.I1)] public bool flatShading;
     }
 
-    public struct DrawTask
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DrawSimpleBase
     {
-        public DrawBase data;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)] public float[] mv;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)] public float[] color;
+    }
+
+    public struct DrawSurfaceTask
+    {
+        public DrawSurfaceBase data;
         public Object mesh;
         public Object texColor;
         public Object texMask;
+    }
+
+    public struct DrawSimpleTask
+    {
+        public DrawSimpleBase data;
+        public Object mesh;
+        public Object texColor;
     }
 
     public struct Atmosphere
@@ -123,11 +141,10 @@ namespace vts
     {
         public CameraBase camera;
         public Celestial celestial;
-        public List<DrawTask> opaque;
-        public List<DrawTask> transparent;
-        public List<DrawTask> geodata;
-        public List<DrawTask> infographics;
-        public List<DrawTask> colliders;
+        public List<DrawSurfaceTask> opaque;
+        public List<DrawSurfaceTask> transparent;
+        public List<DrawSimpleTask> infographics;
+        public List<DrawSimpleTask> colliders;
 
         private Object Load(IntPtr ptr)
         {
@@ -137,36 +154,48 @@ namespace vts
             return hnd.Target;
         }
 
-        private void Load(ref List<DrawTask> tasks, IntPtr group)
+        private void LoadSurfaces(ref List<DrawSurfaceTask> tasks, IntPtr group, uint cnt)
         {
             Util.CheckInterop();
-            try
+            if (tasks == null)
+                tasks = new List<DrawSurfaceTask>((int)cnt);
+            else
+                tasks.Clear();
+            for (uint i = 0; i < cnt; i++)
             {
-                uint cnt = BrowserInterop.vtsDrawsCount(group);
+                DrawSurfaceTask t;
+                IntPtr pm = IntPtr.Zero, ptc = IntPtr.Zero, ptm = IntPtr.Zero, pbs = IntPtr.Zero;
+                BrowserInterop.vtsDrawsSurfaceTask(group, i, ref pm, ref ptc, ref ptm, ref pbs);
                 Util.CheckInterop();
-                if (tasks == null)
-                    tasks = new List<DrawTask>((int)cnt);
-                else
-                    tasks.Clear();
-                for (uint i = 0; i < cnt; i++)
-                {
-                    DrawTask t;
-                    IntPtr pm = IntPtr.Zero, ptc = IntPtr.Zero, ptm = IntPtr.Zero;
-                    IntPtr dataPtr = BrowserInterop.vtsDrawsAllInOne(group, i, ref pm, ref ptc, ref ptm);
-                    Util.CheckInterop();
-                    if (pm == IntPtr.Zero)
-                        continue;
-                    t.data = (DrawBase)Marshal.PtrToStructure(dataPtr, typeof(DrawBase));
-                    t.mesh = Load(pm);
-                    t.texColor = Load(ptc);
-                    t.texMask = Load(ptm);
-                    tasks.Add(t);
-                }
+                if (pm == IntPtr.Zero)
+                    continue;
+                t.data = (DrawSurfaceBase)Marshal.PtrToStructure(pbs, typeof(DrawSurfaceBase));
+                t.mesh = Load(pm);
+                t.texColor = Load(ptc);
+                t.texMask = Load(ptm);
+                tasks.Add(t);
             }
-            finally
+        }
+
+        private void LoadSimple(ref List<DrawSimpleTask> tasks, IntPtr group, uint cnt)
+        {
+            Util.CheckInterop();
+            if (tasks == null)
+                tasks = new List<DrawSimpleTask>((int)cnt);
+            else
+                tasks.Clear();
+            for (uint i = 0; i < cnt; i++)
             {
-                BrowserInterop.vtsDrawsDestroy(group);
+                DrawSimpleTask t;
+                IntPtr pm = IntPtr.Zero, ptc = IntPtr.Zero, pbs = IntPtr.Zero;
+                BrowserInterop.vtsDrawsSimpleTask(group, i, ref pm, ref ptc, ref pbs);
                 Util.CheckInterop();
+                if (pm == IntPtr.Zero)
+                    continue;
+                t.data = (DrawSimpleBase)Marshal.PtrToStructure(pbs, typeof(DrawSimpleBase));
+                t.mesh = Load(pm);
+                t.texColor = Load(ptc);
+                tasks.Add(t);
             }
         }
 
@@ -176,11 +205,16 @@ namespace vts
             Util.CheckInterop();
             camera = (CameraBase)Marshal.PtrToStructure(camPtr, typeof(CameraBase));
             celestial.Load(map);
-            Load(ref opaque, BrowserInterop.vtsDrawsOpaque(cam.Handle));
-            Load(ref transparent, BrowserInterop.vtsDrawsTransparent(cam.Handle));
-            Load(ref geodata, BrowserInterop.vtsDrawsGeodata(cam.Handle));
-            Load(ref infographics, BrowserInterop.vtsDrawsInfographics(cam.Handle));
-            Load(ref colliders, BrowserInterop.vtsDrawsColliders(cam.Handle));
+            IntPtr group = IntPtr.Zero;
+            uint cnt = 0;
+            BrowserInterop.vtsDrawsOpaqueGroup(cam.Handle, ref group, ref cnt);
+            LoadSurfaces(ref opaque, group, cnt);
+            BrowserInterop.vtsDrawsTransparentGroup(cam.Handle, ref group, ref cnt);
+            LoadSurfaces(ref transparent, group, cnt);
+            BrowserInterop.vtsDrawsInfographicsGroup(cam.Handle, ref group, ref cnt);
+            LoadSimple(ref infographics, group, cnt);
+            BrowserInterop.vtsDrawsCollidersGroup(cam.Handle, ref group, ref cnt);
+            LoadSimple(ref colliders, group, cnt);
         }
     }
 }

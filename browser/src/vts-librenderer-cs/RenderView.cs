@@ -29,7 +29,7 @@ using System.Runtime.InteropServices;
 
 namespace vts
 {
-    public class Renderer : IDisposable
+    public class RenderView : IDisposable
     {
         public static void LoadGlFunctions(RendererInterop.GLADloadproc proc)
         {
@@ -37,41 +37,23 @@ namespace vts
             Util.CheckInterop();
         }
 
-        public Renderer()
+        public RenderView(RenderContext ctx, Camera camera)
         {
-            Handle = RendererInterop.vtsRendererCreate();
-            Util.CheckInterop();
-        }
-        
-        public void Initialize()
-        {
-            RendererInterop.vtsRendererInitialize(Handle);
+            Handle = RendererInterop.vtsRenderContextCreateView(ctx.Handle, camera.Handle);
             Util.CheckInterop();
         }
 
-        public void Deinitialize()
+        public void Render()
         {
-            RendererInterop.vtsRendererFinalize(Handle);
+            RendererInterop.vtsRenderViewRender(Handle);
             Util.CheckInterop();
         }
 
-        public void BindLoadFunctions(Map map)
-        {
-            RendererInterop.vtsRendererBindLoadFunctions(Handle, map.Handle);
-            Util.CheckInterop();
-        }
-
-        public void Render(Camera camera)
-        {
-            RendererInterop.vtsRendererRender(Handle, camera.Handle);
-            Util.CheckInterop();
-        }
-        
         public void RenderCompass(double[] screenPosSize, double[] mapRotation)
         {
             Util.CheckArray(screenPosSize, 3);
             Util.CheckArray(mapRotation, 3);
-            RendererInterop.vtsRendererRenderCompas(Handle, screenPosSize, mapRotation);
+            RendererInterop.vtsRenderViewRenderCompas(Handle, screenPosSize, mapRotation);
             Util.CheckInterop();
         }
 
@@ -79,7 +61,7 @@ namespace vts
         {
             Util.CheckArray(screenPos, 2);
             double[] res = new double[3];
-            RendererInterop.vtsRendererGetWorldPosition(Handle, screenPos, res);
+            RendererInterop.vtsRenderViewGetWorldPosition(Handle, screenPos, res);
             Util.CheckInterop();
             return res;
         }
@@ -88,13 +70,13 @@ namespace vts
         {
             get
             {
-                IntPtr p = RendererInterop.vtsRendererOptions(Handle);
+                IntPtr p = RendererInterop.vtsRenderViewOptions(Handle);
                 Util.CheckInterop();
                 return (RenderOptions)Marshal.PtrToStructure(p, typeof(RenderOptions));
             }
             set
             {
-                IntPtr p = RendererInterop.vtsRendererOptions(Handle);
+                IntPtr p = RendererInterop.vtsRenderViewOptions(Handle);
                 Util.CheckInterop();
                 Marshal.StructureToPtr(value, p, false);
             }
@@ -104,7 +86,7 @@ namespace vts
         {
             get
             {
-                IntPtr p = RendererInterop.vtsRendererVariables(Handle);
+                IntPtr p = RendererInterop.vtsRenderViewVariables(Handle);
                 Util.CheckInterop();
                 return (RenderVariables)Marshal.PtrToStructure(p, typeof(RenderVariables));
             }
@@ -112,7 +94,7 @@ namespace vts
 
         public void Dispose()
         {
-            RendererInterop.vtsRendererDestroy(Handle);
+            RendererInterop.vtsRenderViewDestroy(Handle);
             Util.CheckInterop();
         }
 

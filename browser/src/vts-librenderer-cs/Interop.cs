@@ -42,7 +42,7 @@ namespace vts
 #endif
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate IntPtr GLADloadproc([MarshalAs(UnmanagedType.LPStr)] string name);
+public delegate IntPtr  GLADloadproc([MarshalAs(UnmanagedType.LPStr)] string name);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsCheckGl([MarshalAs(UnmanagedType.LPStr)] string name);
@@ -54,36 +54,34 @@ public static extern void vtsCheckGlFramebuffer(uint target);
 public static extern void vtsLoadGlFunctions(GLADloadproc functionLoader);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsRendererCreate();
+public static extern IntPtr vtsRenderContextCreate();
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsRendererDestroy(IntPtr renderer);
+public static extern void vtsRenderContextDestroy(IntPtr context);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsRendererInitialize(IntPtr renderer);
+public static extern void vtsRenderContextBindLoadFunctions(IntPtr context, IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsRendererFinalize(IntPtr renderer);
+public static extern IntPtr vtsRenderContextCreateView(IntPtr context, IntPtr camera);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsRendererBindLoadFunctions(IntPtr renderer, IntPtr map);
+public static extern void vtsRenderViewDestroy(IntPtr view);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsRendererOptions(
- IntPtr renderer);
+public static extern IntPtr vtsRenderViewOptions(IntPtr view);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsRendererVariables(
- IntPtr renderer);
+public static extern IntPtr vtsRenderViewVariables(IntPtr view);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsRendererRender(IntPtr renderer, IntPtr camera);
+public static extern void vtsRenderViewRender(IntPtr view);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsRendererRenderCompas(IntPtr renderer, [In] double[] screenPosSize, [In] double[] mapRotation);
+public static extern void vtsRenderViewRenderCompas(IntPtr view, [In] double[] screenPosSize, [In] double[] mapRotation);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsRendererGetWorldPosition(IntPtr renderer, [In] double[] screenPosIn, [Out] double[] worldPosOut);
+public static extern void vtsRenderViewGetWorldPosition(IntPtr view, [In] double[] screenPosIn, [Out] double[] worldPosOut);
 
 	}
 }

@@ -3,9 +3,10 @@ project(vts-renderer-cs CSharp)
 
 set(SRC_LIST
     Interop.cs
-    Renderer.cs
+    RenderContext.cs
     RenderOptions.cs
     RenderVariables.cs
+	RenderView.cs
 )
 
 add_library(vts-renderer-cs ${SRC_LIST})

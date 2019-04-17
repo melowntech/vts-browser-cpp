@@ -29,22 +29,32 @@ using System.Runtime.InteropServices;
 
 namespace vts
 {
-    [StructLayout(LayoutKind.Sequential)]
-    public struct RenderOptions
+    public class RenderContext : IDisposable
     {
-        [MarshalAs(UnmanagedType.R4)] public float textScale;
-        [MarshalAs(UnmanagedType.U4)] public uint width;
-        [MarshalAs(UnmanagedType.U4)] public uint height;
-        [MarshalAs(UnmanagedType.U4)] public uint targetFrameBuffer;
-        [MarshalAs(UnmanagedType.U4)] public uint targetViewportX;
-        [MarshalAs(UnmanagedType.U4)] public uint targetViewportY;
-        [MarshalAs(UnmanagedType.U4)] public uint targetViewportW;
-        [MarshalAs(UnmanagedType.U4)] public uint targetViewportH;
-        [MarshalAs(UnmanagedType.U4)] public uint antialiasingSamples;
-        [MarshalAs(UnmanagedType.I1)] public bool renderAtmosphere;
-        [MarshalAs(UnmanagedType.I1)] public bool renderPolygonEdges;
-        [MarshalAs(UnmanagedType.I1)] public bool renderGeodataMargins;
-        [MarshalAs(UnmanagedType.I1)] public bool colorToTargetFrameBuffer;
-        [MarshalAs(UnmanagedType.I1)] public bool colorToTexture;
+        public static void LoadGlFunctions(RendererInterop.GLADloadproc proc)
+        {
+            RendererInterop.vtsLoadGlFunctions(proc);
+            Util.CheckInterop();
+        }
+
+        public RenderContext()
+        {
+            Handle = RendererInterop.vtsRenderContextCreate();
+            Util.CheckInterop();
+        }
+
+        public void BindLoadFunctions(Map map)
+        {
+            RendererInterop.vtsRenderContextBindLoadFunctions(Handle, map.Handle);
+            Util.CheckInterop();
+        }
+
+        public void Dispose()
+        {
+            RendererInterop.vtsRenderContextDestroy(Handle);
+            Util.CheckInterop();
+        }
+
+        public IntPtr Handle { get; }
     }
 }

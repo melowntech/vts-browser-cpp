@@ -38,8 +38,8 @@ namespace vts
     {
         private void AssignInternalDelegates()
         {
-            MapconfigAvailableDelegate = new BrowserInterop.vtsEmptyCallbackType(MapconfigAvailableCallback);
-            MapconfigReadyDelegate = new BrowserInterop.vtsEmptyCallbackType(MapconfigReadyCallback);
+            MapconfigAvailableDelegate = new BrowserInterop.vtsMapCallbackType(MapconfigAvailableCallback);
+            MapconfigReadyDelegate = new BrowserInterop.vtsMapCallbackType(MapconfigReadyCallback);
             LoadTextureDelegate = new BrowserInterop.vtsResourceCallbackType(LoadTextureCallback);
             LoadMeshDelegate = new BrowserInterop.vtsResourceCallbackType(LoadMeshCallback);
             UnloadResourceDelegate = new BrowserInterop.vtsResourceDeleterCallbackType(UnloadResourceCallback);
@@ -57,9 +57,9 @@ namespace vts
             Util.CheckInterop();
         }
 
-        private BrowserInterop.vtsEmptyCallbackType MapconfigAvailableDelegate;
+        private BrowserInterop.vtsMapCallbackType MapconfigAvailableDelegate;
 #if ENABLE_IL2CPP
-        [MonoPInvokeCallback(typeof(BrowserInterop.vtsEmptyCallbackType))] static
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsMapCallbackType))] static
 #endif
         private void MapconfigAvailableCallback(IntPtr h)
         {
@@ -68,9 +68,9 @@ namespace vts
                 m.EventMapconfigAvailable.Invoke();
         }
 
-        private BrowserInterop.vtsEmptyCallbackType MapconfigReadyDelegate;
+        private BrowserInterop.vtsMapCallbackType MapconfigReadyDelegate;
 #if ENABLE_IL2CPP
-        [MonoPInvokeCallback(typeof(BrowserInterop.vtsEmptyCallbackType))] static
+        [MonoPInvokeCallback(typeof(BrowserInterop.vtsMapCallbackType))] static
 #endif
         private void MapconfigReadyCallback(IntPtr h)
         {

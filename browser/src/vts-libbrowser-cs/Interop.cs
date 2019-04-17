@@ -45,10 +45,10 @@ namespace vts
 public delegate void vtsResourceCallbackType(IntPtr map, IntPtr resource);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate void vtsEmptyCallbackType(IntPtr map);
+public delegate void vtsMapCallbackType(IntPtr map);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate IntPtr vtsProjFinderCallbackType([MarshalAs(UnmanagedType.LPStr)] string name);
+public delegate IntPtr  vtsProjFinderCallbackType([MarshalAs(UnmanagedType.LPStr)] string name);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsCallbacksLoadTexture(IntPtr map, vtsResourceCallbackType callback);
@@ -57,13 +57,13 @@ public static extern void vtsCallbacksLoadTexture(IntPtr map, vtsResourceCallbac
 public static extern void vtsCallbacksLoadMesh(IntPtr map, vtsResourceCallbackType callback);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsCallbacksMapconfigAvailable(IntPtr map, vtsEmptyCallbackType callback);
+public static extern void vtsCallbacksMapconfigAvailable(IntPtr map, vtsMapCallbackType callback);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsCallbacksMapconfigReady(IntPtr map, vtsEmptyCallbackType callback);
+public static extern void vtsCallbacksMapconfigReady(IntPtr map, vtsMapCallbackType callback);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsProjFinder(vtsProjFinderCallbackType callback);
+public static extern void vtsCallbacksProjFinder(vtsProjFinderCallbackType callback);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern IntPtr vtsCameraCreate(IntPtr map);
@@ -123,40 +123,22 @@ public static extern IntPtr vtsCameraGetStatistics(IntPtr cam);
 public static extern void vtsCameraSetOptions(IntPtr cam, [MarshalAs(UnmanagedType.LPStr)] string options);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsDrawsOpaque(IntPtr cam);
+public static extern void vtsDrawsOpaqueGroup(IntPtr cam, ref IntPtr group, ref uint count);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsDrawsTransparent(IntPtr cam);
+public static extern void vtsDrawsTransparentGroup(IntPtr cam, ref IntPtr group, ref uint count);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsDrawsGeodata(IntPtr cam);
+public static extern void vtsDrawsInfographicsGroup(IntPtr cam, ref IntPtr group, ref uint count);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsDrawsInfographics(IntPtr cam);
+public static extern void vtsDrawsCollidersGroup(IntPtr cam, ref IntPtr group, ref uint count);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsDrawsColliders(IntPtr cam);
+public static extern void vtsDrawsSurfaceTask(IntPtr group, uint index, ref IntPtr mesh, ref IntPtr texColor, ref IntPtr texMask, ref IntPtr baseStruct);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern uint vtsDrawsCount(IntPtr group);
-
-[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsDrawsDestroy(IntPtr group);
-
-[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsDrawsMesh(IntPtr group, uint index);
-
-[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsDrawsTexColor(IntPtr group, uint index);
-
-[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsDrawsTexMask(IntPtr group, uint index);
-
-[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsDrawsDetail(IntPtr group, uint index);
-
-[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsDrawsAllInOne(IntPtr group, uint index, ref IntPtr mesh, ref IntPtr texColor, ref IntPtr texMask);
+public static extern void vtsDrawsSimpleTask(IntPtr group, uint index, ref IntPtr mesh, ref IntPtr texColor, ref IntPtr baseStruct);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern IntPtr vtsDrawsCamera(IntPtr cam);
@@ -399,6 +381,9 @@ public static extern void vtsResourceSetUserData(IntPtr resource, IntPtr data, v
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsResourceSetMemoryCost(IntPtr resource, uint ramMem, uint gpuMem);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern IntPtr vtsResourceGetId(IntPtr resource);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsTextureGetResolution(IntPtr resource, ref uint width, ref uint height, ref uint components);

@@ -32,12 +32,12 @@ namespace vts
     [StructLayout(LayoutKind.Sequential)]
     public struct RenderVariables
     {
-        public uint frameRenderBufferId;
-        public uint frameReadBufferId;
-        public uint depthRenderTexId;
-        public uint depthReadTexId;
-        public uint colorRenderTexId;
-        public uint colorReadTexId;
-        public uint textureTargetType;
+        [MarshalAs(UnmanagedType.U4)] public uint frameRenderBufferId;
+        [MarshalAs(UnmanagedType.U4)] public uint frameReadBufferId;
+        [MarshalAs(UnmanagedType.U4)] public uint depthRenderTexId;
+        [MarshalAs(UnmanagedType.U4)] public uint depthReadTexId;
+        [MarshalAs(UnmanagedType.U4)] public uint colorRenderTexId;
+        [MarshalAs(UnmanagedType.U4)] public uint colorReadTexId;
+        [MarshalAs(UnmanagedType.U4)] public uint textureTargetType;
     }
 }

@@ -678,26 +678,26 @@ void vtsDrawsCollidersGroup(vtsHCamera cam,
 
 void vtsDrawsSurfaceTask(void *group, uint32 index,
     void **mesh, void **texColor, void **texMask,
-    vtsCDrawSurfaceBase **base)
+    vtsCDrawSurfaceBase **baseStruct)
 {
     C_BEGIN
     vts::DrawSurfaceTask *t = (vts::DrawSurfaceTask *)group + index;
     *mesh = t->mesh.get();
     *texColor = t->texColor.get();
     *texMask = t->texMask.get();
-    *base = (vtsCDrawSurfaceBase*)t;
+    *baseStruct = (vtsCDrawSurfaceBase*)t;
     C_END
 }
 
 void vtsDrawsSimpleTask(void *group, uint32 index,
     void **mesh, void **texColor,
-    vtsCDrawSimpleBase **base)
+    vtsCDrawSimpleBase **baseStruct)
 {
     C_BEGIN
     vts::DrawSimpleTask *t = (vts::DrawSimpleTask *)group + index;
     *mesh = t->mesh.get();
     *texColor = t->texColor.get();
-    *base = (vtsCDrawSimpleBase*)t;
+    *baseStruct = (vtsCDrawSimpleBase*)t;
     C_END
 }
 

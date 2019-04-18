@@ -80,7 +80,14 @@ uint32 parseEnv(const char *env)
 uint32 detectMeasurementSystemImpl()
 {
 #ifdef _WIN32
-    // todo GetLocaleInfoEx
+
+    WCHAR buff[2];
+    buff[0] = 0;
+    int len = GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT,
+        LOCALE_IMEASURE, buff, 2);
+    if (len == 2)
+        return buff[0] == '0';
+
 #endif // _WIN32
 
     if (auto p = std::getenv("LC_MEASUREMENT"))

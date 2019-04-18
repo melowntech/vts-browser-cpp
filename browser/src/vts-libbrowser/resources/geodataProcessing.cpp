@@ -544,6 +544,8 @@ struct geoContext
                     return "polygon";
                 }
             }
+            if (name == "#metric")
+                return !!data->map->options.measurementUnitsSystem;
             if (name == "#lod")
                 return lod;
             if (name == "#tileSize")

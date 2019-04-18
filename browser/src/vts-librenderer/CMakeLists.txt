@@ -101,16 +101,11 @@ include(GNUInstallDirs)
 
 set(VTSRENDERER_LIBRARIES vts-renderer)
 
-# headers
-install(FILES ${PUB_HDR_LIST}
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/vts-renderer
-    COMPONENT renderer-dev
-)
-
 # library and binaries
 install(TARGETS vts-renderer
     COMPONENT renderer
     EXPORT vts-renderer
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/vts-renderer
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

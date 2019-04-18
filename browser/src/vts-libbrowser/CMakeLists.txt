@@ -131,6 +131,8 @@ set(SRC_LIST
     utilities/array.hpp
     utilities/case.cpp
     utilities/case.hpp
+    utilities/detectMeasurementSystem.cpp
+    utilities/detectMeasurementSystem.hpp
     utilities/json.cpp
     utilities/json.hpp
     utilities/obj.cpp
@@ -208,16 +210,11 @@ include(GNUInstallDirs)
 
 set(VTSBROWSER_LIBRARIES vts-browser)
 
-# headers
-install(FILES ${PUB_HDR_LIST}
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/vts-browser
-    COMPONENT browser-dev
-)
-
 # library and binaries
 install(TARGETS vts-browser
     COMPONENT browser
     EXPORT vts-browser
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/vts-browser
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

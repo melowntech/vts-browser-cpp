@@ -95,6 +95,7 @@ public:
     void applyJson(const std::string &json);
     std::string toJson() const;
 
+    // default is 72
     double pixelsPerInch;
 
     // relative scale of every tile.
@@ -120,6 +121,13 @@ public:
     // delay in seconds for first resource download retry
     // each subsequent retry is delayed twice as long as before
     uint32 fetchFirstRetryTimeOffset;
+
+    // 0 = US customary units
+    // 1 = metric
+    // when new instance of this structure is created,
+    //   this field is initialized by value deduced
+    //   from the environment locale settings
+    uint32 measurementUnitsSystem;
 
     // to improve search results relevance, the results are further
     //   filtered and reordered

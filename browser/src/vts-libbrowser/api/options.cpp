@@ -28,6 +28,7 @@
 #include "../include/vts-browser/mapOptions.hpp"
 #include "../include/vts-browser/cameraOptions.hpp"
 #include "../include/vts-browser/navigationOptions.hpp"
+#include "../utilities/detectMeasurementSystem.hpp"
 
 namespace vts
 {
@@ -95,6 +96,7 @@ MapRuntimeOptions::MapRuntimeOptions() :
     maxFetchRedirections(5),
     maxFetchRetries(5),
     fetchFirstRetryTimeOffset(1),
+    measurementUnitsSystem(detectMeasurementSystem()),
     searchResultsFiltering(true),
     debugVirtualSurfaces(true),
     debugSaveCorruptedFiles(false),
@@ -121,6 +123,7 @@ void MapRuntimeOptions::applyJson(const std::string &json)
     AJ(maxFetchRedirections, asUInt);
     AJ(maxFetchRetries, asUInt);
     AJ(fetchFirstRetryTimeOffset, asUInt);
+    AJ(measurementUnitsSystem, asUInt);
     AJ(searchResultsFiltering, asBool);
     AJ(debugVirtualSurfaces, asBool);
     AJ(debugSaveCorruptedFiles, asBool);
@@ -140,6 +143,7 @@ std::string MapRuntimeOptions::toJson() const
     TJ(maxFetchRedirections, asUInt);
     TJ(maxFetchRetries, asUInt);
     TJ(fetchFirstRetryTimeOffset, asUInt);
+    TJ(measurementUnitsSystem, asUInt);
     TJ(searchResultsFiltering, asBool);
     TJ(debugVirtualSurfaces, asBool);
     TJ(debugSaveCorruptedFiles, asBool);

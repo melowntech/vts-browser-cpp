@@ -59,20 +59,20 @@ void GeodataBase::load(RenderContextImpl *renderer, ResourceInfo &info,
     {
     case GpuGeodataSpec::Type::LineScreen:
     case GpuGeodataSpec::Type::LineFlat:
-        loadLine();
+        loadLines();
         break;
     case GpuGeodataSpec::Type::PointScreen:
     case GpuGeodataSpec::Type::PointFlat:
-        loadPoint();
+        loadPoints();
         break;
     case GpuGeodataSpec::Type::Triangles:
-        // todo
+        loadTriangles();
         break;
     case GpuGeodataSpec::Type::PointLabel:
-        loadPointLabel();
+        loadPointLabels();
         break;
     case GpuGeodataSpec::Type::LineLabel:
-        loadLineLabel();
+        loadLineLabels();
         break;
     default:
         throw std::invalid_argument("invalid geodata type");
@@ -167,7 +167,8 @@ bool RenderViewImpl::geodataTestVisibility(
     if (visibility[2] == visibility[2] && distance > visibility[2])
         return false;
     if (visibility[3] == visibility[3]
-        && dot(normalize(vec3(eye - pos)).cast<float>(), up) < visibility[3])
+        && dot(vec3((eye - pos) / distance).cast<float>(), up)
+            < visibility[3])
         return false;
     vec4 sp = viewProj * vec3to4(pos, 1);
     for (uint32 i = 0; i < 3; i++)
@@ -407,6 +408,7 @@ void RenderViewImpl::generateJobs()
         case GpuGeodataSpec::Type::LineFlat:
         case GpuGeodataSpec::Type::PointScreen:
         case GpuGeodataSpec::Type::PointFlat:
+        case GpuGeodataSpec::Type::Triangles:
         {
             // one job for entire tile
             geodataJobs.emplace_back(g, uint32(-1));
@@ -667,6 +669,18 @@ void RenderViewImpl::renderJobs()
             glEnable(GL_STENCIL_TEST);
             msh->dispatch();
             glDisable(GL_STENCIL_TEST);
+        } break;
+        case GpuGeodataSpec::Type::Triangles:
+        {
+            assert(job.itemIndex == (uint32)-1);
+            bindUboView(g);
+            context->shaderGeodataTriangle->bind();
+            g->uniform->bindToIndex(2);
+            Mesh *msh = g->mesh.get();
+            msh->bind();
+            glDepthMask(GL_TRUE);
+            msh->dispatch();
+            glDepthMask(GL_FALSE);
         } break;
         case GpuGeodataSpec::Type::PointLabel:
         {

@@ -93,11 +93,12 @@ public:
         uint32 totalPoints);
     void prepareMeshForLinesAndPoints(Buffer &&indBuffer,
         uint32 indicesCount);
-    void loadLine();
-    void loadPoint();
+    void loadLines();
+    void loadPoints();
+    void loadTriangles();
     void copyFonts();
-    void loadPointLabel();
-    void loadLineLabel();
+    void loadPointLabels();
+    void loadLineLabels();
     bool checkTextures();
 };
 

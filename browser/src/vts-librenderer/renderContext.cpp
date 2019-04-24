@@ -43,6 +43,11 @@ void ShaderAtm::initializeAtmosphere()
 
 RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
 {
+    std::string atm = readInternalMemoryBuffer(
+        "data/shaders/atmosphere.inc.glsl").str();
+    std::string geo = readInternalMemoryBuffer(
+        "data/shaders/geodata.inc.glsl").str();
+
     // load texture compas
     {
         texCompas = std::make_shared<Texture>();
@@ -77,11 +82,9 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
             = "data/shaders/surface.*.glsl";
         Buffer vert = readInternalMemoryBuffer(
             "data/shaders/surface.vert.glsl");
-        Buffer atm = readInternalMemoryBuffer(
-            "data/shaders/atmosphere.inc.glsl");
         Buffer frag = readInternalMemoryBuffer(
             "data/shaders/surface.frag.glsl");
-        shaderSurface->load(vert.str(), atm.str() + frag.str());
+        shaderSurface->load(vert.str(), atm + frag.str());
         shaderSurface->bindUniformBlockLocations({
                  { "uboSurface", 1 }
              });
@@ -94,16 +97,16 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
 
     // load shader infographic
     {
-        shaderInfographic = std::make_shared<Shader>();
-        shaderInfographic->debugId
+        shaderInfographics = std::make_shared<Shader>();
+        shaderInfographics->debugId
             = "data/shaders/infographic.*.glsl";
-        shaderInfographic->loadInternal(
-            "data/shaders/infographic.vert.glsl",
-            "data/shaders/infographic.frag.glsl");
-        shaderInfographic->bindUniformBlockLocations({
+        shaderInfographics->loadInternal(
+            "data/shaders/infographics.vert.glsl",
+            "data/shaders/infographics.frag.glsl");
+        shaderInfographics->bindUniformBlockLocations({
                  { "uboInfographics", 1 }
              });
-        shaderInfographic->bindTextureLocations({
+        shaderInfographics->bindTextureLocations({
                 { "texColor", 0 },
                 { "texDepth", 6 }
             });
@@ -116,11 +119,9 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
             = "data/shaders/background.*.glsl";
         Buffer vert = readInternalMemoryBuffer(
             "data/shaders/background.vert.glsl");
-        Buffer atm = readInternalMemoryBuffer(
-            "data/shaders/atmosphere.inc.glsl");
         Buffer frag = readInternalMemoryBuffer(
             "data/shaders/background.frag.glsl");
-        shaderBackground->load(vert.str(), atm.str() + frag.str());
+        shaderBackground->load(vert.str(), atm + frag.str());
         shaderBackground->loadUniformLocations({
                 "uniCorners[0]",
                 "uniCorners[1]",
@@ -206,8 +207,6 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
         meshEmpty->load(ri, spec, "meshEmpty");
     }
 
-    CHECK_GL("initialize");
-
     // load shader geodata color
     {
         shaderGeodataColor = std::make_shared<Shader>();
@@ -215,7 +214,8 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
             = "data/shaders/geodataColor.*.glsl";
         shaderGeodataColor->loadInternal(
             "data/shaders/geodataColor.vert.glsl",
-            "data/shaders/geodataColor.frag.glsl");
+            "data/shaders/geodataColor.frag.glsl"
+        );
         shaderGeodataColor->loadUniformLocations({
                 "uniMvp",
                 "uniColor"
@@ -227,9 +227,11 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
         shaderGeodataLine = std::make_shared<Shader>();
         shaderGeodataLine->debugId
             = "data/shaders/geodataLine.*.glsl";
-        shaderGeodataLine->loadInternal(
-            "data/shaders/geodataLine.vert.glsl",
+        Buffer vert = readInternalMemoryBuffer(
+            "data/shaders/geodataLine.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
             "data/shaders/geodataLine.frag.glsl");
+        shaderGeodataLine->load(geo + vert.str(), geo + frag.str());
         shaderGeodataLine->bindTextureLocations({
                 { "texLineData", 0 }
             });
@@ -245,9 +247,11 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
         shaderGeodataPoint = std::make_shared<Shader>();
         shaderGeodataPoint->debugId
             = "data/shaders/geodataPoint.*.glsl";
-        shaderGeodataPoint->loadInternal(
-            "data/shaders/geodataPoint.vert.glsl",
+        Buffer vert = readInternalMemoryBuffer(
+            "data/shaders/geodataPoint.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
             "data/shaders/geodataPoint.frag.glsl");
+        shaderGeodataPoint->load(geo + vert.str(), geo + frag.str());
         shaderGeodataPoint->bindTextureLocations({
                 { "texPointData", 0 }
             });
@@ -263,9 +267,11 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
         shaderGeodataPointLabel = std::make_shared<Shader>();
         shaderGeodataPointLabel->debugId
             = "data/shaders/geodataPointLabel.*.glsl";
-        shaderGeodataPointLabel->loadInternal(
-            "data/shaders/geodataPointLabel.vert.glsl",
+        Buffer vert = readInternalMemoryBuffer(
+            "data/shaders/geodataPointLabel.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
             "data/shaders/geodataPointLabel.frag.glsl");
+        shaderGeodataPointLabel->load(geo + vert.str(), geo + frag.str());
         shaderGeodataPointLabel->loadUniformLocations({
                 "uniPass"
             });
@@ -279,7 +285,24 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
             });
     }
 
-    CHECK_GL("initialize geodata");
+    // load shader geodata triangle
+    {
+        shaderGeodataTriangle = std::make_shared<Shader>();
+        shaderGeodataTriangle->debugId
+            = "data/shaders/geodataTriangle.*.glsl";
+        Buffer vert = readInternalMemoryBuffer(
+            "data/shaders/geodataTriangle.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
+            "data/shaders/geodataTriangle.frag.glsl");
+        shaderGeodataTriangle->load(geo + vert.str(), geo + frag.str());
+        shaderGeodataTriangle->bindUniformBlockLocations({
+                { "uboCameraData", 0 },
+                { "uboViewData", 1 },
+                { "uboTriangleData", 2 }
+            });
+    }
+
+    CHECK_GL("initialize");
 }
 
 RenderContextImpl::~RenderContextImpl()

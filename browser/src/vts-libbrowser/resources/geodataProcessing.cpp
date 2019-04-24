@@ -161,7 +161,7 @@ double str2num(const std::string &s)
     return f;
 }
 
-bool isLayerStyleRequired(const Value &v)
+bool isLayerStyleRequested(const Value &v)
 {
     if (v.isNull())
         return false;
@@ -313,22 +313,23 @@ struct geoContext
                 result.push_back(layerName);
                 continue;
             }
-            bool line = isLayerStyleRequired(layer["line"]);
-            bool point = isLayerStyleRequired(layer["point"]);
-            bool icon = isLayerStyleRequired(layer["icon"]);
-            bool label = isLayerStyleRequired(layer["label"]);
-            bool polygon = isLayerStyleRequired(layer["polygon"]);
+            bool point = isLayerStyleRequested(layer["point"]);
+            bool line = isLayerStyleRequested(layer["line"]);
+            bool icon = isLayerStyleRequested(layer["icon"]);
+            bool pointLabel = isLayerStyleRequested(layer["label"]);
+            bool lineLabel = isLayerStyleRequested(layer["line-label"]);
+            bool polygon = isLayerStyleRequested(layer["polygon"]);
             bool ok = false;
             switch (t)
             {
             case Type::Point:
-                ok = point || icon || label;
+                ok = point || icon || pointLabel;
                 break;
             case Type::Line:
-                ok = point || line;
+                ok = line || lineLabel; // todo enable degrading line features to point layers
                 break;
             case Type::Polygon:
-                ok = point || line || polygon;
+                ok = polygon; // todo enable degrading polygon features to all layer types
                 break;
             }
             if (ok)
@@ -1246,21 +1247,23 @@ if (cond == #OP) \
         if (evaluate(layer["line"]).asBool())
             processFeatureLine(layer, spec);
 
-        // line-label
-        if (evaluate(layer["line-label"]).asBool())
-            processFeatureLineLabel(layer, spec);
-
         // point
         if (evaluate(layer["point"]).asBool())
             processFeaturePoint(layer, spec);
 
-        // icon
+        // line-label
+        if (evaluate(layer["line-label"]).asBool())
+            processFeatureLineLabel(layer, spec);
 
         // point label
         if (evaluate(layer["label"]).asBool())
             processFeaturePointLabel(layer, spec);
 
+        // icon
+
         // polygon
+        if (evaluate(layer["polygon"]).asBool())
+            processFeaturePolygon(layer, spec);
     }
 
     void processFeatureCommon(const Value &layer, GpuGeodataSpec &spec,
@@ -1557,6 +1560,21 @@ if (cond == #OP) \
         }
     }
 
+    void processFeaturePolygon(const Value &layer, GpuGeodataSpec spec)
+    {
+        spec.type = GpuGeodataSpec::Type::Triangles;
+
+        vecToRaw(layer.isMember("polygon-color")
+            ? convertColor(layer["polygon-color"])
+            : vec4f(1, 1, 1, 1),
+            spec.unionData.triangles.color);
+
+        GpuGeodataSpec &data = findSpecData(spec);
+        const auto arr = getFeatureTriangles();
+        data.positions.reserve(data.positions.size() + arr.size());
+        data.positions.insert(data.positions.end(), arr.begin(), arr.end());
+    }
+
     GpuGeodataSpec &findSpecData(const GpuGeodataSpec &spec)
     {
         // only modifying attributes not used in comparison
@@ -1604,7 +1622,7 @@ if (cond == #OP) \
             validateArrayLength(v, 3, 3, "Point must have 3 coordinates");
             vec3f p = vec3f(v[0].asDouble(), v[1].asDouble(), v[2].asDouble());
             p = orthonormalize * p;
-            return Point({ p[0], p[1], p[2] });
+            return { p[0], p[1], p[2] };
         }
 
         std::vector<Point> convertArray(const Value &v, bool relative) const
@@ -1651,10 +1669,51 @@ if (cond == #OP) \
         } break;
         case Type::Polygon:
         {
-            // todo
+            std::vector<Point> r;
+            r.push_back(group->convertPoint((*feature)["middle"]));
+            result.push_back(r);
         } break;
         }
         return result;
+    }
+
+    std::vector<std::vector<Point>> getFeatureTriangles() const
+    {
+        std::vector<Point> result;
+        assert(*type == Type::Polygon);
+        const Value &array1 = (*feature)["vertices"];
+        if (Validating)
+        {
+            if (!array1.isArray() || (array1.size() % 3) != 0)
+                THROW << "Polygon vertices must be an array "
+                "with size divisible by 3";
+        }
+        std::vector<Point> vertices;
+        vertices.reserve(array1.size());
+        for (uint32 i = 0, e = array1.size(); i < e; i += 3)
+        {
+            Value v;
+            v.resize(3);
+            for (uint32 j = 0; j < 3; j++)
+                v[j] = array1[i + j];
+            vertices.push_back(group->convertPoint(v));
+        }
+        const Value &surface = (*feature)["surface"];
+        if (Validating)
+        {
+            if (!surface.isArray() || (surface.size() % 3) != 0)
+                THROW << "Polygon surface must be an array "
+                         "with size divisible by 3";
+        }
+        auto verticesCount = vertices.size();
+        for (const Value &vi : surface)
+        {
+            Json::UInt i = vi.asUInt();
+            if (i >= verticesCount)
+                THROW << "Index out of range (polygon surface vertex)";
+            result.push_back(vertices[i]);
+        }
+        return { result };
     }
 
     void cullOutsideFeatures(std::vector<std::vector<Point>> &fps) const

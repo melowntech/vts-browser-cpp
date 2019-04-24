@@ -448,7 +448,7 @@ void RenderViewImpl::renderValid()
 
     // render infographics
     glDisable(GL_DEPTH_TEST);
-    context->shaderInfographic->bind();
+    context->shaderInfographics->bind();
     for (const DrawSimpleTask &t : draws->infographics)
         drawInfographic(t);
     CHECK_GL("rendered infographics");

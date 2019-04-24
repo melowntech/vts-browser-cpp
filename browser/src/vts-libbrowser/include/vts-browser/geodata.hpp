@@ -140,6 +140,11 @@ public:
         Icon icon;
     };
 
+    struct VTS_API Triangles
+    {
+        float color[4];
+    };
+
     union VTS_API UnionData
     {
         Icon icon;
@@ -148,6 +153,7 @@ public:
         Point point;
         PointLabel pointLabel;
         PackedLabelIcon packedLabelIcon;
+        Triangles triangles;
         UnionData();
     };
 

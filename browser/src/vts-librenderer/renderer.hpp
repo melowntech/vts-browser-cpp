@@ -199,13 +199,14 @@ public:
     std::shared_ptr<Texture> texCompas;
     std::shared_ptr<ShaderAtm> shaderSurface;
     std::shared_ptr<ShaderAtm> shaderBackground;
-    std::shared_ptr<Shader> shaderInfographic;
+    std::shared_ptr<Shader> shaderInfographics;
     std::shared_ptr<Shader> shaderTexture;
     std::shared_ptr<Shader> shaderCopyDepth;
     std::shared_ptr<Shader> shaderGeodataColor;
     std::shared_ptr<Shader> shaderGeodataLine;
     std::shared_ptr<Shader> shaderGeodataPoint;
     std::shared_ptr<Shader> shaderGeodataPointLabel;
+    std::shared_ptr<Shader> shaderGeodataTriangle;
     std::shared_ptr<Mesh> meshQuad; // positions: -1 .. 1
     std::shared_ptr<Mesh> meshRect; // positions: 0 .. 1
     std::shared_ptr<Mesh> meshLine;

@@ -536,7 +536,7 @@ void GeodataBase::copyFonts()
         fontCascade.push_back(std::static_pointer_cast<Font>(i));
 }
 
-void GeodataBase::loadPointLabel()
+void GeodataBase::loadPointLabels()
 {
     assert(spec.texts.size() == spec.positions.size());
     float align = numericAlign(spec.unionData.pointLabel.textAlign);
@@ -569,7 +569,7 @@ void GeodataBase::loadPointLabel()
     }
 }
 
-void GeodataBase::loadLineLabel()
+void GeodataBase::loadLineLabels()
 {
     // todo
 }

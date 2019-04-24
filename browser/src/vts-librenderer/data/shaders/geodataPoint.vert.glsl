@@ -1,18 +1,4 @@
 
-layout(std140) uniform uboCameraData
-{
-    mat4 uniProj;
-    vec4 uniCameraParams; // screen width in pixels, screen height in pixels, view extent in meters
-};
-
-layout(std140) uniform uboViewData
-{
-    mat4 uniMvp;
-    mat4 uniMvpInv;
-    mat4 uniMv;
-    mat4 uniMvInv;
-};
-
 layout(std140) uniform uboPointData
 {
     vec4 uniColor;
@@ -24,50 +10,13 @@ uniform sampler2D texPointData;
 
 out float varOpacity;
 
-float testVisibility(vec3 modelPos, vec3 modelUp)
-{
-    vec3 pos = vec3(uniMv * vec4(modelPos, 1.0));
-    float distance = length(pos);
-    if (uniVisibilities[0] == uniVisibilities[0] && distance > uniVisibilities[0])
-        return 0.0;
-    distance *= 2.0 / uniProj[1][1];
-    if (uniVisibilities[1] == uniVisibilities[1] && distance < uniVisibilities[1])
-        return 0.0;
-    if (uniVisibilities[2] == uniVisibilities[2] && distance > uniVisibilities[2])
-        return 0.0;
-    vec3 up = vec3(uniMv * vec4(modelUp, 0.0));
-    vec3 f = normalize(-pos);
-    if (uniVisibilities[3] == uniVisibilities[3]
-        && dot(f, up) < uniVisibilities[3])
-        return 0.0;
-    return 1.0;
-}
-
-vec3 pixelUp(vec3 a)
-{
-    vec4 b = uniMvp * vec4(a, 1.0);
-    vec3 c = b.xyz / b.w;
-    c[1] += 1.0 / uniCameraParams[1];
-    vec4 d = uniMvpInv * vec4(c, 1.0);
-    return d.xyz / d.w;
-}
-
-vec3 pixelLeft(vec3 a)
-{
-    vec4 b = uniMvp * vec4(a, 1.0);
-    vec3 c = b.xyz / b.w;
-    c[0] += 1.0 / uniCameraParams[1];
-    vec4 d = uniMvpInv * vec4(c, 1.0);
-    return d.xyz / d.w;
-}
-
 void main()
 {
     int pointIndex = gl_VertexID / 4;
     int cornerIndex = gl_VertexID % 4;
     vec3 p = texelFetch(texPointData, ivec2(pointIndex, 0), 0).xyz;
     vec3 mu = texelFetch(texPointData, ivec2(pointIndex, 1), 0).xyz;
-    varOpacity = testVisibility(p, mu);
+    varOpacity = testVisibility(uniVisibilities, p, mu);
     vec3 u = vec3(0.0);
     float scale = 0.0;
     switch (int(uniTypePlusRadius[0]))

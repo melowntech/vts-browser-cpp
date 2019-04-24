@@ -60,7 +60,7 @@ void GeodataBase::prepareMeshForLinesAndPoints(Buffer &&indBuffer,
     addMemory(ri);
 }
 
-void GeodataBase::loadLine()
+void GeodataBase::loadLines()
 {
     uint32 totalPoints = getTotalPoints(); // example: 7
     uint32 linesCount = spec.positions.size(); // 2
@@ -156,7 +156,7 @@ void GeodataBase::loadLine()
     }
 }
 
-void GeodataBase::loadPoint()
+void GeodataBase::loadPoints()
 {
     uint32 totalPoints = getTotalPoints();
     uint32 trianglesCount = totalPoints * 2;
@@ -233,6 +233,49 @@ void GeodataBase::loadPoint()
         uniform->bind();
         uniform->load(uboPointData);
         info->gpuMemoryCost += sizeof(uboPointData);
+    }
+}
+
+void GeodataBase::loadTriangles()
+{
+    // prepare mesh
+    {
+        GpuMeshSpec msh;
+        msh.faceMode = GpuMeshSpec::FaceMode::Triangles;
+        msh.attributes[0].enable = true;
+        msh.attributes[0].components = 3;
+        msh.attributes[0].type = GpuTypeEnum::Float;
+        msh.verticesCount = getTotalPoints();
+        msh.vertices.allocate(sizeof(float) * 3 * msh.verticesCount);
+        float *f = (float*)msh.vertices.data();
+        for (const auto &it1 : spec.positions)
+            for (const auto &it2 : it1)
+                for (float it : it2)
+                    *f++ = it;
+        ResourceInfo ri;
+        renderer->api->loadMesh(ri, msh, debugId);
+        this->mesh = std::static_pointer_cast<Mesh>(ri.userData);
+        addMemory(ri);
+    }
+
+    // prepare UBO
+    {
+        struct UboTriangleData
+        {
+            vec4f color;
+            vec4f visibilities;
+        };
+        UboTriangleData uboTriangleData;
+
+        uboTriangleData.color = rawToVec4(spec.unionData.triangles.color);
+        uboTriangleData.visibilities
+            = rawToVec4(spec.commonData.visibilities);
+
+        uniform = std::make_shared<UniformBuffer>();
+        uniform->debugId = debugId;
+        uniform->bind();
+        uniform->load(uboTriangleData);
+        info->gpuMemoryCost += sizeof(uboTriangleData);
     }
 }
 

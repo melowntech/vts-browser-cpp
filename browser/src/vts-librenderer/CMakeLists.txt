@@ -42,16 +42,11 @@ set(DATA_LIST
     data/shaders/atmosphere.inc.glsl
     data/shaders/background.vert.glsl
     data/shaders/background.frag.glsl
-    data/shaders/surface.frag.glsl
-    data/shaders/surface.vert.glsl
-    data/shaders/infographic.frag.glsl
-    data/shaders/infographic.vert.glsl
-    data/shaders/texture.frag.glsl
-    data/shaders/texture.vert.glsl
     data/shaders/color.frag.glsl
     data/shaders/color.vert.glsl
     data/shaders/copyDepth.frag.glsl
     data/shaders/copyDepth.vert.glsl
+    data/shaders/geodata.inc.glsl
     data/shaders/geodataColor.frag.glsl
     data/shaders/geodataColor.vert.glsl
     data/shaders/geodataLine.frag.glsl
@@ -60,6 +55,14 @@ set(DATA_LIST
     data/shaders/geodataPoint.vert.glsl
     data/shaders/geodataPointLabel.frag.glsl
     data/shaders/geodataPointLabel.vert.glsl
+    data/shaders/geodataTriangle.frag.glsl
+    data/shaders/geodataTriangle.vert.glsl
+    data/shaders/infographics.frag.glsl
+    data/shaders/infographics.vert.glsl
+    data/shaders/surface.frag.glsl
+    data/shaders/surface.vert.glsl
+    data/shaders/texture.frag.glsl
+    data/shaders/texture.vert.glsl
     data/textures/compas.png
 )
 

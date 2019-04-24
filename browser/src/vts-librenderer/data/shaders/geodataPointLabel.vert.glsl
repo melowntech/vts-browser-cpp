@@ -1,18 +1,4 @@
 
-layout(std140) uniform uboCameraData
-{
-    mat4 uniProj;
-    vec4 uniCameraParams; // screen width in pixels, screen height in pixels, view extent in meters
-};
-
-layout(std140) uniform uboViewData
-{
-    mat4 uniMvp;
-    mat4 uniMvpInv;
-    mat4 uniMv;
-    mat4 uniMvInv;
-};
-
 layout(std140) uniform uboText
 {
     vec4 uniColor[2];

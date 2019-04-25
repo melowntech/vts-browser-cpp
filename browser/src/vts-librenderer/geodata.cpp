@@ -678,9 +678,14 @@ void RenderViewImpl::renderJobs()
             g->uniform->bindToIndex(2);
             Mesh *msh = g->mesh.get();
             msh->bind();
+            bool stencil = g->spec.unionData.triangles.useStencil;
+            if (stencil)
+                glEnable(GL_STENCIL_TEST);
             glDepthMask(GL_TRUE);
             msh->dispatch();
             glDepthMask(GL_FALSE);
+            if (stencil)
+                glDisable(GL_STENCIL_TEST);
         } break;
         case GpuGeodataSpec::Type::PointLabel:
         {

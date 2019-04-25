@@ -264,12 +264,14 @@ void GeodataBase::loadTriangles()
         {
             vec4f color;
             vec4f visibilities;
+            sint32 shading;
         };
         UboTriangleData uboTriangleData;
 
         uboTriangleData.color = rawToVec4(spec.unionData.triangles.color);
         uboTriangleData.visibilities
             = rawToVec4(spec.commonData.visibilities);
+        uboTriangleData.shading = (sint32)spec.unionData.triangles.style;
 
         uniform = std::make_shared<UniformBuffer>();
         uniform->debugId = debugId;

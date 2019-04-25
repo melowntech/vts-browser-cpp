@@ -1569,6 +1569,30 @@ if (cond == #OP) \
             : vec4f(1, 1, 1, 1),
             spec.unionData.triangles.color);
 
+        if (layer.isMember("polygon-style"))
+        {
+            Value v = evaluate(layer["polygon-style"]);
+            if (v.asString() == "solid")
+                spec.unionData.triangles.style
+                    = GpuGeodataSpec::PolygonStyle::Solid;
+            else if (v.asString() == "flatshade")
+                spec.unionData.triangles.style
+                    = GpuGeodataSpec::PolygonStyle::FlatShade;
+            else if (Validating)
+                THROW << "Invalid polygon style";
+        }
+        else
+        {
+            spec.unionData.triangles.style
+                = GpuGeodataSpec::PolygonStyle::FlatShade;
+        }
+
+        if (layer.isMember("polygon-use-stencil"))
+        {
+            Value v = evaluate(layer["polygon-use-stencil"]);
+            spec.unionData.triangles.useStencil = v.asBool();
+        }
+
         GpuGeodataSpec &data = findSpecData(spec);
         const auto arr = getFeatureTriangles();
         data.positions.reserve(data.positions.size() + arr.size());

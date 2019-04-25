@@ -41,7 +41,7 @@ namespace vts
 class VTS_API GpuGeodataSpec
 {
 public:
-    enum class Type
+    enum class Type : uint8
     {
         Invalid,
         LineScreen,
@@ -55,7 +55,7 @@ public:
         Triangles,
     };
 
-    enum class Units
+    enum class Units : uint8
     {
         Invalid,
         Pixels,
@@ -63,7 +63,7 @@ public:
         Ratio,
     };
 
-    enum class TextAlign
+    enum class TextAlign : uint8
     {
         Invalid,
         Left,
@@ -71,7 +71,7 @@ public:
         Center,
     };
 
-    enum class Origin
+    enum class Origin : uint8
     {
         Invalid,
         TopLeft,
@@ -83,6 +83,13 @@ public:
         BottomLeft,
         BottomRight,
         BottomCenter,
+    };
+
+    enum class PolygonStyle : uint8
+    {
+        Invalid,
+        Solid,
+        FlatShade,
     };
 
     struct VTS_API Stick
@@ -143,6 +150,8 @@ public:
     struct VTS_API Triangles
     {
         float color[4];
+        PolygonStyle style;
+        bool useStencil;
     };
 
     union VTS_API UnionData

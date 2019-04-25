@@ -28,12 +28,27 @@
 #include "font.hpp"
 #include "utility/binaryio.hpp"
 
+#include <mutex>
+
 namespace bin = utility::binaryio;
 
 namespace
 {
 
 FT_Library ftLibrary;
+std::mutex ftMutex;
+
+std::string ftErrToStr(int code)
+{
+    switch (code)
+#undef __FTERRORS_H__
+#define FT_ERRORDEF(E,V,S)  case V: return S;
+#define FT_ERROR_START_LIST     {
+#define FT_ERROR_END_LIST       default: \
+    throw std::runtime_error("Unknown FreeType error code");
+#include FT_ERRORS_H
+    }
+}
 
 class FtInitializer
 {
@@ -100,7 +115,10 @@ Font::Font() : face(nullptr), font(nullptr),
 Font::~Font()
 {
     hb_font_destroy(font);
-    FT_Done_Face(face);
+    {
+        std::lock_guard<std::mutex> lock(ftMutex);
+        FT_Done_Face(face);
+    }
 }
 
 void Font::load(ResourceInfo &info, GpuFontSpec &spec,
@@ -111,10 +129,18 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec,
     fontData = std::move(spec.data);
     fontHandle = spec.handle;
 
-    if (FT_New_Memory_Face(ftLibrary,
-        (FT_Byte*)fontData.data(), fontData.size(),
-        0, &face))
-        throw std::runtime_error("Failed loading the font with FreeType");
+    {
+        std::lock_guard<std::mutex> lock(ftMutex);
+        auto err = FT_New_Memory_Face(ftLibrary,
+            (FT_Byte*)fontData.data(), fontData.size(),
+            0, &face);
+        if (err)
+        {
+            throw std::runtime_error(std::string()
+                + "Failed loading the font with FreeType: <"
+                + ftErrToStr(err) + ">");
+        }
+    }
 
     vts::detail::BufferStream w(fontData);
     w.ignore(findCustomTablesOffset(fontData));

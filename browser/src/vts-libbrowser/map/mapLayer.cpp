@@ -149,6 +149,7 @@ bool MapLayer::prerequisitesCheckFreeLayer()
     freeLayer = *fl;
 
     surfaceStack.generateFree(map, *freeLayer);
+    assert(!surfaceStack.surfaces.empty());
 
     traverseRoot = std::make_shared<TraverseNode>(this, nullptr, NodeInfo(
                     mapconfig->referenceFrame, TileId(), false, *mapconfig));

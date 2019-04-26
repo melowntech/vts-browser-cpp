@@ -659,6 +659,8 @@ void CameraImpl::renderUpdate()
     // traverse and generate draws
     for (auto &it : map->layers)
     {
+        if (it->surfaceStack.surfaces.empty())
+            continue;
         traverseRender(it->traverseRoot.get());
         // resolve blending
         resolveBlending(it->traverseRoot.get(), layers[it]);

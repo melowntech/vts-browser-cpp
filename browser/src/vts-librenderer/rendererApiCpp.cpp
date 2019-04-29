@@ -39,6 +39,7 @@ RenderOptions::RenderOptions()
     textScale = 1.5;
     antialiasingSamples = 1;
     renderAtmosphere = true;
+    geodataHysteresis = true;
     colorToTargetFrameBuffer = true;
 }
 

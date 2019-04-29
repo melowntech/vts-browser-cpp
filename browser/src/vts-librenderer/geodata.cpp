@@ -581,11 +581,17 @@ void RenderViewImpl::filterJobs()
 
 void RenderViewImpl::processHysteresisJobs()
 {
+    if (!options.geodataHysteresis)
+    {
+        hysteresisJobs.clear();
+        return;
+    }
+
     for (auto it = hysteresisJobs.begin(); it != hysteresisJobs.end(); )
     {
         it->second.opacity -= elapsedTime
             / it->second.g->spec.commonData.hysteresisDuration[1];
-        if (it->second.opacity < 0)
+        if (it->second.opacity < -0.5f)
             it = hysteresisJobs.erase(it);
         else
             it++;
@@ -603,7 +609,7 @@ void RenderViewImpl::processHysteresisJobs()
             hysteresisJobs.erase(hit);
         }
         else
-            it.opacity = 0;
+            it.opacity = -0.5f;
         it.opacity +=
             + elapsedTime / it.g->spec.commonData.hysteresisDuration[0]
             + elapsedTime / it.g->spec.commonData.hysteresisDuration[1];
@@ -613,7 +619,10 @@ void RenderViewImpl::processHysteresisJobs()
     }), geodataJobs.end());
 
     for (const auto &it : hysteresisJobs)
-        geodataJobs.push_back(it.second);
+    {
+        if (it.second.opacity > 0.f)
+            geodataJobs.push_back(it.second);
+    }
 }
 
 void RenderViewImpl::sortJobsBackToFront()

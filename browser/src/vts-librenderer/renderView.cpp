@@ -375,6 +375,7 @@ void RenderViewImpl::renderValid()
             context->shaderBackground->uniformVec3(i, cornerDirs[i].data());
         context->meshQuad->bind();
         context->meshQuad->dispatch();
+        CHECK_GL("rendered background");
     }
 
     // render transparent
@@ -452,21 +453,6 @@ void RenderViewImpl::renderValid()
     for (const DrawSimpleTask &t : draws->infographics)
         drawInfographic(t);
     CHECK_GL("rendered infographics");
-
-    // copy the color (resolve multisampling)
-    if (options.colorToTexture
-        && vars.colorReadTexId != vars.colorRenderTexId)
-    {
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, vars.frameReadBufferId);
-        CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
-        CHECK_GL_FRAMEBUFFER(GL_DRAW_FRAMEBUFFER);
-        glBlitFramebuffer(0, 0, options.width, options.height,
-            0, 0, options.width, options.height,
-            GL_COLOR_BUFFER_BIT, GL_NEAREST);
-        glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
-        CHECK_GL("copied the color to texture (resolving multisampling)");
-    }
 }
 
 void RenderViewImpl::renderEntry()
@@ -493,13 +479,30 @@ void RenderViewImpl::renderEntry()
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
         | GL_STENCIL_BUFFER_BIT);
-    CHECK_GL("initialized opengl");
+    CHECK_GL("initialized opengl state");
 
     // render
     if (proj(0, 0) != 0)
         renderValid();
+    else
+        hysteresisJobs.clear();
 
-    // copy the color to screen
+    // copy the color to output texture
+    if (options.colorToTexture
+        && vars.colorReadTexId != vars.colorRenderTexId)
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, vars.frameReadBufferId);
+        CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
+        CHECK_GL_FRAMEBUFFER(GL_DRAW_FRAMEBUFFER);
+        glBlitFramebuffer(0, 0, options.width, options.height,
+            0, 0, options.width, options.height,
+            GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
+        CHECK_GL("copied the color to texture");
+    }
+
+    // copy the color to target frame buffer
     if (options.colorToTargetFrameBuffer)
     {
         uint32 w = options.targetViewportW ? options.targetViewportW
@@ -515,7 +518,7 @@ void RenderViewImpl::renderEntry()
             options.targetViewportX, options.targetViewportY,
             options.targetViewportX + w, options.targetViewportY + h,
             GL_COLOR_BUFFER_BIT, same ? GL_NEAREST : GL_LINEAR);
-        CHECK_GL("copied the color to screen (resolving multisampling)");
+        CHECK_GL("copied the color to target frame buffer");
     }
 
     // clear the state

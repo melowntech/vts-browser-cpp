@@ -797,6 +797,10 @@ public:
                 r.renderGeodataMargins = nk_check_label(&ctx,
                     "geodata margins", r.renderGeodataMargins);
 
+                // geodata hysteresis
+                r.geodataHysteresis = nk_check_label(&ctx,
+                    "geodata hysteresis", r.geodataHysteresis);
+
                 // render objective position
                 n.debugRenderObjectPosition = nk_check_label(&ctx,
                             "objective pos.", n.debugRenderObjectPosition);

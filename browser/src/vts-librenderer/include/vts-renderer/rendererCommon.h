@@ -57,6 +57,7 @@ typedef struct vtsCRenderOptionsBase
     bool renderAtmosphere;
     bool renderPolygonEdges;
     bool renderGeodataMargins;
+    bool geodataHysteresis;
 
     // where to copy the result (and resolve multisampling)
     bool colorToTargetFrameBuffer;

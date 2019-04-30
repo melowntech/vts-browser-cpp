@@ -187,6 +187,7 @@ std::shared_ptr<GeodataStylesheet> MapImpl::newGeoStyle(
 {
     auto res = getGeoStyle(std::string("GeodataStylesheet: ") + value);
     res->data = value;
+    res->json.reset();
     res->dependenciesLoaded = false;
     res->state = Resource::State::ready;
     return res;

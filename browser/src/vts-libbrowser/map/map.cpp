@@ -306,9 +306,7 @@ TraverseNode *findTravById(TraverseNode *trav, const TileId &what)
         return trav;
     if (what.lod <= id.lod)
         return findTravById(trav->parent, what);
-    TileId t = what;
-    while (t.lod > id.lod + 1)
-        t = vtslibs::vts::parent(t);
+    TileId t = vtslibs::vts::parent(what, what.lod - (id.lod + 1));
     for (auto &it : trav->childs)
         if (it->id() == t)
             return findTravById(it.get(), what);

@@ -103,7 +103,8 @@ Validity GeodataStylesheet::dependencies()
         bitmaps.clear();
         try
         {
-            Json::Value s = stringToJson(data);
+            json = std::make_shared<const Json::Value>(stringToJson(data));
+            auto &s = *json;
             for (const auto &n : s["fonts"].getMemberNames())
             {
                 std::string p = s["fonts"][n].asString();

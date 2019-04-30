@@ -76,13 +76,13 @@ public:
     vec2 diskHeightsPhys;
     const SurfaceInfo *surface;
     double diskHalfAngle;
-    bool determined; // draws are fully loaded (draws may be empty)
 
     uint32 lastAccessTime;
     uint32 lastRenderTime;
     float priority;
 
     // renders
+    bool determined; // draws are fully loaded (draws may be empty)
     std::shared_ptr<Resource> touchResource;
     std::vector<RenderSurfaceTask> opaque;
     std::vector<RenderSurfaceTask> transparent;

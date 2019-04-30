@@ -590,7 +590,7 @@ bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
     case Validity::Invalid:
         trav->surface = nullptr;
         trav->touchResource = nullptr;
-        UTILITY_FALLTHROUGH;
+        return false;
     case Validity::Indeterminate:
         return false;
     case Validity::Valid:

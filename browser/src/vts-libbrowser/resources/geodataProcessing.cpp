@@ -289,7 +289,7 @@ struct geoContext
     geoContext(GeodataTile *data)
         : data(data),
         stylesheet(data->style.get()),
-        style(stringToJson(data->style->data)),
+        style(*data->style->json),
         features(stringToJson(*data->features)),
         browserOptions(*data->browserOptions),
         aabbPhys{ data->aabbPhys[0], data->aabbPhys[1] },

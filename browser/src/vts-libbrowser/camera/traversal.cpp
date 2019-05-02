@@ -414,25 +414,30 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
 {
     const TileId nodeId = trav->id();
 
-    // prefetch internal textures
-    if (trav->meta->geometry())
-    {
-        auto cnt = trav->meta->internalTextureCount();
-        for (uint32 i = 0; i < cnt; i++)
-            travInternalTexture(trav, i);
-    }
-
     // aggregate mesh
-    std::string meshAggName = trav->surface->urlMesh(
+    if (!trav->meshAgg)
+    {
+        std::string name = trav->surface->urlMesh(
             UrlTemplate::Vars(nodeId, vtslibs::vts::local(trav->nodeInfo)));
-    auto meshAgg = map->getMeshAggregate(meshAggName);
+        trav->meshAgg = map->getMeshAggregate(name);
+
+        // prefetch internal textures
+        if (trav->meta->geometry())
+        {
+            auto cnt = trav->meta->internalTextureCount();
+            for (uint32 i = 0; i < cnt; i++)
+                travInternalTexture(trav, i);
+        }
+    }
+    auto &meshAgg = trav->meshAgg;
     meshAgg->updatePriority(trav->priority);
-    switch (map->getResourceValidity(meshAggName))
+    switch (map->getResourceValidity(meshAgg))
     {
     case Validity::Invalid:
         trav->surface = nullptr;
         trav->touchResource = nullptr;
-        UTILITY_FALLTHROUGH;
+        trav->meshAgg = nullptr;
+        return false;
     case Validity::Indeterminate:
         return false;
     case Validity::Valid:
@@ -445,7 +450,6 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
     std::vector<RenderSurfaceTask> newTransparent;
     std::vector<vtslibs::registry::CreditId> newCredits;
 
-    // iterate over all submeshes
     for (uint32 subMeshIndex = 0, e = meshAgg->submeshes.size();
          subMeshIndex != e; subMeshIndex++)
     {
@@ -468,7 +472,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
             {
             case Validity::Indeterminate:
                 determined = false;
-                UTILITY_FALLTHROUGH;
+                continue;
             case Validity::Invalid:
                 continue;
             case Validity::Valid:
@@ -517,7 +521,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
             {
             case Validity::Indeterminate:
                 determined = false;
-                UTILITY_FALLTHROUGH;
+                continue;
             case Validity::Invalid:
                 continue;
             case Validity::Valid:
@@ -556,6 +560,9 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
         // credits
         trav->credits.insert(trav->credits.end(),
                              newCredits.begin(), newCredits.end());
+
+        // discard temporary
+        trav->meshAgg = nullptr;
     }
 
     return determined;

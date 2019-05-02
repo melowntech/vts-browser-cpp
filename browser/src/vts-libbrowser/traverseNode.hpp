@@ -46,6 +46,7 @@ class Resource;
 class RenderSurfaceTask;
 class RenderGeodataTask;
 class RenderSimpleTask;
+class MeshAggregate;
 
 class TraverseNode
 {
@@ -83,6 +84,7 @@ public:
 
     // renders
     bool determined; // draws are fully loaded (draws may be empty)
+    std::shared_ptr<MeshAggregate> meshAgg;
     std::shared_ptr<Resource> touchResource;
     std::vector<RenderSurfaceTask> opaque;
     std::vector<RenderSurfaceTask> transparent;

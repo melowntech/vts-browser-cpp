@@ -86,6 +86,7 @@ void TraverseNode::clearRenders()
     geodata.clear();
     colliders.clear();
     touchResource.reset();
+    meshAgg.reset();
     determined = false;
 }
 

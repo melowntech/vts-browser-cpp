@@ -94,7 +94,7 @@ RenderViewImpl::RenderViewImpl(
 UniformBuffer *RenderViewImpl::getUbo()
 {
     if (uboCacheIndex >= uboCacheVector.size())
-        uboCacheVector.push_back(std::make_unique<UniformBuffer>());
+        uboCacheVector.emplace_back(new UniformBuffer());
     return &*uboCacheVector[uboCacheIndex++];
 }
 

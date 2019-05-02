@@ -38,9 +38,9 @@ TraverseNode::TraverseNode(MapLayer *layer, TraverseNode *parent,
       nodeInfo(nodeInfo),
       hash(std::hash<TileId>()(id())),
       surface(nullptr),
-      determined(false),
       lastAccessTime(0), lastRenderTime(0),
-      priority(nan1())
+      priority(nan1()),
+      determined(false)
 {
     // initialize corners to NAN
     {

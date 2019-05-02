@@ -294,18 +294,18 @@ void RenderViewImpl::bindUboView(const std::shared_ptr<GeodataBase> &g)
         mat4f mvpInv;
         mat4f mv;
         mat4f mvInv;
-    } ubo;
+    } uboView;
 
-    ubo.mvp = mvp.cast<float>();
-    ubo.mvpInv = mvpInv.cast<float>();
-    ubo.mv = mv.cast<float>();
-    ubo.mvInv = mvInv.cast<float>();
+    uboView.mvp = mvp.cast<float>();
+    uboView.mvpInv = mvpInv.cast<float>();
+    uboView.mv = mv.cast<float>();
+    uboView.mvInv = mvInv.cast<float>();
 
-    lastUboView = std::make_shared<UniformBuffer>();
-    lastUboView->debugId = "UboViewData";
-    lastUboView->bind();
-    lastUboView->load(ubo);
-    lastUboView->bindToIndex(1);
+    auto ubo = getUbo();
+    ubo->debugId = "UboViewData";
+    ubo->bind();
+    ubo->load(uboView);
+    ubo->bindToIndex(1);
 }
 
 void RenderViewImpl::renderGeodata()
@@ -727,7 +727,7 @@ void RenderViewImpl::renderJobs()
 
             bindUboView(g);
             context->shaderGeodataPointLabel->bind();
-            auto uboGeodataText = std::make_shared<UniformBuffer>();
+            auto uboGeodataText = getUbo();
             uboGeodataText->debugId = "UboText";
             uboGeodataText->bind();
             uboGeodataText->load(&uboText,
@@ -775,7 +775,6 @@ void RenderViewImpl::renderJobs()
     geodataJobs.clear();
 
     lastUboViewPointer = nullptr;
-    lastUboView.reset();
 }
 
 void RenderContext::loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec,

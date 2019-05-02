@@ -49,7 +49,7 @@ void clearGlState()
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glPolygonOffset(0, 0);
-    checkGlImpl("cleared gl state");
+    CHECK_GL("cleared gl state");
 }
 
 void enableClipDistance(bool enable)
@@ -72,6 +72,7 @@ RenderViewImpl::RenderViewImpl(
     camera(camera),
     api(api),
     context(context),
+    uboCacheIndex(0),
     draws(nullptr),
     body(nullptr),
     atmosphereDensityTexture(nullptr),
@@ -88,6 +89,13 @@ RenderViewImpl::RenderViewImpl(
     uboGeodataCamera->debugId = "uboGeodataCamera";
     depthBuffer.meshQuad = context->meshQuad;
     depthBuffer.shaderCopyDepth = context->shaderCopyDepth;
+}
+
+UniformBuffer *RenderViewImpl::getUbo()
+{
+    if (uboCacheIndex >= uboCacheVector.size())
+        uboCacheVector.push_back(std::make_unique<UniformBuffer>());
+    return &*uboCacheVector[uboCacheIndex++];
 }
 
 void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
@@ -131,7 +139,7 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
                 t.externalUv ? 1 : -1
                 );
 
-    auto ubo = std::make_shared<UniformBuffer>();
+    auto ubo = getUbo();
     ubo->debugId = "UboSurface";
     ubo->bind();
     ubo->load(uboSurface);
@@ -459,6 +467,7 @@ void RenderViewImpl::renderEntry()
 {
     CHECK_GL("pre-frame check");
     clearGlState();
+    uboCacheIndex = 0;
 
     assert(context->shaderSurface);
     view = rawToMat4(draws->camera.view);
@@ -523,6 +532,8 @@ void RenderViewImpl::renderEntry()
 
     // clear the state
     clearGlState();
+
+    checkGlImpl("frame end (unconditional check)");
 }
 
 void RenderViewImpl::updateAtmosphereBuffer()

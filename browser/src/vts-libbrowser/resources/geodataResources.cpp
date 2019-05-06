@@ -91,6 +91,49 @@ Validity merge(Validity a, Validity b)
     return Validity::Invalid;
 }
 
+std::shared_ptr<GpuTexture> bitmapTexture(MapImpl *map, const std::string &v)
+{
+    std::string p = convertPath(v, map->mapconfigPath);
+    return map->getTexture(p);
+}
+
+std::shared_ptr<GpuTexture> bitmapTexture(MapImpl *map, const Json::Value &v)
+{
+    if (v.isObject())
+    {
+        std::string url = v["url"].asString();
+        std::string filter = v.isMember("filter")
+            ? v["filter"].asString() : "linear";
+        bool tiled = v.isMember("tiled")
+            ? v["tiled"].asBool() : false;
+        std::shared_ptr<GpuTexture> tex = bitmapTexture(map, url);
+        if (filter == "nearest")
+            tex->filterMode = GpuTextureSpec::FilterMode::Nearest;
+        else if (filter == "linear")
+            tex->filterMode = GpuTextureSpec::FilterMode::Linear;
+        else if (filter == "trilinear")
+            tex->filterMode = GpuTextureSpec::FilterMode::LinearMipmapLinear;
+        else
+            LOGTHROW(err2, std::runtime_error)
+            << "Invalid style bitmap filter definition <"
+            << filter << ">";
+        tex->wrapMode = tiled ? GpuTextureSpec::WrapMode::Repeat
+            : GpuTextureSpec::WrapMode::ClampToEdge;
+        return tex;
+    }
+    else if (v.isString())
+    {
+        return bitmapTexture(map, v.asString());
+    }
+    else
+    {
+        LOGTHROW(err2, std::runtime_error)
+            << "Invalid style bitmap definition <"
+            << v.toStyledString() << ">";
+        throw;
+    }
+}
+
 } // namespace
 
 Validity GeodataStylesheet::dependencies()
@@ -117,15 +160,8 @@ Validity GeodataStylesheet::dependencies()
                 p = convertPath(p, map->mapconfigPath);
                 fonts["#default"] = map->getFont(p);
             }
-            /*
             for (const auto &n : s["bitmaps"].getMemberNames())
-            {
-                // todo bitmap may be an object with: url, filter, tiled
-                std::string p = s["bitmaps"][n].asString();
-                p = convertPath(p, map->mapconfigPath);
-                bitmaps[n] = map->getTexture(p);
-            }
-            */
+                bitmaps[n] = bitmapTexture(map, s["bitmaps"][n]);
         }
         catch (std::exception &e)
         {

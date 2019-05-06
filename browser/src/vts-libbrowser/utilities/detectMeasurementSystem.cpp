@@ -39,7 +39,7 @@
 #include <dbglog/dbglog.hpp>
 
 #include "../include/vts-browser/foundation.hpp"
-#include "../utilities/detectMeasurementSystem.hpp"
+#include "detectMeasurementSystem.hpp"
 
 namespace vts
 {

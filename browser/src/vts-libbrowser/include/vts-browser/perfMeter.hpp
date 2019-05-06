@@ -29,14 +29,31 @@
 #include <Windows.h>
 #include <cstdio>
 
-LARGE_INTEGER perfSamp1, perfSamp2;
-
-#define PerfStart { QueryPerformanceCounter(&perfSamp1); }
-#define PerfEnd { QueryPerformanceCounter(&perfSamp2); printf("%lld\n", (perfSamp2.QuadPart - perfSamp1.QuadPart)); }
+struct perfMeter
+{
+    LARGE_INTEGER samp;
+    const char *name;
+    perfMeter(const char *name) : name(name)
+    {
+        QueryPerformanceCounter(&samp);
+    }
+    ~perfMeter()
+    {
+        LARGE_INTEGER samp2;
+        QueryPerformanceCounter(&samp2);
+        LARGE_INTEGER freq;
+        QueryPerformanceFrequency(&freq);
+        samp2.QuadPart -= samp.QuadPart;
+        printf("%s:\t%1.10f\n", name, samp2.QuadPart / (double)freq.QuadPart);
+    }
+};
 
 #else
 
-#define PerfStart
-#define PerfEnd
+struct perfMeter
+{
+    perfMeter(const char *)
+    {}
+};
 
 #endif // _WIN32

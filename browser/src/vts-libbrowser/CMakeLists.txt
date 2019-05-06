@@ -131,6 +131,8 @@ set(SRC_LIST
     utilities/array.hpp
     utilities/case.cpp
     utilities/case.hpp
+    utilities/dataUrl.cpp
+    utilities/dataUrl.hpp
     utilities/detectMeasurementSystem.cpp
     utilities/detectMeasurementSystem.hpp
     utilities/json.cpp

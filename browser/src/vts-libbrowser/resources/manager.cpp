@@ -30,6 +30,7 @@
 #include "../map.hpp"
 #include "../authConfig.hpp"
 #include "cache.hpp"
+#include "../utilities/dataUrl.hpp"
 
 namespace vts
 {
@@ -276,23 +277,30 @@ void MapImpl::cacheReadProcess(const std::shared_ptr<Resource> &r)
         r->fetch->reply.expires))
     {
         statistics.resourcesDiskLoaded++;
+        r->fetch->reply.code = 200;
         if (r->fetch->reply.content.size() > 0)
             r->state = Resource::State::downloaded;
         else
             r->state = Resource::State::availFail;
+    }
+    else if (startsWith(r->name, "data:"))
+    {
+        readDataUrl(r->name, r->fetch->reply.content,
+            r->fetch->reply.contentType);
         r->fetch->reply.code = 200;
+        r->state = Resource::State::downloaded;
     }
     else if (startsWith(r->name, "file://"))
     {
         r->fetch->reply.content = readLocalFileBuffer(r->name.substr(7));
-        r->state = Resource::State::downloaded;
         r->fetch->reply.code = 200;
+        r->state = Resource::State::downloaded;
     }
     else if (startsWith(r->name, "internal://"))
     {
         r->fetch->reply.content = readInternalMemoryBuffer(r->name.substr(11));
-        r->state = Resource::State::downloaded;
         r->fetch->reply.code = 200;
+        r->state = Resource::State::downloaded;
     }
     else if (startsWith(r->name, "generate://"))
     {

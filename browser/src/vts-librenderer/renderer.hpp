@@ -189,7 +189,9 @@ public:
     void renderJobMargins();
     void filterJobs();
     void processHysteresisJobs();
-    void sortJobsBackToFront();
+    void sortJobsByZIndexAndDepth();
+    void renderStick(const GeodataJob &job, const vec3 &worldPosition);
+    void renderIcon(const GeodataJob &job, const vec3 &worldPosition);
     void renderJobs();
 };
 

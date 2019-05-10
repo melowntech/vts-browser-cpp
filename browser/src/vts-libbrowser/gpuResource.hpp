@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPURESOURCES_HPP_m1nbr6779
-#define GPURESOURCES_HPP_m1nbr6779
+#ifndef GPURESOURCE_HPP_m1nbr6779
+#define GPURESOURCE_HPP_m1nbr6779
 
 #include "include/vts-browser/math.hpp"
 #include "resource.hpp"
@@ -49,6 +49,7 @@ public:
     FetchTask::ResourceType resourceType() const override;
     GpuTextureSpec::FilterMode filterMode;
     GpuTextureSpec::WrapMode wrapMode;
+    uint32 width, height;
 };
 
 class GpuAtmosphereDensityTexture : public GpuTexture

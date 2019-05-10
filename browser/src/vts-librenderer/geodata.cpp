@@ -79,14 +79,14 @@ void GeodataBase::load(RenderContextImpl *renderer, ResourceInfo &info,
     }
 
     // free some memory
-    std::vector<std::vector<std::array<float, 3>>>()
-        .swap(spec.positions);
-    std::vector<std::vector<std::array<float, 2>>>()
-        .swap(spec.uvs);
-    std::vector<std::shared_ptr<void>>().swap(spec.bitmaps);
     std::vector<std::string>().swap(spec.texts);
     std::vector<std::shared_ptr<void>>().swap(spec.fontCascade);
 
+    // compute memory requirements
+    this->info->ramMemoryCost += getTotalPoints()
+        * sizeof(decltype(spec.positions[0][0]));
+    this->info->ramMemoryCost += spec.iconCoords.size()
+        * sizeof(decltype(spec.iconCoords[0]));
     this->info->ramMemoryCost += sizeof(spec) + sizeof(*this);
     this->info = nullptr;
     renderer = nullptr;
@@ -121,9 +121,8 @@ vec3f GeodataBase::worldUp(vec3f &p) const
 uint32 GeodataBase::getTotalPoints() const
 {
     uint32 totalPoints = 0;
-    uint32 linesCount = spec.positions.size();
-    for (uint32 li = 0; li < linesCount; li++)
-        totalPoints += spec.positions[li].size();
+    for (const auto &li : spec.positions)
+        totalPoints += li.size();
     return totalPoints;
 }
 
@@ -324,7 +323,7 @@ void RenderViewImpl::renderGeodata()
         renderJobMargins(); // this color-codes the order, therefore it should go after the sort
     filterJobs();
     processHysteresisJobs();
-    sortJobsBackToFront();
+    sortJobsByZIndexAndDepth();
     renderJobs();
 
     glDepthMask(GL_TRUE);
@@ -418,6 +417,8 @@ void RenderViewImpl::generateJobs()
             if (!g->checkTextures())
                 continue;
 
+            mat4 depthCorrection = proj * depthOffsetCorrection(g) * projInv;
+
             // individual jobs for each text
             for (uint32 index = 0, indexEnd = g->texts.size();
                 index < indexEnd; index++)
@@ -448,7 +449,7 @@ void RenderViewImpl::generateJobs()
 
                 // ndcZ
                 {
-                    vec4 p = proj * depthOffsetCorrection(g) * projInv * sp;
+                    vec4 p = depthCorrection * sp;
                     j.ndcZ = p[2] / p[3];
                 }
 
@@ -625,13 +626,47 @@ void RenderViewImpl::processHysteresisJobs()
     }
 }
 
-void RenderViewImpl::sortJobsBackToFront()
+void RenderViewImpl::sortJobsByZIndexAndDepth()
 {
     std::sort(geodataJobs.begin(), geodataJobs.end(),
         [](const GeodataJob &a, const GeodataJob &b)
         {
-            return a.ndcZ > b.ndcZ;
+            auto az = a.g->spec.commonData.zIndex;
+            auto bz = b.g->spec.commonData.zIndex;
+            if (az == bz)
+                return a.ndcZ > b.ndcZ;
+            return az < bz;
         });
+}
+
+void RenderViewImpl::renderStick(const GeodataJob &job,
+    const vec3 &worldPosition)
+{
+    if (job.stick > 0)
+    {
+        const auto &s = job.g->spec.commonData.stick;
+        vec4f color = rawToVec4(job.g->spec.commonData.stick.color);
+        color[3] *= job.opacity;
+        Rect r;
+        r.a = r.b = vec3to2(vec4to3(vec4(viewProj
+            * vec3to4(worldPosition, 1)), true)).cast<float>();
+        float w = s.width / width;
+        float h = job.stick / height;
+        r.a[0] -= w;
+        r.b[0] += w;
+        r.b[1] += h;
+        renderGeodataQuad(r, job.ndcZ, color);
+    }
+}
+
+void RenderViewImpl::renderIcon(const GeodataJob &job,
+    const vec3 &worldPosition)
+{
+    const auto &icon = job.g->spec.commonData.icon;
+    if (icon.scale > 0)
+    {
+        // todo
+    }
 }
 
 void RenderViewImpl::renderJobs()
@@ -678,6 +713,19 @@ void RenderViewImpl::renderJobs()
             glEnable(GL_STENCIL_TEST);
             msh->dispatch();
             glDisable(GL_STENCIL_TEST);
+
+            if (job.stick > 0 || g->spec.commonData.icon.scale > 0)
+            {
+                for (uint32 index = 0, indexEnd = g->spec.positions.size();
+                    index < indexEnd; index++)
+                {
+                    vec3 worldPosition = vec4to3(vec4(g->model * vec3to4(
+                        rawToVec3(g->spec.positions[index][0].data()),
+                            1).cast<double>()));
+                    renderStick(job, worldPosition);
+                    renderIcon(job, worldPosition);
+                }
+            }
         } break;
         case GpuGeodataSpec::Type::Triangles:
         {
@@ -746,25 +794,8 @@ void RenderViewImpl::renderJobs()
                 }
             }
 
-            // render stick
-            {
-                const auto &s = g->spec.commonData.stick;
-                if (job.stick > 0)
-                {
-                    vec4f color = rawToVec4(g->spec.commonData.stick.color);
-                    color[3] *= job.opacity;
-                    Rect r;
-                    r.a = r.b = vec3to2(vec4to3(vec4(viewProj
-                        * vec3to4(t.worldPosition, 1)), true)).cast<float>();
-                    float w = s.width / width;
-                    float h = job.stick / height;
-                    r.a[0] -= w;
-                    r.b[0] += w;
-                    r.b[1] += h;
-                    renderGeodataQuad(r, job.ndcZ, color);
-                }
-            }
-
+            renderStick(job, t.worldPosition);
+            renderIcon(job, t.worldPosition);
         } break;
         default:
         {

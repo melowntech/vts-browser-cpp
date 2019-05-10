@@ -81,7 +81,8 @@ Buffer GpuTextureSpec::encodePng() const
 GpuTexture::GpuTexture(MapImpl *map, const std::string &name) :
     Resource(map, name),
     filterMode(GpuTextureSpec::FilterMode::Linear),
-    wrapMode(GpuTextureSpec::WrapMode::ClampToEdge)
+    wrapMode(GpuTextureSpec::WrapMode::ClampToEdge),
+    width(0), height(0)
 {}
 
 void GpuTexture::load()
@@ -90,6 +91,8 @@ void GpuTexture::load()
     GpuTextureSpec spec(fetch->reply.content);
     spec.filterMode = filterMode;
     spec.wrapMode = wrapMode;
+    this->width = spec.width;
+    this->height = spec.height;
 
     if (map->options.debugExtractRawResources)
     {

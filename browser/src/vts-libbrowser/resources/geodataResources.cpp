@@ -265,6 +265,7 @@ GpuGeodataSpec::CommonData::CommonData()
     memset(this, 0, sizeof(*this));
 
     stick.width = nan1();
+    icon.scale = nan1();
     vecToRaw(vec4f(nan4().cast<float>()), visibilities);
     vecToRaw(vec3f(nan3().cast<float>()), zBufferOffset);
     featuresLimitPerPixelSquared = nan1();

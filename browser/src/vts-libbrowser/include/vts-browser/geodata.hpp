@@ -50,8 +50,6 @@ public:
         PointScreen,
         PointFlat,
         PointLabel,
-        Icon,
-        PackedLabelIcon,
         Triangles,
     };
 
@@ -141,12 +139,6 @@ public:
         TextAlign textAlign;
     };
 
-    struct VTS_API PackedLabelIcon
-    {
-        PointLabel pointlabel;
-        Icon icon;
-    };
-
     struct VTS_API Triangles
     {
         float color[4];
@@ -156,12 +148,10 @@ public:
 
     union VTS_API UnionData
     {
-        Icon icon;
         Line line;
         LineLabel lineLabel;
         Point point;
         PointLabel pointLabel;
-        PackedLabelIcon packedLabelIcon;
         Triangles triangles;
         UnionData();
     };
@@ -169,6 +159,7 @@ public:
     struct VTS_API CommonData
     {
         Stick stick;
+        Icon icon;
         float visibilities[4]; // feature distance (meters), (altered) view-min, view-max, culling (degrees)
         float zBufferOffset[3]; // do NOT ask for units here
         float tileVisibility[2]; // view extent range in which the tile is visible
@@ -186,16 +177,16 @@ public:
 
     // positions
     std::vector<std::vector<std::array<float, 3>>> positions;
-    std::vector<std::vector<std::array<float, 2>>> uvs;
 
     // properties per item
-    std::vector<std::shared_ptr<void>> bitmaps;
+    std::vector<std::array<float, 6>> iconCoords; // uv x1, uv y1, uv x2, uv y2, pixels width, pixels height
     std::vector<std::string> texts;
     std::vector<std::string> hysteresisIds;
     std::vector<float> importances;
 
     // global properties
     std::vector<std::shared_ptr<void>> fontCascade;
+    std::shared_ptr<void> bitmap;
     double model[16];
     UnionData unionData;
     CommonData commonData;

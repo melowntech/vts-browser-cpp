@@ -71,6 +71,8 @@ struct GpuGeodataSpecComparator
     {
         if (a.type != b.type)
             return a.type < b.type;
+        if (a.bitmap != b.bitmap)
+            return a.bitmap < b.bitmap;
         int c = memcmp(&a.commonData, &b.commonData, sizeof(a.commonData));
         if (c != 0)
             return c < 0;
@@ -450,8 +452,7 @@ struct geoContext
                     }
                 };
                 c(spec.positions.size());
-                c(spec.uvs.size());
-                c(spec.bitmaps.size());
+                c(spec.iconCoords.size());
                 c(spec.texts.size());
                 c(spec.hysteresisIds.size());
                 c(spec.importances.size());
@@ -1112,6 +1113,26 @@ if (cond == #OP) \
         addFont("#default", output);
     }
 
+    void addIconItems(const Value &layer,
+        GpuGeodataSpec &data, uint32 addedItems)
+    {
+        if (!(data.commonData.icon.scale == data.commonData.icon.scale))
+            return;
+        if (addedItems == 0)
+            return;
+        Value src = evaluate(layer["icon-source"]);
+        auto tex = std::static_pointer_cast<GpuTexture>(data.bitmap);
+        assert(tex);
+        sint32 a[4] = { src[1].asInt(), src[2].asInt(),
+            src[3].asInt(), src[4].asInt()};
+        float s[2] = { tex->width - 1.f, tex->height - 1.f };
+        std::array<float, 6> uv = { a[0] / s[0], a[1] / s[1],
+            (a[0] + a[2]) / s[0], (a[1] + a[3]) / s[1],
+            (float)tex->width, (float)tex->height };
+        for (uint32 i = 0; i < addedItems; i++)
+            data.iconCoords.push_back(uv);
+    }
+
     // process single feature with specific style layer
     void processFeatureName(const std::string &layerName)
     {
@@ -1259,8 +1280,6 @@ if (cond == #OP) \
         if (evaluate(layer["label"]).asBool())
             processFeaturePointLabel(layer, spec);
 
-        // icon
-
         // polygon
         if (evaluate(layer["polygon"]).asBool())
             processFeaturePolygon(layer, spec);
@@ -1339,6 +1358,42 @@ if (cond == #OP) \
         if (layer.isMember("culling"))
             spec.commonData.visibilities[3]
                 = convertToDouble(layer["culling"]);
+
+        // icon
+        if (evaluate(layer["icon"]).asBool())
+        {
+            Value src = evaluate(layer["icon-source"]);
+            validateArrayLength(src, 5, 5, "icon-source must have 5 values");
+            std::string btm = src[0].asString();
+            if (stylesheet->bitmaps.count(btm) != 1)
+            {
+                if (Validating)
+                    THROW << "invalid bitmap name <" << btm << ">";
+                return;
+            }
+            auto tex = stylesheet->bitmaps.at(btm);
+            assert(stylesheet->map->getResourceValidity(tex)
+                == Validity::Valid);
+            spec.bitmap = std::static_pointer_cast<void>(tex);
+
+            spec.commonData.icon.scale
+                = layer.isMember("icon-scale")
+                ? convertToDouble(layer["icon-scale"])
+                : 1;
+
+            spec.commonData.icon.origin
+                = layer.isMember("icon-origin")
+                ? convertOrigin(layer["icon-origin"])
+                : GpuGeodataSpec::Origin::BottomCenter;
+
+            vecToRaw(layer.isMember("icon-offset")
+                ? convertVector2(layer["icon-offset"])
+                : vec2f(),
+                spec.commonData.icon.offset);
+
+            if (layer.isMember("icon-stick"))
+                spec.commonData.stick = convertStick(layer["icon-stick"]);
+        }
     }
 
     void processFeatureLine(const Value &layer, GpuGeodataSpec spec)
@@ -1386,6 +1441,7 @@ if (cond == #OP) \
         const auto arr = getFeaturePositions();
         data.positions.reserve(data.positions.size() + arr.size());
         data.positions.insert(data.positions.end(), arr.begin(), arr.end());
+        addIconItems(layer, data, arr.size());
     }
 
     void processFeaturePoint(const Value &layer, GpuGeodataSpec spec)
@@ -1407,6 +1463,7 @@ if (cond == #OP) \
         cullOutsideFeatures(arr);
         data.positions.reserve(data.positions.size() + arr.size());
         data.positions.insert(data.positions.end(), arr.begin(), arr.end());
+        addIconItems(layer, data, arr.size());
     }
 
     void processFeatureLineLabel(const Value &layer, GpuGeodataSpec spec)
@@ -1558,6 +1615,7 @@ if (cond == #OP) \
             if (importance == importance)
                 data.importances.push_back(importance);
         }
+        addIconItems(layer, data, arr.size());
     }
 
     void processFeaturePolygon(const Value &layer, GpuGeodataSpec spec)

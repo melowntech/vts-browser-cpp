@@ -129,9 +129,27 @@ uint32 GeodataBase::getTotalPoints() const
 Rect::Rect() : a(nan2().cast<float>()), b(nan2().cast<float>())
 {}
 
+Rect::Rect(const vec2f &a, const vec2f &b) : a(a), b(b)
+{}
+
 bool Rect::valid() const
 {
     return a == a && b == b;
+}
+
+Rect Rect::merge(const Rect &a, const Rect &b)
+{
+    if (!a.valid())
+        return b;
+    if (!b.valid())
+        return a;
+    Rect r;
+    for (int i = 0; i < 2; i++)
+    {
+        r.a[i] = std::min(a.a[i], b.a[i]);
+        r.b[i] = std::max(a.b[i], b.b[i]);
+    }
+    return r;
 }
 
 bool Rect::overlaps(const Rect &a, const Rect &b)
@@ -146,10 +164,20 @@ bool Rect::overlaps(const Rect &a, const Rect &b)
     return true;
 }
 
+float Rect::width() const
+{
+    return b[0] - a[0];
+}
+
+float Rect::height() const
+{
+    return b[1] - a[1];
+}
+
 GeodataJob::GeodataJob(const std::shared_ptr<GeodataBase> &g,
     uint32 itemIndex)
-    : g(g), itemIndex(itemIndex),
-    importance(0), opacity(1), stick(0), ndcZ(nan1())
+    : g(g), refPoint(0, 0), itemIndex(itemIndex),
+    importance(0), opacity(1), depth(nan1())
 {}
 
 bool RenderViewImpl::geodataTestVisibility(
@@ -258,18 +286,76 @@ mat4 RenderViewImpl::depthOffsetCorrection(
     return davidProjInv * s * davidProj;
 }
 
-void RenderViewImpl::renderGeodataQuad(const Rect &rect,
-    float depth, const vec4f &color)
+namespace
 {
-    context->shaderGeodataColor->bind();
-    context->shaderGeodataColor->uniformVec4(1, color.data());
+
+mat4f rectTransform(const Rect &rect, float depth)
+{
     vec3 p = vec2to3(vec2((rect.a + rect.b).cast<double>() * 0.5),
         (double)depth);
     vec2 s = vec2((rect.b - rect.a).cast<double>() * 0.5);
     mat4 mvp = translationMatrix(p)
         * scaleMatrix(vec2to3(s, 1));
-    mat4f mvpf = mvp.cast<float>();
+    return mvp.cast<float>();
+}
+
+Rect pointToRect(const vec2f &p, uint32 w, uint32 h)
+{
+    Rect r;
+    r.a = p - vec2f(5.f / w, 5.f / h);
+    r.b = p + vec2f(5.f / w, 5.f / h);
+    return r;
+}
+
+vec2f numericOrigin(GpuGeodataSpec::Origin o)
+{
+    vec2f origin = vec2f(0.5, 1);
+    switch (o)
+    {
+    case GpuGeodataSpec::Origin::TopLeft:
+        origin = vec2f(0, 1);
+        break;
+    case GpuGeodataSpec::Origin::TopRight:
+        origin = vec2f(1, 1);
+        break;
+    case GpuGeodataSpec::Origin::TopCenter:
+        origin = vec2f(0.5, 1);
+        break;
+    case GpuGeodataSpec::Origin::CenterLeft:
+        origin = vec2f(0, 0.5);
+        break;
+    case GpuGeodataSpec::Origin::CenterRight:
+        origin = vec2f(1, 0.5);
+        break;
+    case GpuGeodataSpec::Origin::CenterCenter:
+        origin = vec2f(0.5, 0.5);
+        break;
+    case GpuGeodataSpec::Origin::BottomLeft:
+        origin = vec2f(0, 0);
+        break;
+    case GpuGeodataSpec::Origin::BottomRight:
+        origin = vec2f(1, 0);
+        break;
+    case GpuGeodataSpec::Origin::BottomCenter:
+        origin = vec2f(0.5, 0);
+        break;
+    default:
+        break;
+    }
+    return origin;
+}
+
+} // namespace
+
+void RenderViewImpl::renderGeodataQuad(const Rect &rect,
+    float depth, const vec4f &color)
+{
+    if (!rect.valid())
+        return;
+    context->shaderGeodataColor->bind();
+    mat4f mvpf = rectTransform(rect, depth);
     context->shaderGeodataColor->uniformMat4(0, mvpf.data());
+    context->shaderGeodataColor->uniformVec4(1, color.data());
     context->meshQuad->bind();
     context->meshQuad->dispatch();
 }
@@ -309,7 +395,6 @@ void RenderViewImpl::bindUboView(const std::shared_ptr<GeodataBase> &g)
 
 void RenderViewImpl::renderGeodata()
 {
-    //glDisable(GL_CULL_FACE);
     glDepthMask(GL_FALSE);
 
     glStencilFunc(GL_EQUAL, 0, 0xFF);
@@ -318,16 +403,20 @@ void RenderViewImpl::renderGeodata()
     computeZBufferOffsetValues();
     bindUboCamera();
     generateJobs();
+    if (options.renderGeodataDebug == 2)
+    {
+        sortJobsByZIndexAndDepth();
+        renderJobsDebugRects();
+    }
     sortJobsByZIndexAndImportance();
-    if (options.renderGeodataMargins)
-        renderJobMargins(); // this color-codes the order, therefore it should go after the sort
-    filterJobs();
-    processHysteresisJobs();
+    if (options.renderGeodataDebug == 1)
+        renderJobsDebugImportance();
+    filterJobsByResolvingCollisions();
+    processJobsHysteresis();
     sortJobsByZIndexAndDepth();
     renderJobs();
 
     glDepthMask(GL_TRUE);
-    //glEnable(GL_CULL_FACE);
 }
 
 void RenderViewImpl::computeZBufferOffsetValues()
@@ -389,6 +478,121 @@ void RenderViewImpl::bindUboCamera()
     uboGeodataCamera->bindToIndex(0);
 }
 
+void RenderViewImpl::regenerateJob(GeodataJob &j)
+{
+    const auto &g = j.g;
+    const auto index = j.itemIndex;
+
+    switch (g->spec.type)
+    {
+    case GpuGeodataSpec::Type::LineScreen:
+    case GpuGeodataSpec::Type::LineFlat:
+    case GpuGeodataSpec::Type::PointScreen:
+    case GpuGeodataSpec::Type::PointFlat:
+    case GpuGeodataSpec::Type::Triangles:
+    {
+        // nothing
+    } break;
+    case GpuGeodataSpec::Type::PointLabel:
+    {
+        const auto &t = g->texts[index];
+
+        if (!g->spec.importances.empty())
+        {
+            j.importance = g->spec.importances[index];
+            j.importance
+                -= g->spec.commonData.importanceDistanceFactor
+                * std::log(length(vec3(t.worldPosition
+                    - rawToVec3(draws->camera.eye))));
+        }
+
+        const vec4 sp = viewProj * vec3to4(t.worldPosition, 1);
+
+        // ref point
+        j.refPoint = vec3to2(vec4to3(sp, true)).cast<float>();
+
+        // depth
+        {
+            mat4 depthCorrection = proj
+                * depthOffsetCorrection(g) * projInv;
+            vec4 p = depthCorrection * sp;
+            j.depth = p[2] / p[3];
+        }
+
+        // label rect
+        {
+            float sc = options.textScale;
+            vec2f ss = t.rectSize.cwiseProduct(
+                vec2f(sc / width, sc / height));
+            j.labelRect.a = j.labelRect.b = j.refPoint + vec2f(
+                g->spec.unionData.pointLabel.offset[0] / width,
+                g->spec.unionData.pointLabel.offset[1] / height
+            ) - numericOrigin(g->spec.unionData.pointLabel.origin)
+                .cwiseProduct(ss);
+            j.labelRect.b += ss;
+        }
+
+        // icon rect
+        {
+            const auto &c = g->spec.commonData.icon;
+            if (c.scale > 0)
+            {
+                const auto &s = g->spec.iconCoords[index];
+                float w = c.scale * 0.5f * s[4] / width;
+                float h = c.scale * 0.5f * s[5] / height;
+                j.iconRect.a = j.iconRect.b = j.refPoint;
+                j.iconRect.a[0] -= w;
+                j.iconRect.b[0] += w;
+                j.iconRect.a[1] -= h;
+                j.iconRect.b[1] += h;
+            }
+        }
+
+        // stick
+        {
+            const auto &s = g->spec.commonData.stick;
+            if (s.width > 0)
+            {
+                float stick = s.heightMax;
+                vec3f camForward
+                    = vec4to3(vec4(viewInv
+                        * vec4(0, 0, -1, 0)), false).cast<float>();
+                vec3f camUp
+                    = vec4to3(vec4(viewInv
+                        * vec4(0, 1, 0, 0)), false).cast<float>();
+                vec3f camDir = normalize(rawToVec3(
+                    draws->camera.eye)).cast<float>();
+                stick *= std::max(0.f,
+                    (1 + dot(t.worldUp, camForward))
+                    * dot(camUp, camDir)
+                );
+                if (stick < s.heightThreshold)
+                    stick = 0;
+                float ro = (stick > 0 ? stick + s.offset : 0)
+                    / height;
+                j.stickRect.a = j.stickRect.b
+                    = vec3to2(vec4to3(sp, true)).cast<float>();
+                float w = s.width / width;
+                float h = stick / height;
+                j.stickRect.a[0] -= w;
+                j.stickRect.b[0] += w;
+                j.stickRect.b[1] += h;
+
+                // offset others
+                j.labelRect.a[1] += h;
+                j.labelRect.b[1] += h;
+                j.iconRect.a[1] += h;
+                j.iconRect.b[1] += h;
+            }
+        }
+
+        // collision rect
+        if (g->spec.commonData.preventOverlap)
+            j.collisionRect = Rect::merge(j.labelRect, j.iconRect);
+    } break;
+    }
+}
+
 void RenderViewImpl::generateJobs()
 {
     geodataJobs.clear();
@@ -417,8 +621,6 @@ void RenderViewImpl::generateJobs()
             if (!g->checkTextures())
                 continue;
 
-            mat4 depthCorrection = proj * depthOffsetCorrection(g) * projInv;
-
             // individual jobs for each text
             for (uint32 index = 0, indexEnd = g->texts.size();
                 index < indexEnd; index++)
@@ -435,71 +637,7 @@ void RenderViewImpl::generateJobs()
                     continue;
 
                 GeodataJob j(g, index);
-
-                if (!g->spec.importances.empty())
-                {
-                    j.importance = g->spec.importances[index];
-                    j.importance
-                        -= g->spec.commonData.importanceDistanceFactor
-                        * std::log(length(vec3(t.worldPosition
-                            - rawToVec3(draws->camera.eye))));
-                }
-
-                vec4 sp = viewProj * vec3to4(t.worldPosition, 1);
-
-                // ndcZ
-                {
-                    vec4 p = depthCorrection * sp;
-                    j.ndcZ = p[2] / p[3];
-                }
-
-                // rect
-                if (g->spec.commonData.preventOverlap)
-                {
-                    vec2f ss = vec2f(1.f / width, 1.f / height);
-                    vec2f off = vec2f(
-                        g->spec.unionData.pointLabel.offset[0],
-                        g->spec.unionData.pointLabel.offset[1]
-                    ).cwiseProduct(ss);
-                    auto p = [&](const vec2f &a) -> vec2f
-                    {
-                        vec4 r = sp;
-                        for (int i = 0; i < 2; i++)
-                            r[i] += options.textScale * r[3]*a[i]*ss[i];
-                        vec3 r3 = vec4to3(r, true);
-                        return vec3to2(r3).cast<float>() + off;
-                    };
-                    j.rect.a = p(t.rectOrigin);
-                    j.rect.b = p(t.rectOrigin + t.rectSize);
-                }
-
-                // stick
-                {
-                    const auto &s = g->spec.commonData.stick;
-                    if (s.width == s.width)
-                    {
-                        j.stick = s.heightMax;
-                        vec3f camForward
-                            = vec4to3(vec4(viewInv
-                            * vec4(0, 0, -1, 0)), false).cast<float>();
-                        vec3f camUp
-                            = vec4to3(vec4(viewInv
-                            * vec4(0, 1, 0, 0)), false).cast<float>();
-                        vec3f camDir = normalize(rawToVec3(
-                            draws->camera.eye)).cast<float>();
-                        j.stick *= std::max(0.f,
-                            (1 + dot(t.worldUp, camForward))
-                            * dot(camUp, camDir)
-                        );
-                        if (j.stick < s.heightThreshold)
-                            j.stick = 0;
-                        float ro = (j.stick > 0 ? j.stick + s.offset : 0)
-                            / height;
-                        j.rect.a[1] += ro;
-                        j.rect.b[1] += ro;
-                    }
-                }
-
+                regenerateJob(j);
                 geodataJobs.push_back(std::move(j));
             }
         } break;
@@ -525,7 +663,27 @@ void RenderViewImpl::sortJobsByZIndexAndImportance()
         });
 }
 
-void RenderViewImpl::renderJobMargins()
+void RenderViewImpl::renderJobsDebugRects()
+{
+    vec4f colorCollision = vec4f(0.5, 0.5, 0.5, 0.4);
+    vec4f colorStick = vec4f(0, 0, 0.5, 0.4);
+    vec4f colorIcon = vec4f(0, 0.5, 0, 0.4);
+    vec4f colorLabel = vec4f(0.5, 0, 0, 0.4);
+    vec4f colorRef = vec4f(1, 0, 1, 1);
+    for (const GeodataJob &job : geodataJobs)
+    {
+        if (!job.labelRect.valid())
+            continue;
+        renderGeodataQuad(job.collisionRect, job.depth, colorCollision);
+        renderGeodataQuad(job.stickRect, job.depth, colorStick);
+        renderGeodataQuad(job.iconRect, job.depth, colorIcon);
+        renderGeodataQuad(job.labelRect, job.depth, colorLabel);
+        renderGeodataQuad(pointToRect(job.refPoint, width, height),
+            job.depth, colorRef);
+    }
+}
+
+void RenderViewImpl::renderJobsDebugImportance()
 {
     uint32 cnt = geodataJobs.size();
     struct Quad
@@ -541,10 +699,11 @@ void RenderViewImpl::renderJobMargins()
     uint32 i = 0;
     for (const GeodataJob &job : geodataJobs)
     {
-        if (!job.rect.valid())
+        if (!job.labelRect.valid())
             continue;
         vec3f color = convertToRainbowColor(1 - float(i++) / cnt);
-        quads.emplace_back(job.rect, vec3to4(color, 0.35f), job.ndcZ);
+        quads.emplace_back(job.labelRect,
+            vec3to4(color, 0.35f), job.depth);
     }
     std::sort(quads.begin(), quads.end(),
         [](const Quad &a, const Quad &b)
@@ -555,7 +714,7 @@ void RenderViewImpl::renderJobMargins()
         renderGeodataQuad(a.r, a.z, a.c);
 }
 
-void RenderViewImpl::filterJobs()
+void RenderViewImpl::filterJobsByResolvingCollisions()
 {
     float pixels = width * height;
     uint32 index = 0;
@@ -566,9 +725,9 @@ void RenderViewImpl::filterJobs()
         float limitFactor = l.g->spec.commonData.featuresLimitPerPixelSquared;
         if (index > limitFactor * pixels)
             return true;
-        if (l.rect.valid())
+        if (l.collisionRect.valid())
         {
-            const Rect mr = l.rect;
+            const Rect mr = l.collisionRect;
             for (const Rect &r : rects)
                 if (Rect::overlaps(mr, r))
                     return true;
@@ -580,7 +739,7 @@ void RenderViewImpl::filterJobs()
     }), geodataJobs.end());
 }
 
-void RenderViewImpl::processHysteresisJobs()
+void RenderViewImpl::processJobsHysteresis()
 {
     if (!options.geodataHysteresis)
     {
@@ -598,32 +757,43 @@ void RenderViewImpl::processHysteresisJobs()
             it++;
     }
 
-    geodataJobs.erase(std::remove_if(geodataJobs.begin(),
-        geodataJobs.end(), [&](GeodataJob &it) {
-        if (it.itemIndex >= it.g->spec.hysteresisIds.size())
-            return false;
+    for (auto &it : geodataJobs)
+    {
+        if (it.itemIndex == (uint32)-1 || it.g->spec.hysteresisIds.empty())
+            continue;
         const std::string &id = it.g->spec.hysteresisIds[it.itemIndex];
         auto hit = hysteresisJobs.find(id);
-        if (hit != hysteresisJobs.end())
+        if (hit == hysteresisJobs.end())
+            it.opacity = -0.5f;
+        else
         {
             it.opacity = hit->second.opacity;
             hysteresisJobs.erase(hit);
         }
-        else
-            it.opacity = -0.5f;
         it.opacity +=
             + elapsedTime / it.g->spec.commonData.hysteresisDuration[0]
             + elapsedTime / it.g->spec.commonData.hysteresisDuration[1];
         it.opacity = std::min(it.opacity, 1.f);
-        hysteresisJobs.insert(std::make_pair(id, it));
-        return true;
-    }), geodataJobs.end());
+    }
 
-    for (const auto &it : hysteresisJobs)
+    for (auto &it : hysteresisJobs)
     {
         if (it.second.opacity > 0.f)
+        {
+            regenerateJob(it.second);
             geodataJobs.push_back(it.second);
+        }
     }
+
+    hysteresisJobs.clear();
+    geodataJobs.erase(std::remove_if(geodataJobs.begin(),
+        geodataJobs.end(), [&](GeodataJob &it) {
+        if (it.itemIndex == (uint32)-1 || it.g->spec.hysteresisIds.empty())
+            return false;
+        const std::string &id = it.g->spec.hysteresisIds[it.itemIndex];
+        hysteresisJobs.insert(std::make_pair(id, it));
+        return it.opacity <= 0;
+    }), geodataJobs.end());
 }
 
 void RenderViewImpl::sortJobsByZIndexAndDepth()
@@ -634,42 +804,49 @@ void RenderViewImpl::sortJobsByZIndexAndDepth()
             auto az = a.g->spec.commonData.zIndex;
             auto bz = b.g->spec.commonData.zIndex;
             if (az == bz)
-                return a.ndcZ > b.ndcZ;
+                return a.depth > b.depth;
             return az < bz;
         });
 }
 
-void RenderViewImpl::renderStick(const GeodataJob &job,
-    const vec3 &worldPosition)
+void RenderViewImpl::renderStick(const GeodataJob &job)
 {
-    if (job.stick > 0)
-    {
-        const auto &s = job.g->spec.commonData.stick;
-        vec4f color = rawToVec4(job.g->spec.commonData.stick.color);
-        color[3] *= job.opacity;
-        Rect r;
-        r.a = r.b = vec3to2(vec4to3(vec4(viewProj
-            * vec3to4(worldPosition, 1)), true)).cast<float>();
-        float w = s.width / width;
-        float h = job.stick / height;
-        r.a[0] -= w;
-        r.b[0] += w;
-        r.b[1] += h;
-        renderGeodataQuad(r, job.ndcZ, color);
-    }
+    const auto &s = job.g->spec.commonData.stick;
+    vec4f color = rawToVec4(job.g->spec.commonData.stick.color);
+    color[3] *= job.opacity;
+    renderGeodataQuad(job.stickRect, job.depth, color);
 }
 
 void RenderViewImpl::renderIcon(const GeodataJob &job,
-    const vec3 &worldPosition)
+    const float uvs[4])
 {
-    const auto &icon = job.g->spec.commonData.icon;
-    if (icon.scale > 0)
+    struct UboIcon
     {
-        // todo
-    }
+        mat4f mvp;
+        vec4f params;
+        vec4f uvs;
+    } uboIcon;
+
+    const auto &icon = job.g->spec.commonData.icon;
+
+    uboIcon.mvp = rectTransform(job.iconRect, job.depth);
+    uboIcon.params = vec4f(job.opacity, 0, 0, 0);
+    uboIcon.uvs = rawToVec4(uvs);
+
+    auto uboGeodataIcon = getUbo();
+    uboGeodataIcon->debugId = "UboIcon";
+    uboGeodataIcon->bind();
+    uboGeodataIcon->load(uboIcon);
+    uboGeodataIcon->bindToIndex(2);
+
+    ((Texture*)job.g->spec.bitmap.get())->bind();
+
+    context->shaderGeodataIcon->bind();
+    context->meshQuad->bind();
+    context->meshQuad->dispatch();
 }
 
-void RenderViewImpl::renderJobs()
+void RenderViewImpl::renderLabel(const GeodataJob &job)
 {
     struct UboText
     {
@@ -680,6 +857,51 @@ void RenderViewImpl::renderJobs()
         vec4f coordinates[1000];
     } uboText;
 
+    const auto &g = job.g;
+    const auto &t = g->texts[job.itemIndex];
+
+    uboText.color[0] = rawToVec4(g->spec.unionData.pointLabel.color);
+    uboText.color[1] = rawToVec4(g->spec.unionData.pointLabel.color2);
+    uboText.color[0][3] *= job.opacity;
+    uboText.color[1][3] *= job.opacity;
+    uboText.outline = g->outline;
+    uboText.position[0] = t.modelPosition[0];
+    uboText.position[1] = t.modelPosition[1];
+    uboText.position[2] = t.modelPosition[2];
+    uboText.position[3] = options.textScale;
+    vec2f off = (job.labelRect.a + job.labelRect.b) * 0.5
+        - job.refPoint;
+    uboText.offset = vec4f(off[0], off[1], 0, 0);
+
+    {
+        vec4f *o = uboText.coordinates;
+        for (const vec4f &c : t.coordinates)
+            *o++ = c;
+    }
+
+    context->shaderGeodataPointLabel->bind();
+    auto uboGeodataText = getUbo();
+    uboGeodataText->debugId = "UboText";
+    uboGeodataText->bind();
+    uboGeodataText->load(&uboText,
+        20 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size());
+    uboGeodataText->bindToIndex(2);
+
+    context->meshEmpty->bind();
+    for (int pass = 0; pass < 2; pass++)
+    {
+        context->shaderGeodataPointLabel->uniform(0, pass);
+        for (auto &w : t.words)
+        {
+            w.texture->bind();
+            context->meshEmpty->dispatch(
+                w.coordinatesStart, w.coordinatesCount);
+        }
+    }
+}
+
+void RenderViewImpl::renderJobs()
+{
     for (const GeodataJob &job : geodataJobs)
     {
         const auto &g = job.g;
@@ -714,6 +936,7 @@ void RenderViewImpl::renderJobs()
             msh->dispatch();
             glDisable(GL_STENCIL_TEST);
 
+            /*
             if (job.stick > 0 || g->spec.commonData.icon.scale > 0)
             {
                 for (uint32 index = 0, indexEnd = g->spec.positions.size();
@@ -726,6 +949,7 @@ void RenderViewImpl::renderJobs()
                     renderIcon(job, worldPosition);
                 }
             }
+            */
         } break;
         case GpuGeodataSpec::Type::Triangles:
         {
@@ -753,49 +977,11 @@ void RenderViewImpl::renderJobs()
                 t.worldPosition, t.worldUp))
                 continue;
 
-            uboText.color[0] = rawToVec4(g->spec.unionData.pointLabel.color);
-            uboText.color[1] = rawToVec4(g->spec.unionData.pointLabel.color2);
-            uboText.color[0][3] *= job.opacity;
-            uboText.color[1][3] *= job.opacity;
-            uboText.outline = g->outline;
-            uboText.position[0] = t.modelPosition[0];
-            uboText.position[1] = t.modelPosition[1];
-            uboText.position[2] = t.modelPosition[2];
-            uboText.position[3] = options.textScale;
-            uboText.offset = vec4f(g->spec.unionData.pointLabel.offset[0],
-                g->spec.unionData.pointLabel.offset[1], 0, 0);
-            if (job.stick)
-                uboText.offset[1] += job.stick
-                    + g->spec.commonData.stick.offset;
-            {
-                vec4f *o = uboText.coordinates;
-                for (const vec4f &c : t.coordinates)
-                    *o++ = c;
-            }
-
             bindUboView(g);
-            context->shaderGeodataPointLabel->bind();
-            auto uboGeodataText = getUbo();
-            uboGeodataText->debugId = "UboText";
-            uboGeodataText->bind();
-            uboGeodataText->load(&uboText,
-                20 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size());
-            uboGeodataText->bindToIndex(2);
-
-            context->meshEmpty->bind();
-            for (int pass = 0; pass < 2; pass++)
-            {
-                context->shaderGeodataPointLabel->uniform(0, pass);
-                for (auto &w : t.words)
-                {
-                    w.texture->bind();
-                    context->meshEmpty->dispatch(
-                        w.coordinatesStart, w.coordinatesCount);
-                }
-            }
-
-            renderStick(job, t.worldPosition);
-            renderIcon(job, t.worldPosition);
+            renderStick(job);
+            if (job.g->spec.commonData.icon.scale > 0)
+                renderIcon(job, job.g->spec.iconCoords[job.itemIndex].data());
+            renderLabel(job);
         } break;
         default:
         {

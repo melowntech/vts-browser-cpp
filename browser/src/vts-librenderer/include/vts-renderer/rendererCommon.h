@@ -54,9 +54,9 @@ typedef struct vtsCRenderOptionsBase
 
     // other options
     uint32 antialiasingSamples; // two or more to enable multisampling
+    uint32 renderGeodataDebug; // 0 = disabled
     bool renderAtmosphere;
     bool renderPolygonEdges;
-    bool renderGeodataMargins;
     bool geodataHysteresis;
 
     // where to copy the result (and resolve multisampling)

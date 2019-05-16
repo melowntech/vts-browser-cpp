@@ -7,7 +7,6 @@ layout(std140) uniform uboTriangleData
 };
 
 layout(location = 0) in vec3 inPosition;
-layout(location = 0) in vec3 inUp;
 
 out float varOpacity;
 out vec3 varViewPosition;

@@ -1121,7 +1121,7 @@ if (cond == #OP) \
         if (addedItems == 0)
             return;
         Value src = evaluate(layer["icon-source"]);
-        auto tex = std::static_pointer_cast<GpuTexture>(data.bitmap);
+        auto tex = stylesheet->bitmaps.at(src[0].asString());
         assert(tex);
         sint32 a[4] = { src[1].asInt(), src[2].asInt(),
             src[3].asInt(), src[4].asInt()};
@@ -1374,7 +1374,7 @@ if (cond == #OP) \
             auto tex = stylesheet->bitmaps.at(btm);
             assert(stylesheet->map->getResourceValidity(tex)
                 == Validity::Valid);
-            spec.bitmap = std::static_pointer_cast<void>(tex);
+            spec.bitmap = tex->info.userData;
 
             spec.commonData.icon.scale
                 = layer.isMember("icon-scale")

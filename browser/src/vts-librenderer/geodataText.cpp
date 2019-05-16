@@ -228,7 +228,7 @@ std::vector<TmpLine> textToGlyphs(
                     if (!terminal)
                     {
                         // we have another font available to use
-                        // se we search for tofus
+                        // so we search for tofus
                         bool hasTofu = false;
                         for (uint32 i = 0; i < len; i++)
                         {
@@ -260,7 +260,7 @@ std::vector<TmpLine> textToGlyphs(
                                 //   which prevents me to split them
                                 // for a lack of better ideas
                                 //   we send these sequences to next font
-                                //   without propper splitting
+                                //   without proper splitting
                                 bool currentTofu = info[i].codepoint == 0;
                                 if (currentTofu != lastTofu)
                                 {
@@ -320,24 +320,13 @@ std::vector<TmpLine> textToGlyphs(
 
 void mergeRect(vec2f &ro, vec2f &rs, const vec2f &go, const vec2f &gs)
 {
-    assert(gs[0] >= 0 && gs[1] >= 0);
-    if (!(ro[0] == ro[0]))
-    {
-        ro = go;
-        rs = gs;
-        return;
-    }
-    assert(rs[0] >= 0 && rs[1] >= 0);
-    for (int i = 0; i < 2; i++)
-    {
-        float a = std::min(ro[i], go[i]);
-        float b = std::max(ro[i] + rs[i], go[i] + gs[i]);
-        ro[i] = a;
-        rs[i] = b - a;
-    }
+    Rect r(ro, ro + rs);
+    r = Rect::merge(r, Rect(go, go + gs));
+    ro = r.a;
+    rs = r.b - r.a;
 }
 
-vec2f textLayout(float size, float maxWidth, float align, vec2f origin,
+vec2f textLayout(float size, float maxWidth, float align,
     std::vector<TmpLine> &lines)
 {
     // find glyph positions
@@ -373,20 +362,13 @@ vec2f textLayout(float size, float maxWidth, float align, vec2f origin,
         mergeRect(ro, rs, lo, ls); // merge line box into global box
     }
 
-    // subtract bounding box origin
+    // center the entire text
+    vec2f off = (ro + rs) * 0.5;
     for (TmpLine &line : lines)
         for (TmpGlyph &g : line.glyphs)
-            g.position -= ro;
+            g.position -= off;
+    rs -= ro;
     ro = vec2f(0, 0);
-
-    // origin (move all text as whole)
-    {
-        vec2f dp = rs.cwiseProduct(vec2f(-1, 1)).cwiseProduct(origin)
-            + rs.cwiseProduct(vec2f(0, -1));
-        for (TmpLine &line : lines)
-            for (TmpGlyph &g : line.glyphs)
-                g.position += dp;
-    }
 
     // align (move each line independently)
     for (TmpLine &line : lines)
@@ -397,15 +379,6 @@ vec2f textLayout(float size, float maxWidth, float align, vec2f origin,
     }
 
     return rs;
-}
-
-void findRect(Text &t, vec2f origin, const vec2f &size, const vec2f &margin)
-{
-    origin[1] = 1 - origin[1];
-    t.rectOrigin = -origin.cwiseProduct(size);
-    t.rectSize = size;
-    t.rectOrigin -= margin;
-    t.rectSize += 2 * margin;
 }
 
 Text generateTexts(std::vector<TmpLine> &lines)
@@ -489,44 +462,6 @@ float numericAlign(GpuGeodataSpec::TextAlign a)
     return align;
 }
 
-vec2f numericOrigin(GpuGeodataSpec::Origin o)
-{
-    vec2f origin = vec2f(0.5, 1);
-    switch (o)
-    {
-    case GpuGeodataSpec::Origin::TopLeft:
-        origin = vec2f(0, 0);
-        break;
-    case GpuGeodataSpec::Origin::TopRight:
-        origin = vec2f(1, 0);
-        break;
-    case GpuGeodataSpec::Origin::TopCenter:
-        origin = vec2f(0.5, 0);
-        break;
-    case GpuGeodataSpec::Origin::CenterLeft:
-        origin = vec2f(0, 0.5);
-        break;
-    case GpuGeodataSpec::Origin::CenterRight:
-        origin = vec2f(1, 0.5);
-        break;
-    case GpuGeodataSpec::Origin::CenterCenter:
-        origin = vec2f(0.5, 0.5);
-        break;
-    case GpuGeodataSpec::Origin::BottomLeft:
-        origin = vec2f(0, 1);
-        break;
-    case GpuGeodataSpec::Origin::BottomRight:
-        origin = vec2f(1, 1);
-        break;
-    case GpuGeodataSpec::Origin::BottomCenter:
-        origin = vec2f(0.5, 1);
-        break;
-    default:
-        break;
-    }
-    return origin;
-}
-
 } // namespace
 
 void GeodataBase::copyFonts()
@@ -540,7 +475,6 @@ void GeodataBase::loadPointLabels()
 {
     assert(spec.texts.size() == spec.positions.size());
     float align = numericAlign(spec.unionData.pointLabel.textAlign);
-    vec2f origin = numericOrigin(spec.unionData.pointLabel.origin);
     for (uint32 i = 0, e = spec.texts.size(); i != e; i++)
     {
         std::vector<TmpLine> lines = textToGlyphs(
@@ -548,9 +482,9 @@ void GeodataBase::loadPointLabels()
         vec2f rectSize = textLayout(
             spec.unionData.pointLabel.size,
             spec.unionData.pointLabel.width,
-            align, origin, lines);
+            align, lines);
         Text t = generateTexts(lines);
-        findRect(t, origin, rectSize, rawToVec2(spec.commonData.margin));
+        t.rectSize = rectSize;
         t.modelPosition = rawToVec3(spec.positions[i][0].data());
         t.worldPosition = vec4to3(vec4(rawToMat4(spec.model)
             * vec3to4(t.modelPosition, 1).cast<double>()));

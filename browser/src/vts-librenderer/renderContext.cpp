@@ -242,6 +242,24 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
             });
     }
 
+    // load shader geodata icon
+    {
+        shaderGeodataIcon = std::make_shared<Shader>();
+        shaderGeodataIcon->debugId
+            = "data/shaders/geodataIcon.*.glsl";
+        Buffer vert = readInternalMemoryBuffer(
+            "data/shaders/geodataIcon.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
+            "data/shaders/geodataIcon.frag.glsl");
+        shaderGeodataIcon->load(vert.str(), frag.str());
+        shaderGeodataIcon->bindTextureLocations({
+                { "texIcons", 0 }
+            });
+        shaderGeodataIcon->bindUniformBlockLocations({
+                { "uboIconData", 2 }
+            });
+    }
+
     // load shader geodata point
     {
         shaderGeodataPoint = std::make_shared<Shader>();

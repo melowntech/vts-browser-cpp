@@ -160,10 +160,10 @@ public:
     {
         Stick stick;
         Icon icon;
-        float visibilities[4]; // feature distance (meters), (altered) view-min, view-max, culling (degrees)
+        float visibilities[4]; // feature distance (meters), (altered) view-min, view-max, culling degrees
         float zBufferOffset[3]; // do NOT ask for units here
         float tileVisibility[2]; // view extent range in which the tile is visible
-        float hysteresisDuration[2]; // seconds
+        float hysteresisDuration[2]; // seconds to appear, seconds to disappear
         float margin[2]; // horizontal, vertical (pixels)
         float importanceDistanceFactor;
         float featuresLimitPerPixelSquared;

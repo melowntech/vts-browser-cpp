@@ -54,11 +54,9 @@ struct Text
     vec3 worldPosition;
     vec3f modelPosition;
     vec3f worldUp;
-    vec2f rectOrigin;
     vec2f rectSize;
 
     Text() : worldPosition(0, 0, 0), modelPosition(0, 0, 0), worldUp(0, 0, 0),
-        rectOrigin(nan2().cast<float>()),
         rectSize(nan2().cast<float>())
     {}
 };

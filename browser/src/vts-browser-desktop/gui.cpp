@@ -106,6 +106,12 @@ static const char *lodBlendingModeNames[] = {
     "Precise",
 };
 
+static const char *geodataDebugNames[] = {
+    "Off",
+    "Importance",
+    "Rects",
+};
+
 } // namespace
 
 Mark::Mark() : open(false)
@@ -793,10 +799,6 @@ public:
                 c.debugRenderSurrogates = nk_check_label(&ctx, "surrogates",
                                                     c.debugRenderSurrogates);
 
-                // render geodata margins
-                r.renderGeodataMargins = nk_check_label(&ctx,
-                    "geodata margins", r.renderGeodataMargins);
-
                 // geodata hysteresis
                 r.geodataHysteresis = nk_check_label(&ctx,
                     "geodata hysteresis", r.geodataHysteresis);
@@ -828,6 +830,28 @@ public:
             // debug
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Debug", NK_MINIMIZED))
             {
+                // geodata debug mode
+                {
+                    float ratio[] = { width * 0.4f, width * 0.6f };
+                    nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+
+                    nk_label(&ctx, "Geodata:", NK_TEXT_LEFT);
+                    if (nk_combo_begin_label(&ctx,
+                        geodataDebugNames[(int)r.renderGeodataDebug],
+                        nk_vec2(nk_widget_width(&ctx), 200)))
+                    {
+                        nk_layout_row_dynamic(&ctx, 16, 1);
+                        for (unsigned i = 0; i < sizeof(geodataDebugNames)
+                            / sizeof(geodataDebugNames[0]); i++)
+                        {
+                            if (nk_combo_item_label(&ctx,
+                                geodataDebugNames[i], NK_TEXT_LEFT))
+                                r.renderGeodataDebug = i;
+                        }
+                        nk_combo_end(&ctx);
+                    }
+                }
+
                 nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
 
                 // enable camera normalization

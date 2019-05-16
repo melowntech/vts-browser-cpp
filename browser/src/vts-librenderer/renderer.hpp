@@ -104,19 +104,26 @@ struct Rect
 {
     vec2f a, b;
     Rect();
+    Rect(const vec2f &a, const vec2f &b);
     bool valid() const;
+    float width() const;
+    float height() const;
+    static Rect merge(const Rect &a, const Rect &b);
     static bool overlaps(const Rect &a, const Rect &b);
 };
 
 struct GeodataJob
 {
-    Rect rect; // ndc space
     std::shared_ptr<GeodataBase> g;
+    Rect collisionRect; // ndc space (-1..1)
+    Rect iconRect;
+    Rect stickRect;
+    Rect labelRect;
+    vec2f refPoint; // ndc space (-1..1)
     uint32 itemIndex; // -1 means all
     float importance;
     float opacity; // 1 .. 0
-    float stick; // stick length (pixels)
-    float ndcZ;
+    float depth; // ndc space (0..1)
     GeodataJob(const std::shared_ptr<GeodataBase> &g, uint32 itemIndex);
 };
 
@@ -184,14 +191,17 @@ public:
     void computeZBufferOffsetValues();
     void bindUboCamera();
     void renderGeodata();
+    void regenerateJob(GeodataJob &j);
     void generateJobs();
     void sortJobsByZIndexAndImportance();
-    void renderJobMargins();
-    void filterJobs();
-    void processHysteresisJobs();
+    void renderJobsDebugRects();
+    void renderJobsDebugImportance();
+    void filterJobsByResolvingCollisions();
+    void processJobsHysteresis();
     void sortJobsByZIndexAndDepth();
-    void renderStick(const GeodataJob &job, const vec3 &worldPosition);
-    void renderIcon(const GeodataJob &job, const vec3 &worldPosition);
+    void renderStick(const GeodataJob &job);
+    void renderIcon(const GeodataJob &job, const float uvs[4]);
+    void renderLabel(const GeodataJob &job);
     void renderJobs();
 };
 
@@ -208,6 +218,7 @@ public:
     std::shared_ptr<Shader> shaderCopyDepth;
     std::shared_ptr<Shader> shaderGeodataColor;
     std::shared_ptr<Shader> shaderGeodataLine;
+    std::shared_ptr<Shader> shaderGeodataIcon;
     std::shared_ptr<Shader> shaderGeodataPoint;
     std::shared_ptr<Shader> shaderGeodataPointLabel;
     std::shared_ptr<Shader> shaderGeodataTriangle;

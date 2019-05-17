@@ -2,7 +2,7 @@
 layout(std140) uniform uboIconData
 {
     mat4 uniMvp;
-    vec4 uniParams;
+    vec4 uniColor;
     vec4 uniUvs;
 };
 

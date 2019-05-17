@@ -318,14 +318,6 @@ std::vector<TmpLine> textToGlyphs(
     return lines;
 }
 
-void mergeRect(vec2f &ro, vec2f &rs, const vec2f &go, const vec2f &gs)
-{
-    Rect r(ro, ro + rs);
-    r = Rect::merge(r, Rect(go, go + gs));
-    ro = r.a;
-    rs = r.b - r.a;
-}
-
 vec2f textLayout(float size, float maxWidth, float align,
     std::vector<TmpLine> &lines)
 {
@@ -334,17 +326,15 @@ vec2f textLayout(float size, float maxWidth, float align,
         vec2f o = vec2f(0, 0);
         for (TmpLine &line : lines)
         {
-            float ml = 0;
             for (TmpGlyph &g : line.glyphs)
             {
-                ml = std::max(ml, (float)g.font->size);
                 const auto &f = g.font->glyphs[g.glyphIndex];
                 g.position = (o + g.offset + f.offset) * size / g.font->size;
                 g.size = f.size * size / g.font->size;
                 o[0] += g.advance;
             }
             o[0] = 0;
-            o[1] -= ml * 1.5;
+            o[1] -= size * 2;
         }
     }
 
@@ -352,33 +342,32 @@ vec2f textLayout(float size, float maxWidth, float align,
     (void)maxWidth;
 
     // find text bounding box
-    vec2f ro = nan2().cast<float>(), rs = nan2().cast<float>();
+    Rect r;
     for (TmpLine &line : lines)
     {
-        vec2f lo = nan2().cast<float>(), ls = nan2().cast<float>();
+        Rect l;
         for (TmpGlyph &g : line.glyphs)
-            mergeRect(lo, ls, g.position, g.size);
-        line.width = ls[0] - lo[0];
-        mergeRect(ro, rs, lo, ls); // merge line box into global box
+            l = Rect::merge(l, Rect(g.position, g.position + g.size));
+        line.width = l.width();
+        r = Rect::merge(r, l);
     }
 
     // center the entire text
-    vec2f off = (ro + rs) * 0.5;
+    vec2f off = (r.a + r.b) * 0.5;
     for (TmpLine &line : lines)
         for (TmpGlyph &g : line.glyphs)
             g.position -= off;
-    rs -= ro;
-    ro = vec2f(0, 0);
 
     // align (move each line independently)
+    float tw = r.width();
     for (TmpLine &line : lines)
     {
-        float dx = (rs[0] - line.width) * align;
+        float dx = (tw - line.width) * align;
         for (TmpGlyph &g : line.glyphs)
             g.position[0] += dx;
     }
 
-    return rs;
+    return r.b - r.a;
 }
 
 Text generateTexts(std::vector<TmpLine> &lines)

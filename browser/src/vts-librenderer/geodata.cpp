@@ -403,11 +403,6 @@ void RenderViewImpl::renderGeodata()
     computeZBufferOffsetValues();
     bindUboCamera();
     generateJobs();
-    if (options.renderGeodataDebug == 2)
-    {
-        sortJobsByZIndexAndDepth();
-        renderJobsDebugRects();
-    }
     sortJobsByZIndexAndImportance();
     if (options.renderGeodataDebug == 1)
         renderJobsDebugImportance();
@@ -415,6 +410,9 @@ void RenderViewImpl::renderGeodata()
     processJobsHysteresis();
     sortJobsByZIndexAndDepth();
     renderJobs();
+    if (options.renderGeodataDebug == 2)
+        renderJobsDebugRects();
+    geodataJobs.clear();
 
     glDepthMask(GL_TRUE);
 }
@@ -538,13 +536,13 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
             if (c.scale > 0)
             {
                 const auto &s = g->spec.iconCoords[index];
-                float w = c.scale * 0.5f * s[4] / width;
-                float h = c.scale * 0.5f * s[5] / height;
-                j.iconRect.a = j.iconRect.b = j.refPoint;
-                j.iconRect.a[0] -= w;
-                j.iconRect.b[0] += w;
-                j.iconRect.a[1] -= h;
-                j.iconRect.b[1] += h;
+                vec2f ss = c.scale * vec2f(s[4] / width, s[5] / height);
+                j.iconRect.a = j.iconRect.b = j.refPoint + vec2f(
+                    g->spec.commonData.icon.offset[0] / width,
+                    g->spec.commonData.icon.offset[1] / height
+                ) - numericOrigin(g->spec.commonData.icon.origin)
+                    .cwiseProduct(ss);
+                j.iconRect.b += ss;
             }
         }
 
@@ -570,8 +568,7 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
                     stick = 0;
                 float ro = (stick > 0 ? stick + s.offset : 0)
                     / height;
-                j.stickRect.a = j.stickRect.b
-                    = vec3to2(vec4to3(sp, true)).cast<float>();
+                j.stickRect.a = j.stickRect.b = j.refPoint;
                 float w = s.width / width;
                 float h = stick / height;
                 j.stickRect.a[0] -= w;
@@ -579,16 +576,22 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
                 j.stickRect.b[1] += h;
 
                 // offset others
-                j.labelRect.a[1] += h;
-                j.labelRect.b[1] += h;
-                j.iconRect.a[1] += h;
-                j.iconRect.b[1] += h;
+                j.labelRect.a[1] += ro;
+                j.labelRect.b[1] += ro;
+                j.iconRect.a[1] += ro;
+                j.iconRect.b[1] += ro;
             }
         }
 
         // collision rect
         if (g->spec.commonData.preventOverlap)
+        {
+            vec2f margin = rawToVec2(g->spec.commonData.margin)
+                .cwiseProduct(vec2f(1.f / width, 1.f / height));
             j.collisionRect = Rect::merge(j.labelRect, j.iconRect);
+            j.collisionRect.a -= margin;
+            j.collisionRect.b += margin;
+        }
     } break;
     }
 }
@@ -823,14 +826,15 @@ void RenderViewImpl::renderIcon(const GeodataJob &job,
     struct UboIcon
     {
         mat4f mvp;
-        vec4f params;
+        vec4f color;
         vec4f uvs;
     } uboIcon;
 
     const auto &icon = job.g->spec.commonData.icon;
 
     uboIcon.mvp = rectTransform(job.iconRect, job.depth);
-    uboIcon.params = vec4f(job.opacity, 0, 0, 0);
+    uboIcon.color = rawToVec4(icon.color);
+    uboIcon.color[3] *= job.opacity;
     uboIcon.uvs = rawToVec4(uvs);
 
     auto uboGeodataIcon = getUbo();
@@ -988,9 +992,6 @@ void RenderViewImpl::renderJobs()
         } break;
         }
     }
-
-    geodataJobs.clear();
-
     lastUboViewPointer = nullptr;
 }
 

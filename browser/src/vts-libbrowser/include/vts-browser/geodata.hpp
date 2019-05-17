@@ -101,6 +101,7 @@ public:
 
     struct VTS_API Icon
     {
+        float color[4];
         float offset[2];
         float scale;
         Origin origin;

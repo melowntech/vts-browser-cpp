@@ -2,7 +2,7 @@
 layout(std140) uniform uboIconData
 {
     mat4 uniMvp;
-    vec4 uniParams;
+    vec4 uniColor;
     vec4 uniUvs;
 };
 
@@ -14,7 +14,6 @@ in vec2 varUv;
 
 void main()
 {
-    outColor = texture(texIcons, varUv);
-    outColor.a *= uniParams.x;
+    outColor = uniColor * texture(texIcons, varUv);
 }
 

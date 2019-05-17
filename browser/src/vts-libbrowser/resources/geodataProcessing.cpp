@@ -1390,6 +1390,12 @@ if (cond == #OP) \
                 ? convertVector2(layer["icon-offset"])
                 : vec2f(),
                 spec.commonData.icon.offset);
+            spec.commonData.icon.offset[1] *= -1;
+
+            vecToRaw(layer.isMember("icon-color")
+                ? convertColor(layer["icon-color"])
+                : vec4f(1, 1, 1, 1),
+                spec.commonData.icon.color);
 
             if (layer.isMember("icon-stick"))
                 spec.commonData.stick = convertStick(layer["icon-stick"]);

@@ -593,6 +593,9 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
             j.collisionRect.b += margin;
         }
     } break;
+    default:
+    {
+    } break;
     }
 }
 
@@ -815,7 +818,7 @@ void RenderViewImpl::sortJobsByZIndexAndDepth()
 void RenderViewImpl::renderStick(const GeodataJob &job)
 {
     const auto &s = job.g->spec.commonData.stick;
-    vec4f color = rawToVec4(job.g->spec.commonData.stick.color);
+    vec4f color = rawToVec4(s.color);
     color[3] *= job.opacity;
     renderGeodataQuad(job.stickRect, job.depth, color);
 }

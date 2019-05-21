@@ -1126,9 +1126,17 @@ if (cond == #OP) \
         sint32 a[4] = { src[1].asInt(), src[2].asInt(),
             src[3].asInt(), src[4].asInt()};
         float s[2] = { tex->width - 1.f, tex->height - 1.f };
-        std::array<float, 6> uv = { a[0] / s[0], a[1] / s[1],
-            (a[0] + a[2]) / s[0], (a[1] + a[3]) / s[1],
-            (float)tex->width, (float)tex->height };
+        std::array<float, 6> uv =
+        {
+            a[0] / s[0],
+            1.f - (a[1] + a[3]) / s[1],
+            (a[0] + a[2]) / s[0],
+            1.f - a[1] / s[1],
+            a[2],
+            a[3]
+            //a[2] * tex->width / s[0],
+            //a[3] * tex->height / s[1]
+        };
         for (uint32 i = 0; i < addedItems; i++)
             data.iconCoords.push_back(uv);
     }

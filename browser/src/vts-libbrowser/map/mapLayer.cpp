@@ -182,7 +182,8 @@ std::pair<Validity, std::shared_ptr<GeodataStylesheet>>
     FreeInfo *f = mapconfig->getFreeInfo(name);
     if (!f)
         return { Validity::Indeterminate, {} };
-    if (!f->stylesheet)
+
+    // find stylesheet url
     {
         std::string url;
         MapLayer *layer = getLayer(this, name);
@@ -194,11 +195,11 @@ std::pair<Validity, std::shared_ptr<GeodataStylesheet>>
             {
             case vtslibs::registry::FreeLayer::Type::geodata:
                 url = boost::get<vtslibs::registry::FreeLayer::Geodata>(
-                            f->definition).style;
+                    f->definition).style;
                 break;
             case vtslibs::registry::FreeLayer::Type::geodataTiles:
                 url = boost::get<vtslibs::registry::FreeLayer::GeodataTiles>(
-                            f->definition).style;
+                    f->definition).style;
                 break;
             default:
                 assert(false);
@@ -209,8 +210,11 @@ std::pair<Validity, std::shared_ptr<GeodataStylesheet>>
             url = convertPath(url, f->url);
         }
         assert(!url.empty());
-        f->stylesheet = getGeoStyle(url);
+        if (!f->stylesheet || f->stylesheet->name != url)
+            f->stylesheet = getGeoStyle(url);
     }
+
+    // check validity
     touchResource(f->stylesheet);
     switch (getResourceValidity(f->stylesheet))
     {

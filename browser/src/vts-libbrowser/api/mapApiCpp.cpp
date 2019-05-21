@@ -434,7 +434,7 @@ void Map::setResourceFreeLayerStyle(const std::string &name,
         throw;
     }
     auto &v = impl->mapconfig->getFreeInfo(name)->stylesheet;
-    v = impl->newGeoStyle(value);
+    v = impl->newGeoStyle(v->name, value);
     purgeViewCache();
 }
 

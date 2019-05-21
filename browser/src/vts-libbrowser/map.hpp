@@ -219,7 +219,8 @@ public:
     std::shared_ptr<TilesetMapping> getTilesetMapping(const std::string &name);
     std::shared_ptr<GeodataFeatures> getGeoFeatures(const std::string &name);
     std::shared_ptr<GeodataStylesheet> getGeoStyle(const std::string &name);
-    std::shared_ptr<GeodataStylesheet> newGeoStyle(const std::string &value);
+    std::shared_ptr<GeodataStylesheet> newGeoStyle(const std::string &name,
+        const std::string &value);
     std::shared_ptr<GeodataTile> getGeodata(const std::string &name);
     std::shared_ptr<GpuFont> getFont(const std::string &name);
 

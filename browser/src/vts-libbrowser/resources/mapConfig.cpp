@@ -111,6 +111,7 @@ void Mapconfig::load()
 
     // store default view
     namedViews[""] = view;
+    consolidateView();
 
     // memory use
     info.ramMemoryCost += sizeof(*this);

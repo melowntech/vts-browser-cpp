@@ -30,6 +30,7 @@
 #include <vts-browser/fetcher.hpp>
 #include <SDL2/SDL.h>
 #include <vts-renderer/foundation.hpp>
+
 #include "dataThread.hpp"
 
 DataThread::DataThread(struct SDL_Window *window, void *dataContext,

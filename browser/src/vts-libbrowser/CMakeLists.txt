@@ -184,6 +184,7 @@ add_library(vts-browser ${VTS_BROWSER_BUILD_LIBRARY} ${SRC_LIST} ${PUB_HDR_LIST}
 target_compile_definitions(vts-browser ${VTS_BROWSER_BUILD_VISIBILITY} VTS_BUILD_${VTS_BROWSER_BUILD_MACRO})
 target_compile_definitions(vts-browser PRIVATE ${MODULE_DEFINITIONS})
 target_link_libraries(vts-browser ${VTS_BROWSER_BUILD_VISIBILITY} initializeBrowserData ${MODULE_LIBRARIES} ${EXTRA_LIB_DEPS})
+target_link_libraries(vts-browser PRIVATE Optick)
 set_target_properties(vts-browser PROPERTIES
     MACOSX_FRAMEWORK_IDENTIFIER com.melown.vts-browser
     MACOSX_BUNDLE_BUNDLE_NAME vts-browser
@@ -200,8 +201,6 @@ buildsys_library(vts-browser)
 buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})
 buildsys_position_independent(${MODULE_LIBRARIES})
 buildsys_ide_groups(vts-browser libs)
-
-
 
 #######################################################################
 # Install

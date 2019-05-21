@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <optick.h>
+
 #include "../include/vts-browser/exceptions.hpp"
 #include "../include/vts-browser/cameraDraws.hpp"
 #include "../include/vts-browser/cameraOptions.hpp"
@@ -54,6 +56,7 @@ void MapImpl::renderFinalize()
 
 void MapImpl::renderUpdate(double elapsedTime)
 {
+    OPTICK_EVENT();
     lastElapsedFrameTime = elapsedTime;
 
     if (!prerequisitesCheck())
@@ -95,6 +98,7 @@ void MapImpl::initializeNavigation()
 
 void MapImpl::purgeMapconfig()
 {
+    OPTICK_EVENT();
     LOG(info2) << "Purge mapconfig";
 
     if (resources.auth)
@@ -130,6 +134,7 @@ void MapImpl::purgeMapconfig()
 
 void MapImpl::purgeViewCache()
 {
+    OPTICK_EVENT();
     LOG(info2) << "Purge view cache";
 
     if (mapconfig)

@@ -30,6 +30,8 @@
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
+#include <optick.h>
+
 #include "mainWindow.hpp"
 #include "dataThread.hpp"
 #include "programOptions.hpp"
@@ -104,7 +106,7 @@ int main(int argc, char *argv[])
     try
     {
 #endif
-
+        OPTICK_THREAD("main");
         vts::setLogThreadName("main");
         vts::setLogFile("vts-browser-desktop.log");
         //vts::setLogMask("I2W2E2");

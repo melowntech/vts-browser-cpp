@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <optick.h>
+
 #include "../include/vts-browser/log.hpp"
 
 #include "../fetchTask.hpp"
@@ -138,6 +140,8 @@ void FetchTaskImpl::fetchDone()
 
 void MapImpl::resourceUploadProcess(const std::shared_ptr<Resource> &r)
 {
+    OPTICK_EVENT();
+
     assert(r->state == Resource::State::downloaded);
     r->info.gpuMemoryCost = r->info.ramMemoryCost = 0;
     statistics.resourcesProcessed++;
@@ -186,6 +190,7 @@ void MapImpl::resourceDataFinalize()
 
 void MapImpl::resourceDataUpdate()
 {
+    OPTICK_EVENT();
     for (uint32 proc = 0; proc
         < options.maxResourceProcessesPerTick; proc++)
     {
@@ -201,6 +206,7 @@ void MapImpl::resourceDataUpdate()
 
 void MapImpl::resourceDataRun()
 {
+    OPTICK_THREAD("data");
     while (!resources.queUpload.stopped())
     {
         std::weak_ptr<Resource> w;
@@ -218,6 +224,7 @@ void MapImpl::resourceDataRun()
 
 void MapImpl::cacheWriteEntry()
 {
+    OPTICK_THREAD("cache_writer");
     setLogThreadName("cache writer");
     while (!resources.queCacheWrite.stopped())
     {
@@ -234,6 +241,7 @@ void MapImpl::cacheWriteEntry()
 
 void MapImpl::cacheReadEntry()
 {
+    OPTICK_THREAD("cache_reader");
     setLogThreadName("cache reader");
     while (!resources.queCacheRead.stopped())
     {
@@ -268,6 +276,7 @@ bool startsWith(const std::string &text, const std::string &start)
 
 void MapImpl::cacheReadProcess(const std::shared_ptr<Resource> &r)
 {
+    OPTICK_EVENT();
     assert(r->state == Resource::State::checkCache);
     if (!r->fetch)
         r->fetch = std::make_shared<FetchTaskImpl>(r);
@@ -323,6 +332,7 @@ void MapImpl::cacheReadProcess(const std::shared_ptr<Resource> &r)
 
 void MapImpl::resourcesDownloadsEntry()
 {
+    OPTICK_THREAD("fetcher");
     resources.fetcher->initialize();
     while (!resources.fetching.stop)
     {
@@ -580,6 +590,7 @@ void MapImpl::resourceRenderFinalize()
 
 void MapImpl::resourceRenderUpdate()
 {
+    OPTICK_EVENT();
     // resourcesPreparing is used to determine mapRenderComplete
     resourcesUpdateStatistics();
 

@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <optick.h>
+
 #include "renderer.hpp"
 
 namespace vts { namespace renderer
@@ -60,72 +62,81 @@ void DepthBuffer::performCopy(uint32 sourceTexture,
     glViewport(0, 0, paramW, paramH);
 
     // copy depth to texture (perform conversion)
-
-    glBindTexture(GL_TEXTURE_2D, tex);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
-    if (tw != paramW || th != paramH)
     {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, paramW, paramH, 0,
-            GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        OPTICK_EVENT("copy_depth_to_texture_with_conversion");
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D, tex, 0);
-        checkGlFramebuffer(GL_FRAMEBUFFER);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-        CHECK_GL("read the depth (resize fbo and texture)");
+        if (tw != paramW || th != paramH)
+        {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, paramW, paramH, 0,
+                GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-        tw = paramW;
-        th = paramH;
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                GL_TEXTURE_2D, tex, 0);
+            checkGlFramebuffer(GL_FRAMEBUFFER);
+
+            CHECK_GL("read the depth (resize fbo and texture)");
+
+            tw = paramW;
+            th = paramH;
+        }
+
+        glBindTexture(GL_TEXTURE_2D, sourceTexture);
+        shaderCopyDepth->bind();
+        meshQuad->bind();
+        meshQuad->dispatch();
+
+        CHECK_GL("read the depth (conversion)");
     }
-
-    glBindTexture(GL_TEXTURE_2D, sourceTexture);
-    shaderCopyDepth->bind();
-    meshQuad->bind();
-    meshQuad->dispatch();
-
-    CHECK_GL("read the depth (conversion)");
 
     // copy texture to pbo
-
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo[index]);
-    if (w[index] != paramW || h[index] != paramH)
     {
-        glBufferData(GL_PIXEL_PACK_BUFFER,
-            paramW * paramH * sizeof(float),
-            nullptr, GL_STATIC_READ);
-        w[index] = paramW;
-        h[index] = paramH;
+        OPTICK_EVENT("copy_texture_to_pbo");
+
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo[index]);
+        if (w[index] != paramW || h[index] != paramH)
+        {
+            glBufferData(GL_PIXEL_PACK_BUFFER,
+                paramW * paramH * sizeof(float),
+                nullptr, GL_DYNAMIC_READ);
+            w[index] = paramW;
+            h[index] = paramH;
+        }
+
+        glReadPixels(0, 0, w[index], h[index],
+            GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+
+        CHECK_GL("read the depth (texture to pbo)");
     }
 
-    glReadPixels(0, 0, w[index], h[index],
-        GL_RGBA, GL_UNSIGNED_BYTE, 0);
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-
-    CHECK_GL("read the depth (texture to pbo)");
-
     // copy gpu pbo to cpu buffer
+    {
+        OPTICK_EVENT("copy_pbo_to_cpu");
 
-    conv[index] = storeConv;
-    index = (index + 1) % PboCount;
+        conv[index] = storeConv;
+        index = (index + 1) % PboCount;
 
-    uint32 reqsiz = w[index] * h[index] * sizeof(uint32);
-    if (!reqsiz)
-        return;
-    if (buffer.size() < reqsiz)
-        buffer.allocate(reqsiz);
+        uint32 reqsiz = w[index] * h[index] * sizeof(uint32);
+        if (!reqsiz)
+            return;
+        if (buffer.size() < reqsiz)
+            buffer.allocate(reqsiz);
 
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo[index]);
-    void *ptr = glMapBufferRange(GL_PIXEL_PACK_BUFFER,
-                                 0, reqsiz, GL_MAP_READ_BIT);
-    assert(ptr);
-    memcpy(buffer.data(), ptr, reqsiz);
-    glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo[index]);
+        void *ptr = glMapBufferRange(GL_PIXEL_PACK_BUFFER,
+            0, reqsiz, GL_MAP_READ_BIT);
+        assert(ptr);
+        memcpy(buffer.data(), ptr, reqsiz);
+        glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
-    CHECK_GL("read the depth (pbo to cpu)");
+        CHECK_GL("read the depth (pbo to cpu)");
+    }
 }
 
 double DepthBuffer::valuePix(uint32 x, uint32 y)

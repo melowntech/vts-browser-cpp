@@ -54,6 +54,7 @@ public:
     boost::optional<double> positionAltitudeReset;
     NavigationMode mode;
     NavigationType previousType;
+    bool suspendAltitudeChange;
 
     NavigationImpl(CameraImpl *cam, Navigation *navigation);
 

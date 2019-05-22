@@ -57,6 +57,7 @@ void Navigation::pan(const double value[3])
 {
     if (!impl->camera->map->mapconfigReady)
         return;
+    impl->suspendAltitudeChange = false;
     if (impl->position.type
             == vtslibs::registry::Position::Type::objective)
         impl->pan(rawToVec3(value));
@@ -73,6 +74,7 @@ void Navigation::rotate(const double value[3])
 {
     if (!impl->camera->map->mapconfigReady)
         return;
+    impl->suspendAltitudeChange = false;
     impl->rotate(rawToVec3(value));
 }
 
@@ -85,6 +87,7 @@ void Navigation::zoom(double value)
 {
     if (!impl->camera->map->mapconfigReady)
         return;
+    impl->suspendAltitudeChange = false;
     if (impl->position.type
             == vtslibs::registry::Position::Type::objective)
         impl->zoom(value);
@@ -97,6 +100,7 @@ void Navigation::resetAltitude()
         LOGTHROW(err4, std::logic_error)
             << "Map is not yet available.";
     }
+    impl->suspendAltitudeChange = false;
     impl->positionAltitudeReset = 0;
     impl->updatePositionAltitude();
 }

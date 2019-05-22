@@ -41,7 +41,8 @@ namespace vts
 NavigationImpl::NavigationImpl(CameraImpl *cam, Navigation *navigation) :
     camera(cam), navigation(navigation), changeRotation(0,0,0),
     targetPoint(0,0,0), autoRotation(0), targetViewExtent(0),
-    mode(NavigationMode::Azimuthal), previousType(NavigationType::Quick)
+    mode(NavigationMode::Azimuthal), previousType(NavigationType::Quick),
+    suspendAltitudeChange(false)
 {
     if (camera->map->mapconfig && *camera->map->mapconfig)
         initialize();
@@ -56,6 +57,7 @@ void NavigationImpl::initialize()
     changeRotation = vec3(0, 0, 0);
     targetViewExtent = position.verticalExtent;
     autoRotation = camera->map->mapconfig->browserOptions.autorotate;
+    suspendAltitudeChange = true;
     for (int i = 0; i < 3; i++)
         normalizeAngle(position.orientation[i]);
 

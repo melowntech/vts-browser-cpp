@@ -189,7 +189,7 @@ bool MapImpl::getSurfaceAltitude(double &result,
 
 void NavigationImpl::updatePositionAltitude(double fadeOutFactor)
 {
-    if (!options.cameraAltitudeChanges)
+    if (!options.cameraAltitudeChanges || suspendAltitudeChange)
         return;
 
     double altitude;

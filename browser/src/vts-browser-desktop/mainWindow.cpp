@@ -198,6 +198,13 @@ bool MainWindow::processEvents()
         if (gui.input(event))
             continue;
 
+        // fullscreen
+        if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_F11)
+        {
+            bool c = SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN;
+            SDL_SetWindowFullscreen(window, c ? 0 : SDL_WINDOW_FULLSCREEN);
+        }
+
         // add mark
         if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_m)
         {

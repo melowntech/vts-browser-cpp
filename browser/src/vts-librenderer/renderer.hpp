@@ -119,6 +119,7 @@ struct GeodataJob
     Rect iconRect;
     Rect stickRect;
     Rect labelRect;
+    vec2f labelOffset;
     vec2f refPoint; // ndc space (-1..1)
     uint32 itemIndex; // -1 means all
     float importance;

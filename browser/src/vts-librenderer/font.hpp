@@ -56,6 +56,7 @@ public:
     std::vector<Glyph> glyphs;
     FT_Face face;
     hb_font_t *font;
+    float ascend;
     uint16 textureWidth;
     uint16 textureHeight;
     uint16 filesCount;

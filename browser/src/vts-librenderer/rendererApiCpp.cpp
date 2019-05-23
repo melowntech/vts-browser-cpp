@@ -36,7 +36,7 @@ namespace vts { namespace renderer
 RenderOptions::RenderOptions()
 {
     memset(this, 0, sizeof(*this));
-    textScale = 1.5;
+    textScale = 1;
     antialiasingSamples = 1;
     renderAtmosphere = true;
     geodataHysteresis = true;

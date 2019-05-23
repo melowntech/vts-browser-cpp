@@ -109,7 +109,7 @@ namespace vts { namespace renderer
 {
 
 Font::Font() : face(nullptr), font(nullptr),
-    textureWidth(0), textureHeight(0), filesCount(0), size(0)
+    ascend(0), textureWidth(0), textureHeight(0), filesCount(0), size(0)
 {}
 
 Font::~Font()
@@ -141,6 +141,8 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec,
                 + ftErrToStr(err) + ">");
         }
     }
+
+    ascend = face->ascender / 64.f;
 
     vts::detail::BufferStream w(fontData);
     w.ignore(findCustomTablesOffset(fontData));

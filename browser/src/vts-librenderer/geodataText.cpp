@@ -318,10 +318,12 @@ std::vector<TmpLine> textToGlyphs(
     return lines;
 }
 
-vec2f textLayout(float size, float maxWidth, float align,
+vec2f textLayout(float size, float align,
     std::vector<TmpLine> &lines)
 {
     // find glyph positions
+    vec2f res = vec2f(0, 0);
+    float asc = 0;
     {
         vec2f o = vec2f(0, 0);
         for (TmpLine &line : lines)
@@ -329,37 +331,28 @@ vec2f textLayout(float size, float maxWidth, float align,
             for (TmpGlyph &g : line.glyphs)
             {
                 const auto &f = g.font->glyphs[g.glyphIndex];
-                g.position = (o + g.offset + f.offset) * size / g.font->size;
-                g.size = f.size * size / g.font->size;
-                o[0] += g.advance;
+                float s = size / g.font->size;
+                g.position = o + (g.offset + f.offset) * s;
+                g.size = f.size * s;
+                o[0] += g.advance * s;
+                asc = std::max(asc, g.font->ascend * s);
             }
+            line.width = o[0];
+            res[0] = std::max(res[0], o[0]);
             o[0] = 0;
-            o[1] -= size * 2;
+            o[1] += size * -1.5;
         }
-    }
-
-    // todo line wrap
-    (void)maxWidth;
-
-    // find text bounding box
-    Rect r;
-    for (TmpLine &line : lines)
-    {
-        Rect l;
-        for (TmpGlyph &g : line.glyphs)
-            l = Rect::merge(l, Rect(g.position, g.position + g.size));
-        line.width = l.width();
-        r = Rect::merge(r, l);
+        res[1] = -o[1];
     }
 
     // center the entire text
-    vec2f off = (r.a + r.b) * 0.5;
+    vec2f off = res.cwiseProduct(vec2f(-0.5, 0.5)) + vec2f(0, -asc);
     for (TmpLine &line : lines)
         for (TmpGlyph &g : line.glyphs)
-            g.position -= off;
+            g.position += off;
 
     // align (move each line independently)
-    float tw = r.width();
+    float tw = res[0];
     for (TmpLine &line : lines)
     {
         float dx = (tw - line.width) * align;
@@ -367,7 +360,19 @@ vec2f textLayout(float size, float maxWidth, float align,
             g.position[0] += dx;
     }
 
-    return r.b - r.a;
+    return res;
+}
+
+Rect textCollision(const std::vector<TmpLine> &lines)
+{
+    Rect collision;
+    for (const TmpLine &line : lines)
+    {
+        for (const TmpGlyph &g : line.glyphs)
+            collision = Rect::merge(collision,
+                Rect(g.position, g.position + g.size));
+    }
+    return collision;
 }
 
 Text generateTexts(std::vector<TmpLine> &lines)
@@ -468,12 +473,12 @@ void GeodataBase::loadPointLabels()
     {
         std::vector<TmpLine> lines = textToGlyphs(
             spec.texts[i], fontCascade);
-        vec2f rectSize = textLayout(
+        vec2f originSize = textLayout(
             spec.unionData.pointLabel.size,
-            spec.unionData.pointLabel.width,
             align, lines);
         Text t = generateTexts(lines);
-        t.rectSize = rectSize;
+        t.collision = textCollision(lines);
+        t.originSize = originSize;
         t.modelPosition = rawToVec3(spec.positions[i][0].data());
         t.worldPosition = vec4to3(vec4(rawToMat4(spec.model)
             * vec3to4(t.modelPosition, 1).cast<double>()));

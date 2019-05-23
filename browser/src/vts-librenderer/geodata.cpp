@@ -176,7 +176,7 @@ float Rect::height() const
 
 GeodataJob::GeodataJob(const std::shared_ptr<GeodataBase> &g,
     uint32 itemIndex)
-    : g(g), refPoint(0, 0), itemIndex(itemIndex),
+    : g(g), labelOffset(0, 0), refPoint(0, 0), itemIndex(itemIndex),
     importance(0), opacity(1), depth(nan1())
 {}
 
@@ -520,14 +520,17 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
         // label rect
         {
             float sc = options.textScale;
-            vec2f ss = t.rectSize.cwiseProduct(
-                vec2f(sc / width, sc / height));
-            j.labelRect.a = j.labelRect.b = j.refPoint + vec2f(
-                g->spec.unionData.pointLabel.offset[0] / width,
-                g->spec.unionData.pointLabel.offset[1] / height
-            ) - numericOrigin(g->spec.unionData.pointLabel.origin)
-                .cwiseProduct(ss);
-            j.labelRect.b += ss;
+            vec2f sd = vec2f(sc / width, sc / height);
+            j.labelOffset = sd.cwiseProduct(vec2f(
+                g->spec.unionData.pointLabel.offset[0],
+                g->spec.unionData.pointLabel.offset[1]
+            )) - (numericOrigin(g->spec.unionData.pointLabel.origin)
+                - vec2f(0.5f, 0.5f)).cwiseProduct(t.originSize)
+                .cwiseProduct(sd);
+            j.labelRect = Rect(
+                t.collision.a.cwiseProduct(sd) + j.labelOffset + j.refPoint,
+                t.collision.b.cwiseProduct(sd) + j.labelOffset + j.refPoint
+            );
         }
 
         // icon rect
@@ -578,6 +581,7 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
                 // offset others
                 j.labelRect.a[1] += ro;
                 j.labelRect.b[1] += ro;
+                j.labelOffset[1] += ro;
                 j.iconRect.a[1] += ro;
                 j.iconRect.b[1] += ro;
             }
@@ -876,9 +880,7 @@ void RenderViewImpl::renderLabel(const GeodataJob &job)
     uboText.position[1] = t.modelPosition[1];
     uboText.position[2] = t.modelPosition[2];
     uboText.position[3] = options.textScale;
-    vec2f off = (job.labelRect.a + job.labelRect.b) * 0.5
-        - job.refPoint;
-    uboText.offset = vec4f(off[0], off[1], 0, 0);
+    uboText.offset = vec4f(job.labelOffset[0], job.labelOffset[1], 0, 0);
 
     {
         vec4f *o = uboText.coordinates;

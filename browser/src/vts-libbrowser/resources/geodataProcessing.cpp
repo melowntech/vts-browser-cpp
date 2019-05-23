@@ -1132,10 +1132,8 @@ if (cond == #OP) \
             1.f - (a[1] + a[3]) / s[1],
             (a[0] + a[2]) / s[0],
             1.f - a[1] / s[1],
-            a[2],
-            a[3]
-            //a[2] * tex->width / s[0],
-            //a[3] * tex->height / s[1]
+            (float)a[2],
+            (float)a[3]
         };
         for (uint32 i = 0; i < addedItems; i++)
             data.iconCoords.push_back(uv);
@@ -1539,8 +1537,8 @@ if (cond == #OP) \
 
         spec.unionData.pointLabel.size
             = layer.isMember("label-size")
-            ? convertToDouble(layer["label-size"])
-            : 10;
+            ? convertToDouble(layer["label-size"]) * 1.5
+            : 15;
 
         spec.unionData.pointLabel.width
             = layer.isMember("label-width")

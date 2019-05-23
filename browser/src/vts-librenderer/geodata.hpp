@@ -51,13 +51,14 @@ struct Text
 {
     std::vector<vec4f> coordinates;
     std::vector<Word> words;
+    Rect collision;
     vec3 worldPosition;
     vec3f modelPosition;
     vec3f worldUp;
-    vec2f rectSize;
+    vec2f originSize;
 
     Text() : worldPosition(0, 0, 0), modelPosition(0, 0, 0), worldUp(0, 0, 0),
-        rectSize(nan2().cast<float>())
+        originSize(nan2().cast<float>())
     {}
 };
 

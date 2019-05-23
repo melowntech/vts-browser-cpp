@@ -37,8 +37,6 @@
 
 #include <utf8.h>
 
-#include <deque>
-
 namespace vts
 {
 
@@ -48,6 +46,23 @@ namespace
 {
 
 typedef std::map<std::string, const Value> AmpVariables;
+typedef std::basic_string<uint32> S32;
+
+S32 s8to32(const std::string &s8)
+{
+    S32 s32;
+    s32.reserve(s8.size());
+    utf8::utf8to32(s8.begin(), s8.end(), std::back_inserter(s32));
+    return s32;
+}
+
+std::string s32to8(const S32 &s32)
+{
+    std::string s8;
+    s8.reserve(s32.size());
+    utf8::utf32to8(s32.begin(), s32.end(), std::back_inserter(s8));
+    return s8;
+}
 
 struct AmpVarsScope
 {
@@ -133,19 +148,53 @@ uint32 utf8len(const std::string &s)
     return utf8::distance(s.begin(), s.end());
 }
 
-std::string utf8trim(const std::string &s)
+std::string utf8trim(const std::string &sin)
 {
-    std::deque<uint32> s8;
-    //s8.reserve(s.size());
-    utf8::utf8to32(s.begin(), s.end(), std::back_inserter(s8));
-    while (!s8.empty() && isWhitespace(s8[0]))
-        s8.pop_back();
-    while (!s8.empty() && isWhitespace(s8[s8.size() - 1]))
-        s8.pop_front();
-    std::string res;
-    res.reserve(s.size());
-    utf8::utf32to8(s8.begin(), s8.end(), std::back_inserter(res));
-    return res;
+    auto s = s8to32(sin);
+    while (!s.empty() && isWhitespace(s[s.size() - 1]))
+        s.pop_back();
+    while (!s.empty() && isWhitespace(s[0]))
+        s.erase(s.begin());
+    return s32to8(s);
+}
+
+sint32 utf8find(const std::string &str, const std::string &what, uint32 off)
+{
+    S32 s = s8to32(str);
+    S32 w = s8to32(what);
+    auto p = s.find(w, off);
+    if (p == s.npos)
+        return -1;
+    return p;
+}
+
+std::string utf8replace(const std::string &str, const std::string &what,
+    const std::string &replacement)
+{
+    S32 s = s8to32(str);
+    S32 w = s8to32(what);
+    S32 r = s8to32(replacement);
+    auto p = s.find(w);
+    if (p == s.npos)
+        return str;
+    s = s.replace(p, what.length(), r);
+    return s32to8(s);
+}
+
+std::string utf8substr(const std::string &str, sint32 start, uint32 length)
+{
+    S32 s = s8to32(str);
+    if (start >= s.size())
+        return "";
+    if (start < 0)
+    {
+        if (-start >= s.size())
+            start = 0;
+        else
+            start += s.size();
+    }
+    s = s.substr(start, length);
+    return s32to8(s);
 }
 
 double str2num(const std::string &s)
@@ -808,11 +857,42 @@ if (fnc == #NAME) \
         if (fnc == "trim")
             return utf8trim(evaluate(expression[fnc]).asString());
 
+        // 'find', 'replace', 'substr'
+        if (fnc == "find")
+        {
+            const auto &arr = expression[fnc];
+            validateArrayLength(arr, 2, 3,
+                "Function 'find' must have 2 or 3 values");
+            return utf8find(evaluate(arr[0]).asString(),
+                evaluate(arr[1]).asString(),
+                arr.size() == 3 ? evaluate(arr[2]).asUInt() : 0);
+        }
+        if (fnc == "replace")
+        {
+            const auto &arr = expression[fnc];
+            validateArrayLength(arr, 3, 3,
+                "Function 'replace' must have 3 values");
+            return utf8replace(evaluate(arr[0]).asString(),
+                evaluate(arr[1]).asString(),
+                evaluate(arr[2]).asString());
+        }
+        if (fnc == "substr")
+        {
+            const auto &arr = expression[fnc];
+            validateArrayLength(arr, 2, 3,
+                "Function 'substr' must have 2 or 3 values");
+            return utf8substr(evaluate(arr[0]).asString(),
+                evaluate(arr[1]).asInt(),
+                arr.size() == 3 ? evaluate(arr[2]).asUInt() : (uint32)-1);
+        }
+
         // 'has-fonts', 'has-latin', 'is-cjk'
         if (fnc == "has-latin")
             return hasLatin(evaluate(expression[fnc]).asString());
         if (fnc == "is-cjk")
             return isCjk(evaluate(expression[fnc]).asString());
+
+        // 'map'
 
         // 'discrete', 'discrete2', 'linear', 'linear2'
         if (fnc == "discrete")

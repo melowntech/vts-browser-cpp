@@ -185,11 +185,11 @@ std::string utf8replace(const std::string &str, const std::string &what,
 std::string utf8substr(const std::string &str, sint32 start, uint32 length)
 {
     S32 s = s8to32(str);
-    if (start >= s.size())
+    if (start >= (sint32)s.size())
         return "";
     if (start < 0)
     {
-        if (-start >= s.size())
+        if (-start >= (sint32)s.size())
             start = 0;
         else
             start += s.size();

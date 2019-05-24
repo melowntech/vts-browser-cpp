@@ -95,6 +95,12 @@ public:
     void applyJson(const std::string &json);
     std::string toJson() const;
 
+    // eg. en-US
+    // when new instance of this structure is created,
+    //   this field is initialized by value deduced
+    //   from the environment locale settings
+    std::string language;
+
     // default is 72
     double pixelsPerInch;
 

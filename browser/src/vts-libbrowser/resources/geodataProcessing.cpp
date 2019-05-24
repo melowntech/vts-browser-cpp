@@ -597,6 +597,8 @@ struct geoContext
             }
             if (name == "#metric")
                 return !!data->map->options.measurementUnitsSystem;
+            if (name == "#language")
+                return data->map->options.language;
             if (name == "#lod")
                 return lod;
             if (name == "#tileSize")

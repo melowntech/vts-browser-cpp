@@ -28,7 +28,7 @@
 #include "../include/vts-browser/mapOptions.hpp"
 #include "../include/vts-browser/cameraOptions.hpp"
 #include "../include/vts-browser/navigationOptions.hpp"
-#include "../utilities/detectMeasurementSystem.hpp"
+#include "../utilities/detectLanguage.hpp"
 
 namespace vts
 {
@@ -88,6 +88,7 @@ std::string MapCreateOptions::toJson() const
 }
 
 MapRuntimeOptions::MapRuntimeOptions() :
+    language(detectLanguage()),
     pixelsPerInch(96),
     renderTilesScale(1.001),
     targetResourcesMemoryKB(0),
@@ -115,6 +116,7 @@ MapRuntimeOptions::MapRuntimeOptions(const std::string &json)
 void MapRuntimeOptions::applyJson(const std::string &json)
 {
     Json::Value v = stringToJson(json);
+    AJ(language, asString);
     AJ(pixelsPerInch, asDouble);
     AJ(renderTilesScale, asDouble);
     AJ(targetResourcesMemoryKB, asUInt);
@@ -135,6 +137,7 @@ void MapRuntimeOptions::applyJson(const std::string &json)
 std::string MapRuntimeOptions::toJson() const
 {
     Json::Value v;
+    TJ(language, asString);
     TJ(pixelsPerInch, asDouble);
     TJ(renderTilesScale, asDouble);
     TJ(targetResourcesMemoryKB, asUInt);

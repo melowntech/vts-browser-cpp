@@ -133,8 +133,8 @@ set(SRC_LIST
     utilities/case.hpp
     utilities/dataUrl.cpp
     utilities/dataUrl.hpp
-    utilities/detectMeasurementSystem.cpp
-    utilities/detectMeasurementSystem.hpp
+    utilities/detectLanguage.cpp
+    utilities/detectLanguage.hpp
     utilities/json.cpp
     utilities/json.hpp
     utilities/obj.cpp

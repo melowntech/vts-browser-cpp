@@ -39,7 +39,7 @@
 #include <dbglog/dbglog.hpp>
 
 #include "../include/vts-browser/foundation.hpp"
-#include "detectMeasurementSystem.hpp"
+#include "detectLanguage.hpp"
 
 namespace vts
 {
@@ -47,7 +47,7 @@ namespace vts
 namespace
 {
 
-uint32 parseEnv(const char *env)
+uint32 detectMeasurementSystemEnv(const char *env)
 {
     const char *l = env;
     const char *p = env;
@@ -91,11 +91,11 @@ uint32 detectMeasurementSystemImpl()
 #endif // _WIN32
 
     if (auto p = std::getenv("LC_MEASUREMENT"))
-        return parseEnv(p);
+        return detectMeasurementSystemEnv(p);
     if (auto p = std::getenv("LANG"))
-        return parseEnv(p);
+        return detectMeasurementSystemEnv(p);
     if (auto p = std::getenv("LANGUAGE"))
-        return parseEnv(p);
+        return detectMeasurementSystemEnv(p);
     return 1; // metric
 }
 
@@ -107,11 +107,55 @@ uint32 detectMeasurementSystemLog()
     return v;
 }
 
+std::string detectLanguageEnv(const char *env)
+{
+    // todo strip .UTF-8 or similar suffixes
+    return env;
+}
+
+std::string detectLanguageImpl()
+{
+#ifdef _WIN32
+
+    ULONG numlangs = 1;
+    WCHAR buff[100];
+    ULONG buffLen = 99;
+    BOOL res = GetUserPreferredUILanguages(MUI_LANGUAGE_NAME,
+        &numlangs, buff, &buffLen);
+    if (res == TRUE)
+    {
+        char output[200];
+        sprintf(output, "%ws", buff);
+        return output;
+    }
+
+#endif // _WIN32
+
+    if (auto p = std::getenv("LANG"))
+        return detectLanguageEnv(p);
+    if (auto p = std::getenv("LANGUAGE"))
+        return detectLanguageEnv(p);
+    return "en-US";
+}
+
+std::string detectLanguageLog()
+{
+    std::string v = detectLanguageImpl();
+    LOG(info2) << "Detected language: " << v;
+    return v;
+}
+
 } // namespace
 
 uint32 detectMeasurementSystem()
 {
-    static uint32 value = detectMeasurementSystemLog();
+    static const uint32 value = detectMeasurementSystemLog();
+    return value;
+}
+
+std::string detectLanguage()
+{
+    static const std::string value = detectLanguageLog();
     return value;
 }
 

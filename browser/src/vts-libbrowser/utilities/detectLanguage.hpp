@@ -28,6 +28,7 @@ namespace vts
 {
 
 uint32 detectMeasurementSystem();
+std::string detectLanguage();
 
 } // namespace vts
 

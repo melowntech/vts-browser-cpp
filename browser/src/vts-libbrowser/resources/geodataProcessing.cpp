@@ -726,6 +726,57 @@ struct geoContext
         return evaluate(searchArray[0][1]);
     }
 
+    Value evaluateMap(const Value &key,
+        const Value &pairsp, const Value &default_) const
+    {
+        if (Validating)
+        {
+            try
+            {
+                return evaluateMapInternal(key, pairsp, default_);
+            }
+            catch (...)
+            {
+                LOG(info3) << "In search of <"
+                    << key.toStyledString()
+                    << "> in pairs array <"
+                    << pairsp.toStyledString()
+                    << "> with default value <"
+                    << default_.toStyledString()
+                    << ">";
+                throw;
+            }
+        }
+        return evaluateMapInternal(key, pairsp, default_);
+    }
+
+    Value evaluateMapInternal(const Value &key,
+        const Value &pairsp, const Value &default_) const
+    {
+        const std::string k = evaluate(key).asString();
+        const Value pairs = evaluate(pairsp);
+        if (Validating)
+        {
+            if (!pairs.isArray())
+                THROW << "Expected an array";
+            std::set<std::string> keys;
+            for (const auto &p : pairs)
+            {
+                if (!p.isArray() || p.size() != 2)
+                    THROW << "Expected an array with two elements";
+                std::string a = evaluate(p[0]).asString();
+                if (!keys.insert(a).second)
+                    THROW << "Duplicate keys <" << a << ">";
+            }
+        }
+        for (const Value &p : pairs)
+        {
+            if (k == evaluate(p[0]).asString())
+                return evaluate(p[1]);
+        }
+        return evaluate(default_);
+    }
+
     Value evaluateArray(const Value &expression) const
     {
         Value r(expression);
@@ -830,6 +881,26 @@ if (fnc == #NAME) \
         }
 
         // 'min', 'max'
+        if (fnc == "min")
+        {
+            const Value &arr = expression[fnc];
+            validateArrayLength(arr, 1, (uint32)-1,
+                "Function 'min' expects an array");
+            double t = convertToDouble(arr[0]);
+            for (uint32 i = 1; i < arr.size(); i++)
+                t = std::min(t, convertToDouble(arr[i]));
+            return t;
+        }
+        if (fnc == "max")
+        {
+            const Value &arr = expression[fnc];
+            validateArrayLength(arr, 1, (uint32)-1,
+                "Function 'max' expects an array");
+            double t = convertToDouble(arr[0]);
+            for (uint32 i = 1; i < arr.size(); i++)
+                t = std::max(t, convertToDouble(arr[i]));
+            return t;
+        }
 
         // 'if'
         if (fnc == "if")
@@ -893,6 +964,14 @@ if (fnc == #NAME) \
             return isCjk(evaluate(expression[fnc]).asString());
 
         // 'map'
+        if (fnc == "map")
+        {
+            // { "map" : [inputValue, [[key, value], ...], defaultValue] }
+            const auto &arr = expression[fnc];
+            validateArrayLength(arr, 3, 3,
+                "Function 'map' must have 3 values");
+            return evaluateMap(arr[0], arr[1], arr[2]);
+        }
 
         // 'discrete', 'discrete2', 'linear', 'linear2'
         if (fnc == "discrete")

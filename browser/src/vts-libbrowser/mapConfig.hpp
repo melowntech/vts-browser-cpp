@@ -38,6 +38,11 @@ namespace Json
     class Value;
 }
 
+namespace vtslibs { namespace vts
+{
+    class NodeInfo;
+}} // namespace vtslibs::vts
+
 namespace vts
 {
 
@@ -79,6 +84,7 @@ public:
     };
 
     Mapconfig(MapImpl *map, const std::string &name);
+    ~Mapconfig();
     void load() override;
     FetchTask::ResourceType resourceType() const override;
     vtslibs::registry::Srs::Type navigationSrsType() const;
@@ -95,8 +101,8 @@ public:
         const std::string &id);
 
     BrowserOptions browserOptions;
-
     std::shared_ptr<GpuAtmosphereDensityTexture> atmosphereDensityTexture;
+    std::vector<vtslibs::vts::NodeInfo> referenceDivisionNodeInfos;
 
 private:
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;

@@ -47,7 +47,8 @@ double generalInterpolation(
     double a = 0, b = 0;
     for (int i = 0; i < 4; i++)
     {
-        double d = std::pow(1 / (length(vec2(query - points[i])) + 1), 2);
+        double d = 1 / (length(vec2(query - points[i])) + 1);
+        d *= d;
         a += d * values[i];
         b += d;
     }
@@ -94,12 +95,14 @@ bool MapImpl::getSurfaceAltitude(double &result,
     // find surface division coordinates (and appropriate node info)
     vec2 sds;
     boost::optional<NodeInfo> info;
+    uint32 index = 0;
     for (auto &it : mapconfig->referenceFrame.division.nodes)
     {
+        struct I { uint32 &i; I(uint32 &i) : i(i) {} ~I() { ++i; } } inc(index);
         if (it.second.partitioning.mode
                 != vtslibs::registry::PartitioningMode::bisection)
             continue;
-        NodeInfo ni(mapconfig->referenceFrame, it.first, false, *mapconfig);
+        const NodeInfo &ni = mapconfig->referenceDivisionNodeInfos[index];
         try
         {
             sds = vec3to2(convertor->convert(navPos,

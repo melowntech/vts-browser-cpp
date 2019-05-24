@@ -45,6 +45,9 @@ Mapconfig::Mapconfig(MapImpl *map, const std::string &name)
     priority = std::numeric_limits<float>::infinity();
 }
 
+Mapconfig::~Mapconfig()
+{}
+
 void Mapconfig::load()
 {
     assert(map->layers.empty());
@@ -112,6 +115,14 @@ void Mapconfig::load()
     // store default view
     namedViews[""] = view;
     consolidateView();
+
+    // referenceDivisionNodeInfos
+    referenceDivisionNodeInfos.clear();
+    for (auto &it : referenceFrame.division.nodes)
+    {
+        referenceDivisionNodeInfos.emplace_back(
+            referenceFrame, it.first, false, *this);
+    }
 
     // memory use
     info.ramMemoryCost += sizeof(*this);

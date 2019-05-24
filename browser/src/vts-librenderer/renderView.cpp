@@ -24,11 +24,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "renderer.hpp"
-
 #include <vts-browser/resources.hpp>
 #include <vts-browser/cameraDraws.hpp>
 #include <vts-browser/celestial.hpp>
+
+#include <optick.h>
+
+#include "renderer.hpp"
 
 namespace vts { namespace renderer
 {
@@ -192,6 +194,8 @@ void RenderViewImpl::drawInfographic(const DrawSimpleTask &t)
 
 void RenderViewImpl::updateFramebuffers()
 {
+    OPTICK_EVENT();
+
     if (options.width != width || options.height != height
         || options.antialiasingSamples != antialiasingPrev)
     {
@@ -343,6 +347,8 @@ void RenderViewImpl::updateFramebuffers()
 
 void RenderViewImpl::renderValid()
 {
+    OPTICK_EVENT();
+
     viewInv = view.inverse();
     projInv = proj.inverse();
     viewProj = proj * view;
@@ -352,18 +358,22 @@ void RenderViewImpl::renderValid()
     updateAtmosphereBuffer();
 
     // render opaque
-    glDisable(GL_BLEND);
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
-    context->shaderSurface->bind();
-    enableClipDistance(true);
-    for (const DrawSurfaceTask &t : draws->opaque)
-        drawSurface(t);
-    enableClipDistance(false);
-    CHECK_GL("rendered opaque");
+    {
+        OPTICK_EVENT("opaque");
+        glDisable(GL_BLEND);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
+        context->shaderSurface->bind();
+        enableClipDistance(true);
+        for (const DrawSurfaceTask &t : draws->opaque)
+            drawSurface(t);
+        enableClipDistance(false);
+        CHECK_GL("rendered opaque");
+    }
 
     // render background (atmosphere)
     {
+        OPTICK_EVENT("background");
         // corner directions
         vec3 camPos = rawToVec3(draws->camera.eye) / body->majorRadius;
         mat4 inv = (viewProj * scaleMatrix(body->majorRadius)).inverse();
@@ -387,22 +397,27 @@ void RenderViewImpl::renderValid()
     }
 
     // render transparent
-    glEnable(GL_BLEND);
-    glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(0, -10);
-    glDepthMask(GL_FALSE);
-    context->shaderSurface->bind();
-    enableClipDistance(true);
-    for (const DrawSurfaceTask &t : draws->transparent)
-        drawSurface(t);
-    enableClipDistance(false);
-    glDepthMask(GL_TRUE);
-    glDisable(GL_POLYGON_OFFSET_FILL);
-    CHECK_GL("rendered transparent");
+    {
+        OPTICK_EVENT("transparent");
+        glEnable(GL_BLEND);
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(0, -10);
+        glDepthMask(GL_FALSE);
+        context->shaderSurface->bind();
+        enableClipDistance(true);
+        for (const DrawSurfaceTask &t : draws->transparent)
+            drawSurface(t);
+        enableClipDistance(false);
+        glDepthMask(GL_TRUE);
+        glDisable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(0, 0);
+        CHECK_GL("rendered transparent");
+    }
 
     // render polygon edges
     if (options.renderPolygonEdges)
     {
+        OPTICK_EVENT("polygon_edges");
         glDisable(GL_BLEND);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 #ifndef VTSR_OPENGLES
@@ -423,14 +438,15 @@ void RenderViewImpl::renderValid()
         glDisable(GL_POLYGON_OFFSET_LINE);
 #endif
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glPolygonOffset(0, 0);
         glEnable(GL_BLEND);
         CHECK_GL("rendered polygon edges");
     }
-    glPolygonOffset(0, 0);
 
     // copy the depth (resolve multisampling)
     if (vars.depthReadTexId != vars.depthRenderTexId)
     {
+        OPTICK_EVENT("copy_depth_resolve_multisampling");
         glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, vars.frameReadBufferId);
         CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
@@ -443,24 +459,30 @@ void RenderViewImpl::renderValid()
     }
 
     // copy the depth for future use
-    clearGlState();
-    depthBuffer.performCopy(vars.depthReadTexId, width, height, viewProj);
-    glViewport(0, 0, options.width, options.height);
-    glScissor(0, 0, options.width, options.height);
-    glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
-    glEnable(GL_BLEND);
-    glEnable(GL_DEPTH_TEST);
+    {
+        OPTICK_EVENT("copy_depth_to_cpu");
+        clearGlState();
+        depthBuffer.performCopy(vars.depthReadTexId, width, height, viewProj);
+        glViewport(0, 0, options.width, options.height);
+        glScissor(0, 0, options.width, options.height);
+        glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
+        glEnable(GL_BLEND);
+        glEnable(GL_DEPTH_TEST);
+    }
 
     // render geodata
     renderGeodata();
     CHECK_GL("rendered geodata");
 
     // render infographics
-    glDisable(GL_DEPTH_TEST);
-    context->shaderInfographics->bind();
-    for (const DrawSimpleTask &t : draws->infographics)
-        drawInfographic(t);
-    CHECK_GL("rendered infographics");
+    {
+        OPTICK_EVENT("infographics");
+        glDisable(GL_DEPTH_TEST);
+        context->shaderInfographics->bind();
+        for (const DrawSimpleTask &t : draws->infographics)
+            drawInfographic(t);
+        CHECK_GL("rendered infographics");
+    }
 }
 
 void RenderViewImpl::renderEntry()
@@ -538,6 +560,8 @@ void RenderViewImpl::renderEntry()
 
 void RenderViewImpl::updateAtmosphereBuffer()
 {
+    OPTICK_EVENT();
+
     ShaderAtm::AtmBlock atmBlock;
 
     if (options.renderAtmosphere

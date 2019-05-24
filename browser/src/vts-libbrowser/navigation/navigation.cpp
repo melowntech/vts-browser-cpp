@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <optick.h>
+
 #include "../include/vts-browser/camera.hpp"
 
 #include "../navigation.hpp"
@@ -222,6 +224,8 @@ void NavigationImpl::navigationTypeChanged()
 
 void NavigationImpl::updateNavigation(double elapsedTime)
 {
+    OPTICK_EVENT();
+
     assert(options.inertiaPan >= 0
             && options.inertiaPan < 1);
     assert(options.inertiaRotate >= 0

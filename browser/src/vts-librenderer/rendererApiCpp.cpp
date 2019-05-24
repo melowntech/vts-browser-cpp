@@ -28,6 +28,8 @@
 #include <vts-browser/mapCallbacks.hpp>
 #include <vts-browser/camera.hpp>
 
+#include <optick.h>
+
 #include "renderer.hpp"
 
 namespace vts { namespace renderer
@@ -99,6 +101,8 @@ const RenderVariables &RenderView::variables() const
 
 void RenderView::render()
 {
+    OPTICK_EVENT();
+
     impl->draws = &impl->camera->draws();
     impl->body = &impl->camera->map()->celestialBody();
     impl->projected = impl->camera->map()->getMapProjected();

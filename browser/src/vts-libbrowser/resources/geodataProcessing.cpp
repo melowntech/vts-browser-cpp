@@ -24,6 +24,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <optick.h>
+#include <utf8.h>
+
 #include "../include/vts-browser/exceptions.hpp"
 #include "../include/vts-browser/log.hpp"
 
@@ -34,8 +37,6 @@
 #include "../renderTasks.hpp"
 #include "../mapConfig.hpp"
 #include "../map.hpp"
-
-#include <utf8.h>
 
 namespace vts
 {
@@ -2039,6 +2040,7 @@ void GeodataTile::load()
 
 void GeodataTile::process()
 {
+    OPTICK_EVENT();
     LOG(info2) << "Processing geodata <" << name << ">";
 
     if (map->options.debugValidateGeodataStyles)
@@ -2058,6 +2060,7 @@ void GeodataTile::process()
 
 void MapImpl::resourcesGeodataProcessorEntry()
     {
+    OPTICK_THREAD("geodata_processor");
         setLogThreadName("geodata processor");
         while (!resources.queGeodata.stopped())
         {

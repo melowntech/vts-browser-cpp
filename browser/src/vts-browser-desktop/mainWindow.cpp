@@ -39,6 +39,7 @@
 #include <vts-browser/cameraCredits.hpp>
 
 #include <SDL2/SDL.h>
+#include <optick.h>
 
 #include "mainWindow.hpp"
 
@@ -57,7 +58,14 @@ struct Initializer
 
 void microSleep(uint64 micros)
 {
+    OPTICK_EVENT();
     std::this_thread::sleep_for(std::chrono::microseconds(micros));
+}
+
+void windowSwap(SDL_Window *window)
+{
+    OPTICK_EVENT();
+    SDL_GL_SwapWindow(window);
 }
 
 } // namespace
@@ -134,6 +142,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::renderFrame()
 {
+    OPTICK_EVENT();
+
     vts::renderer::RenderOptions &ro = view->options();
     view->render();
 
@@ -183,6 +193,8 @@ void MainWindow::prepareMarks()
 
 bool MainWindow::processEvents()
 {
+    OPTICK_EVENT();
+
     SDL_Event event;
     gui.inputBegin();
     while (SDL_PollEvent(&event))
@@ -338,6 +350,7 @@ void MainWindow::run()
     uint32 lastFrameTime = SDL_GetTicks();
     while (!shouldClose)
     {
+        OPTICK_FRAME("frame");
         uint32 time1 = SDL_GetTicks();
         try
         {
@@ -377,7 +390,7 @@ void MainWindow::run()
         }
 
         uint32 time3 = SDL_GetTicks();
-        SDL_GL_SwapWindow(window);
+        windowSwap(window);
 
         uint32 time4 = SDL_GetTicks();
         // workaround for when v-sync is missing

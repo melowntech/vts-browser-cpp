@@ -26,6 +26,7 @@
 
 #include <dbglog/dbglog.hpp>
 #include <vts-libs/vts/atmospheredensitytexture.hpp>
+#include <optick.h>
 
 #include "../include/vts-browser/log.hpp"
 #include "../include/vts-browser/celestial.hpp"
@@ -129,6 +130,7 @@ void GpuAtmosphereDensityTexture::load()
 
 void MapImpl::resourcesAtmosphereGeneratorEntry()
 {
+    OPTICK_THREAD("atmosphere_generator");
     setLogThreadName("atmosphere generator");
     while (!resources.queAtmosphere.stopped())
     {

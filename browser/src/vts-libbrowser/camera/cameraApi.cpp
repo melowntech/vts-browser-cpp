@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <optick.h>
+
 #include "../include/vts-browser/map.hpp"
 #include "../include/vts-browser/camera.hpp"
 
@@ -124,6 +126,7 @@ void Camera::suggestedNearFar(double &near_, double &far_)
 
 void Camera::renderUpdate()
 {
+    OPTICK_EVENT();
     impl->renderUpdate();
 }
 

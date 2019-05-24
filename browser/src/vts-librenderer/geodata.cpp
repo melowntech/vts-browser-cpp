@@ -27,6 +27,8 @@
 #include <vts-browser/cameraDraws.hpp>
 #include <vts-browser/celestial.hpp>
 
+#include <optick.h>
+
 #include "geodata.hpp"
 
 namespace vts { namespace renderer
@@ -395,6 +397,8 @@ void RenderViewImpl::bindUboView(const std::shared_ptr<GeodataBase> &g)
 
 void RenderViewImpl::renderGeodata()
 {
+    OPTICK_EVENT();
+
     glDepthMask(GL_FALSE);
 
     glStencilFunc(GL_EQUAL, 0, 0xFF);

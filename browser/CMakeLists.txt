@@ -36,6 +36,12 @@ find_package(Eigen3 REQUIRED)
 include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 add_subdirectory(externals/utfcpp)
 
+# Optick - instrumental profiler for games
+find_package(Optick QUIET)
+if(NOT TARGET Optick)
+    add_subdirectory(src/dummyOptick)
+endif()
+
 # libraries type
 set(VTS_BROWSER_TYPE FRAMEWORK CACHE STRING "Type of browser libraries")
 set_property(CACHE VTS_BROWSER_TYPE PROPERTY STRINGS STATIC SHARED MODULE FRAMEWORK)

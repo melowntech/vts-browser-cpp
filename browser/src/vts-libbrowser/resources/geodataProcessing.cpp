@@ -338,6 +338,27 @@ struct geoContext
         }
     }
 
+    static bool getCompatibilityMode(const GeodataTile *data)
+    {
+        const Value &style = *data->style->json;
+        if (style.isMember("compatibility-mode"))
+            return style["compatibility-mode"].asBool();
+        // todo
+        // later, when a versioning scheme is determined,
+        //   the default will change based on the version
+        if (Validating)
+        {
+            if (style.isMember("version"))
+                THROW << "Not implemented: specifying 'version' in geodata"
+                " stylesheet should change the way in which compatibility"
+                " mode is handled, but the versioning scheme"
+                " is not yet determined. To solve this problem,"
+                " either update the browser to a version with support"
+                " for versioned stylesheets, or define 'compatibility-mode'.";
+        }
+        return true;
+    }
+
     geoContext(GeodataTile *data)
         : data(data),
         stylesheet(data->style.get()),
@@ -346,6 +367,7 @@ struct geoContext
         browserOptions(*data->browserOptions),
         aabbPhys{ data->aabbPhys[0], data->aabbPhys[1] },
         lod(data->lod),
+        compatibility(getCompatibilityMode(data)),
         currentLayer(nullptr)
     {}
 
@@ -1567,6 +1589,9 @@ if (cond == #OP) \
 
             if (layer.isMember("icon-stick"))
                 spec.commonData.stick = convertStick(layer["icon-stick"]);
+
+            if (compatibility)
+                spec.commonData.icon.scale *= 0.5;
         }
     }
 
@@ -1672,6 +1697,11 @@ if (cond == #OP) \
             : vec2f(0, 0),
             spec.unionData.pointLabel.offset);
         spec.unionData.pointLabel.offset[1] *= -1;
+        if (compatibility)
+        {
+            spec.unionData.pointLabel.offset[0] *= 0.5;
+            spec.unionData.pointLabel.offset[1] *= 0.5;
+        }
 
         spec.commonData.preventOverlap
             = layer.isMember("label-no-overlap")
@@ -1699,8 +1729,10 @@ if (cond == #OP) \
 
         spec.unionData.pointLabel.size
             = layer.isMember("label-size")
-            ? convertToDouble(layer["label-size"]) * 1.5
-            : 15;
+            ? convertToDouble(layer["label-size"])
+            : 20;
+        if (compatibility)
+            spec.unionData.pointLabel.size *= 1.5 * 1.52 / 3.0;
 
         spec.unionData.pointLabel.width
             = layer.isMember("label-width")
@@ -1851,6 +1883,7 @@ if (cond == #OP) \
     Value browserOptions;
     const vec3 aabbPhys[2];
     const uint32 lod;
+    const bool compatibility;
 
     // processing data
     //   fast accessors to currently processed feature

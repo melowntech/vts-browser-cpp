@@ -217,6 +217,12 @@ bool MainWindow::processEvents()
             SDL_SetWindowFullscreen(window, c ? 0 : SDL_WINDOW_FULLSCREEN);
         }
 
+        // screenshot
+        if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_p)
+        {
+            makeScreenshot();
+        }
+
         // add mark
         if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_m)
         {

@@ -523,17 +523,18 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
 
         // label rect
         {
-            float sc = options.textScale;
+            float sc = options.textScale * 2; // NDC space is twice as large
             vec2f sd = vec2f(sc / width, sc / height);
-            j.labelOffset = sd.cwiseProduct(vec2f(
-                g->spec.unionData.pointLabel.offset[0],
-                g->spec.unionData.pointLabel.offset[1]
-            )) - (numericOrigin(g->spec.unionData.pointLabel.origin)
-                - vec2f(0.5f, 0.5f)).cwiseProduct(t.originSize)
-                .cwiseProduct(sd);
+            vec2f org = numericOrigin(g->spec.unionData.pointLabel.origin)
+                - vec2f(0.5f, 0.5f);
+            j.labelOffset = vec2f(
+                g->spec.unionData.pointLabel.offset[0] * 2 / width,
+                g->spec.unionData.pointLabel.offset[1] * 2 / height
+            ) - org.cwiseProduct(t.originSize).cwiseProduct(sd);
+            vec2f off = j.labelOffset + j.refPoint;
             j.labelRect = Rect(
-                t.collision.a.cwiseProduct(sd) + j.labelOffset + j.refPoint,
-                t.collision.b.cwiseProduct(sd) + j.labelOffset + j.refPoint
+                t.collision.a.cwiseProduct(sd) + off,
+                t.collision.b.cwiseProduct(sd) + off
             );
         }
 
@@ -543,10 +544,11 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
             if (c.scale > 0)
             {
                 const auto &s = g->spec.iconCoords[index];
-                vec2f ss = c.scale * vec2f(s[4] / width, s[5] / height);
+                float sc = c.scale * 2; // NDC space is twice as large
+                vec2f ss = sc * vec2f(s[4] / width, s[5] / height);
                 j.iconRect.a = j.iconRect.b = j.refPoint + vec2f(
-                    g->spec.commonData.icon.offset[0] / width,
-                    g->spec.commonData.icon.offset[1] / height
+                    g->spec.commonData.icon.offset[0] * 2 / width,
+                    g->spec.commonData.icon.offset[1] * 2 / height
                 ) - numericOrigin(g->spec.commonData.icon.origin)
                     .cwiseProduct(ss);
                 j.iconRect.b += ss;
@@ -559,22 +561,20 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
             if (s.width > 0)
             {
                 float stick = s.heightMax;
-                vec3f camForward
-                    = vec4to3(vec4(viewInv
-                        * vec4(0, 0, -1, 0)), false).cast<float>();
-                vec3f camUp
-                    = vec4to3(vec4(viewInv
+                {
+                    vec3f toEye = normalize(rawToVec3(
+                        draws->camera.eye)).cast<float>();
+                    vec3f toJob = normalize(vec3(t.worldPosition
+                        - rawToVec3(draws->camera.eye))).cast<float>();
+                    vec3f camUp = vec4to3(vec4(viewInv
                         * vec4(0, 1, 0, 0)), false).cast<float>();
-                vec3f camDir = normalize(rawToVec3(
-                    draws->camera.eye)).cast<float>();
-                stick *= std::max(0.f,
-                    (1 + dot(t.worldUp, camForward))
-                    * dot(camUp, camDir)
-                );
+                    float localTilt = std::max(1 - dot(-toJob, t.worldUp), 0.f);
+                    float cameraTilt = std::max(dot(toEye, camUp), 0.f);
+                    stick *= localTilt * cameraTilt;
+                }
                 if (stick < s.heightThreshold)
                     stick = 0;
-                float ro = (stick > 0 ? stick + s.offset : 0)
-                    / height;
+                stick *= 2; // NDC space is twice as large
                 j.stickRect.a = j.stickRect.b = j.refPoint;
                 float w = s.width / width;
                 float h = stick / height;
@@ -583,6 +583,7 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
                 j.stickRect.b[1] += h;
 
                 // offset others
+                float ro = (stick > 1e-7 ? stick + s.offset : 0) / height;
                 j.labelRect.a[1] += ro;
                 j.labelRect.b[1] += ro;
                 j.labelOffset[1] += ro;
@@ -883,7 +884,7 @@ void RenderViewImpl::renderLabel(const GeodataJob &job)
     uboText.position[0] = t.modelPosition[0];
     uboText.position[1] = t.modelPosition[1];
     uboText.position[2] = t.modelPosition[2];
-    uboText.position[3] = options.textScale;
+    uboText.position[3] = options.textScale * 2; // NDC space is twice as large
     uboText.offset = vec4f(job.labelOffset[0], job.labelOffset[1], 0, 0);
 
     {

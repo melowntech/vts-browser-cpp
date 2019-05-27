@@ -340,7 +340,7 @@ vec2f textLayout(float size, float align,
             line.width = o[0];
             res[0] = std::max(res[0], o[0]);
             o[0] = 0;
-            o[1] += size * -1.5;
+            o[1] += size * -1.5; // 1.5 line spacing
         }
         res[1] = -o[1];
     }

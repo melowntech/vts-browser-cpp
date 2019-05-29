@@ -62,6 +62,12 @@ struct Text
     {}
 };
 
+struct Point
+{
+    vec3 worldPosition;
+    vec3f worldUp;
+};
+
 class GeodataBase : public std::enable_shared_from_this<GeodataBase>
 {
 public:
@@ -81,6 +87,8 @@ public:
     std::vector<std::shared_ptr<Font>> fontCascade;
     std::vector<Text> texts;
 
+    std::vector<Point> points;
+
     GeodataBase();
     void load(RenderContextImpl *renderer, ResourceInfo &info,
         GpuGeodataSpec &specp, const std::string &debugId);
@@ -92,12 +100,13 @@ public:
         uint32 totalPoints);
     void prepareMeshForLinesAndPoints(Buffer &&indBuffer,
         uint32 indicesCount);
+    void copyFonts();
     void loadLines();
     void loadPoints();
-    void loadTriangles();
-    void copyFonts();
     void loadPointLabels();
     void loadLineLabels();
+    void loadIcons();
+    void loadTriangles();
     bool checkTextures();
 };
 

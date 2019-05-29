@@ -67,14 +67,17 @@ void GeodataBase::load(RenderContextImpl *renderer, ResourceInfo &info,
     case GpuGeodataSpec::Type::PointFlat:
         loadPoints();
         break;
-    case GpuGeodataSpec::Type::Triangles:
-        loadTriangles();
-        break;
     case GpuGeodataSpec::Type::PointLabel:
         loadPointLabels();
         break;
     case GpuGeodataSpec::Type::LineLabel:
         loadLineLabels();
+        break;
+    case GpuGeodataSpec::Type::IconScreen:
+        loadIcons();
+        break;
+    case GpuGeodataSpec::Type::Triangles:
+        loadTriangles();
         break;
     default:
         throw std::invalid_argument("invalid geodata type");
@@ -480,46 +483,124 @@ void RenderViewImpl::bindUboCamera()
     uboGeodataCamera->bindToIndex(0);
 }
 
+void RenderViewImpl::regenerateJobCommon(GeodataJob &j,
+    const vec3 worldPosition)
+{
+    const auto &g = j.g;
+
+    // importance
+    if (!g->spec.importances.empty())
+    {
+        j.importance = g->spec.importances[j.itemIndex];
+        j.importance
+            -= g->spec.commonData.importanceDistanceFactor
+            * std::log(length(vec3(worldPosition
+                - rawToVec3(draws->camera.eye))));
+    }
+
+    // NDC position
+    const vec4 sp = viewProj * vec3to4(worldPosition, 1);
+
+    // ref point
+    j.refPoint = vec3to2(vec4to3(sp, true)).cast<float>();
+
+    // depth
+    {
+        mat4 depthCorrection = proj
+            * depthOffsetCorrection(g) * projInv;
+        vec4 p = depthCorrection * sp;
+        j.depth = p[2] / p[3];
+    }
+}
+
+void RenderViewImpl::regenerateJobIcon(GeodataJob &j)
+{
+    const auto &g = j.g;
+    const auto &c = g->spec.commonData.icon;
+    if (c.scale > 0)
+    {
+        const auto &s = g->spec.iconCoords[j.itemIndex];
+        float sc = c.scale * 2; // NDC space is twice as large
+        vec2f ss = sc * vec2f(s[4] / width, s[5] / height);
+        j.iconRect.a = j.iconRect.b = j.refPoint + vec2f(
+            g->spec.commonData.icon.offset[0] * 2 / width,
+            g->spec.commonData.icon.offset[1] * 2 / height
+        ) - numericOrigin(g->spec.commonData.icon.origin)
+            .cwiseProduct(ss);
+        j.iconRect.b += ss;
+    }
+}
+
+void RenderViewImpl::regenerateJobStick(GeodataJob &j,
+    const vec3 worldPosition, const vec3f worldUp)
+{
+    const auto &g = j.g;
+    const auto &s = g->spec.commonData.stick;
+    if (s.width > 0)
+    {
+        float stick = s.heightMax;
+        {
+            vec3f toEye = normalize(rawToVec3(
+                draws->camera.eye)).cast<float>();
+            vec3f toJob = normalize(vec3(worldPosition
+                - rawToVec3(draws->camera.eye))).cast<float>();
+            vec3f camUp = vec4to3(vec4(viewInv
+                * vec4(0, 1, 0, 0)), false).cast<float>();
+            float localTilt = std::max(1 - dot(-toJob, worldUp), 0.f);
+            float cameraTilt = std::max(dot(toEye, camUp), 0.f);
+            stick *= localTilt * cameraTilt;
+        }
+        if (stick < s.heightThreshold)
+            stick = 0;
+        stick *= 2; // NDC space is twice as large
+        j.stickRect.a = j.stickRect.b = j.refPoint;
+        float w = s.width / width;
+        float h = stick / height;
+        j.stickRect.a[0] -= w;
+        j.stickRect.b[0] += w;
+        j.stickRect.b[1] += h;
+
+        // offset others
+        float ro = (stick > 1e-7 ? stick + s.offset : 0) / height;
+        j.labelRect.a[1] += ro;
+        j.labelRect.b[1] += ro;
+        j.labelOffset[1] += ro;
+        j.iconRect.a[1] += ro;
+        j.iconRect.b[1] += ro;
+    }
+}
+
+void RenderViewImpl::regenerateJobCollision(GeodataJob &j)
+{
+    const auto &g = j.g;
+    if (j.g->spec.commonData.preventOverlap)
+    {
+        vec2f margin = rawToVec2(g->spec.commonData.margin)
+            .cwiseProduct(vec2f(1.f / width, 1.f / height));
+        j.collisionRect = Rect::merge(j.labelRect, j.iconRect);
+        j.collisionRect.a -= margin;
+        j.collisionRect.b += margin;
+    }
+}
+
 void RenderViewImpl::regenerateJob(GeodataJob &j)
 {
     const auto &g = j.g;
-    const auto index = j.itemIndex;
 
     switch (g->spec.type)
     {
     case GpuGeodataSpec::Type::LineScreen:
     case GpuGeodataSpec::Type::LineFlat:
+    case GpuGeodataSpec::Type::LineLabel:
     case GpuGeodataSpec::Type::PointScreen:
     case GpuGeodataSpec::Type::PointFlat:
     case GpuGeodataSpec::Type::Triangles:
-    {
-        // nothing
-    } break;
+        return; // nothing
+
     case GpuGeodataSpec::Type::PointLabel:
     {
-        const auto &t = g->texts[index];
-
-        if (!g->spec.importances.empty())
-        {
-            j.importance = g->spec.importances[index];
-            j.importance
-                -= g->spec.commonData.importanceDistanceFactor
-                * std::log(length(vec3(t.worldPosition
-                    - rawToVec3(draws->camera.eye))));
-        }
-
-        const vec4 sp = viewProj * vec3to4(t.worldPosition, 1);
-
-        // ref point
-        j.refPoint = vec3to2(vec4to3(sp, true)).cast<float>();
-
-        // depth
-        {
-            mat4 depthCorrection = proj
-                * depthOffsetCorrection(g) * projInv;
-            vec4 p = depthCorrection * sp;
-            j.depth = p[2] / p[3];
-        }
+        const auto &t = g->texts[j.itemIndex];
+        regenerateJobCommon(j, t.worldPosition);
 
         // label rect
         {
@@ -538,72 +619,18 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
             );
         }
 
-        // icon rect
-        {
-            const auto &c = g->spec.commonData.icon;
-            if (c.scale > 0)
-            {
-                const auto &s = g->spec.iconCoords[index];
-                float sc = c.scale * 2; // NDC space is twice as large
-                vec2f ss = sc * vec2f(s[4] / width, s[5] / height);
-                j.iconRect.a = j.iconRect.b = j.refPoint + vec2f(
-                    g->spec.commonData.icon.offset[0] * 2 / width,
-                    g->spec.commonData.icon.offset[1] * 2 / height
-                ) - numericOrigin(g->spec.commonData.icon.origin)
-                    .cwiseProduct(ss);
-                j.iconRect.b += ss;
-            }
-        }
-
-        // stick
-        {
-            const auto &s = g->spec.commonData.stick;
-            if (s.width > 0)
-            {
-                float stick = s.heightMax;
-                {
-                    vec3f toEye = normalize(rawToVec3(
-                        draws->camera.eye)).cast<float>();
-                    vec3f toJob = normalize(vec3(t.worldPosition
-                        - rawToVec3(draws->camera.eye))).cast<float>();
-                    vec3f camUp = vec4to3(vec4(viewInv
-                        * vec4(0, 1, 0, 0)), false).cast<float>();
-                    float localTilt = std::max(1 - dot(-toJob, t.worldUp), 0.f);
-                    float cameraTilt = std::max(dot(toEye, camUp), 0.f);
-                    stick *= localTilt * cameraTilt;
-                }
-                if (stick < s.heightThreshold)
-                    stick = 0;
-                stick *= 2; // NDC space is twice as large
-                j.stickRect.a = j.stickRect.b = j.refPoint;
-                float w = s.width / width;
-                float h = stick / height;
-                j.stickRect.a[0] -= w;
-                j.stickRect.b[0] += w;
-                j.stickRect.b[1] += h;
-
-                // offset others
-                float ro = (stick > 1e-7 ? stick + s.offset : 0) / height;
-                j.labelRect.a[1] += ro;
-                j.labelRect.b[1] += ro;
-                j.labelOffset[1] += ro;
-                j.iconRect.a[1] += ro;
-                j.iconRect.b[1] += ro;
-            }
-        }
-
-        // collision rect
-        if (g->spec.commonData.preventOverlap)
-        {
-            vec2f margin = rawToVec2(g->spec.commonData.margin)
-                .cwiseProduct(vec2f(1.f / width, 1.f / height));
-            j.collisionRect = Rect::merge(j.labelRect, j.iconRect);
-            j.collisionRect.a -= margin;
-            j.collisionRect.b += margin;
-        }
+        regenerateJobIcon(j);
+        regenerateJobStick(j, t.worldPosition, t.worldUp);
+        regenerateJobCollision(j);
     } break;
-    default:
+
+    case GpuGeodataSpec::Type::IconScreen:
     {
+        const auto &t = g->points[j.itemIndex];
+        regenerateJobCommon(j, t.worldPosition);
+        regenerateJobIcon(j);
+        regenerateJobStick(j, t.worldPosition, t.worldUp);
+        regenerateJobCollision(j);
     } break;
     }
 }
@@ -624,6 +651,7 @@ void RenderViewImpl::generateJobs()
         {
         case GpuGeodataSpec::Type::LineScreen:
         case GpuGeodataSpec::Type::LineFlat:
+        case GpuGeodataSpec::Type::LineLabel:
         case GpuGeodataSpec::Type::PointScreen:
         case GpuGeodataSpec::Type::PointFlat:
         case GpuGeodataSpec::Type::Triangles:
@@ -631,6 +659,7 @@ void RenderViewImpl::generateJobs()
             // one job for entire tile
             geodataJobs.emplace_back(g, uint32(-1));
         } break;
+
         case GpuGeodataSpec::Type::PointLabel:
         {
             if (!g->checkTextures())
@@ -656,8 +685,28 @@ void RenderViewImpl::generateJobs()
                 geodataJobs.push_back(std::move(j));
             }
         } break;
-        default:
+
+        case GpuGeodataSpec::Type::IconScreen:
         {
+            // individual jobs for each icon
+            for (uint32 index = 0, indexEnd = g->points.size();
+                index < indexEnd; index++)
+            {
+                const auto &t = g->points[index];
+
+                if (!geodataTestVisibility(
+                    g->spec.commonData.visibilities,
+                    t.worldPosition, t.worldUp))
+                    continue;
+
+                if (!geodataDepthVisibility(t.worldPosition,
+                    g->spec.commonData.depthVisibilityThreshold))
+                    continue;
+
+                GeodataJob j(g, index);
+                regenerateJob(j);
+                geodataJobs.push_back(std::move(j));
+            }
         } break;
         }
     }
@@ -665,8 +714,6 @@ void RenderViewImpl::generateJobs()
 
 void RenderViewImpl::sortJobsByZIndexAndImportance()
 {
-    // primary: z-index
-    // secondary: importance
     std::sort(geodataJobs.begin(), geodataJobs.end(),
         [](const GeodataJob &a, const GeodataJob &b)
         {
@@ -936,6 +983,12 @@ void RenderViewImpl::renderJobs()
             msh->dispatch();
             glDisable(GL_STENCIL_TEST);
         } break;
+
+        case GpuGeodataSpec::Type::LineLabel:
+        {
+            // todo
+        } break;
+
         case GpuGeodataSpec::Type::PointScreen:
         case GpuGeodataSpec::Type::PointFlat:
         {
@@ -949,22 +1002,38 @@ void RenderViewImpl::renderJobs()
             glEnable(GL_STENCIL_TEST);
             msh->dispatch();
             glDisable(GL_STENCIL_TEST);
-
-            /*
-            if (job.stick > 0 || g->spec.commonData.icon.scale > 0)
-            {
-                for (uint32 index = 0, indexEnd = g->spec.positions.size();
-                    index < indexEnd; index++)
-                {
-                    vec3 worldPosition = vec4to3(vec4(g->model * vec3to4(
-                        rawToVec3(g->spec.positions[index][0].data()),
-                            1).cast<double>()));
-                    renderStick(job, worldPosition);
-                    renderIcon(job, worldPosition);
-                }
-            }
-            */
         } break;
+
+        case GpuGeodataSpec::Type::PointLabel:
+        {
+            const auto &t = g->texts[job.itemIndex];
+
+            if (!geodataTestVisibility(
+                g->spec.commonData.visibilities,
+                t.worldPosition, t.worldUp))
+                continue;
+
+            bindUboView(g);
+            renderStick(job);
+            if (job.g->spec.commonData.icon.scale > 0)
+                renderIcon(job, job.g->spec.iconCoords[job.itemIndex].data());
+            renderLabel(job);
+        } break;
+
+        case GpuGeodataSpec::Type::IconScreen:
+        {
+            const auto &t = g->points[job.itemIndex];
+
+            if (!geodataTestVisibility(
+                g->spec.commonData.visibilities,
+                t.worldPosition, t.worldUp))
+                continue;
+
+            bindUboView(g);
+            renderStick(job);
+            renderIcon(job, job.g->spec.iconCoords[job.itemIndex].data());
+        } break;
+
         case GpuGeodataSpec::Type::Triangles:
         {
             assert(job.itemIndex == (uint32)-1);
@@ -981,24 +1050,6 @@ void RenderViewImpl::renderJobs()
             glDepthMask(GL_FALSE);
             if (stencil)
                 glDisable(GL_STENCIL_TEST);
-        } break;
-        case GpuGeodataSpec::Type::PointLabel:
-        {
-            const auto &t = g->texts[job.itemIndex];
-
-            if (!geodataTestVisibility(
-                g->spec.commonData.visibilities,
-                t.worldPosition, t.worldUp))
-                continue;
-
-            bindUboView(g);
-            renderStick(job);
-            if (job.g->spec.commonData.icon.scale > 0)
-                renderIcon(job, job.g->spec.iconCoords[job.itemIndex].data());
-            renderLabel(job);
-        } break;
-        default:
-        {
         } break;
         }
     }

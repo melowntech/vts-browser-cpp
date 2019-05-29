@@ -192,6 +192,12 @@ public:
     void computeZBufferOffsetValues();
     void bindUboCamera();
     void renderGeodata();
+    void regenerateJobCommon(GeodataJob &j,
+        const vec3 worldPosition);
+    void regenerateJobIcon(GeodataJob &j);
+    void regenerateJobStick(GeodataJob &j,
+        const vec3 worldPosition, const vec3f worldUp);
+    void regenerateJobCollision(GeodataJob &j);
     void regenerateJob(GeodataJob &j);
     void generateJobs();
     void sortJobsByZIndexAndImportance();

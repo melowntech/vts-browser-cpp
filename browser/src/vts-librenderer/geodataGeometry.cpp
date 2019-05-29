@@ -225,8 +225,8 @@ void GeodataBase::loadPoints()
             = rawToVec4(spec.commonData.visibilities);
         uboPointData.typePlusRadius
             = vec4f((float)spec.type,
-            (float)spec.unionData.point.radius
-                , 0.f, 0.f);
+                spec.unionData.point.radius * 2.f, // NDC space is twice as large
+                0.f, 0.f);
 
         uniform = std::make_shared<UniformBuffer>();
         uniform->debugId = debugId;
@@ -234,6 +234,21 @@ void GeodataBase::loadPoints()
         uniform->load(uboPointData);
         info->gpuMemoryCost += sizeof(uboPointData);
     }
+}
+
+void GeodataBase::loadIcons()
+{
+    assert(spec.iconCoords.size() == spec.positions.size());
+    for (uint32 i = 0, e = spec.iconCoords.size(); i != e; i++)
+    {
+        Point t;
+        vec3f modelPosition = rawToVec3(spec.positions[i][0].data());
+        t.worldPosition = vec4to3(vec4(rawToMat4(spec.model)
+            * vec3to4(modelPosition, 1).cast<double>()));
+        t.worldUp = worldUp(modelPosition);
+        points.push_back(t);
+    }
+    info->ramMemoryCost += points.size() * sizeof(decltype(points[0]));
 }
 
 void GeodataBase::loadTriangles()

@@ -50,6 +50,7 @@ public:
         PointScreen,
         PointFlat,
         PointLabel,
+        IconScreen,
         Triangles,
     };
 

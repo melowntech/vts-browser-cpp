@@ -129,6 +129,16 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec,
     fontData = std::move(spec.data);
     fontHandle = spec.handle;
 
+    /*
+    {
+        std::string name = debugId;
+        std::replace(name.begin(), name.end(), ':', '_');
+        std::replace(name.begin(), name.end(), '/', '_');
+        name = std::string("./exported-fonts/") + name;
+        vts::writeLocalFileBuffer(name, fontData);
+    }
+    */
+
     {
         std::lock_guard<std::mutex> lock(ftMutex);
         auto err = FT_New_Memory_Face(ftLibrary,

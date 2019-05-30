@@ -107,6 +107,14 @@ void FetchTaskImpl::fetchDone()
         }
     }
 
+    // (deferred) write to cache
+    if (state == Resource::State::availFail
+        || state == Resource::State::downloading)
+    {
+        // this makes copy of the content buffer
+        map->resources.queCacheWrite.push(this);
+    }
+
     // update the actual resource
     if (state == Resource::State::downloading)
         state = Resource::State::downloaded;
@@ -124,14 +132,14 @@ void FetchTaskImpl::fetchDone()
             rs->info.ramMemoryCost = reply.content.size();
             rs->state = state;
             if (state == Resource::State::downloaded)
+            {
+                // this allows another thread to immediately start
+                //   processing the content, including its modification,
+                //   and must therefore be the last action in this thread
                 map->resources.queUpload.push(rs);
+            }
         }
     }
-
-    // (deferred) write to cache
-    if (state == Resource::State::availFail
-        || state == Resource::State::downloaded)
-        map->resources.queCacheWrite.push(this);
 }
 
 ////////////////////////////

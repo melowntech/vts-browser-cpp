@@ -405,13 +405,6 @@ void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec,
 {
     this->debugId = debugId;
 
-    if (spec.width == 0 && spec.height == 0 && spec.components == 0
-        && spec.buffer.size() > 0)
-    {
-        spec.components = 4;
-        spec.width = spec.height = std::sqrt(spec.buffer.size() / 4);
-    }
-
     assert(spec.buffer.size() == spec.width * spec.height
            * spec.components * gpuTypeSize(spec.type)
            || spec.buffer.size() == 0);

@@ -182,7 +182,8 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec,
             uint8 gy = v2 & 255;
             sint8 sx = ((v1 >> 9) & 63) * (((v1 >> 15) & 1) ? -1 : 1);
             sint8 sy = ((v1 >> 2) & 63) * (((v1 >> 8) & 1) ? -1 : 1);
-            g.uvs = vec4f(gx, gy + gh, gx + gw, gy) / textureWidth;
+            g.uvs = vec4f(gx, textureWidth - (gy + gh),
+                gx + gw, textureWidth - gy) / textureWidth;
             g.offset = vec2f(sx, -sy - gh);
             g.size = vec2f(gw, gh);
         }
@@ -201,6 +202,9 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec,
                 glyphs[j].fileIndex = i;
             last = curr;
         }
+        // filesCount may be one less than the actual number of files
+        for (uint16 j = last; j < face->num_glyphs; j++)
+            glyphs[j].fileIndex = filesCount;
     }
 
     info.ramMemoryCost += sizeof(*this)

@@ -46,8 +46,12 @@ void decodeImage(const Buffer &in, Buffer &out,
         decodeJpeg(in, out, width, height, components);
     else
     {
+        // raw image data - assume square
         out = in.copy();
-        width = height = components = 0;
+        components = 4;
+        width = height = std::sqrt(out.size() / 4);
+        if (out.size() != width * height * components)
+            LOGTHROW(err1, std::runtime_error) << "Raw image is not square";
     }
 }
 

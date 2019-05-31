@@ -30,6 +30,7 @@
 #include "../gpuResource.hpp"
 #include "../fetchTask.hpp"
 #include "../map.hpp"
+#include "cache.hpp"
 
 namespace vts
 {
@@ -46,6 +47,20 @@ GpuFont::GpuFont(MapImpl *map, const std::string &name) :
 void GpuFont::load()
 {
     LOG(info2) << "Loading font <" << name << ">";
+
+    if (map->options.debugExtractRawResources)
+    {
+        static const std::string prefix = "extracted/";
+        std::string b, c;
+        std::string path = prefix
+            + convertNameToFolderAndFile(this->name, b, c)
+            + ".fnt";
+        if (!boost::filesystem::exists(path))
+        {
+            boost::filesystem::create_directories(prefix + b);
+            writeLocalFileBuffer(path, fetch->reply.content);
+        }
+    }
 
     GpuFontSpec spec;
     spec.data = std::move(fetch->reply.content);

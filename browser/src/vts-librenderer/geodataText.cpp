@@ -323,7 +323,6 @@ vec2f textLayout(float size, float align,
 {
     // find glyph positions
     vec2f res = vec2f(0, 0);
-    float asc = 0;
     {
         vec2f o = vec2f(0, 0);
         for (TmpLine &line : lines)
@@ -335,7 +334,6 @@ vec2f textLayout(float size, float align,
                 g.position = o + (g.offset + f.offset) * s;
                 g.size = f.size * s;
                 o[0] += g.advance * s;
-                asc = std::max(asc, g.font->ascend * s);
             }
             line.width = o[0];
             res[0] = std::max(res[0], o[0]);
@@ -346,16 +344,15 @@ vec2f textLayout(float size, float align,
     }
 
     // center the entire text
-    vec2f off = res.cwiseProduct(vec2f(-0.5, 0.5)) + vec2f(0, -asc);
+    vec2f off = res.cwiseProduct(vec2f(-0.5, 0.5)) + vec2f(0, -size);
     for (TmpLine &line : lines)
         for (TmpGlyph &g : line.glyphs)
             g.position += off;
 
     // align (move each line independently)
-    float tw = res[0];
     for (TmpLine &line : lines)
     {
-        float dx = (tw - line.width) * align;
+        float dx = (res[0] - line.width) * align;
         for (TmpGlyph &g : line.glyphs)
             g.position[0] += dx;
     }

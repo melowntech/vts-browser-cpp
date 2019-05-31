@@ -109,7 +109,7 @@ namespace vts { namespace renderer
 {
 
 Font::Font() : face(nullptr), font(nullptr),
-    ascend(0), textureWidth(0), textureHeight(0), filesCount(0), size(0)
+    textureWidth(0), textureHeight(0), filesCount(0), size(0)
 {}
 
 Font::~Font()
@@ -129,16 +129,6 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec,
     fontData = std::move(spec.data);
     fontHandle = spec.handle;
 
-    /*
-    {
-        std::string name = debugId;
-        std::replace(name.begin(), name.end(), ':', '_');
-        std::replace(name.begin(), name.end(), '/', '_');
-        name = std::string("./exported-fonts/") + name;
-        vts::writeLocalFileBuffer(name, fontData);
-    }
-    */
-
     {
         std::lock_guard<std::mutex> lock(ftMutex);
         auto err = FT_New_Memory_Face(ftLibrary,
@@ -151,8 +141,6 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec,
                 + ftErrToStr(err) + ">");
         }
     }
-
-    ascend = face->ascender / 64.f;
 
     vts::detail::BufferStream w(fontData);
     w.ignore(findCustomTablesOffset(fontData));
@@ -194,7 +182,7 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec,
             uint8 gy = v2 & 255;
             sint8 sx = ((v1 >> 9) & 63) * (((v1 >> 15) & 1) ? -1 : 1);
             sint8 sy = ((v1 >> 2) & 63) * (((v1 >> 8) & 1) ? -1 : 1);
-            g.uvs = vec4f(gx, gy + gh, gx + gw, gy) / (textureWidth - 1);
+            g.uvs = vec4f(gx, gy + gh, gx + gw, gy) / textureWidth;
             g.offset = vec2f(sx, -sy - gh);
             g.size = vec2f(gw, gh);
         }

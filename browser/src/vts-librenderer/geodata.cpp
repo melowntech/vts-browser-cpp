@@ -589,6 +589,9 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
 
     switch (g->spec.type)
     {
+    case GpuGeodataSpec::Type::Invalid:
+        throw std::invalid_argument("Invalid geodata type enum");
+
     case GpuGeodataSpec::Type::LineScreen:
     case GpuGeodataSpec::Type::LineFlat:
     case GpuGeodataSpec::Type::LineLabel:
@@ -649,6 +652,9 @@ void RenderViewImpl::generateJobs()
 
         switch (g->spec.type)
         {
+        case GpuGeodataSpec::Type::Invalid:
+            throw std::invalid_argument("Invalid geodata type enum");
+
         case GpuGeodataSpec::Type::LineScreen:
         case GpuGeodataSpec::Type::LineFlat:
         case GpuGeodataSpec::Type::LineLabel:
@@ -969,6 +975,9 @@ void RenderViewImpl::renderJobs()
 
         switch (g->spec.type)
         {
+        case GpuGeodataSpec::Type::Invalid:
+            throw std::invalid_argument("Invalid geodata type enum");
+
         case GpuGeodataSpec::Type::LineScreen:
         case GpuGeodataSpec::Type::LineFlat:
         {

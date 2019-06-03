@@ -103,7 +103,8 @@ public:
     struct VTS_API Icon
     {
         float color[4];
-        float offset[2];
+        float offset[2]; // x, y (pixels)
+        float margin[2]; // horizontal, vertical (pixels)
         float scale;
         Origin origin;
     };
@@ -134,9 +135,10 @@ public:
         float outline[4];
         float color[4];
         float color2[4];
-        float offset[2];
-        float size;
-        float width;
+        float offset[2]; // x, y (pixels)
+        float margin[2]; // horizontal, vertical (pixels)
+        float size; // vertical (pixels)
+        float width; // line wrap (pixels)
         Origin origin;
         TextAlign textAlign;
     };
@@ -166,7 +168,6 @@ public:
         float zBufferOffset[3]; // do NOT ask for units here
         float tileVisibility[2]; // view extent range in which the tile is visible
         float hysteresisDuration[2]; // seconds to appear, seconds to disappear
-        float margin[2]; // horizontal, vertical (pixels)
         float importanceDistanceFactor;
         float featuresLimitPerPixelSquared;
         float depthVisibilityThreshold; // meters

@@ -270,6 +270,7 @@ GpuGeodataSpec::CommonData::CommonData()
     vecToRaw(vec3f(nan3().cast<float>()), zBufferOffset);
     featuresLimitPerPixelSquared = nan1();
     depthVisibilityThreshold = nan1();
+    preventOverlap = true;
 }
 
 } // namespace vts

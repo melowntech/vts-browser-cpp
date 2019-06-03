@@ -270,6 +270,25 @@ struct geoContext
         return vec2f(convertToDouble(v[0]), convertToDouble(v[1]));
     }
 
+    vec2f convertNoOverlapMargin(const Value &p) const
+    {
+        Json::Value lnom = evaluate(p);
+        switch (lnom.size())
+        {
+        case 2:
+        case 4:
+            // 4 values are valid, but we ignore the last two now
+            return {
+                convertToDouble(lnom[0]),
+                convertToDouble(lnom[1])
+            };
+        default:
+            if (Validating)
+                THROW << "Invalid no-overlap-margin array size";
+            throw;
+        }
+    }
+
     GpuGeodataSpec::Stick convertStick(const Value &p) const
     {
         Value v = evaluate(p);
@@ -1473,6 +1492,8 @@ if (cond == #OP) \
             = layer.isMember("icon-scale")
             ? convertToDouble(layer["icon-scale"])
             : 1;
+        if (compatibility)
+            spec.commonData.icon.scale *= 0.5;
 
         spec.commonData.icon.origin
             = layer.isMember("icon-origin")
@@ -1485,6 +1506,16 @@ if (cond == #OP) \
             spec.commonData.icon.offset);
         spec.commonData.icon.offset[1] *= -1;
 
+        if (layer.isMember("icon-no-overlap"))
+            spec.commonData.preventOverlap
+            = spec.commonData.preventOverlap
+            && evaluate(layer["icon-no-overlap"]).asBool();
+
+        vecToRaw(vec2f(5, 5), spec.commonData.icon.margin);
+        if (layer.isMember("icon-no-overlap-margin"))
+            vecToRaw(convertNoOverlapMargin(layer["icon-no-overlap-margin"]),
+                spec.commonData.icon.margin);
+
         vecToRaw(layer.isMember("icon-color")
             ? convertColor(layer["icon-color"])
             : vec4f(1, 1, 1, 1),
@@ -1492,17 +1523,12 @@ if (cond == #OP) \
 
         if (layer.isMember("icon-stick"))
             spec.commonData.stick = convertStick(layer["icon-stick"]);
-
-        if (compatibility)
-            spec.commonData.icon.scale *= 0.5;
     }
 
     void addIconItems(const Value &layer,
         GpuGeodataSpec &data, uint32 itemsCount)
     {
         if (!(data.commonData.icon.scale == data.commonData.icon.scale))
-            return;
-        if (itemsCount == 0)
             return;
         Value src = evaluate(layer["icon-source"]);
         auto tex = stylesheet->bitmaps.at(src[0].asString());
@@ -1519,8 +1545,85 @@ if (cond == #OP) \
             (float)a[2],
             (float)a[3]
         };
+        data.iconCoords.reserve(data.iconCoords.size() + itemsCount);
         for (uint32 i = 0; i < itemsCount; i++)
             data.iconCoords.push_back(uv);
+    }
+
+    std::string addHysteresisIdSpec(const Value &layer,
+        GpuGeodataSpec &spec)
+    {
+        std::string hysteresisId;
+        if (layer.isMember("hysteresis"))
+        {
+            Value arr = evaluate(layer["hysteresis"]);
+            validateArrayLength(arr, 4, 4,
+                "hysteresis must have 4 values");
+            spec.commonData.hysteresisDuration[0]
+                = convertToDouble(arr[0]) / 1000.0;
+            spec.commonData.hysteresisDuration[1]
+                = convertToDouble(arr[1]) / 1000.0;
+            hysteresisId = arr[2].asString();
+            if (Validating && hysteresisId.empty())
+                THROW << "Empty hysteresis id";
+        }
+        return hysteresisId;
+    }
+
+    void addHysteresisIdItems(const std::string &hysteresisId,
+        GpuGeodataSpec &data, uint32 itemsCount)
+    {
+        if (hysteresisId.empty())
+            return;
+        data.hysteresisIds.reserve(data.hysteresisIds.size() + itemsCount);
+        for (uint32 i = 0; i < itemsCount; i++)
+            data.hysteresisIds.push_back(hysteresisId);
+    }
+
+    float addImportanceSpec(const Value &layer,
+        GpuGeodataSpec &spec, float *overrideMargin = nullptr)
+    {
+        float importance = nan1();
+        if (layer.isMember("importance-source"))
+            importance = convertToDouble(
+                evaluate(layer["importance-source"]));
+        if (layer.isMember("importance-weight"))
+            importance *= convertToDouble(
+                evaluate(layer["importance-weight"]));
+        if (importance == importance
+            && browserOptions.isMember("mapFeaturesReduceMode")
+            && browserOptions["mapFeaturesReduceMode"] == "scr-count7")
+        {
+            Value params = browserOptions["mapFeaturesReduceParams"];
+            float dpi = data->map->options.pixelsPerInch;
+
+            if (overrideMargin)
+            {
+                overrideMargin[0] = overrideMargin[1]
+                    = convertToDouble(params[0]) * dpi;
+            }
+
+            spec.commonData.featuresLimitPerPixelSquared
+                = convertToDouble(params[1]) / (dpi * dpi);
+
+            spec.commonData.importanceDistanceFactor
+                = convertToDouble(params[2]);
+
+            if (params[3].asInt())
+                spec.commonData.depthVisibilityThreshold
+                = convertToDouble(params[4]);
+        }
+        return importance;
+    }
+
+    void addImportanceItems(float importance,
+        GpuGeodataSpec &data, uint32 itemsCount)
+    {
+        if (!(importance == importance))
+            return;
+        data.importances.reserve(data.importances.size() + itemsCount);
+        for (uint32 i = 0; i < itemsCount; i++)
+            data.importances.push_back(importance);
     }
 
     void processFeatureCommon(const Value &layer, GpuGeodataSpec &spec,
@@ -1710,29 +1813,15 @@ if (cond == #OP) \
             spec.unionData.pointLabel.offset[1] *= 0.5;
         }
 
-        spec.commonData.preventOverlap
-            = layer.isMember("label-no-overlap")
-            ? evaluate(layer["label-no-overlap"]).asBool()
-            : true;
+        if (layer.isMember("label-no-overlap"))
+            spec.commonData.preventOverlap
+                = spec.commonData.preventOverlap
+                    && evaluate(layer["label-no-overlap"]).asBool();
 
-        vecToRaw(vec2f(5, 5), spec.commonData.margin);
+        vecToRaw(vec2f(5, 5), spec.unionData.pointLabel.margin);
         if (layer.isMember("label-no-overlap-margin"))
-        {
-            Json::Value lnom = evaluate(layer["label-no-overlap-margin"]);
-            switch (lnom.size())
-            {
-            case 2:
-            case 4:
-                // 4 values are valid, but we ignore the last two now
-                for (int i = 0; i < 2; i++)
-                    spec.commonData.margin[i] = convertToDouble(lnom[i]);
-                break;
-            default:
-                if (Validating)
-                    THROW << "Invalid label-no-overlap-margin array size";
-                break;
-            }
-        }
+            vecToRaw(convertNoOverlapMargin(layer["label-no-overlap-margin"]),
+                spec.unionData.pointLabel.margin);
 
         spec.unionData.pointLabel.size
             = layer.isMember("label-size")
@@ -1765,53 +1854,10 @@ if (cond == #OP) \
         if (text.empty())
             return;
 
-        std::string hysteresisId;
-        if (layer.isMember("hysteresis"))
-        {
-            Value arr = evaluate(layer["hysteresis"]);
-            validateArrayLength(arr, 4, 4,
-                "hysteresis must have 4 values");
-            spec.commonData.hysteresisDuration[0]
-                = convertToDouble(arr[0]) / 1000.0;
-            spec.commonData.hysteresisDuration[1]
-                = convertToDouble(arr[1]) / 1000.0;
-            hysteresisId = arr[2].asString();
-            if (hysteresisId.empty())
-            {
-                if (Validating)
-                    THROW << "Empty hysteresis id";
-                else
-                    hysteresisId = text;
-            }
-        }
+        std::string hysteresisId = addHysteresisIdSpec(layer, spec);
 
-        float importance = nan1();
-        if (layer.isMember("importance-source"))
-            importance = convertToDouble(
-                evaluate(layer["importance-source"]));
-        if (layer.isMember("importance-weight"))
-            importance *= convertToDouble(
-                evaluate(layer["importance-weight"]));
-        if (importance == importance
-            && browserOptions.isMember("mapFeaturesReduceMode")
-            && browserOptions["mapFeaturesReduceMode"] == "scr-count7")
-        {
-            Value params = browserOptions["mapFeaturesReduceParams"];
-            float dpi = data->map->options.pixelsPerInch;
-
-            spec.commonData.margin[0] = spec.commonData.margin[1]
-                = convertToDouble(params[0]) * dpi;
-
-            spec.commonData.featuresLimitPerPixelSquared
-                = convertToDouble(params[1]) / (dpi * dpi);
-
-            spec.commonData.importanceDistanceFactor
-                = convertToDouble(params[2]);
-
-            if (params[3].asInt())
-                spec.commonData.depthVisibilityThreshold
-                    = convertToDouble(params[4]);
-        }
+        float importance = addImportanceSpec(layer, spec,
+            spec.unionData.pointLabel.margin);
 
         GpuGeodataSpec &data = findSpecData(spec);
         auto arr = getFeaturePositions();
@@ -1819,15 +1865,10 @@ if (cond == #OP) \
         data.positions.reserve(data.positions.size() + arr.size());
         data.positions.insert(data.positions.end(), arr.begin(), arr.end());
         data.texts.reserve(data.texts.size() + arr.size());
-        for (const auto &a : arr)
-        {
-            (void)a; // is this suspicious?
+        for (uint32 i = 0, cnt = arr.size(); i < cnt; i++)
             data.texts.push_back(text);
-            if (!hysteresisId.empty())
-                data.hysteresisIds.push_back(hysteresisId);
-            if (importance == importance)
-                data.importances.push_back(importance);
-        }
+        addHysteresisIdItems(hysteresisId, data, arr.size());
+        addImportanceItems(importance, data, arr.size());
         addIconItems(layer, data, arr.size());
     }
 
@@ -1877,10 +1918,18 @@ if (cond == #OP) \
 
         spec.type = GpuGeodataSpec::Type::IconScreen;
         addIconSpec(layer, spec);
+
+        std::string hysteresisId = addHysteresisIdSpec(layer, spec);
+
+        float importance = addImportanceSpec(layer, spec,
+            spec.commonData.icon.margin);
+
         GpuGeodataSpec &data = findSpecData(spec);
         const auto arr = getFeaturePositions();
         data.positions.reserve(data.positions.size() + arr.size());
         data.positions.insert(data.positions.end(), arr.begin(), arr.end());
+        addHysteresisIdItems(hysteresisId, data, arr.size());
+        addImportanceItems(importance, data, arr.size());
         addIconItems(layer, data, arr.size());
     }
 

@@ -575,11 +575,19 @@ void RenderViewImpl::regenerateJobCollision(GeodataJob &j)
     const auto &g = j.g;
     if (j.g->spec.commonData.preventOverlap)
     {
-        vec2f margin = rawToVec2(g->spec.commonData.margin)
-            .cwiseProduct(vec2f(1.f / width, 1.f / height));
-        j.collisionRect = Rect::merge(j.labelRect, j.iconRect);
-        j.collisionRect.a -= margin;
-        j.collisionRect.b += margin;
+        vec2f marginLabel = rawToVec2(g->spec.unionData.pointLabel.margin)
+            .cwiseProduct(vec2f(2.f / width, 2.f / height));
+        Rect label = j.labelRect;
+        label.a -= marginLabel;
+        label.b += marginLabel;
+
+        vec2f marginIcon = rawToVec2(g->spec.commonData.icon.margin)
+            .cwiseProduct(vec2f(2.f / width, 2.f / height));
+        Rect icon = j.iconRect;
+        icon.a -= marginIcon;
+        icon.b += marginIcon;
+
+        j.collisionRect = Rect::merge(label, icon);
     }
 }
 
@@ -593,6 +601,8 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
         throw std::invalid_argument("Invalid geodata type enum");
 
     case GpuGeodataSpec::Type::LineScreen:
+        return; // nothing
+
     case GpuGeodataSpec::Type::LineFlat:
     case GpuGeodataSpec::Type::LineLabel:
     case GpuGeodataSpec::Type::PointScreen:
@@ -740,7 +750,7 @@ void RenderViewImpl::renderJobsDebugRects()
     vec4f colorRef = vec4f(1, 0, 1, 1);
     for (const GeodataJob &job : geodataJobs)
     {
-        if (!job.labelRect.valid())
+        if (job.itemIndex == (uint32)-1)
             continue;
         renderGeodataQuad(job.collisionRect, job.depth, colorCollision);
         renderGeodataQuad(job.stickRect, job.depth, colorStick);

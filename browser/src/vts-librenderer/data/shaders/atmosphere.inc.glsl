@@ -127,3 +127,4 @@ vec4 atmColor(float density, vec4 color)
     return vec4(mix(color.rgb, a, density), color.a);
 }
 
+#define VTS_ATM_PER_VERTEX 1

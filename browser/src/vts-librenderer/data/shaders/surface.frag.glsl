@@ -14,6 +14,9 @@ layout(std140) uniform uboSurface
 
 in vec2 varUvTex;
 in vec3 varViewPosition;
+#ifdef VTS_ATM_PER_VERTEX
+in float varAtmDensity;
+#endif
 
 layout(location = 0) out vec4 outColor;
 
@@ -51,9 +54,11 @@ void main()
     }
 
     outColor *= uniColor;
-
-    // atmosphere
-    float atmosphere = atmDensity(varViewPosition);
-    outColor = atmColor(atmosphere, outColor);
+#ifdef VTS_ATM_PER_VERTEX
+    outColor = atmColor(varAtmDensity, outColor);
+#else
+    float atmDensity = atmDensity(varViewPosition);
+    outColor = atmColor(atmDensity, outColor);
+#endif
 }
 

@@ -84,7 +84,7 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
             "data/shaders/surface.vert.glsl");
         Buffer frag = readInternalMemoryBuffer(
             "data/shaders/surface.frag.glsl");
-        shaderSurface->load(vert.str(), atm + frag.str());
+        shaderSurface->load(atm + vert.str(), atm + frag.str());
         shaderSurface->bindUniformBlockLocations({
                  { "uboSurface", 1 }
              });

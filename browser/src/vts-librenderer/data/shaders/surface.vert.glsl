@@ -15,6 +15,9 @@ layout(location = 2) in vec2 inUvExternal;
 
 out vec2 varUvTex;
 out vec3 varViewPosition;
+#ifdef VTS_ATM_PER_VERTEX
+out float varAtmDensity;
+#endif
 
 out float gl_ClipDistance[4];
 
@@ -30,5 +33,8 @@ void main()
     varUvTex = vec2(mat3(uniUvMat) * vec3(uniFlags.w > 0
             ? inUvExternal : inUvInternal, 1.0));
     varViewPosition = vp.xyz;
+#ifdef VTS_ATM_PER_VERTEX
+    varAtmDensity = atmDensity(varViewPosition);
+#endif
 }
 

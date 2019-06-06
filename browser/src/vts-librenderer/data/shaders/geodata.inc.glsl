@@ -13,24 +13,6 @@ layout(std140) uniform uboViewData
     mat4 uniMvInv;
 };
 
-vec3 pixelUp(vec3 a)
-{
-    vec4 b = uniMvp * vec4(a, 1.0);
-    vec3 c = b.xyz / b.w;
-    c[1] += 1.0 / uniCameraParams[1];
-    vec4 d = uniMvpInv * vec4(c, 1.0);
-    return d.xyz / d.w;
-}
-
-vec3 pixelLeft(vec3 a)
-{
-    vec4 b = uniMvp * vec4(a, 1.0);
-    vec3 c = b.xyz / b.w;
-    c[0] += 1.0 / uniCameraParams[1];
-    vec4 d = uniMvpInv * vec4(c, 1.0);
-    return d.xyz / d.w;
-}
-
 float testVisibility(vec4 visibilities, vec3 modelPos, vec3 modelUp)
 {
     vec3 pos = vec3(uniMv * vec4(modelPos, 1.0));

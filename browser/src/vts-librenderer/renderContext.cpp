@@ -222,81 +222,121 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
             });
     }
 
-    // load shader geodata line
+    // load shader geodata point flat
     {
-        shaderGeodataLine = std::make_shared<Shader>();
-        shaderGeodataLine->debugId
-            = "data/shaders/geodataLine.*.glsl";
+        shaderGeodataPointFlat = std::make_shared<Shader>();
+        shaderGeodataPointFlat->debugId
+            = "data/shaders/geodataPointFlat.*.glsl";
         Buffer vert = readInternalMemoryBuffer(
-            "data/shaders/geodataLine.vert.glsl");
-        Buffer frag = readInternalMemoryBuffer(
-            "data/shaders/geodataLine.frag.glsl");
-        shaderGeodataLine->load(geo + vert.str(), geo + frag.str());
-        shaderGeodataLine->bindTextureLocations({
-                { "texLineData", 0 }
-            });
-        shaderGeodataLine->bindUniformBlockLocations({
-                { "uboCameraData", 0 },
-                { "uboViewData", 1 },
-                { "uboLineData", 2 }
-            });
-    }
-
-    // load shader geodata icon
-    {
-        shaderGeodataIcon = std::make_shared<Shader>();
-        shaderGeodataIcon->debugId
-            = "data/shaders/geodataIcon.*.glsl";
-        Buffer vert = readInternalMemoryBuffer(
-            "data/shaders/geodataIcon.vert.glsl");
-        Buffer frag = readInternalMemoryBuffer(
-            "data/shaders/geodataIcon.frag.glsl");
-        shaderGeodataIcon->load(vert.str(), frag.str());
-        shaderGeodataIcon->bindTextureLocations({
-                { "texIcons", 0 }
-            });
-        shaderGeodataIcon->bindUniformBlockLocations({
-                { "uboIconData", 2 }
-            });
-    }
-
-    // load shader geodata point
-    {
-        shaderGeodataPoint = std::make_shared<Shader>();
-        shaderGeodataPoint->debugId
-            = "data/shaders/geodataPoint.*.glsl";
-        Buffer vert = readInternalMemoryBuffer(
-            "data/shaders/geodataPoint.vert.glsl");
+            "data/shaders/geodataPointFlat.vert.glsl");
         Buffer frag = readInternalMemoryBuffer(
             "data/shaders/geodataPoint.frag.glsl");
-        shaderGeodataPoint->load(geo + vert.str(), geo + frag.str());
-        shaderGeodataPoint->bindTextureLocations({
+        shaderGeodataPointFlat->load(geo + vert.str(), geo + frag.str());
+        shaderGeodataPointFlat->bindTextureLocations({
                 { "texPointData", 0 }
             });
-        shaderGeodataPoint->bindUniformBlockLocations({
+        shaderGeodataPointFlat->bindUniformBlockLocations({
                 { "uboCameraData", 0 },
                 { "uboViewData", 1 },
                 { "uboPointData", 2 }
             });
     }
 
-    // load shader geodata point label
+    // load shader geodata point screen
     {
-        shaderGeodataPointLabel = std::make_shared<Shader>();
-        shaderGeodataPointLabel->debugId
-            = "data/shaders/geodataPointLabel.*.glsl";
+        shaderGeodataPointScreen = std::make_shared<Shader>();
+        shaderGeodataPointScreen->debugId
+            = "data/shaders/geodataPointScreen.*.glsl";
         Buffer vert = readInternalMemoryBuffer(
-            "data/shaders/geodataPointLabel.vert.glsl");
+            "data/shaders/geodataPointScreen.vert.glsl");
         Buffer frag = readInternalMemoryBuffer(
-            "data/shaders/geodataPointLabel.frag.glsl");
-        shaderGeodataPointLabel->load(geo + vert.str(), geo + frag.str());
-        shaderGeodataPointLabel->loadUniformLocations({
+            "data/shaders/geodataPoint.frag.glsl");
+        shaderGeodataPointScreen->load(geo + vert.str(), geo + frag.str());
+        shaderGeodataPointScreen->bindTextureLocations({
+                { "texPointData", 0 }
+            });
+        shaderGeodataPointScreen->bindUniformBlockLocations({
+                { "uboCameraData", 0 },
+                { "uboViewData", 1 },
+                { "uboPointData", 2 }
+            });
+    }
+
+    // load shader geodata line flat
+    {
+        shaderGeodataLineFlat = std::make_shared<Shader>();
+        shaderGeodataLineFlat->debugId
+            = "data/shaders/geodataLineFlat.*.glsl";
+        Buffer vert = readInternalMemoryBuffer(
+            "data/shaders/geodataLineFlat.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
+            "data/shaders/geodataLine.frag.glsl");
+        shaderGeodataLineFlat->load(geo + vert.str(), geo + frag.str());
+        shaderGeodataLineFlat->bindTextureLocations({
+                { "texLineData", 0 }
+            });
+        shaderGeodataLineFlat->bindUniformBlockLocations({
+                { "uboCameraData", 0 },
+                { "uboViewData", 1 },
+                { "uboLineData", 2 }
+            });
+    }
+
+    // load shader geodata line screen
+    {
+        shaderGeodataLineScreen = std::make_shared<Shader>();
+        shaderGeodataLineScreen->debugId
+            = "data/shaders/geodataLineScreen.*.glsl";
+        Buffer vert = readInternalMemoryBuffer(
+            "data/shaders/geodataLineScreen.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
+            "data/shaders/geodataLine.frag.glsl");
+        shaderGeodataLineScreen->load(geo + vert.str(), geo + frag.str());
+        shaderGeodataLineScreen->bindTextureLocations({
+                { "texLineData", 0 }
+            });
+        shaderGeodataLineScreen->bindUniformBlockLocations({
+                { "uboCameraData", 0 },
+                { "uboViewData", 1 },
+                { "uboLineData", 2 }
+            });
+    }
+
+    // load shader geodata icon screen
+    {
+        shaderGeodataIconScreen = std::make_shared<Shader>();
+        shaderGeodataIconScreen->debugId
+            = "data/shaders/geodataIcon.*.glsl";
+        Buffer vert = readInternalMemoryBuffer(
+            "data/shaders/geodataIcon.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
+            "data/shaders/geodataIcon.frag.glsl");
+        shaderGeodataIconScreen->load(vert.str(), frag.str());
+        shaderGeodataIconScreen->bindTextureLocations({
+                { "texIcons", 0 }
+            });
+        shaderGeodataIconScreen->bindUniformBlockLocations({
+                { "uboIconData", 2 }
+            });
+    }
+
+    // load shader geodata label screen
+    {
+        shaderGeodataLabelScreen = std::make_shared<Shader>();
+        shaderGeodataLabelScreen->debugId
+            = "data/shaders/geodataLabelScreen.*.glsl";
+        Buffer vert = readInternalMemoryBuffer(
+            "data/shaders/geodataLabelScreen.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
+            "data/shaders/geodataLabelScreen.frag.glsl");
+        shaderGeodataLabelScreen->load(geo + vert.str(), geo + frag.str());
+        shaderGeodataLabelScreen->loadUniformLocations({
                 "uniPass"
             });
-        shaderGeodataPointLabel->bindTextureLocations({
+        shaderGeodataLabelScreen->bindTextureLocations({
                 { "texGlyphs", 0 }
             });
-        shaderGeodataPointLabel->bindUniformBlockLocations({
+        shaderGeodataLabelScreen->bindUniformBlockLocations({
                 { "uboCameraData", 0 },
                 { "uboViewData", 1 },
                 { "uboText", 2 }

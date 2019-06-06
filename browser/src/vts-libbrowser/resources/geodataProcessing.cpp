@@ -409,17 +409,17 @@ struct geoContext
             bool point = isLayerStyleRequested(layer["point"]);
             bool line = isLayerStyleRequested(layer["line"]);
             bool icon = isLayerStyleRequested(layer["icon"]);
-            bool pointLabel = isLayerStyleRequested(layer["label"]);
-            bool lineLabel = isLayerStyleRequested(layer["line-label"]);
+            bool labelScreen = isLayerStyleRequested(layer["label"]);
+            bool labelFlat = isLayerStyleRequested(layer["line-label"]);
             bool polygon = isLayerStyleRequested(layer["polygon"]);
             bool ok = false;
             switch (t)
             {
             case Type::Point:
-                ok = point || icon || pointLabel;
+                ok = point || icon || labelScreen;
                 break;
             case Type::Line:
-                ok = line || lineLabel; // todo enable degrading line features to point layers
+                ok = line || labelFlat; // todo enable degrading line features to point layers
                 break;
             case Type::Polygon:
                 ok = polygon; // todo enable degrading polygon features to all layer types
@@ -1447,29 +1447,29 @@ if (cond == #OP) \
         spec.commonData.tileVisibility[1] = tileVisibility[1];
         processFeatureCommon(layer, spec, zOverride);
 
-        // line
-        if (evaluate(layer["line"]).asBool())
-            processFeatureLine(layer, spec);
-
         // point
         if (evaluate(layer["point"]).asBool())
             processFeaturePoint(layer, spec);
 
-        // line-label
-        if (evaluate(layer["line-label"]).asBool())
-            processFeatureLineLabel(layer, spec);
-
-        // point label
-        if (evaluate(layer["label"]).asBool())
-            processFeaturePointLabel(layer, spec);
-
-        // polygon
-        if (evaluate(layer["polygon"]).asBool())
-            processFeaturePolygon(layer, spec);
+        // line
+        if (evaluate(layer["line"]).asBool())
+            processFeatureLine(layer, spec);
 
         // icon
         if (evaluate(layer["icon"]).asBool())
             processFeatureIcon(layer, spec);
+
+        // label flat
+        if (evaluate(layer["line-label"]).asBool())
+            processFeatureLabelFlat(layer, spec);
+
+        // label screen
+        if (evaluate(layer["label"]).asBool())
+            processFeatureLabelScreen(layer, spec);
+
+        // polygon
+        if (evaluate(layer["polygon"]).asBool())
+            processFeaturePolygon(layer, spec);
     }
 
     void addIconSpec(const Value &layer, GpuGeodataSpec &spec) const
@@ -1701,6 +1701,29 @@ if (cond == #OP) \
                 = convertToDouble(layer["culling"]);
     }
 
+    void processFeaturePoint(const Value &layer, GpuGeodataSpec spec)
+    {
+        if (evaluate(layer["point-flat"]).asBool())
+            spec.type = GpuGeodataSpec::Type::PointFlat;
+        else
+            spec.type = GpuGeodataSpec::Type::PointScreen;
+        vecToRaw(layer.isMember("point-color")
+            ? convertColor(layer["point-color"])
+            : vec4f(1, 1, 1, 1),
+            spec.unionData.point.color);
+        spec.unionData.point.radius
+            = layer.isMember("point-radius")
+            ? convertToDouble(layer["point-radius"])
+            : 1;
+        if (compatibility)
+            spec.unionData.point.radius *= 0.25;
+        GpuGeodataSpec &data = findSpecData(spec);
+        auto arr = getFeaturePositions();
+        cullOutsideFeatures(arr);
+        data.positions.reserve(data.positions.size() + arr.size());
+        data.positions.insert(data.positions.end(), arr.begin(), arr.end());
+    }
+
     void processFeatureLine(const Value &layer, GpuGeodataSpec spec)
     {
         if (evaluate(layer["line-flat"]).asBool())
@@ -1748,41 +1771,40 @@ if (cond == #OP) \
         data.positions.insert(data.positions.end(), arr.begin(), arr.end());
     }
 
-    void processFeaturePoint(const Value &layer, GpuGeodataSpec spec)
+    void processFeatureIcon(const Value &layer, GpuGeodataSpec spec)
     {
-        if (evaluate(layer["point-flat"]).asBool())
-            spec.type = GpuGeodataSpec::Type::PointFlat;
-        else
-            spec.type = GpuGeodataSpec::Type::PointScreen;
-        vecToRaw(layer.isMember("point-color")
-            ? convertColor(layer["point-color"])
-            : vec4f(1, 1, 1, 1),
-            spec.unionData.point.color);
-        spec.unionData.point.radius
-            = layer.isMember("point-radius")
-            ? convertToDouble(layer["point-radius"])
-            : 1;
-        if (compatibility)
-            spec.unionData.point.radius *= 0.25;
+        if (evaluate(layer["pack"]).asBool())
+            return;
+
+        spec.type = GpuGeodataSpec::Type::IconScreen;
+        addIconSpec(layer, spec);
+
+        std::string hysteresisId = addHysteresisIdSpec(layer, spec);
+
+        float importance = addImportanceSpec(layer, spec,
+            spec.commonData.icon.margin);
+
         GpuGeodataSpec &data = findSpecData(spec);
-        auto arr = getFeaturePositions();
-        cullOutsideFeatures(arr);
+        const auto arr = getFeaturePositions();
         data.positions.reserve(data.positions.size() + arr.size());
         data.positions.insert(data.positions.end(), arr.begin(), arr.end());
+        addHysteresisIdItems(hysteresisId, data, arr.size());
+        addImportanceItems(importance, data, arr.size());
+        addIconItems(layer, data, arr.size());
     }
 
-    void processFeatureLineLabel(const Value &layer, GpuGeodataSpec spec)
+    void processFeatureLabelFlat(const Value &layer, GpuGeodataSpec spec)
     {
         (void)layer;
         (void)spec;
         // todo
     }
 
-    void processFeaturePointLabel(const Value &layer, GpuGeodataSpec spec)
+    void processFeatureLabelScreen(const Value &layer, GpuGeodataSpec spec)
     {
         findFonts(layer["label-font"], spec.fontCascade);
 
-        spec.type = GpuGeodataSpec::Type::PointLabel;
+        spec.type = GpuGeodataSpec::Type::LabelScreen;
 
         if (evaluate(layer["icon"]).asBool()
             && evaluate(layer["pack"]).asBool())
@@ -1791,26 +1813,26 @@ if (cond == #OP) \
         vecToRaw(layer.isMember("label-color")
             ? convertColor(layer["label-color"])
             : vec4f(1, 1, 1, 1),
-            spec.unionData.pointLabel.color);
+            spec.unionData.labelScreen.color);
         vecToRaw(layer.isMember("label-color2")
             ? convertColor(layer["label-color2"])
             : vec4f(0, 0, 0, 1),
-            spec.unionData.pointLabel.color2);
+            spec.unionData.labelScreen.color2);
 
         vecToRaw(layer.isMember("label-outline")
             ? convertVector4(layer["label-outline"])
             : vec4f(0.25, 0.75, 2.2, 2.2),
-            spec.unionData.pointLabel.outline);
+            spec.unionData.labelScreen.outline);
 
         vecToRaw(layer.isMember("label-offset")
             ? convertVector2(layer["label-offset"])
             : vec2f(0, 0),
-            spec.unionData.pointLabel.offset);
-        spec.unionData.pointLabel.offset[1] *= -1;
+            spec.unionData.labelScreen.offset);
+        spec.unionData.labelScreen.offset[1] *= -1;
         if (compatibility)
         {
-            spec.unionData.pointLabel.offset[0] *= 0.5;
-            spec.unionData.pointLabel.offset[1] *= 0.5;
+            spec.unionData.labelScreen.offset[0] *= 0.5;
+            spec.unionData.labelScreen.offset[1] *= 0.5;
         }
 
         if (layer.isMember("label-no-overlap"))
@@ -1818,29 +1840,29 @@ if (cond == #OP) \
                 = spec.commonData.preventOverlap
                     && evaluate(layer["label-no-overlap"]).asBool();
 
-        vecToRaw(vec2f(5, 5), spec.unionData.pointLabel.margin);
+        vecToRaw(vec2f(5, 5), spec.unionData.labelScreen.margin);
         if (layer.isMember("label-no-overlap-margin"))
             vecToRaw(convertNoOverlapMargin(layer["label-no-overlap-margin"]),
-                spec.unionData.pointLabel.margin);
+                spec.unionData.labelScreen.margin);
 
-        spec.unionData.pointLabel.size
+        spec.unionData.labelScreen.size
             = layer.isMember("label-size")
             ? convertToDouble(layer["label-size"])
             : 20;
         if (compatibility)
-            spec.unionData.pointLabel.size *= 1.5 * 1.52 / 3.0;
+            spec.unionData.labelScreen.size *= 1.5 * 1.52 / 3.0;
 
-        spec.unionData.pointLabel.width
+        spec.unionData.labelScreen.width
             = layer.isMember("label-width")
             ? convertToDouble(layer["label-width"])
             : 200;
 
-        spec.unionData.pointLabel.origin
+        spec.unionData.labelScreen.origin
             = layer.isMember("label-origin")
             ? convertOrigin(layer["label-origin"])
             : GpuGeodataSpec::Origin::BottomCenter;
 
-        spec.unionData.pointLabel.textAlign
+        spec.unionData.labelScreen.textAlign
             = layer.isMember("label-align")
             ? convertTextAlign(layer["label-align"])
             : GpuGeodataSpec::TextAlign::Center;
@@ -1857,7 +1879,7 @@ if (cond == #OP) \
         std::string hysteresisId = addHysteresisIdSpec(layer, spec);
 
         float importance = addImportanceSpec(layer, spec,
-            spec.unionData.pointLabel.margin);
+            spec.unionData.labelScreen.margin);
 
         GpuGeodataSpec &data = findSpecData(spec);
         auto arr = getFeaturePositions();
@@ -1909,28 +1931,6 @@ if (cond == #OP) \
         const auto arr = getFeatureTriangles();
         data.positions.reserve(data.positions.size() + arr.size());
         data.positions.insert(data.positions.end(), arr.begin(), arr.end());
-    }
-
-    void processFeatureIcon(const Value &layer, GpuGeodataSpec spec)
-    {
-        if (evaluate(layer["pack"]).asBool())
-            return;
-
-        spec.type = GpuGeodataSpec::Type::IconScreen;
-        addIconSpec(layer, spec);
-
-        std::string hysteresisId = addHysteresisIdSpec(layer, spec);
-
-        float importance = addImportanceSpec(layer, spec,
-            spec.commonData.icon.margin);
-
-        GpuGeodataSpec &data = findSpecData(spec);
-        const auto arr = getFeaturePositions();
-        data.positions.reserve(data.positions.size() + arr.size());
-        data.positions.insert(data.positions.end(), arr.begin(), arr.end());
-        addHysteresisIdItems(hysteresisId, data, arr.size());
-        addImportanceItems(importance, data, arr.size());
-        addIconItems(layer, data, arr.size());
     }
 
     GpuGeodataSpec &findSpecData(const GpuGeodataSpec &spec)

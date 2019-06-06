@@ -45,7 +45,7 @@ void MainWindow::makeScreenshot()
     spec.height = ro.height;
     spec.components = 3;
     spec.buffer.resize(spec.expectedSize());
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, rv.frameRenderBufferId);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, rv.frameReadBufferId);
     glReadPixels(0, 0, spec.width, spec.height,
         GL_RGB, GL_UNSIGNED_BYTE, spec.buffer.data());
     spec.verticalFlip();

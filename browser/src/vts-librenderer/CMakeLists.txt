@@ -23,7 +23,7 @@ set(PUB_HDR_LIST
 
 set(SRC_LIST
     classes.cpp
-	depthBuffer.cpp
+    depthBuffer.cpp
     font.cpp
     font.hpp
     foundation.cpp
@@ -40,8 +40,8 @@ set(SRC_LIST
 
 set(DATA_LIST
     data/shaders/atmosphere.inc.glsl
-    data/shaders/background.vert.glsl
     data/shaders/background.frag.glsl
+    data/shaders/background.vert.glsl
     data/shaders/color.frag.glsl
     data/shaders/color.vert.glsl
     data/shaders/copyDepth.frag.glsl
@@ -51,12 +51,14 @@ set(DATA_LIST
     data/shaders/geodataColor.vert.glsl
     data/shaders/geodataIcon.frag.glsl
     data/shaders/geodataIcon.vert.glsl
+    data/shaders/geodataLabelScreen.frag.glsl
+    data/shaders/geodataLabelScreen.vert.glsl
     data/shaders/geodataLine.frag.glsl
-    data/shaders/geodataLine.vert.glsl
+    data/shaders/geodataLineFlat.vert.glsl
+    data/shaders/geodataLineScreen.vert.glsl
     data/shaders/geodataPoint.frag.glsl
-    data/shaders/geodataPoint.vert.glsl
-    data/shaders/geodataPointLabel.frag.glsl
-    data/shaders/geodataPointLabel.vert.glsl
+    data/shaders/geodataPointFlat.vert.glsl
+    data/shaders/geodataPointScreen.vert.glsl
     data/shaders/geodataTriangle.frag.glsl
     data/shaders/geodataTriangle.vert.glsl
     data/shaders/infographics.frag.glsl

@@ -44,13 +44,14 @@ public:
     enum class Type : uint8
     {
         Invalid,
-        LineScreen,
-        LineFlat,
-        LineLabel,
-        PointScreen,
         PointFlat,
-        PointLabel,
+        PointScreen,
+        LineFlat,
+        LineScreen,
+        IconFlat,
         IconScreen,
+        LabelFlat,
+        LabelScreen,
         Triangles,
     };
 
@@ -91,13 +92,17 @@ public:
         FlatShade,
     };
 
-    struct VTS_API Stick
+    struct VTS_API Point
     {
         float color[4];
-        float heightMax;
-        float heightThreshold;
+        float radius;
+    };
+
+    struct VTS_API Line
+    {
+        float color[4];
         float width;
-        float offset;
+        Units units;
     };
 
     struct VTS_API Icon
@@ -109,14 +114,7 @@ public:
         Origin origin;
     };
 
-    struct VTS_API Line
-    {
-        float color[4];
-        float width;
-        Units units;
-    };
-
-    struct VTS_API LineLabel
+    struct VTS_API LabelFlat
     {
         float color[4];
         float color2[4];
@@ -124,13 +122,7 @@ public:
         float offset;
     };
 
-    struct VTS_API Point
-    {
-        float color[4];
-        float radius;
-    };
-
-    struct VTS_API PointLabel
+    struct VTS_API LabelScreen
     {
         float outline[4];
         float color[4];
@@ -152,12 +144,21 @@ public:
 
     union VTS_API UnionData
     {
-        Line line;
-        LineLabel lineLabel;
         Point point;
-        PointLabel pointLabel;
+        Line line;
+        LabelFlat labelFlat;
+        LabelScreen labelScreen;
         Triangles triangles;
         UnionData();
+    };
+
+    struct VTS_API Stick
+    {
+        float color[4];
+        float heightMax;
+        float heightThreshold;
+        float width;
+        float offset;
     };
 
     struct VTS_API CommonData

@@ -67,11 +67,11 @@ void GeodataBase::load(RenderContextImpl *renderer, ResourceInfo &info,
     case GpuGeodataSpec::Type::PointFlat:
         loadPoints();
         break;
-    case GpuGeodataSpec::Type::PointLabel:
-        loadPointLabels();
+    case GpuGeodataSpec::Type::LabelScreen:
+        loadLabelScreens();
         break;
-    case GpuGeodataSpec::Type::LineLabel:
-        loadLineLabels();
+    case GpuGeodataSpec::Type::LabelFlat:
+        loadLabelFlats();
         break;
     case GpuGeodataSpec::Type::IconScreen:
         loadIcons();
@@ -575,7 +575,7 @@ void RenderViewImpl::regenerateJobCollision(GeodataJob &j)
     const auto &g = j.g;
     if (j.g->spec.commonData.preventOverlap)
     {
-        vec2f marginLabel = rawToVec2(g->spec.unionData.pointLabel.margin)
+        vec2f marginLabel = rawToVec2(g->spec.unionData.labelScreen.margin)
             .cwiseProduct(vec2f(2.f / width, 2.f / height));
         Rect label = j.labelRect;
         label.a -= marginLabel;
@@ -604,13 +604,13 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
         return; // nothing
 
     case GpuGeodataSpec::Type::LineFlat:
-    case GpuGeodataSpec::Type::LineLabel:
+    case GpuGeodataSpec::Type::LabelFlat:
     case GpuGeodataSpec::Type::PointScreen:
     case GpuGeodataSpec::Type::PointFlat:
     case GpuGeodataSpec::Type::Triangles:
         return; // nothing
 
-    case GpuGeodataSpec::Type::PointLabel:
+    case GpuGeodataSpec::Type::LabelScreen:
     {
         const auto &t = g->texts[j.itemIndex];
         regenerateJobCommon(j, t.worldPosition);
@@ -619,11 +619,11 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
         {
             float sc = options.textScale * 2; // NDC space is twice as large
             vec2f sd = vec2f(sc / width, sc / height);
-            vec2f org = numericOrigin(g->spec.unionData.pointLabel.origin)
+            vec2f org = numericOrigin(g->spec.unionData.labelScreen.origin)
                 - vec2f(0.5f, 0.5f);
             j.labelOffset = vec2f(
-                g->spec.unionData.pointLabel.offset[0] * 2 / width,
-                g->spec.unionData.pointLabel.offset[1] * 2 / height
+                g->spec.unionData.labelScreen.offset[0] * 2 / width,
+                g->spec.unionData.labelScreen.offset[1] * 2 / height
             ) - org.cwiseProduct(t.originSize).cwiseProduct(sd);
             vec2f off = j.labelOffset + j.refPoint;
             j.labelRect = Rect(
@@ -667,7 +667,7 @@ void RenderViewImpl::generateJobs()
 
         case GpuGeodataSpec::Type::LineScreen:
         case GpuGeodataSpec::Type::LineFlat:
-        case GpuGeodataSpec::Type::LineLabel:
+        case GpuGeodataSpec::Type::LabelFlat:
         case GpuGeodataSpec::Type::PointScreen:
         case GpuGeodataSpec::Type::PointFlat:
         case GpuGeodataSpec::Type::Triangles:
@@ -676,7 +676,7 @@ void RenderViewImpl::generateJobs()
             geodataJobs.emplace_back(g, uint32(-1));
         } break;
 
-        case GpuGeodataSpec::Type::PointLabel:
+        case GpuGeodataSpec::Type::LabelScreen:
         {
             if (!g->checkTextures())
                 continue;
@@ -895,6 +895,20 @@ void RenderViewImpl::renderStick(const GeodataJob &job)
     renderGeodataQuad(job.stickRect, job.depth, color);
 }
 
+void RenderViewImpl::renderPointOrLine(const GeodataJob &job)
+{
+    const auto &g = job.g;
+    assert(job.itemIndex == (uint32)-1);
+    bindUboView(g);
+    g->uniform->bindToIndex(2);
+    g->texture->bind();
+    Mesh *msh = g->mesh.get();
+    msh->bind();
+    glEnable(GL_STENCIL_TEST);
+    msh->dispatch();
+    glDisable(GL_STENCIL_TEST);
+}
+
 void RenderViewImpl::renderIcon(const GeodataJob &job,
     const float uvs[4])
 {
@@ -920,7 +934,7 @@ void RenderViewImpl::renderIcon(const GeodataJob &job,
 
     ((Texture*)job.g->spec.bitmap.get())->bind();
 
-    context->shaderGeodataIcon->bind();
+    context->shaderGeodataIconScreen->bind();
     context->meshQuad->bind();
     context->meshQuad->dispatch();
 }
@@ -939,8 +953,8 @@ void RenderViewImpl::renderLabel(const GeodataJob &job)
     const auto &g = job.g;
     const auto &t = g->texts[job.itemIndex];
 
-    uboText.color[0] = rawToVec4(g->spec.unionData.pointLabel.color);
-    uboText.color[1] = rawToVec4(g->spec.unionData.pointLabel.color2);
+    uboText.color[0] = rawToVec4(g->spec.unionData.labelScreen.color);
+    uboText.color[1] = rawToVec4(g->spec.unionData.labelScreen.color2);
     uboText.color[0][3] *= job.opacity;
     uboText.color[1][3] *= job.opacity;
     uboText.outline = g->outline;
@@ -956,7 +970,7 @@ void RenderViewImpl::renderLabel(const GeodataJob &job)
             *o++ = c;
     }
 
-    context->shaderGeodataPointLabel->bind();
+    context->shaderGeodataLabelScreen->bind();
     auto uboGeodataText = getUbo();
     uboGeodataText->debugId = "UboText";
     uboGeodataText->bind();
@@ -967,7 +981,7 @@ void RenderViewImpl::renderLabel(const GeodataJob &job)
     context->meshEmpty->bind();
     for (int pass = 0; pass < 2; pass++)
     {
-        context->shaderGeodataPointLabel->uniform(0, pass);
+        context->shaderGeodataLabelScreen->uniform(0, pass);
         for (auto &w : t.words)
         {
             w.texture->bind();
@@ -988,55 +1002,28 @@ void RenderViewImpl::renderJobs()
         case GpuGeodataSpec::Type::Invalid:
             throw std::invalid_argument("Invalid geodata type enum");
 
-        case GpuGeodataSpec::Type::LineScreen:
-        case GpuGeodataSpec::Type::LineFlat:
+        case GpuGeodataSpec::Type::PointFlat:
         {
-            assert(job.itemIndex == (uint32)-1);
-            bindUboView(g);
-            context->shaderGeodataLine->bind();
-            g->uniform->bindToIndex(2);
-            g->texture->bind();
-            Mesh *msh = g->mesh.get();
-            msh->bind();
-            glEnable(GL_STENCIL_TEST);
-            msh->dispatch();
-            glDisable(GL_STENCIL_TEST);
-        } break;
-
-        case GpuGeodataSpec::Type::LineLabel:
-        {
-            // todo
+            context->shaderGeodataPointFlat->bind();
+            renderPointOrLine(job);
         } break;
 
         case GpuGeodataSpec::Type::PointScreen:
-        case GpuGeodataSpec::Type::PointFlat:
         {
-            assert(job.itemIndex == (uint32)-1);
-            bindUboView(g);
-            context->shaderGeodataPoint->bind();
-            g->uniform->bindToIndex(2);
-            g->texture->bind();
-            Mesh *msh = g->mesh.get();
-            msh->bind();
-            glEnable(GL_STENCIL_TEST);
-            msh->dispatch();
-            glDisable(GL_STENCIL_TEST);
+            context->shaderGeodataPointScreen->bind();
+            renderPointOrLine(job);
         } break;
 
-        case GpuGeodataSpec::Type::PointLabel:
+        case GpuGeodataSpec::Type::LineFlat:
         {
-            const auto &t = g->texts[job.itemIndex];
+            context->shaderGeodataLineFlat->bind();
+            renderPointOrLine(job);
+        } break;
 
-            if (!geodataTestVisibility(
-                g->spec.commonData.visibilities,
-                t.worldPosition, t.worldUp))
-                continue;
-
-            bindUboView(g);
-            renderStick(job);
-            if (job.g->spec.commonData.icon.scale > 0)
-                renderIcon(job, job.g->spec.iconCoords[job.itemIndex].data());
-            renderLabel(job);
+        case GpuGeodataSpec::Type::LineScreen:
+        {
+            context->shaderGeodataLineScreen->bind();
+            renderPointOrLine(job);
         } break;
 
         case GpuGeodataSpec::Type::IconScreen:
@@ -1051,6 +1038,27 @@ void RenderViewImpl::renderJobs()
             bindUboView(g);
             renderStick(job);
             renderIcon(job, job.g->spec.iconCoords[job.itemIndex].data());
+        } break;
+
+        case GpuGeodataSpec::Type::LabelFlat:
+        {
+            // todo
+        } break;
+
+        case GpuGeodataSpec::Type::LabelScreen:
+        {
+            const auto &t = g->texts[job.itemIndex];
+
+            if (!geodataTestVisibility(
+                g->spec.commonData.visibilities,
+                t.worldPosition, t.worldUp))
+                continue;
+
+            bindUboView(g);
+            renderStick(job);
+            if (job.g->spec.commonData.icon.scale > 0)
+                renderIcon(job, job.g->spec.iconCoords[job.itemIndex].data());
+            renderLabel(job);
         } break;
 
         case GpuGeodataSpec::Type::Triangles:

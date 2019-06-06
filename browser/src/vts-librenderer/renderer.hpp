@@ -207,6 +207,7 @@ public:
     void processJobsHysteresis();
     void sortJobsByZIndexAndDepth();
     void renderStick(const GeodataJob &job);
+    void renderPointOrLine(const GeodataJob &job);
     void renderIcon(const GeodataJob &job, const float uvs[4]);
     void renderLabel(const GeodataJob &job);
     void renderJobs();
@@ -224,10 +225,12 @@ public:
     std::shared_ptr<Shader> shaderTexture;
     std::shared_ptr<Shader> shaderCopyDepth;
     std::shared_ptr<Shader> shaderGeodataColor;
-    std::shared_ptr<Shader> shaderGeodataLine;
-    std::shared_ptr<Shader> shaderGeodataIcon;
-    std::shared_ptr<Shader> shaderGeodataPoint;
-    std::shared_ptr<Shader> shaderGeodataPointLabel;
+    std::shared_ptr<Shader> shaderGeodataPointFlat;
+    std::shared_ptr<Shader> shaderGeodataPointScreen;
+    std::shared_ptr<Shader> shaderGeodataLineFlat;
+    std::shared_ptr<Shader> shaderGeodataLineScreen;
+    std::shared_ptr<Shader> shaderGeodataIconScreen;
+    std::shared_ptr<Shader> shaderGeodataLabelScreen;
     std::shared_ptr<Shader> shaderGeodataTriangle;
     std::shared_ptr<Mesh> meshQuad; // positions: -1 .. 1
     std::shared_ptr<Mesh> meshRect; // positions: 0 .. 1

@@ -29,37 +29,6 @@
 namespace vts { namespace renderer
 {
 
-void GeodataBase::prepareTextureForLinesAndPoints(Buffer &&texBuffer,
-    uint32 totalPoints)
-{
-    GpuTextureSpec tex;
-    tex.buffer = std::move(texBuffer);
-    tex.width = totalPoints;
-    tex.height = 2;
-    tex.components = 3;
-    tex.internalFormat = GL_RGB32F;
-    tex.type = GpuTypeEnum::Float;
-    tex.filterMode = GpuTextureSpec::FilterMode::Nearest;
-    tex.wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
-    ResourceInfo ri;
-    renderer->api->loadTexture(ri, tex, debugId);
-    this->texture = std::static_pointer_cast<Texture>(ri.userData);
-    addMemory(ri);
-}
-
-void GeodataBase::prepareMeshForLinesAndPoints(Buffer &&indBuffer,
-    uint32 indicesCount)
-{
-    GpuMeshSpec msh;
-    msh.faceMode = GpuMeshSpec::FaceMode::Triangles;
-    msh.indices = std::move(indBuffer);
-    msh.indicesCount = indicesCount;
-    ResourceInfo ri;
-    renderer->api->loadMesh(ri, msh, debugId);
-    this->mesh = std::static_pointer_cast<Mesh>(ri.userData);
-    addMemory(ri);
-}
-
 void GeodataBase::loadLines()
 {
     uint32 totalPoints = getTotalPoints(); // example: 7
@@ -126,10 +95,33 @@ void GeodataBase::loadLines()
     }
 
     // prepare the texture
-    prepareTextureForLinesAndPoints(std::move(texBuffer), totalPoints);
+    {
+        GpuTextureSpec tex;
+        tex.buffer = std::move(texBuffer);
+        tex.width = totalPoints;
+        tex.height = 2;
+        tex.components = 3;
+        tex.internalFormat = GL_RGB32F;
+        tex.type = GpuTypeEnum::Float;
+        tex.filterMode = GpuTextureSpec::FilterMode::Nearest;
+        tex.wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
+        ResourceInfo ri;
+        renderer->api->loadTexture(ri, tex, debugId);
+        this->texture = std::static_pointer_cast<Texture>(ri.userData);
+        addMemory(ri);
+    }
 
     // prepare the mesh
-    prepareMeshForLinesAndPoints(std::move(indBuffer), indicesCount);
+    {
+        GpuMeshSpec msh;
+        msh.faceMode = GpuMeshSpec::FaceMode::Triangles;
+        msh.indices = std::move(indBuffer);
+        msh.indicesCount = indicesCount;
+        ResourceInfo ri;
+        renderer->api->loadMesh(ri, msh, debugId);
+        this->mesh = std::static_pointer_cast<Mesh>(ri.userData);
+        addMemory(ri);
+    }
 
     // prepare UBO
     {
@@ -137,16 +129,16 @@ void GeodataBase::loadLines()
         {
             vec4f color;
             vec4f visibilities;
-            vec4f typePlusUnitsPlusWidth;
+            vec4f uniUnitsRadius;
         };
         UboLineData uboLineData;
 
         uboLineData.color = rawToVec4(spec.unionData.line.color);
         uboLineData.visibilities
             = rawToVec4(spec.commonData.visibilities);
-        uboLineData.typePlusUnitsPlusWidth
-            = vec4f((float)spec.type, (float)spec.unionData.line.units,
-                spec.unionData.line.width, 0.f);
+        uboLineData.uniUnitsRadius
+            = vec4f((float)spec.unionData.line.units,
+                spec.unionData.line.width * 0.5f, 0.f, 0.f);
 
         uniform = std::make_shared<UniformBuffer>();
         uniform->debugId = debugId;
@@ -158,9 +150,11 @@ void GeodataBase::loadLines()
 
 void GeodataBase::loadPoints()
 {
-    uint32 totalPoints = getTotalPoints();
-    uint32 trianglesCount = totalPoints * 2;
-    uint32 indicesCount = trianglesCount * 3;
+    uint32 totalPoints = getTotalPoints(); // example: 7
+    uint32 trianglesCount = totalPoints * 2; // 14
+    uint32 indicesCount = trianglesCount * 3; // 42
+    // point index = vertex index / 4
+    // corner = vertex index % 4
 
     Buffer texBuffer;
     Buffer indBuffer;
@@ -177,26 +171,20 @@ void GeodataBase::loadPoints()
         uint16 *bufInd = (uint16*)indBuffer.data();
         uint16 current = 0;
 
-        for (uint32 li = 0, lin = spec.positions.size();
-            li < lin; li++)
+        assert(spec.positions.size() == totalPoints);
+        for (uint32 pi = 0; pi < totalPoints; pi++)
         {
-            const std::vector<std::array<float, 3>> &points
-                = spec.positions[li];
-            for (uint32 pi = 0, pin = points.size();
-                pi < pin; pi++)
-            {
-                vec3f p = rawToVec3(points[pi].data());
-                vec3f u = modelUp(p);
-                *bufPos++ = p;
-                *bufUps++ = u;
-                *bufInd++ = current + 0;
-                *bufInd++ = current + 1;
-                *bufInd++ = current + 3;
-                *bufInd++ = current + 0;
-                *bufInd++ = current + 3;
-                *bufInd++ = current + 2;
-                current += 4;
-            }
+            vec3f p = rawToVec3(spec.positions[pi][0].data());
+            vec3f u = modelUp(p);
+            *bufPos++ = p;
+            *bufUps++ = u;
+            *bufInd++ = current + 0;
+            *bufInd++ = current + 1;
+            *bufInd++ = current + 3;
+            *bufInd++ = current + 0;
+            *bufInd++ = current + 3;
+            *bufInd++ = current + 2;
+            current += 4;
         }
 
         assert(bufPos == texBufHalf);
@@ -205,10 +193,33 @@ void GeodataBase::loadPoints()
     }
 
     // prepare the texture
-    prepareTextureForLinesAndPoints(std::move(texBuffer), totalPoints);
+    {
+        GpuTextureSpec tex;
+        tex.buffer = std::move(texBuffer);
+        tex.width = totalPoints;
+        tex.height = 2;
+        tex.components = 3;
+        tex.internalFormat = GL_RGB32F;
+        tex.type = GpuTypeEnum::Float;
+        tex.filterMode = GpuTextureSpec::FilterMode::Nearest;
+        tex.wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
+        ResourceInfo ri;
+        renderer->api->loadTexture(ri, tex, debugId);
+        this->texture = std::static_pointer_cast<Texture>(ri.userData);
+        addMemory(ri);
+    }
 
     // prepare the mesh
-    prepareMeshForLinesAndPoints(std::move(indBuffer), indicesCount);
+    {
+        GpuMeshSpec msh;
+        msh.faceMode = GpuMeshSpec::FaceMode::Triangles;
+        msh.indices = std::move(indBuffer);
+        msh.indicesCount = indicesCount;
+        ResourceInfo ri;
+        renderer->api->loadMesh(ri, msh, debugId);
+        this->mesh = std::static_pointer_cast<Mesh>(ri.userData);
+        addMemory(ri);
+    }
 
     // prepare UBO
     {
@@ -216,17 +227,15 @@ void GeodataBase::loadPoints()
         {
             vec4f color;
             vec4f visibilities;
-            vec4f typePlusRadius;
+            vec4f uniUnitsRadius;
         };
         UboPointData uboPointData;
 
         uboPointData.color = rawToVec4(spec.unionData.point.color);
         uboPointData.visibilities
             = rawToVec4(spec.commonData.visibilities);
-        uboPointData.typePlusRadius
-            = vec4f((float)spec.type,
-                spec.unionData.point.radius * 2.f, // NDC space is twice as large
-                0.f, 0.f);
+        uboPointData.uniUnitsRadius
+            = vec4f(0, spec.unionData.point.radius, 0.f, 0.f);
 
         uniform = std::make_shared<UniformBuffer>();
         uniform->debugId = debugId;

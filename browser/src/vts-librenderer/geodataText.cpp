@@ -462,16 +462,16 @@ void GeodataBase::copyFonts()
         fontCascade.push_back(std::static_pointer_cast<Font>(i));
 }
 
-void GeodataBase::loadPointLabels()
+void GeodataBase::loadLabelScreens()
 {
     assert(spec.texts.size() == spec.positions.size());
-    float align = numericAlign(spec.unionData.pointLabel.textAlign);
+    float align = numericAlign(spec.unionData.labelScreen.textAlign);
     for (uint32 i = 0, e = spec.texts.size(); i != e; i++)
     {
         std::vector<TmpLine> lines = textToGlyphs(
             spec.texts[i], fontCascade);
         vec2f originSize = textLayout(
-            spec.unionData.pointLabel.size,
+            spec.unionData.labelScreen.size,
             align, lines);
         Text t = generateTexts(lines);
         t.collision = textCollision(lines);
@@ -488,13 +488,13 @@ void GeodataBase::loadPointLabels()
 
     // prepare outline
     {
-        float os = std::sqrt(2) / spec.unionData.pointLabel.size;
-        outline = rawToVec4(spec.unionData.pointLabel.outline)
+        float os = std::sqrt(2) / spec.unionData.labelScreen.size;
+        outline = rawToVec4(spec.unionData.labelScreen.outline)
                         .cwiseProduct(vec4f(1, 1, os, os));
     }
 }
 
-void GeodataBase::loadLineLabels()
+void GeodataBase::loadLabelFlats()
 {
     // todo
 }

@@ -96,15 +96,11 @@ public:
     vec3f modelUp(const vec3f &p) const;
     vec3f worldUp(vec3f &p) const;
     uint32 getTotalPoints() const;
-    void prepareTextureForLinesAndPoints(Buffer &&texBuffer,
-        uint32 totalPoints);
-    void prepareMeshForLinesAndPoints(Buffer &&indBuffer,
-        uint32 indicesCount);
     void copyFonts();
     void loadLines();
     void loadPoints();
-    void loadPointLabels();
-    void loadLineLabels();
+    void loadLabelScreens();
+    void loadLabelFlats();
     void loadIcons();
     void loadTriangles();
     bool checkTextures();

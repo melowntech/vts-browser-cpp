@@ -3,7 +3,7 @@ layout(std140) uniform uboTriangleData
 {
     vec4 uniColor;
     vec4 uniVisibilities;
-    int shading;
+    int uniShading;
 };
 
 layout(location = 0) in vec3 inPosition;

@@ -96,6 +96,7 @@ public:
     {
         float color[4];
         float radius;
+        Units units;
     };
 
     struct VTS_API Line

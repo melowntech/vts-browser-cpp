@@ -874,7 +874,7 @@ struct geoContext
         if (fnc == "round")
             return (sint32)std::round(convertToDouble(expression[fnc]));
 
-        // 'add', 'sub', 'mul', 'div', 'pow', 'atan2'
+        // 'add', 'sub', 'mul', 'div'
 #define COMP(NAME, OP) \
 if (fnc == #NAME) \
 { \
@@ -887,8 +887,10 @@ if (fnc == #NAME) \
         COMP(add, +);
         COMP(sub, -);
         COMP(mul, *);
-        COMP(div, / );
+        COMP(div, /);
 #undef COMP
+
+        // 'pow', 'atan2', 'mod'
         if (fnc == "pow")
         {
             validateArrayLength(expression[fnc], 2, 2,
@@ -904,6 +906,14 @@ if (fnc == #NAME) \
             double a = convertToDouble(expression[fnc][0]);
             double b = convertToDouble(expression[fnc][1]);
             return std::atan2(a, b);
+        }
+        if (fnc == "mod")
+        {
+            validateArrayLength(expression[fnc], 2, 2,
+                "Function 'mod' is expecting an array with 2 elements.");
+            sint64 a = (sint64)convertToDouble(expression[fnc][0]);
+            sint64 b = (sint64)convertToDouble(expression[fnc][1]);
+            return a % b;
         }
 
         // 'clamp'
@@ -1707,16 +1717,52 @@ if (cond == #OP) \
             spec.type = GpuGeodataSpec::Type::PointFlat;
         else
             spec.type = GpuGeodataSpec::Type::PointScreen;
+
         vecToRaw(layer.isMember("point-color")
             ? convertColor(layer["point-color"])
             : vec4f(1, 1, 1, 1),
             spec.unionData.point.color);
+
+        if (layer.isMember("point-radius-units"))
+        {
+            std::string units = evaluate(layer["point-radius-units"]).asString();
+            if (units == "ratio")
+                spec.unionData.point.units = GpuGeodataSpec::Units::Ratio;
+            else if (units == "pixels")
+                spec.unionData.point.units = GpuGeodataSpec::Units::Pixels;
+            else if (units == "meters")
+                spec.unionData.point.units = GpuGeodataSpec::Units::Meters;
+            else if (Validating)
+                THROW << "Invalid point-radius-units";
+            if (Validating)
+            {
+                if (spec.type == GpuGeodataSpec::Type::PointFlat
+                    && spec.unionData.point.units
+                    == GpuGeodataSpec::Units::Pixels)
+                    THROW
+                    << "Invalid combination of point-radius-units"
+                    << " (pixels) and point-flat (true)";
+                if (spec.type == GpuGeodataSpec::Type::PointScreen
+                    && spec.unionData.point.units
+                    == GpuGeodataSpec::Units::Meters)
+                    THROW
+                    << "Invalid combination of point-radius-units"
+                    << " (meters) and point-flat (false)";
+            }
+        }
+        else if (spec.type == GpuGeodataSpec::Type::PointFlat)
+            spec.unionData.point.units = GpuGeodataSpec::Units::Meters;
+        else
+            spec.unionData.point.units = GpuGeodataSpec::Units::Pixels;
+
         spec.unionData.point.radius
             = layer.isMember("point-radius")
             ? convertToDouble(layer["point-radius"])
             : 1;
-        if (compatibility)
+        if (compatibility && spec.unionData.point.units
+            != GpuGeodataSpec::Units::Ratio)
             spec.unionData.point.radius *= 0.25;
+
         GpuGeodataSpec &data = findSpecData(spec);
         auto arr = getFeaturePositions();
         cullOutsideFeatures(arr);
@@ -1730,10 +1776,12 @@ if (cond == #OP) \
             spec.type = GpuGeodataSpec::Type::LineFlat;
         else
             spec.type = GpuGeodataSpec::Type::LineScreen;
-        vecToRaw(convertColor(layer["line-color"]),
+
+        vecToRaw(layer.isMember("line-color")
+            ? convertColor(layer["line-color"])
+            : vec4f(1, 1, 1, 1),
             spec.unionData.line.color);
-        spec.unionData.line.width
-            = convertToDouble(layer["line-width"]);
+
         if (layer.isMember("line-width-units"))
         {
             std::string units = evaluate(layer["line-width-units"]).asString();
@@ -1765,6 +1813,10 @@ if (cond == #OP) \
             spec.unionData.line.units = GpuGeodataSpec::Units::Meters;
         else
             spec.unionData.line.units = GpuGeodataSpec::Units::Pixels;
+
+        spec.unionData.line.width
+            = convertToDouble(layer["line-width"]);
+
         GpuGeodataSpec &data = findSpecData(spec);
         const auto arr = getFeaturePositions();
         data.positions.reserve(data.positions.size() + arr.size());

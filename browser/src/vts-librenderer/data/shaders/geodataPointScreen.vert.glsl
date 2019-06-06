@@ -9,6 +9,7 @@ layout(std140) uniform uboPointData
 uniform sampler2D texPointData;
 
 out float varOpacity;
+out vec2 varCorner;
 
 void main()
 {
@@ -17,6 +18,7 @@ void main()
     vec3 p = texelFetch(texPointData, ivec2(pointIndex, 0), 0).xyz;
     vec3 u = texelFetch(texPointData, ivec2(pointIndex, 1), 0).xyz;
     varOpacity = testVisibility(uniVisibilities, p, u);
+
     float scale = uniUnitsRadius[1];
     if (int(uniUnitsRadius[0]) == 3) // ratio
         scale *= uniCameraParams[1];
@@ -26,14 +28,15 @@ void main()
     p = pp.xyz / pp.w;
     vec3 s = vec3(1.0 / uniCameraParams[0], 0.0, 0.0);
     vec3 f = vec3(0.0, 1.0 / uniCameraParams[1], 0.0);
-    vec3 o = vec3(0.0);
     switch (cornerIndex)
     {
-    case 0: o = -s + f; break;
-    case 1: o = +s + f; break;
-    case 2: o = -s - f; break;
-    case 3: o = +s - f; break;
+    case 0: varCorner = vec2(-1.0, +1.0); break;
+    case 1: varCorner = vec2(+1.0, +1.0); break;
+    case 2: varCorner = vec2(-1.0, -1.0); break;
+    case 3: varCorner = vec2(+1.0, -1.0); break;
+    default: varCorner = vec2(0.0); break;
     }
+    vec3 o = varCorner.x * s + varCorner.y * f;
     gl_Position = vec4(p + o * scale, 1.0);
 
     // avoid culling geodata by near camera plane

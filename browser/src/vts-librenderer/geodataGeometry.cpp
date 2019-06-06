@@ -136,9 +136,9 @@ void GeodataBase::loadLines()
         uboLineData.color = rawToVec4(spec.unionData.line.color);
         uboLineData.visibilities
             = rawToVec4(spec.commonData.visibilities);
-        uboLineData.uniUnitsRadius
-            = vec4f((float)spec.unionData.line.units,
-                spec.unionData.line.width * 0.5f, 0.f, 0.f);
+        uboLineData.uniUnitsRadius = vec4f(
+            (float)spec.unionData.line.units,
+            spec.unionData.line.width * 0.5f, 0.f, 0.f);
 
         uniform = std::make_shared<UniformBuffer>();
         uniform->debugId = debugId;
@@ -234,8 +234,9 @@ void GeodataBase::loadPoints()
         uboPointData.color = rawToVec4(spec.unionData.point.color);
         uboPointData.visibilities
             = rawToVec4(spec.commonData.visibilities);
-        uboPointData.uniUnitsRadius
-            = vec4f(0, spec.unionData.point.radius, 0.f, 0.f);
+        uboPointData.uniUnitsRadius = vec4f(
+            (float)spec.unionData.point.units,
+            spec.unionData.point.radius, 0.f, 0.f);
 
         uniform = std::make_shared<UniformBuffer>();
         uniform->debugId = debugId;

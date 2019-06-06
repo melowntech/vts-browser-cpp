@@ -39,7 +39,7 @@ add_subdirectory(externals/utfcpp)
 # Optick - instrumental profiler for games
 find_package(Optick QUIET)
 if(NOT TARGET Optick)
-    add_subdirectory(src/dummyOptick)
+    add_subdirectory(src/dummy-optick)
 endif()
 
 # libraries type

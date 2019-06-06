@@ -18,6 +18,7 @@ void main()
     vec3 mu = texelFetch(texLineData, ivec2(pointIndex, 1), 0).xyz;
     vec3 o = texelFetch(texLineData, ivec2(otherIndex, 0), 0).xyz;
     varOpacity = testVisibility(uniVisibilities, p, mu);
+
     float scale = uniUnitsRadius[1];
     if (int(uniUnitsRadius[0]) == 3) // ratio
         scale *= uniCameraParams[1];

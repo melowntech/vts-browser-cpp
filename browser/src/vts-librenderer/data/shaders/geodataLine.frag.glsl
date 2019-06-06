@@ -12,6 +12,8 @@ in float varOpacity;
 
 void main()
 {
+    if (varOpacity < 1e-7)
+        discard;
     outColor = uniColor;
     outColor.a *= varOpacity;
 }

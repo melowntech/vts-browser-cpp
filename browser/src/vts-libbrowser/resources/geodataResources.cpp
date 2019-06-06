@@ -32,6 +32,7 @@
 #include "../map.hpp"
 #include "../gpuResource.hpp"
 #include "../utilities/json.hpp"
+#include "cache.hpp"
 
 namespace vts
 {
@@ -44,6 +45,20 @@ void GeodataFeatures::load()
 {
     LOG(info2) << "Loading geodata features <" << name << ">";
     data = std::make_shared<const std::string>(fetch->reply.content.str());
+
+    if (map->options.debugExtractRawResources)
+    {
+        static const std::string prefix = "extracted/";
+        std::string b, c;
+        std::string path = prefix
+            + convertNameToFolderAndFile(this->name, b, c)
+            + ".json";
+        if (!boost::filesystem::exists(path))
+        {
+            boost::filesystem::create_directories(prefix + b);
+            writeLocalFileBuffer(path, Buffer(*data));
+        }
+    }
 }
 
 FetchTask::ResourceType GeodataFeatures::resourceType() const
@@ -64,6 +79,20 @@ void GeodataStylesheet::load()
     LOG(info2) << "Loading geodata stylesheet <" << name << ">";
     data = fetch->reply.content.str();
     dependenciesLoaded = false;
+
+    if (map->options.debugExtractRawResources)
+    {
+        static const std::string prefix = "extracted/";
+        std::string b, c;
+        std::string path = prefix
+            + convertNameToFolderAndFile(this->name, b, c)
+            + ".json";
+        if (!boost::filesystem::exists(path))
+        {
+            boost::filesystem::create_directories(prefix + b);
+            writeLocalFileBuffer(path, Buffer(data));
+        }
+    }
 }
 
 namespace

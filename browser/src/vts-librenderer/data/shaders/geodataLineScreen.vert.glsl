@@ -15,11 +15,11 @@ void main()
     int pointIndex = gl_VertexID / 4 + (gl_VertexID + 0) % 2;
     int otherIndex = gl_VertexID / 4 + (gl_VertexID + 1) % 2;
     vec3 p = texelFetch(texLineData, ivec2(pointIndex, 0), 0).xyz;
-    vec3 mu = texelFetch(texLineData, ivec2(pointIndex, 1), 0).xyz;
+    vec3 u = texelFetch(texLineData, ivec2(pointIndex, 1), 0).xyz;
     vec3 o = texelFetch(texLineData, ivec2(otherIndex, 0), 0).xyz;
-    varOpacity = testVisibility(uniVisibilities, p, mu);
+    varOpacity = testVisibility(uniVisibilities, p, u);
 
-    float scale = uniUnitsRadius[1];
+    float scale = uniUnitsRadius[1] * 2.0;
     if (int(uniUnitsRadius[0]) == 3) // ratio
         scale *= uniCameraParams[1];
 

@@ -29,7 +29,7 @@ void main()
     vec3 u = texelFetch(texPointData, ivec2(pointIndex, 1), 0).xyz;
     varOpacity = testVisibility(uniVisibilities, p, u);
 
-    float scale = length(u) * uniUnitsRadius[1] * 0.5;
+    float scale = length(u) * uniUnitsRadius[1];
     if (int(uniUnitsRadius[0]) == 3) // ratio
         scale *= uniCameraParams[2];
     u = normalize(u);

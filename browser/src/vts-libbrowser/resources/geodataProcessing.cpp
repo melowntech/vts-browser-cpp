@@ -198,6 +198,11 @@ std::string utf8substr(const std::string &str, sint32 start, uint32 length)
     return s32to8(s);
 }
 
+auto strhash(const std::string &str)
+{
+    return std::hash<std::string>()(str);
+}
+
 double str2num(const std::string &s)
 {
     if (s.empty())
@@ -622,7 +627,7 @@ struct geoContext
         }
         case '#': // identifier
             if (name == "#id")
-                return (*feature)["properties"]["name"];
+                return (*feature)["id"];
             if (name == "#group")
                 return group->group["id"];
             if (name == "#type")
@@ -968,7 +973,7 @@ if (fnc == #NAME) \
                 return evaluate(arr[2]);
         }
 
-        // 'strlen', 'str2num', 'lowercase', 'uppercase', 'capitalize', 'trim'
+        // 'strlen', 'str2num', 'lowercase', 'uppercase', 'capitalize', 'trim', 'strhash'
         if (fnc == "strlen")
             return utf8len(evaluate(expression[fnc]).asString());
         if (fnc == "str2num")
@@ -981,6 +986,8 @@ if (fnc == #NAME) \
             return titlecase(evaluate(expression[fnc]).asString());
         if (fnc == "trim")
             return utf8trim(evaluate(expression[fnc]).asString());
+        if (fnc == "strhash")
+            return strhash(evaluate(expression[fnc]).asString());
 
         // 'find', 'replace', 'substr'
         if (fnc == "find")
@@ -1816,6 +1823,8 @@ if (cond == #OP) \
 
         spec.unionData.line.width
             = convertToDouble(layer["line-width"]);
+        if (compatibility && spec.type == GpuGeodataSpec::Type::LineScreen)
+            spec.unionData.line.width *= 0.5;
 
         GpuGeodataSpec &data = findSpecData(spec);
         const auto arr = getFeaturePositions();

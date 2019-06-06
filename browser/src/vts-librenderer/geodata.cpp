@@ -105,6 +105,7 @@ void GeodataBase::addMemory(ResourceInfo &other)
     info->gpuMemoryCost += other.gpuMemoryCost;
 }
 
+// given a point in model space, computes a direction against gravity in model space with length of one meter converted to model space
 vec3f GeodataBase::modelUp(const vec3f &p) const
 {
     vec3 dl = p.cast<double>();
@@ -115,6 +116,7 @@ vec3f GeodataBase::modelUp(const vec3f &p) const
     return (tl - dl).cast<float>();
 }
 
+// given a point in model space, computes a direction against gravity in world space with length of one meter
 vec3f GeodataBase::worldUp(vec3f &p) const
 {
     vec3 dl = p.cast<double>();

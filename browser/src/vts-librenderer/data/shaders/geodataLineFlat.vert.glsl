@@ -20,9 +20,10 @@ void main()
     varOpacity = testVisibility(uniVisibilities, p, u);
 
     float scale = length(u) * uniUnitsRadius[1];
-    u = normalize(u);
     if (int(uniUnitsRadius[0]) == 3) // ratio
         scale *= uniCameraParams[2];
+
+    u = normalize(u);
     vec3 f = normalize(o - p);
     if ((gl_VertexID % 2) == 1)
         f = -f;

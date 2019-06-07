@@ -198,11 +198,6 @@ std::string utf8substr(const std::string &str, sint32 start, uint32 length)
     return s32to8(s);
 }
 
-auto strhash(const std::string &str)
-{
-    return std::hash<std::string>()(str);
-}
-
 double str2num(const std::string &s)
 {
     if (s.empty())
@@ -844,7 +839,8 @@ struct geoContext
         }
         const std::string fnc = expression.getMemberNames()[0];
 
-        // 'sgn', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'abs', 'deg2rad', 'rad2deg', 'log'
+        // 'sgn', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan',
+        // 'sqrt', 'abs', 'deg2rad', 'rad2deg', 'log'
         if (fnc == "sgn")
         {
             double v = convertToDouble(expression[fnc]);
@@ -916,8 +912,8 @@ if (fnc == #NAME) \
         {
             validateArrayLength(expression[fnc], 2, 2,
                 "Function 'mod' is expecting an array with 2 elements.");
-            sint64 a = (sint64)convertToDouble(expression[fnc][0]);
-            sint64 b = (sint64)convertToDouble(expression[fnc][1]);
+            sint32 a = (sint32)convertToDouble(expression[fnc][0]);
+            sint32 b = (sint32)convertToDouble(expression[fnc][1]);
             return a % b;
         }
 
@@ -973,7 +969,7 @@ if (fnc == #NAME) \
                 return evaluate(arr[2]);
         }
 
-        // 'strlen', 'str2num', 'lowercase', 'uppercase', 'capitalize', 'trim', 'strhash'
+        // 'strlen', 'str2num', 'lowercase', 'uppercase', 'capitalize', 'trim'
         if (fnc == "strlen")
             return utf8len(evaluate(expression[fnc]).asString());
         if (fnc == "str2num")
@@ -986,8 +982,6 @@ if (fnc == #NAME) \
             return titlecase(evaluate(expression[fnc]).asString());
         if (fnc == "trim")
             return utf8trim(evaluate(expression[fnc]).asString());
-        if (fnc == "strhash")
-            return strhash(evaluate(expression[fnc]).asString());
 
         // 'find', 'replace', 'substr'
         if (fnc == "find")

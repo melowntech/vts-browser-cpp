@@ -605,12 +605,26 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
     case GpuGeodataSpec::Type::LineScreen:
         return; // nothing
 
+    case GpuGeodataSpec::Type::PointFlat:
+    case GpuGeodataSpec::Type::PointScreen:
     case GpuGeodataSpec::Type::LineFlat:
     case GpuGeodataSpec::Type::LabelFlat:
-    case GpuGeodataSpec::Type::PointScreen:
-    case GpuGeodataSpec::Type::PointFlat:
     case GpuGeodataSpec::Type::Triangles:
         return; // nothing
+
+    case GpuGeodataSpec::Type::IconFlat:
+    {
+        // todo
+    } break;
+
+    case GpuGeodataSpec::Type::IconScreen:
+    {
+        const auto &t = g->points[j.itemIndex];
+        regenerateJobCommon(j, t.worldPosition);
+        regenerateJobIcon(j);
+        regenerateJobStick(j, t.worldPosition, t.worldUp);
+        regenerateJobCollision(j);
+    } break;
 
     case GpuGeodataSpec::Type::LabelScreen:
     {
@@ -638,15 +652,6 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
         regenerateJobStick(j, t.worldPosition, t.worldUp);
         regenerateJobCollision(j);
     } break;
-
-    case GpuGeodataSpec::Type::IconScreen:
-    {
-        const auto &t = g->points[j.itemIndex];
-        regenerateJobCommon(j, t.worldPosition);
-        regenerateJobIcon(j);
-        regenerateJobStick(j, t.worldPosition, t.worldUp);
-        regenerateJobCollision(j);
-    } break;
     }
 }
 
@@ -667,27 +672,29 @@ void RenderViewImpl::generateJobs()
         case GpuGeodataSpec::Type::Invalid:
             throw std::invalid_argument("Invalid geodata type enum");
 
-        case GpuGeodataSpec::Type::LineScreen:
-        case GpuGeodataSpec::Type::LineFlat:
-        case GpuGeodataSpec::Type::LabelFlat:
-        case GpuGeodataSpec::Type::PointScreen:
         case GpuGeodataSpec::Type::PointFlat:
+        case GpuGeodataSpec::Type::PointScreen:
+        case GpuGeodataSpec::Type::LineFlat:
+        case GpuGeodataSpec::Type::LineScreen:
+        case GpuGeodataSpec::Type::LabelFlat:
         case GpuGeodataSpec::Type::Triangles:
         {
             // one job for entire tile
             geodataJobs.emplace_back(g, uint32(-1));
         } break;
 
-        case GpuGeodataSpec::Type::LabelScreen:
+        case GpuGeodataSpec::Type::IconFlat:
         {
-            if (!g->checkTextures())
-                continue;
+            // todo
+        } break;
 
-            // individual jobs for each text
-            for (uint32 index = 0, indexEnd = g->texts.size();
+        case GpuGeodataSpec::Type::IconScreen:
+        {
+            // individual jobs for each icon
+            for (uint32 index = 0, indexEnd = g->points.size();
                 index < indexEnd; index++)
             {
-                const auto &t = g->texts[index];
+                const auto &t = g->points[index];
 
                 if (!geodataTestVisibility(
                     g->spec.commonData.visibilities,
@@ -704,13 +711,16 @@ void RenderViewImpl::generateJobs()
             }
         } break;
 
-        case GpuGeodataSpec::Type::IconScreen:
+        case GpuGeodataSpec::Type::LabelScreen:
         {
-            // individual jobs for each icon
-            for (uint32 index = 0, indexEnd = g->points.size();
+            if (!g->checkTextures())
+                continue;
+
+            // individual jobs for each text
+            for (uint32 index = 0, indexEnd = g->texts.size();
                 index < indexEnd; index++)
             {
-                const auto &t = g->points[index];
+                const auto &t = g->texts[index];
 
                 if (!geodataTestVisibility(
                     g->spec.commonData.visibilities,
@@ -1026,6 +1036,11 @@ void RenderViewImpl::renderJobs()
         {
             context->shaderGeodataLineScreen->bind();
             renderPointOrLine(job);
+        } break;
+
+        case GpuGeodataSpec::Type::IconFlat:
+        {
+            // todo
         } break;
 
         case GpuGeodataSpec::Type::IconScreen:

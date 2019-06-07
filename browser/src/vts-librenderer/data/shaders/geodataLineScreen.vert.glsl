@@ -39,7 +39,7 @@ void main()
     vec3 f = o - p;
     if ((id % 2) == 1)
         f = -f;
-    f.z = 0;
+    f.z = 0.0;
     f = normalize(f);
     vec3 s = cross(f, vec3(0.0, 0.0, 1.0));
     if (((id % 4) / 2) == 1)

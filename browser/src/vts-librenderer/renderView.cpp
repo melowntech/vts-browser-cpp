@@ -249,9 +249,9 @@ void RenderViewImpl::updateFramebuffers()
         {
             glGenTextures(1, &vars.depthReadTexId);
             glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24,
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8,
                 options.width, options.height,
-                0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
+                0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
                 GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
@@ -334,7 +334,7 @@ void RenderViewImpl::updateFramebuffers()
         if (GLAD_GL_KHR_debug)
             glObjectLabel(GL_FRAMEBUFFER, vars.frameReadBufferId,
                 -1, "frameReadBufferId");
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
             GL_TEXTURE_2D, vars.depthReadTexId, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
             GL_TEXTURE_2D, vars.colorReadTexId, 0);

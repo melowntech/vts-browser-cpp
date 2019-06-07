@@ -29,6 +29,7 @@
 #include "Map.h"
 #include <vts-browser/math.hpp>
 #include <vts-browser/mapOptions.hpp>
+#include <vts-browser/mapCallbacks.hpp>
 #include <vts-browser/cameraOptions.hpp>
 #include <vts-browser/navigationOptions.hpp>
 #include <vts-browser/fetcher.hpp>
@@ -114,6 +115,24 @@ void mapInitialize()
         navigationPtr = camera->createNavigation();
         navigation = navigationPtr.get();
     }
+
+    /*
+    {
+        map->callbacks().mapconfigAvailable = [&](){
+            vts::log(vts::LogLevel::info2, "Setting initial position");
+            try
+            {
+                navigation->setPositionUrl("obj,14.4059726608,50.0808835139,fixed,250.5823177088,-159.2157609071,-12.1000000000,0.0000000000,210.1804041278,45.0000000000");
+                navigation->options().navigationType = vts::NavigationType::Instant;
+            }
+            catch (...)
+            {
+                vts::log(vts::LogLevel::warn3, "Failed to set initial position");
+            }
+            map->callbacks().mapconfigAvailable = {};
+        };
+    }
+    */
 
     // configure the map for mobile use
     defaultMapOptions(map->options(), camera->options());

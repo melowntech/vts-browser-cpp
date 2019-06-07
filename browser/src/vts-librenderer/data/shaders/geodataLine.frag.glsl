@@ -9,11 +9,12 @@ layout(std140) uniform uboLineData
 layout(location = 0) out vec4 outColor;
 
 in float varOpacity;
+in vec2 varCorner;
 
 void main()
 {
-    if (varOpacity < 1e-7)
-        discard;
+    if (length(varCorner) >= 1.0 || varOpacity < 0.01)
+        discard; // prevent the corners from masking (via stencil test) other geodata
     outColor = uniColor;
     outColor.a *= varOpacity;
 }

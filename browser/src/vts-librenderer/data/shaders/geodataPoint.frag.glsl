@@ -13,13 +13,9 @@ in vec2 varCorner;
 
 void main()
 {
-    float u = length(abs(varCorner));
-    float du = fwidth(u);
-    if (u >= 1.0)
+    if (length(varCorner) >= 1.0 || varOpacity < 0.01)
         discard; // prevent the corners from masking (via stencil test) other geodata
-    if (varOpacity < 1e-7)
-        discard;
     outColor = uniColor;
-    outColor.a *= varOpacity * (1.0 - smoothstep(1.0 - du, 1.0, u));
+    outColor.a *= varOpacity;
 }
 

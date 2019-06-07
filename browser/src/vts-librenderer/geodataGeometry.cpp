@@ -35,8 +35,9 @@ void GeodataBase::loadLines()
     uint32 linesCount = spec.positions.size(); // 2
     uint32 segmentsCount = totalPoints - linesCount; // 5
     uint32 jointsCount = segmentsCount - linesCount; // 3
-    uint32 trianglesCount = (segmentsCount + jointsCount) * 2; // 16
-    uint32 indicesCount = trianglesCount * 3; // 48
+    uint32 capsCount = linesCount * 2; // 4
+    uint32 trianglesCount = (segmentsCount + jointsCount + capsCount) * 2; // 24
+    uint32 indicesCount = trianglesCount * 3; // 72
     // point index = (vertex index / 4 + vertex index % 2)
     // corner = vertex index % 4
 
@@ -47,18 +48,21 @@ void GeodataBase::loadLines()
     {
         texBuffer.resize(totalPoints * sizeof(vec3f) * 2);
         vec3f *bufPos = (vec3f*)texBuffer.data();
-        vec3f *bufUps = (vec3f*)texBuffer.data() + totalPoints;
+        vec3f *bufUps = bufPos + totalPoints;
         vec3f *texBufHalf = bufUps;
         (void)texBufHalf;
 
-        indBuffer.resize(indicesCount * sizeof(uint16));
-        uint16 *bufInd = (uint16*)indBuffer.data();
-        uint16 current = 0;
+        indBuffer.resize(indicesCount * sizeof(uint32));
+        uint32 *bufInd = (uint32*)indBuffer.data();
+        uint32 *capsInd = bufInd + indicesCount - capsCount * 6;
+        uint32 *capsStart = capsInd;
+        (void)capsStart;
 
+        uint32 current = 0;
         for (uint32 li = 0; li < linesCount; li++)
         {
-            const std::vector<std::array<float, 3>> &points
-                = spec.positions[li];
+            uint32 first = bufPos - (vec3f*)texBuffer.data();
+            const auto &points = spec.positions[li];
             uint32 pointsCount = points.size();
             for (uint32 pi = 0; pi < pointsCount; pi++)
             {
@@ -66,8 +70,9 @@ void GeodataBase::loadLines()
                 vec3f u = modelUp(p);
                 *bufPos++ = p;
                 *bufUps++ = u;
+                // add joint
                 if (pi > 1)
-                { // add joint
+                {
                     *bufInd++ = current + 1 - 4;
                     *bufInd++ = current + 4 - 4;
                     *bufInd++ = current + 6 - 4;
@@ -75,8 +80,9 @@ void GeodataBase::loadLines()
                     *bufInd++ = current + 6 - 4;
                     *bufInd++ = current + 3 - 4;
                 }
+                // add segment
                 if (pi > 0)
-                { // add segment
+                {
                     *bufInd++ = current + 0;
                     *bufInd++ = current + 1;
                     *bufInd++ = current + 3;
@@ -86,12 +92,32 @@ void GeodataBase::loadLines()
                     current += 4;
                 }
             }
-            current += 4; // make a gap
+            // make a gap
+            current += 4;
+            // caps
+            {
+                uint32 last = first + pointsCount - 2;
+                *capsInd++ = (1 << 31) + first * 4 + 0;
+                *capsInd++ = (1 << 31) + first * 4 + 3;
+                *capsInd++ = (1 << 31) + first * 4 + 1;
+                *capsInd++ = (1 << 31) + first * 4 + 0;
+                *capsInd++ = (1 << 31) + first * 4 + 2;
+                *capsInd++ = (1 << 31) + first * 4 + 3;
+                *capsInd++ = (1 << 31) + (1 << 30) + last * 4 + 0;
+                *capsInd++ = (1 << 31) + (1 << 30) + last * 4 + 3;
+                *capsInd++ = (1 << 31) + (1 << 30) + last * 4 + 1;
+                *capsInd++ = (1 << 31) + (1 << 30) + last * 4 + 0;
+                *capsInd++ = (1 << 31) + (1 << 30) + last * 4 + 2;
+                *capsInd++ = (1 << 31) + (1 << 30) + last * 4 + 3;
+                // highest bit = is cap
+                // second highest bit = is end cap
+            }
         }
 
         assert(bufPos == texBufHalf);
         assert(bufUps == (vec3f*)texBuffer.dataEnd());
-        assert(bufInd == (uint16*)indBuffer.dataEnd());
+        assert(bufInd == capsStart);
+        assert(capsInd == (uint32*)indBuffer.dataEnd());
     }
 
     // prepare the texture
@@ -101,7 +127,6 @@ void GeodataBase::loadLines()
         tex.width = totalPoints;
         tex.height = 2;
         tex.components = 3;
-        tex.internalFormat = GL_RGB32F;
         tex.type = GpuTypeEnum::Float;
         tex.filterMode = GpuTextureSpec::FilterMode::Nearest;
         tex.wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
@@ -117,6 +142,7 @@ void GeodataBase::loadLines()
         msh.faceMode = GpuMeshSpec::FaceMode::Triangles;
         msh.indices = std::move(indBuffer);
         msh.indicesCount = indicesCount;
+        msh.indexMode = GpuTypeEnum::UnsignedInt;
         ResourceInfo ri;
         renderer->api->loadMesh(ri, msh, debugId);
         this->mesh = std::static_pointer_cast<Mesh>(ri.userData);
@@ -167,9 +193,9 @@ void GeodataBase::loadPoints()
         vec3f *texBufHalf = bufUps;
         (void)texBufHalf;
 
-        indBuffer.resize(indicesCount * sizeof(uint16));
-        uint16 *bufInd = (uint16*)indBuffer.data();
-        uint16 current = 0;
+        indBuffer.resize(indicesCount * sizeof(uint32));
+        uint32 *bufInd = (uint32*)indBuffer.data();
+        uint32 current = 0;
 
         assert(spec.positions.size() == totalPoints);
         for (uint32 pi = 0; pi < totalPoints; pi++)
@@ -189,7 +215,7 @@ void GeodataBase::loadPoints()
 
         assert(bufPos == texBufHalf);
         assert(bufUps == (vec3f*)texBuffer.dataEnd());
-        assert(bufInd == (uint16*)indBuffer.dataEnd());
+        assert(bufInd == (uint32*)indBuffer.dataEnd());
     }
 
     // prepare the texture
@@ -199,7 +225,6 @@ void GeodataBase::loadPoints()
         tex.width = totalPoints;
         tex.height = 2;
         tex.components = 3;
-        tex.internalFormat = GL_RGB32F;
         tex.type = GpuTypeEnum::Float;
         tex.filterMode = GpuTextureSpec::FilterMode::Nearest;
         tex.wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
@@ -215,6 +240,7 @@ void GeodataBase::loadPoints()
         msh.faceMode = GpuMeshSpec::FaceMode::Triangles;
         msh.indices = std::move(indBuffer);
         msh.indicesCount = indicesCount;
+        msh.indexMode = GpuTypeEnum::UnsignedInt;
         ResourceInfo ri;
         renderer->api->loadMesh(ri, msh, debugId);
         this->mesh = std::static_pointer_cast<Mesh>(ri.userData);

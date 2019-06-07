@@ -157,7 +157,7 @@ public:
     // the interpretation of the data is defined by the 'attributes' member
     Buffer vertices;
 
-    // an array of uint16, or empty if the mesh is not indexed
+    // an array of uint16, uint32, or empty if the mesh is not indexed
     Buffer indices;
 
     // description of memory layout in the vertices buffer

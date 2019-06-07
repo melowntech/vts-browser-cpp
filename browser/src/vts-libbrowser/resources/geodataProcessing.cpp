@@ -2080,6 +2080,7 @@ if (cond == #OP) \
         case Type::Line:
         {
             const Value &array1 = (*feature)["lines"];
+            result.reserve(array1.size());
             for (const Value &array2 : array1)
             {
                 result.push_back(

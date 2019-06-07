@@ -121,6 +121,7 @@ int main(int argc, char *argv[])
         vts::FetcherOptions fetcherOptions;
         AppOptions appOptions;
         vts::renderer::RenderOptions renderOptions;
+        renderOptions.antialiasingSamples = 4;
         if (!programOptions(createOptions, mapOptions, fetcherOptions,
                             camOptions, navOptions,
                             renderOptions, appOptions, argc, argv))

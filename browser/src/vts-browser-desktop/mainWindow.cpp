@@ -257,7 +257,7 @@ bool MainWindow::processEvents()
         // camera jump to double click
         if (event.type == SDL_MOUSEBUTTONDOWN
                 && event.button.clicks == 2
-                && event.button.state == SDL_BUTTON(SDL_BUTTON_LEFT))
+                && event.button.button == SDL_BUTTON_LEFT)
         {
             vts::vec3 posPhys = getWorldPositionFromCursor();
             if (posPhys(0) == posPhys(0))
@@ -284,8 +284,8 @@ bool MainWindow::processEvents()
                 else
                     mode = 1;
             }
-            else if (event.motion.state & SDL_BUTTON(SDL_BUTTON_RIGHT)
-                     || event.motion.state & SDL_BUTTON(SDL_BUTTON_MIDDLE))
+            else if ((event.motion.state & SDL_BUTTON(SDL_BUTTON_RIGHT))
+                     || (event.motion.state & SDL_BUTTON(SDL_BUTTON_MIDDLE)))
                 mode = 2;
             double p[3] = { (double)event.motion.xrel,
                             (double)event.motion.yrel, 0 };

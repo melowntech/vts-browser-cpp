@@ -50,8 +50,8 @@ void GeodataBase::load(RenderContextImpl *renderer, ResourceInfo &info,
 
     {
         // culling (degrees to dot)
-        float &c = this->spec.commonData.visibilities[3];
-        if (c == c)
+        float &c = spec.commonData.visibilities[3];
+        if (!std::isnan(c))
             c = std::cos(c * M_PI / 180.0);
     }
 
@@ -59,22 +59,23 @@ void GeodataBase::load(RenderContextImpl *renderer, ResourceInfo &info,
 
     switch (spec.type)
     {
-    case GpuGeodataSpec::Type::LineScreen:
-    case GpuGeodataSpec::Type::LineFlat:
-        loadLines();
-        break;
-    case GpuGeodataSpec::Type::PointScreen:
     case GpuGeodataSpec::Type::PointFlat:
+    case GpuGeodataSpec::Type::PointScreen:
         loadPoints();
         break;
-    case GpuGeodataSpec::Type::LabelScreen:
-        loadLabelScreens();
+    case GpuGeodataSpec::Type::LineFlat:
+    case GpuGeodataSpec::Type::LineScreen:
+        loadLines();
+        break;
+    case GpuGeodataSpec::Type::IconFlat:
+    case GpuGeodataSpec::Type::IconScreen:
+        loadIcons();
         break;
     case GpuGeodataSpec::Type::LabelFlat:
         loadLabelFlats();
         break;
-    case GpuGeodataSpec::Type::IconScreen:
-        loadIcons();
+    case GpuGeodataSpec::Type::LabelScreen:
+        loadLabelScreens();
         break;
     case GpuGeodataSpec::Type::Triangles:
         loadTriangles();
@@ -85,7 +86,6 @@ void GeodataBase::load(RenderContextImpl *renderer, ResourceInfo &info,
 
     // free some memory
     std::vector<std::string>().swap(spec.texts);
-    std::vector<std::shared_ptr<void>>().swap(spec.fontCascade);
 
     // compute memory requirements
     this->info->ramMemoryCost += getTotalPoints()
@@ -157,7 +157,8 @@ Rect::Rect(const vec2f &a, const vec2f &b) : a(a), b(b)
 
 bool Rect::valid() const
 {
-    return a == a && b == b;
+    return !std::isnan(a[0]) && !std::isnan(a[1])
+        && !std::isnan(b[0]) && !std::isnan(b[1]);
 }
 
 Rect Rect::merge(const Rect &a, const Rect &b)
@@ -199,8 +200,8 @@ float Rect::height() const
 
 GeodataJob::GeodataJob(const std::shared_ptr<GeodataBase> &g,
     uint32 itemIndex)
-    : g(g), labelOffset(0, 0), refPoint(0, 0), itemIndex(itemIndex),
-    importance(0), opacity(1), depth(nan1())
+    : g(g), labelOffset(0, 0), refPoint(nan2().cast<float>()),
+    itemIndex(itemIndex), importance(nan1()), opacity(1), depth(nan1())
 {}
 
 vec3f GeodataJob::modelPosition() const
@@ -227,14 +228,14 @@ bool RenderViewImpl::geodataTestVisibility(
 {
     vec3 eye = rawToVec3(draws->camera.eye);
     double distance = length(vec3(eye - pos));
-    if (visibility[0] == visibility[0] && distance > visibility[0])
+    if (!std::isnan(visibility[0]) && distance > visibility[0])
         return false;
     distance *= 2 / draws->camera.proj[5];
-    if (visibility[1] == visibility[1] && distance < visibility[1])
+    if (!std::isnan(visibility[1]) && distance < visibility[1])
         return false;
-    if (visibility[2] == visibility[2] && distance > visibility[2])
+    if (!std::isnan(visibility[2]) && distance > visibility[2])
         return false;
-    if (visibility[3] == visibility[3]
+    if (!std::isnan(visibility[3])
         && dot(vec3((eye - pos) / distance).cast<float>(), up)
             < visibility[3])
         return false;
@@ -277,7 +278,7 @@ namespace
         vec3 d = vec3(dir[0], dir[1], dir[2] * r);
         d = normalize(d);
         double t = raySphereTest(o, d, radiusXY);
-        if (!(t == t))
+        if (std::isnan(t))
             return nan1();
         vec3 p = o + d * t;
         p = vec3(p[0], p[1], p[2] / r); // sphere to ellipsoid
@@ -287,7 +288,7 @@ namespace
 
 bool RenderViewImpl::geodataDepthVisibility(const vec3 &pos, float threshold)
 {
-    if (!(threshold == threshold))
+    if (std::isnan(threshold))
         return true;
 
     vec3 diff = vec3(rawToVec3(draws->camera.eye) - pos);
@@ -299,7 +300,7 @@ bool RenderViewImpl::geodataDepthVisibility(const vec3 &pos, float threshold)
     {
         double de = rayEllipsoidTest(rawToVec3(draws->camera.eye),
             -dir, body->majorRadius, body->minorRadius);
-        if (!(de == de))
+        if (std::isnan(de))
             return true;
         double df = length(diff);
         return df < de + threshold;
@@ -310,7 +311,7 @@ bool RenderViewImpl::geodataDepthVisibility(const vec3 &pos, float threshold)
     vec4 p4 = depthBuffer.getConv() * vec3to4(p3, 1);
     p3 = vec4to3(p4, true);
     double d = depthBuffer.value(p3[0], p3[1]) * 2 - 1;
-    if (d == d)
+    if (!std::isnan(d))
         return p3[2] < d;
 
     // if the depth value is invalid (eg. sky), the feature is visible
@@ -544,7 +545,9 @@ void RenderViewImpl::regenerateJobCommon(GeodataJob &j)
     // importance
     if (!g->spec.importances.empty())
     {
-        j.importance = g->spec.importances[j.itemIndex];
+        j.importance = j.itemIndex == (uint32)-1
+            ? g->spec.importances[0]
+            : g->spec.importances[j.itemIndex];
         j.importance
             -= g->spec.commonData.importanceDistanceFactor
             * std::log(length(vec3(j.worldPosition()
@@ -847,7 +850,7 @@ void RenderViewImpl::filterJobsByResolvingCollisions()
                     return true;
             rects.push_back(mr);
         }
-        if (limitFactor == limitFactor)
+        if (!std::isnan(limitFactor))
             index++;
         return false;
     }), geodataJobs.end());

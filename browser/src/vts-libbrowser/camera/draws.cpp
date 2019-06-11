@@ -143,7 +143,7 @@ DrawSurfaceTask CameraImpl::convert(const RenderSurfaceTask &task,
 {
     DrawSurfaceTask result = convert(task);
     vecToRaw(uvClip, result.uvClip);
-    if (opacity == opacity)
+    if (!std::isnan(opacity))
         result.color[3] *= opacity;
     return result;
 }

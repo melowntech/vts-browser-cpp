@@ -146,9 +146,9 @@ void Navigation::setPoint(const double point[3])
         LOGTHROW(err4, std::logic_error)
                 << "Map is not yet available.";
     }
-    assert(point[0] == point[0]);
-    assert(point[1] == point[1]);
-    assert(point[2] == point[2]);
+    assert(!std::isnan(point[0]));
+    assert(!std::isnan(point[1]));
+    assert(!std::isnan(point[2]));
     if (impl->camera->map->mapconfig->navigationSrsType()
                    == vtslibs::registry::Srs::Type::geographic)
     {
@@ -182,9 +182,9 @@ void Navigation::setRotation(const double point[3])
         LOGTHROW(err4, std::logic_error)
                 << "Map is not yet available.";
     }
-    assert(point[0] == point[0]);
-    assert(point[1] == point[1]);
-    assert(point[2] == point[2]);
+    assert(std::isnan(point[0]));
+    assert(std::isnan(point[1]));
+    assert(std::isnan(point[2]));
     impl->setRotation(rawToVec3(point));
 }
 
@@ -224,7 +224,7 @@ void Navigation::setViewExtent(double viewExtent)
         LOGTHROW(err4, std::logic_error)
                 << "Map is not yet available.";
     }
-    assert(viewExtent == viewExtent && viewExtent > 0);
+    assert(!std::isnan(viewExtent) && viewExtent > 0);
     impl->setViewExtent(viewExtent);
 }
 

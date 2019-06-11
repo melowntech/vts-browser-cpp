@@ -1603,7 +1603,8 @@ if (cond == #OP) \
                 evaluate(layer["importance-weight"]));
         if (importance == importance
             && browserOptions.isMember("mapFeaturesReduceMode")
-            && browserOptions["mapFeaturesReduceMode"] == "scr-count7")
+            && browserOptions["mapFeaturesReduceMode"].asString()
+                == "scr-count7")
         {
             Value params = browserOptions["mapFeaturesReduceParams"];
             float dpi = data->map->options.pixelsPerInch;
@@ -1630,7 +1631,7 @@ if (cond == #OP) \
     void addImportanceItems(float importance,
         GpuGeodataSpec &data, uint32 itemsCount)
     {
-        if (!(importance == importance))
+        if (std::isnan(importance))
             return;
         data.importances.reserve(data.importances.size() + itemsCount);
         for (uint32 i = 0; i < itemsCount; i++)
@@ -1693,7 +1694,7 @@ if (cond == #OP) \
             float v2 = convertToDouble(arr[2]);
             vec2f vr = vec2f(v3 <= 0 ? 0 : d / v3, v2 <= 0 ? 0 : d / v2);
             float *vs = spec.commonData.visibilities;
-            if (vs[1] == vs[1])
+            if (!std::isnan(vs[1]))
             {
                 // merge with visibility-abs
                 vs[1] = std::max(vs[1], vr[0]);

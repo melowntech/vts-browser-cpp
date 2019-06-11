@@ -161,7 +161,7 @@ double distanceToDisk(const vec3 &diskNormal,
         l < diskHeights[0] ? diskHeights[0] - l : 0;
     double horizontal = std::max(angle - diskHalfAngle, 0.0) * l;
     double d = std::sqrt(vertical * vertical + horizontal * horizontal);
-    assert(d == d && d >= 0);
+    assert(!std::isnan(d) && d >= 0);
     return d;
 }
 
@@ -200,7 +200,7 @@ double CameraImpl::coarsenessValue(TraverseNode *trav)
             trav->diskHeightsPhys, trav->diskHalfAngle,
             cameraPosPhys);
         double v = texelSize * diskNominalDistance / dist;
-        assert(v == v && v > 0);
+        assert(!std::isnan(v) && v > 0);
         return v;
     }
     else

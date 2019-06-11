@@ -105,7 +105,7 @@ bool Resource::allowDiskCache(FetchTask::ResourceType type)
 
 void Resource::updatePriority(float p)
 {
-    if (priority == priority)
+    if (!std::isnan(priority))
         priority = std::max(priority, p);
     else
         priority = p;

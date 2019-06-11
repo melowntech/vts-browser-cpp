@@ -460,6 +460,7 @@ void GeodataBase::copyFonts()
     fontCascade.reserve(spec.fontCascade.size());
     for (auto &i : spec.fontCascade)
         fontCascade.push_back(std::static_pointer_cast<Font>(i));
+    std::vector<std::shared_ptr<void>>().swap(spec.fontCascade);
 }
 
 void GeodataBase::loadLabelScreens()

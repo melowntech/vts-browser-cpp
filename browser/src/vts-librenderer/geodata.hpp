@@ -52,13 +52,9 @@ struct Text
     std::vector<vec4f> coordinates;
     std::vector<Word> words;
     Rect collision;
-    vec3 worldPosition;
-    vec3f modelPosition;
-    vec3f worldUp;
     vec2f originSize;
 
-    Text() : worldPosition(0, 0, 0), modelPosition(0, 0, 0), worldUp(0, 0, 0),
-        originSize(nan2().cast<float>())
+    Text() : originSize(nan2().cast<float>())
     {}
 };
 
@@ -66,6 +62,7 @@ struct Point
 {
     vec3 worldPosition;
     vec3f worldUp;
+    vec3f modelPosition;
 };
 
 class GeodataBase : public std::enable_shared_from_this<GeodataBase>
@@ -96,6 +93,7 @@ public:
     vec3f modelUp(const vec3f &p) const;
     vec3f worldUp(vec3f &p) const;
     uint32 getTotalPoints() const;
+    void copyPoints();
     void copyFonts();
     void loadLines();
     void loadPoints();

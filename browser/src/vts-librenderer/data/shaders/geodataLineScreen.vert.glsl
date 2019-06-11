@@ -63,8 +63,6 @@ void main()
     }
 
     gl_Position = vec4(p + s * scale, 1.0);
-
-    // avoid culling geodata by near camera plane
-    gl_Position.z = max(gl_Position.z, -gl_Position.w + 1e-7);
+    cullingCorrection();
 }
 

@@ -75,6 +75,8 @@ public:
 
 private:
     uint32 id;
+
+    int loadShader(const std::string &source, int stage) const;
 };
 
 class VTSR_API Texture

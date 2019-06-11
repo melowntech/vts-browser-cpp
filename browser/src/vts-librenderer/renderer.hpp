@@ -123,9 +123,12 @@ struct GeodataJob
     vec2f refPoint; // ndc space (-1..1)
     uint32 itemIndex; // -1 means all
     float importance;
-    float opacity; // 1 .. 0
+    float opacity; // 0..1
     float depth; // ndc space (0..1)
     GeodataJob(const std::shared_ptr<GeodataBase> &g, uint32 itemIndex);
+    vec3f modelPosition() const;
+    vec3 worldPosition() const;
+    vec3f worldUp() const;
 };
 
 extern uint32 maxAntialiasingSamples;
@@ -187,16 +190,15 @@ public:
         const vec3 &pos, const vec3f &up);
     bool geodataDepthVisibility(const vec3 &pos, float threshold);
     mat4 depthOffsetCorrection(const std::shared_ptr<GeodataBase> &g) const;
-    void renderGeodataQuad(const Rect &rect, float depth, const vec4f &color);
+    void renderGeodataQuad(const GeodataJob &job,
+        const Rect &rect, const vec4f &color);
     void bindUboView(const std::shared_ptr<GeodataBase> &gg);
     void computeZBufferOffsetValues();
     void bindUboCamera();
     void renderGeodata();
-    void regenerateJobCommon(GeodataJob &j,
-        const vec3 worldPosition);
+    void regenerateJobCommon(GeodataJob &j);
     void regenerateJobIcon(GeodataJob &j);
-    void regenerateJobStick(GeodataJob &j,
-        const vec3 worldPosition, const vec3f worldUp);
+    void regenerateJobStick(GeodataJob &j);
     void regenerateJobCollision(GeodataJob &j);
     void regenerateJob(GeodataJob &j);
     void generateJobs();
@@ -208,7 +210,7 @@ public:
     void sortJobsByZIndexAndDepth();
     void renderStick(const GeodataJob &job);
     void renderPointOrLine(const GeodataJob &job);
-    void renderIcon(const GeodataJob &job, const float uvs[4]);
+    void renderIcon(const GeodataJob &job);
     void renderLabel(const GeodataJob &job);
     void renderJobs();
 };

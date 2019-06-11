@@ -37,7 +37,7 @@ std::string Shader::preamble = "#version 300 es\n"
         "precision highp float;\n"
         "precision highp int;\n";
 #else
-std::string Shader::preamble = "#version 330\n"
+std::string Shader::preamble = "#version 330 core\n"
         "precision highp float;\n"
         "precision highp int;\n";
 #endif
@@ -78,10 +78,7 @@ void Shader::bind()
     glUseProgram(id);
 }
 
-namespace
-{
-
-int loadShader(const std::string &source, int stage)
+int Shader::loadShader(const std::string &source, int stage) const
 {
     GLuint s = glCreateShader(stage);
     try
@@ -104,19 +101,20 @@ int loadShader(const std::string &source, int stage)
         glGetShaderiv(s, GL_COMPILE_STATUS, &len);
         if (len != GL_TRUE)
             throw std::runtime_error("failed to compile shader");
+
+        CHECK_GL("load shader source");
     }
     catch (...)
     {
         glDeleteShader(s);
         vts::log(vts::LogLevel::err4,
-                 std::string("shader source: \n") + source);
+            std::string("shader source: \n") + source);
+        vts::log(vts::LogLevel::err4,
+            std::string("shader name: <" + debugId + ">"));
         throw;
     }
-    CHECK_GL("load shader source");
     return s;
 }
-
-} // namespace
 
 void Shader::load(const std::string &vertexShader,
                   const std::string &fragmentShader)
@@ -126,8 +124,14 @@ void Shader::load(const std::string &vertexShader,
     setDebugLabel(GL_PROGRAM, id, debugId);
     try
     {
-        GLuint v = loadShader(preamble + vertexShader, GL_VERTEX_SHADER);
-        GLuint f = loadShader(preamble + fragmentShader, GL_FRAGMENT_SHADER);
+        GLuint v = loadShader(preamble
+            + "#define VTS_STAGE_VERTEX\n"
+            + vertexShader,
+            GL_VERTEX_SHADER);
+        GLuint f = loadShader(preamble
+            + "#define VTS_STAGE_FRAGMENT\n"
+            + fragmentShader,
+            GL_FRAGMENT_SHADER);
         glAttachShader(id, v);
         glAttachShader(id, f);
         glLinkProgram(id);

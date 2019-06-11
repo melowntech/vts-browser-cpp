@@ -16,5 +16,6 @@ void main()
     varViewPosition = (uniMv * vec4(inPosition, 1.0)).xyz;
     varOpacity = testVisibility(uniVisibilities, inPosition, vec3(0.0));
     gl_Position = uniMvp * vec4(inPosition, 1.0);
+    cullingCorrection();
 }
 

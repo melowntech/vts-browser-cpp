@@ -465,6 +465,8 @@ void GeodataBase::copyFonts()
 void GeodataBase::loadLabelScreens()
 {
     assert(spec.texts.size() == spec.positions.size());
+    copyPoints();
+
     float align = numericAlign(spec.unionData.labelScreen.textAlign);
     for (uint32 i = 0, e = spec.texts.size(); i != e; i++)
     {
@@ -476,10 +478,6 @@ void GeodataBase::loadLabelScreens()
         Text t = generateTexts(lines);
         t.collision = textCollision(lines);
         t.originSize = originSize;
-        t.modelPosition = rawToVec3(spec.positions[i][0].data());
-        t.worldPosition = vec4to3(vec4(rawToMat4(spec.model)
-            * vec3to4(t.modelPosition, 1).cast<double>()));
-        t.worldUp = worldUp(t.modelPosition);
         info->ramMemoryCost += t.coordinates.size() * sizeof(vec4f);
         info->ramMemoryCost += t.words.size() * sizeof(Word);
         texts.push_back(std::move(t));

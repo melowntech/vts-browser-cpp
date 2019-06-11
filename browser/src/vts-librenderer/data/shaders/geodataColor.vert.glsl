@@ -1,12 +1,17 @@
 
-layout(location = 0) in vec3 inPosition;
+layout(std140) uniform uboColorData
+{
+    mat4 uniScreen;
+    vec4 uniModelPos;
+    vec4 uniColor;
+};
 
-uniform mat4 uniMvp;
+layout(location = 0) in vec3 inPosition;
 
 void main()
 {
-    gl_Position = uniMvp * vec4(inPosition, 1.0);
-    // avoid culling geodata by near camera plane
-    gl_Position.z = max(gl_Position.z, -gl_Position.w + 1e-7);
+    gl_Position = uniMvp * vec4(uniModelPos);
+    gl_Position += (uniScreen * vec4(inPosition, 1.0)) * gl_Position.w;
+    cullingCorrection();
 }
 

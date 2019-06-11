@@ -122,6 +122,7 @@ int main(int argc, char *argv[])
         AppOptions appOptions;
         vts::renderer::RenderOptions renderOptions;
         renderOptions.antialiasingSamples = 4;
+        renderOptions.colorToTexture = true;
         if (!programOptions(createOptions, mapOptions, fetcherOptions,
                             camOptions, navOptions,
                             renderOptions, appOptions, argc, argv))

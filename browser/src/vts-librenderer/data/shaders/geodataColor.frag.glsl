@@ -1,5 +1,10 @@
 
-uniform vec4 uniColor;
+layout(std140) uniform uboColorData
+{
+    mat4 uniScreen;
+    vec4 uniModelPos;
+    vec4 uniColor;
+};
 
 layout(location = 0) out vec4 outColor;
 

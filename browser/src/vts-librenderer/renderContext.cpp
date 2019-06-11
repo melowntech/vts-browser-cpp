@@ -212,13 +212,15 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
         shaderGeodataColor = std::make_shared<Shader>();
         shaderGeodataColor->debugId
             = "data/shaders/geodataColor.*.glsl";
-        shaderGeodataColor->loadInternal(
-            "data/shaders/geodataColor.vert.glsl",
-            "data/shaders/geodataColor.frag.glsl"
-        );
-        shaderGeodataColor->loadUniformLocations({
-                "uniMvp",
-                "uniColor"
+        Buffer vert = readInternalMemoryBuffer(
+            "data/shaders/geodataColor.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
+            "data/shaders/geodataColor.frag.glsl");
+        shaderGeodataColor->load(geo + vert.str(), geo + frag.str());
+        shaderGeodataColor->bindUniformBlockLocations({
+                { "uboCameraData", 0 },
+                { "uboViewData", 1 },
+                { "uboColorData", 2 }
             });
     }
 
@@ -311,11 +313,13 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
             "data/shaders/geodataIcon.vert.glsl");
         Buffer frag = readInternalMemoryBuffer(
             "data/shaders/geodataIcon.frag.glsl");
-        shaderGeodataIconScreen->load(vert.str(), frag.str());
+        shaderGeodataIconScreen->load(geo + vert.str(), geo + frag.str());
         shaderGeodataIconScreen->bindTextureLocations({
                 { "texIcons", 0 }
             });
         shaderGeodataIconScreen->bindUniformBlockLocations({
+                { "uboCameraData", 0 },
+                { "uboViewData", 1 },
                 { "uboIconData", 2 }
             });
     }
@@ -330,9 +334,6 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
         Buffer frag = readInternalMemoryBuffer(
             "data/shaders/geodataLabelScreen.frag.glsl");
         shaderGeodataLabelScreen->load(geo + vert.str(), geo + frag.str());
-        shaderGeodataLabelScreen->loadUniformLocations({
-                "uniPass"
-            });
         shaderGeodataLabelScreen->bindTextureLocations({
                 { "texGlyphs", 0 }
             });
@@ -340,6 +341,9 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
                 { "uboCameraData", 0 },
                 { "uboViewData", 1 },
                 { "uboText", 2 }
+            });
+        shaderGeodataLabelScreen->loadUniformLocations({
+                "uniPass"
             });
     }
 

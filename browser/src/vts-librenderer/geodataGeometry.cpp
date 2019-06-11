@@ -275,15 +275,7 @@ void GeodataBase::loadPoints()
 void GeodataBase::loadIcons()
 {
     assert(spec.iconCoords.size() == spec.positions.size());
-    for (uint32 i = 0, e = spec.iconCoords.size(); i != e; i++)
-    {
-        Point t;
-        vec3f modelPosition = rawToVec3(spec.positions[i][0].data());
-        t.worldPosition = vec4to3(vec4(rawToMat4(spec.model)
-            * vec3to4(modelPosition, 1).cast<double>()));
-        t.worldUp = worldUp(modelPosition);
-        points.push_back(t);
-    }
+    copyPoints();
     info->ramMemoryCost += points.size() * sizeof(decltype(points[0]));
 }
 

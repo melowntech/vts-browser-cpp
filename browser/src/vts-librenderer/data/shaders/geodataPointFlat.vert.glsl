@@ -46,8 +46,6 @@ void main()
     }
     vec3 o = varCorner.x * s + varCorner.y * f;
     gl_Position = uniMvp * vec4(p + o * scale, 1.0);
-
-    // avoid culling geodata by near camera plane
-    gl_Position.z = max(gl_Position.z, -gl_Position.w + 1e-7);
+    cullingCorrection();
 }
 

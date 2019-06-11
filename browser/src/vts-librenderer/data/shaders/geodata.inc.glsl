@@ -13,6 +13,8 @@ layout(std140) uniform uboViewData
     mat4 uniMvInv;
 };
 
+#ifdef VTS_STAGE_VERTEX
+
 float testVisibility(vec4 visibilities, vec3 modelPos, vec3 modelUp)
 {
     vec3 pos = vec3(uniMv * vec4(modelPos, 1.0));
@@ -31,3 +33,11 @@ float testVisibility(vec4 visibilities, vec3 modelPos, vec3 modelUp)
         return 0.0;
     return 1.0;
 }
+
+void cullingCorrection()
+{
+    // avoid culling geodata by near camera plane
+    gl_Position.z = max(gl_Position.z, -gl_Position.w + 1e-7);
+}
+
+#endif

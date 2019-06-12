@@ -75,8 +75,9 @@ public:
     boost::optional<float> surrogateNav;
     vec3 diskNormalPhys;
     vec2 diskHeightsPhys;
-    const SurfaceInfo *surface;
     double diskHalfAngle;
+    double texelSize;
+    const SurfaceInfo *surface;
 
     uint32 lastAccessTime;
     uint32 lastRenderTime;

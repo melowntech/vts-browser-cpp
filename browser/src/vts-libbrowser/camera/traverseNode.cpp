@@ -37,6 +37,10 @@ TraverseNode::TraverseNode(MapLayer *layer, TraverseNode *parent,
     : layer(layer), parent(parent),
       nodeInfo(nodeInfo),
       hash(std::hash<TileId>()(id())),
+      diskNormalPhys(nan3()),
+      diskHeightsPhys(nan2()),
+      diskHalfAngle(nan1()),
+      texelSize(nan1()),
       surface(nullptr),
       lastAccessTime(0), lastRenderTime(0),
       priority(nan1()),
@@ -47,12 +51,6 @@ TraverseNode::TraverseNode(MapLayer *layer, TraverseNode *parent,
         for (uint32 i = 0; i < 8; i++)
             cornersPhys[i] = nan3();
         surrogatePhys = nan3();
-    }
-    // initialize disk to NAN
-    {
-        diskNormalPhys = nan3();
-        diskHeightsPhys = nan2();
-        diskHalfAngle = nan1();
     }
     // initialize aabb to universe
     {

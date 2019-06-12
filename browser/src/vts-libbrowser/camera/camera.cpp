@@ -169,28 +169,11 @@ double distanceToDisk(const vec3 &diskNormal,
 
 double CameraImpl::coarsenessValue(TraverseNode *trav)
 {
-    bool applyTexelSize = trav->meta->flags()
-            & vtslibs::vts::MetaNode::Flag::applyTexelSize;
-    bool applyDisplaySize = trav->meta->flags()
-            & vtslibs::vts::MetaNode::Flag::applyDisplaySize;
+    assert(trav->meta);
+    assert(!std::isnan(trav->texelSize));
 
-    // the test fails by default
-    if (!applyTexelSize && !applyDisplaySize)
-        return std::numeric_limits<double>::infinity();
-
-    double texelSize = 0;
-    if (applyTexelSize)
-    {
-        texelSize = trav->meta->texelSize;
-    }
-    else if (applyDisplaySize)
-    {
-        vec3 s = trav->aabbPhys[1] - trav->aabbPhys[0];
-        double m = std::max(s[0], std::max(s[1], s[2]));
-        if (m == std::numeric_limits<double>::infinity())
-            return m;
-        texelSize = m / trav->meta->displaySize;
-    }
+    if (trav->texelSize == std::numeric_limits<double>::infinity())
+        return trav->texelSize;
 
     if (map->options.debugCoarsenessDisks
         && trav->diskHalfAngle == trav->diskHalfAngle)
@@ -199,7 +182,7 @@ double CameraImpl::coarsenessValue(TraverseNode *trav)
         double dist = distanceToDisk(trav->diskNormalPhys,
             trav->diskHeightsPhys, trav->diskHalfAngle,
             cameraPosPhys);
-        double v = texelSize * diskNominalDistance / dist;
+        double v = trav->texelSize * diskNominalDistance / dist;
         assert(!std::isnan(v) && v > 0);
         return v;
     }
@@ -209,7 +192,7 @@ double CameraImpl::coarsenessValue(TraverseNode *trav)
         double result = 0;
         for (const vec3 &c : trav->cornersPhys)
         {
-            vec3 up = perpendicularUnitVector * texelSize;
+            vec3 up = perpendicularUnitVector * trav->texelSize;
             vec3 c1 = c - up * 0.5;
             vec3 c2 = c1 + up;
             c1 = vec4to3(vec4(viewProjRender * vec3to4(c1, 1)), true);

@@ -182,9 +182,9 @@ void Navigation::setRotation(const double point[3])
         LOGTHROW(err4, std::logic_error)
                 << "Map is not yet available.";
     }
-    assert(std::isnan(point[0]));
-    assert(std::isnan(point[1]));
-    assert(std::isnan(point[2]));
+    assert(!std::isnan(point[0]));
+    assert(!std::isnan(point[1]));
+    assert(!std::isnan(point[2]));
     impl->setRotation(rawToVec3(point));
 }
 

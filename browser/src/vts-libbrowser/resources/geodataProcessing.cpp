@@ -26,6 +26,7 @@
 
 #include <optick.h>
 #include <utf8.h>
+#include <cstdlib>
 
 #include "../include/vts-browser/exceptions.hpp"
 #include "../include/vts-browser/log.hpp"
@@ -891,7 +892,7 @@ if (fnc == #NAME) \
         COMP(div, /);
 #undef COMP
 
-        // 'pow', 'atan2', 'mod'
+        // 'pow', 'atan2', 'mod', 'random'
         if (fnc == "pow")
         {
             validateArrayLength(expression[fnc], 2, 2,
@@ -915,6 +916,14 @@ if (fnc == #NAME) \
             sint32 a = (sint32)convertToDouble(expression[fnc][0]);
             sint32 b = (sint32)convertToDouble(expression[fnc][1]);
             return a % b;
+        }
+        if (fnc == "random")
+        {
+            validateArrayLength(expression[fnc], 2, 2,
+                "Function 'random' is expecting an array with 2 elements.");
+            double a = convertToDouble(expression[fnc][0]);
+            double b = convertToDouble(expression[fnc][1]);
+            return std::rand() * (b - a);
         }
 
         // 'clamp'
@@ -1877,7 +1886,7 @@ if (cond == #OP) \
 
         vecToRaw(layer.isMember("label-outline")
             ? convertVector4(layer["label-outline"])
-            : vec4f(0.25, 0.75, 2.2, 2.2),
+            : vec4f(0.27, 0.75, 2.2, 2.2),
             spec.unionData.labelScreen.outline);
 
         vecToRaw(layer.isMember("label-offset")

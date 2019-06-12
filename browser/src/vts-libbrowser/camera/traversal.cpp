@@ -388,6 +388,30 @@ void CameraImpl::travDetermineMetaImpl(TraverseNode *trav)
         trav->surrogateNav = map->convertor->convert(sds,
                             trav->nodeInfo.node(), Srs::Navigation)[2];
     }
+
+    // texelSize
+    {
+        bool applyTexelSize = trav->meta->flags()
+            & vtslibs::vts::MetaNode::Flag::applyTexelSize;
+        bool applyDisplaySize = trav->meta->flags()
+            & vtslibs::vts::MetaNode::Flag::applyDisplaySize;
+
+        if (applyTexelSize)
+        {
+            trav->texelSize = trav->meta->texelSize;
+        }
+        else if (applyDisplaySize)
+        {
+            vec3 s = trav->aabbPhys[1] - trav->aabbPhys[0];
+            double m = std::max(s[0], std::max(s[1], s[2]));
+            trav->texelSize = m / trav->meta->displaySize;
+        }
+        else
+        {
+            // the test fails by default
+            trav->texelSize = std::numeric_limits<double>::infinity();
+        }
+    }
 }
 
 bool CameraImpl::travDetermineDraws(TraverseNode *trav)

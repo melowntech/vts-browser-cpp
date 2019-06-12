@@ -48,6 +48,11 @@ void MetaTile::load()
     detail::BufferStream w(fetch->reply.content);
     *(vtslibs::vts::MetaTile*)this
             = vtslibs::vts::loadMetaTile(w, 5, name);
+    vtslibs::vts::MetaTile::for_each([](vtslibs::vts::TileId,
+        vtslibs::vts::MetaNode &node) {
+            // override display size to 1024
+            node.displaySize = 1024;
+        });
     info.ramMemoryCost += sizeof(*this);
     uint32 side = 1 << 5;
     info.ramMemoryCost += side * side * sizeof(vtslibs::vts::MetaNode);

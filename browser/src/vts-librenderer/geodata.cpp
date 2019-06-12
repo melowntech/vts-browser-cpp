@@ -773,7 +773,11 @@ void RenderViewImpl::sortJobsByZIndexAndImportance()
             auto az = a.g->spec.commonData.zIndex;
             auto bz = b.g->spec.commonData.zIndex;
             if (az == bz)
+            {
+                if (std::isnan(a.importance) || std::isnan(b.importance))
+                    return a.g->spec.type < b.g->spec.type;
                 return a.importance > b.importance;
+            }
             return az < bz;
         });
 }
@@ -921,7 +925,11 @@ void RenderViewImpl::sortJobsByZIndexAndDepth()
             auto az = a.g->spec.commonData.zIndex;
             auto bz = b.g->spec.commonData.zIndex;
             if (az == bz)
+            {
+                if (std::isnan(a.depth) || std::isnan(b.depth))
+                    return a.g->spec.type < b.g->spec.type;
                 return a.depth > b.depth;
+            }
             return az < bz;
         });
 }

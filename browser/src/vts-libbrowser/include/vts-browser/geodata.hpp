@@ -44,15 +44,15 @@ public:
     enum class Type : uint8
     {
         Invalid,
-        PointFlat,
-        PointScreen,
-        LineFlat,
-        LineScreen,
-        IconFlat,
-        IconScreen,
-        LabelFlat,
-        LabelScreen,
         Triangles,
+        LineFlat,
+        PointFlat,
+        IconFlat,
+        LabelFlat,
+        LineScreen,
+        PointScreen,
+        IconScreen,
+        LabelScreen,
     };
 
     enum class Units : uint8

@@ -29,6 +29,48 @@
 namespace vts { namespace renderer
 {
 
+namespace
+{
+
+void makeTextureMoreSquare(GpuTextureSpec &spec)
+{
+    assert(spec.height == 2);
+    assert(spec.components == 3);
+    assert(spec.type == GpuTypeEnum::Float);
+    if (spec.width < 10)
+        return;
+    uint32 w = std::sqrt(spec.width * 2) + 1;
+    w = (w / 4) * 4;
+    uint32 h = spec.width / w * 2;
+    if (w * h < spec.width * 2)
+        h += 2;
+    assert(w * h >= spec.width * 2);
+    Buffer b;
+    b.allocate(w * h * sizeof(vec3f));
+    b.zero();
+    vec3f *inp = (vec3f*)spec.buffer.data();
+    vec3f *inn = inp + spec.width;
+    vec3f *out = (vec3f*)b.data();
+    uint32 mm = b.size() / sizeof(vec3f);
+    (void)mm;
+    for (uint32 i = 0; i < spec.width; i++)
+    {
+        uint32 yy = i / w;
+        uint32 xx = i % w;
+        uint32 pi = (yy * 2 + 0) * w + xx;
+        uint32 ni = (yy * 2 + 1) * w + xx;
+        assert(pi < mm);
+        assert(ni < mm);
+        out[pi] = *inp++;
+        out[ni] = *inn++;
+    }
+    std::swap(spec.buffer, b);
+    spec.width = w;
+    spec.height = h;
+}
+
+} // namespace
+
 void GeodataBase::loadLines()
 {
     uint32 totalPoints = getTotalPoints(); // example: 7
@@ -131,6 +173,7 @@ void GeodataBase::loadLines()
         tex.type = GpuTypeEnum::Float;
         tex.filterMode = GpuTextureSpec::FilterMode::Nearest;
         tex.wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
+        makeTextureMoreSquare(tex);
         ResourceInfo ri;
         renderer->api->loadTexture(ri, tex, debugId);
         this->texture = std::static_pointer_cast<Texture>(ri.userData);
@@ -229,6 +272,7 @@ void GeodataBase::loadPoints()
         tex.type = GpuTypeEnum::Float;
         tex.filterMode = GpuTextureSpec::FilterMode::Nearest;
         tex.wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
+        makeTextureMoreSquare(tex);
         ResourceInfo ri;
         renderer->api->loadTexture(ri, tex, debugId);
         this->texture = std::static_pointer_cast<Texture>(ri.userData);

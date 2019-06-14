@@ -923,7 +923,7 @@ if (fnc == #NAME) \
                 "Function 'random' is expecting an array with 2 elements.");
             double a = convertToDouble(expression[fnc][0]);
             double b = convertToDouble(expression[fnc][1]);
-            return std::rand() * (b - a);
+            return std::rand() * (b - a) / RAND_MAX;
         }
 
         // 'clamp'

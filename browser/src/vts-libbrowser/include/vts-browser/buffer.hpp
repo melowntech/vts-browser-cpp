@@ -68,6 +68,9 @@ public:
     // this may invalidate all pointers
     void resize(uint32 size);
 
+    // fills the buffer with zeros
+    void zero();
+
     void free();
 
     char *data() const { return data_; }

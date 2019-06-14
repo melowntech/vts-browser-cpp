@@ -114,8 +114,7 @@ Buffer::Buffer(Buffer &&other) noexcept : data_(other.data_), size_(other.size_)
 
 Buffer &Buffer::operator = (Buffer &&other) noexcept
 {
-    if (&other == this)
-        return *this;
+    assert(&other != this);
     this->free();
     size_ = other.size_;
     data_ = other.data_;
@@ -158,6 +157,11 @@ void Buffer::resize(uint32 size)
     }
     this->size_ = size;
     data_ = tmp;
+}
+
+void Buffer::zero()
+{
+    memset(data_, 0, size_);
 }
 
 void Buffer::free()

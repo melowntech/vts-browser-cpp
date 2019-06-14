@@ -15,8 +15,11 @@ void main()
 {
     int pointIndex = gl_VertexID / 4;
     int cornerIndex = gl_VertexID % 4;
-    vec3 p = texelFetch(texPointData, ivec2(pointIndex, 0), 0).xyz;
-    vec3 u = texelFetch(texPointData, ivec2(pointIndex, 1), 0).xyz;
+    int tw = textureSize(texPointData, 0).x;
+    int xx = pointIndex % tw;
+    int yy = (pointIndex / tw) * 2;
+    vec3 p = texelFetch(texPointData, ivec2(xx, yy + 0), 0).xyz;
+    vec3 u = texelFetch(texPointData, ivec2(xx, yy + 1), 0).xyz;
     varOpacity = testVisibility(uniVisibilities, p, u);
 
     float scale = uniUnitsRadius[1] * 2.0;

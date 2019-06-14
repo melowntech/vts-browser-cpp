@@ -19,9 +19,14 @@ void main()
 
     int pointIndex = id / 4 + (id + 0) % 2;
     int otherIndex = id / 4 + (id + 1) % 2;
-    vec3 p = texelFetch(texLineData, ivec2(pointIndex, 0), 0).xyz;
-    vec3 u = texelFetch(texLineData, ivec2(pointIndex, 1), 0).xyz;
-    vec3 o = texelFetch(texLineData, ivec2(otherIndex, 0), 0).xyz;
+    int tw = textureSize(texLineData, 0).x;
+    int xx = pointIndex % tw;
+    int yy = (pointIndex / tw) * 2;
+    int ox = otherIndex % tw;
+    int oy = (otherIndex / tw) * 2;
+    vec3 p = texelFetch(texLineData, ivec2(xx, yy + 0), 0).xyz;
+    vec3 u = texelFetch(texLineData, ivec2(xx, yy + 1), 0).xyz;
+    vec3 o = texelFetch(texLineData, ivec2(ox, oy + 0), 0).xyz;
     varOpacity = testVisibility(uniVisibilities, p, u);
 
     // scale

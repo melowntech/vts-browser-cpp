@@ -13,9 +13,9 @@ out vec2 varCorner;
 
 void main()
 {
-    bool isCap = (gl_VertexID & (1 << 31)) != 0;
-    bool isEndCap = (gl_VertexID & (1 << 30)) != 0;
-    int id = isCap ? (gl_VertexID & ((1 << 30) - 1)) : gl_VertexID;
+    bool isCap = (gl_VertexID & (1 << 30)) != 0;
+    bool isEndCap = (gl_VertexID & (1 << 29)) != 0;
+    int id = isCap ? (gl_VertexID & ((1 << 29) - 1)) : gl_VertexID;
 
     int pointIndex = id / 4 + (id + 0) % 2;
     int otherIndex = id / 4 + (id + 1) % 2;
@@ -34,6 +34,13 @@ void main()
     vec4 op = uniMvp * vec4(o, 1.0);
     p = pp.xyz / pp.w;
     o = op.xyz / op.w;
+
+    // discard invalid
+    if (pp.z < -pp.w)
+    {
+        gl_Position = pp;
+        return;
+    }
 
     // line vectors
     vec3 f = o - p;

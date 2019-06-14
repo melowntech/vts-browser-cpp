@@ -97,20 +97,21 @@ void GeodataBase::loadLines()
             // caps
             {
                 uint32 last = first + pointsCount - 2;
-                *capsInd++ = (1 << 31) + first * 4 + 0;
-                *capsInd++ = (1 << 31) + first * 4 + 3;
-                *capsInd++ = (1 << 31) + first * 4 + 1;
-                *capsInd++ = (1 << 31) + first * 4 + 0;
-                *capsInd++ = (1 << 31) + first * 4 + 2;
-                *capsInd++ = (1 << 31) + first * 4 + 3;
-                *capsInd++ = (1 << 31) + (1 << 30) + last * 4 + 0;
-                *capsInd++ = (1 << 31) + (1 << 30) + last * 4 + 3;
-                *capsInd++ = (1 << 31) + (1 << 30) + last * 4 + 1;
-                *capsInd++ = (1 << 31) + (1 << 30) + last * 4 + 0;
-                *capsInd++ = (1 << 31) + (1 << 30) + last * 4 + 2;
-                *capsInd++ = (1 << 31) + (1 << 30) + last * 4 + 3;
-                // highest bit = is cap
-                // second highest bit = is end cap
+                *capsInd++ = (1 << 30) + first * 4 + 0;
+                *capsInd++ = (1 << 30) + first * 4 + 3;
+                *capsInd++ = (1 << 30) + first * 4 + 1;
+                *capsInd++ = (1 << 30) + first * 4 + 0;
+                *capsInd++ = (1 << 30) + first * 4 + 2;
+                *capsInd++ = (1 << 30) + first * 4 + 3;
+                *capsInd++ = (3 << 29) + last * 4 + 0;
+                *capsInd++ = (3 << 29) + last * 4 + 3;
+                *capsInd++ = (3 << 29) + last * 4 + 1;
+                *capsInd++ = (3 << 29) + last * 4 + 0;
+                *capsInd++ = (3 << 29) + last * 4 + 2;
+                *capsInd++ = (3 << 29) + last * 4 + 3;
+                // highest (sign) bit = unused
+                // second highest bit = is cap
+                // third highest bit = is end cap
             }
         }
 

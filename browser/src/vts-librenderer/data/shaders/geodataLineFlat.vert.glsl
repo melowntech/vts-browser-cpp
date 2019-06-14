@@ -13,9 +13,9 @@ out vec2 varCorner;
 
 void main()
 {
-    bool isCap = (gl_VertexID & (1 << 31)) != 0;
-    bool isEndCap = (gl_VertexID & (1 << 30)) != 0;
-    int id = isCap ? (gl_VertexID & ((1 << 30) - 1)) : gl_VertexID;
+    bool isCap = (gl_VertexID & (1 << 30)) != 0;
+    bool isEndCap = (gl_VertexID & (1 << 29)) != 0;
+    int id = isCap ? (gl_VertexID & ((1 << 29) - 1)) : gl_VertexID;
 
     int pointIndex = id / 4 + (id + 0) % 2;
     int otherIndex = id / 4 + (id + 1) % 2;

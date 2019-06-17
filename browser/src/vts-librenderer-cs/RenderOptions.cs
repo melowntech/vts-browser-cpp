@@ -41,9 +41,10 @@ namespace vts
         [MarshalAs(UnmanagedType.U4)] public uint targetViewportW;
         [MarshalAs(UnmanagedType.U4)] public uint targetViewportH;
         [MarshalAs(UnmanagedType.U4)] public uint antialiasingSamples;
+        [MarshalAs(UnmanagedType.U4)] public uint renderGeodataDebug;
         [MarshalAs(UnmanagedType.I1)] public bool renderAtmosphere;
         [MarshalAs(UnmanagedType.I1)] public bool renderPolygonEdges;
-        [MarshalAs(UnmanagedType.I1)] public bool renderGeodataMargins;
+        [MarshalAs(UnmanagedType.I1)] public bool geodataHysteresis;
         [MarshalAs(UnmanagedType.I1)] public bool colorToTargetFrameBuffer;
         [MarshalAs(UnmanagedType.I1)] public bool colorToTexture;
     }

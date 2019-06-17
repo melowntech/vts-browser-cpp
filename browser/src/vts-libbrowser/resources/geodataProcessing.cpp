@@ -2045,7 +2045,7 @@ if (cond == #OP) \
         {
             validateArrayLength(v, 3, 3, "Point must have 3 coordinates");
             vec3 p = vec3(v[0].asDouble(), v[1].asDouble(), v[2].asDouble());
-            vec3f f = (orthonormalize * p).cast<float>();
+            vec3f f = vec3(orthonormalize * p).cast<float>();
             return { f[0], f[1], f[2] };
         }
 

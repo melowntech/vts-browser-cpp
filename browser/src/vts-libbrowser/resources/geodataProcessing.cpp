@@ -2036,17 +2036,17 @@ if (cond == #OP) \
             vec3 bb = vec3(b[0].asDouble(), b[1].asDouble(), b[2].asDouble());
             double resolution = group["resolution"].asDouble();
             vec3 mm = bb - aa;
-            orthonormalize = mat4to3(scaleMatrix(
-                mm / resolution)).cast<float>();
-            model = translationMatrix(aa) * scaleMatrix(1);
+            double ms = length(mm) * 0.01;
+            orthonormalize = mat4to3(scaleMatrix(mm / resolution / ms));
+            model = translationMatrix(aa) * scaleMatrix(ms);
         }
 
         Point convertPoint(const Value &v) const
         {
             validateArrayLength(v, 3, 3, "Point must have 3 coordinates");
-            vec3f p = vec3f(v[0].asDouble(), v[1].asDouble(), v[2].asDouble());
-            p = orthonormalize * p;
-            return { p[0], p[1], p[2] };
+            vec3 p = vec3(v[0].asDouble(), v[1].asDouble(), v[2].asDouble());
+            vec3f f = (orthonormalize * p).cast<float>();
+            return { f[0], f[1], f[2] };
         }
 
         std::vector<Point> convertArray(const Value &v, bool relative) const
@@ -2062,7 +2062,7 @@ if (cond == #OP) \
         mat4 model;
 
     private:
-        mat3f orthonormalize;
+        mat3 orthonormalize;
     };
 
     boost::optional<Group> group;

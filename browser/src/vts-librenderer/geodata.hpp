@@ -90,9 +90,8 @@ public:
     void load(RenderContextImpl *renderer, ResourceInfo &info,
         GpuGeodataSpec &specp, const std::string &debugId);
     void addMemory(ResourceInfo &other);
-    vec3f modelUp(const vec3f &p) const;
-    vec3f worldUp(vec3f &p) const;
     uint32 getTotalPoints() const;
+    vec3f modelUp(const vec3f &modelPos);
     void copyPoints();
     void copyFonts();
     void loadLines();

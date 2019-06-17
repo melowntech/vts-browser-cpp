@@ -26,11 +26,12 @@ float testVisibility(vec4 visibilities, vec3 modelPos, vec3 modelUp)
         return 0.0;
     if (!isnan(visibilities[2]) && distance > visibilities[2])
         return 0.0;
-    vec3 up = vec3(uniMv * vec4(modelUp, 0.0));
-    vec3 f = -pos / distance;
-    if (!isnan(visibilities[3])
-        && dot(f, up) < visibilities[3])
-        return 0.0;
+    if (!isnan(visibilities[3]))
+    {
+        vec3 up = vec3(uniMv * vec4(modelUp, 0.0));
+        if (dot(normalize(-pos), normalize(up)) < visibilities[3])
+            return 0.0;
+    }
     return 1.0;
 }
 

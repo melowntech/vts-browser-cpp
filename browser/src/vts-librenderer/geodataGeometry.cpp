@@ -69,6 +69,14 @@ void makeTextureMoreSquare(GpuTextureSpec &spec)
     spec.height = h;
 }
 
+float oneMeterInModel(const mat4 &model, const mat4 &modelInv)
+{
+    vec4 a = model * vec4(0, 0, 0, 1);
+    vec4 b = a + vec4(1, 0, 0, 0); // add one meter in world space
+    vec4 c = modelInv * b;
+    return length(vec4to3(c)); // measure the change in model space
+}
+
 } // namespace
 
 void GeodataBase::loadLines()
@@ -209,6 +217,9 @@ void GeodataBase::loadLines()
         uboLineData.uniUnitsRadius = vec4f(
             (float)spec.unionData.line.units,
             spec.unionData.line.width * 0.5f, 0.f, 0.f);
+        if (spec.type == GpuGeodataSpec::Type::LineFlat)
+            uboLineData.uniUnitsRadius[1]
+                *= oneMeterInModel(model, modelInv);
 
         uniform = std::make_shared<UniformBuffer>();
         uniform->debugId = debugId;
@@ -308,6 +319,9 @@ void GeodataBase::loadPoints()
         uboPointData.uniUnitsRadius = vec4f(
             (float)spec.unionData.point.units,
             spec.unionData.point.radius, 0.f, 0.f);
+        if (spec.type == GpuGeodataSpec::Type::PointFlat)
+            uboPointData.uniUnitsRadius[1]
+                *= oneMeterInModel(model, modelInv);
 
         uniform = std::make_shared<UniformBuffer>();
         uniform->debugId = debugId;

@@ -105,32 +105,25 @@ void GeodataBase::addMemory(ResourceInfo &other)
     info->gpuMemoryCost += other.gpuMemoryCost;
 }
 
-// given a point in model space, computes a direction against gravity in model space with length of one meter converted to model space
-vec3f GeodataBase::modelUp(const vec3f &p) const
-{
-    vec3 dl = p.cast<double>();
-    vec3 dw = vec4to3(vec4(model * vec3to4(dl, 1)));
-    vec3 upw = normalize(dw);
-    vec3 tw = dw + upw;
-    vec3 tl = vec4to3(vec4(modelInv * vec3to4(tw, 1)));
-    return (tl - dl).cast<float>();
-}
-
-// given a point in model space, computes a direction against gravity in world space with length of one meter
-vec3f GeodataBase::worldUp(vec3f &p) const
-{
-    vec3 dl = p.cast<double>();
-    vec3 dw = vec4to3(vec4(model * vec3to4(dl, 1)));
-    vec3 upw = normalize(dw);
-    return upw.cast<float>();
-}
-
 uint32 GeodataBase::getTotalPoints() const
 {
     uint32 totalPoints = 0;
     for (const auto &li : spec.positions)
         totalPoints += li.size();
     return totalPoints;
+}
+
+vec3f GeodataBase::modelUp(const vec3f &modelPos)
+{
+    vec3 mp3 = modelPos.cast<double>();
+    vec4 mp4 = vec3to4(mp3, 1);
+    vec4 wp4 = model * mp4;
+    vec3 wp3 = vec4to3(wp4); // no perspective, no division
+    vec3 wn3 = normalize(wp3);
+    vec4 wn4 = vec3to4(wn3, 0);
+    vec4 mn4 = modelInv * wn4;
+    vec3 mn3 = vec4to3(mn4); // no division
+    return normalize(mn3).cast<float>();
 }
 
 void GeodataBase::copyPoints()
@@ -144,7 +137,7 @@ void GeodataBase::copyPoints()
         t.modelPosition = rawToVec3(it[0].data());
         t.worldPosition = vec4to3(vec4(model
             * vec3to4(t.modelPosition, 1).cast<double>()));
-        t.worldUp = worldUp(t.modelPosition);
+        t.worldUp = normalize(t.worldPosition).cast<float>();
         points.push_back(t);
     }
 }
@@ -236,7 +229,7 @@ bool RenderViewImpl::geodataTestVisibility(
     if (!std::isnan(visibility[2]) && distance > visibility[2])
         return false;
     if (!std::isnan(visibility[3])
-        && dot(vec3((eye - pos) / distance).cast<float>(), up)
+        && dot(normalize(vec3(eye - pos)).cast<float>(), up)
             < visibility[3])
         return false;
     vec4 sp = viewProj * vec3to4(pos, 1);

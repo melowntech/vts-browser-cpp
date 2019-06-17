@@ -30,10 +30,9 @@ void main()
     varOpacity = testVisibility(uniVisibilities, p, u);
 
     // scale
-    float scale = length(u) * uniUnitsRadius[1];
+    float scale = uniUnitsRadius[1];
     if (int(uniUnitsRadius[0]) == 3) // ratio
         scale *= uniCameraParams[2];
-    u = normalize(u);
 
     // line vectors
     vec3 f = normalize(o - p);

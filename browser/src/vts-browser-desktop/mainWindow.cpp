@@ -72,7 +72,8 @@ void windowSwap(SDL_Window *window)
 
 AppOptions::AppOptions() :
     oversampleRender(1),
-    renderCompas(false),
+    renderCompas(0),
+    simulatedFpsSlowdown(0),
     screenshotOnFullRender(false),
     closeOnFullRender(false),
     purgeDiskCache(false)
@@ -353,15 +354,16 @@ void MainWindow::run()
     }
 
     bool shouldClose = false;
-    uint32 lastFrameTime = SDL_GetTicks();
+    auto lastTime = std::chrono::high_resolution_clock::now();
+    double accumulatedTime = 0;
     while (!shouldClose)
     {
         OPTICK_FRAME("frame");
-        uint32 time1 = SDL_GetTicks();
+        auto time1 = std::chrono::high_resolution_clock::now();
         try
         {
             updateWindowSize();
-            map->renderUpdate(timingTotalFrame * 1e-3);
+            map->renderUpdate(timingTotalFrame);
             camera->renderUpdate();
         }
         catch (const vts::MapconfigException &e)
@@ -375,7 +377,7 @@ void MainWindow::run()
                 throw;
         }
 
-        uint32 time2 = SDL_GetTicks();
+        auto time2 = std::chrono::high_resolution_clock::now();
         shouldClose = processEvents();
         prepareMarks();
         renderFrame();
@@ -395,22 +397,42 @@ void MainWindow::run()
             SDL_SetWindowTitle(window, creditLine.c_str());
         }
 
-        uint32 time3 = SDL_GetTicks();
+        auto time3 = std::chrono::high_resolution_clock::now();
         windowSwap(window);
 
-        uint32 time4 = SDL_GetTicks();
-        // workaround for when v-sync is missing
-        uint32 duration = time4 - time1;
-        if (duration < 16)
+        // simulated fps slowdown
+        switch (appOptions.simulatedFpsSlowdown)
         {
-            microSleep((16 - duration) * 1000);
-            time4 = SDL_GetTicks();
+        case 1:
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            break;
+        case 2:
+            std::this_thread::sleep_for(std::chrono::milliseconds(
+                std::sin(accumulatedTime * 0.1) < 0 ? 50 : 0));
+            break;
         }
 
-        timingMapProcess = time2 - time1;
-        timingAppProcess = time3 - time2;
-        timingTotalFrame = time4 - lastFrameTime;
-        lastFrameTime = time4;
+        auto time4 = std::chrono::high_resolution_clock::now();
+
+        // workaround for when v-sync is missing
+        {
+            double duration = std::chrono::duration<double>(
+                time4 - time1).count();
+            if (duration < 16e-3)
+            {
+                microSleep(16e3 - duration * 1e6);
+                time4 = std::chrono::high_resolution_clock::now();
+            }
+        }
+
+        timingMapProcess = std::chrono::duration<double>(
+            time2 - time1).count();
+        timingAppProcess = std::chrono::duration<double>(
+            time3 - time2).count();
+        timingTotalFrame = std::chrono::duration<double>(
+            time4 - lastTime).count();
+        lastTime = time4;
+        accumulatedTime += timingTotalFrame;
 
         timingMapSmooth.add(timingMapProcess);
         timingFrameSmooth.add(timingTotalFrame);

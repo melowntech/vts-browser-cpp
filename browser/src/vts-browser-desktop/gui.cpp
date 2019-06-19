@@ -112,6 +112,12 @@ static const char *geodataDebugNames[] = {
     "Rects",
 };
 
+static const char *fpsSlowdownNames[] = {
+    "Off",
+    "On",
+    "Periodic",
+};
+
 } // namespace
 
 Mark::Mark() : open(false)
@@ -830,6 +836,28 @@ public:
             // debug
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Debug", NK_MINIMIZED))
             {
+                // simulated fps slowdown
+                {
+                    float ratio[] = { width * 0.4f, width * 0.6f };
+                    nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+
+                    nk_label(&ctx, "Fps Slowdown:", NK_TEXT_LEFT);
+                    if (nk_combo_begin_label(&ctx,
+                        fpsSlowdownNames[(int)a.simulatedFpsSlowdown],
+                        nk_vec2(nk_widget_width(&ctx), 200)))
+                    {
+                        nk_layout_row_dynamic(&ctx, 16, 1);
+                        for (unsigned i = 0; i < sizeof(fpsSlowdownNames)
+                            / sizeof(fpsSlowdownNames[0]); i++)
+                        {
+                            if (nk_combo_item_label(&ctx,
+                                fpsSlowdownNames[i], NK_TEXT_LEFT))
+                                a.simulatedFpsSlowdown = i;
+                        }
+                        nk_combo_end(&ctx);
+                    }
+                }
+
                 // geodata debug mode
                 {
                     float ratio[] = { width * 0.4f, width * 0.6f };
@@ -947,11 +975,16 @@ public:
                 float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
-                S("Time map avg:", window->timingMapSmooth.avg(), " ms");
-                S("Time map max:", window->timingMapSmooth.max(), " ms");
-                S("Time app:", window->timingAppProcess, " ms");
-                S("Time frame avg:", window->timingFrameSmooth.avg(), " ms");
-                S("Time frame max:", window->timingFrameSmooth.max(), " ms");
+                S("Time map avg:", uint32(
+                    window->timingMapSmooth.avg() * 1000), " ms");
+                S("Time map max:", uint32(
+                    window->timingMapSmooth.max() * 1000), " ms");
+                S("Time app:", uint32(
+                    window->timingAppProcess * 1000), " ms");
+                S("Time frame avg:", uint32(
+                    window->timingFrameSmooth.avg() * 1000), " ms");
+                S("Time frame max:", uint32(
+                    window->timingFrameSmooth.max() * 1000), " ms");
 
                 nk_tree_pop(&ctx);
             }

@@ -69,6 +69,7 @@ struct AppOptions
     std::string initialPosition;
     uint32 oversampleRender;
     int renderCompas;
+    int simulatedFpsSlowdown;
     bool screenshotOnFullRender;
     bool closeOnFullRender;
     bool purgeDiskCache;
@@ -117,11 +118,11 @@ public:
     std::shared_ptr<vts::renderer::Mesh> meshSphere;
     std::shared_ptr<vts::renderer::Mesh> meshLine;
     std::vector<Mark> marks;
-    smoothVariable<uint32, 60> timingMapSmooth;
-    smoothVariable<uint32, 60> timingFrameSmooth;
-    uint32 timingMapProcess;
-    uint32 timingAppProcess;
-    uint32 timingTotalFrame;
+    smoothVariable<double, 60> timingMapSmooth;
+    smoothVariable<double, 60> timingFrameSmooth;
+    double timingMapProcess;
+    double timingAppProcess;
+    double timingTotalFrame;
     vts::Map *const map;
     vts::Camera *const camera;
     vts::Navigation *const navigation;

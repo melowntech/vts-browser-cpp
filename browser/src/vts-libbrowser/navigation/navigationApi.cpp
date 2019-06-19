@@ -282,8 +282,8 @@ void setPosition(Navigation *nav, NavigationImpl *impl,
 {
     impl->navigationTypeChanged();
     impl->position.heightMode = position.heightMode;
-    nav->setSubjective(
-            position.type == vtslibs::registry::Position::Type::subjective, false);
+    nav->setSubjective(position.type
+        == vtslibs::registry::Position::Type::subjective, false);
     nav->setFov(position.verticalFov);
     nav->setViewExtent(position.verticalExtent);
     vec3 v = vecFromUblas<vec3>(position.orientation);

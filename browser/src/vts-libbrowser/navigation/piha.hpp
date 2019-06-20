@@ -30,15 +30,15 @@ namespace vts
 {
 
 void navigationPiha(
-    const class NavigationOptions &inNavOpts,
-    double inTimeDiff, // seconds
-    double inFov, // degrees
+    const class NavigationOptions &navOpts,
+    double timeDiff, // seconds
+    double fov, // degrees
     double inHorizontalDistance, // unsigned
     double inVerticalChange, // signed
     double inStartViewExtent,
     double inViewExtentChange,
-    vec3 inStartRotation,
-    vec3 inRotationChange,
+    const vec3 &inStartRotation,
+    const vec3 &inRotationChange,
     double &outViewExtent,
     double &outHorizontalMove,
     double &outVerticalMove,

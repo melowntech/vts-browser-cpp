@@ -496,6 +496,10 @@ public:
 
                 nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
 
+                // fps compensation
+                n.fpsCompensation = nk_check_label(&ctx, "FPS compensation",
+                    n.fpsCompensation);
+
                 // save
                 if (nk_button_label(&ctx, "Save"))
                 {
@@ -697,7 +701,7 @@ public:
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                         // fixedTraversalDistance
-                        nk_label(&ctx, "Fixed Distance:", NK_TEXT_LEFT);
+                        nk_label(&ctx, "Fixed distance:", NK_TEXT_LEFT);
                         c.fixedTraversalDistance = nk_slide_float(&ctx,
                             100, c.fixedTraversalDistance, 10000, 100);
                         sprintf(buffer, "%5.0f", c.fixedTraversalDistance);
@@ -769,7 +773,7 @@ public:
                     // text scale
                     {
                         float &s = window->view->options().textScale;
-                        nk_label(&ctx, "Text Scale:", NK_TEXT_LEFT);
+                        nk_label(&ctx, "Text scale:", NK_TEXT_LEFT);
                         s = nk_slide_float(&ctx, 0.2, s, 5, 0.1);
                         sprintf(buffer, "%3.1f", s);
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
@@ -805,10 +809,6 @@ public:
                 c.debugRenderSurrogates = nk_check_label(&ctx, "surrogates",
                                                     c.debugRenderSurrogates);
 
-                // geodata hysteresis
-                r.geodataHysteresis = nk_check_label(&ctx,
-                    "geodata hysteresis", r.geodataHysteresis);
-
                 // render objective position
                 n.debugRenderObjectPosition = nk_check_label(&ctx,
                             "objective pos.", n.debugRenderObjectPosition);
@@ -841,7 +841,7 @@ public:
                     float ratio[] = { width * 0.4f, width * 0.6f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
-                    nk_label(&ctx, "Fps Slowdown:", NK_TEXT_LEFT);
+                    nk_label(&ctx, "FPS slowdown:", NK_TEXT_LEFT);
                     if (nk_combo_begin_label(&ctx,
                         fpsSlowdownNames[(int)a.simulatedFpsSlowdown],
                         nk_vec2(nk_widget_width(&ctx), 200)))
@@ -881,6 +881,10 @@ public:
                 }
 
                 nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
+
+                // geodata hysteresis
+                r.geodataHysteresis = nk_check_label(&ctx,
+                    "geodata hysteresis", r.geodataHysteresis);
 
                 // enable camera normalization
                 n.cameraNormalization = nk_check_label(&ctx,

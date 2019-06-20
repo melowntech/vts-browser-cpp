@@ -1312,14 +1312,16 @@ public:
                 for (int i = 0; i < 3; i++)
                 {
                     nk_label(&ctx, i == 0 ? "Move:" : "", NK_TEXT_LEFT);
-                    posAutoMotion[i] = nk_slide_float(&ctx, -3,
-                                                posAutoMotion[i], 3, 0.1);
+                    posAutoMotion[i] = nk_slide_float(&ctx, -1,
+                                                posAutoMotion[i], 1, 0.05);
                 }
                 nk_label(&ctx, "Rotate:", NK_TEXT_LEFT);
-                posAutoRotation = nk_slide_float(&ctx, -3,
-                                posAutoRotation, 3, 0.1);
-                window->navigation->pan(posAutoMotion.data());
-                window->navigation->rotate({ posAutoRotation, 0, 0 });
+                posAutoRotation = nk_slide_float(&ctx, -1,
+                                posAutoRotation, 1, 0.05);
+                window->navigation->pan(vec3(
+                    300 * posAutoMotion * window->timingTotalFrame).data());
+                window->navigation->rotate({
+                    300 * posAutoRotation * window->timingTotalFrame, 0, 0 });
                 window->navigation->options().navigationType
                         = vts::NavigationType::Quick;
                 nk_tree_pop(&ctx);

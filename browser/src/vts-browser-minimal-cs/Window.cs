@@ -43,6 +43,7 @@ namespace vtsBrowserMinimalCs
         public Window()
         {
             InitializeComponent();
+            stopwatch = new System.Diagnostics.Stopwatch();
         }
 
         public void Init(object sender, EventArgs args)
@@ -77,7 +78,9 @@ namespace vtsBrowserMinimalCs
                 return;
 
             map.DataUpdate();
-            map.RenderUpdate(0);
+            long elapsed = stopwatch.ElapsedMilliseconds;
+            stopwatch.Restart();
+            map.RenderUpdate(elapsed / 1000.0);
             cam.SetViewportSize((uint)c.Width, (uint)c.Height);
             cam.RenderUpdate();
 
@@ -122,5 +125,6 @@ namespace vtsBrowserMinimalCs
         public Navigation nav;
         public RenderContext renderContext;
         public RenderView renderView;
+        public System.Diagnostics.Stopwatch stopwatch;
     }
 }

@@ -56,12 +56,6 @@ struct Initializer
     }
 } initializer;
 
-void microSleep(uint64 micros)
-{
-    OPTICK_EVENT();
-    std::this_thread::sleep_for(std::chrono::microseconds(micros));
-}
-
 void windowSwap(SDL_Window *window)
 {
     OPTICK_EVENT();
@@ -413,18 +407,6 @@ void MainWindow::run()
         }
 
         auto time4 = std::chrono::high_resolution_clock::now();
-
-        // workaround for when v-sync is missing
-        {
-            double duration = std::chrono::duration<double>(
-                time4 - time1).count();
-            if (duration < 16e-3)
-            {
-                microSleep(16e3 - duration * 1e6);
-                time4 = std::chrono::high_resolution_clock::now();
-            }
-        }
-
         timingMapProcess = std::chrono::duration<double>(
             time2 - time1).count();
         timingAppProcess = std::chrono::duration<double>(

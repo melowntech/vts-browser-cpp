@@ -14,7 +14,9 @@ endif()
 
 # by default, this is OSS build (can be overridden by customer machinery)
 set(BUILDSYS_DEFAULT_CUSTOMER_NAME oss)
+set(BUILDSYS_CPP_STANDARD 14)
 include(buildsys/cmake/buildsys.cmake)
+enable_hidden_visibility()
 
 # bump shared libraries version here
 set(vts-browser_SO_VERSION 0.0.0)
@@ -22,9 +24,6 @@ set(vts-browser_SO_VERSION 0.0.0)
 # include additional buildsys functions
 include(cmake/buildsys_ide_groups.cmake)
 include(cmake/buildsys_pack_data.cmake)
-
-# compiler options
-enable_hidden_visibility()
 
 # find 3rd party dependencies
 find_package(Boost 1.46 REQUIRED

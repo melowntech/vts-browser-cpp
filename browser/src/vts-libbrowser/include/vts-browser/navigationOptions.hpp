@@ -47,7 +47,7 @@ public:
     double sensitivityZoom;
     double sensitivityRotate;
 
-    // innertia coefficients [0 - 1) for smoothing the navigation changes
+    // inertia coefficients [0 - 1) for smoothing the navigation changes
     // inertia of zero makes all changes to apply immediately
     // while inertia of almost one makes the moves very smooth and slow
     double inertiaPan;
@@ -96,6 +96,10 @@ public:
 
     // vertically converges objective position towards ground
     bool cameraAltitudeChanges;
+
+    // makes the navigation react to user inputs more predictively
+    //   at varying frame rates
+    bool fpsCompensation;
 
     bool debugRenderObjectPosition;
     bool debugRenderTargetPosition;

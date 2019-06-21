@@ -112,6 +112,12 @@ static const char *geodataDebugNames[] = {
     "Rects",
 };
 
+static const char *fpsSlowdownNames[] = {
+    "Off",
+    "On",
+    "Periodic",
+};
+
 } // namespace
 
 Mark::Mark() : open(false)
@@ -490,6 +496,10 @@ public:
 
                 nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
 
+                // fps compensation
+                n.fpsCompensation = nk_check_label(&ctx, "FPS compensation",
+                    n.fpsCompensation);
+
                 // save
                 if (nk_button_label(&ctx, "Save"))
                 {
@@ -691,7 +701,7 @@ public:
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                         // fixedTraversalDistance
-                        nk_label(&ctx, "Fixed Distance:", NK_TEXT_LEFT);
+                        nk_label(&ctx, "Fixed distance:", NK_TEXT_LEFT);
                         c.fixedTraversalDistance = nk_slide_float(&ctx,
                             100, c.fixedTraversalDistance, 10000, 100);
                         sprintf(buffer, "%5.0f", c.fixedTraversalDistance);
@@ -763,7 +773,7 @@ public:
                     // text scale
                     {
                         float &s = window->view->options().textScale;
-                        nk_label(&ctx, "Text Scale:", NK_TEXT_LEFT);
+                        nk_label(&ctx, "Text scale:", NK_TEXT_LEFT);
                         s = nk_slide_float(&ctx, 0.2, s, 5, 0.1);
                         sprintf(buffer, "%3.1f", s);
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
@@ -799,10 +809,6 @@ public:
                 c.debugRenderSurrogates = nk_check_label(&ctx, "surrogates",
                                                     c.debugRenderSurrogates);
 
-                // geodata hysteresis
-                r.geodataHysteresis = nk_check_label(&ctx,
-                    "geodata hysteresis", r.geodataHysteresis);
-
                 // render objective position
                 n.debugRenderObjectPosition = nk_check_label(&ctx,
                             "objective pos.", n.debugRenderObjectPosition);
@@ -830,6 +836,28 @@ public:
             // debug
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Debug", NK_MINIMIZED))
             {
+                // simulated fps slowdown
+                {
+                    float ratio[] = { width * 0.4f, width * 0.6f };
+                    nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+
+                    nk_label(&ctx, "FPS slowdown:", NK_TEXT_LEFT);
+                    if (nk_combo_begin_label(&ctx,
+                        fpsSlowdownNames[(int)a.simulatedFpsSlowdown],
+                        nk_vec2(nk_widget_width(&ctx), 200)))
+                    {
+                        nk_layout_row_dynamic(&ctx, 16, 1);
+                        for (unsigned i = 0; i < sizeof(fpsSlowdownNames)
+                            / sizeof(fpsSlowdownNames[0]); i++)
+                        {
+                            if (nk_combo_item_label(&ctx,
+                                fpsSlowdownNames[i], NK_TEXT_LEFT))
+                                a.simulatedFpsSlowdown = i;
+                        }
+                        nk_combo_end(&ctx);
+                    }
+                }
+
                 // geodata debug mode
                 {
                     float ratio[] = { width * 0.4f, width * 0.6f };
@@ -853,6 +881,10 @@ public:
                 }
 
                 nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
+
+                // geodata hysteresis
+                r.geodataHysteresis = nk_check_label(&ctx,
+                    "geodata hysteresis", r.geodataHysteresis);
 
                 // enable camera normalization
                 n.cameraNormalization = nk_check_label(&ctx,
@@ -947,11 +979,16 @@ public:
                 float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
-                S("Time map avg:", window->timingMapSmooth.avg(), " ms");
-                S("Time map max:", window->timingMapSmooth.max(), " ms");
-                S("Time app:", window->timingAppProcess, " ms");
-                S("Time frame avg:", window->timingFrameSmooth.avg(), " ms");
-                S("Time frame max:", window->timingFrameSmooth.max(), " ms");
+                S("Time map avg:", uint32(
+                    window->timingMapSmooth.avg() * 1000), " ms");
+                S("Time map max:", uint32(
+                    window->timingMapSmooth.max() * 1000), " ms");
+                S("Time app:", uint32(
+                    window->timingAppProcess * 1000), " ms");
+                S("Time frame avg:", uint32(
+                    window->timingFrameSmooth.avg() * 1000), " ms");
+                S("Time frame max:", uint32(
+                    window->timingFrameSmooth.max() * 1000), " ms");
 
                 nk_tree_pop(&ctx);
             }
@@ -1275,14 +1312,16 @@ public:
                 for (int i = 0; i < 3; i++)
                 {
                     nk_label(&ctx, i == 0 ? "Move:" : "", NK_TEXT_LEFT);
-                    posAutoMotion[i] = nk_slide_float(&ctx, -3,
-                                                posAutoMotion[i], 3, 0.1);
+                    posAutoMotion[i] = nk_slide_float(&ctx, -1,
+                                                posAutoMotion[i], 1, 0.05);
                 }
                 nk_label(&ctx, "Rotate:", NK_TEXT_LEFT);
-                posAutoRotation = nk_slide_float(&ctx, -3,
-                                posAutoRotation, 3, 0.1);
-                window->navigation->pan(posAutoMotion.data());
-                window->navigation->rotate({ posAutoRotation, 0, 0 });
+                posAutoRotation = nk_slide_float(&ctx, -1,
+                                posAutoRotation, 1, 0.05);
+                window->navigation->pan(vec3(
+                    300 * posAutoMotion * window->timingTotalFrame).data());
+                window->navigation->rotate({
+                    300 * posAutoRotation * window->timingTotalFrame, 0, 0 });
                 window->navigation->options().navigationType
                         = vts::NavigationType::Quick;
                 nk_tree_pop(&ctx);

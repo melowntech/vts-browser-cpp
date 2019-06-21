@@ -247,6 +247,7 @@ NavigationOptions::NavigationOptions() :
     navigationMode(NavigationMode::Seamless),
     cameraNormalization(true),
     cameraAltitudeChanges(true),
+    fpsCompensation(true),
     debugRenderObjectPosition(false),
     debugRenderTargetPosition(false)
 {}
@@ -282,6 +283,7 @@ void NavigationOptions::applyJson(const std::string &json)
     AJE(navigationMode, NavigationMode);
     AJ(cameraNormalization, asBool);
     AJ(cameraAltitudeChanges, asBool);
+    AJ(fpsCompensation, asBool);
     AJ(debugRenderObjectPosition, asBool);
     AJ(debugRenderTargetPosition, asBool);
 }
@@ -310,6 +312,7 @@ std::string NavigationOptions::toJson() const
     TJE(navigationMode, NavigationMode);
     TJ(cameraAltitudeChanges, asBool);
     TJ(cameraNormalization, asBool);
+    TJ(fpsCompensation, asBool);
     TJ(debugRenderObjectPosition, asBool);
     TJ(debugRenderTargetPosition, asBool);
     return jsonToString(v);

@@ -90,8 +90,12 @@ if(NOT VTS_BROWSER_TYPE STREQUAL "MODULE")
             add_subdirectory(src/vts-browser-desktop)
 
             # two cameras
-            message(STATUS "including vts-browser-two-cameras")
-            add_subdirectory(src/vts-browser-two-cameras)
+            message(STATUS "including test-two-cameras")
+            add_subdirectory(src/test-two-cameras)
+
+            # two cameras
+            message(STATUS "including test-smoothness")
+            add_subdirectory(src/test-smoothness)
         else()
             message(WARNING "SDL was not found, many example applications will be skipped")
         endif()

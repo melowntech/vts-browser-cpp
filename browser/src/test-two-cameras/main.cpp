@@ -91,7 +91,7 @@ int main(int, char *[])
 
     vts::log(vts::LogLevel::info3, "Creating window");
     {
-        window = SDL_CreateWindow("vts-browser-two-cameras",
+        window = SDL_CreateWindow("test-two-cameras",
             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
             800, 600,
             SDL_WINDOW_MAXIMIZED | SDL_WINDOW_OPENGL

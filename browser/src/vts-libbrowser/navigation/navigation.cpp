@@ -314,10 +314,10 @@ void NavigationImpl::updateNavigation(double elapsedTime)
     }
 
     // find inputs for perceptually invariant motion
-    double azi1 = std::numeric_limits<double>::quiet_NaN();
-    double azi2 = std::numeric_limits<double>::quiet_NaN();
-    double horizontal1 = std::numeric_limits<double>::quiet_NaN();
-    double horizontal2 = std::numeric_limits<double>::quiet_NaN();
+    double azi1 = nan1();
+    double azi2 = nan1();
+    double horizontal1 = nan1();
+    double horizontal2 = nan1();
     switch (map->mapconfig->navigationSrsType())
     {
     case vtslibs::registry::Srs::Type::projected:
@@ -333,8 +333,8 @@ void NavigationImpl::updateNavigation(double elapsedTime)
                 << "Invalid navigation srs type";
     }
     double vertical1 = targetPoint(2) - p(2);
-    double vertical2 = std::numeric_limits<double>::quiet_NaN();
-    vec3 r2(vertical2, vertical2, vertical2);
+    double vertical2 = nan1();
+    vec3 r2 = nan3();
     double prevExtent = position.verticalExtent;
     navigationPiha(
                 options,
@@ -434,9 +434,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
 
     // normalize rotation
     if (options.cameraNormalization
-            && position.type == vtslibs::registry::Position::Type::objective
-            && position.type
-                    == vtslibs::registry::Position::Type::objective)
+            && position.type == vtslibs::registry::Position::Type::objective)
     {
         r[1] = clamp(r[1],
             options.tiltLimitAngleLow,

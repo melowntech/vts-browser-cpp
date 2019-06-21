@@ -132,7 +132,7 @@ bool MapLayer::prerequisitesCheckMainSurfaces()
     if (surfaceStack.surfaces.empty())
         surfaceStack.generateReal(map);
 
-    traverseRoot = std::make_shared<TraverseNode>(this, nullptr, NodeInfo(
+    traverseRoot = std::make_unique<TraverseNode>(this, nullptr, NodeInfo(
                     mapconfig->referenceFrame, TileId(), false, *mapconfig));
     traverseRoot->priority = std::numeric_limits<double>::infinity();
 
@@ -151,7 +151,7 @@ bool MapLayer::prerequisitesCheckFreeLayer()
     surfaceStack.generateFree(map, *freeLayer);
     assert(!surfaceStack.surfaces.empty());
 
-    traverseRoot = std::make_shared<TraverseNode>(this, nullptr, NodeInfo(
+    traverseRoot = std::make_unique<TraverseNode>(this, nullptr, NodeInfo(
                     mapconfig->referenceFrame, TileId(), false, *mapconfig));
     traverseRoot->priority = std::numeric_limits<double>::infinity();
 

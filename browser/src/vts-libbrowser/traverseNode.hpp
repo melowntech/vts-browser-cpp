@@ -58,7 +58,7 @@ public:
     };
 
     // traversal
-    Array<std::shared_ptr<TraverseNode>, 4> childs;
+    Array<std::unique_ptr<TraverseNode>, 4> childs;
     MapLayer *const layer;
     TraverseNode *const parent;
     const NodeInfo nodeInfo;

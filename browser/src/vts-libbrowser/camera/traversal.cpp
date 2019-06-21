@@ -261,7 +261,7 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
     for (uint32 i = 0; i < 4; i++)
     {
         if (childsAvailable[i])
-            trav->childs.push_back(std::make_shared<TraverseNode>(
+            trav->childs.push_back(std::make_unique<TraverseNode>(
                     trav->layer, trav, trav->nodeInfo.child(childs[i])));
     }
 

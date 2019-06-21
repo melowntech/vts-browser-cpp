@@ -100,7 +100,7 @@ public:
     SurfaceStack surfaceStack;
     boost::optional<SurfaceStack> tilesetStack;
 
-    std::shared_ptr<TraverseNode> traverseRoot;
+    std::unique_ptr<TraverseNode> traverseRoot;
 
     MapImpl *const map;
     Credits::Scope creditScope;

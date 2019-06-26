@@ -29,7 +29,7 @@
 namespace vts
 {
 
-void navigationPiha(
+void solveNavigation(
     const class NavigationOptions &navOpts,
     double timeDiff, // seconds
     double fov, // degrees

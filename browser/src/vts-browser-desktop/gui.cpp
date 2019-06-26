@@ -591,18 +591,25 @@ public:
                                       width * 0.15f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
 
-                    // navigation max view extent multiplier
+                    // navigation max view extent change
                     nk_label(&ctx, "Piha zoom:", NK_TEXT_LEFT);
-                    n.navigationPihaViewExtentMult = nk_slide_float(&ctx,
-                            1.002, n.navigationPihaViewExtentMult, 1.2, 0.002);
-                    sprintf(buffer, "%5.3f", n.navigationPihaViewExtentMult);
+                    n.navigationPihaViewExtentChange = nk_slide_float(&ctx,
+                        0.002, n.navigationPihaViewExtentChange, 0.2, 0.002);
+                    sprintf(buffer, "%5.3f", n.navigationPihaViewExtentChange);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                     // navigation max position change
                     nk_label(&ctx, "Piha move:", NK_TEXT_LEFT);
                     n.navigationPihaPositionChange = nk_slide_float(&ctx,
-                            0.002, n.navigationPihaPositionChange, 0.2, 0.002);
+                        0.002, n.navigationPihaPositionChange, 0.2, 0.002);
                     sprintf(buffer, "%5.3f", n.navigationPihaPositionChange);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                    // navigation max rotation change
+                    nk_label(&ctx, "Piha rotation:", NK_TEXT_LEFT);
+                    n.navigationPihaRotationChange = nk_slide_float(&ctx,
+                        0.002, n.navigationPihaRotationChange, 0.2, 0.002);
+                    sprintf(buffer, "%5.3f", n.navigationPihaRotationChange);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                     // navigation samples per view extent

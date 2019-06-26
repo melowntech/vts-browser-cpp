@@ -232,16 +232,17 @@ NavigationOptions::NavigationOptions() :
     inertiaPan(0.9),
     inertiaZoom(0.9),
     inertiaRotate(0.9),
-    viewExtentLimitScaleMin(0.00001175917), // 75 metres on earth
-    viewExtentLimitScaleMax(2.35183443086), // 1.5e7 metres on earth
-    viewExtentThresholdScaleLow(0.03135779241), // 200 000 metres on earth
-    viewExtentThresholdScaleHigh(0.20382565067), // 1 300 000 metres on earth
+    viewExtentLimitScaleMin(0.00001175917), // 75 meters on earth
+    viewExtentLimitScaleMax(2.35183443086), // 1.5e7 meters on earth
+    viewExtentThresholdScaleLow(0.03135779241), // 200 000 meters on earth
+    viewExtentThresholdScaleHigh(0.20382565067), // 1 300 000 meters on earth
     tiltLimitAngleLow(-90),
     tiltLimitAngleHigh(-10),
     cameraAltitudeFadeOutFactor(0.5),
     navigationLatitudeThreshold(80),
-    navigationPihaViewExtentMult(1.02),
+    navigationPihaViewExtentChange(0.02),
     navigationPihaPositionChange(0.02),
+    navigationPihaRotationChange(0.02),
     navigationSamplesPerViewExtent(8),
     navigationType(NavigationType::Quick),
     navigationMode(NavigationMode::Seamless),
@@ -276,8 +277,9 @@ void NavigationOptions::applyJson(const std::string &json)
     AJ(tiltLimitAngleHigh, asDouble);
     AJ(cameraAltitudeFadeOutFactor, asDouble);
     AJ(navigationLatitudeThreshold, asDouble);
-    AJ(navigationPihaViewExtentMult, asDouble);
+    AJ(navigationPihaViewExtentChange, asDouble);
     AJ(navigationPihaPositionChange, asDouble);
+    AJ(navigationPihaRotationChange, asDouble);
     AJ(navigationSamplesPerViewExtent, asUInt);
     AJE(navigationType, NavigationType);
     AJE(navigationMode, NavigationMode);
@@ -305,8 +307,9 @@ std::string NavigationOptions::toJson() const
     TJ(tiltLimitAngleHigh, asDouble);
     TJ(cameraAltitudeFadeOutFactor, asDouble);
     TJ(navigationLatitudeThreshold, asDouble);
-    TJ(navigationPihaViewExtentMult, asDouble);
+    TJ(navigationPihaViewExtentChange, asDouble);
     TJ(navigationPihaPositionChange, asDouble);
+    TJ(navigationPihaRotationChange, asDouble);
     TJ(navigationSamplesPerViewExtent, asUInt);
     TJE(navigationType, NavigationType);
     TJE(navigationMode, NavigationMode);

@@ -35,7 +35,7 @@
 #include "../coordsManip.hpp"
 #include "../renderTasks.hpp"
 #include "../gpuResource.hpp"
-#include "piha.hpp"
+#include "solver.hpp"
 
 namespace vts
 {
@@ -336,7 +336,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
     double vertical2 = nan1();
     vec3 r2 = nan3();
     double prevExtent = position.verticalExtent;
-    navigationPiha(
+    solveNavigation(
                 options,
                 elapsedTime,
                 position.verticalFov,

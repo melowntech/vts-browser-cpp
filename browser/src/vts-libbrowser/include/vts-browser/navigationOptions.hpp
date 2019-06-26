@@ -76,10 +76,11 @@ public:
     // latitude threshold (0 - 90) used for azimuthal navigation
     double navigationLatitudeThreshold;
 
-    // maximum view-extent multiplier allowed for PIHA, must be larger than 1
-    double navigationPihaViewExtentMult;
-    // maximum position change allowed for PIHA, must be positive
+    // maximum change factors for PIHA
+    // (perceptively invariant horizontal autopilot)
+    double navigationPihaViewExtentChange;
     double navigationPihaPositionChange;
+    double navigationPihaRotationChange;
 
     // number of virtual samples to fit the view-extent
     // it is used to determine lod index at which to retrieve

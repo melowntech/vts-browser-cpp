@@ -109,8 +109,8 @@ set(SRC_LIST
     navigation/altitude.cpp
     navigation/navigation.cpp
     navigation/navigationApi.cpp
-    navigation/piha.cpp
-    navigation/piha.hpp
+    navigation/solver.cpp
+    navigation/solver.hpp
     resources/auth.cpp
     resources/cache.cpp
     resources/cache.hpp

@@ -32,7 +32,6 @@
 #include "../gpuResource.hpp"
 #include "../fetchTask.hpp"
 #include "../map.hpp"
-#include "cache.hpp"
 
 namespace vts
 {

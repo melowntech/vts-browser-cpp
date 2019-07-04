@@ -113,7 +113,6 @@ set(SRC_LIST
     navigation/piha.hpp
     resources/auth.cpp
     resources/cache.cpp
-    resources/cache.hpp
     resources/fetcher.cpp
     resources/font.cpp
     resources/geodataProcessing.cpp

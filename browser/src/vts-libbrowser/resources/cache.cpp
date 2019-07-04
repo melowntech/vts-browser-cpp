@@ -30,8 +30,7 @@
 #include <dbglog/dbglog.hpp>
 
 #include "../include/vts-browser/mapOptions.hpp"
-
-#include "cache.hpp"
+#include "../map.hpp"
 
 namespace vts
 {
@@ -40,14 +39,21 @@ namespace
 {
 
 static const char Magic[] = "vtscache";
-static const uint16 Version = 3;
+static const uint16 Version = 4;
+
+enum class CacheFlags : uint16
+{
+    None = 0,
+    AvailFailed = 1 << 0,
+};
 
 struct CacheHeader
 {
-    char magic[sizeof(Magic)];
+    char magic[16];
     uint16 version;
-    sint64 expires;
+    uint16 flags;
     uint16 nameLen;
+    sint64 expires;
 };
 
 char digit(unsigned char a)
@@ -58,14 +64,14 @@ char digit(unsigned char a)
     return a + '0';
 }
 
-class CacheImpl : public Cache
+class Cache
 {
 public:
-    CacheImpl(const MapCreateOptions &options) :
-        root(options.cachePath), disabled(!options.diskCache),
+    Cache(const MapCreateOptions &options) :
+        disabled(!options.diskCache),
         hashes(options.hashCachePaths)
     {
-        if (!disabled)
+        if (options.diskCache)
         {
             if (root.empty())
             {
@@ -83,24 +89,25 @@ public:
         }
     }
 
-    void write(std::string name,
-               const Buffer &buffer, sint64 expires) override
+    void write(CacheData &&cd)
     {
         if (disabled)
             return;
-        name = stripScheme(name);
         try
         {
-            Buffer b(sizeof(CacheHeader) + name.size() + buffer.size());
+            std::string name = stripScheme(cd.name);
+            Buffer b(sizeof(CacheHeader) + name.size() + cd.buffer.size());
             memset(b.data(), 0, sizeof(CacheHeader)); // initialize structure padding
             CacheHeader *h = (CacheHeader*)b.data();
             memcpy(h->magic, Magic, sizeof(Magic));
             h->version = Version;
-            h->expires = expires;
+            if (cd.availFailed)
+                h->flags |= (uint16)CacheFlags::AvailFailed;
+            h->expires = cd.expires;
             h->nameLen = name.size();
             memcpy(b.data() + sizeof(CacheHeader), name.data(), name.size());
             memcpy(b.data() + sizeof(CacheHeader) + name.size(),
-                   buffer.data(), buffer.size());
+                cd.buffer.data(), cd.buffer.size());
             writeLocalFileBuffer(convertNameToCache(name), b);
         }
         catch (...)
@@ -109,54 +116,57 @@ public:
         }
     }
 
-    bool read(std::string name,
-              Buffer &buffer, sint64 &expires) override
+    CacheData read(const std::string &nameParam)
     {
-        assert(buffer.size() == 0);
         if (disabled)
-            return false;
-        name = stripScheme(name);
-        std::string cn = convertNameToCache(name);
-        if (!boost::filesystem::exists(cn))
-            return false;
+            return {};
+        std::string name = stripScheme(nameParam);
+        std::string fileName = convertNameToCache(name);
+        if (!boost::filesystem::exists(fileName))
+            return {};
         try
         {
-            Buffer b = readLocalFileBuffer(cn);
+            CacheData cd;
+            Buffer b = readLocalFileBuffer(fileName);
             if (b.size() < sizeof(CacheHeader))
-                return false;
+                return {};
             CacheHeader *h = (CacheHeader*)b.data();
             if (memcmp(h->magic, Magic, sizeof(Magic)) != 0)
-                return false;
+                return {};
             if (h->version != Version)
-                return false;
+                return {};
+            sint64 &expires = cd.expires;
             expires = h->expires;
             if (expires == -2)
-                return false; // must revalidate
+                return {}; // must revalidate
             if (expires > 0 && expires < std::time(nullptr))
-                return false;
+                return {}; // expired
             if (name.size() != h->nameLen)
-                return false;
+                return {};
             if (b.size() < sizeof(CacheHeader) + h->nameLen)
-                return false;
+                return {};
             if (memcmp(b.data() + sizeof(CacheHeader),
-                       name.data(), h->nameLen) != 0)
-                return false;
+                name.data(), h->nameLen) != 0)
+                return {};
             uint32 size = b.size() - sizeof(CacheHeader) - h->nameLen;
             if (size > 0)
             {
-                buffer.allocate(size);
-                memcpy(buffer.data(), b.data()
-                       + sizeof(CacheHeader) + h->nameLen, size);
+                cd.buffer.allocate(size);
+                memcpy(cd.buffer.data(), b.data()
+                    + sizeof(CacheHeader) + h->nameLen, size);
             }
-            return true;
+            cd.availFailed = (h->flags & (uint16)CacheFlags::AvailFailed)
+                == (uint16)CacheFlags::AvailFailed;
+            cd.name = nameParam;
+            return cd;
         }
         catch (...)
         {
-            return false;
+            return {};
         }
     }
 
-    void purge() override
+    void purge()
     {
         if (disabled)
             return;
@@ -219,17 +229,30 @@ public:
 
 } // namespace
 
-Cache::~Cache()
-{}
-
-std::shared_ptr<Cache> Cache::create(const MapCreateOptions &options)
+void MapImpl::cacheInit()
 {
-    return std::make_shared<CacheImpl>(options);
+    resources.cache = std::make_shared<Cache>(createOptions);
 }
 
-std::string convertNameToPath(std::string path, bool preserveSlashes)
+void MapImpl::cacheWrite(CacheData &&data)
 {
-    path = boost::filesystem::path(path).normalize().string();
+    resources.cache->write(std::move(data));
+}
+
+CacheData MapImpl::cacheRead(std::string name)
+{
+    return resources.cache->read(name);
+}
+
+void MapImpl::cachePurge()
+{
+    resources.cache->purge();
+}
+
+std::string convertNameToPath(const std::string &pathParam, bool preserveSlashes)
+{
+    std::string path = boost::filesystem::path(pathParam)
+        .normalize().string();
     std::string res;
     res.reserve(path.size());
     for (char it : path)
@@ -247,7 +270,7 @@ std::string convertNameToPath(std::string path, bool preserveSlashes)
     return res;
 }
 
-std::string convertNameToFolderAndFile(std::string path,
+std::string convertNameToFolderAndFile(const std::string &path,
                     std::string &folder, std::string &file)
 {
     std::string b = boost::filesystem::path(path).parent_path().string();

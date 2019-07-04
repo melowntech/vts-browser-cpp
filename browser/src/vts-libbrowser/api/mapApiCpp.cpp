@@ -30,7 +30,6 @@
 #include "../include/vts-browser/map.hpp"
 #include "../include/vts-browser/view.hpp"
 #include "../utilities/json.hpp"
-#include "../resources/cache.hpp"
 #include "../map.hpp"
 #include "../mapConfig.hpp"
 #include "../gpuResource.hpp"
@@ -156,8 +155,7 @@ std::string Map::getMapconfigPath() const
 
 void Map::purgeDiskCache()
 {
-    if (impl->resources.cache)
-        impl->resources.cache->purge();
+    impl->cachePurge();
 }
 
 void Map::purgeViewCache()
@@ -582,7 +580,6 @@ MapImpl::MapImpl(Map *map, const MapCreateOptions &options,
 {
     assert(fetcher);
     resources.fetcher = fetcher;
-    resources.cache = Cache::create(options);
     resources.thrCacheReader = std::thread(&MapImpl::cacheReadEntry, this);
     resources.thrCacheWriter = std::thread(&MapImpl::cacheWriteEntry, this);
     resources.thrAtmosphereGenerator
@@ -591,6 +588,7 @@ MapImpl::MapImpl(Map *map, const MapCreateOptions &options,
             = std::thread(&MapImpl::resourcesGeodataProcessorEntry, this);
     resources.fetching.thr
             = std::thread(&MapImpl::resourcesDownloadsEntry, this);
+    cacheInit();
     credits = std::make_shared<Credits>();
 }
 

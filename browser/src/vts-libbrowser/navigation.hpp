@@ -41,43 +41,47 @@ class Navigation;
 class NavigationImpl
 {
 public:
+    typedef vtslibs::registry::Position::Type Type;
+    typedef vtslibs::registry::Position::HeightMode HeightMode;
 
     CameraImpl *const camera;
     Navigation *const navigation;
     NavigationOptions options;
-    vtslibs::registry::Position position;
-    vec3 changeRotation;
-    vec3 targetPoint;
+    vec3 position;
+    vec3 targetPosition;
+    vec3 orientation;
+    vec3 targetOrientation;
+    double verticalExtent;
+    double targetVerticalExtent;
+    double verticalFov;
     double autoRotation;
-    double targetViewExtent;
     boost::optional<double> lastPositionAltitude;
     boost::optional<double> positionAltitudeReset;
+    Type type;
+    HeightMode heightMode;
     NavigationMode mode;
-    NavigationType previousType;
     bool suspendAltitudeChange;
 
     NavigationImpl(CameraImpl *cam, Navigation *navigation);
-
     void initialize();
     void pan(vec3 value);
     void rotate(vec3 value);
     void zoom(double value);
-    void setPoint(const vec3 &point);
-    void setRotation(const vec3 &euler);
-    void setViewExtent(double viewExtent);
-    void updatePositionAltitude(double fadeOutFactor
-                = std::numeric_limits<double>::quiet_NaN());
     void resetNavigationMode();
-    void convertPositionSubjObj();
-    void positionToCamera(vec3 &center, vec3 &dir, vec3 &up);
-    double positionObjectiveDistance();
-    void navigationTypeChanged();
-    void updateNavigation(double elapsedTime);
+    void convertSubjObj();
+    double objectiveDistance();
+    void positionToCamera(vec3 &center, vec3 &dir, vec3 &up,
+        const vec3 &inputRotation, const vec3 &inputPosition);
     bool isNavigationModeValid() const;
-    uint32 applyCameraRotationNormalization(vec3 &rot);
-    uint32 applyCameraRotationNormalization(math::Point3 &rot);
-    vec3 applyCameraRotationNormalizationPermanently();
+    void setManual();
+    void setPosition(const vtslibs::registry::Position &position); // set target position
+    vtslibs::registry::Position getPosition() const; // return camera position
+    void updateNavigation(double elapsedTime);
+    void updatePositionAltitude(double fadeOutFactor
+        = std::numeric_limits<double>::quiet_NaN());
 };
+
+void normalizeOrientation(vec3 &o);
 
 } // namespace vts
 

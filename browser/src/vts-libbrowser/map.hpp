@@ -170,8 +170,8 @@ public:
     void renderUpdate(double elapsedTime);
     bool prerequisitesCheck();
     void initializeNavigation();
-    bool getSurfaceAltitude(double &result, const vec3 &navPos,
-        double samples);
+    bool getSurfaceOverEllipsoid(double &result, const vec3 &navPos,
+        double sampleSize);
     std::pair<Validity, std::shared_ptr<GeodataStylesheet>>
         getActualGeoStyle(const std::string &name);
     std::pair<Validity, std::shared_ptr<const std::string>>

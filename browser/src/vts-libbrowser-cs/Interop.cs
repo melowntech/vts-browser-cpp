@@ -347,9 +347,6 @@ public static extern void vtsNavigationGetPoint(IntPtr nav, [Out] double[] point
 public static extern void vtsNavigationGetRotation(IntPtr nav, [Out] double[] rot);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsNavigationGetRotationLimited(IntPtr nav, [Out] double[] rot);
-
-[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern double vtsNavigationGetViewExtent(IntPtr nav);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]

@@ -173,7 +173,7 @@ public:
     void suggestedNearFar(double &near_, double &far_);
 };
 
-void updateNavigation(std::weak_ptr<NavigationImpl> nav, double elapsedTime);
+void updateNavigation(std::weak_ptr<NavigationImpl> &nav, double elapsedTime);
 
 } // namespace vts
 

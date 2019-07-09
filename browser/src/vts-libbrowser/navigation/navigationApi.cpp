@@ -57,9 +57,8 @@ void Navigation::pan(const double value[3])
 {
     if (!impl->camera->map->mapconfigReady)
         return;
-    impl->suspendAltitudeChange = false;
-    if (impl->position.type
-            == vtslibs::registry::Position::Type::objective)
+    impl->setManual();
+    if (impl->type == NavigationImpl::Type::objective)
         impl->pan(rawToVec3(value));
     else
         impl->rotate(-rawToVec3(value));
@@ -68,75 +67,6 @@ void Navigation::pan(const double value[3])
 void Navigation::pan(const std::array<double, 3> &lst)
 {
     pan(lst.data());
-}
-
-void Navigation::rotate(const double value[3])
-{
-    if (!impl->camera->map->mapconfigReady)
-        return;
-    impl->suspendAltitudeChange = false;
-    impl->rotate(rawToVec3(value));
-}
-
-void Navigation::rotate(const std::array<double, 3> &lst)
-{
-    rotate(lst.data());
-}
-
-void Navigation::zoom(double value)
-{
-    if (!impl->camera->map->mapconfigReady)
-        return;
-    impl->suspendAltitudeChange = false;
-    if (impl->position.type
-            == vtslibs::registry::Position::Type::objective)
-        impl->zoom(value);
-}
-
-void Navigation::resetAltitude()
-{
-    if (!impl->camera->map->mapconfigAvailable)
-    {
-        LOGTHROW(err4, std::logic_error)
-            << "Map is not yet available.";
-    }
-    impl->suspendAltitudeChange = false;
-    impl->positionAltitudeReset = 0;
-    impl->updatePositionAltitude();
-}
-
-void Navigation::resetNavigationMode()
-{
-    if (!impl->camera->map->mapconfigAvailable)
-    {
-        LOGTHROW(err4, std::logic_error)
-            << "Map is not yet available.";
-    }
-    impl->resetNavigationMode();
-}
-
-void Navigation::setSubjective(bool subjective, bool convert)
-{
-    if (!impl->camera->map->mapconfigAvailable)
-    {
-        LOGTHROW(err4, std::logic_error)
-                << "Map is not yet available.";
-    }
-    if (subjective == getSubjective())
-        return;
-    if (convert)
-        impl->convertPositionSubjObj();
-    impl->position.type = subjective
-            ? vtslibs::registry::Position::Type::subjective
-            : vtslibs::registry::Position::Type::objective;
-}
-
-bool Navigation::getSubjective() const
-{
-    if (!impl->camera->map->mapconfigAvailable)
-        return false;
-    return impl->position.type
-            == vtslibs::registry::Position::Type::subjective;
 }
 
 void Navigation::setPoint(const double point[3])
@@ -155,8 +85,10 @@ void Navigation::setPoint(const double point[3])
         assert(point[0] >= -180 && point[0] <= 180);
         assert(point[1] >= -90 && point[1] <= 90);
     }
-    vec3 v = rawToVec3(point);
-    impl->setPoint(v);
+    impl->setManual();
+    if (impl->options.navigationType == NavigationType::Instant)
+        impl->lastPositionAltitude.reset();
+    impl->targetPosition = rawToVec3(point);
 }
 
 void Navigation::setPoint(const std::array<double, 3> &lst)
@@ -164,15 +96,17 @@ void Navigation::setPoint(const std::array<double, 3> &lst)
     setPoint(lst.data());
 }
 
-void Navigation::getPoint(double point[3]) const
+void Navigation::rotate(const double value[3])
 {
-    if (!impl->camera->map->mapconfigAvailable)
-    {
-        for (int i = 0; i < 3; i++)
-            point[i] = 0;
+    if (!impl->camera->map->mapconfigReady)
         return;
-    }
-    vecToRaw(vecFromUblas<vec3>(impl->position.position), point);
+    impl->setManual();
+    impl->rotate(rawToVec3(value));
+}
+
+void Navigation::rotate(const std::array<double, 3> &lst)
+{
+    rotate(lst.data());
 }
 
 void Navigation::setRotation(const double point[3])
@@ -185,7 +119,9 @@ void Navigation::setRotation(const double point[3])
     assert(!std::isnan(point[0]));
     assert(!std::isnan(point[1]));
     assert(!std::isnan(point[2]));
-    impl->setRotation(rawToVec3(point));
+    impl->setManual();
+    impl->targetOrientation = rawToVec3(point);
+    normalizeOrientation(impl->targetOrientation);
 }
 
 void Navigation::setRotation(const std::array<double, 3> &lst)
@@ -193,28 +129,24 @@ void Navigation::setRotation(const std::array<double, 3> &lst)
     setRotation(lst.data());
 }
 
-void Navigation::getRotation(double point[3]) const
+void Navigation::setAutoRotation(double value)
 {
     if (!impl->camera->map->mapconfigAvailable)
     {
-        for (int i = 0; i < 3; i++)
-            point[i] = 0;
-        return;
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
     }
-    vecToRaw(vecFromUblas<vec3>(impl->position.orientation), point);
+    impl->autoRotation = value;
+    impl->suspendAltitudeChange = true;
 }
 
-void Navigation::getRotationLimited(double point[3]) const
+void Navigation::zoom(double value)
 {
-    if (!impl->camera->map->mapconfigAvailable)
-    {
-        for (int i = 0; i < 3; i++)
-            point[i] = 0;
+    if (!impl->camera->map->mapconfigReady)
         return;
-    }
-    vec3 p = vecFromUblas<vec3>(impl->position.orientation);
-    impl->applyCameraRotationNormalization(p);
-    vecToRaw(p, point);
+    impl->setManual();
+    if (impl->type == NavigationImpl::Type::objective)
+        impl->zoom(value);
 }
 
 void Navigation::setViewExtent(double viewExtent)
@@ -225,14 +157,8 @@ void Navigation::setViewExtent(double viewExtent)
                 << "Map is not yet available.";
     }
     assert(!std::isnan(viewExtent) && viewExtent > 0);
-    impl->setViewExtent(viewExtent);
-}
-
-double Navigation::getViewExtent() const
-{
-    if (!impl->camera->map->mapconfigAvailable)
-        return 0;
-    return impl->position.verticalExtent;
+    impl->setManual();
+    impl->targetVerticalExtent = viewExtent;
 }
 
 void Navigation::setFov(double fov)
@@ -243,56 +169,107 @@ void Navigation::setFov(double fov)
                 << "Map is not yet available.";
     }
     assert(fov > 0 && fov < 180);
-    impl->position.verticalFov = fov;
+    impl->setManual();
+    impl->verticalFov = fov;
+}
+
+void Navigation::setSubjective(bool subjective, bool convert)
+{
+    if (!impl->camera->map->mapconfigAvailable)
+    {
+        LOGTHROW(err4, std::logic_error)
+                << "Map is not yet available.";
+    }
+    if (subjective == getSubjective())
+        return;
+    if (convert)
+        impl->convertSubjObj();
+    impl->type = subjective
+            ? NavigationImpl::Type::subjective
+            : NavigationImpl::Type::objective;
+    impl->setManual();
+}
+
+void Navigation::resetAltitude()
+{
+    if (!impl->camera->map->mapconfigAvailable)
+    {
+        LOGTHROW(err4, std::logic_error)
+            << "Map is not yet available.";
+    }
+    impl->setManual();
+    impl->positionAltitudeReset = 0;
+    impl->updatePositionAltitude();
+}
+
+void Navigation::resetNavigationMode()
+{
+    if (!impl->camera->map->mapconfigAvailable)
+    {
+        LOGTHROW(err4, std::logic_error)
+            << "Map is not yet available.";
+    }
+    impl->resetNavigationMode();
+}
+
+void Navigation::getPoint(double point[3]) const
+{
+    if (!impl->camera->map->mapconfigAvailable)
+        return vecToRaw(vec3(0, 0, 0), point);
+    vecToRaw(impl->position, point);
+}
+
+void Navigation::getRotation(double point[3]) const
+{
+    if (!impl->camera->map->mapconfigAvailable)
+        return vecToRaw(vec3(0, 0, 0), point);
+    vecToRaw(impl->orientation, point);
+}
+
+double Navigation::getAutoRotation() const
+{
+    if (!impl->camera->map->mapconfigAvailable)
+        return 0;
+    return impl->autoRotation;
+}
+
+double Navigation::getViewExtent() const
+{
+    if (!impl->camera->map->mapconfigAvailable)
+        return 0;
+    return impl->verticalExtent;
 }
 
 double Navigation::getFov() const
 {
     if (!impl->camera->map->mapconfigAvailable)
         return 0;
-    return impl->position.verticalFov;
+    return impl->verticalFov;
+}
+
+bool Navigation::getSubjective() const
+{
+    if (!impl->camera->map->mapconfigAvailable)
+        return false;
+    return impl->type == NavigationImpl::Type::subjective;
 }
 
 std::string Navigation::getPositionJson() const
 {
     if (!impl->camera->map->mapconfigAvailable)
         return "";
-    vtslibs::registry::Position p = impl->position;
-    impl->applyCameraRotationNormalization(p.orientation);
-    return jsonToString(vtslibs::registry::asJson(p));
+    return jsonToString(vtslibs::registry::asJson(impl->getPosition()));
 }
 
 std::string Navigation::getPositionUrl() const
 {
     if (!impl->camera->map->mapconfigAvailable)
         return "";
-    vtslibs::registry::Position p = impl->position;
-    impl->applyCameraRotationNormalization(p.orientation);
     std::ostringstream ss;
     ss << std::fixed << std::setprecision(10);
-    ss << p;
+    ss << impl->getPosition();
     return ss.str();
 }
-
-namespace
-{
-
-void setPosition(Navigation *nav, NavigationImpl *impl,
-                 const vtslibs::registry::Position &position)
-{
-    impl->navigationTypeChanged();
-    impl->position.heightMode = position.heightMode;
-    nav->setSubjective(position.type
-        == vtslibs::registry::Position::Type::subjective, false);
-    nav->setFov(position.verticalFov);
-    nav->setViewExtent(position.verticalExtent);
-    vec3 v = vecFromUblas<vec3>(position.orientation);
-    nav->setRotation(v.data());
-    v = vecFromUblas<vec3>(position.position);
-    nav->setPoint(v.data());
-}
-
-} // namespace
 
 void Navigation::setPositionJson(const std::string &position)
 {
@@ -302,8 +279,8 @@ void Navigation::setPositionJson(const std::string &position)
                 << "Map is not yet available.";
     }
     Json::Value val = stringToJson(position);
-    vtslibs::registry::Position pos = vtslibs::registry::positionFromJson(val);
-    setPosition(this, impl.get(), pos);
+    auto pos = vtslibs::registry::positionFromJson(val);
+    impl->setPosition(pos);
 }
 
 void Navigation::setPositionUrl(const std::string &position)
@@ -322,24 +299,7 @@ void Navigation::setPositionUrl(const std::string &position)
     {
         LOGTHROW(err2, std::runtime_error) << "Invalid position from url.";
     }
-    setPosition(this, impl.get(), pos);
-}
-
-void Navigation::setAutoRotation(double value)
-{
-    if (!impl->camera->map->mapconfigAvailable)
-    {
-        LOGTHROW(err4, std::logic_error)
-                << "Map is not yet available.";
-    }
-    impl->autoRotation = value;
-}
-
-double Navigation::getAutoRotation() const
-{
-    if (!impl->camera->map->mapconfigAvailable)
-        return 0;
-    return impl->autoRotation;
+    impl->setPosition(pos);
 }
 
 NavigationOptions &Navigation::options()

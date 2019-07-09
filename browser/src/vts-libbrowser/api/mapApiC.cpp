@@ -858,13 +858,6 @@ void vtsNavigationGetRotation(vtsHNavigation nav, double rot[3])
     C_END
 }
 
-void vtsNavigationGetRotationLimited(vtsHNavigation nav, double rot[3])
-{
-    C_BEGIN
-    nav->p->getRotationLimited(rot);
-    C_END
-}
-
 double vtsNavigationGetViewExtent(vtsHNavigation nav)
 {
     C_BEGIN

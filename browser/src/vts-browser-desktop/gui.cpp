@@ -1217,28 +1217,20 @@ public:
 
             // rotation
             {
-                float ratio2[] = { width * 0.4f, width * 0.3f, width * 0.3f };
-                nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio2);
-                double n[3], c[3];
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
+                double n[3];
                 window->navigation->getRotation(n);
-                window->navigation->getRotationLimited(c);
                 // yaw
                 nk_label(&ctx, "Yaw:", NK_TEXT_LEFT);
                 sprintf(buffer, "%5.1f", n[0]);
-                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                sprintf(buffer, "%5.1f", c[0]);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 // pitch/tilt
                 nk_label(&ctx, "Pitch:", NK_TEXT_LEFT);
                 sprintf(buffer, "%5.1f", n[1]);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                sprintf(buffer, "%5.1f", c[1]);
-                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 // roll
                 nk_label(&ctx, "Roll:", NK_TEXT_LEFT);
                 sprintf(buffer, "%5.1f", n[2]);
-                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                sprintf(buffer, "%5.1f", c[2]);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 // reset
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);

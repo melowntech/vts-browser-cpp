@@ -82,8 +82,8 @@ TraverseNode *findTravSds(TraverseNode *where,
 } // namespace
 
 
-bool MapImpl::getSurfaceAltitude(double &result,
-            const vec3 &navPos, double samples)
+bool MapImpl::getSurfaceOverEllipsoid(double &result,
+            const vec3 &navPos, double sampleSize)
 {
     assert(convertor);
     assert(!layers.empty());
@@ -122,7 +122,7 @@ bool MapImpl::getSurfaceAltitude(double &result,
 
     // desired lod
     uint32 desiredLod = std::max(0.0,
-        -std::log2(samples / info->extents().size()));
+        -std::log2(sampleSize / info->extents().size()));
 
     // find corner positions
     vec2 points[4];
@@ -195,35 +195,35 @@ void NavigationImpl::updatePositionAltitude(double fadeOutFactor)
     if (!options.cameraAltitudeChanges || suspendAltitudeChange)
         return;
 
-    double altitude;
-    if (!camera->map->getSurfaceAltitude(altitude, targetPoint,
-            position.verticalExtent
-            / options.navigationSamplesPerViewExtent))
+    double surfaceOverEllipsoid = nan1();
+    if (!camera->map->getSurfaceOverEllipsoid(
+        surfaceOverEllipsoid, targetPosition,
+        verticalExtent / options.navigationSamplesPerViewExtent))
         return;
 
     // set the altitude
+    double &pa = targetPosition[2];
     if (positionAltitudeReset)
     {
-        targetPoint[2] = altitude
-                + *positionAltitudeReset;
+        pa = surfaceOverEllipsoid + *positionAltitudeReset;
         positionAltitudeReset.reset();
     }
     else if (lastPositionAltitude)
     {
-        targetPoint[2] += altitude
-                - *lastPositionAltitude;
-        if (fadeOutFactor == fadeOutFactor)
+        pa += surfaceOverEllipsoid - *lastPositionAltitude;
+        if (!std::isnan(fadeOutFactor))
         {
-            targetPoint[2] = interpolate(targetPoint[2],
-                    altitude, std::min(1.0, fadeOutFactor)
-                    * options.cameraAltitudeFadeOutFactor);
+            pa = interpolate(pa, surfaceOverEllipsoid,
+                std::min(1.0, fadeOutFactor)
+                * options.cameraAltitudeFadeOutFactor);
+            // todo fps compensation
         }
     }
     else
     {
-        targetPoint[2] = altitude;
+        pa = surfaceOverEllipsoid;
     }
-    lastPositionAltitude = altitude;
+    lastPositionAltitude = surfaceOverEllipsoid;
 }
 
 } // namespace vts

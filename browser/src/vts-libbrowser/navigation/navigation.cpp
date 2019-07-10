@@ -577,11 +577,41 @@ void NavigationImpl::updateNavigation(double elapsedTime)
     p(2) += vertical2;
 
     // altitude corrections
-    if (type == Type::objective)
+    if (options.cameraAltitudeChanges
+        && !suspendAltitudeChange
+        && type == Type::objective)
     {
         double f1 = horizontal2 / verticalExtent;
         double f2 = std::abs(std::log(verticalExtent) - std::log(prevExtent));
-        updatePositionAltitude(std::max(f1, f2));
+        double fadeOutFactor = std::max(f1, f2);
+        if (!std::isnan(fadeOutFactor))
+        {
+            double surfaceOverEllipsoid = nan1();
+            if (camera->map->getSurfaceOverEllipsoid(
+                surfaceOverEllipsoid, targetPosition,
+                verticalExtent / options.navigationSamplesPerViewExtent))
+            {
+                double &pa = targetPosition[2];
+                if (positionAltitudeReset)
+                {
+                    pa = surfaceOverEllipsoid + *positionAltitudeReset;
+                    positionAltitudeReset.reset();
+                }
+                else if (lastPositionAltitude)
+                {
+                    pa += surfaceOverEllipsoid - *lastPositionAltitude;
+                    pa = interpolate(pa, surfaceOverEllipsoid,
+                        std::min(1.0, fadeOutFactor)
+                        * options.cameraAltitudeFadeOutFactor);
+                    // todo fps compensation
+                }
+                else
+                {
+                    pa = surfaceOverEllipsoid;
+                }
+                lastPositionAltitude = surfaceOverEllipsoid;
+            }
+        }
     }
 
     // normalize rotation

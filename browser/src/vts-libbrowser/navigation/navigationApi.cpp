@@ -199,7 +199,6 @@ void Navigation::resetAltitude()
     }
     impl->setManual();
     impl->positionAltitudeReset = 0;
-    impl->updatePositionAltitude();
 }
 
 void Navigation::resetNavigationMode()

@@ -77,8 +77,6 @@ public:
     void setPosition(const vtslibs::registry::Position &position); // set target position
     vtslibs::registry::Position getPosition() const; // return camera position
     void updateNavigation(double elapsedTime);
-    void updatePositionAltitude(double fadeOutFactor
-        = std::numeric_limits<double>::quiet_NaN());
 };
 
 void normalizeOrientation(vec3 &o);

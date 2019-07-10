@@ -190,40 +190,4 @@ bool MapImpl::getSurfaceOverEllipsoid(double &result,
     return true;
 }
 
-void NavigationImpl::updatePositionAltitude(double fadeOutFactor)
-{
-    if (!options.cameraAltitudeChanges || suspendAltitudeChange)
-        return;
-
-    double surfaceOverEllipsoid = nan1();
-    if (!camera->map->getSurfaceOverEllipsoid(
-        surfaceOverEllipsoid, targetPosition,
-        verticalExtent / options.navigationSamplesPerViewExtent))
-        return;
-
-    // set the altitude
-    double &pa = targetPosition[2];
-    if (positionAltitudeReset)
-    {
-        pa = surfaceOverEllipsoid + *positionAltitudeReset;
-        positionAltitudeReset.reset();
-    }
-    else if (lastPositionAltitude)
-    {
-        pa += surfaceOverEllipsoid - *lastPositionAltitude;
-        if (!std::isnan(fadeOutFactor))
-        {
-            pa = interpolate(pa, surfaceOverEllipsoid,
-                std::min(1.0, fadeOutFactor)
-                * options.cameraAltitudeFadeOutFactor);
-            // todo fps compensation
-        }
-    }
-    else
-    {
-        pa = surfaceOverEllipsoid;
-    }
-    lastPositionAltitude = surfaceOverEllipsoid;
-}
-
 } // namespace vts

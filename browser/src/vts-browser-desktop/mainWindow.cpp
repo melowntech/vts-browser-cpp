@@ -149,7 +149,7 @@ void MainWindow::renderFrame()
         double offset = size * (0.5 + 0.2);
         double posSize[3] = { offset, offset, size };
         double rot[3];
-        navigation->getRotationLimited(rot);
+        navigation->getRotation(rot);
         view->renderCompass(posSize, rot);
     }
 

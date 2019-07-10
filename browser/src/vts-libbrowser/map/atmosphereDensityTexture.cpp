@@ -64,15 +64,15 @@ void generateAtmosphereTexture(
     encodePng(tmp, tex->fetch->reply.content,
         res.size.width, res.size.height, res.components);
 
+    // write to cache
+    tex->map->resources.queCacheWrite.push(tex->fetch.get());
+
     // mark the texture ready
     {
         tex->info.ramMemoryCost = tex->fetch->reply.content.size();
         tex->state = Resource::State::downloaded;
         tex->map->resources.queUpload.push(tex);
     }
-
-    // (deferred) write to cache
-    tex->map->resources.queCacheWrite.push(tex->fetch.get());
 }
 
 void gray3ToRgb(GpuTextureSpec &spec)

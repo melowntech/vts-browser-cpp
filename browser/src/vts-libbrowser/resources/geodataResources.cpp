@@ -32,7 +32,6 @@
 #include "../map.hpp"
 #include "../gpuResource.hpp"
 #include "../utilities/json.hpp"
-#include "cache.hpp"
 
 namespace vts
 {

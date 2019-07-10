@@ -64,8 +64,6 @@ VTS_API void vtsNavigationSetPositionUrl(vtsHNavigation nav,
 VTS_API bool vtsNavigationGetSubjective(vtsHNavigation nav);
 VTS_API void vtsNavigationGetPoint(vtsHNavigation nav, double point[3]);
 VTS_API void vtsNavigationGetRotation(vtsHNavigation nav, double rot[3]);
-VTS_API void vtsNavigationGetRotationLimited(vtsHNavigation nav,
-                    double rot[3]);
 VTS_API double vtsNavigationGetViewExtent(vtsHNavigation nav);
 VTS_API double vtsNavigationGetFov(vtsHNavigation nav);
 VTS_API double vtsNavigationGetAutoRotation(vtsHNavigation nav);

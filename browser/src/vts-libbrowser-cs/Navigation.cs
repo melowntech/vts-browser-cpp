@@ -148,14 +148,6 @@ namespace vts
             return res;
         }
 
-        public double[] GetRotationLimited()
-        {
-            double[] res = new double[3];
-            BrowserInterop.vtsNavigationGetRotationLimited(Handle, res);
-            Util.CheckInterop();
-            return res;
-        }
-
         public double GetViewExtent()
         {
             double res = BrowserInterop.vtsNavigationGetViewExtent(Handle);

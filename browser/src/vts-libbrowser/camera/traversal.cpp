@@ -56,20 +56,6 @@ double CameraImpl::travDistance(TraverseNode *trav, const vec3 pointPhys)
 {
     // checking the distance in node srs may be more accurate,
     //   but the resulting distance is in different units
-    /*
-    if (!vtslibs::vts::empty(trav->meta->geomExtents)
-            && !trav->nodeInfo.srs().empty())
-    {
-        // todo periodicity
-        vec2 fl = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
-        vec2 fu = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
-        vec3 el = vec2to3(fl, trav->meta->geomExtents.z.min);
-        vec3 eu = vec2to3(fu, trav->meta->geomExtents.z.max);
-        vec3 p = convertor->convert(pointPhys,
-            Srs::Physical, trav->nodeInfo.node());
-        return aabbPointDist(p, el, eu);
-    }
-    */
     return aabbPointDist(pointPhys, trav->aabbPhys[0],
             trav->aabbPhys[1]);
 }
@@ -78,12 +64,8 @@ void CameraImpl::updateNodePriority(TraverseNode *trav)
 {
     if (trav->meta)
     {
-        // only update every 4th render frame
-        if ((trav->hash + map->renderTickIndex) % 4 == 0)
-        {
-            trav->priority = (float)(1e6
-                / (travDistance(trav, focusPosPhys) + 1));
-        }
+        trav->priority = (float)(1e6
+            / (travDistance(trav, focusPosPhys) + 1));
     }
     else if (trav->parent)
         trav->priority = trav->parent->priority;
@@ -91,8 +73,8 @@ void CameraImpl::updateNodePriority(TraverseNode *trav)
         trav->priority = 0;
 }
 
-std::shared_ptr<GpuTexture> CameraImpl::travInternalTexture(TraverseNode *trav,
-                                                       uint32 subMeshIndex)
+std::shared_ptr<GpuTexture> CameraImpl::travInternalTexture(
+    TraverseNode *trav, uint32 subMeshIndex)
 {
     UrlTemplate::Vars vars(trav->id(),
             vtslibs::vts::local(trav->nodeInfo), subMeshIndex);

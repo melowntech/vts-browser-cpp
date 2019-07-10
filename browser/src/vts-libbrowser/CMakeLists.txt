@@ -97,6 +97,7 @@ set(SRC_LIST
     image/image.hpp
     image/jpeg.cpp
     image/png.cpp
+    map/altitude.cpp
     map/atmosphereDensityTexture.cpp
     map/celestialBody.cpp
     map/coordsManip.cpp
@@ -106,14 +107,12 @@ set(SRC_LIST
     map/progress.cpp
     map/search.cpp
     map/surfaceStack.cpp
-    navigation/altitude.cpp
     navigation/navigation.cpp
     navigation/navigationApi.cpp
     navigation/solver.cpp
     navigation/solver.hpp
     resources/auth.cpp
     resources/cache.cpp
-    resources/cache.hpp
     resources/fetcher.cpp
     resources/font.cpp
     resources/geodataProcessing.cpp

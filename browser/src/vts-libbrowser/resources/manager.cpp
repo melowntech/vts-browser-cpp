@@ -31,7 +31,6 @@
 #include "../fetchTask.hpp"
 #include "../map.hpp"
 #include "../authConfig.hpp"
-#include "cache.hpp"
 #include "../utilities/dataUrl.hpp"
 
 namespace vts
@@ -41,17 +40,22 @@ namespace vts
 // A FETCH THREAD
 ////////////////////////////
 
-CacheWriteData::CacheWriteData() : expires(-1)
+CacheData::CacheData() : expires(0), availFailed(false)
 {}
 
-CacheWriteData::CacheWriteData(FetchTaskImpl *task) :
+CacheData::CacheData(FetchTaskImpl *task, bool availFailed) :
+    //availTest(task->availTest),
     buffer(task->reply.content.copy()),
-    name(task->name), expires(task->reply.expires)
+    name(task->name), expires(task->reply.expires),
+    availFailed(availFailed)
 {}
 
 void FetchTaskImpl::fetchDone()
 {
-    LOG(debug) << "Resource <" << name << "> finished downloading";
+    LOG(debug) << "Resource <" << name << "> finished downloading, "
+        << "http code: " << reply.code << ", content type: <"
+        << reply.contentType << ">, size: " << reply.content.size()
+        << ", expires: " << reply.expires;
     assert(map);
     map->resources.downloads--;
     Resource::State state = Resource::State::downloading;
@@ -98,7 +102,6 @@ void FetchTaskImpl::fetchDone()
         else
         {
             query.url.swap(reply.redirectUrl);
-            std::string().swap(reply.redirectUrl);
             LOG(info1) << "Download of <"
                 << name << "> redirected to <"
                 << query.url << ">, http code " << reply.code;
@@ -107,12 +110,13 @@ void FetchTaskImpl::fetchDone()
         }
     }
 
-    // (deferred) write to cache
+    // write to cache
     if (state == Resource::State::availFail
         || state == Resource::State::downloading)
     {
         // this makes copy of the content buffer
-        map->resources.queCacheWrite.push(this);
+        map->resources.queCacheWrite.push(CacheData(this,
+            state == Resource::State::availFail));
     }
 
     // update the actual resource
@@ -236,10 +240,10 @@ void MapImpl::cacheWriteEntry()
     setLogThreadName("cache writer");
     while (!resources.queCacheWrite.stopped())
     {
-        CacheWriteData cwd;
+        CacheData cwd;
         resources.queCacheWrite.waitPop(cwd);
         if (!cwd.name.empty())
-            resources.cache->write(cwd.name, cwd.buffer, cwd.expires);
+            cacheWrite(std::move(cwd));
     }
 }
 
@@ -289,16 +293,18 @@ void MapImpl::cacheReadProcess(const std::shared_ptr<Resource> &r)
     if (!r->fetch)
         r->fetch = std::make_shared<FetchTaskImpl>(r);
     r->info.gpuMemoryCost = r->info.ramMemoryCost = 0;
-    if (r->allowDiskCache() && resources.cache->read(
-        r->name, r->fetch->reply.content,
-        r->fetch->reply.expires))
+    CacheData cd;
+    if (r->allowDiskCache() && (cd = cacheRead(
+        r->name)).name == r->name)
     {
-        statistics.resourcesDiskLoaded++;
+        r->fetch->reply.expires = cd.expires;
+        r->fetch->reply.content = std::move(cd.buffer);
         r->fetch->reply.code = 200;
-        if (r->fetch->reply.content.size() > 0)
-            r->state = Resource::State::downloaded;
-        else
+        if (cd.availFailed)
             r->state = Resource::State::availFail;
+        else
+            r->state = Resource::State::downloaded;
+        statistics.resourcesDiskLoaded++;
     }
     else if (startsWith(r->name, "data:"))
     {

@@ -32,6 +32,7 @@
 #include <vector>
 #include <atomic>
 #include <thread>
+#include <memory>
 
 #include <vts-libs/registry/referenceframe.hpp>
 
@@ -55,7 +56,6 @@ class CoordManip;
 class MapLayer;
 class CameraImpl;
 class GpuAtmosphereDensityTexture;
-class Cache;
 class AuthConfig;
 class SearchTask;
 class GpuTexture;
@@ -79,14 +79,21 @@ class GpuFont;
 
 using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
 
-class CacheWriteData
+namespace
+{
+    class Cache;
+}
+
+class CacheData
 {
 public:
-    CacheWriteData();
-    CacheWriteData(FetchTaskImpl *task);
+    CacheData();
+    CacheData(FetchTaskImpl *task, bool availFailed = false);
+    //std::shared_ptr<void> availTest;
     Buffer buffer;
     std::string name;
     sint64 expires;
+    bool availFailed;
 };
 
 class MapImpl
@@ -122,14 +129,14 @@ public:
         std::shared_ptr<Cache> cache;
         std::shared_ptr<AuthConfig> auth;
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
-        std::deque<std::weak_ptr<SearchTask>> searchTasks;
+        std::list<std::weak_ptr<SearchTask>> searchTasks;
         std::string authPath;
         std::atomic<uint32> downloads;
         uint32 progressEstimationMaxResources;
 
         ThreadQueue<std::weak_ptr<Resource>> queCacheRead;
         ThreadQueue<std::weak_ptr<Resource>> queUpload;
-        ThreadQueue<CacheWriteData> queCacheWrite;
+        ThreadQueue<CacheData> queCacheWrite;
         ThreadQueue<std::weak_ptr<GpuAtmosphereDensityTexture>> queAtmosphere;
         ThreadQueue<std::weak_ptr<GeodataTile>> queGeodata;
         std::thread thrCacheReader;
@@ -163,8 +170,8 @@ public:
     void renderUpdate(double elapsedTime);
     bool prerequisitesCheck();
     void initializeNavigation();
-    bool getSurfaceAltitude(double &result, const vec3 &navPos,
-        double samples);
+    bool getSurfaceOverEllipsoid(double &result, const vec3 &navPos,
+        double sampleSize);
     std::pair<Validity, std::shared_ptr<GeodataStylesheet>>
         getActualGeoStyle(const std::string &name);
     std::pair<Validity, std::shared_ptr<const std::string>>
@@ -193,9 +200,13 @@ public:
     void resourcesGeodataProcessorEntry();
     void resourceUploadProcess(const std::shared_ptr<Resource> &r);
 
+    void cacheInit();
     void cacheWriteEntry();
+    void cacheWrite(CacheData &&data);
     void cacheReadEntry();
     void cacheReadProcess(const std::shared_ptr<Resource> &r);
+    CacheData cacheRead(std::string name);
+    void cachePurge();
 
     void touchResource(const std::shared_ptr<Resource> &resource);
     Validity getResourceValidity(const std::string &name);
@@ -237,6 +248,10 @@ public:
 
 std::string convertPath(const std::string &path,
                         const std::string &parent);
+std::string convertNameToPath(const std::string &path,
+    bool preserveSlashes);
+std::string convertNameToFolderAndFile(const std::string &path,
+    std::string &folder, std::string &file);
 
 } // namespace vts
 

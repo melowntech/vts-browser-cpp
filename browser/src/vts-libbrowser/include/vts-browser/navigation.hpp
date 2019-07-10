@@ -73,7 +73,6 @@ public:
     bool getSubjective() const;
     void getPoint(double point[3]) const;
     void getRotation(double point[3]) const;
-    void getRotationLimited(double point[3]) const;
     double getViewExtent() const;
     double getFov() const;
     double getAutoRotation() const;

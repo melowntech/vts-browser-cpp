@@ -432,7 +432,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
             double ll = objectiveDistance();
             double sampleSize = verticalExtent
                 / options.navigationSamplesPerViewExtent;
-            double threshold = verticalExtent * 0.1;
+            double thresholdBase = verticalExtent * 0.15;
             for (double fraction = 0.4; fraction < 1.0; fraction += 0.02)
             {
                 double l = ll * fraction;
@@ -444,6 +444,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
                 if (camera->map->getSurfaceOverEllipsoid(altitude,
                     eyeNav, sampleSize * fraction))
                 {
+                    double threshold = thresholdBase * fraction;
                     altitude = eyeNav[2] - altitude;
                     if (altitude < threshold)
                     {

@@ -76,9 +76,98 @@ double vectorAbsSum(const vec3 &v)
     return std::abs(v[0]) + std::abs(v[1]) + std::abs(v[2]);
 }
 
+double distanceByExtent(double startExtent, double finalExtent,
+    double extentFactor, double distanceFactor, uint32 &depth)
+{
+    depth++;
+    if (startExtent * extentFactor > finalExtent
+        && startExtent / extentFactor < finalExtent)
+        return 0;
+    return startExtent * distanceFactor
+        + distanceByExtent(startExtent > finalExtent
+            ? startExtent / extentFactor
+            : startExtent * extentFactor,
+            finalExtent, extentFactor, distanceFactor, depth);
+}
+
+double ballisticAngle(double x, double y, double g)
+{
+    return std::atan(y / x + std::sqrt((y*y) / (x*x) + 1));
+}
+
+double ballisticVelocity(double x, double y, double g)
+{
+    return std::sqrt((y + std::sqrt((y*y) + (x+x))) * g);
+}
+
+void parabola(
+    double sx, double sy, // start at (sx,sy); finish at (0,0)
+    double a, // parabola parameter
+    double &dx, double &dy) // output
+{
+    // vertically flip the parabola
+    a *= -1;
+
+    // y = a*x*x + b*x + c
+    // parabola goes through (0,0) -> c = 0
+
+    // parabola goes through (sx,sy) -> b = (y - a*x*x) / x
+    //double b = (sy - a * sx*sx) / sx;
+    // y = a*x^2 - a*x*sx + x*sy/sx
+
+    // tangent y = k * (x - sx) + sy
+    double k = a * sx + sy / sx;
+
+    // output direction
+    dx = -1 / std::sqrt(k*k + 1);
+    dy = dx * k;
+
+    LOG(info4) << "parabola: x: " << sx << ", y: " << sy << ", k: " << k;
+}
+
 // perceptively invariant horizontal autopilot
 // piha = freckle in czech
 void piha(
+    const NavigationOptions &navOpts,
+    double timeDiff,
+    double inDistance,
+    double inStartViewExtent,
+    double inTargetViewExtent,
+    double &outDistance,
+    double &outViewExtent)
+{
+    assert(timeDiff > 0);
+    assert(inDistance > 0);
+    assert(inStartViewExtent > 0);
+    assert(inTargetViewExtent > 0);
+
+    double dx, dy;
+    parabola(inDistance, inStartViewExtent - inTargetViewExtent, 1e-6, dx, dy);
+    double spd = inStartViewExtent * 0.1 * timeDiff;
+    outDistance = -dx * spd;
+    outViewExtent = inStartViewExtent + dy * spd;
+    LOG(info4) << "piha: x: " << inDistance << ", y: " << inStartViewExtent << ", dx: " << dx << ", dy: " << dy;
+
+
+
+
+
+    /*
+    double x = inDistance;
+    double y = inTargetViewExtent - inStartViewExtent;
+    double g = 10;
+    double a = ballisticAngle(x, y, g);
+    double v = ballisticVelocity(x, y, g);
+    //double v = inStartViewExtent * navOpts.navigationPihaPositionChange;
+    double xx = std::cos(a) * v;
+    double yy = std::sin(a) * v - g;
+    outDistance = xx * timeDiff;
+    outViewExtent = yy * timeDiff + inStartViewExtent;
+    LOG(info4) << "piha: x: " << x << ", y: " << y << ", a: " << radToDeg(a) << ", v: " << v << ", od: " << outDistance << ", ove: " << outViewExtent;
+    */
+}
+
+void flyOver(
     const NavigationOptions &navOpts,
     double timeDiff,
     double inHorizontalDistance,
@@ -92,24 +181,24 @@ void piha(
     double &outVerticalMove,
     vec3 &outRotation)
 {
-    assert(timeDiff >= 0);
-    assert(inHorizontalDistance >= 0);
-    assert(inStartViewExtent > 0);
-    assert(inStartViewExtent + inViewExtentChange > 0);
+    double d, v;
+    piha(
+        navOpts,
+        timeDiff,
+        inHorizontalDistance,
+        inStartViewExtent,
+        inStartViewExtent + inViewExtentChange,
+        d,
+        v
+    );
 
-    // no operation needed
-    if (inHorizontalDistance < 1e-7
-        && std::abs(inVerticalChange) < 1e-7
-        && std::abs(inViewExtentChange) < 1e-7
-        && vectorAbsSum(inRotationChange) < 1e-7)
-    {
-        outViewExtent = inStartViewExtent;
-        outHorizontalMove = 0;
-        outVerticalMove = 0;
-        outRotation = inStartRotation;
-        return;
-    }
+    outViewExtent = v;
+    outHorizontalMove = d;
+    outVerticalMove = 0;
+    outRotation = inStartRotation;
 
+
+    /*
     // fps compensation
     double extentChangeFactor = multFactor(navOpts, timeDiff,
         navOpts.navigationPihaViewExtentChange + 1);
@@ -133,53 +222,59 @@ void piha(
     double verticalChange = inVerticalChange * translationFactor;
     translationDist = length(vec2(horizontalChange, verticalChange));
 
+
+
+    /*
+    // extent or translation
+    double exFacForSm = std::pow(
+        navOpts.navigationPihaViewExtentChange + 1, 30);
+    uint32 depthBefore = 0, depthAfter = 0;
+    double distanceBefore = distanceByExtent(
+        inStartViewExtent / exFacForSm,
+        inStartViewExtent + inViewExtentChange,
+        extentChangeFactor, positionChangeFactor, depthBefore);
+    double distanceAfter = distanceByExtent(
+        inStartViewExtent * exFacForSm,
+        inStartViewExtent + inViewExtentChange,
+        extentChangeFactor, positionChangeFactor, depthAfter);
+    assert(distanceAfter > distanceBefore);
+    double extentOrTranslation = (translationDist - distanceBefore)
+        / (distanceAfter - distanceBefore);
+    extentOrTranslation = 2 * clamp(extentOrTranslation, 0, 1) - 1;
+    // extentOrTranslation:
+    // -1 -> zoom in
+    // 0 -> translation
+    // +1 -> zoom out
+    bool zoomIn = extentOrTranslation < 0;
+    extentOrTranslation = std::abs(extentOrTranslation);
+    extentChangeFactor = (extentChangeFactor - 1)
+        * (extentOrTranslation) + 1;
+    positionChangeFactor *= (1 - extentOrTranslation);
+
+    if (zoomIn)
+        extentChangeFactor = 1 / extentChangeFactor;
+
+    outViewExtent = inStartViewExtent * extentChangeFactor;
+    outHorizontalMove = inStartViewExtent * positionChangeFactor;
+    outVerticalMove = inVerticalChange;
+    outRotation = inStartRotation + inRotationChange;
+
+    /*
     // rotation
     double rotationDist = length(inRotationChange);
 
     // steps (frames) to complete individual operations
-    double extentSteps = std::abs(std::log((inStartViewExtent
+    double extentSteps = extentChangeFactor < 1 + 1e-7 ? 0
+        : std::abs(std::log((inStartViewExtent
         + inViewExtentChange) / inStartViewExtent))
         / std::log(extentChangeFactor);
-    double translationSteps = translationDist
-        / (inStartViewExtent * positionChangeFactor);
+    double translationSteps = positionChangeFactor < 1e-7 ? 0
+        : translationDist / (inStartViewExtent * positionChangeFactor);
     double rotationSteps = rotationDist
         / (360 * rotationChangeFactor);
     assert(extentSteps >= 0);
     assert(translationSteps >= 0);
     assert(rotationSteps >= 0);
-
-    // zoom-out to speed up translation
-    if (translationSteps > 1e-7)
-    {
-        static const double piHalf = 3.14159265358979323846264338327 * 0.5;
-        static const double piQuarter = 3.14159265358979323846264338327 * 0.25;
-        double a = std::atan2(translationSteps, extentSteps);
-        assert(a >= 0 && a <= piHalf);
-        double b = piQuarter - std::abs(a - piQuarter);
-        assert(b >= 0 && b <= piQuarter);
-        b = std::pow(b / piQuarter, 0.5) * piQuarter;
-        assert(b >= 0 && b <= piQuarter);
-        double d = length(vec2(translationSteps, extentSteps));
-        double t = std::sin(b) * d;
-        double z = std::cos(b) * d;
-        assert(t >= 0);
-        assert(z >= 0);
-        //assert(std::abs(t + z - translationSteps - extentSteps) < 1e-5);
-
-        // update translation
-        double tf = t / translationSteps;
-        horizontalChange *= tf;
-        verticalChange *= tf;
-        translationSteps = t;
-
-        // update view extent
-        double e = std::exp(z * std::log(extentChangeFactor))
-            * inStartViewExtent - inStartViewExtent;
-        if (a < piQuarter && inViewExtentChange < 0)
-            e *= -1;
-        inViewExtentChange = e;
-        extentSteps = z;
-    }
 
     // inter-operation normalization
     double normalizationSum = extentSteps + translationSteps + rotationSteps;
@@ -197,12 +292,13 @@ void piha(
     // find the final outputs
     double extentFactor = std::pow(extentChangeFactor,
         extentSteps * totalStepsInv);
-    if (inViewExtentChange < 0)
+    if (zoomIn)
         extentFactor = 1.0 / extentFactor;
     outViewExtent = inStartViewExtent * extentFactor;
     outHorizontalMove = horizontalChange * totalStepsInv;
     outVerticalMove = verticalChange * totalStepsInv;
     outRotation = inStartRotation + inRotationChange * totalStepsInv;
+    */
 }
 
 double inertiaFactor(
@@ -232,14 +328,31 @@ void solveNavigation(
         double &outVerticalMove,
         vec3 &outRotation)
 {
-    switch (navOpts.navigationType)
+    assert(timeDiff >= 0);
+    assert(inHorizontalDistance >= 0);
+    assert(inStartViewExtent > 0);
+    assert(inStartViewExtent + inViewExtentChange > 0);
+
+    if (timeDiff < 1e-7
+        || (inHorizontalDistance < 1e-7
+        && std::abs(inVerticalChange) < 1e-7
+        && std::abs(inViewExtentChange) < 1e-7
+        && vectorAbsSum(inRotationChange) < 1e-7))
+    {
+        // no operation needed
+        outViewExtent = inStartViewExtent;
+        outHorizontalMove = 0;
+        outVerticalMove = 0;
+        outRotation = inStartRotation;
+    }
+    else switch (navOpts.navigationType)
     {
     case NavigationType::Instant:
         outHorizontalMove = inHorizontalDistance;
         outVerticalMove = inVerticalChange;
         outRotation = inStartRotation + inRotationChange;
         outViewExtent = inStartViewExtent + inViewExtentChange;
-        return;
+        break;
     case NavigationType::Quick:
         outHorizontalMove = inHorizontalDistance
             * inertiaFactor(navOpts, timeDiff, navOpts.inertiaPan);
@@ -249,9 +362,9 @@ void solveNavigation(
             * inertiaFactor(navOpts, timeDiff, navOpts.inertiaRotate);
         outViewExtent = inStartViewExtent + inViewExtentChange
             * inertiaFactor(navOpts, timeDiff, navOpts.inertiaZoom);
-        return;
+        break;
     case NavigationType::FlyOver:
-        return piha(
+        flyOver(
             navOpts,
             timeDiff,
             inHorizontalDistance,
@@ -265,7 +378,12 @@ void solveNavigation(
             outVerticalMove,
             outRotation
         );
+        break;
     }
+
+    assert(outViewExtent >= 0);
+    assert(outHorizontalMove >= 0);
+    assert(!std::isnan(outVerticalMove));
 
     (void)fov;
 }

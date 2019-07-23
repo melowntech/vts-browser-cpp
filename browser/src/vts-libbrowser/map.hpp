@@ -76,13 +76,9 @@ class TraverseNode;
 class Credits;
 class FetchTaskImpl;
 class GpuFont;
+class Cache;
 
 using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
-
-namespace
-{
-    class Cache;
-}
 
 class CacheData
 {

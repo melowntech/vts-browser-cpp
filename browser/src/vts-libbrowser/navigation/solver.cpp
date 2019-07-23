@@ -76,6 +76,7 @@ double vectorAbsSum(const vec3 &v)
     return std::abs(v[0]) + std::abs(v[1]) + std::abs(v[2]);
 }
 
+/*
 double distanceByExtent(double startExtent, double finalExtent,
     double extentFactor, double distanceFactor, uint32 &depth)
 {
@@ -99,6 +100,8 @@ double ballisticVelocity(double x, double y, double g)
 {
     return std::sqrt((y + std::sqrt((y*y) + (x+x))) * g);
 }
+*/
+
 
 void parabola(
     double sx, double sy, // start at (sx,sy); finish at (0,0)
@@ -147,8 +150,6 @@ void piha(
     outDistance = -dx * spd;
     outViewExtent = inStartViewExtent + dy * spd;
     LOG(info4) << "piha: x: " << inDistance << ", y: " << inStartViewExtent << ", dx: " << dx << ", dy: " << dy;
-
-
 
 
 
@@ -224,7 +225,6 @@ void flyOver(
 
 
 
-    /*
     // extent or translation
     double exFacForSm = std::pow(
         navOpts.navigationPihaViewExtentChange + 1, 30);
@@ -259,7 +259,6 @@ void flyOver(
     outVerticalMove = inVerticalChange;
     outRotation = inStartRotation + inRotationChange;
 
-    /*
     // rotation
     double rotationDist = length(inRotationChange);
 

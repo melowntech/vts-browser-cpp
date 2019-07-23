@@ -56,6 +56,10 @@ if(VTS_BROWSER_TYPE STREQUAL "FRAMEWORK")
     set(VTS_BROWSER_BUILD_LIBRARY SHARED)
 endif()
 
+if(UNIX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter") # this drives me crazy! stop it
+endif()
+
 # vts browser library
 message(STATUS "including vts browser library")
 add_subdirectory(src/vts-libbrowser)

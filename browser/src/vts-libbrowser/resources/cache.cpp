@@ -64,6 +64,8 @@ char digit(unsigned char a)
     return a + '0';
 }
 
+} // namespace
+
 class Cache
 {
 public:
@@ -226,8 +228,6 @@ public:
     bool disabled;
     bool hashes;
 };
-
-} // namespace
 
 void MapImpl::cacheInit()
 {

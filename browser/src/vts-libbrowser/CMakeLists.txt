@@ -14,9 +14,10 @@ set(EXTRA_LIB_DEPS)
 set(EXTRA_LIB_MODULES)
 
 if(BUILDSYS_IOS)
-    # ios
     list(APPEND EXTRA_LIB_DEPS iconv objc "-framework CoreGraphics")
     list(APPEND EXTRA_SRC_LIST fetcher/ios.mm)
+elseif(BUILDSYS_UWP)
+    list(APPEND EXTRA_SRC_LIST fetcher/uwp.cpp)
 else()
     # desktop
     buildsys_fix_symlinks(${CMAKE_CURRENT_SOURCE_DIR}/fetcher)

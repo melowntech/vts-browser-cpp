@@ -61,60 +61,63 @@ message(STATUS "including vts browser library")
 add_subdirectory(src/vts-libbrowser)
 include_directories(src/vts-libbrowser/include)
 
-if(NOT VTS_BROWSER_TYPE STREQUAL "MODULE")
-    # vts renderer library
-    message(STATUS "including vts renderer library")
-    add_subdirectory(externals/glad)
-    add_subdirectory(src/vts-librenderer)
-    include_directories(src/vts-librenderer/include)
+if(VTS_BROWSER_TYPE STREQUAL "MODULE")
+    return()
+endif()
 
-    # application
-    if(BUILDSYS_IOS)
-        # ios application
-        message(STATUS "including vts-browser-ios")
-        add_subdirectory(src/vts-browser-ios)
+# vts renderer library
+message(STATUS "including vts renderer library")
+add_subdirectory(externals/glad)
+add_subdirectory(src/vts-librenderer)
+include_directories(src/vts-librenderer/include)
+
+# application
+if(BUILDSYS_UWP)
+    message(STATUS "no application for UWP")
+elseif(BUILDSYS_IOS)
+    message(STATUS "including vts-browser-ios")
+    add_subdirectory(src/vts-browser-ios)
+else()
+    # desktop apps (SDL)
+    cmake_policy(SET CMP0004 OLD) # because SDL installed on some systems has improperly configured libraries
+    find_package(SDL2 QUIET)
+    if((TARGET SDL2) OR (DEFINED SDL2_LIBRARIES))
+        include_directories(SYSTEM ${SDL2_INCLUDE_DIR})
+
+        # minimal application
+        message(STATUS "including vts-browser-minimal")
+        add_subdirectory(src/vts-browser-minimal-c)
+        add_subdirectory(src/vts-browser-minimal-cpp)
+
+        # desktop application
+        message(STATUS "including vts-browser-desktop")
+        add_subdirectory(src/vts-browser-desktop)
+
+        # two cameras
+        message(STATUS "including test-two-cameras")
+        add_subdirectory(src/test-two-cameras)
+
+        # two cameras
+        message(STATUS "including test-smoothness")
+        add_subdirectory(src/test-smoothness)
     else()
-        # desktop apps (SDL)
-        cmake_policy(SET CMP0004 OLD) # because SDL installed on some systems has improperly configured libraries
-        find_package(SDL2 QUIET)
-        if((TARGET SDL2) OR (DEFINED SDL2_LIBRARIES))
-            include_directories(SYSTEM ${SDL2_INCLUDE_DIR})
-
-            # minimal application
-            message(STATUS "including vts-browser-minimal")
-            add_subdirectory(src/vts-browser-minimal-c)
-            add_subdirectory(src/vts-browser-minimal-cpp)
-
-            # desktop application
-            message(STATUS "including vts-browser-desktop")
-            add_subdirectory(src/vts-browser-desktop)
-
-            # two cameras
-            message(STATUS "including test-two-cameras")
-            add_subdirectory(src/test-two-cameras)
-
-            # two cameras
-            message(STATUS "including test-smoothness")
-            add_subdirectory(src/test-smoothness)
-        else()
-            message(WARNING "SDL was not found, many example applications will be skipped")
-        endif()
-
-        # desktop apps (Qt)
-        find_package(Qt5 COMPONENTS Core Gui QUIET)
-        if(TARGET Qt5::Gui)
-            # Qt application
-            message(STATUS "including vts-browser-qt")
-            add_subdirectory(src/vts-browser-qt)
-        endif()
+        message(WARNING "SDL was not found, many example applications will be skipped")
     endif()
 
-    # vts csharp libraries
-    if(MSVC)
-        message(STATUS "including csharp libraries")
-        set(CMAKE_CSharp_FLAGS "${CMAKE_CSharp_FLAGS} -langversion:6 -unsafe")
-        add_subdirectory(src/vts-libbrowser-cs)
-        add_subdirectory(src/vts-librenderer-cs)
-        add_subdirectory(src/vts-browser-minimal-cs)
+    # desktop apps (Qt)
+    find_package(Qt5 COMPONENTS Core Gui QUIET)
+    if(TARGET Qt5::Gui)
+        # Qt application
+        message(STATUS "including vts-browser-qt")
+        add_subdirectory(src/vts-browser-qt)
     endif()
+endif()
+
+# vts csharp libraries
+if(MSVC)
+    message(STATUS "including csharp libraries")
+    set(CMAKE_CSharp_FLAGS "${CMAKE_CSharp_FLAGS} -langversion:6 -unsafe")
+    add_subdirectory(src/vts-libbrowser-cs)
+    add_subdirectory(src/vts-librenderer-cs)
+    add_subdirectory(src/vts-browser-minimal-cs)
 endif()

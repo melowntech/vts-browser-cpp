@@ -26,19 +26,140 @@
 
 #include "../include/vts-browser/fetcher.hpp"
 
+#include <Windows.Foundation.h>
+#include <Windows.Web.Http.Headers.h>
+#include <ppltasks.h>
+
+#include <stdexcept>
+#include <vector>
+
+using namespace Platform;
+using namespace Concurrency;
+using namespace Windows;
+using namespace Windows::Foundation;
+using namespace Windows::Storage;
+using namespace Windows::Storage::Streams;
+using namespace Windows::Web;
+using namespace Windows::Web::Http;
+using namespace Windows::Security::Cryptography;
+
+/*
+std::wstring widen(const std::string &str)
+{
+    if (str.empty())
+        return {};
+    size_t charsNeeded = ::MultiByteToWideChar(CP_UTF8, 0, str.data(), str.size(), NULL, 0);
+    std::wstring buffer;
+    buffer.resize(charsNeeded);
+    ::MultiByteToWideChar(CP_UTF8, 0, str.data(), (int)str.size(), buffer.data(), buffer.size());
+    return buffer;
+}
+
+std::string narrow(const std::wstring &str)
+{
+    if (str.empty())
+        return {};
+    size_t charsNeeded = ::WideCharToMultiByte(CP_UTF8, 0, str.data(), str.size(), NULL, 0, 0, 0);
+    std::string buffer;
+    buffer.resize(charsNeeded);
+    ::WideCharToMultiByte(CP_UTF8, 0, str.data(), (int)str.size(), buffer.data(), buffer.size(), 0, 0);
+    return buffer;
+}
+*/
+
+String ^widen(const std::string &str)
+{
+    if (str.empty())
+        return {};
+    size_t charsNeeded = ::MultiByteToWideChar(CP_UTF8, 0, str.data(), str.size(), NULL, 0);
+    std::wstring buffer;
+    buffer.resize(charsNeeded);
+    ::MultiByteToWideChar(CP_UTF8, 0, str.data(), str.size(), &buffer[0], buffer.size());
+    return ref new String(buffer.data());
+}
+
+std::string narrow(String ^str)
+{
+    if (str->Length() == 0)
+        return {};
+    size_t charsNeeded = ::WideCharToMultiByte(CP_UTF8, 0, str->Data(), str->Length(), NULL, 0, 0, 0);
+    std::string buffer;
+    buffer.resize(charsNeeded);
+    ::WideCharToMultiByte(CP_UTF8, 0, str->Data(), str->Length(), &buffer[0], buffer.size(), 0, 0);
+    return buffer;
+}
+
 namespace vts
 {
 
 namespace
 {
 
+class FetcherImpl : public Fetcher
+{
+    HttpClient ^client;
 
+public:
+    FetcherImpl(const FetcherOptions &options)
+    {}
+
+    ~FetcherImpl()
+    {}
+
+    void initialize() override
+    {
+        client = ref new HttpClient();
+    }
+
+    void finalize() override
+    {}
+
+    void fetch(const std::shared_ptr<FetchTask> &task_) override
+    {
+        const std::shared_ptr<FetchTask> task = task_;
+        try
+        {
+            //auto headers{ client->DefaultRequestHeaders() };
+            //for (auto it : task->query.headers)
+            //    headers.Append(widen(it.first), widen(it.second));
+
+            Uri ^requestUri = ref new Uri(widen(task->query.url));
+            create_task(client->GetAsync(requestUri))
+                .then([=](HttpResponseMessage ^response) {
+                    task->reply.code = (uint32)response->StatusCode;
+                    IBuffer ^body = response->Content->ReadAsBufferAsync()->GetResults();
+                    Array<unsigned char> ^array = nullptr;
+                    CryptographicBuffer::CopyToByteArray(body, &array);
+                    task->reply.content.allocate(array->Length);
+                    memcpy(task->reply.content.data(), array->Data, array->Length);
+                })
+                .then([=](Concurrency::task<void> t)
+                {
+                    try
+                    {
+                        t.get();
+                    }
+                    catch (...)
+                    {
+                        task->reply.code = FetchTask::ExtraCodes::InternalError;
+                    }
+                    task->fetchDone();
+                });
+        }
+        catch (...)
+        {
+            task->reply.code = FetchTask::ExtraCodes::InternalError;
+            task->fetchDone();
+        }
+    }
+};
 
 } // namespace
 
 std::shared_ptr<Fetcher> Fetcher::create(const FetcherOptions &options)
 {
-    return nullptr; // todo
+    return std::dynamic_pointer_cast<Fetcher>(
+        std::make_shared<FetcherImpl>(options));
 }
 
 } // namespace vts

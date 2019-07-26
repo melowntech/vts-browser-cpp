@@ -28,6 +28,11 @@ void main()
     vec3 viewDx = dFdx(varViewPosition);
     vec3 viewDy = dFdy(varViewPosition);
 
+#ifdef VTS_NO_CLIP
+	// no hardware clipping, do it here instead
+	// todo
+#endif
+
     // mask
     if (uniFlags.x > 0)
     {

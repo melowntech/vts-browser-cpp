@@ -231,7 +231,7 @@ void loadGlFunctions(GLADloadproc functionLoader)
 
 void installGlDebugCallback()
 {
-    if (GLAD_GL_KHR_debug)
+    if (GLAD_GL_KHR_debug && glDebugMessageCallback)
     {
         vts::log(vts::LogLevel::info1, "Installing OpenGL debug callback");
         glDebugMessageCallback(&openglErrorCallback, nullptr);

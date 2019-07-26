@@ -73,7 +73,8 @@ include_directories(src/vts-librenderer/include)
 
 # application
 if(BUILDSYS_UWP)
-    message(STATUS "no application for UWP")
+    message(STATUS "including vts-browser-uwp")
+    add_subdirectory(src/vts-browser-uwp)
 elseif(BUILDSYS_IOS)
     message(STATUS "including vts-browser-ios")
     add_subdirectory(src/vts-browser-ios)

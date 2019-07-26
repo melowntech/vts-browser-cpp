@@ -19,14 +19,18 @@ out vec3 varViewPosition;
 out float varAtmDensity;
 #endif
 
+#ifndef VTS_NO_CLIP
 out float gl_ClipDistance[4];
+#endif
 
 void main()
 {
+#ifndef VTS_NO_CLIP
     gl_ClipDistance[0] = (inUvExternal[0] - uniUvClip[0]) * +1.0;
     gl_ClipDistance[1] = (inUvExternal[1] - uniUvClip[1]) * +1.0;
     gl_ClipDistance[2] = (inUvExternal[0] - uniUvClip[2]) * -1.0;
     gl_ClipDistance[3] = (inUvExternal[1] - uniUvClip[3]) * -1.0;
+#endif
 
     vec4 vp = uniMv * vec4(inPosition, 1.0);
     gl_Position = uniP * vp;

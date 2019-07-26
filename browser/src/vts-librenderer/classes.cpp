@@ -29,25 +29,31 @@
 namespace vts { namespace renderer
 {
 
+std::string Shader::preamble =
 #ifdef VTSR_OPENGLES
-std::string Shader::preamble = "#version 300 es\n"
+        "#version 300 es\n"
+#else
+        "#version 330 core\n"
+#endif
+
+#ifdef VTSR_OPENGLES
 #ifdef __APPLE__
         "#extension GL_APPLE_clip_distance : require\n"
+#elif !WINAPI_PARTITION_DESKTOP
+        "#define VTS_NO_CLIP\n"
 #endif
-        "precision highp float;\n"
-        "precision highp int;\n";
-#else
-std::string Shader::preamble = "#version 330 core\n"
-        "precision highp float;\n"
-        "precision highp int;\n";
 #endif
+
+        "precision highp float;\n"
+        "precision highp int;\n"
+    ;
 
 namespace
 {
 
 void setDebugLabel(GLenum type, GLuint id, std::string name)
 {
-    if (!GLAD_GL_KHR_debug || name.empty())
+    if (!GLAD_GL_KHR_debug || !glObjectLabel || name.empty())
         return;
     name = name.substr(0, 200);
     glObjectLabel(type, id, name.length(), name.data());

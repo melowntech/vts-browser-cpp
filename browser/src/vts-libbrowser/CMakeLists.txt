@@ -18,6 +18,7 @@ if(BUILDSYS_IOS)
     list(APPEND EXTRA_SRC_LIST fetcher/ios.mm)
 elseif(BUILDSYS_UWP)
     list(APPEND EXTRA_SRC_LIST fetcher/uwp.cpp)
+    set_source_files_properties(fetcher/uwp.cpp PROPERTIES COMPILE_FLAGS "/ZW")
 else()
     # desktop
     buildsys_fix_symlinks(${CMAKE_CURRENT_SOURCE_DIR}/fetcher)
@@ -201,6 +202,12 @@ buildsys_library(vts-browser)
 buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})
 buildsys_position_independent(${MODULE_LIBRARIES})
 buildsys_ide_groups(vts-browser libs)
+if(BUILDSYS_UWP)
+    set_target_properties(vts-browser PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB:vccorlibd /NODEFAULTLIB:msvcrtd vccorlibd.lib msvcrtd.lib")
+    set_target_properties(vts-browser PROPERTIES LINK_FLAGS_RELEASE "/NODEFAULTLIB:vccorlib /NODEFAULTLIB:msvcrt vccorlib.lib msvcrt.lib")
+endif()
+
+
 
 #######################################################################
 # Install

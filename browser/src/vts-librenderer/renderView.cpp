@@ -56,6 +56,7 @@ void clearGlState()
 
 void enableClipDistance(bool enable)
 {
+#ifndef VTSR_UWP
     if (enable)
     {
         for (int i = 0; i < 4; i++)
@@ -66,6 +67,7 @@ void enableClipDistance(bool enable)
         for (int i = 0; i < 4; i++)
             glDisable(GL_CLIP_DISTANCE0 + i);
     }
+#endif
 }
 
 RenderViewImpl::RenderViewImpl(

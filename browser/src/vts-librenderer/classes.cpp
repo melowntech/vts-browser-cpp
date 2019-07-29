@@ -39,7 +39,7 @@ std::string Shader::preamble =
 #ifdef VTSR_OPENGLES
 #ifdef __APPLE__
         "#extension GL_APPLE_clip_distance : require\n"
-#elif !WINAPI_PARTITION_DESKTOP
+#elif VTSR_UWP
         "#define VTS_NO_CLIP\n"
 #endif
 #endif
@@ -53,7 +53,7 @@ namespace
 
 void setDebugLabel(GLenum type, GLuint id, std::string name)
 {
-    if (!GLAD_GL_KHR_debug || !glObjectLabel || name.empty())
+    if (!GLAD_GL_KHR_debug || name.empty())
         return;
     name = name.substr(0, 200);
     glObjectLabel(type, id, name.length(), name.data());
@@ -388,7 +388,7 @@ GpuTextureSpec::FilterMode magFilter(
         return GpuTextureSpec::FilterMode::Linear;
     default:
         throw std::invalid_argument("invalid texture filter mode "
-            "(in coversion for magnification filter)");
+            "(in conversion for magnification filter)");
     }
 }
 
@@ -670,6 +670,14 @@ void UniformBuffer::bindToIndex(uint32 index)
 void UniformBuffer::load(const void *data, std::size_t size)
 {
     assert(ubo != 0);
+
+#ifdef VTSR_UWP
+    // angle/directx seems to not like changing a buffer
+    // create a new one instead
+    clear();
+    bind();
+#endif // VTSR_UWP
+
     if (size <= capacity)
         glBufferSubData(GL_UNIFORM_BUFFER, 0, size, data);
     else

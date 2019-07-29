@@ -96,6 +96,9 @@ buildsys_ide_groups(vts-renderer libs)
 if(BUILDSYS_EMBEDDED)
     target_compile_definitions(vts-renderer PRIVATE VTSR_OPENGLES)
 endif()
+if(BUILDSYS_UWP)
+    target_compile_definitions(vts-renderer PRIVATE VTSR_UWP)
+endif()
 
 
 

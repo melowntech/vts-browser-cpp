@@ -237,8 +237,11 @@ void installGlDebugCallback()
         glDebugMessageCallback(&openglErrorCallback, nullptr);
     }
     else
+    {
         vts::log(vts::LogLevel::info1,
                 "OpenGL debug callback is not available");
+        GLAD_GL_KHR_debug = 0; // sometimes the loader considers the extension available, but the symbols are not loaded
+    }
 }
 
 } } // namespace vts renderer

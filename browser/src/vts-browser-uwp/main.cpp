@@ -186,9 +186,7 @@ void SingleWindowAppView::InitializeVts()
 {
     {
         vts::MapCreateOptions opts;
-        // uwp has restricted file api
-        //   todo fix the boost filesystem dummy functions
-        opts.diskCache = false;
+        opts.clientId = "vts-browser-uwp";
         map = std::make_shared<vts::Map>(opts);
     }
     renderContext = std::make_shared<vts::renderer::RenderContext>();
@@ -202,14 +200,10 @@ void SingleWindowAppView::InitializeVts()
     {
         auto &op = camera->options();
         // rendering geodata crashes the app
-        // with the amount of hacks that had to be done to make it work this far, I don't care anymore
+        //   given the amount of hacks that had to be done to make it work this far, I don't care anymore
         op.traverseModeGeodata = vts::TraverseMode::None;
-        // balanced rendering is suboptimal because angle does not support GL_EXT_clip_cull_distance
+        // balanced rendering is suboptimal because Angle does not support GL_EXT_clip_cull_distance
         op.traverseModeSurfaces = vts::TraverseMode::Flat;
-    }
-    {
-        auto &ro = renderView->options();
-        ro.antialiasingSamples = 1;
     }
 }
 

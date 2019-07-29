@@ -6,9 +6,9 @@ Install the libraries from apt packages or [build](BUILDING.md) them.
 Write a cmake file _CMakeLists.txt_:
 
 ```cmake
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 project(vts-example CXX)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 find_package(VtsBrowser REQUIRED)
 include_directories(${VtsBrowser_INCLUDE_DIR})

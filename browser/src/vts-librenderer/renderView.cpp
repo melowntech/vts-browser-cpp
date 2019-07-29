@@ -56,7 +56,7 @@ void clearGlState()
 
 void enableClipDistance(bool enable)
 {
-#ifndef VTSR_UWP
+#ifndef VTSR_NO_CLIP
     if (enable)
     {
         for (int i = 0; i < 4; i++)

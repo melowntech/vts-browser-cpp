@@ -36,12 +36,10 @@ std::string Shader::preamble =
         "#version 330 core\n"
 #endif
 
-#ifdef VTSR_OPENGLES
-#ifdef __APPLE__
-        "#extension GL_APPLE_clip_distance : require\n"
-#elif VTSR_UWP
+#ifdef VTSR_NO_CLIP
         "#define VTS_NO_CLIP\n"
-#endif
+#elif defined(VTSR_OPENGLES) && defined(__APPLE__)
+        "#extension GL_APPLE_clip_distance : require\n"
 #endif
 
         "precision highp float;\n"

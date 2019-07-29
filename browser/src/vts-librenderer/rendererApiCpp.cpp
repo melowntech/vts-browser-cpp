@@ -39,7 +39,11 @@ RenderOptions::RenderOptions()
 {
     memset(this, 0, sizeof(*this));
     textScale = 1;
+#ifdef VTSR_EMBEDDED
     antialiasingSamples = 1;
+#else
+    antialiasingSamples = 4;
+#endif // !VTSR_EMBEDDED
     renderAtmosphere = true;
     geodataHysteresis = true;
     colorToTargetFrameBuffer = true;

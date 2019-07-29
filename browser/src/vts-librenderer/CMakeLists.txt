@@ -94,10 +94,15 @@ buildsys_position_independent(${MODULE_LIBRARIES})
 buildsys_ide_groups(vts-renderer libs)
 
 if(BUILDSYS_EMBEDDED)
+    target_compile_definitions(vts-renderer PRIVATE VTSR_EMBEDDED)
     target_compile_definitions(vts-renderer PRIVATE VTSR_OPENGLES)
+endif()
+if(BUILDSYS_IOS)
+    target_compile_definitions(vts-renderer PRIVATE VTSR_IOS)
 endif()
 if(BUILDSYS_UWP)
     target_compile_definitions(vts-renderer PRIVATE VTSR_UWP)
+    target_compile_definitions(vts-renderer PRIVATE VTSR_NO_CLIP)
 endif()
 
 

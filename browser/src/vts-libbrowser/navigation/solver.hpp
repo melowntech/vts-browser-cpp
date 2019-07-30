@@ -24,13 +24,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <memory>
 #include "../include/vts-browser/math.hpp"
 
 namespace vts
 {
 
+class TemporalNavigationState;
+
 void solveNavigation(
     const class NavigationOptions &navOpts,
+    std::shared_ptr<TemporalNavigationState> &temporalNavigationState,
     double timeDiff, // seconds
     double fov, // degrees
     double inHorizontalDistance, // unsigned

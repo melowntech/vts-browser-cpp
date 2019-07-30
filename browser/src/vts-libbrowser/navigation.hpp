@@ -37,6 +37,7 @@ namespace vts
 
 class CameraImpl;
 class Navigation;
+class TemporalNavigationState;
 
 class NavigationImpl
 {
@@ -57,6 +58,7 @@ public:
     double autoRotation;
     boost::optional<double> lastPositionAltitude;
     boost::optional<double> positionAltitudeReset;
+    std::shared_ptr<TemporalNavigationState> temporalNavigationState;
     Type type;
     HeightMode heightMode;
     NavigationMode mode;

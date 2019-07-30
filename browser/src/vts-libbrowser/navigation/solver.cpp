@@ -31,6 +31,15 @@
 namespace vts
 {
 
+class TemporalNavigationState
+{
+public:
+    double parabolaParameter;
+
+    TemporalNavigationState() : parabolaParameter(nan1())
+    {}
+};
+
 namespace
 {
 
@@ -106,7 +115,7 @@ double ballisticVelocity(double x, double y, double g)
 void parabola(
     double sx, double sy, // start at (sx,sy); finish at (0,0)
     double a, // parabola parameter
-    double &dx, double &dy) // output
+    double &dx, double &dy, double &outLen) // output
 {
     // vertically flip the parabola
     a *= -1;
@@ -115,7 +124,7 @@ void parabola(
     // parabola goes through (0,0) -> c = 0
 
     // parabola goes through (sx,sy) -> b = (y - a*x*x) / x
-    //double b = (sy - a * sx*sx) / sx;
+    double b = (sy - a * sx*sx) / sx;
     // y = a*x^2 - a*x*sx + x*sy/sx
 
     // tangent y = k * (x - sx) + sy
@@ -125,51 +134,23 @@ void parabola(
     dx = -1 / std::sqrt(k*k + 1);
     dy = dx * k;
 
-    LOG(info4) << "parabola: x: " << sx << ", y: " << sy << ", k: " << k;
+    // output is normalized
+    assert(std::abs(std::sqrt(dx*dx + dy*dy) - 1) < 1e-5);
+
+    // output length
+    auto &ff = [a, b](double x)
+    {
+        double p = 2 * a * x + b;
+        return (std::sqrt(p * p + 1) * p + std::asinh(p)) / (4 * a);
+    };
+    outLen = ff(sx) - ff(0);
 }
 
-// perceptively invariant horizontal autopilot
-// piha = freckle in czech
-void piha(
-    const NavigationOptions &navOpts,
-    double timeDiff,
-    double inDistance,
-    double inStartViewExtent,
-    double inTargetViewExtent,
-    double &outDistance,
-    double &outViewExtent)
-{
-    assert(timeDiff > 0);
-    assert(inDistance > 0);
-    assert(inStartViewExtent > 0);
-    assert(inTargetViewExtent > 0);
-
-    double dx, dy;
-    parabola(inDistance, inStartViewExtent - inTargetViewExtent, 1e-6, dx, dy);
-    double spd = inStartViewExtent * 0.1 * timeDiff;
-    outDistance = -dx * spd;
-    outViewExtent = inStartViewExtent + dy * spd;
-    LOG(info4) << "piha: x: " << inDistance << ", y: " << inStartViewExtent << ", dx: " << dx << ", dy: " << dy;
-
-
-
-    /*
-    double x = inDistance;
-    double y = inTargetViewExtent - inStartViewExtent;
-    double g = 10;
-    double a = ballisticAngle(x, y, g);
-    double v = ballisticVelocity(x, y, g);
-    //double v = inStartViewExtent * navOpts.navigationPihaPositionChange;
-    double xx = std::cos(a) * v;
-    double yy = std::sin(a) * v - g;
-    outDistance = xx * timeDiff;
-    outViewExtent = yy * timeDiff + inStartViewExtent;
-    LOG(info4) << "piha: x: " << x << ", y: " << y << ", a: " << radToDeg(a) << ", v: " << v << ", od: " << outDistance << ", ove: " << outViewExtent;
-    */
-}
-
+// Perceptively Invariant Horizontal Autopilot
+// (piha = freckle in czech)
 void flyOver(
     const NavigationOptions &navOpts,
+    std::shared_ptr<TemporalNavigationState> &temporalNavigationState,
     double timeDiff,
     double inHorizontalDistance,
     double inVerticalChange,
@@ -182,20 +163,26 @@ void flyOver(
     double &outVerticalMove,
     vec3 &outRotation)
 {
-    double d, v;
-    piha(
-        navOpts,
-        timeDiff,
-        inHorizontalDistance,
-        inStartViewExtent,
-        inStartViewExtent + inViewExtentChange,
-        d,
-        v
-    );
+    if (!temporalNavigationState)
+    {
+        temporalNavigationState
+            = std::make_shared<TemporalNavigationState>();
+        temporalNavigationState->parabolaParameter
+            = 3.0 / (inHorizontalDistance + 1);
+    }
 
-    outViewExtent = v;
-    outHorizontalMove = d;
-    outVerticalMove = 0;
+    double distance = std::sqrt(inVerticalChange * inVerticalChange
+        + inHorizontalDistance * inHorizontalDistance);
+    double dx, dy, dl;
+    parabola(distance, -inViewExtentChange,
+        temporalNavigationState->parabolaParameter,
+        dx, dy, dl);
+    double spd = inStartViewExtent * 0.1 * timeDiff;
+    double move = -dx * spd;
+    move /= distance;
+    outHorizontalMove = inHorizontalDistance * move;
+    outVerticalMove = inVerticalChange * move;
+    outViewExtent = inStartViewExtent + dy * spd;
     outRotation = inStartRotation;
 
 
@@ -314,6 +301,7 @@ double inertiaFactor(
 
 void solveNavigation(
         const NavigationOptions &navOpts,
+        std::shared_ptr<TemporalNavigationState> &temporalNavigationState,
         double timeDiff,
         double fov,
         double inHorizontalDistance,
@@ -343,6 +331,7 @@ void solveNavigation(
         outHorizontalMove = 0;
         outVerticalMove = 0;
         outRotation = inStartRotation;
+        temporalNavigationState.reset();
     }
     else switch (navOpts.navigationType)
     {
@@ -351,6 +340,7 @@ void solveNavigation(
         outVerticalMove = inVerticalChange;
         outRotation = inStartRotation + inRotationChange;
         outViewExtent = inStartViewExtent + inViewExtentChange;
+        temporalNavigationState.reset();
         break;
     case NavigationType::Quick:
         outHorizontalMove = inHorizontalDistance
@@ -361,10 +351,12 @@ void solveNavigation(
             * inertiaFactor(navOpts, timeDiff, navOpts.inertiaRotate);
         outViewExtent = inStartViewExtent + inViewExtentChange
             * inertiaFactor(navOpts, timeDiff, navOpts.inertiaZoom);
+        temporalNavigationState.reset();
         break;
     case NavigationType::FlyOver:
         flyOver(
             navOpts,
+            temporalNavigationState,
             timeDiff,
             inHorizontalDistance,
             inVerticalChange,

@@ -272,6 +272,7 @@ void NavigationImpl::setManual()
 {
     suspendAltitudeChange = false;
     autoRotation = 0;
+    temporalNavigationState.reset();
 }
 
 void NavigationImpl::setPosition(const vtslibs::registry::Position &position)
@@ -288,6 +289,7 @@ void NavigationImpl::setPosition(const vtslibs::registry::Position &position)
     normalizeOrientation(targetOrientation);
     targetPosition = vecFromUblas<vec3>(position.position);
     resetNavigationMode();
+    temporalNavigationState.reset();
 }
 
 vtslibs::registry::Position NavigationImpl::getPosition() const
@@ -485,6 +487,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
     double prevExtent = verticalExtent;
     solveNavigation(
         options,
+        temporalNavigationState,
         elapsedTime,
         verticalFov,
         horizontal1,

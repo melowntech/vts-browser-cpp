@@ -208,6 +208,7 @@ void Navigation::resetNavigationMode()
         LOGTHROW(err4, std::logic_error)
             << "Map is not yet available.";
     }
+    impl->setManual();
     impl->resetNavigationMode();
 }
 

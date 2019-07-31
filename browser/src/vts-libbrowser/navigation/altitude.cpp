@@ -32,6 +32,8 @@
 #include "../mapConfig.hpp"
 #include "../map.hpp"
 
+#include <optick.h>
+
 namespace vts
 {
 
@@ -195,6 +197,7 @@ void NavigationImpl::updatePositionAltitude(double fadeOutFactor)
     if (!options.cameraAltitudeChanges || suspendAltitudeChange)
         return;
 
+    OPTICK_EVENT();
     double altitude;
     if (!camera->map->getSurfaceAltitude(altitude, targetPoint,
             position.verticalExtent

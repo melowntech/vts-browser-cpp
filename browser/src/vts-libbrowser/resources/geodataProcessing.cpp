@@ -2210,6 +2210,7 @@ void GeodataTile::load()
 void GeodataTile::process()
 {
     OPTICK_EVENT();
+    OPTICK_TAG("name", name.c_str());
     LOG(info2) << "Processing geodata <" << name << ">";
 
     if (map->options.debugValidateGeodataStyles)
@@ -2229,7 +2230,7 @@ void GeodataTile::process()
 
 void MapImpl::resourcesGeodataProcessorEntry()
     {
-    OPTICK_THREAD("geodata_processor");
+        OPTICK_THREAD("geodata");
         setLogThreadName("geodata processor");
         while (!resources.queGeodata.stopped())
         {

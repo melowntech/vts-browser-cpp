@@ -28,6 +28,7 @@
 #include <utility/path.hpp> // homeDir
 #include <utility/md5.hpp>
 #include <dbglog/dbglog.hpp>
+#include <optick.h>
 
 #include "../include/vts-browser/mapOptions.hpp"
 #include "../map.hpp"
@@ -93,6 +94,7 @@ public:
     {
         if (disabled)
             return;
+        OPTICK_EVENT();
         try
         {
             std::string name = stripScheme(cd.name);
@@ -120,6 +122,7 @@ public:
     {
         if (disabled)
             return {};
+        OPTICK_EVENT();
         std::string name = stripScheme(nameParam);
         std::string fileName = convertNameToCache(name);
         if (!boost::filesystem::exists(fileName))
@@ -170,6 +173,7 @@ public:
     {
         if (disabled)
             return;
+        OPTICK_EVENT();
         LOG(info2) << "Purging disk cache";
         assert(root.length() > 0 && root[root.length() - 1] == '/');
         std::string op = root.substr(0, root.length() - 1);

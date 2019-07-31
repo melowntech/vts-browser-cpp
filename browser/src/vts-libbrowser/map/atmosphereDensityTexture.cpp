@@ -47,6 +47,7 @@ void generateAtmosphereTexture(
     const std::shared_ptr<GpuAtmosphereDensityTexture> &tex,
     const MapCelestialBody &body)
 {
+    OPTICK_EVENT();
     double boundaryThickness, horizontalExponent, verticalExponent;
     atmosphereDerivedAttributes(body, boundaryThickness,
         horizontalExponent, verticalExponent);
@@ -130,7 +131,7 @@ void GpuAtmosphereDensityTexture::load()
 
 void MapImpl::resourcesAtmosphereGeneratorEntry()
 {
-    OPTICK_THREAD("atmosphere_generator");
+    OPTICK_THREAD("atmosphereGenerator");
     setLogThreadName("atmosphere generator");
     while (!resources.queAtmosphere.stopped())
     {

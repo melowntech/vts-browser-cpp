@@ -591,39 +591,39 @@ public:
                                       width * 0.15f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
 
-                    // navigation max view extent change
-                    nk_label(&ctx, "Piha zoom:", NK_TEXT_LEFT);
-                    n.navigationPihaViewExtentChange = nk_slide_float(&ctx,
-                        0.002, n.navigationPihaViewExtentChange, 0.2, 0.002);
-                    sprintf(buffer, "%5.3f", n.navigationPihaViewExtentChange);
+                    // flyOverSpikinessFactor
+                    nk_label(&ctx, "FlyOver spikiness:", NK_TEXT_LEFT);
+                    n.flyOverSpikinessFactor = nk_slide_float(&ctx,
+                        0.1, n.flyOverSpikinessFactor, 20, 0.1);
+                    sprintf(buffer, "%5.3f", n.flyOverSpikinessFactor);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
-                    // navigation max position change
-                    nk_label(&ctx, "Piha move:", NK_TEXT_LEFT);
-                    n.navigationPihaPositionChange = nk_slide_float(&ctx,
-                        0.002, n.navigationPihaPositionChange, 0.2, 0.002);
-                    sprintf(buffer, "%5.3f", n.navigationPihaPositionChange);
+                    // flyOverMotionChangeFraction
+                    nk_label(&ctx, "FlyOver move:", NK_TEXT_LEFT);
+                    n.flyOverMotionChangeFraction = nk_slide_float(&ctx,
+                        0.1, n.flyOverMotionChangeFraction, 2, 0.01);
+                    sprintf(buffer, "%5.3f", n.flyOverMotionChangeFraction);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
-                    // navigation max rotation change
-                    nk_label(&ctx, "Piha rotation:", NK_TEXT_LEFT);
-                    n.navigationPihaRotationChange = nk_slide_float(&ctx,
-                        0.002, n.navigationPihaRotationChange, 0.2, 0.002);
-                    sprintf(buffer, "%5.3f", n.navigationPihaRotationChange);
+                    // flyOverRotationChangeSpeed
+                    nk_label(&ctx, "FlyOver rotation:", NK_TEXT_LEFT);
+                    n.flyOverRotationChangeSpeed = nk_slide_float(&ctx,
+                        0.1, n.flyOverRotationChangeSpeed, 2, 0.01);
+                    sprintf(buffer, "%5.3f", n.flyOverRotationChangeSpeed);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                     // navigation samples per view extent
                     nk_label(&ctx, "Nav. samples:", NK_TEXT_LEFT);
-                    n.navigationSamplesPerViewExtent = nk_slide_int(&ctx,
-                            1, n.navigationSamplesPerViewExtent, 16, 1);
-                    sprintf(buffer, "%3d", n.navigationSamplesPerViewExtent);
+                    n.lodSelectionSamplesForAltitude = nk_slide_int(&ctx,
+                            1, n.lodSelectionSamplesForAltitude, 16, 1);
+                    sprintf(buffer, "%3d", n.lodSelectionSamplesForAltitude);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                     // altitude fade out
                     nk_label(&ctx, "Altitude fade:", NK_TEXT_LEFT);
-                    n.cameraAltitudeFadeOutFactor = nk_slide_float(&ctx,
-                            0, n.cameraAltitudeFadeOutFactor, 1, 0.01);
-                    sprintf(buffer, "%4.2f", n.cameraAltitudeFadeOutFactor);
+                    n.altitudeFadeOutFactor = nk_slide_float(&ctx,
+                            0, n.altitudeFadeOutFactor, 1, 0.01);
+                    sprintf(buffer, "%4.2f", n.altitudeFadeOutFactor);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 }
 

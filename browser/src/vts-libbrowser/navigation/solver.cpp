@@ -75,6 +75,17 @@ double sign(double a)
     return 0;
 }
 
+double sqr(double a)
+{
+    return a * a;
+}
+
+double hypot(double a, double b)
+{
+    // naive but faster than std::hypot
+    return std::sqrt(sqr(a) + sqr(b));
+}
+
 double clamp2(double v, double a, double b)
 {
     return clamp(v, std::min(a, b), std::max(a, b));
@@ -85,33 +96,6 @@ double vectorAbsSum(const vec3 &v)
     return std::abs(v[0]) + std::abs(v[1]) + std::abs(v[2]);
 }
 
-/*
-double distanceByExtent(double startExtent, double finalExtent,
-    double extentFactor, double distanceFactor, uint32 &depth)
-{
-    depth++;
-    if (startExtent * extentFactor > finalExtent
-        && startExtent / extentFactor < finalExtent)
-        return 0;
-    return startExtent * distanceFactor
-        + distanceByExtent(startExtent > finalExtent
-            ? startExtent / extentFactor
-            : startExtent * extentFactor,
-            finalExtent, extentFactor, distanceFactor, depth);
-}
-
-double ballisticAngle(double x, double y, double g)
-{
-    return std::atan(y / x + std::sqrt((y*y) / (x*x) + 1));
-}
-
-double ballisticVelocity(double x, double y, double g)
-{
-    return std::sqrt((y + std::sqrt((y*y) + (x+x))) * g);
-}
-*/
-
-
 void parabola(
     double sx, double sy, // start at (sx,sy); finish at (0,0)
     double a, // parabola parameter
@@ -120,28 +104,28 @@ void parabola(
     // vertically flip the parabola
     a *= -1;
 
-    // y = a*x*x + b*x + c
-    // parabola goes through (0,0) -> c = 0
+    // generic parabola: y = a*x*x + b*x + c
 
+    // our parabola goes through (0,0) -> c = 0
     // parabola goes through (sx,sy) -> b = (y - a*x*x) / x
-    double b = (sy - a * sx*sx) / sx;
+    double b = (sy - a * sqr(sx)) / sx;
     // y = a*x^2 - a*x*sx + x*sy/sx
 
     // tangent y = k * (x - sx) + sy
     double k = a * sx + sy / sx;
 
     // output direction
-    dx = -1 / std::sqrt(k*k + 1);
+    dx = -1 / std::sqrt(sqr(k) + 1);
     dy = dx * k;
 
     // output is normalized
-    assert(std::abs(std::sqrt(dx*dx + dy*dy) - 1) < 1e-5);
+    assert(std::abs(hypot(dx, dy) - 1) < 1e-5);
 
     // output length
     auto &ff = [a, b](double x)
     {
         double p = 2 * a * x + b;
-        return (std::sqrt(p * p + 1) * p + std::asinh(p)) / (4 * a);
+        return (std::sqrt(sqr(p) + 1) * p + std::asinh(p)) / (4 * a);
     };
     outLen = ff(sx) - ff(0);
 }
@@ -168,123 +152,32 @@ void flyOver(
         temporalNavigationState
             = std::make_shared<TemporalNavigationState>();
         temporalNavigationState->parabolaParameter
-            = 3.0 / (inHorizontalDistance + 1);
+            = navOpts.flyOverSpikinessFactor
+            / (inHorizontalDistance + 1);
     }
 
-    double distance = std::sqrt(inVerticalChange * inVerticalChange
-        + inHorizontalDistance * inHorizontalDistance);
+    double distance = hypot(inVerticalChange, inHorizontalDistance);
     double dx, dy, dl;
     parabola(distance, -inViewExtentChange,
         temporalNavigationState->parabolaParameter,
         dx, dy, dl);
-    double spd = inStartViewExtent * 0.1 * timeDiff;
-    double move = -dx * spd;
+    double moveSpeed = inStartViewExtent * timeDiff
+        * navOpts.flyOverMotionChangeFraction;
+
+    double moveSteps = dl / moveSpeed;
+    double rotationDist = length(inRotationChange);
+    double rotationSteps = rotationDist
+        / (90 * navOpts.flyOverRotationChangeSpeed * timeDiff);
+    // add some additional steps to simulate slowdown at the end of the fly over
+    double totalSteps = hypot(rotationSteps, moveSteps) + 10;
+    moveSpeed = dl / totalSteps;
+
+    double move = -dx * moveSpeed;
     move /= distance;
     outHorizontalMove = inHorizontalDistance * move;
     outVerticalMove = inVerticalChange * move;
-    outViewExtent = inStartViewExtent + dy * spd;
-    outRotation = inStartRotation;
-
-
-    /*
-    // fps compensation
-    double extentChangeFactor = multFactor(navOpts, timeDiff,
-        navOpts.navigationPihaViewExtentChange + 1);
-    double positionChangeFactor = addFactor(navOpts, timeDiff,
-        navOpts.navigationPihaPositionChange);
-    double rotationChangeFactor = addFactor(navOpts, timeDiff,
-        navOpts.navigationPihaRotationChange);
-    assert(extentChangeFactor > 1);
-    assert(positionChangeFactor > 0);
-    assert(rotationChangeFactor > 0);
-
-    // translations (as a combination of horizontal and vertical movement)
-    double translationSum = inHorizontalDistance
-        + std::abs(inVerticalChange);
-    double translationDist = length(vec2(inHorizontalDistance,
-        inVerticalChange));
-    double translationFactor = (translationSum + 1)
-        / (translationDist + 1);
-    assert(translationFactor >= 1);
-    double horizontalChange = inHorizontalDistance * translationFactor;
-    double verticalChange = inVerticalChange * translationFactor;
-    translationDist = length(vec2(horizontalChange, verticalChange));
-
-
-
-    // extent or translation
-    double exFacForSm = std::pow(
-        navOpts.navigationPihaViewExtentChange + 1, 30);
-    uint32 depthBefore = 0, depthAfter = 0;
-    double distanceBefore = distanceByExtent(
-        inStartViewExtent / exFacForSm,
-        inStartViewExtent + inViewExtentChange,
-        extentChangeFactor, positionChangeFactor, depthBefore);
-    double distanceAfter = distanceByExtent(
-        inStartViewExtent * exFacForSm,
-        inStartViewExtent + inViewExtentChange,
-        extentChangeFactor, positionChangeFactor, depthAfter);
-    assert(distanceAfter > distanceBefore);
-    double extentOrTranslation = (translationDist - distanceBefore)
-        / (distanceAfter - distanceBefore);
-    extentOrTranslation = 2 * clamp(extentOrTranslation, 0, 1) - 1;
-    // extentOrTranslation:
-    // -1 -> zoom in
-    // 0 -> translation
-    // +1 -> zoom out
-    bool zoomIn = extentOrTranslation < 0;
-    extentOrTranslation = std::abs(extentOrTranslation);
-    extentChangeFactor = (extentChangeFactor - 1)
-        * (extentOrTranslation) + 1;
-    positionChangeFactor *= (1 - extentOrTranslation);
-
-    if (zoomIn)
-        extentChangeFactor = 1 / extentChangeFactor;
-
-    outViewExtent = inStartViewExtent * extentChangeFactor;
-    outHorizontalMove = inStartViewExtent * positionChangeFactor;
-    outVerticalMove = inVerticalChange;
-    outRotation = inStartRotation + inRotationChange;
-
-    // rotation
-    double rotationDist = length(inRotationChange);
-
-    // steps (frames) to complete individual operations
-    double extentSteps = extentChangeFactor < 1 + 1e-7 ? 0
-        : std::abs(std::log((inStartViewExtent
-        + inViewExtentChange) / inStartViewExtent))
-        / std::log(extentChangeFactor);
-    double translationSteps = positionChangeFactor < 1e-7 ? 0
-        : translationDist / (inStartViewExtent * positionChangeFactor);
-    double rotationSteps = rotationDist
-        / (360 * rotationChangeFactor);
-    assert(extentSteps >= 0);
-    assert(translationSteps >= 0);
-    assert(rotationSteps >= 0);
-
-    // inter-operation normalization
-    double normalizationSum = extentSteps + translationSteps + rotationSteps;
-    double normalizationDist = length(vec3(extentSteps,
-        translationSteps, rotationSteps));
-    double normalizationFactor = (normalizationSum + 1)
-        / (normalizationDist + 1);
-    assert(normalizationFactor >= 1);
-    double totalSteps = std::max(extentSteps,
-        std::max(translationSteps, rotationSteps))
-        * normalizationFactor + 20;
-    double totalStepsInv = 1.0 / totalSteps;
-    assert(totalStepsInv >= 0 && totalStepsInv <= 1);
-
-    // find the final outputs
-    double extentFactor = std::pow(extentChangeFactor,
-        extentSteps * totalStepsInv);
-    if (zoomIn)
-        extentFactor = 1.0 / extentFactor;
-    outViewExtent = inStartViewExtent * extentFactor;
-    outHorizontalMove = horizontalChange * totalStepsInv;
-    outVerticalMove = verticalChange * totalStepsInv;
-    outRotation = inStartRotation + inRotationChange * totalStepsInv;
-    */
+    outViewExtent = inStartViewExtent + dy * moveSpeed;
+    outRotation = inStartRotation + inRotationChange / totalSteps;
 }
 
 double inertiaFactor(

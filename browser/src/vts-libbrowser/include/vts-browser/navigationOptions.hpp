@@ -42,7 +42,7 @@ public:
     void applyJson(const std::string &json);
     std::string toJson() const;
 
-    // multiplier that is applied to mouse input for the respective actions
+    // multiplier applied to mouse input for the respective actions
     double sensitivityPan;
     double sensitivityZoom;
     double sensitivityRotate;
@@ -71,21 +71,24 @@ public:
     // multiplicative factor at which camera altitude will converge to terrain
     //   when panning or zooming
     // range 0 (off) to 1 (fast)
-    double cameraAltitudeFadeOutFactor;
+    double altitudeFadeOutFactor;
 
     // latitude threshold (0 - 90) used for azimuthal navigation
-    double navigationLatitudeThreshold;
+    double azimuthalLatitudeThreshold;
 
-    // maximum change factors for PIHA
-    // (perceptively invariant horizontal autopilot)
-    double navigationPihaViewExtentChange;
-    double navigationPihaPositionChange;
-    double navigationPihaRotationChange;
+    // fly over motion trajectory shape parameter
+    // low -> flat trajectory
+    // high -> spiky trajectory
+    double flyOverSpikinessFactor;
+
+    // speed configuration for fly over navigation type
+    double flyOverMotionChangeFraction;
+    double flyOverRotationChangeSpeed;
 
     // number of virtual samples to fit the view-extent
     // it is used to determine lod index at which to retrieve
     //   the altitude used to correct camera position
-    uint32 navigationSamplesPerViewExtent;
+    uint32 lodSelectionSamplesForAltitude;
 
     NavigationType navigationType;
     NavigationMode navigationMode;

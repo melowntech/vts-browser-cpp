@@ -238,12 +238,12 @@ NavigationOptions::NavigationOptions() :
     viewExtentThresholdScaleHigh(0.20382565067), // 1 300 000 meters on earth
     tiltLimitAngleLow(-90),
     tiltLimitAngleHigh(-10),
-    cameraAltitudeFadeOutFactor(0.5),
-    navigationLatitudeThreshold(80),
-    navigationPihaViewExtentChange(0.02),
-    navigationPihaPositionChange(0.02),
-    navigationPihaRotationChange(0.02),
-    navigationSamplesPerViewExtent(8),
+    altitudeFadeOutFactor(0.5),
+    azimuthalLatitudeThreshold(80),
+    flyOverSpikinessFactor(2.5),
+    flyOverMotionChangeFraction(0.5),
+    flyOverRotationChangeSpeed(0.5),
+    lodSelectionSamplesForAltitude(8),
     navigationType(NavigationType::Quick),
     navigationMode(NavigationMode::Seamless),
     cameraNormalization(true),
@@ -275,12 +275,12 @@ void NavigationOptions::applyJson(const std::string &json)
     AJ(viewExtentThresholdScaleHigh, asDouble);
     AJ(tiltLimitAngleLow, asDouble);
     AJ(tiltLimitAngleHigh, asDouble);
-    AJ(cameraAltitudeFadeOutFactor, asDouble);
-    AJ(navigationLatitudeThreshold, asDouble);
-    AJ(navigationPihaViewExtentChange, asDouble);
-    AJ(navigationPihaPositionChange, asDouble);
-    AJ(navigationPihaRotationChange, asDouble);
-    AJ(navigationSamplesPerViewExtent, asUInt);
+    AJ(altitudeFadeOutFactor, asDouble);
+    AJ(azimuthalLatitudeThreshold, asDouble);
+    AJ(flyOverSpikinessFactor, asDouble);
+    AJ(flyOverMotionChangeFraction, asDouble);
+    AJ(flyOverRotationChangeSpeed, asDouble);
+    AJ(lodSelectionSamplesForAltitude, asUInt);
     AJE(navigationType, NavigationType);
     AJE(navigationMode, NavigationMode);
     AJ(cameraNormalization, asBool);
@@ -305,12 +305,12 @@ std::string NavigationOptions::toJson() const
     TJ(viewExtentThresholdScaleHigh, asDouble);
     TJ(tiltLimitAngleLow, asDouble);
     TJ(tiltLimitAngleHigh, asDouble);
-    TJ(cameraAltitudeFadeOutFactor, asDouble);
-    TJ(navigationLatitudeThreshold, asDouble);
-    TJ(navigationPihaViewExtentChange, asDouble);
-    TJ(navigationPihaPositionChange, asDouble);
-    TJ(navigationPihaRotationChange, asDouble);
-    TJ(navigationSamplesPerViewExtent, asUInt);
+    TJ(altitudeFadeOutFactor, asDouble);
+    TJ(azimuthalLatitudeThreshold, asDouble);
+    TJ(flyOverSpikinessFactor, asDouble);
+    TJ(flyOverMotionChangeFraction, asDouble);
+    TJ(flyOverRotationChangeSpeed, asDouble);
+    TJ(lodSelectionSamplesForAltitude, asUInt);
     TJE(navigationType, NavigationType);
     TJE(navigationMode, NavigationMode);
     TJ(cameraAltitudeChanges, asBool);

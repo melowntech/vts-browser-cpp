@@ -314,8 +314,8 @@ void NavigationImpl::updateNavigation(double elapsedTime)
         && options.inertiaRotate < 1);
     assert(options.inertiaZoom >= 0
         && options.inertiaZoom < 1);
-    assert(options.navigationLatitudeThreshold > 0
-        && options.navigationLatitudeThreshold < 90);
+    assert(options.azimuthalLatitudeThreshold > 0
+        && options.azimuthalLatitudeThreshold < 90);
 
     MapImpl *map = camera->map;
     const auto &convertor = map->convertor;
@@ -345,7 +345,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
         if (map->mapconfig->navigationSrsType()
             == vtslibs::registry::Srs::Type::projected)
             mode = NavigationMode::Azimuthal;
-        else if (std::abs(tp(1)) > options.navigationLatitudeThreshold - 1e-5)
+        else if (std::abs(tp(1)) > options.azimuthalLatitudeThreshold - 1e-5)
             mode = NavigationMode::Free; // switch to free mode when too close to a pole
         break;
     case NavigationMode::Seamless:
@@ -373,8 +373,8 @@ void NavigationImpl::updateNavigation(double elapsedTime)
         == vtslibs::registry::Srs::Type::geographic)
     {
         tp(1) = clamp(tp(1),
-            -options.navigationLatitudeThreshold,
-            options.navigationLatitudeThreshold);
+            -options.azimuthalLatitudeThreshold,
+            options.azimuthalLatitudeThreshold);
     }
 
     // auto rotation
@@ -433,7 +433,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
         {
             double ll = objectiveDistance();
             double sampleSize = verticalExtent
-                / options.navigationSamplesPerViewExtent;
+                / options.lodSelectionSamplesForAltitude;
             double thresholdBase = verticalExtent * 0.15;
             for (double fraction = 0.4; fraction < 1.0; fraction += 0.02)
             {
@@ -593,7 +593,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
             double surfaceOverEllipsoid = nan1();
             if (camera->map->getSurfaceOverEllipsoid(
                 surfaceOverEllipsoid, targetPosition,
-                verticalExtent / options.navigationSamplesPerViewExtent))
+                verticalExtent / options.lodSelectionSamplesForAltitude))
             {
                 double &pa = targetPosition[2];
                 if (positionAltitudeReset)
@@ -606,7 +606,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
                     pa += surfaceOverEllipsoid - *lastPositionAltitude;
                     pa = interpolate(pa, surfaceOverEllipsoid,
                         std::min(1.0, fadeOutFactor)
-                        * options.cameraAltitudeFadeOutFactor);
+                        * options.altitudeFadeOutFactor);
                     // todo fps compensation
                 }
                 else

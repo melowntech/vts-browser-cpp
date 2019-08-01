@@ -8,6 +8,15 @@ You have multiple options:
  - (Recommended) Use [Build Wrapper](https://github.com/melowntech/vts-browser-cpp-build-wrapper) instead.
    The wrapper has integrated build scripts for all dependencies making building the browser a peace of cake :D
 
+# Build for UWP (Universal Windows Platform)
+
+You have multiple options:
+
+ - Build all required dependencies yourself.
+   Then use cmake with -DCMAKE_TOOLCHAIN_FILE=\<path-to-our-uwp.toolchain.cmake\>.
+ - (Recommended) Use [Build Wrapper](https://github.com/melowntech/vts-browser-cpp-build-wrapper) instead.
+   The wrapper has integrated build scripts for all dependencies making building the browser a peace of cake :D
+
 # Build for Linux Desktop
 
 The Gdal library must be version 2. Additional source list is required on eg. Ubuntu Xenial.
@@ -92,13 +101,16 @@ You have multiple options:
 ├── vts-browser-cpp
 │   ├── browser
 │   │   ├── build
-│   │   │   ├── vts-browser-cpp.sln -- here is your solution for Visual Studio
+│   │   │   ├── vts-browser-cpp.sln -- here is your project for Windows
 │   │   │   ├── Makefile -- here is your makefile for Linux
 │   │   │   └── vts-browser.xcodeproj -- here is your project for Mac
+│   │   ├── build-uwp
+│   │   │   ├── vts-browser-cpp.sln -- here is your solution for UWP
 │   │   ├── build-ios
 │   │   │   └── vts-browser.xcodeproj -- here is your project for iOS
 │   │   ├── cmake
-│   │   │   └── ios.toolchain.cmake -- this is where CMAKE_TOOLCHAIN_FILE points to when building for iOS
+│   │   │   ├── ios.toolchain.cmake -- this is where CMAKE_TOOLCHAIN_FILE points to when building for iOS
+│   │   │   └── uwp.toolchain.cmake -- this is where CMAKE_TOOLCHAIN_FILE points to when building for UWP
 │   │   └── CMakeLists.txt
 │   ├── externals
 │   │   └── vts-libs -- if this folder is empty, you forgot to clone the submodules (run 'git submodule update --init --recursive' to initialize the submodules now)
@@ -108,7 +120,7 @@ You have multiple options:
 │   ├── LICENSE
 │   └── README.md
 └── your-new-awesome-application-using-vts
-    └── CMakeLists.txt or xcodeproj which links to the libraries
+    └── CMakeLists.txt
 ```
 
 

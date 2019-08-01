@@ -25,6 +25,7 @@
  */
 
 #include <unordered_set>
+#include <optick.h>
 
 #include "../camera.hpp"
 #include "../traverseNode.hpp"
@@ -62,6 +63,7 @@ CameraImpl::CameraImpl(MapImpl *map, Camera *cam) :
 
 void CameraImpl::clear()
 {
+    OPTICK_EVENT();
     draws.clear();
     credits.clear();
 
@@ -482,6 +484,7 @@ void CameraImpl::resolveBlending(TraverseNode *root,
 {
     if (options.lodBlending == 0)
         return;
+    OPTICK_EVENT();
 
     // update blendDraws age and remove old
     {
@@ -558,6 +561,7 @@ void CameraImpl::resolveBlending(TraverseNode *root,
 
 void CameraImpl::renderUpdate()
 {
+    OPTICK_EVENT();
     clear();
 
     if (!map->mapconfigReady)
@@ -644,15 +648,25 @@ void CameraImpl::renderUpdate()
     {
         if (it->surfaceStack.surfaces.empty())
             continue;
-        traverseRender(it->traverseRoot.get());
+        {
+            OPTICK_EVENT("traversal");
+            OPTICK_TAG("freeLayerName", it->freeLayerName.c_str());
+            traverseRender(it->traverseRoot.get());
+        }
         // resolve blending
         resolveBlending(it->traverseRoot.get(), layers[it]);
         // resolve subtile merging
-        for (auto &os : opaqueSubtiles)
-            os.second.resolve(os.first, this);
-        opaqueSubtiles.clear();
+        {
+            OPTICK_EVENT("subtileMerging");
+            for (auto &os : opaqueSubtiles)
+                os.second.resolve(os.first, this);
+            opaqueSubtiles.clear();
+        }
         // resolve grid preload
-        gridPreloadProcess(it->traverseRoot.get());
+        {
+            OPTICK_EVENT("gridPreloadProcess");
+            gridPreloadProcess(it->traverseRoot.get());
+        }
     }
     sortOpaqueFrontToBack();
 
@@ -705,6 +719,7 @@ void CameraImpl::suggestedNearFar(double &near_, double &far_)
 
 void CameraImpl::sortOpaqueFrontToBack()
 {
+    OPTICK_EVENT();
     vec3 e = rawToVec3(draws.camera.eye);
     std::sort(draws.opaque.begin(), draws.opaque.end(), [e](
         const DrawSurfaceTask &a, const DrawSurfaceTask &b) {

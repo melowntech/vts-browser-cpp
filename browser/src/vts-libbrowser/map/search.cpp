@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <optick.h>
+
 #include "../include/vts-browser/search.hpp"
 
 #include "../utilities/json.hpp"
@@ -353,6 +355,7 @@ std::shared_ptr<SearchTask> MapImpl::search(const std::string &query,
 
 void MapImpl::updateSearch()
 {
+    OPTICK_EVENT();
     auto it = resources.searchTasks.begin();
     while (it != resources.searchTasks.end())
     {

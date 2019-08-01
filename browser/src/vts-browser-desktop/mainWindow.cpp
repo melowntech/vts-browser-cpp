@@ -145,6 +145,7 @@ void MainWindow::renderFrame()
     // compas
     if (appOptions.renderCompas)
     {
+        OPTICK_EVENT("compas");
         double size = std::min(ro.width, ro.height) * 0.09;
         double offset = size * (0.5 + 0.2);
         double posSize[3] = { offset, offset, size };
@@ -153,7 +154,11 @@ void MainWindow::renderFrame()
         view->renderCompass(posSize, rot);
     }
 
-    gui.render(ro.targetViewportW, ro.targetViewportH);
+    // gui
+    {
+        OPTICK_EVENT("gui");
+        gui.render(ro.targetViewportW, ro.targetViewportH);
+    }
 }
 
 void MainWindow::prepareMarks()

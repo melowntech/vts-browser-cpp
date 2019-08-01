@@ -35,7 +35,7 @@ namespace vts
 	public static class BrowserInterop
 	{
 
-#if ENABLE_IL2CPP
+#if ENABLE_IL2CPP && UNITY_IOS
 	const string LibName = "__Internal";
 #else
 	const string LibName = "vts-browser";

@@ -1,6 +1,6 @@
 
 message(STATUS "***************************")
-message(STATUS "*** Using ios toolchain ***")
+message(STATUS "*** Using IOS toolchain ***")
 message(STATUS "***************************")
 
 # standard settings

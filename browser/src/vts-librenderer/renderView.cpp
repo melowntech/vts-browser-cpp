@@ -56,6 +56,7 @@ void clearGlState()
 
 void enableClipDistance(bool enable)
 {
+#ifndef VTSR_NO_CLIP
     if (enable)
     {
         for (int i = 0; i < 4; i++)
@@ -66,6 +67,7 @@ void enableClipDistance(bool enable)
         for (int i = 0; i < 4; i++)
             glDisable(GL_CLIP_DISTANCE0 + i);
     }
+#endif
 }
 
 RenderViewImpl::RenderViewImpl(
@@ -522,6 +524,7 @@ void RenderViewImpl::renderEntry()
     if (options.colorToTexture
         && vars.colorReadTexId != vars.colorRenderTexId)
     {
+        OPTICK_EVENT("colorToTexture");
         glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, vars.frameReadBufferId);
         CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
@@ -536,6 +539,7 @@ void RenderViewImpl::renderEntry()
     // copy the color to target frame buffer
     if (options.colorToTargetFrameBuffer)
     {
+        OPTICK_EVENT("colorToTargetFrameBuffer");
         uint32 w = options.targetViewportW ? options.targetViewportW
             : options.width;
         uint32 h = options.targetViewportH ? options.targetViewportH

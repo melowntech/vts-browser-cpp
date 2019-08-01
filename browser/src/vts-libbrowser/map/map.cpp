@@ -57,6 +57,7 @@ void MapImpl::renderFinalize()
 void MapImpl::renderUpdate(double elapsedTime)
 {
     OPTICK_EVENT();
+    OPTICK_TAG("elapsedTime", (float)elapsedTime);
     lastElapsedFrameTime = elapsedTime;
 
     if (!prerequisitesCheck())
@@ -75,8 +76,11 @@ void MapImpl::renderUpdate(double elapsedTime)
         return !camera.lock();
     }), cameras.end());
 
-    for (auto &it : layers)
-        traverseClearing(it->traverseRoot.get());
+    {
+        OPTICK_EVENT("traverseClearing");
+        for (auto &it : layers)
+            traverseClearing(it->traverseRoot.get());
+    }
 
     if (mapconfig->atmosphereDensityTexture)
         updateAtmosphereDensity();
@@ -84,6 +88,7 @@ void MapImpl::renderUpdate(double elapsedTime)
 
 void MapImpl::initializeNavigation()
 {
+    OPTICK_EVENT();
     for (auto &camera : cameras)
     {
         auto cam = camera.lock();
@@ -168,6 +173,8 @@ void MapImpl::setMapconfigPath(const std::string &mapconfigPath,
 
 bool MapImpl::prerequisitesCheck()
 {
+    OPTICK_EVENT();
+
     if (resources.auth)
         resources.auth->checkTime();
 

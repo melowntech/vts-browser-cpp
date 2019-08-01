@@ -40,7 +40,11 @@ MapCreateOptions::MapCreateOptions() :
     searchUrlFallback("https://eu-n1.windyty.com/search.php?format=json"
                        "&addressdetails=1&limit=20&q={value}"),
     searchSrsFallback("+proj=longlat +datum=WGS84 +nodefs"),
+#ifdef VTS_EMBEDDED
+    diskCache(false),
+#else
     diskCache(true),
+#endif // VTS_EMBEDDED
     hashCachePaths(true),
     searchUrlFallbackOutsideEarth(false),
     browserOptionsSearchUrls(true),

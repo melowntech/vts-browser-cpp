@@ -32,11 +32,13 @@
 #define VC_EXTRALEAN
 #endif
 #include <windows.h>
+#include <winapifamily.h>
 #endif // _WIN32
 
 #include <cstdlib>
 
 #include <dbglog/dbglog.hpp>
+#include <utility/getenv.hpp>
 
 #include "../include/vts-browser/foundation.hpp"
 #include "detectLanguage.hpp"
@@ -90,11 +92,11 @@ uint32 detectMeasurementSystemImpl()
 
 #endif // _WIN32
 
-    if (auto p = std::getenv("LC_MEASUREMENT"))
+    if (auto p = utility::getenv("LC_MEASUREMENT"))
         return detectMeasurementSystemEnv(p);
-    if (auto p = std::getenv("LANG"))
+    if (auto p = utility::getenv("LANG"))
         return detectMeasurementSystemEnv(p);
-    if (auto p = std::getenv("LANGUAGE"))
+    if (auto p = utility::getenv("LANGUAGE"))
         return detectMeasurementSystemEnv(p);
     return 1; // metric
 }
@@ -116,6 +118,7 @@ std::string detectLanguageEnv(const char *env)
 std::string detectLanguageImpl()
 {
 #ifdef _WIN32
+#if WINAPI_PARTITION_DESKTOP
 
     ULONG numlangs = 1;
     WCHAR buff[100];
@@ -129,11 +132,12 @@ std::string detectLanguageImpl()
         return output;
     }
 
+#endif // WINAPI_PARTITION_DESKTOP
 #endif // _WIN32
 
-    if (auto p = std::getenv("LANG"))
+    if (auto p = utility::getenv("LANG"))
         return detectLanguageEnv(p);
-    if (auto p = std::getenv("LANGUAGE"))
+    if (auto p = utility::getenv("LANGUAGE"))
         return detectLanguageEnv(p);
     return "en-US";
 }

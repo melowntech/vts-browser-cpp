@@ -25,6 +25,7 @@
  */
 
 #include <vts-libs/vts/mapconfig.hpp>
+#include <optick.h>
 
 #include "../utilities/json.hpp"
 #include "../credits.hpp"
@@ -92,6 +93,7 @@ void Credits::hit(Scope scope, vtslibs::registry::CreditId id, uint32 lod)
 
 void Credits::tick(CameraCredits &credits)
 {
+    OPTICK_EVENT();
     CameraCredits::Scope *scopes[(int)Scope::Total_] = {
         &credits.imagery, &credits.geodata };
     for (int i = 0; i < (int)Scope::Total_; i++)

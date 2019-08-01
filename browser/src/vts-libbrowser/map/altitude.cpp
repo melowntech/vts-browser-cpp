@@ -32,6 +32,8 @@
 #include "../mapConfig.hpp"
 #include "../map.hpp"
 
+#include <optick.h>
+
 namespace vts
 {
 

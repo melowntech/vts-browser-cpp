@@ -52,6 +52,7 @@ CacheData::CacheData(FetchTaskImpl *task, bool availFailed) :
 
 void FetchTaskImpl::fetchDone()
 {
+    OPTICK_EVENT();
     LOG(debug) << "Resource <" << name << "> finished downloading, "
         << "http code: " << reply.code << ", content type: <"
         << reply.contentType << ">, size: " << reply.content.size()
@@ -153,6 +154,7 @@ void FetchTaskImpl::fetchDone()
 void MapImpl::resourceUploadProcess(const std::shared_ptr<Resource> &r)
 {
     OPTICK_EVENT();
+    OPTICK_TAG("name", r->name.c_str());
 
     assert(r->state == Resource::State::downloaded);
     r->info.gpuMemoryCost = r->info.ramMemoryCost = 0;
@@ -236,7 +238,7 @@ void MapImpl::resourceDataRun()
 
 void MapImpl::cacheWriteEntry()
 {
-    OPTICK_THREAD("cache_writer");
+    OPTICK_THREAD("cacheWriter");
     setLogThreadName("cache writer");
     while (!resources.queCacheWrite.stopped())
     {
@@ -253,7 +255,7 @@ void MapImpl::cacheWriteEntry()
 
 void MapImpl::cacheReadEntry()
 {
-    OPTICK_THREAD("cache_reader");
+    OPTICK_THREAD("cacheReader");
     setLogThreadName("cache reader");
     while (!resources.queCacheRead.stopped())
     {
@@ -358,6 +360,7 @@ void MapImpl::resourcesDownloadsEntry()
         }
         if (resources.downloads >= options.maxConcurrentDownloads)
             continue; // skip processing if no download slots are available
+        OPTICK_EVENT("process");
         typedef std::pair<float, std::shared_ptr<Resource>> PR;
         std::vector<PR> res;
         for (auto &w : res1)
@@ -372,7 +375,7 @@ void MapImpl::resourcesDownloadsEntry()
         }
         std::sort(res.begin(), res.end(), [](PR &a, PR &b) {
             return a.first > b.first;
-        });
+            });
         for (auto &pr : res)
         {
             if (resources.downloads >= options.maxConcurrentDownloads)
@@ -382,7 +385,7 @@ void MapImpl::resourcesDownloadsEntry()
             resources.downloads++;
             LOG(debug) << "Initializing fetch of <" << r->name << ">";
             r->fetch->query.headers["X-Vts-Client-Id"]
-                    = createOptions.clientId;
+                = createOptions.clientId;
             if (resources.auth)
                 resources.auth->authorize(r);
             resources.fetcher->fetch(r->fetch);
@@ -427,6 +430,7 @@ bool MapImpl::resourcesTryRemove(std::shared_ptr<Resource> &r)
 
 void MapImpl::resourcesRemoveOld()
 {
+    OPTICK_EVENT();
     struct Res
     {
         std::string n; // name
@@ -491,6 +495,7 @@ void MapImpl::resourcesRemoveOld()
 
 void MapImpl::resourcesCheckInitialized()
 {
+    OPTICK_EVENT();
     std::time_t current = std::time(nullptr);
     for (auto it : resources.resources)
     {
@@ -538,6 +543,7 @@ void MapImpl::resourcesCheckInitialized()
 
 void MapImpl::resourcesStartDownloads()
 {
+    OPTICK_EVENT();
     if (resources.downloads >= options.maxConcurrentDownloads)
         return; // early exit
     std::vector<std::weak_ptr<Resource>> res;
@@ -556,6 +562,7 @@ void MapImpl::resourcesStartDownloads()
 
 void MapImpl::resourcesUpdateStatistics()
 {
+    OPTICK_EVENT();
     statistics.resourcesPreparing = 0;
     for (auto &rp : resources.resources)
     {

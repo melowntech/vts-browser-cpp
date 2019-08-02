@@ -107,6 +107,7 @@ public:
 
     bool debugRenderObjectPosition;
     bool debugRenderTargetPosition;
+    bool debugRenderAltitudeSurrogates;
 };
 
 } // namespace vts

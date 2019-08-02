@@ -797,40 +797,44 @@ public:
                 nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
 
                 // render atmosphere
-                r.renderAtmosphere = nk_check_label(&ctx, "atmosphere",
-                                                   r.renderAtmosphere);
+                r.renderAtmosphere = nk_check_label(&ctx,
+                    "atmosphere", r.renderAtmosphere);
 
                 // render mesh boxes
-                c.debugRenderMeshBoxes = nk_check_label(&ctx, "mesh boxes",
-                                                   c.debugRenderMeshBoxes);
+                c.debugRenderMeshBoxes = nk_check_label(&ctx,
+                    "mesh boxes", c.debugRenderMeshBoxes);
 
                 // render tile boxes
-                c.debugRenderTileBoxes = nk_check_label(&ctx, "tile boxes",
-                                                    c.debugRenderTileBoxes);
+                c.debugRenderTileBoxes = nk_check_label(&ctx,
+                    "tile boxes", c.debugRenderTileBoxes);
 
                 // render subtile boxes
                 c.debugRenderSubtileBoxes = nk_check_label(&ctx,
                     "subtile boxes", c.debugRenderSubtileBoxes);
 
                 // render surrogates
-                c.debugRenderSurrogates = nk_check_label(&ctx, "surrogates",
-                                                    c.debugRenderSurrogates);
+                c.debugRenderSurrogates = nk_check_label(&ctx,
+                    "surrogates", c.debugRenderSurrogates);
 
                 // render objective position
                 n.debugRenderObjectPosition = nk_check_label(&ctx,
-                            "objective pos.", n.debugRenderObjectPosition);
+                    "objective position", n.debugRenderObjectPosition);
 
                 // render target position
                 n.debugRenderTargetPosition = nk_check_label(&ctx,
-                            "target pos.", n.debugRenderTargetPosition);
+                    "target position", n.debugRenderTargetPosition);
+
+                // altitude surrogates
+                n.debugRenderAltitudeSurrogates = nk_check_label(&ctx,
+                    "altitude surrogates", n.debugRenderAltitudeSurrogates);
 
                 // flat shading
-                c.debugFlatShading = nk_check_label(&ctx, "flat shading",
-                                                    c.debugFlatShading);
+                c.debugFlatShading = nk_check_label(&ctx,
+                    "flat shading", c.debugFlatShading);
 
                 // polygon edges
-                r.renderPolygonEdges = nk_check_label(&ctx, "edges",
-                                                r.renderPolygonEdges);
+                r.renderPolygonEdges = nk_check_label(&ctx,
+                    "edges", r.renderPolygonEdges);
 
                 // render compas
                 nk_checkbox_label(&ctx,

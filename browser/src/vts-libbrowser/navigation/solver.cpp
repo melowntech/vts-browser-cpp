@@ -43,38 +43,6 @@ public:
 namespace
 {
 
-// the options values are for 60 frames per second
-const double nominalFps = 60;
-
-double addFactor(
-    const NavigationOptions &navOpts,
-    double timeDiff,
-    double factor)
-{
-    if (!navOpts.fpsCompensation)
-        return factor;
-    return factor * timeDiff * nominalFps;
-}
-
-double multFactor(
-    const NavigationOptions &navOpts,
-    double timeDiff,
-    double factor)
-{
-    if (!navOpts.fpsCompensation)
-        return factor;
-    return std::pow(factor, timeDiff * nominalFps);
-}
-
-double sign(double a)
-{
-    if (a < 0)
-        return -1;
-    if (a > 0)
-        return 1;
-    return 0;
-}
-
 double sqr(double a)
 {
     return a * a;
@@ -84,11 +52,6 @@ double hypot(double a, double b)
 {
     // naive but faster than std::hypot
     return std::sqrt(sqr(a) + sqr(b));
-}
-
-double clamp2(double v, double a, double b)
-{
-    return clamp(v, std::min(a, b), std::max(a, b));
 }
 
 double vectorAbsSum(const vec3 &v)
@@ -101,33 +64,43 @@ void parabola(
     double a, // parabola parameter
     double &dx, double &dy, double &outLen) // output
 {
-    // vertically flip the parabola
-    a *= -1;
+    if (sx < 1e-7)
+    {
+        // just a vertical line
+        dx = 0;
+        dy = sy < 0 ? 1 : -1;
+        outLen = std::abs(sy);
+    }
+    else
+    {
+        // generic parabola: y = a*x*x + b*x + c
 
-    // generic parabola: y = a*x*x + b*x + c
+        // vertically flip the parabola
+        a *= -1;
 
-    // our parabola goes through (0,0) -> c = 0
-    // parabola goes through (sx,sy) -> b = (y - a*x*x) / x
-    double b = (sy - a * sqr(sx)) / sx;
-    // y = a*x^2 - a*x*sx + x*sy/sx
+        // our parabola goes through (0,0) -> c = 0
+        // parabola goes through (sx,sy) -> b = (y - a*x*x) / x
+        double b = (sy - a * sqr(sx)) / sx;
+        // y = a*x^2 - a*x*sx + x*sy/sx
 
-    // tangent y = k * (x - sx) + sy
-    double k = a * sx + sy / sx;
+        // tangent y = k * (x - sx) + sy
+        double k = a * sx + sy / sx;
 
-    // output direction
-    dx = -1 / std::sqrt(sqr(k) + 1);
-    dy = dx * k;
+        // output direction
+        dx = -1 / std::sqrt(sqr(k) + 1);
+        dy = dx * k;
+
+        // output length
+        auto &ff = [a, b](double x)
+        {
+            double p = 2 * a * x + b;
+            return (std::sqrt(sqr(p) + 1) * p + std::asinh(p)) / (4 * a);
+        };
+        outLen = ff(sx) - ff(0);
+    }
 
     // output is normalized
     assert(std::abs(hypot(dx, dy) - 1) < 1e-5);
-
-    // output length
-    auto &ff = [a, b](double x)
-    {
-        double p = 2 * a * x + b;
-        return (std::sqrt(sqr(p) + 1) * p + std::asinh(p)) / (4 * a);
-    };
-    outLen = ff(sx) - ff(0);
 }
 
 // Perceptively Invariant Horizontal Autopilot
@@ -149,6 +122,7 @@ void flyOver(
 {
     if (!temporalNavigationState)
     {
+        // start of the fly over
         temporalNavigationState
             = std::make_shared<TemporalNavigationState>();
         temporalNavigationState->parabolaParameter
@@ -156,6 +130,7 @@ void flyOver(
             / (inHorizontalDistance + 1);
     }
 
+    // movement / view extent parameters
     double distance = hypot(inVerticalChange, inHorizontalDistance);
     double dx, dy, dl;
     parabola(distance, -inViewExtentChange,
@@ -164,14 +139,16 @@ void flyOver(
     double moveSpeed = inStartViewExtent * timeDiff
         * navOpts.flyOverMotionChangeFraction;
 
+    // normalization for multiple simultaneous movements
     double moveSteps = dl / moveSpeed;
     double rotationDist = length(inRotationChange);
     double rotationSteps = rotationDist
         / (90 * navOpts.flyOverRotationChangeSpeed * timeDiff);
     // add some additional steps to simulate slowdown at the end of the fly over
     double totalSteps = hypot(rotationSteps, moveSteps) + 10;
-    moveSpeed = dl / totalSteps;
 
+    // compute outputs
+    moveSpeed = dl / totalSteps;
     double move = -dx * moveSpeed;
     move /= distance;
     outHorizontalMove = inHorizontalDistance * move;
@@ -187,6 +164,10 @@ double inertiaFactor(
 {
     if (!navOpts.fpsCompensation)
         return 1 - inertia;
+
+    // the options values are for 60 frames per second
+    static const double nominalFps = 60;
+
     return 1 - std::pow(inertia, timeDiff * nominalFps);
 }
 
@@ -199,9 +180,9 @@ void solveNavigation(
         double fov,
         double inHorizontalDistance,
         double inVerticalChange,
-        double inStartViewExtent,
+        double inViewExtentCurrent,
         double inViewExtentChange,
-        const vec3 &inStartRotation,
+        const vec3 &inRotationCurrent,
         const vec3 &inRotationChange,
         double &outViewExtent,
         double &outHorizontalMove,
@@ -210,8 +191,8 @@ void solveNavigation(
 {
     assert(timeDiff >= 0);
     assert(inHorizontalDistance >= 0);
-    assert(inStartViewExtent > 0);
-    assert(inStartViewExtent + inViewExtentChange > 0);
+    assert(inViewExtentCurrent > 0);
+    assert(inViewExtentCurrent + inViewExtentChange > 0);
 
     if (timeDiff < 1e-7
         || (inHorizontalDistance < 1e-7
@@ -219,11 +200,10 @@ void solveNavigation(
         && std::abs(inViewExtentChange) < 1e-7
         && vectorAbsSum(inRotationChange) < 1e-7))
     {
-        // no operation needed
-        outViewExtent = inStartViewExtent;
         outHorizontalMove = 0;
         outVerticalMove = 0;
-        outRotation = inStartRotation;
+        outRotation = inRotationCurrent;
+        outViewExtent = inViewExtentCurrent;
         temporalNavigationState.reset();
     }
     else switch (navOpts.navigationType)
@@ -231,8 +211,8 @@ void solveNavigation(
     case NavigationType::Instant:
         outHorizontalMove = inHorizontalDistance;
         outVerticalMove = inVerticalChange;
-        outRotation = inStartRotation + inRotationChange;
-        outViewExtent = inStartViewExtent + inViewExtentChange;
+        outRotation = inRotationCurrent + inRotationChange;
+        outViewExtent = inViewExtentCurrent + inViewExtentChange;
         temporalNavigationState.reset();
         break;
     case NavigationType::Quick:
@@ -240,9 +220,9 @@ void solveNavigation(
             * inertiaFactor(navOpts, timeDiff, navOpts.inertiaPan);
         outVerticalMove = inVerticalChange
             * inertiaFactor(navOpts, timeDiff, navOpts.inertiaPan);
-        outRotation = inStartRotation + inRotationChange
+        outRotation = inRotationCurrent + inRotationChange
             * inertiaFactor(navOpts, timeDiff, navOpts.inertiaRotate);
-        outViewExtent = inStartViewExtent + inViewExtentChange
+        outViewExtent = inViewExtentCurrent + inViewExtentChange
             * inertiaFactor(navOpts, timeDiff, navOpts.inertiaZoom);
         temporalNavigationState.reset();
         break;
@@ -253,9 +233,9 @@ void solveNavigation(
             timeDiff,
             inHorizontalDistance,
             inVerticalChange,
-            inStartViewExtent,
+            inViewExtentCurrent,
             inViewExtentChange,
-            inStartRotation,
+            inRotationCurrent,
             inRotationChange,
             outViewExtent,
             outHorizontalMove,
@@ -266,6 +246,7 @@ void solveNavigation(
     }
 
     assert(outViewExtent >= 0);
+    assert(inViewExtentCurrent + outViewExtent > 0);
     assert(outHorizontalMove >= 0);
     assert(!std::isnan(outVerticalMove));
 

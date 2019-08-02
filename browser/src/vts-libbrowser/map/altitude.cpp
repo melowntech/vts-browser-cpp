@@ -31,6 +31,8 @@
 #include "../mapLayer.hpp"
 #include "../mapConfig.hpp"
 #include "../map.hpp"
+#include "../gpuResource.hpp"
+#include "../renderTasks.hpp"
 
 #include <optick.h>
 
@@ -40,21 +42,63 @@ namespace vts
 namespace
 {
 
-double generalInterpolation(
-        const vec2 &query,
-        const vec2 points[4],
-        double values[4])
+double cross(const vec2 &a, const vec2 &b)
 {
-    // shepards interpolation method
-    double a = 0, b = 0;
-    for (int i = 0; i < 4; i++)
+    return a[0] * b[1] - a[1] * b[0];
+}
+
+vec2 quadrilateralUv(const vec2 &p,
+    const vec2 &a, const vec2 &b, const vec2 &c, const vec2 &d)
+{
+    // http://www.iquilezles.org/www/articles/ibilinear/ibilinear.htm
+    vec2 e = b - a;
+    if (dot(e, e) < 1e-7)
+        return nan2(); // todo degenerate
+    vec2 f = d - a;
+    if (dot(f, f) < 1e-7)
+        return nan2(); // todo degenerate
+    vec2 g = a - b + c - d;
+    vec2 h = p - a;
+    double k2 = cross(g, f);
+    if (std::abs(k2) < 1e-7)
     {
-        double d = 1 / (length(vec2(query - points[i])) + 1);
-        d *= d;
-        a += d * values[i];
-        b += d;
+        // rectangle
+        double u = h[0] / e[0];
+        double v = h[1] / f[1];
+        if (v >= 0.0 && v <= 1.0 && u >= 0.0 && u <= 1.0)
+            return vec2(u, v);
+        return nan2();
     }
-    return a / b;
+    double k0 = cross(h, e);
+    double k1 = cross(e, f) + cross(h, g);
+    double w = k1 * k1 - 4.0 * k0 * k2;
+    if (w < 0.0)
+        return nan2();
+    w = sqrt(w);
+    double v1 = (-k1 - w) / (2.0 * k2);
+    double u1 = (h[0] - f[0] * v1) / (e[0] + g[0] * v1);
+    double v2 = (-k1 + w) / (2.0 * k2);
+    double u2 = (h[0] - f[0] * v2) / (e[0] + g[0] * v2);
+    if (v1 >= 0.0 && v1 <= 1.0 && u1 >= 0.0 && u1 <= 1.0)
+        return vec2(u1, v1);
+    if (v2 >= 0.0 && v2 <= 1.0 && u2 >= 0.0 && u2 <= 1.0)
+        return vec2(u2, v2);
+    return nan2();
+}
+
+double altitudeInterpolation(
+    const vec2 &query,
+    const vec2 points[4],
+    double values[4])
+{
+    vec2 uv = quadrilateralUv(query,
+        points[0], points[1], points[3], points[2]);
+    if (std::isnan(uv[0]) || std::isnan(uv[1]))
+        return nan1();
+    assert(uv[0] >= 0 && uv[0] <= 1 && uv[1] >= 0 && uv[1] <= 1);
+    double p = interpolate(values[0], values[1], uv[0]);
+    double q = interpolate(values[2], values[3], uv[0]);
+    return interpolate(p, q, uv[1]);
 }
 
 TraverseNode *findTravSds(TraverseNode *where,
@@ -85,7 +129,8 @@ TraverseNode *findTravSds(TraverseNode *where,
 
 
 bool MapImpl::getSurfaceOverEllipsoid(double &result,
-            const vec3 &navPos, double sampleSize)
+    const vec3 &navPos, double sampleSize,
+    CameraImpl *debugCamera)
 {
     assert(convertor);
     assert(!layers.empty());
@@ -153,14 +198,15 @@ bool MapImpl::getSurfaceOverEllipsoid(double &result,
         points[1] = p + vec2(size(0), 0);
         points[2] = p + vec2(0, size(1));
         points[3] = p + size;
+        // todo periodicity
     }
 
     // find the actual corners
-    double altitudes[4];
-    uint32 minUsedLod = -1;
-    auto travRoot = findTravById(root, info->nodeId());
+    TraverseNode *travRoot = findTravById(root, info->nodeId());
     if (!travRoot || !travRoot->meta)
         return false;
+    double altitudes[4];
+    const TraverseNode *nodes[4];
     for (int i = 0; i < 4; i++)
     {
         auto t = findTravSds(travRoot, points[i], desiredLod, renderTickIndex);
@@ -171,24 +217,38 @@ bool MapImpl::getSurfaceOverEllipsoid(double &result,
         math::Extents2 ext = t->nodeInfo.extents();
         points[i] = vecFromUblas<vec2>(ext.ll + ext.ur) * 0.5;
         altitudes[i] = *t->surrogateNav;
-        minUsedLod = std::min(minUsedLod, (uint32)t->id().lod);
-        /*
-        if (options.debugRenderAltitudeShiftCorners)
-        {
-            RenderTask task;
-            task.mesh = getMesh("internal://data/meshes/sphere.obj");
-            task.mesh->priority = std::numeric_limits<float>::infinity();
-            task.model = translationMatrix(*t->surrogatePhys)
-                    * scaleMatrix(t->nodeInfo.extents().size() * 0.031);
-            task.color = vec4f(1.f, 1.f, 1.f, 1.f);
-            if (*task.mesh)
-                renders.push_back(task);
-        }
-        */
+        nodes[i] = t;
     }
 
     // interpolate
-    result = generalInterpolation(sds, points, altitudes);
+    double res = altitudeInterpolation(sds, points, altitudes);
+    bool resValid = !std::isnan(res);
+
+    // debug visualization
+    if (debugCamera)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            const TraverseNode *t = nodes[i];
+            RenderSimpleTask task;
+            task.mesh = getMesh("internal://data/meshes/sphere.obj");
+            task.mesh->priority = std::numeric_limits<float>::infinity();
+            if (*task.mesh)
+            {
+                task.model = translationMatrix(*t->surrogatePhys)
+                    * scaleMatrix(t->nodeInfo.extents().size() * 0.035);
+                float c = resValid ? 1.0 : 0.0;
+                task.color = vec4f(c, c, c, 1.f);
+                debugCamera->draws.infographics.push_back(
+                    debugCamera->convert(task));
+            }
+        }
+    }
+
+    // output
+    if (!resValid)
+        return false;
+    result = res;
     return true;
 }
 

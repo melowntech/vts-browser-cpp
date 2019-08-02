@@ -167,7 +167,7 @@ public:
     bool prerequisitesCheck();
     void initializeNavigation();
     bool getSurfaceOverEllipsoid(double &result, const vec3 &navPos,
-        double sampleSize);
+        double sampleSize, CameraImpl *debugCamera = nullptr);
     std::pair<Validity, std::shared_ptr<GeodataStylesheet>>
         getActualGeoStyle(const std::string &name);
     std::pair<Validity, std::shared_ptr<const std::string>>

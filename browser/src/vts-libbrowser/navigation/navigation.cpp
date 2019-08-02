@@ -343,15 +343,19 @@ void NavigationImpl::updateNavigation(double elapsedTime)
         break;
     case NavigationMode::Dynamic:
         if (map->mapconfig->navigationSrsType()
-            == vtslibs::registry::Srs::Type::projected)
+            == vtslibs::registry::Srs::Type::projected
+            || options.navigationType == NavigationType::FlyOver)
             mode = NavigationMode::Azimuthal;
         else if (std::abs(tp(1)) > options.azimuthalLatitudeThreshold - 1e-5)
             mode = NavigationMode::Free; // switch to free mode when too close to a pole
         break;
     case NavigationMode::Seamless:
-        mode = verticalExtent
-            < options.viewExtentThresholdScaleLow * majorRadius
-            ? NavigationMode::Free : NavigationMode::Azimuthal;
+        if (options.navigationType == NavigationType::FlyOver)
+            mode = NavigationMode::Azimuthal;
+        else
+            mode = verticalExtent
+                < options.viewExtentThresholdScaleLow * majorRadius
+                ? NavigationMode::Free : NavigationMode::Azimuthal;
         break;
     default:
         LOGTHROW(fatal, std::invalid_argument)
@@ -431,6 +435,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
 
         // detect terrain obscurance
         {
+            OPTICK_EVENT("terrainObscurrance");
             double ll = objectiveDistance();
             double sampleSize = verticalExtent
                 / options.lodSelectionSamplesForAltitude;
@@ -591,9 +596,10 @@ void NavigationImpl::updateNavigation(double elapsedTime)
         if (!std::isnan(fadeOutFactor))
         {
             double surfaceOverEllipsoid = nan1();
-            if (camera->map->getSurfaceOverEllipsoid(
+            if (map->getSurfaceOverEllipsoid(
                 surfaceOverEllipsoid, targetPosition,
-                verticalExtent / options.lodSelectionSamplesForAltitude))
+                verticalExtent / options.lodSelectionSamplesForAltitude,
+                options.debugRenderAltitudeSurrogates ? camera : nullptr))
             {
                 double &pa = targetPosition[2];
                 if (positionAltitudeReset)

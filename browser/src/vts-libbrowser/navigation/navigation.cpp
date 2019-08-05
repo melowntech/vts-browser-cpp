@@ -394,19 +394,15 @@ void NavigationImpl::updateNavigation(double elapsedTime)
     else
         normalizeOrientation(tr);
 
-    // limit tilt
-    if (options.cameraNormalization
-        && type == Type::objective)
-    {
-        tr(1) = clamp(tr(1), options.tiltLimitAngleLow,
-            options.tiltLimitAngleHigh);
-    }
-
     // camera normalization
     vec3 normalizedRotation = tr;
     if (options.cameraNormalization
         && type == Type::objective)
     {
+        // limit tilt
+        tr(1) = clamp(tr(1), options.tiltLimitAngleLow,
+            options.tiltLimitAngleHigh);
+
         double &yaw = normalizedRotation(0);
         double &tilt = normalizedRotation(1);
 
@@ -440,7 +436,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
             double sampleSize = verticalExtent
                 / options.lodSelectionSamplesForAltitude;
             double thresholdBase = verticalExtent * 0.15;
-            for (double fraction = 0.4; fraction < 1.0; fraction += 0.02)
+            for (double fraction = 0.3; fraction < 1.0; fraction += 0.05)
             {
                 double l = ll * fraction;
                 vec3 eye, forward, up;
@@ -449,7 +445,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
                 vec3 eyeNav = convertor->physToNav(eye);
                 double altitude = nan1();
                 if (camera->map->getSurfaceOverEllipsoid(altitude,
-                    eyeNav, sampleSize * fraction))
+                    eyeNav, sampleSize / fraction))
                 {
                     double threshold = thresholdBase * fraction;
                     altitude = eyeNav[2] - altitude;

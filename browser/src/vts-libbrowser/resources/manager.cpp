@@ -363,7 +363,7 @@ void MapImpl::resourcesDownloadsEntry()
         OPTICK_EVENT("process");
         typedef std::pair<float, std::shared_ptr<Resource>> PR;
         std::vector<PR> res;
-        for (auto &w : res1)
+        for (const auto &w : res1)
         {
             std::shared_ptr<Resource> r = w.lock();
             if (r)
@@ -374,13 +374,13 @@ void MapImpl::resourcesDownloadsEntry()
             }
         }
         std::sort(res.begin(), res.end(), [](PR &a, PR &b) {
-            return a.first > b.first;
+            return a.first > b.first; // highest priority first
             });
-        for (auto &pr : res)
+        for (const auto &pr : res)
         {
             if (resources.downloads >= options.maxConcurrentDownloads)
                 break;
-            std::shared_ptr<Resource> r = pr.second;
+            const std::shared_ptr<Resource> &r = pr.second;
             r->state = Resource::State::downloading;
             resources.downloads++;
             LOG(debug) << "Initializing fetch of <" << r->name << ">";
@@ -434,52 +434,65 @@ void MapImpl::resourcesRemoveOld()
     struct Res
     {
         std::string n; // name
-        uint32 m; // mem used
+        uint32 m; // memory used
         uint32 a; // lastAccessTick
         Res(const std::string &n, uint32 m, uint32 a) : n(n), m(m), a(a)
         {}
     };
     // successfully loaded resources are removed
     //   only when we are tight on memory
-    std::vector<Res> loadedToRemove;
-    // resources that errored or are still being loaded
-    //   are removed immediately if not used recently
-    std::vector<Res> loadingToRemove;
+    std::vector<Res> resourcesToRemove;
+    resourcesToRemove.reserve(resources.resources.size() / 4);
+    // resources that errored are removed immediately
+    std::vector<Res> unconditionalToRemove;
+    unconditionalToRemove.reserve(resources.resources.size() / 4);
     uint64 memRamUse = 0;
     uint64 memGpuUse = 0;
     // find resource candidates for removal
-    for (auto &it : resources.resources)
+    for (const auto &it : resources.resources)
     {
+        resourceUpdateStatistics(it.second);
         memRamUse += it.second->info.ramMemoryCost;
         memGpuUse += it.second->info.gpuMemoryCost;
-        // consider long time not used resources only
+        // skip recently used resources
         if (it.second->lastAccessTick + 5 < renderTickIndex)
         {
             Res r(it.first,
                 it.second->info.ramMemoryCost + it.second->info.gpuMemoryCost,
                 it.second->lastAccessTick);
-            if (it.second->state == Resource::State::ready)
-                loadedToRemove.push_back(std::move(r));
-            else
-                loadingToRemove.push_back(std::move(r));
+            switch ((vts::Resource::State)it.second->state)
+            {
+            case Resource::State::initializing:
+            case Resource::State::startDownload:
+            case Resource::State::errorFatal:
+            case Resource::State::errorRetry:
+            case Resource::State::availFail:
+                unconditionalToRemove.push_back(std::move(r));
+                break;
+            default:
+                resourcesToRemove.push_back(std::move(r));
+                break;
+            }
         }
     }
+    statistics.currentGpuMemUseKB = memGpuUse / 1024;
+    statistics.currentRamMemUseKB = memRamUse / 1024;
     uint64 memUse = memRamUse + memGpuUse;
-    // remove loadingToRemove
-    for (Res &res : loadingToRemove)
+    // remove unconditionalToRemove
+    for (const Res &res : unconditionalToRemove)
     {
         if (resourcesTryRemove(resources.resources[res.n]))
             memUse -= res.m;
     }
-    // remove loadedToRemove
+    // remove resourcesToRemove
     uint64 trs = (uint64)options.targetResourcesMemoryKB * 1024;
     if (memUse > trs)
     {
-        std::sort(loadedToRemove.begin(), loadedToRemove.end(),
+        std::sort(resourcesToRemove.begin(), resourcesToRemove.end(),
                   [](const Res &a, const Res &b){
-            return a.a < b.a;
+            return a.a < b.a; // least recently used first
         });
-        for (Res &res : loadedToRemove)
+        for (const Res &res : resourcesToRemove)
         {
             if (resourcesTryRemove(resources.resources[res.n]))
             {
@@ -489,22 +502,21 @@ void MapImpl::resourcesRemoveOld()
             }
         }
     }
-    statistics.currentGpuMemUseKB = memGpuUse / 1024;
-    statistics.currentRamMemUseKB = memRamUse / 1024;
 }
 
 void MapImpl::resourcesCheckInitialized()
 {
     OPTICK_EVENT();
     std::time_t current = std::time(nullptr);
-    for (auto it : resources.resources)
+    for (const auto &it : resources.resources)
     {
+        resourceUpdateStatistics(it.second);
         const std::shared_ptr<Resource> &r = it.second;
+        if (r->lastAccessTick + 3 < renderTickIndex)
+            continue; // skip resources that were not accessed last tick
         switch ((Resource::State)r->state)
         {
         case Resource::State::errorRetry:
-            if (r->lastAccessTick + 1 != renderTickIndex)
-                continue; // skip resources that were not accessed last tick
             if (r->retryNumber >= options.maxFetchRetries)
             {
                 LOG(err3) << "All retries for resource <"
@@ -545,10 +557,15 @@ void MapImpl::resourcesStartDownloads()
 {
     OPTICK_EVENT();
     if (resources.downloads >= options.maxConcurrentDownloads)
-        return; // early exit
-    std::vector<std::weak_ptr<Resource>> res;
-    for (auto it : resources.resources)
     {
+        for (const auto &it : resources.resources)
+            resourceUpdateStatistics(it.second);
+        return; // early exit
+    }
+    std::vector<std::weak_ptr<Resource>> res;
+    for (const auto &it : resources.resources)
+    {
+        resourceUpdateStatistics(it.second);
         const std::shared_ptr<Resource> &r = it.second;
         if (r->state == Resource::State::startDownload)
             res.push_back(r);
@@ -560,44 +577,24 @@ void MapImpl::resourcesStartDownloads()
     resources.fetching.con.notify_one();
 }
 
-void MapImpl::resourcesUpdateStatistics()
+void MapImpl::resourceUpdateStatistics(const std::shared_ptr<Resource> &r)
 {
-    OPTICK_EVENT();
-    statistics.resourcesPreparing = 0;
-    for (auto &rp : resources.resources)
+    switch ((Resource::State)r->state)
     {
-        std::shared_ptr<Resource> &r = rp.second;
-        switch ((Resource::State)r->state)
-        {
-        case Resource::State::initializing:
-        case Resource::State::checkCache:
-        case Resource::State::startDownload:
-        case Resource::State::downloading:
-        case Resource::State::downloaded:
-        case Resource::State::uploading:
-            statistics.resourcesPreparing++;
-            break;
-        case Resource::State::ready:
-        case Resource::State::errorFatal:
-        case Resource::State::errorRetry:
-        case Resource::State::availFail:
-            break;
-        }
+    case Resource::State::initializing:
+    case Resource::State::checkCache:
+    case Resource::State::startDownload:
+    case Resource::State::downloading:
+    case Resource::State::downloaded:
+    case Resource::State::uploading:
+        statistics.resourcesPreparing++;
+        break;
+    case Resource::State::ready:
+    case Resource::State::errorFatal:
+    case Resource::State::errorRetry:
+    case Resource::State::availFail:
+        break;
     }
-    statistics.resourcesActive
-        = resources.resources.size();
-    statistics.resourcesDownloading
-        = resources.downloads;
-    statistics.resourcesQueueUpload
-        = resources.queUpload.estimateSize();
-    statistics.resourcesQueueCacheRead
-        = resources.queCacheRead.estimateSize();
-    statistics.resourcesQueueCacheWrite
-        = resources.queCacheWrite.estimateSize();
-    statistics.resourcesQueueAtmosphere
-        = resources.queAtmosphere.estimateSize();
-    statistics.resourcesQueueGeodata
-        = resources.queGeodata.estimateSize();
 }
 
 void MapImpl::resourceRenderInitialize()
@@ -613,7 +610,22 @@ void MapImpl::resourceRenderUpdate()
 {
     OPTICK_EVENT();
     // resourcesPreparing is used to determine mapRenderComplete
-    resourcesUpdateStatistics();
+    //   and must be updated every frame
+    statistics.resourcesPreparing = 0;
+    statistics.resourcesActive
+        = resources.resources.size();
+    statistics.resourcesDownloading
+        = resources.downloads;
+    statistics.resourcesQueueUpload
+        = resources.queUpload.estimateSize();
+    statistics.resourcesQueueCacheRead
+        = resources.queCacheRead.estimateSize();
+    statistics.resourcesQueueCacheWrite
+        = resources.queCacheWrite.estimateSize();
+    statistics.resourcesQueueAtmosphere
+        = resources.queAtmosphere.estimateSize();
+    statistics.resourcesQueueGeodata
+        = resources.queGeodata.estimateSize();
 
     // split workload into multiple render frames
     switch (renderTickIndex % 3)

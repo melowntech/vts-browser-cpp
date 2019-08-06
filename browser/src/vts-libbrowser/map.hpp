@@ -190,10 +190,10 @@ public:
     void resourcesRemoveOld();
     void resourcesCheckInitialized();
     void resourcesStartDownloads();
-    void resourcesUpdateStatistics();
     void resourcesDownloadsEntry();
     void resourcesAtmosphereGeneratorEntry();
     void resourcesGeodataProcessorEntry();
+    void resourceUpdateStatistics(const std::shared_ptr<Resource> &r);
     void resourceUploadProcess(const std::shared_ptr<Resource> &r);
 
     void cacheInit();

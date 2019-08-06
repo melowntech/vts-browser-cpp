@@ -445,7 +445,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
                 vec3 eyeNav = convertor->physToNav(eye);
                 double altitude = nan1();
                 if (camera->map->getSurfaceOverEllipsoid(altitude,
-                    eyeNav, sampleSize / fraction))
+                    eyeNav, sampleSize))
                 {
                     double threshold = thresholdBase * fraction;
                     altitude = eyeNav[2] - altitude;

@@ -382,8 +382,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
     }
 
     // auto rotation
-    tr[0] += autoRotation;
-    // todo autorotation fps compensation
+    tr[0] += autoRotation * elapsedTime;
 
     // limit yaw for seamless navigation mode
     if (options.cameraNormalization

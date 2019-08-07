@@ -79,7 +79,7 @@ void Mapconfig::load()
     if (bo.isObject())
     {
         if (bo.isMember("rotate") && bo["rotate"].isDouble())
-            browserOptions.autorotate = bo["rotate"].asDouble() * 0.1;
+            browserOptions.autorotate = bo["rotate"].asDouble();
 
         if (map->createOptions.browserOptionsSearchUrls)
         {

@@ -1270,9 +1270,11 @@ public:
                         width * 0.45f, width * 0.15f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
                 nk_label(&ctx, "Fov:", NK_TEXT_LEFT);
-                window->navigation->setFov(nk_slide_float(&ctx, 10,
-                                    window->navigation->getFov(), 100, 1));
-                sprintf(buffer, "%5.1f", window->navigation->getFov());
+                float prev = window->navigation->getFov();
+                float fov = nk_slide_float(&ctx, 10, prev, 100, 1);
+                if (std::abs(fov - prev) > 1e-7)
+                    window->navigation->setFov(fov);
+                sprintf(buffer, "%5.1f", fov);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
             }
 

@@ -34,7 +34,8 @@ void main()
     varUv.x -= float(varPlane * 2);
     gl_Position = uniMvp * vec4(uniPosition.xyz, 1.0);
     gl_Position.xy += gl_Position.w * uniOffset.xy;
-    gl_Position.xy += uniPosition.w * gl_Position.w * pos / uniCameraParams.xy;
+    gl_Position.xy += gl_Position.w * uniPosition.w
+                        * pos / uniCameraParams.xy;
     cullingCorrection();
 }
 

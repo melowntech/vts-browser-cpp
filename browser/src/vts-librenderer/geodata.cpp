@@ -324,16 +324,26 @@ mat4 RenderViewImpl::depthOffsetCorrection(
 namespace
 {
 
-mat4f rectTransform(const GeodataJob &job, const Rect &rect)
+struct mat3x4f
 {
-    vec2f c = (rect.a + rect.b) - job.refPoint;
-    vec2f s = (rect.b - rect.a);
+    // no eigen matrix!!!!!!
+    // one does not have time to mess with the indices
+    float data[12];
+};
 
-    return (mat4f() <<
-        s[0], 0, 0, c[0],
-        0, s[1], 0, c[1],
-        0, 0, 1, 0,
-        0, 0, 0, 1).finished();
+mat3x4f rectTransform(const GeodataJob &job, const Rect &rect)
+{
+    vec2f c = (rect.a + rect.b) * 0.5 - job.refPoint;
+    vec2f s = (rect.b - rect.a) * 0.5;
+    mat3x4f r;
+    for (int i = 0; i < 12; i++)
+        r.data[i] = 0;
+    r.data[0] = s[0];
+    r.data[5] = s[1];
+    r.data[8] = c[0];
+    r.data[9] = c[1];
+    r.data[10] = 1;
+    return r;
 }
 
 Rect pointToRect(const vec2f &p, uint32 w, uint32 h)
@@ -393,20 +403,20 @@ void RenderViewImpl::renderGeodataQuad(const GeodataJob &job,
 
     struct uboColorData
     {
-        mat4f screen;
+        mat3x4f screen;
         vec4f modelPos;
         vec4f color;
-    } uboColor;
+    } data;
 
-    uboColor.screen = rectTransform(job, rect);
-    uboColor.modelPos = vec3to4(job.modelPosition(), 1.f);
-    uboColor.color = color;
+    data.screen = rectTransform(job, rect);
+    data.modelPos = vec3to4(job.modelPosition(), 1.f);
+    data.color = color;
 
-    auto uboGeodataIcon = getUbo();
-    uboGeodataIcon->debugId = "UboColor";
-    uboGeodataIcon->bind();
-    uboGeodataIcon->load(uboColor);
-    uboGeodataIcon->bindToIndex(2);
+    auto ubo = getUbo();
+    ubo->debugId = "UboColor";
+    ubo->bind();
+    ubo->load(data);
+    ubo->bindToIndex(2);
 
     context->shaderGeodataColor->bind();
     context->meshQuad->bind();
@@ -432,17 +442,17 @@ void RenderViewImpl::bindUboView(const std::shared_ptr<GeodataBase> &g)
         mat4f mvpInv;
         mat4f mv;
         mat4f mvInv;
-    } uboView;
+    } data;
 
-    uboView.mvp = mvp.cast<float>();
-    uboView.mvpInv = mvpInv.cast<float>();
-    uboView.mv = mv.cast<float>();
-    uboView.mvInv = mvInv.cast<float>();
+    data.mvp = mvp.cast<float>();
+    data.mvpInv = mvpInv.cast<float>();
+    data.mv = mv.cast<float>();
+    data.mvInv = mvInv.cast<float>();
 
     auto ubo = getUbo();
     ubo->debugId = "UboViewData";
     ubo->bind();
-    ubo->load(uboView);
+    ubo->load(data);
     ubo->bindToIndex(1);
 }
 
@@ -520,14 +530,14 @@ void RenderViewImpl::bindUboCamera()
     {
         mat4f proj;
         vec4f cameraParams; // screen width in pixels, screen height in pixels, view extent in meters
-    } ubo;
+    } data;
 
-    ubo.proj = proj.cast<float>();
-    ubo.cameraParams = vec4f(width, height,
+    data.proj = proj.cast<float>();
+    data.cameraParams = vec4f(width, height,
         draws->camera.viewExtent, 0);
 
     uboGeodataCamera->bind();
-    uboGeodataCamera->load(ubo);
+    uboGeodataCamera->load(data);
     uboGeodataCamera->bindToIndex(0);
 }
 
@@ -953,25 +963,25 @@ void RenderViewImpl::renderIcon(const GeodataJob &job)
 {
     struct UboIcon
     {
-        mat4f screen;
+        mat3x4f screen;
         vec4f modelPos;
         vec4f color;
         vec4f uvs;
-    } uboIcon;
+    } data;
 
     const auto &icon = job.g->spec.commonData.icon;
 
-    uboIcon.screen = rectTransform(job, job.iconRect);
-    uboIcon.modelPos = vec3to4(job.modelPosition(), 1.f);
-    uboIcon.color = rawToVec4(icon.color);
-    uboIcon.color[3] *= job.opacity;
-    uboIcon.uvs = rawToVec4(job.g->spec.iconCoords[job.itemIndex].data());
+    data.screen = rectTransform(job, job.iconRect);
+    data.modelPos = vec3to4(job.modelPosition(), 1.f);
+    data.color = rawToVec4(icon.color);
+    data.color[3] *= job.opacity;
+    data.uvs = rawToVec4(job.g->spec.iconCoords[job.itemIndex].data());
 
-    auto uboGeodataIcon = getUbo();
-    uboGeodataIcon->debugId = "UboIcon";
-    uboGeodataIcon->bind();
-    uboGeodataIcon->load(uboIcon);
-    uboGeodataIcon->bindToIndex(2);
+    auto ubo = getUbo();
+    ubo->debugId = "UboIcon";
+    ubo->bind();
+    ubo->load(data);
+    ubo->bindToIndex(2);
 
     ((Texture*)job.g->spec.bitmap.get())->bind();
 
@@ -989,36 +999,32 @@ void RenderViewImpl::renderLabel(const GeodataJob &job)
         vec4f position; // xyz, scale
         vec4f offset;
         vec4f coordinates[1000];
-    } uboText;
+    } data;
 
     const auto &g = job.g;
     const auto &t = g->texts[job.itemIndex];
 
-    uboText.color[0] = rawToVec4(g->spec.unionData.labelScreen.color);
-    uboText.color[1] = rawToVec4(g->spec.unionData.labelScreen.color2);
-    uboText.color[0][3] *= job.opacity;
-    uboText.color[1][3] *= job.opacity;
-    uboText.outline = g->outline;
-    vec3f mp = job.modelPosition();
-    uboText.position[0] = mp[0];
-    uboText.position[1] = mp[1];
-    uboText.position[2] = mp[2];
-    uboText.position[3] = options.textScale * 2; // NDC space is twice as large
-    uboText.offset = vec4f(job.labelOffset[0], job.labelOffset[1], 0, 0);
+    data.color[0] = rawToVec4(g->spec.unionData.labelScreen.color);
+    data.color[1] = rawToVec4(g->spec.unionData.labelScreen.color2);
+    data.color[0][3] *= job.opacity;
+    data.color[1][3] *= job.opacity;
+    data.outline = g->outline;
+    data.position = vec3to4(job.modelPosition(), options.textScale * 2);
+    data.offset = vec4f(job.labelOffset[0], job.labelOffset[1], 0, 0);
 
     {
-        vec4f *o = uboText.coordinates;
+        vec4f *o = data.coordinates;
         for (const vec4f &c : t.coordinates)
             *o++ = c;
     }
 
     context->shaderGeodataLabelScreen->bind();
-    auto uboGeodataText = getUbo();
-    uboGeodataText->debugId = "UboText";
-    uboGeodataText->bind();
-    uboGeodataText->load(&uboText,
+    auto ubo = getUbo();
+    ubo->debugId = "UboText";
+    ubo->bind();
+    ubo->load(&data,
         20 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size());
-    uboGeodataText->bindToIndex(2);
+    ubo->bindToIndex(2);
 
     context->meshEmpty->bind();
     for (int pass = 0; pass < 2; pass++)

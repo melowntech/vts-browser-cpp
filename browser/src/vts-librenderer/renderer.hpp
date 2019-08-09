@@ -124,7 +124,7 @@ struct GeodataJob
     uint32 itemIndex; // -1 means all
     float importance;
     float opacity; // 0..1
-    float depth; // ndc space (0..1)
+    float depth; // ndc space (0..1) - with z-buffer-offset applied
     GeodataJob(const std::shared_ptr<GeodataBase> &g, uint32 itemIndex);
     vec3f modelPosition() const;
     vec3 worldPosition() const;

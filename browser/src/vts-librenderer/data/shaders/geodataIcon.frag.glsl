@@ -1,7 +1,7 @@
 
 layout(std140) uniform uboIconData
 {
-    mat4 uniScreen;
+    mat3x4 uniScreen;
     vec4 uniModelPos;
     vec4 uniColor;
     vec4 uniUvs;

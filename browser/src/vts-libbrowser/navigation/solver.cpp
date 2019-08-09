@@ -91,7 +91,7 @@ void parabola(
         dy = dx * k;
 
         // output length
-        auto &ff = [a, b](double x)
+        const auto &ff = [a, b](double x)
         {
             double p = 2 * a * x + b;
             return (std::sqrt(sqr(p) + 1) * p + std::asinh(p)) / (4 * a);

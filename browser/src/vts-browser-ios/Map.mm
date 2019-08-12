@@ -299,7 +299,7 @@ void mapRenderControls(float retinaScale, CGRect whole, CGRect pitch, CGRect yaw
     }
 
     double rotation[3];
-    navigation->getRotationLimited(rotation);
+    navigation->getRotation(rotation);
     if (rotation[1] < 0)
         rotation[1] += 360;
 

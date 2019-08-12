@@ -382,7 +382,10 @@ void NavigationImpl::updateNavigation(double elapsedTime)
     }
 
     // auto rotation
-    tr[0] += autoRotation * elapsedTime;
+    if (options.fpsCompensation)
+        tr[0] += autoRotation * elapsedTime;
+    else
+        tr[0] += autoRotation / 60; // nominal 60 fps
 
     // limit yaw for seamless navigation mode
     if (options.cameraNormalization
@@ -430,7 +433,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
 
         // detect terrain obscurance
         {
-            OPTICK_EVENT("terrainObscurrance");
+            OPTICK_EVENT("terrainObscurance");
             double ll = objectiveDistance();
             double sampleSize = verticalExtent
                 / options.lodSelectionSamplesForAltitude;
@@ -608,7 +611,8 @@ void NavigationImpl::updateNavigation(double elapsedTime)
                     pa = interpolate(pa, surfaceOverEllipsoid,
                         std::min(1.0, fadeOutFactor)
                         * options.altitudeFadeOutFactor);
-                    // todo fps compensation
+                    // options.altitudeFadeOutFactor does not need any fps compensation
+                    //   because the fadeOutFactor is based on variables that are already compensated
                 }
                 else
                 {

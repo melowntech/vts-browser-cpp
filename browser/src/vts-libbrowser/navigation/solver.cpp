@@ -149,6 +149,7 @@ void flyOver(
 
     // compute outputs
     moveSpeed = dl / totalSteps;
+    assert(dx >= -1 && dx <= 0);
     double move = -dx * moveSpeed;
     move /= distance;
     outHorizontalMove = inHorizontalDistance * move;

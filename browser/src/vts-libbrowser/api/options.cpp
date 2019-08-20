@@ -24,6 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "utility/enum-io.hpp"
 #include "../utilities/json.hpp"
 #include "../include/vts-browser/mapOptions.hpp"
 #include "../include/vts-browser/cameraOptions.hpp"

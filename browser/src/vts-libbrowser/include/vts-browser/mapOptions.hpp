@@ -34,7 +34,7 @@
 namespace vts
 {
 
-// these options are passed to the map when it is beeing created
+// these options are passed to the map when it is being created
 //   and are immutable during the lifetime of the map
 class VTS_API MapCreateOptions
 {

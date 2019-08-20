@@ -40,7 +40,7 @@ VTS_API void optionsConfigLog(
 VTS_API void optionsConfigMapCreate(
         boost::program_options::options_description &desc,
         class MapCreateOptions *opts,
-        std::string section = "map");
+        std::string section = "init");
 
 VTS_API void optionsConfigMapRuntime(
         boost::program_options::options_description &desc,

@@ -64,9 +64,7 @@ bool programOptions(vts::MapCreateOptions &createOptions,
             ("url",
                 po::value<std::vector<std::string>>(&configs)->composing(),
                 "Mapconfig URL(s).\n"
-                "Available formats:\n"
-                "<config>|<auth>\n"
-                "<config>"
+                "Format: <config>[|<auth>]"
             )
             ("auth,a",
                 po::value<std::string>(&auth),
@@ -84,23 +82,12 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 ->implicit_value(!appOptions.purgeDiskCache),
                 "Purge the disk cache during initialization."
             )
-            ("renderAtmosphere",
-                po::value<bool>(&renderOptions.renderAtmosphere)
-                ->default_value(renderOptions.renderAtmosphere)
-                ->implicit_value(!renderOptions.renderAtmosphere),
-                "Render atmosphere."
-            )
-            ("antialiasing",
-                po::value<uint32>(&renderOptions.antialiasingSamples)
-                ->default_value(renderOptions.antialiasingSamples)
-                ->implicit_value(16),
-                "Antialiasing samples."
-            )
-            ("oversampleRender",
-                po::value<uint32>(&appOptions.oversampleRender)
-                ->default_value(appOptions.oversampleRender)
-                ->implicit_value(2),
-                "Rendering resolution multiplier."
+            ("screenshotWhenComplete",
+                po::value<bool>(&appOptions.screenshotOnFullRender)
+                ->default_value(appOptions.screenshotOnFullRender)
+                ->implicit_value(!appOptions.screenshotOnFullRender),
+                "Save screenshot when it finishes "
+                "rendering the whole image."
             )
             ("closeWhenComplete",
                 po::value<bool>(&appOptions.closeOnFullRender)
@@ -109,12 +96,23 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 "Quit the application when it finishes "
                 "rendering the whole image."
             )
-            ("screenshotWhenComplete",
-                po::value<bool>(&appOptions.screenshotOnFullRender)
-                ->default_value(appOptions.screenshotOnFullRender)
-                ->implicit_value(!appOptions.screenshotOnFullRender),
-                "Save screenshot when it finishes "
-                "rendering the whole image."
+            ("render.atmosphere",
+                po::value<bool>(&renderOptions.renderAtmosphere)
+                ->default_value(renderOptions.renderAtmosphere)
+                ->implicit_value(!renderOptions.renderAtmosphere),
+                "Render atmosphere."
+            )
+            ("render.antialiasing",
+                po::value<uint32>(&renderOptions.antialiasingSamples)
+                ->default_value(renderOptions.antialiasingSamples)
+                ->implicit_value(16),
+                "Antialiasing samples."
+            )
+            ("render.oversample",
+                po::value<uint32>(&appOptions.oversampleRender)
+                ->default_value(appOptions.oversampleRender)
+                ->implicit_value(2),
+                "Rendering resolution multiplier."
             )
             ;
 
@@ -136,7 +134,7 @@ bool programOptions(vts::MapCreateOptions &createOptions,
     if (vm.count("help"))
     {
         std::cout << "Usage: " << argv[0] << " [options] [--]"
-                  << " [urls ...]"
+                  << " [urls...]"
                   << std::endl << desc << std::endl;
         return false;
     }

@@ -43,21 +43,6 @@ namespace vts
 namespace
 {
 
-void notifyLogMask(const std::string &mask)
-{
-    setLogMask(mask);
-}
-
-void notifyLogFile(const std::string &name)
-{
-    setLogFile(name);
-}
-
-void notifyLogConsole(bool console)
-{
-    setLogConsole(console);
-}
-
 void sanitizeSection(std::string &s)
 {
     if (s.empty())
@@ -69,9 +54,9 @@ void sanitizeSection(std::string &s)
 } // namespace
 
 #define FILE_OPTIONS \
-    ((section + "file").c_str(), \
+    ((section + "json").c_str(), \
         po::value<std::string>()->notifier( \
-            [&](const std::string &name) { \
+            [opts](const std::string &name) { \
                 opts->applyJson( \
                     vts::readLocalFileBuffer(name).str()); \
             }), \
@@ -86,19 +71,20 @@ void optionsConfigLog(
     desc.add_options()
 
     ((section + "mask").c_str(),
-        po::value<std::string>()->notifier(&notifyLogMask)
-        ->default_value(dbglog::get_mask_string()),
+        po::value<std::string>()->notifier([](const std::string &mask) {
+            setLogMask(mask); }),
         "Set log mask.\n"
         "Format: I?E?W?\n"
         "Eg.: I3W1E4")
 
     ((section + "file").c_str(),
-        po::value<std::string>()->notifier(&notifyLogFile),
+        po::value<std::string>()->notifier([](const std::string &file) {
+            setLogFile(file); }),
         "Set log output file path.")
 
     ((section + "console").c_str(),
-        po::value<bool>()->notifier(&notifyLogConsole)
-        ->default_value(dbglog::get_log_console())
+        po::value<bool>()->notifier([](const bool &console) {
+            setLogConsole(console); })
         ->implicit_value(!dbglog::get_log_console()),
         "Enable log output to console.")
     ;
@@ -111,24 +97,21 @@ void optionsConfigMapCreate(
 {
     sanitizeSection(section);
     desc.add_options()
-    FILE_OPTIONS
 
     ((section + "clientId").c_str(),
-        po::value<std::string>(&opts->clientId)
-        ->default_value(opts->clientId),
+        po::value<std::string>(&opts->clientId),
         "Identification of the application for the authentication server.")
 
     ((section + "cachePath").c_str(),
-        po::value<std::string>(&opts->cachePath)
-        ->default_value(opts->cachePath),
+        po::value<std::string>(&opts->cachePath),
         "Path to a directory where all downloaded resources are cached.")
 
     ((section + "diskCache").c_str(),
         po::value<bool>(&opts->diskCache)
-        ->default_value(opts->diskCache)
         ->implicit_value(!opts->diskCache),
         "Use disk cache.")
-    ;
+
+    FILE_OPTIONS;
 }
 
 void optionsConfigMapRuntime(
@@ -138,46 +121,39 @@ void optionsConfigMapRuntime(
 {
     sanitizeSection(section);
     desc.add_options()
-    FILE_OPTIONS
 
     ((section + "renderTilesScale").c_str(),
-        po::value<double>(&opts->renderTilesScale)
-        ->default_value(opts->renderTilesScale),
+        po::value<double>(&opts->renderTilesScale),
         "Scale of every tile. "
         "Small up-scale may reduce occasional holes on tile borders.")
 
     ((section + "targetResourcesMemoryKB").c_str(),
-        po::value<uint32>(&opts->targetResourcesMemoryKB)
-        ->default_value(opts->targetResourcesMemoryKB),
+        po::value<uint32>(&opts->targetResourcesMemoryKB),
         "Target memory (in KB) used by resources "
         "before they begin to unload.")
 
     ((section + "maxConcurrentDownloads").c_str(),
-        po::value<uint32>(&opts->maxConcurrentDownloads)
-        ->default_value(opts->maxConcurrentDownloads),
+        po::value<uint32>(&opts->maxConcurrentDownloads),
         "Maximum size of the queue for the resources to be downloaded.")
 
     ((section + "maxFetchRedirections").c_str(),
-        po::value<uint32>(&opts->maxFetchRedirections)
-        ->default_value(opts->maxFetchRedirections),
+        po::value<uint32>(&opts->maxFetchRedirections),
         "Maximum number of redirections before the download fails.")
 
     ((section + "maxFetchRetries").c_str(),
-        po::value<uint32>(&opts->maxFetchRetries)
-        ->default_value(opts->maxFetchRetries),
+        po::value<uint32>(&opts->maxFetchRetries),
         "Maximum number of attempts to redownload a resource.")
 
     ((section + "fetchFirstRetryTimeOffset").c_str(),
-        po::value<uint32>(&opts->fetchFirstRetryTimeOffset)
-        ->default_value(opts->fetchFirstRetryTimeOffset),
+        po::value<uint32>(&opts->fetchFirstRetryTimeOffset),
         "Delay in seconds for first resource download retry.")
 
     ((section + "debugSaveCorruptedFiles").c_str(),
         po::value<bool>(&opts->debugSaveCorruptedFiles)
-        ->default_value(opts->debugSaveCorruptedFiles)
         ->implicit_value(!opts->debugSaveCorruptedFiles),
         "debugSaveCorruptedFiles")
-    ;
+
+    FILE_OPTIONS;
 }
 
 void optionsConfigCamera(
@@ -187,16 +163,13 @@ void optionsConfigCamera(
 {
     sanitizeSection(section);
     desc.add_options()
-    FILE_OPTIONS
 
     ((section + "maxTexelToPixelScale").c_str(),
-        po::value<double>(&opts->maxTexelToPixelScale)
-        ->default_value(opts->maxTexelToPixelScale),
+        po::value<double>(&opts->maxTexelToPixelScale),
         "Maximum ratio of texture details to the viewport resolution.")
 
     ((section + "traverseModeSurfaces").c_str(),
-        po::value<TraverseMode>(&opts->traverseModeSurfaces)
-        ->default_value(opts->traverseModeSurfaces),
+        po::value<TraverseMode>(&opts->traverseModeSurfaces),
         "Render traversal mode for surfaces:\n"
         "none\n"
         "flat\n"
@@ -206,8 +179,7 @@ void optionsConfigCamera(
         "fixed")
 
     ((section + "traverseModeGeodata").c_str(),
-        po::value<TraverseMode>(&opts->traverseModeGeodata)
-        ->default_value(opts->traverseModeGeodata),
+        po::value<TraverseMode>(&opts->traverseModeGeodata),
         "Render traversal mode for geodata:\n"
         "none\n"
         "flat\n"
@@ -217,15 +189,14 @@ void optionsConfigCamera(
         "fixed")
 
     ((section + "balancedGridLodOffset").c_str(),
-        po::value<uint32>(&opts->balancedGridLodOffset)
-        ->default_value(opts->balancedGridLodOffset),
+        po::value<uint32>(&opts->balancedGridLodOffset),
         "Coarser lod offset for grids for use with balanced traversal.")
 
     ((section + "balancedGridNeighborsDistance").c_str(),
-        po::value<uint32>(&opts->balancedGridNeighborsDistance)
-        ->default_value(opts->balancedGridNeighborsDistance),
+        po::value<uint32>(&opts->balancedGridNeighborsDistance),
         "Distance to neighbors for grids for use with balanced traversal.")
-    ;
+
+    FILE_OPTIONS;
 }
 
 void optionsConfigNavigation(
@@ -235,19 +206,16 @@ void optionsConfigNavigation(
 {
     sanitizeSection(section);
     desc.add_options()
-    FILE_OPTIONS
 
     ((section + "type").c_str(),
-        po::value<NavigationType>(&opts->type)
-        ->default_value(opts->type),
+        po::value<NavigationType>(&opts->type),
         "Responsiveness:\n"
         "instant\n"
         "quick\n"
         "flyOver")
 
     ((section + "mode").c_str(),
-        po::value<NavigationMode>(&opts->mode)
-        ->default_value(opts->mode),
+        po::value<NavigationMode>(&opts->mode),
         "Behavior:\n"
         "azimuthal\n"
         "free\n"
@@ -256,16 +224,15 @@ void optionsConfigNavigation(
 
     ((section + "enableNormalization").c_str(),
         po::value<bool>(&opts->enableNormalization)
-        ->default_value(opts->enableNormalization)
         ->implicit_value(!opts->enableNormalization),
         "Limits camera tilt and yaw.")
 
     ((section + "enableAltitudeCorrections").c_str(),
         po::value<bool>(&opts->enableAltitudeCorrections)
-        ->default_value(opts->enableAltitudeCorrections)
         ->implicit_value(!opts->enableAltitudeCorrections),
         "Vertically converges objective position towards ground.")
-    ;
+
+    FILE_OPTIONS;
 }
 
 void optionsConfigFetcherOptions(
@@ -275,39 +242,33 @@ void optionsConfigFetcherOptions(
 {
     sanitizeSection(section);
     desc.add_options()
-    FILE_OPTIONS
 
     ((section + "threads").c_str(),
-        po::value<uint32>(&opts->threads)
-        ->default_value(opts->threads),
+        po::value<uint32>(&opts->threads),
         "Number of threads created for the fetcher.")
 
     ((section + "maxHostConnections").c_str(),
-        po::value<uint32>(&opts->maxHostConnections)
-        ->default_value(opts->maxHostConnections),
+        po::value<uint32>(&opts->maxHostConnections),
         "Maximum concurrent connections to same host (per thread).")
 
     ((section + "maxTotalConnections").c_str(),
-        po::value<uint32>(&opts->maxTotalConnections)
-        ->default_value(opts->maxTotalConnections),
+        po::value<uint32>(&opts->maxTotalConnections),
         "Total limit of concurrent connections (per thread).")
 
     ((section + "maxCacheConections").c_str(),
-        po::value<uint32>(&opts->maxCacheConections)
-        ->default_value(opts->maxCacheConections),
+        po::value<uint32>(&opts->maxCacheConections),
         "Size of curl connection cache (per thread).")
 
     ((section + "pipelining").c_str(),
-        po::value<sint32>(&opts->pipelining)
-        ->default_value(opts->pipelining),
+        po::value<sint32>(&opts->pipelining),
         "HTTP pipelining mode.")
 
     ((section + "extraFileLog").c_str(),
         po::value<bool>(&opts->extraFileLog)
-        ->default_value(opts->extraFileLog)
         ->implicit_value(!opts->extraFileLog),
         "Produce separate log with downloads.")
-    ;
+
+    FILE_OPTIONS;
 }
 
 } // namespace vts

@@ -86,7 +86,7 @@ void Navigation::setPoint(const double point[3])
         assert(point[1] >= -90 && point[1] <= 90);
     }
     impl->setManual();
-    if (impl->options.navigationType == NavigationType::Instant)
+    if (impl->options.type == NavigationType::Instant)
         impl->lastPositionAltitude.reset();
     impl->targetPosition = rawToVec3(point);
 }

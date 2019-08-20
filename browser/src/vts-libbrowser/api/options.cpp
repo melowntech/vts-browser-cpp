@@ -28,6 +28,7 @@
 #include "../include/vts-browser/mapOptions.hpp"
 #include "../include/vts-browser/cameraOptions.hpp"
 #include "../include/vts-browser/navigationOptions.hpp"
+#include "../include/vts-browser/fetcher.hpp"
 #include "../utilities/detectLanguage.hpp"
 
 namespace vts
@@ -238,7 +239,7 @@ NavigationOptions::NavigationOptions() :
     inertiaRotate(0.9),
     viewExtentLimitScaleMin(0.00001175917), // 75 meters on earth
     viewExtentLimitScaleMax(2.35183443086), // 1.5e7 meters on earth
-    viewExtentThresholdScaleLow(0.03135779241), // 200 000 meters on earth
+    viewExtentThresholdScaleLow(0.1097522734), // 700 000 meters on earth
     viewExtentThresholdScaleHigh(0.20382565067), // 1 300 000 meters on earth
     tiltLimitAngleLow(-90),
     tiltLimitAngleHigh(-10),
@@ -248,10 +249,10 @@ NavigationOptions::NavigationOptions() :
     flyOverMotionChangeFraction(0.5),
     flyOverRotationChangeSpeed(0.5),
     lodSelectionSamplesForAltitude(8),
-    navigationType(NavigationType::Quick),
-    navigationMode(NavigationMode::Seamless),
-    cameraNormalization(true),
-    cameraAltitudeChanges(true),
+    type(NavigationType::Quick),
+    mode(NavigationMode::Seamless),
+    enableNormalization(true),
+    enableAltitudeCorrections(true),
     fpsCompensation(true),
     debugRenderObjectPosition(false),
     debugRenderTargetPosition(false),
@@ -286,10 +287,10 @@ void NavigationOptions::applyJson(const std::string &json)
     AJ(flyOverMotionChangeFraction, asDouble);
     AJ(flyOverRotationChangeSpeed, asDouble);
     AJ(lodSelectionSamplesForAltitude, asUInt);
-    AJE(navigationType, NavigationType);
-    AJE(navigationMode, NavigationMode);
-    AJ(cameraNormalization, asBool);
-    AJ(cameraAltitudeChanges, asBool);
+    AJE(type, NavigationType);
+    AJE(mode, NavigationMode);
+    AJ(enableNormalization, asBool);
+    AJ(enableAltitudeCorrections, asBool);
     AJ(fpsCompensation, asBool);
     AJ(debugRenderObjectPosition, asBool);
     AJ(debugRenderTargetPosition, asBool);
@@ -317,14 +318,56 @@ std::string NavigationOptions::toJson() const
     TJ(flyOverMotionChangeFraction, asDouble);
     TJ(flyOverRotationChangeSpeed, asDouble);
     TJ(lodSelectionSamplesForAltitude, asUInt);
-    TJE(navigationType, NavigationType);
-    TJE(navigationMode, NavigationMode);
-    TJ(cameraAltitudeChanges, asBool);
-    TJ(cameraNormalization, asBool);
+    TJE(type, NavigationType);
+    TJE(mode, NavigationMode);
+    TJ(enableAltitudeCorrections, asBool);
+    TJ(enableNormalization, asBool);
     TJ(fpsCompensation, asBool);
     TJ(debugRenderObjectPosition, asBool);
     TJ(debugRenderTargetPosition, asBool);
     TJ(debugRenderAltitudeSurrogates, asBool);
+    return jsonToString(v);
+}
+
+FetcherOptions::FetcherOptions()
+    : threads(1),
+    timeout(30000),
+    extraFileLog(false),
+    maxHostConnections(0),
+    maxTotalConnections(10),
+    maxCacheConections(0),
+    pipelining(2)
+{}
+
+FetcherOptions::FetcherOptions(const std::string &json)
+    : FetcherOptions()
+{
+    if (!json.empty())
+        applyJson(json);
+}
+
+void FetcherOptions::applyJson(const std::string &json)
+{
+    Json::Value v = stringToJson(json);
+    AJ(threads, asUInt);
+    AJ(timeout, asUInt);
+    AJ(extraFileLog, asBool);
+    AJ(maxHostConnections, asUInt);
+    AJ(maxTotalConnections, asUInt);
+    AJ(maxCacheConections, asUInt);
+    AJ(pipelining, asUInt);
+}
+
+std::string FetcherOptions::toJson() const
+{
+    Json::Value v;
+    TJ(threads, asUInt);
+    TJ(timeout, asUInt);
+    TJ(extraFileLog, asBool);
+    TJ(maxHostConnections, asUInt);
+    TJ(maxTotalConnections, asUInt);
+    TJ(maxCacheConections, asUInt);
+    TJ(pipelining, asUInt);
     return jsonToString(v);
 }
 

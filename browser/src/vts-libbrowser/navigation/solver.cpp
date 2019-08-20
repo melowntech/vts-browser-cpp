@@ -207,7 +207,7 @@ void solveNavigation(
         outViewExtent = inViewExtentCurrent;
         temporalNavigationState.reset();
     }
-    else switch (navOpts.navigationType)
+    else switch (navOpts.type)
     {
     case NavigationType::Instant:
         outHorizontalMove = inHorizontalDistance;

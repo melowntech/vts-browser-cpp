@@ -116,22 +116,6 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 "Save screenshot when it finishes "
                 "rendering the whole image."
             )
-            ("mapOptions",
-                po::value<std::string>()->notifier(
-                    [&](const std::string &name) {
-                        mapOptions.applyJson(
-                            vts::readLocalFileBuffer(name).str());
-                }),
-                "Path to additional JSON encoded map options."
-            )
-            ("createOptions",
-                po::value<std::string>()->notifier(
-                    [&](const std::string &name) {
-                        createOptions.applyJson(
-                            vts::readLocalFileBuffer(name).str());
-                }),
-                "Path to additional JSON encoded create options."
-            )
             ;
 
     po::positional_options_description popts;

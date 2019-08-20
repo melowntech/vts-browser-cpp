@@ -68,6 +68,16 @@ void sanitizeSection(std::string &s)
 
 } // namespace
 
+#define FILE_OPTIONS \
+    ((section + "file").c_str(), \
+        po::value<std::string>()->notifier( \
+            [&](const std::string &name) { \
+                opts->applyJson( \
+                    vts::readLocalFileBuffer(name).str()); \
+            }), \
+        "Path to file with additional JSON encoded options.")
+
+
 void optionsConfigLog(
         boost::program_options::options_description &desc,
         std::string section)
@@ -96,11 +106,12 @@ void optionsConfigLog(
 
 void optionsConfigMapCreate(
     boost::program_options::options_description &desc,
-    class MapCreateOptions *opts,
+    MapCreateOptions *opts,
     std::string section)
 {
     sanitizeSection(section);
     desc.add_options()
+    FILE_OPTIONS
 
     ((section + "clientId").c_str(),
         po::value<std::string>(&opts->clientId)
@@ -122,11 +133,12 @@ void optionsConfigMapCreate(
 
 void optionsConfigMapRuntime(
     boost::program_options::options_description &desc,
-    class MapRuntimeOptions *opts,
+    MapRuntimeOptions *opts,
     std::string section)
 {
     sanitizeSection(section);
     desc.add_options()
+    FILE_OPTIONS
 
     ((section + "renderTilesScale").c_str(),
         po::value<double>(&opts->renderTilesScale)
@@ -145,11 +157,6 @@ void optionsConfigMapRuntime(
         ->default_value(opts->maxConcurrentDownloads),
         "Maximum size of the queue for the resources to be downloaded.")
 
-    ((section + "maxResourceProcessesPerTick").c_str(),
-        po::value<uint32>(&opts->maxResourceProcessesPerTick)
-        ->default_value(opts->maxResourceProcessesPerTick),
-        "Maximum number of resources processed per dataTick.")
-
     ((section + "maxFetchRedirections").c_str(),
         po::value<uint32>(&opts->maxFetchRedirections)
         ->default_value(opts->maxFetchRedirections),
@@ -165,12 +172,6 @@ void optionsConfigMapRuntime(
         ->default_value(opts->fetchFirstRetryTimeOffset),
         "Delay in seconds for first resource download retry.")
 
-    ((section + "debugVirtualSurfaces").c_str(),
-        po::value<bool>(&opts->debugVirtualSurfaces)
-        ->default_value(opts->debugVirtualSurfaces)
-        ->implicit_value(!opts->debugVirtualSurfaces),
-        "debugVirtualSurfaces")
-
     ((section + "debugSaveCorruptedFiles").c_str(),
         po::value<bool>(&opts->debugSaveCorruptedFiles)
         ->default_value(opts->debugSaveCorruptedFiles)
@@ -181,112 +182,89 @@ void optionsConfigMapRuntime(
 
 void optionsConfigCamera(
     boost::program_options::options_description &desc,
-    class CameraOptions *opts,
+    CameraOptions *opts,
     std::string section)
 {
     sanitizeSection(section);
     desc.add_options()
+    FILE_OPTIONS
 
-        ((section + "maxTexelToPixelScale").c_str(),
-            po::value<double>(&opts->maxTexelToPixelScale)
-            ->default_value(opts->maxTexelToPixelScale),
-            "Maximum ratio of texture details to the viewport resolution.")
+    ((section + "maxTexelToPixelScale").c_str(),
+        po::value<double>(&opts->maxTexelToPixelScale)
+        ->default_value(opts->maxTexelToPixelScale),
+        "Maximum ratio of texture details to the viewport resolution.")
 
-        ((section + "traverseModeSurfaces").c_str(),
-            po::value<TraverseMode>(&opts->traverseModeSurfaces)
-            ->default_value(opts->traverseModeSurfaces),
-            "Render traversal mode for surfaces:\n"
-            "none\n"
-            "flat\n"
-            "stable\n"
-            "balanced\n"
-            "hierarchical\n"
-            "fixed")
+    ((section + "traverseModeSurfaces").c_str(),
+        po::value<TraverseMode>(&opts->traverseModeSurfaces)
+        ->default_value(opts->traverseModeSurfaces),
+        "Render traversal mode for surfaces:\n"
+        "none\n"
+        "flat\n"
+        "stable\n"
+        "balanced\n"
+        "hierarchical\n"
+        "fixed")
 
-        ((section + "traverseModeGeodata").c_str(),
-            po::value<TraverseMode>(&opts->traverseModeGeodata)
-            ->default_value(opts->traverseModeGeodata),
-            "Render traversal mode for geodata:\n"
-            "none\n"
-            "flat\n"
-            "stable\n"
-            "balanced\n"
-            "hierarchical\n"
-            "fixed")
+    ((section + "traverseModeGeodata").c_str(),
+        po::value<TraverseMode>(&opts->traverseModeGeodata)
+        ->default_value(opts->traverseModeGeodata),
+        "Render traversal mode for geodata:\n"
+        "none\n"
+        "flat\n"
+        "stable\n"
+        "balanced\n"
+        "hierarchical\n"
+        "fixed")
 
-        ((section + "balancedGridLodOffset").c_str(),
-            po::value<uint32>(&opts->balancedGridLodOffset)
-            ->default_value(opts->balancedGridLodOffset),
-            "Coarser lod offset for grids for use with balanced traversal.")
+    ((section + "balancedGridLodOffset").c_str(),
+        po::value<uint32>(&opts->balancedGridLodOffset)
+        ->default_value(opts->balancedGridLodOffset),
+        "Coarser lod offset for grids for use with balanced traversal.")
 
-        ((section + "balancedGridNeighborsDistance").c_str(),
-            po::value<uint32>(&opts->balancedGridNeighborsDistance)
-            ->default_value(opts->balancedGridNeighborsDistance),
-            "Distance to neighbors for grids for use with balanced traversal.")
-
-        ((section + "debugDetachedCamera").c_str(),
-            po::value<bool>(&opts->debugDetachedCamera)
-            ->default_value(opts->debugDetachedCamera)
-            ->implicit_value(!opts->debugDetachedCamera),
-            "debugDetachedCamera")
-
-        ((section + "debugFlatShading").c_str(),
-            po::value<bool>(&opts->debugFlatShading)
-            ->default_value(opts->debugFlatShading)
-            ->implicit_value(!opts->debugFlatShading),
-            "debugFlatShading")
-
-        ((section + "debugRenderSurrogates").c_str(),
-            po::value<bool>(&opts->debugRenderSurrogates)
-            ->default_value(opts->debugRenderSurrogates)
-            ->implicit_value(!opts->debugRenderSurrogates),
-            "debugRenderSurrogates")
-
-        ((section + "debugRenderMeshBoxes").c_str(),
-            po::value<bool>(&opts->debugRenderMeshBoxes)
-            ->default_value(opts->debugRenderMeshBoxes)
-            ->implicit_value(!opts->debugRenderMeshBoxes),
-            "debugRenderMeshBoxes")
-
-        ((section + "debugRenderTileBoxes").c_str(),
-            po::value<bool>(&opts->debugRenderTileBoxes)
-            ->default_value(opts->debugRenderTileBoxes)
-            ->implicit_value(!opts->debugRenderTileBoxes),
-            "debugRenderTileBoxes")
+    ((section + "balancedGridNeighborsDistance").c_str(),
+        po::value<uint32>(&opts->balancedGridNeighborsDistance)
+        ->default_value(opts->balancedGridNeighborsDistance),
+        "Distance to neighbors for grids for use with balanced traversal.")
     ;
 }
 
 void optionsConfigNavigation(
     boost::program_options::options_description &desc,
-    class NavigationOptions *opts,
+    NavigationOptions *opts,
     std::string section)
 {
     sanitizeSection(section);
     desc.add_options()
+    FILE_OPTIONS
 
-    ((section + "cameraNormalization").c_str(),
-        po::value<bool>(&opts->cameraNormalization)
-        ->default_value(opts->cameraNormalization)
-        ->implicit_value(!opts->cameraNormalization),
+    ((section + "type").c_str(),
+        po::value<NavigationType>(&opts->type)
+        ->default_value(opts->type),
+        "Responsiveness:\n"
+        "instant\n"
+        "quick\n"
+        "flyOver")
+
+    ((section + "mode").c_str(),
+        po::value<NavigationMode>(&opts->mode)
+        ->default_value(opts->mode),
+        "Behavior:\n"
+        "azimuthal\n"
+        "free\n"
+        "dynamic\n"
+        "seamless")
+
+    ((section + "enableNormalization").c_str(),
+        po::value<bool>(&opts->enableNormalization)
+        ->default_value(opts->enableNormalization)
+        ->implicit_value(!opts->enableNormalization),
         "Limits camera tilt and yaw.")
 
-    ((section + "cameraAltitudeChanges").c_str(),
-        po::value<bool>(&opts->cameraAltitudeChanges)
-        ->default_value(opts->cameraAltitudeChanges)
-        ->implicit_value(!opts->cameraAltitudeChanges),
+    ((section + "enableAltitudeCorrections").c_str(),
+        po::value<bool>(&opts->enableAltitudeCorrections)
+        ->default_value(opts->enableAltitudeCorrections)
+        ->implicit_value(!opts->enableAltitudeCorrections),
         "Vertically converges objective position towards ground.")
-
-    ((section + "debugRenderObjectPosition").c_str(),
-        po::value<bool>(&opts->debugRenderObjectPosition)
-        ->default_value(opts->debugRenderObjectPosition)
-        ->implicit_value(!opts->debugRenderObjectPosition),
-        "debugRenderObjectPosition")
-
-    ((section + "debugRenderTargetPosition").c_str(),
-        po::value<bool>(&opts->debugRenderTargetPosition)
-        ->default_value(opts->debugRenderTargetPosition)
-        ->implicit_value(!opts->debugRenderTargetPosition),
-        "debugRenderTargetPosition")
     ;
 }
 
@@ -297,6 +275,7 @@ void optionsConfigFetcherOptions(
 {
     sanitizeSection(section);
     desc.add_options()
+    FILE_OPTIONS
 
     ((section + "threads").c_str(),
         po::value<uint32>(&opts->threads)
@@ -330,14 +309,5 @@ void optionsConfigFetcherOptions(
         "Produce separate log with downloads.")
     ;
 }
-
-UTILITY_GENERATE_ENUM_IO(TraverseMode,
-                         ((None)("none"))
-                         ((Flat)("flat"))
-                         ((Stable)("stable"))
-                         ((Balanced)("balanced"))
-                         ((Hierarchical)("hierarchical"))
-                         ((Fixed)("fixed"))
-                         )
 
 } // namespace vts

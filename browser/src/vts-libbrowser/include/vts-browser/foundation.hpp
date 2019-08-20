@@ -126,6 +126,41 @@ enum class FreeLayerType
     MonolithicGeodata,
 };
 
+#ifdef UTILITY_GENERATE_ENUM_IO
+
+UTILITY_GENERATE_ENUM_IO(Srs,
+    ((Physical)("physical"))
+    ((Navigation)("navigation"))
+    ((Public)("public"))
+    ((Search)("search"))
+    ((Custom1)("custom1"))
+    ((Custom2)("custom2"))
+)
+
+UTILITY_GENERATE_ENUM_IO(NavigationType,
+    ((Instant)("instant"))
+    ((Quick)("quick"))
+    ((FlyOver)("flyOver"))
+)
+
+UTILITY_GENERATE_ENUM_IO(NavigationMode,
+    ((Azimuthal)("azimuthal"))
+    ((Free)("free"))
+    ((Dynamic)("dynamic"))
+    ((Seamless)("seamless"))
+)
+
+UTILITY_GENERATE_ENUM_IO(TraverseMode,
+    ((None)("none"))
+    ((Flat)("flat"))
+    ((Stable)("stable"))
+    ((Balanced)("balanced"))
+    ((Hierarchical)("hierarchical"))
+    ((Fixed)("fixed"))
+)
+
+#endif // UTILITY_GENERATE_ENUM_IO
+
 } // namespace vts
 
 #endif

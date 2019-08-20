@@ -241,7 +241,7 @@ bool MainWindow::processEvents()
             if (map->getMapconfigAvailable())
             {
                 navigation->setRotation({0,270,0});
-                navigation->options().navigationType
+                navigation->options().type
                         = vts::NavigationType::Quick;
                 navigation->resetNavigationMode();
             }
@@ -251,7 +251,7 @@ bool MainWindow::processEvents()
         if (event.type == SDL_MOUSEWHEEL)
         {
             navigation->zoom(event.wheel.y);
-            navigation->options().navigationType = vts::NavigationType::Quick;
+            navigation->options().type = vts::NavigationType::Quick;
         }
 
         // camera jump to double click
@@ -266,7 +266,7 @@ bool MainWindow::processEvents()
                 map->convert(posPhys.data(), posNav,
                              vts::Srs::Physical, vts::Srs::Navigation);
                 navigation->setPoint(posNav);
-                navigation->options().navigationType
+                navigation->options().type
                                 = vts::NavigationType::Quick;
             }
         }
@@ -293,12 +293,12 @@ bool MainWindow::processEvents()
             {
             case 1:
                 navigation->pan(p);
-                navigation->options().navigationType
+                navigation->options().type
                     = vts::NavigationType::Quick;
                 break;
             case 2:
                 navigation->rotate(p);
-                navigation->options().navigationType
+                navigation->options().type
                     = vts::NavigationType::Quick;
                 break;
             }
@@ -340,7 +340,7 @@ void MainWindow::run()
             try
             {
                 navigation->setPositionUrl(appOptions.initialPosition);
-                navigation->options().navigationType
+                navigation->options().type
                         = vts::NavigationType::Instant;
             }
             catch (...)

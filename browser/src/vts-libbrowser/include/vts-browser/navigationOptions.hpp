@@ -90,16 +90,16 @@ public:
     //   the altitude used to correct camera position
     uint32 lodSelectionSamplesForAltitude;
 
-    NavigationType navigationType;
-    NavigationMode navigationMode;
+    NavigationType type;
+    NavigationMode mode;
 
     // limits camera tilt and yaw
     // uses viewExtentThresholdScaleLow/High
     // applies tiltLimitAngleLow/High (and yaw limit)
-    bool cameraNormalization;
+    bool enableNormalization;
 
     // vertically converges objective position towards ground
-    bool cameraAltitudeChanges;
+    bool enableAltitudeCorrections;
 
     // makes the navigation react to user inputs more predictively
     //   at varying frame rates

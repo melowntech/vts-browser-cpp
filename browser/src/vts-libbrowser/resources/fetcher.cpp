@@ -31,31 +31,6 @@
 namespace vts
 {
 
-FetcherOptions::FetcherOptions()
-    : threads(1),
-      timeout(30000),
-      extraFileLog(false),
-      maxHostConnections(0),
-      maxTotalConnections(10),
-      maxCacheConections(0),
-      pipelining(2)
-{}
-
-FetcherOptions::FetcherOptions(const std::string &json)
-    : FetcherOptions()
-{
-    (void)json;
-    LOG(warn3) << "<FetcherOptions(const std::string &json)>"
-               << " is not yet implemented";
-}
-
-std::string FetcherOptions::toJson() const
-{
-    LOG(warn3) << "<FetcherOptions::toJson()>"
-               << " is not yet implemented";
-    return "";
-}
-
 Fetcher::~Fetcher()
 {}
 

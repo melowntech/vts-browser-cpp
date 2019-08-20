@@ -24,6 +24,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <boost/preprocessor/seq.hpp>
+#define GUI_ENUM_IT(R, DATA, ELEM) BOOST_PP_SEQ_ELEM(1, ELEM) ,
+#define UTILITY_GENERATE_ENUM_IO(NAME, PAIRS) \
+static const char *BOOST_PP_CAT(NAME, Names)[] = { \
+    BOOST_PP_SEQ_FOR_EACH(GUI_ENUM_IT, _, PAIRS) \
+};
+
 #include <cstring>
 #include <set>
 
@@ -78,44 +85,22 @@ void clipBoardCopy(nk_handle, const char *text, int len)
     SDL_SetClipboardText(buffer);
 }
 
-static const char *traverseModeNames[] = {
-    "None",
-    "Flat",
-    "Stable",
-    "Balanced",
-    "Hierarchical",
-    "Fixed",
-};
-
-static const char *navigationTypeNames[] = {
-    "Instant",
-    "Quick",
-    "FlyOver",
-};
-
-static const char *navigationModeNames[] = {
-    "Azimuthal",
-    "Free",
-    "Dynamic",
-    "Seamless",
-};
-
 static const char *lodBlendingModeNames[] = {
-    "Off",
-    "Basic",
-    "Precise",
+    "off",
+    "basic",
+    "precise",
 };
 
 static const char *geodataDebugNames[] = {
-    "Off",
-    "Importance",
-    "Rects",
+    "off",
+    "importance",
+    "rects",
 };
 
 static const char *fpsSlowdownNames[] = {
-    "Off",
-    "On",
-    "Periodic",
+    "off",
+    "on",
+    "periodic",
 };
 
 } // namespace
@@ -554,16 +539,16 @@ public:
                     // navigation type
                     nk_label(&ctx, "Nav. type:", NK_TEXT_LEFT);
                     if (nk_combo_begin_label(&ctx,
-                                 navigationTypeNames[(int)n.navigationType],
+                                 NavigationTypeNames[(int)n.type],
                                  nk_vec2(nk_widget_width(&ctx), 200)))
                     {
                         nk_layout_row_dynamic(&ctx, 16, 1);
-                        for (unsigned i = 0; i < sizeof(navigationTypeNames)
-                             / sizeof(navigationTypeNames[0]); i++)
+                        for (unsigned i = 0; i < sizeof(NavigationTypeNames)
+                             / sizeof(NavigationTypeNames[0]); i++)
                         {
                             if (nk_combo_item_label(&ctx,
-                                    navigationTypeNames[i], NK_TEXT_LEFT))
-                                n.navigationType = (NavigationType)i;
+                                    NavigationTypeNames[i], NK_TEXT_LEFT))
+                                n.type = (NavigationType)i;
                         }
                         nk_combo_end(&ctx);
                     }
@@ -571,16 +556,16 @@ public:
                     // navigation mode
                     nk_label(&ctx, "Nav. mode:", NK_TEXT_LEFT);
                     if (nk_combo_begin_label(&ctx,
-                                 navigationModeNames[(int)n.navigationMode],
+                                 NavigationModeNames[(int)n.mode],
                                  nk_vec2(nk_widget_width(&ctx), 200)))
                     {
                         nk_layout_row_dynamic(&ctx, 16, 1);
-                        for (unsigned i = 0; i < sizeof(navigationModeNames)
-                             / sizeof(navigationModeNames[0]); i++)
+                        for (unsigned i = 0; i < sizeof(NavigationModeNames)
+                             / sizeof(NavigationModeNames[0]); i++)
                         {
                             if (nk_combo_item_label(&ctx,
-                                        navigationModeNames[i],NK_TEXT_LEFT))
-                                n.navigationMode = (NavigationMode)i;
+                                        NavigationModeNames[i],NK_TEXT_LEFT))
+                                n.mode = (NavigationMode)i;
                         }
                         nk_combo_end(&ctx);
                     }
@@ -642,15 +627,15 @@ public:
                     // traverse mode (surfaces)
                     nk_label(&ctx, "Surfaces:", NK_TEXT_LEFT);
                     if (nk_combo_begin_label(&ctx,
-                             traverseModeNames[(int)c.traverseModeSurfaces],
+                             TraverseModeNames[(int)c.traverseModeSurfaces],
                              nk_vec2(nk_widget_width(&ctx), 200)))
                     {
                         nk_layout_row_dynamic(&ctx, 16, 1);
-                        for (unsigned i = 0; i < sizeof(traverseModeNames)
-                             / sizeof(traverseModeNames[0]); i++)
+                        for (unsigned i = 0; i < sizeof(TraverseModeNames)
+                             / sizeof(TraverseModeNames[0]); i++)
                         {
                             if (nk_combo_item_label(&ctx,
-                                    traverseModeNames[i],
+                                    TraverseModeNames[i],
                                     NK_TEXT_LEFT))
                                 c.traverseModeSurfaces = (TraverseMode)i;
                         }
@@ -661,15 +646,15 @@ public:
                     // traverse mode (geodata)
                     nk_label(&ctx, "Geodata:", NK_TEXT_LEFT);
                     if (nk_combo_begin_label(&ctx,
-                             traverseModeNames[(int)c.traverseModeGeodata],
+                             TraverseModeNames[(int)c.traverseModeGeodata],
                              nk_vec2(nk_widget_width(&ctx), 200)))
                     {
                         nk_layout_row_dynamic(&ctx, 16, 1);
-                        for (unsigned i = 0; i < sizeof(traverseModeNames)
-                             / sizeof(traverseModeNames[0]); i++)
+                        for (unsigned i = 0; i < sizeof(TraverseModeNames)
+                             / sizeof(TraverseModeNames[0]); i++)
                         {
                             if (nk_combo_item_label(&ctx,
-                                               traverseModeNames[i],
+                                               TraverseModeNames[i],
                                                NK_TEXT_LEFT))
                                 c.traverseModeGeodata = (TraverseMode)i;
                         }
@@ -898,9 +883,9 @@ public:
                     "geodata hysteresis", r.geodataHysteresis);
 
                 // enable camera normalization
-                n.cameraNormalization = nk_check_label(&ctx,
+                n.enableNormalization = nk_check_label(&ctx,
                                 "camera normalization",
-                                n.cameraNormalization);
+                                n.enableNormalization);
 
                 // camera zoom limit
                 {
@@ -1152,7 +1137,7 @@ public:
                     try
                     {
                         const char *text = SDL_GetClipboardText();
-                        window->navigation->options().navigationType
+                        window->navigation->options().type
                                 = vts::NavigationType::FlyOver;
                         window->navigation->setPositionUrl(text);
                     }
@@ -1220,7 +1205,7 @@ public:
                 nk_label(&ctx, "", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Reset altitude"))
                 {
-                    window->navigation->options().navigationType
+                    window->navigation->options().type
                             = vts::NavigationType::Quick;
                     window->navigation->resetAltitude();
                 }
@@ -1249,7 +1234,7 @@ public:
                 if (nk_button_label(&ctx, "Reset rotation"))
                 {
                     window->navigation->setRotation({0,270,0});
-                    window->navigation->options().navigationType
+                    window->navigation->options().type
                             = vts::NavigationType::Quick;
                     window->navigation->resetNavigationMode();
                 }
@@ -1327,7 +1312,7 @@ public:
                     300 * posAutoMotion * window->timingTotalFrame).data());
                 window->navigation->rotate({
                     300 * posAutoRotation * window->timingTotalFrame, 0, 0 });
-                window->navigation->options().navigationType
+                window->navigation->options().type
                         = vts::NavigationType::Quick;
                 nk_tree_pop(&ctx);
             }
@@ -1731,7 +1716,7 @@ public:
                         window->map->convert(n, n, Srs::Physical,
                                                  Srs::Navigation);
                         window->navigation->setPoint(n);
-                        window->navigation->options().navigationType
+                        window->navigation->options().type
                                 = vts::NavigationType::FlyOver;
                     }
                     sprintf(buffer, "%.8f", n[1]);
@@ -1866,7 +1851,7 @@ public:
                         window->navigation->resetAltitude();
                         window->navigation->resetNavigationMode();
                         window->navigation->setPoint(r.position);
-                        window->navigation->options().navigationType
+                        window->navigation->options().type
                                 = vts::NavigationType::FlyOver;
                     }
                 }

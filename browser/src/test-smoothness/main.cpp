@@ -127,12 +127,12 @@ int main(int, char *[])
 
     map->callbacks().mapconfigReady = []()
     {
-        nav->options().navigationType = vts::NavigationType::Instant;
+        nav->options().type = vts::NavigationType::Instant;
         nav->setPositionUrl(
             "obj,14.42865,50.09448,fixed,227.801"
             ",-149.862,-21.2,0,267.127,45");
         cam->renderUpdate(); // apply the position
-        nav->options().navigationType = vts::NavigationType::Quick;
+        nav->options().type = vts::NavigationType::Quick;
         map->callbacks().mapconfigReady = {};
     };
 

@@ -143,7 +143,7 @@ void NavigationImpl::rotate(vec3 value)
 
     if (camera->map->mapconfig->navigationSrsType()
             == vtslibs::registry::Srs::Type::geographic
-            && options.navigationMode == NavigationMode::Dynamic)
+            && options.mode == NavigationMode::Dynamic)
         mode = NavigationMode::Free;
 
     targetOrientation += value.cwiseProduct(vec3(0.2, -0.1, 0.2)
@@ -164,9 +164,9 @@ void NavigationImpl::zoom(double value)
 
 void NavigationImpl::resetNavigationMode()
 {
-    if (options.navigationMode == NavigationMode::Azimuthal
-        || options.navigationMode == NavigationMode::Free)
-        mode = options.navigationMode;
+    if (options.mode == NavigationMode::Azimuthal
+        || options.mode == NavigationMode::Free)
+        mode = options.mode;
     else
         mode = NavigationMode::Azimuthal;
 }
@@ -335,22 +335,22 @@ void NavigationImpl::updateNavigation(double elapsedTime)
     }
 
     // update navigation mode
-    switch (options.navigationMode)
+    switch (options.mode)
     {
     case NavigationMode::Azimuthal:
     case NavigationMode::Free:
-        mode = options.navigationMode;
+        mode = options.mode;
         break;
     case NavigationMode::Dynamic:
         if (map->mapconfig->navigationSrsType()
             == vtslibs::registry::Srs::Type::projected
-            || options.navigationType == NavigationType::FlyOver)
+            || options.type == NavigationType::FlyOver)
             mode = NavigationMode::Azimuthal;
         else if (std::abs(tp(1)) > options.azimuthalLatitudeThreshold - 1e-5)
             mode = NavigationMode::Free; // switch to free mode when too close to a pole
         break;
     case NavigationMode::Seamless:
-        if (options.navigationType == NavigationType::FlyOver)
+        if (options.type == NavigationType::FlyOver)
             mode = NavigationMode::Azimuthal;
         else
             mode = verticalExtent
@@ -364,7 +364,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
     assert(isNavigationModeValid());
 
     // limit zoom
-    if (options.cameraNormalization)
+    if (options.enableNormalization)
     {
         targetVerticalExtent = clamp(targetVerticalExtent,
             options.viewExtentLimitScaleMin * majorRadius,
@@ -388,8 +388,8 @@ void NavigationImpl::updateNavigation(double elapsedTime)
         tr[0] += autoRotation / 60; // nominal 60 fps
 
     // limit yaw for seamless navigation mode
-    if (options.cameraNormalization
-        && options.navigationMode == NavigationMode::Seamless
+    if (options.enableNormalization
+        && options.mode == NavigationMode::Seamless
         && mode == NavigationMode::Azimuthal
         && type == Type::objective)
         tr(0) = clamp(tr(0), -180 + 1e-7, 180 - 1e-7);
@@ -398,7 +398,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
 
     // camera normalization
     vec3 normalizedRotation = tr;
-    if (options.cameraNormalization
+    if (options.enableNormalization
         && type == Type::objective)
     {
         // limit tilt
@@ -422,9 +422,9 @@ void NavigationImpl::updateNavigation(double elapsedTime)
             f = smootherstep(f);
 
             // yaw limit
-            if (options.navigationMode == NavigationMode::Azimuthal)
+            if (options.mode == NavigationMode::Azimuthal)
                 yaw = 0;
-            else if (options.navigationMode == NavigationMode::Seamless)
+            else if (options.mode == NavigationMode::Seamless)
                 yaw = interpolate(yaw, 0, f);
 
             // tilt limit
@@ -584,7 +584,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
     p(2) += vertical2;
 
     // altitude corrections
-    if (options.cameraAltitudeChanges
+    if (options.enableAltitudeCorrections
         && !suspendAltitudeChange
         && type == Type::objective)
     {

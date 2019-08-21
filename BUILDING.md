@@ -39,7 +39,8 @@ sudo apt install \
     libgeographic-dev \
     libjsoncpp-dev \
     libsdl2-dev \
-    libfreetype6-dev
+    libfreetype6-dev \
+    libharfbuzz-dev
 ```
 
 Clone the git repository with all submodules.

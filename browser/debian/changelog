@@ -1,3 +1,10 @@
+vts-browser (0.21) melown-xenial; urgency=medium
+
+  * geodata icons
+  * fps compensation for navigation
+
+ -- Tomas Maly <tomas.maly@melown.com>  Wed, 21 Aug 2019 10:49:06 +0200
+
 vts-browser (0.20) melown-xenial; urgency=medium
 
   * geodata function trim

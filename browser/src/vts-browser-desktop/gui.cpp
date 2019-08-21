@@ -55,6 +55,7 @@ namespace
 
 std::string controlOptionsPath()
 {
+    (void)SrsNames;
     return "vts-browser-desktop.control-options.json";
 }
 

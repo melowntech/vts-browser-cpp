@@ -86,7 +86,7 @@ using namespace vts;
             {
                 CGPoint p = [recognizer translationInView:self.view];
                 navigation->pan({p.x * 1.5, p.y * 1.5, 0});
-                navigation->options().navigationType = vts::NavigationType::Quick;
+                navigation->options().type = vts::NavigationType::Quick;
             }
             [recognizer setTranslation:CGPoint() inView:self.view];
             fullscreenOverride = false;
@@ -105,7 +105,7 @@ using namespace vts;
         {
             CGPoint p = [recognizer translationInView:self.view];
             navigation->rotate({3 * p.x, 0, 0});
-            navigation->options().navigationType = vts::NavigationType::Quick;
+            navigation->options().type = vts::NavigationType::Quick;
             [recognizer setTranslation:CGPoint() inView:self.view];
             fullscreenOverride = false;
         } break;
@@ -123,7 +123,7 @@ using namespace vts;
         {
             CGPoint p = [recognizer translationInView:self.view];
             navigation->rotate({0, 3 * p.y, 0});
-            navigation->options().navigationType = vts::NavigationType::Quick;
+            navigation->options().type = vts::NavigationType::Quick;
             [recognizer setTranslation:CGPoint() inView:self.view];
             fullscreenOverride = false;
         } break;
@@ -141,7 +141,7 @@ using namespace vts;
         {
             CGPoint p = [recognizer translationInView:self.view];
             navigation->zoom(-0.05 * p.y);
-            navigation->options().navigationType = vts::NavigationType::Quick;
+            navigation->options().type = vts::NavigationType::Quick;
             [recognizer setTranslation:CGPoint() inView:self.view];
             fullscreenOverride = false;
         } break;
@@ -160,7 +160,7 @@ using namespace vts;
             if (!pitchMultiEnabled)
             {
                 navigation->rotate({-380 * recognizer.rotation, 0, 0});
-                navigation->options().navigationType = vts::NavigationType::Quick;
+                navigation->options().type = vts::NavigationType::Quick;
             }
             [recognizer setRotation:0];
             fullscreenOverride = false;
@@ -191,7 +191,7 @@ using namespace vts;
             {
                 CGPoint p = [recognizer translationInView:self.view];
                 navigation->rotate({0, 5 * p.y, 0});
-                navigation->options().navigationType = vts::NavigationType::Quick;
+                navigation->options().type = vts::NavigationType::Quick;
             }
             [recognizer setTranslation:CGPoint() inView:self.view];
             fullscreenOverride = false;
@@ -211,7 +211,7 @@ using namespace vts;
             if (!pitchMultiEnabled)
             {
                 navigation->zoom(6 * (recognizer.scale - 1));
-                navigation->options().navigationType = vts::NavigationType::Quick;
+                navigation->options().type = vts::NavigationType::Quick;
             }
             [recognizer setScale:1];
             fullscreenOverride = false;
@@ -228,7 +228,7 @@ using namespace vts;
         case UIGestureRecognizerStateBegan:
         {
             navigation->setRotation({0,270,0});
-            navigation->options().navigationType = vts::NavigationType::Quick;
+            navigation->options().type = vts::NavigationType::Quick;
             navigation->resetNavigationMode();
             fullscreenOverride = false;
         } break;
@@ -278,7 +278,7 @@ using namespace vts;
                 double speed = 10;
                 CGPoint p = [recognizer translationInView:self.view];
                 navigation->rotate({p.x * speed, p.y * speed, 0});
-                navigation->options().navigationType = vts::NavigationType::Quick;
+                navigation->options().type = vts::NavigationType::Quick;
             }
             [recognizer setTranslation:CGPoint() inView:self.view];
             fullscreenOverride = false;
@@ -555,7 +555,7 @@ using namespace vts;
             map->convert(posWorld.data(), posNav,
                          Srs::Physical, Srs::Navigation);
             navigation->setPoint(posNav);
-            navigation->options().navigationType = vts::NavigationType::Quick;
+            navigation->options().type = vts::NavigationType::Quick;
         }
         gotoPoint(0) = std::numeric_limits<double>::quiet_NaN();
         glBindFramebuffer(GL_FRAMEBUFFER, ro.targetFrameBuffer);

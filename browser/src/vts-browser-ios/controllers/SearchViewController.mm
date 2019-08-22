@@ -109,7 +109,7 @@
     navigation->setRotation({0,270,0});
     navigation->resetAltitude();
     navigation->resetNavigationMode();
-    navigation->options().navigationType = vts::NavigationType::FlyOver;
+    navigation->options().type = vts::NavigationType::FlyOver;
     navigation->setPoint(item.position);
     [self.navigationController popViewControllerAnimated:YES];
 }

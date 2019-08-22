@@ -86,7 +86,7 @@ public:
 
 // options of the map which may be changed anytime
 // (although, some of the options may take effect slowly
-//    as some internal caches are beeing rebuild)
+//    as some internal caches are being rebuild)
 class VTS_API MapRuntimeOptions
 {
 public:

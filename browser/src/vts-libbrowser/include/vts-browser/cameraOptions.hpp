@@ -44,15 +44,15 @@ public:
 
     // maximum ratio of texture details to the viewport resolution
     // increasing this ratio yealds less detailed map
-    //   but reduces memory usage and network bandwith
+    //   but reduces memory usage and network bandwidth
     double maxTexelToPixelScale;
 
     // nodes this far from the camera frustum will still be included for render
     // this is useful to include shadow casters outside camera frustum
     double cullingOffsetDistance;
 
-    // maximum distance of meshes emited for fixed traversal mode
-    // defined in physical length units (metres)
+    // maximum distance of meshes emitted for fixed traversal mode
+    // defined in physical length units (meters)
     double fixedTraversalDistance;
 
     // desired lod used with fixed traversal mode
@@ -69,7 +69,7 @@ public:
     // etc.
     uint32 balancedGridNeighborsDistance;
 
-    // enable blending lods to prevend lod popping
+    // enable blending lods to prevent lod popping
     // 0: disable
     // 1: enable, simple
     // 2: enable, detect draws near edges

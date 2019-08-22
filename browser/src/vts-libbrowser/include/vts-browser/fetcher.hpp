@@ -121,7 +121,7 @@ public:
     // the curl options are applied to each thread individually
     uint32 threads;
 
-    // timeout for each download, in miliseconds
+    // timeout for each download, in milliseconds
     sint32 timeout;
 
     // create extra file with log entry for each download

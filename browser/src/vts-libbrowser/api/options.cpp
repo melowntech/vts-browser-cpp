@@ -74,6 +74,7 @@ void MapCreateOptions::applyJson(const std::string &json)
     AJ(hashCachePaths, asBool);
     AJ(searchUrlFallbackOutsideEarth, asBool);
     AJ(browserOptionsSearchUrls, asBool);
+    AJ(atmosphereDensityTexture, asBool);
 }
 
 std::string MapCreateOptions::toJson() const
@@ -90,6 +91,7 @@ std::string MapCreateOptions::toJson() const
     TJ(hashCachePaths, asBool);
     TJ(searchUrlFallbackOutsideEarth, asBool);
     TJ(browserOptionsSearchUrls, asBool);
+    TJ(atmosphereDensityTexture, asBool);
     return jsonToString(v);
 }
 
@@ -330,8 +332,8 @@ std::string NavigationOptions::toJson() const
     return jsonToString(v);
 }
 
-FetcherOptions::FetcherOptions()
-    : threads(1),
+FetcherOptions::FetcherOptions() :
+    threads(1),
     timeout(30000),
     extraFileLog(false),
     maxHostConnections(0),

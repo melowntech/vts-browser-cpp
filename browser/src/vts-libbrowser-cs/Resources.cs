@@ -83,9 +83,11 @@ namespace vts
         public FilterMode filterMode;
         public WrapMode wrapMode;
         public byte[] data;
+        public string id;
 
         public void Load(IntPtr handle)
         {
+            id = Util.CheckString(BrowserInterop.vtsResourceGetId(handle));
             BrowserInterop.vtsTextureGetResolution(handle, ref width, ref height, ref components);
             Util.CheckInterop();
             type = (GpuType)BrowserInterop.vtsTextureGetType(handle);
@@ -121,9 +123,11 @@ namespace vts
         public uint indicesCount;
         public byte[] vertices;
         public ushort[] indices;
+        public string id;
 
         public void Load(IntPtr handle)
         {
+            id = Util.CheckString(BrowserInterop.vtsResourceGetId(handle));
             faceMode = (FaceMode)BrowserInterop.vtsMeshGetFaceMode(handle);
             Util.CheckInterop();
             IntPtr bufPtr = IntPtr.Zero;

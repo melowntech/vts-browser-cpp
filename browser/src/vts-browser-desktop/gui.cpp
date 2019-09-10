@@ -482,10 +482,6 @@ public:
 
                 nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
 
-                // fps compensation
-                n.fpsCompensation = nk_check_label(&ctx, "FPS compensation",
-                    n.fpsCompensation);
-
                 // save
                 if (nk_button_label(&ctx, "Save"))
                 {
@@ -784,47 +780,47 @@ public:
 
                 // render atmosphere
                 r.renderAtmosphere = nk_check_label(&ctx,
-                    "atmosphere", r.renderAtmosphere);
+                    "Atmosphere", r.renderAtmosphere);
 
                 // render mesh boxes
                 c.debugRenderMeshBoxes = nk_check_label(&ctx,
-                    "mesh boxes", c.debugRenderMeshBoxes);
+                    "Mesh boxes", c.debugRenderMeshBoxes);
 
                 // render tile boxes
                 c.debugRenderTileBoxes = nk_check_label(&ctx,
-                    "tile boxes", c.debugRenderTileBoxes);
+                    "Tile boxes", c.debugRenderTileBoxes);
 
                 // render subtile boxes
                 c.debugRenderSubtileBoxes = nk_check_label(&ctx,
-                    "subtile boxes", c.debugRenderSubtileBoxes);
+                    "Subtile boxes", c.debugRenderSubtileBoxes);
 
                 // render surrogates
                 c.debugRenderSurrogates = nk_check_label(&ctx,
-                    "surrogates", c.debugRenderSurrogates);
+                    "Surrogates", c.debugRenderSurrogates);
 
                 // render objective position
                 n.debugRenderObjectPosition = nk_check_label(&ctx,
-                    "objective position", n.debugRenderObjectPosition);
+                    "Objective position", n.debugRenderObjectPosition);
 
                 // render target position
                 n.debugRenderTargetPosition = nk_check_label(&ctx,
-                    "target position", n.debugRenderTargetPosition);
+                    "Target position", n.debugRenderTargetPosition);
 
                 // altitude surrogates
                 n.debugRenderAltitudeSurrogates = nk_check_label(&ctx,
-                    "altitude surrogates", n.debugRenderAltitudeSurrogates);
+                    "Altitude surrogates", n.debugRenderAltitudeSurrogates);
 
                 // flat shading
                 c.debugFlatShading = nk_check_label(&ctx,
-                    "flat shading", c.debugFlatShading);
+                    "Flat shading", c.debugFlatShading);
 
                 // polygon edges
                 r.renderPolygonEdges = nk_check_label(&ctx,
-                    "edges", r.renderPolygonEdges);
+                    "Edges", r.renderPolygonEdges);
 
                 // render compas
                 nk_checkbox_label(&ctx,
-                    "compas", &a.renderCompas);
+                    "Compas", &a.renderCompas);
 
                 // end group
                 nk_tree_pop(&ctx);
@@ -881,11 +877,19 @@ public:
 
                 // geodata hysteresis
                 r.geodataHysteresis = nk_check_label(&ctx,
-                    "geodata hysteresis", r.geodataHysteresis);
+                    "Geodata hysteresis", r.geodataHysteresis);
+
+                // fps compensation
+                n.fpsCompensation = nk_check_label(&ctx, "FPS compensation",
+                    n.fpsCompensation);
+
+                // altitude corrections
+                n.enableAltitudeCorrections = nk_check_label(&ctx,
+                    "Altitude corrections", n.enableAltitudeCorrections);
 
                 // enable camera normalization
                 n.enableNormalization = nk_check_label(&ctx,
-                                "camera normalization",
+                                "Camera normalization",
                                 n.enableNormalization);
 
                 // camera zoom limit
@@ -893,7 +897,7 @@ public:
                     int e = viewExtentLimitScaleMax
                             == std::numeric_limits<double>::infinity();
                     int ePrev = e;
-                    nk_checkbox_label(&ctx, "zoom limit", &e);
+                    nk_checkbox_label(&ctx, "Zoom limit", &e);
                     if (e != ePrev)
                     {
                         std::swap(viewExtentLimitScaleMin,
@@ -905,7 +909,7 @@ public:
 
                 // detached camera
                 c.debugDetachedCamera = nk_check_label(&ctx,
-                                "detached camera", c.debugDetachedCamera);
+                                "Detached camera", c.debugDetachedCamera);
 
                 // virtual surfaces
                 {
@@ -919,13 +923,13 @@ public:
 
                 // coarseness disks
                 mr.debugCoarsenessDisks = nk_check_label(&ctx,
-                    "coarseness disks", mr.debugCoarsenessDisks);
+                    "Coarseness disks", mr.debugCoarsenessDisks);
 
                 // geodata validation
                 {
                     bool old = mr.debugValidateGeodataStyles;
                     mr.debugValidateGeodataStyles = nk_check_label(&ctx,
-                            "validate geodata styles",
+                            "Validate geodata styles",
                             mr.debugValidateGeodataStyles);
                     if (old != mr.debugValidateGeodataStyles)
                         window->map->purgeViewCache();
@@ -1303,12 +1307,12 @@ public:
                 for (int i = 0; i < 3; i++)
                 {
                     nk_label(&ctx, i == 0 ? "Move:" : "", NK_TEXT_LEFT);
-                    posAutoMotion[i] = nk_slide_float(&ctx, -1,
-                                                posAutoMotion[i], 1, 0.05);
+                    posAutoMotion[i] = nk_slide_float(&ctx, -2,
+                                                posAutoMotion[i], 2, 0.05);
                 }
                 nk_label(&ctx, "Rotate:", NK_TEXT_LEFT);
-                posAutoRotation = nk_slide_float(&ctx, -1,
-                                posAutoRotation, 1, 0.05);
+                posAutoRotation = nk_slide_float(&ctx, -0.5,
+                                posAutoRotation, 0.5, 0.02);
                 window->navigation->pan(vec3(
                     300 * posAutoMotion * window->timingTotalFrame).data());
                 window->navigation->rotate({
@@ -1912,10 +1916,9 @@ public:
 
     void render(int width, int height)
     {
-        if (hideTheGui)
-            return;
         prepare(width, height);
-        dispatch(width, height);
+        if (!hideTheGui)
+            dispatch(width, height);
     }
 
     static const int MaxSearchTextLength = 200;

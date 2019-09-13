@@ -38,19 +38,19 @@ namespace vts
 class VTS_API MapconfigException : public std::runtime_error
 {
 public:
-    MapconfigException(const std::string &what_arg);
+    explicit MapconfigException(const std::string &what_arg);
 };
 
 class VTS_API AuthException : public std::runtime_error
 {
 public:
-    AuthException(const std::string &what_arg);
+    explicit AuthException(const std::string &what_arg);
 };
 
 class VTS_API GeodataValidationException : public std::runtime_error
 {
 public:
-    GeodataValidationException(const std::string &what_arg);
+    explicit GeodataValidationException(const std::string &what_arg);
 };
 
 } // namespace vts

@@ -37,6 +37,7 @@
 #include "../coordsManip.hpp"
 #include "../credits.hpp"
 #include "../geodata.hpp"
+#include "../position.hpp"
 
 namespace vts
 {
@@ -189,6 +190,13 @@ bool Map::getMapProjected() const
         return impl->mapconfig->navigationSrsType()
             == vtslibs::registry::Srs::Type::projected;
     return false;
+}
+
+Position Map::getMapDefaultPosition() const
+{
+    if (getMapconfigAvailable())
+        return p2p(impl->mapconfig->position);
+    return {};
 }
 
 bool Map::getMapRenderComplete() const

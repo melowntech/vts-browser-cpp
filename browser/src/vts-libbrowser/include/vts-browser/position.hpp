@@ -24,44 +24,26 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JSON_HPP_sgf56489dh4d69
-#define JSON_HPP_sgf56489dh4d69
+#ifndef POSITION_HPP_yxdr4h8
+#define POSITION_HPP_yxdr4h8
 
-#include <jsoncpp/json.hpp>
-#include <sstream>
+#include <string>
+
+#include "positionCommon.h"
 
 namespace vts
 {
 
-Json::Value stringToJson(const std::string &s);
-std::string jsonToString(const Json::Value &value);
-
-// json to enum
-template<class T>
-T jToE(const Json::Value &j)
+class VTS_API Position : public vtsCPositionBase
 {
-    std::string s = j.asString();
-    T e;
-    std::istringstream ss(s);
-    ss >> e;
-    return e;
-}
-
-// enum to json
-template<class T>
-Json::Value eToJ(T e)
-{
-    std::ostringstream ss;
-    ss << e;
-    std::string s = ss.str();
-    return s;
-}
+public:
+    Position();
+    explicit Position(const std::string &json);
+    explicit Position(const std::string &url, int overloadTag);
+    std::string toJson() const;
+    std::string toUrl() const;
+};
 
 } // namespace vts
-
-#define TJ(NAME, AS) v[#NAME] = NAME ;
-#define AJ(NAME, AS) if (v.isMember(#NAME)) NAME = v[#NAME].AS();
-#define TJE(NAME, TYPE) v[#NAME] = eToJ<TYPE>(NAME);
-#define AJE(NAME, TYPE) if (v.isMember(#NAME)) { NAME = jToE<TYPE>(v[#NAME]); }
 
 #endif

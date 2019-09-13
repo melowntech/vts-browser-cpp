@@ -41,11 +41,12 @@ class CameraImpl;
 class Camera;
 class NavigationOptions;
 class NavigationImpl;
+class Position;
 
 class VTS_API Navigation
 {
 public:
-    Navigation(CameraImpl *cam);
+    explicit Navigation(CameraImpl *cam);
 
     void pan(const double value[3]);
     void pan(const std::array<double, 3> &lst);
@@ -67,8 +68,7 @@ public:
     void setViewExtent(double viewExtent);
     void setFov(double fov);
     void setAutoRotation(double value);
-    void setPositionJson(const std::string &position);
-    void setPositionUrl(const std::string &position);
+    void setPosition(const Position &position);
 
     bool getSubjective() const;
     void getPoint(double point[3]) const;
@@ -76,8 +76,7 @@ public:
     double getViewExtent() const;
     double getFov() const;
     double getAutoRotation() const;
-    std::string getPositionJson() const;
-    std::string getPositionUrl() const;
+    Position getPosition() const;
 
     NavigationOptions &options();
     Camera *camera();

@@ -35,7 +35,7 @@ extern "C" {
 
 // creation and destruction
 VTS_API vtsHNavigation vtsNavigationCreate(vtsHCamera cam);
-VTS_API void vtsNavigationDestroy(vtsHNavigation map);
+VTS_API void vtsNavigationDestroy(vtsHNavigation nav);
 
 // navigation
 VTS_API void vtsNavigationPan(vtsHNavigation nav, const double value[3]);
@@ -46,19 +46,17 @@ VTS_API void vtsNavigationResetNavigationMode(vtsHNavigation nav);
 
 // setters
 VTS_API void vtsNavigationSetSubjective(vtsHNavigation nav,
-                    bool subjective, bool convert);
+    bool subjective, bool convert);
 VTS_API void vtsNavigationSetPoint(vtsHNavigation nav,
-                    const double point[3]);
+    const double point[3]);
 VTS_API void vtsNavigationSetRotation(vtsHNavigation nav,
-                    const double point[3]);
+    const double point[3]);
 VTS_API void vtsNavigationSetViewExtent(vtsHNavigation nav,
-                    double viewExtent);
+    double viewExtent);
 VTS_API void vtsNavigationSetFov(vtsHNavigation nav, double fov);
 VTS_API void vtsNavigationSetAutoRotation(vtsHNavigation nav, double value);
-VTS_API void vtsNavigationSetPositionJson(vtsHNavigation nav,
-                    const char *position);
-VTS_API void vtsNavigationSetPositionUrl(vtsHNavigation nav,
-                    const char *position);
+VTS_API void vtsNavigationSetPosition(vtsHNavigation nav,
+    vtsHPosition position);
 
 // getters
 VTS_API bool vtsNavigationGetSubjective(vtsHNavigation nav);
@@ -67,8 +65,8 @@ VTS_API void vtsNavigationGetRotation(vtsHNavigation nav, double rot[3]);
 VTS_API double vtsNavigationGetViewExtent(vtsHNavigation nav);
 VTS_API double vtsNavigationGetFov(vtsHNavigation nav);
 VTS_API double vtsNavigationGetAutoRotation(vtsHNavigation nav);
-VTS_API const char *vtsNavigationGetPositionUrl(vtsHNavigation nav);
-VTS_API const char *vtsNavigationGetPositionJson(vtsHNavigation nav);
+VTS_API void vtsNavigationGetPosition(vtsHNavigation nav,
+    vtsHPosition position);
 
 // options
 VTS_API const char *vtsNavigationGetOptions(vtsHNavigation nav);

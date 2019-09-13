@@ -101,10 +101,6 @@ else()
         # two cameras
         message(STATUS "including test-two-cameras")
         add_subdirectory(src/test-two-cameras)
-
-        # two cameras
-        message(STATUS "including test-smoothness")
-        add_subdirectory(src/test-smoothness)
     else()
         message(WARNING "SDL was not found, many example applications will be skipped")
     endif()

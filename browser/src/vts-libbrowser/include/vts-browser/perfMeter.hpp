@@ -33,7 +33,7 @@ struct perfMeter
 {
     LARGE_INTEGER samp;
     const char *name;
-    perfMeter(const char *name) : name(name)
+    explicit perfMeter(const char *name) : name(name)
     {
         QueryPerformanceCounter(&samp);
     }

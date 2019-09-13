@@ -81,7 +81,7 @@ public:
         std::map<std::string, std::string> headers;
         ResourceType resourceType;
 
-        Query(const std::string &url, ResourceType resourceType);
+        explicit Query(const std::string &url, ResourceType resourceType);
     };
 
     struct VTS_API Reply
@@ -104,8 +104,8 @@ public:
     Query query;
     Reply reply;
 
-    FetchTask(const Query &query);
-    FetchTask(const std::string &url, ResourceType resourceType);
+    explicit FetchTask(const Query &query);
+    explicit FetchTask(const std::string &url, ResourceType resourceType);
     virtual ~FetchTask();
     virtual void fetchDone() = 0;
 };
@@ -114,7 +114,7 @@ class VTS_API FetcherOptions
 {
 public:
     FetcherOptions();
-    FetcherOptions(const std::string &json);
+    explicit FetcherOptions(const std::string &json);
     void applyJson(const std::string &json);
     std::string toJson() const;
 

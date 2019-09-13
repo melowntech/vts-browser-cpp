@@ -40,6 +40,7 @@ static const char *BOOST_PP_CAT(NAME, Names)[] = { \
 #include <vts-browser/view.hpp>
 #include <vts-browser/search.hpp>
 #include <vts-browser/celestial.hpp>
+#include <vts-browser/position.hpp>
 
 #include <SDL2/SDL.h>
 
@@ -1144,7 +1145,8 @@ public:
                         const char *text = SDL_GetClipboardText();
                         window->navigation->options().type
                                 = vts::NavigationType::FlyOver;
-                        window->navigation->setPositionUrl(text);
+                        window->navigation->setPosition(
+                            vts::Position(text, 1));
                     }
                     catch(...)
                     {
@@ -1274,7 +1276,7 @@ public:
                 nk_label(&ctx, "Output:", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Copy to clipboard"))
                     SDL_SetClipboardText(
-                            window->navigation->getPositionUrl().c_str());
+                        window->navigation->getPosition().toUrl().c_str());
             }
 
             // camera

@@ -47,14 +47,15 @@ class MapCelestialBody;
 class MapView;
 class SearchTask;
 class MapImpl;
+class Position;
 
 // fundamental class which orchestrates all the vts tasks
 class VTS_API Map
 {
 public:
     Map();
-    Map(const MapCreateOptions &options);
-    Map(const MapCreateOptions &options,
+    explicit Map(const MapCreateOptions &options);
+    explicit Map(const MapCreateOptions &options,
         const std::shared_ptr<Fetcher> &fetcher);
     ~Map();
 
@@ -80,14 +81,16 @@ public:
     // some other functions will not work until this returns true
     bool getMapconfigReady() const;
 
-    bool getMapProjected() const;
-
     // returns whether the map has all resources needed for complete
     //   render
     bool getMapRenderComplete() const;
 
     // returns estimation of progress till complete render
     double getMapRenderProgress() const;
+
+    bool getMapProjected() const;
+
+    Position getMapDefaultPosition() const;
 
     void dataInitialize();
     // dataTick does at most MapOptions.maxResourceProcessesPerTick

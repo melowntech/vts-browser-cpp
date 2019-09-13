@@ -593,7 +593,7 @@ bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
             || features.first == Validity::Indeterminate)
         return false;
 
-    std::shared_ptr<GeodataTile> geo = map->getGeodata(geoName + "#$!tile");
+    std::shared_ptr<GeodataTile> geo = map->getGeodata(geoName + "#tile");
     geo->updatePriority(trav->priority);
     geo->update(style.second, features.second,
         map->mapconfig->browserOptions.value,

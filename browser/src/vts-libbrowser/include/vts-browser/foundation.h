@@ -57,6 +57,7 @@ typedef struct vtsCResource *vtsHResource;
 typedef struct vtsCCamera *vtsHCamera;
 typedef struct vtsCNavigation *vtsHNavigation;
 typedef struct vtsCSearch *vtsHSearch;
+typedef struct vtsCPositionBase *vtsHPosition;
 
 #ifdef __cplusplus
 } // extern C

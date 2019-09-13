@@ -27,6 +27,7 @@
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace vts
 {
@@ -93,13 +94,6 @@ namespace vts
             return res;
         }
 
-        public bool GetProjected()
-        {
-            bool res = BrowserInterop.vtsMapGetProjected(Handle);
-            Util.CheckInterop();
-            return res;
-        }
-
         public bool GetMapRenderComplete()
         {
             bool res = BrowserInterop.vtsMapGetRenderComplete(Handle);
@@ -112,6 +106,24 @@ namespace vts
             double res = BrowserInterop.vtsMapGetRenderProgress(Handle);
             Util.CheckInterop();
             return res;
+        }
+
+        public bool GetProjected()
+        {
+            bool res = BrowserInterop.vtsMapGetProjected(Handle);
+            Util.CheckInterop();
+            return res;
+        }
+
+        public Position GetDefaultPosition()
+        {
+            Position p = new Position();
+            IntPtr i = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(PositionBase)));
+            BrowserInterop.vtsMapGetDefaultPosition(Handle, i);
+            p.data = (PositionBase)Marshal.PtrToStructure(i, typeof(PositionBase));
+            Marshal.FreeHGlobal(i);
+            Util.CheckInterop();
+            return p;
         }
 
         public void DataInitialize()

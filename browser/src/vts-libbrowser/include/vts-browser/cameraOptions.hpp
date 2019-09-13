@@ -38,7 +38,7 @@ class VTS_API CameraOptions
 {
 public:
     CameraOptions();
-    CameraOptions(const std::string &json);
+    explicit CameraOptions(const std::string &json);
     void applyJson(const std::string &json);
     std::string toJson() const;
 

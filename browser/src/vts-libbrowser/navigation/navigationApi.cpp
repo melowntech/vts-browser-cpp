@@ -24,18 +24,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vts-libs/registry/json.hpp>
-#include <vts-libs/registry/io.hpp>
-#include <boost/lexical_cast.hpp>
-
 #include "../include/vts-browser/camera.hpp"
 #include "../include/vts-browser/navigation.hpp"
+#include "../include/vts-browser/position.hpp"
 
-#include "../utilities/json.hpp"
 #include "../navigation.hpp"
 #include "../camera.hpp"
 #include "../mapConfig.hpp"
 #include "../map.hpp"
+#include "../position.hpp"
 
 namespace vts
 {
@@ -140,6 +137,16 @@ void Navigation::setAutoRotation(double value)
     impl->suspendAltitudeChange = true;
 }
 
+void Navigation::setPosition(const Position &p)
+{
+    if (!impl->camera->map->mapconfigAvailable)
+    {
+        LOGTHROW(err4, std::logic_error)
+            << "Map is not yet available.";
+    }
+    impl->setPosition(p2p(p));
+}
+
 void Navigation::zoom(double value)
 {
     if (!impl->camera->map->mapconfigReady)
@@ -233,6 +240,13 @@ double Navigation::getAutoRotation() const
     return impl->autoRotation;
 }
 
+Position Navigation::getPosition() const
+{
+    if (!impl->camera->map->mapconfigAvailable)
+        return {};
+    return p2p(impl->getPosition());
+}
+
 double Navigation::getViewExtent() const
 {
     if (!impl->camera->map->mapconfigAvailable)
@@ -252,54 +266,6 @@ bool Navigation::getSubjective() const
     if (!impl->camera->map->mapconfigAvailable)
         return false;
     return impl->type == NavigationImpl::Type::subjective;
-}
-
-std::string Navigation::getPositionJson() const
-{
-    if (!impl->camera->map->mapconfigAvailable)
-        return "";
-    return jsonToString(vtslibs::registry::asJson(impl->getPosition()));
-}
-
-std::string Navigation::getPositionUrl() const
-{
-    if (!impl->camera->map->mapconfigAvailable)
-        return "";
-    std::ostringstream ss;
-    ss << std::fixed << std::setprecision(10);
-    ss << impl->getPosition();
-    return ss.str();
-}
-
-void Navigation::setPositionJson(const std::string &position)
-{
-    if (!impl->camera->map->mapconfigAvailable)
-    {
-        LOGTHROW(err4, std::logic_error)
-                << "Map is not yet available.";
-    }
-    Json::Value val = stringToJson(position);
-    auto pos = vtslibs::registry::positionFromJson(val);
-    impl->setPosition(pos);
-}
-
-void Navigation::setPositionUrl(const std::string &position)
-{
-    if (!impl->camera->map->mapconfigAvailable)
-    {
-        LOGTHROW(err4, std::logic_error)
-                << "Map is not yet available.";
-    }
-    vtslibs::registry::Position pos;
-    try
-    {
-        pos = boost::lexical_cast<vtslibs::registry::Position>(position);
-    }
-    catch(...)
-    {
-        LOGTHROW(err2, std::runtime_error) << "Invalid position from url.";
-    }
-    impl->setPosition(pos);
 }
 
 NavigationOptions &Navigation::options()

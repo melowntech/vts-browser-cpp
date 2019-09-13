@@ -38,7 +38,7 @@ class VTS_API NavigationOptions
 {
 public:
     NavigationOptions();
-    NavigationOptions(const std::string &json);
+    explicit NavigationOptions(const std::string &json);
     void applyJson(const std::string &json);
     std::string toJson() const;
 

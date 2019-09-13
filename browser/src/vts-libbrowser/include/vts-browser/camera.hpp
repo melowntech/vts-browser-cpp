@@ -47,7 +47,7 @@ class CameraImpl;
 class VTS_API Camera
 {
 public:
-    Camera(MapImpl *map);
+    explicit Camera(MapImpl *map);
 
     void setViewportSize(uint32 width, uint32 height);
     void setView(const double eye[3], const double target[3],

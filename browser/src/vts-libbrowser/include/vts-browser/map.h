@@ -42,16 +42,19 @@ VTS_API void vtsMapSetCustomData(vtsHMap map, void *data);
 VTS_API void *vtsMapGetCustomData(vtsHMap map);
 
 // config path
-VTS_API void vtsMapSetConfigPaths(vtsHMap map, const char *mapconfigPath,
-                                  const char *authPath);
+VTS_API void vtsMapSetConfigPaths(vtsHMap map,
+    const char *mapconfigPath, const char *authPath);
 VTS_API const char *vtsMapGetConfigPath(vtsHMap map);
 
 // readyness status
 VTS_API bool vtsMapGetConfigAvailable(vtsHMap map);
 VTS_API bool vtsMapGetConfigReady(vtsHMap map);
-VTS_API bool vtsMapGetProjected(vtsHMap map);
 VTS_API bool vtsMapGetRenderComplete(vtsHMap map);
 VTS_API double vtsMapGetRenderProgress(vtsHMap map);
+
+// position
+VTS_API bool vtsMapGetProjected(vtsHMap map);
+VTS_API void vtsMapGetDefaultPosition(vtsHMap map, vtsHPosition position);
 
 // data processing (may be run on a dedicated thread)
 VTS_API void vtsMapDataInitialize(vtsHMap map);
@@ -71,8 +74,8 @@ VTS_API void vtsMapSetOptions(vtsHMap map, const char *options);
 
 // conversion
 VTS_API void vtsMapConvert(vtsHMap map,
-                           const double pointFrom[3], double pointTo[3],
-                           uint32 srsFrom, uint32 SrsTo);
+    const double pointFrom[3], double pointTo[3],
+    uint32 srsFrom, uint32 SrsTo);
 
 // map view functionality is not yet available in the C API
 

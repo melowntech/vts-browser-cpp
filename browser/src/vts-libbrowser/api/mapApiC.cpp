@@ -49,6 +49,8 @@
 #include "../include/vts-browser/navigation.h"
 #include "../include/vts-browser/navigation.hpp"
 #include "../include/vts-browser/navigationOptions.hpp"
+#include "../include/vts-browser/position.h"
+#include "../include/vts-browser/position.hpp"
 #include "../include/vts-browser/resources.h"
 #include "../include/vts-browser/resources.hpp"
 #include "../include/vts-browser/search.h"
@@ -365,6 +367,13 @@ bool vtsMapGetProjected(vtsHMap map)
     return map->p->getMapProjected();
     C_END
     return false;
+}
+
+void vtsMapGetDefaultPosition(vtsHMap map, vtsHPosition position)
+{
+    C_BEGIN
+    *position = map->p->getMapDefaultPosition();
+    C_END
 }
 
 bool vtsMapGetRenderComplete(vtsHMap map)
@@ -820,17 +829,11 @@ void vtsNavigationSetAutoRotation(vtsHNavigation nav, double value)
     C_END
 }
 
-void vtsNavigationSetPositionJson(vtsHNavigation nav, const char *pos)
+void vtsNavigationSetPosition(vtsHNavigation nav,
+    vtsHPosition position)
 {
     C_BEGIN
-    nav->p->setPositionJson(pos);
-    C_END
-}
-
-void vtsNavigationSetPositionUrl(vtsHNavigation nav, const char *pos)
-{
-    C_BEGIN
-    nav->p->setPositionUrl(pos);
+    nav->p->setPosition(*(vts::Position*)position);
     C_END
 }
 
@@ -882,20 +885,12 @@ double vtsNavigationGetAutoRotation(vtsHNavigation nav)
     return 0.0;
 }
 
-const char *vtsNavigationGetPositionUrl(vtsHNavigation nav)
+void vtsNavigationGetPosition(vtsHNavigation nav,
+    vtsHPosition position)
 {
     C_BEGIN
-    return vts::retStr(nav->p->getPositionUrl());
+    *position = nav->p->getPosition();
     C_END
-    return nullptr;
-}
-
-const char *vtsNavigationGetPositionJson(vtsHNavigation nav)
-{
-    C_BEGIN
-    return vts::retStr(nav->p->getPositionJson());
-    C_END
-    return nullptr;
 }
 
 // options
@@ -915,6 +910,49 @@ void vtsNavigationSetOptions(vtsHNavigation nav, const char *options)
     no.applyJson(options);
     nav->p->options() = no; // all or nothing
     C_END
+}
+
+////////////////////////////////////////////////////////////////////////////
+// POSITION
+////////////////////////////////////////////////////////////////////////////
+
+void vtsPositionInitialize(vtsHPosition position)
+{
+    C_BEGIN
+    *position = vts::Position();
+    C_END
+}
+
+void vtsPositionFromUrl(vtsHPosition position,
+    const char *url)
+{
+    C_BEGIN
+    *position = vts::Position(url, 1);
+    C_END
+}
+
+void vtsPositionFromJson(vtsHPosition position,
+    const char *json)
+{
+    C_BEGIN
+    *position = vts::Position(json);
+    C_END
+}
+
+const char *vtsPositionToUrl(vtsHPosition position)
+{
+    C_BEGIN
+    return vts::retStr(((vts::Position*)position)->toUrl());
+    C_END
+    return nullptr;
+}
+
+const char *vtsPositionToJson(vtsHPosition position)
+{
+    C_BEGIN
+    return vts::retStr(((vts::Position*)position)->toJson());
+    C_END
+    return nullptr;
 }
 
 ////////////////////////////////////////////////////////////////////////////

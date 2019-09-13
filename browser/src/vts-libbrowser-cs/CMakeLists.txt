@@ -10,6 +10,7 @@ set(SRC_LIST
     Map.cs
     Math.cs
     Navigation.cs
+    Position.cs
     Resources.cs
     Search.cs
     Utilities.cs

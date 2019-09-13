@@ -27,6 +27,7 @@
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace vts
 {
@@ -113,15 +114,12 @@ namespace vts
             Util.CheckInterop();
         }
 
-        public void SetPositionJson(string position)
+        public void SetPosition(Position position)
         {
-            BrowserInterop.vtsNavigationSetPositionJson(Handle, position);
-            Util.CheckInterop();
-        }
-
-        public void SetPositionUrl(string position)
-        {
-            BrowserInterop.vtsNavigationSetPositionUrl(Handle, position);
+            IntPtr i = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(PositionBase)));
+            Marshal.StructureToPtr(position.data, i, true);
+            BrowserInterop.vtsNavigationSetPosition(Handle, i);
+            Marshal.FreeHGlobal(i);
             Util.CheckInterop();
         }
 
@@ -162,16 +160,17 @@ namespace vts
             return res;
         }
 
-        public string GetPositionJson()
+        public Position GetPosition()
         {
-            return Util.CheckString(BrowserInterop.vtsNavigationGetPositionJson(Handle));
+            Position p = new Position();
+            IntPtr i = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(PositionBase)));
+            BrowserInterop.vtsNavigationGetPosition(Handle, i);
+            p.data = (PositionBase)Marshal.PtrToStructure(i, typeof(PositionBase));
+            Marshal.FreeHGlobal(i);
+            Util.CheckInterop();
+            return p;
         }
 
-        public string GetPositionUrl()
-        {
-            return Util.CheckString(BrowserInterop.vtsNavigationGetPositionUrl(Handle));
-        }
-        
         public void Dispose()
         {
             Dispose(true);

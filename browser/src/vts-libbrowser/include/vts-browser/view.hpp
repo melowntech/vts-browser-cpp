@@ -48,7 +48,7 @@ public:
         double alpha;
 
         BoundLayerInfo();
-        BoundLayerInfo(const std::string &id);
+        explicit BoundLayerInfo(const std::string &id);
     };
 
     class VTS_API SurfaceInfo

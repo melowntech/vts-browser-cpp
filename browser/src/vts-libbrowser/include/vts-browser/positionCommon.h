@@ -24,44 +24,27 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JSON_HPP_sgf56489dh4d69
-#define JSON_HPP_sgf56489dh4d69
+#ifndef POSITION_COMMON_H_ko189rds4f
+#define POSITION_COMMON_H_ko189rds4f
 
-#include <jsoncpp/json.hpp>
-#include <sstream>
+#include "foundation.h"
 
-namespace vts
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct vtsCPositionBase
 {
+    double point[3];
+    double orientation[3];
+    double viewExtent;
+    double fov;
+    bool subjective;
+    bool floatAltitude;
+} vtsCPositionBase;
 
-Json::Value stringToJson(const std::string &s);
-std::string jsonToString(const Json::Value &value);
-
-// json to enum
-template<class T>
-T jToE(const Json::Value &j)
-{
-    std::string s = j.asString();
-    T e;
-    std::istringstream ss(s);
-    ss >> e;
-    return e;
-}
-
-// enum to json
-template<class T>
-Json::Value eToJ(T e)
-{
-    std::ostringstream ss;
-    ss << e;
-    std::string s = ss.str();
-    return s;
-}
-
-} // namespace vts
-
-#define TJ(NAME, AS) v[#NAME] = NAME ;
-#define AJ(NAME, AS) if (v.isMember(#NAME)) NAME = v[#NAME].AS();
-#define TJE(NAME, TYPE) v[#NAME] = eToJ<TYPE>(NAME);
-#define AJE(NAME, TYPE) if (v.isMember(#NAME)) { NAME = jToE<TYPE>(v[#NAME]); }
+#ifdef __cplusplus
+} // extern C
+#endif
 
 #endif

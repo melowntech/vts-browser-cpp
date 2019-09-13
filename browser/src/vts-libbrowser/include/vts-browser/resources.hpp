@@ -72,7 +72,7 @@ class VTS_API GpuTextureSpec
 {
 public:
     GpuTextureSpec();
-    GpuTextureSpec(const Buffer &buffer); // decode jpg or png file
+    explicit GpuTextureSpec(const Buffer &buffer); // decode jpg or png file
     void verticalFlip();
 
     // image resolution
@@ -151,7 +151,7 @@ public:
     };
 
     GpuMeshSpec();
-    GpuMeshSpec(const Buffer &buffer); // decode obj file
+    explicit GpuMeshSpec(const Buffer &buffer); // decode obj file
 
     // an array of vertex data
     // the interpretation of the data is defined by the 'attributes' member

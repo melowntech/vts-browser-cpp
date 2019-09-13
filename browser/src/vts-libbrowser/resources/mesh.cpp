@@ -133,7 +133,7 @@ void MeshAggregate::load()
         vtslibs::vts::SubMesh &m = meshes[mi].submesh;
 
         std::stringstream ss;
-        ss << name << "#$!" << mi;
+        ss << name << "#" << mi;
         std::shared_ptr<GpuMesh> gm = std::make_shared<GpuMesh>(map, ss.str());
         gm->state = Resource::State::errorFatal;
 

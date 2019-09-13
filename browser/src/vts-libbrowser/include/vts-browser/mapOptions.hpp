@@ -40,7 +40,7 @@ class VTS_API MapCreateOptions
 {
 public:
     MapCreateOptions();
-    MapCreateOptions(const std::string &json);
+    explicit MapCreateOptions(const std::string &json);
     void applyJson(const std::string &json);
     std::string toJson() const;
 
@@ -91,7 +91,7 @@ class VTS_API MapRuntimeOptions
 {
 public:
     MapRuntimeOptions();
-    MapRuntimeOptions(const std::string &json);
+    explicit MapRuntimeOptions(const std::string &json);
     void applyJson(const std::string &json);
     std::string toJson() const;
 

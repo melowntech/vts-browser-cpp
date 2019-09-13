@@ -234,14 +234,17 @@ public static extern bool vtsMapGetConfigReady(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 [return: MarshalAs(UnmanagedType.I1)]
-public static extern bool vtsMapGetProjected(IntPtr map);
-
-[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-[return: MarshalAs(UnmanagedType.I1)]
 public static extern bool vtsMapGetRenderComplete(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern double vtsMapGetRenderProgress(IntPtr map);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.I1)]
+public static extern bool vtsMapGetProjected(IntPtr map);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsMapGetDefaultPosition(IntPtr map, IntPtr position);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsMapDataInitialize(IntPtr map);
@@ -295,7 +298,7 @@ public static extern void vtsMathInverse33([Out] double[] result, [In] double[] 
 public static extern IntPtr vtsNavigationCreate(IntPtr cam);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsNavigationDestroy(IntPtr map);
+public static extern void vtsNavigationDestroy(IntPtr nav);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsNavigationPan(IntPtr nav, [In] double[] value);
@@ -331,10 +334,7 @@ public static extern void vtsNavigationSetFov(IntPtr nav, double fov);
 public static extern void vtsNavigationSetAutoRotation(IntPtr nav, double value);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsNavigationSetPositionJson(IntPtr nav, [MarshalAs(UnmanagedType.LPStr)] string position);
-
-[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsNavigationSetPositionUrl(IntPtr nav, [MarshalAs(UnmanagedType.LPStr)] string position);
+public static extern void vtsNavigationSetPosition(IntPtr nav, IntPtr position);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 [return: MarshalAs(UnmanagedType.I1)]
@@ -356,16 +356,28 @@ public static extern double vtsNavigationGetFov(IntPtr nav);
 public static extern double vtsNavigationGetAutoRotation(IntPtr nav);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsNavigationGetPositionUrl(IntPtr nav);
-
-[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern IntPtr vtsNavigationGetPositionJson(IntPtr nav);
+public static extern void vtsNavigationGetPosition(IntPtr nav, IntPtr position);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern IntPtr vtsNavigationGetOptions(IntPtr nav);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsNavigationSetOptions(IntPtr nav, [MarshalAs(UnmanagedType.LPStr)] string options);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsPositionInitialize(IntPtr position);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsPositionFromUrl(IntPtr position, [MarshalAs(UnmanagedType.LPStr)] string url);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsPositionFromJson(IntPtr position, [MarshalAs(UnmanagedType.LPStr)] string json);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern IntPtr vtsPositionToUrl(IntPtr position);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern IntPtr vtsPositionToJson(IntPtr position);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern uint vtsGpuTypeSize(uint type);

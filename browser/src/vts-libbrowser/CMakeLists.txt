@@ -38,6 +38,7 @@ set(PUB_HDR_LIST
     # C/C++ API
     include/vts-browser/foundationCommon.h
     include/vts-browser/cameraCommon.h
+    include/vts-browser/positionCommon.h
     # C++ API
     include/vts-browser/boostProgramOptions.hpp
     include/vts-browser/buffer.hpp
@@ -60,6 +61,7 @@ set(PUB_HDR_LIST
     include/vts-browser/navigation.hpp
     include/vts-browser/navigationOptions.hpp
     include/vts-browser/perfMeter.hpp
+    include/vts-browser/position.hpp
     include/vts-browser/resources.hpp
     include/vts-browser/search.hpp
     include/vts-browser/view.hpp
@@ -73,6 +75,7 @@ set(PUB_HDR_LIST
     include/vts-browser/map.h
     include/vts-browser/math.h
     include/vts-browser/navigation.h
+    include/vts-browser/position.h
     include/vts-browser/resources.h
     include/vts-browser/search.h
 )
@@ -111,6 +114,7 @@ set(SRC_LIST
     map/surfaceStack.cpp
     navigation/navigation.cpp
     navigation/navigationApi.cpp
+    navigation/positionApi.cpp
     navigation/solver.cpp
     navigation/solver.hpp
     resources/auth.cpp
@@ -158,6 +162,7 @@ set(SRC_LIST
     metaTile.hpp
     navigation.hpp
     navTile.hpp
+    position.hpp
     renderInfos.hpp
     renderTasks.hpp
     resource.hpp

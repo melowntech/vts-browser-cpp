@@ -298,7 +298,7 @@ vtslibs::registry::Position NavigationImpl::getPosition() const
     res.type = type;
     res.heightMode = heightMode;
     res.position = vecToUblas<math::Point3>(position);
-    res.orientation = vecToUblas<math::Point3>(orientation); // todo use camera ortientation
+    res.orientation = vecToUblas<math::Point3>(orientation); // todo use camera orientation
     res.verticalExtent = verticalExtent;
     res.verticalFov = verticalFov;
     return res;

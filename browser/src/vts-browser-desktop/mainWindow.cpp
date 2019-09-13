@@ -37,6 +37,7 @@
 #include <vts-browser/mapStatistics.hpp>
 #include <vts-browser/cameraDraws.hpp>
 #include <vts-browser/cameraCredits.hpp>
+#include <vts-browser/position.hpp>
 
 #include <SDL2/SDL.h>
 #include <optick.h>
@@ -339,7 +340,8 @@ void MainWindow::run()
                      "Setting initial position");
             try
             {
-                navigation->setPositionUrl(appOptions.initialPosition);
+                navigation->setPosition(
+                    vts::Position(appOptions.initialPosition));
                 navigation->options().type
                         = vts::NavigationType::Instant;
             }

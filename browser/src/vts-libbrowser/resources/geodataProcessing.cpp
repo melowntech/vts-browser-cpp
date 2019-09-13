@@ -2191,7 +2191,7 @@ void GeodataTile::load()
         RenderGeodataTask t;
         t.geodata = std::make_shared<GpuGeodata>();
         std::stringstream ss;
-        ss << name << "#$!" << index++;
+        ss << name << "#" << index++;
         map->callbacks.loadGeodata(t.geodata->info, spec, ss.str());
         renders.push_back(t);
     }

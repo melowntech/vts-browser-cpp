@@ -923,19 +923,10 @@ void vtsPositionInitialize(vtsHPosition position)
     C_END
 }
 
-void vtsPositionFromUrl(vtsHPosition position,
-    const char *url)
+void vtsPositionFromString(vtsHPosition position, const char *str)
 {
     C_BEGIN
-    *position = vts::Position(url, 1);
-    C_END
-}
-
-void vtsPositionFromJson(vtsHPosition position,
-    const char *json)
-{
-    C_BEGIN
-    *position = vts::Position(json);
+    *position = vts::Position(str);
     C_END
 }
 

@@ -1146,7 +1146,7 @@ public:
                         window->navigation->options().type
                                 = vts::NavigationType::FlyOver;
                         window->navigation->setPosition(
-                            vts::Position(text, 1));
+                            vts::Position(text));
                     }
                     catch(...)
                     {

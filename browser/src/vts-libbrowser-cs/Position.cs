@@ -45,22 +45,11 @@ namespace vts
     {
         public PositionBase data;
 
-        public static Position FromJson(string json)
+        public static Position FromString(string str)
         {
             Position p = new Position();
             IntPtr i = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(PositionBase)));
-            BrowserInterop.vtsPositionFromJson(i, json);
-            p.data = (PositionBase)Marshal.PtrToStructure(i, typeof(PositionBase));
-            Marshal.FreeHGlobal(i);
-            Util.CheckInterop();
-            return p;
-        }
-
-        public static Position FromUrl(string url)
-        {
-            Position p = new Position();
-            IntPtr i = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(PositionBase)));
-            BrowserInterop.vtsPositionFromUrl(i, url);
+            BrowserInterop.vtsPositionFromString(i, str);
             p.data = (PositionBase)Marshal.PtrToStructure(i, typeof(PositionBase));
             Marshal.FreeHGlobal(i);
             Util.CheckInterop();

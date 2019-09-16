@@ -79,27 +79,21 @@ Position::Position(const std::string &position)
 {
     try
     {
-        Json::Value val = stringToJson(position);
-        *this = p2p(vtslibs::registry::positionFromJson(val));
-    }
-    catch (...)
-    {
-        LOGTHROW(err2, std::runtime_error)
-            << "Failed parsing position from json.";
-    }
-}
-
-Position::Position(const std::string &position, int)
-{
-    try
-    {
-        *this = p2p(boost::lexical_cast<
-            vtslibs::registry::Position>(position));
+        if (position.find("[") == std::string::npos)
+        {
+            *this = p2p(boost::lexical_cast<
+                vtslibs::registry::Position>(position));
+        }
+        else
+        {
+            Json::Value val = stringToJson(position);
+            *this = p2p(vtslibs::registry::positionFromJson(val));
+        }
     }
     catch(...)
     {
         LOGTHROW(err2, std::runtime_error)
-            << "Failed parsing position from url.";
+            << "Failed parsing position from string.";
     }
 }
 

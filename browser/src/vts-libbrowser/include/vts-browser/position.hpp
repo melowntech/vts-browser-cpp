@@ -38,8 +38,7 @@ class VTS_API Position : public vtsCPositionBase
 {
 public:
     Position();
-    explicit Position(const std::string &json);
-    explicit Position(const std::string &url, int overloadTag);
+    explicit Position(const std::string &str);
     std::string toJson() const;
     std::string toUrl() const;
 };

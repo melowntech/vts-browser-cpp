@@ -34,8 +34,7 @@ extern "C" {
 #endif
 
 VTS_API void vtsPositionInitialize(vtsHPosition position);
-VTS_API void vtsPositionFromUrl(vtsHPosition position, const char *url);
-VTS_API void vtsPositionFromJson(vtsHPosition position, const char *json);
+VTS_API void vtsPositionFromString(vtsHPosition position, const char *str);
 VTS_API const char *vtsPositionToUrl(vtsHPosition position);
 VTS_API const char *vtsPositionToJson(vtsHPosition position);
 

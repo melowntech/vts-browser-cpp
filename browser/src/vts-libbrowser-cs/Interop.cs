@@ -368,10 +368,7 @@ public static extern void vtsNavigationSetOptions(IntPtr nav, [MarshalAs(Unmanag
 public static extern void vtsPositionInitialize(IntPtr position);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsPositionFromUrl(IntPtr position, [MarshalAs(UnmanagedType.LPStr)] string url);
-
-[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsPositionFromJson(IntPtr position, [MarshalAs(UnmanagedType.LPStr)] string json);
+public static extern void vtsPositionFromString(IntPtr position, [MarshalAs(UnmanagedType.LPStr)] string str);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern IntPtr vtsPositionToUrl(IntPtr position);

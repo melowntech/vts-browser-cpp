@@ -35,6 +35,7 @@ DrawSurfaceTask::DrawSurfaceTask()
 {
     memset((vtsCDrawSurfaceBase*)this, 0, sizeof(vtsCDrawSurfaceBase));
     color[3] = 1;
+    blendingCoverage = 1;
     vecToRaw(vec4f(-1, -1, 2, 2), uvClip);
 }
 
@@ -139,12 +140,11 @@ DrawSurfaceTask CameraImpl::convert(const RenderSurfaceTask &task)
 }
 
 DrawSurfaceTask CameraImpl::convert(const RenderSurfaceTask &task,
-    const vec4f &uvClip, float opacity)
+    const vec4f &uvClip, float blendingCoverage)
 {
     DrawSurfaceTask result = convert(task);
     vecToRaw(uvClip, result.uvClip);
-    if (!std::isnan(opacity))
-        result.color[3] *= opacity;
+    result.blendingCoverage = blendingCoverage; // may be nan
     return result;
 }
 

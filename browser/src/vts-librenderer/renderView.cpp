@@ -136,6 +136,8 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
     uboSurface.uvMat = mat3x4f(rawToMat3(t.uvm));
     uboSurface.uvClip = rawToVec4(t.uvClip);
     uboSurface.color = rawToVec4(t.color);
+    if (!std::isnan(t.blendingCoverage))
+        uboSurface.color[3] *= t.blendingCoverage;
     uboSurface.flags = vec4si32(
                 t.texMask ? 1 : -1,
                 tex->getGrayscale() ? 1 : -1,

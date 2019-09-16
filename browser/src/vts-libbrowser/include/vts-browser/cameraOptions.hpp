@@ -81,6 +81,9 @@ public:
     TraverseMode traverseModeSurfaces;
     TraverseMode traverseModeGeodata;
 
+    // move opaque blending draws into transparent group
+    bool lodBlendingTransparent;
+
     bool debugDetachedCamera;
     bool debugFlatShading;
     bool debugRenderSurrogates;

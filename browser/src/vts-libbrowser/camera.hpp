@@ -139,10 +139,10 @@ public:
     void renderNodeCoarser(TraverseNode *trav, TraverseNode *orig);
     void renderNodeCoarser(TraverseNode *trav);
     void renderNodeDraws(TraverseNode *trav, TraverseNode *orig,
-                            float opacity);
+                            float blendingCoverage);
     DrawSurfaceTask convert(const RenderSurfaceTask &task);
     DrawSurfaceTask convert(const RenderSurfaceTask &task,
-                            const vec4f &uvClip, float opacity);
+                            const vec4f &uvClip, float blendingCoverage);
     DrawGeodataTask convert(const RenderGeodataTask &task);
     DrawSimpleTask convert(const RenderSimpleTask &task);
     bool generateMonolithicGeodataTrav(TraverseNode *trav);

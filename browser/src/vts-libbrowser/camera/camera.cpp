@@ -385,7 +385,7 @@ void updateRangeToHalf(float &a, float &b, int which)
 } // namespace
 
 void CameraImpl::renderNodeDraws(TraverseNode *trav,
-    TraverseNode *orig, float opacity)
+    TraverseNode *orig, float blendingCoverage)
 {
     assert(trav && orig);
     assert(trav->meta);
@@ -416,34 +416,42 @@ void CameraImpl::renderNodeDraws(TraverseNode *trav,
         }
     }
 
-    if (opacity == opacity)
-    {
-        assert(opacity >= 0.f && opacity <= 1.f);
-        // opaque becomes transparent
-        for (const RenderSurfaceTask &r : trav->opaque)
-            draws.transparent.emplace_back(convert(r, uvClip, opacity));
-    }
-    else
+    if (trav != orig && std::isnan(blendingCoverage))
     {
         // some neighboring subtiles may be merged together
         //   this will reduce gpu overhead on rasterization
-        // since the merging process ultimately alters the rendering order
-        //   it is only allowed on opaque draws
-        if (trav != orig)
-            opaqueSubtiles[trav].subtiles.emplace_back(orig, uvClip);
-        else
-            for (const RenderSurfaceTask &r : trav->opaque)
-                draws.opaque.emplace_back(convert(r, uvClip, nan1()));
+        opaqueSubtiles[trav].subtiles.emplace_back(orig, uvClip);
+    }
+    else if (options.lodBlendingTransparent
+        && !std::isnan(blendingCoverage))
+    {
+        // if lod blending is considered transparent
+        //   move blending draws into transparent group
+        for (const RenderSurfaceTask &r : trav->opaque)
+            draws.transparent.emplace_back(convert(r, uvClip,
+                blendingCoverage));
+    }
+    else
+    {
+        // if lod blending uses dithering
+        //   move blending draws into opaque group
+        // fully opaque draws (no blending) remain in opaque group
+        for (const RenderSurfaceTask &r : trav->opaque)
+            draws.opaque.emplace_back(convert(r, uvClip,
+                blendingCoverage));
     }
 
+    // transparent draws always remain in transparent group
+    //   irrespective of any blending
     for (const RenderSurfaceTask &r : trav->transparent)
-        draws.transparent.emplace_back(convert(r, uvClip, opacity));
+        draws.transparent.emplace_back(convert(r, uvClip,
+            blendingCoverage));
 }
 
 namespace
 {
 
-float blendingOpacity(uint32 age, uint32 duration)
+float timeToBlendingCoverage(uint32 age, uint32 duration)
 {
     /*
       opacity
@@ -554,8 +562,8 @@ void CameraImpl::resolveBlending(TraverseNode *root,
         TraverseNode *orig = findTravById(trav, b.orig);
         if (!orig || !trav->determined)
             continue;
-        renderNodeDraws(trav, orig, blendingOpacity(b.age,
-                                    options.lodBlendingDuration));
+        renderNodeDraws(trav, orig,
+            timeToBlendingCoverage(b.age, options.lodBlendingDuration));
     }
 }
 

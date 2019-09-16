@@ -717,14 +717,22 @@ public:
                     }
                     nk_label(&ctx, "", NK_TEXT_RIGHT);
 
-                    // lodBlendingDuration
                     if (c.lodBlending)
                     {
+                        // lodBlendingDuration
                         nk_label(&ctx, "Blend duration:", NK_TEXT_LEFT);
                         c.lodBlendingDuration = nk_slide_int(&ctx,
                             0, c.lodBlendingDuration, 1000, 5);
                         sprintf(buffer, "%4d", c.lodBlendingDuration);
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                        // lodBlendingTransparent
+                        nk_label(&ctx, "Blend mode:", NK_TEXT_LEFT);
+                        c.lodBlendingTransparent = nk_check_label(&ctx,
+                            c.lodBlendingTransparent
+                            ? "transparent" : "dithering",
+                            c.lodBlendingTransparent);
+                        nk_label(&ctx, "", NK_TEXT_RIGHT);
                     }
 
                     // cullingOffsetDistance

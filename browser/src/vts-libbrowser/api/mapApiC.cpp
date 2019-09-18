@@ -1413,6 +1413,46 @@ void vtsMathInverse33(double result[9], const double r[9])
     C_END
 }
 
+////////////////////////////////////////////////////////////////////////////
+// INTERNAL MEMORY
+////////////////////////////////////////////////////////////////////////////
+
+/*
+void vtsInternalMemoryAdd(const char *name,
+    void *data, uint32 size)
+{
+    C_BEGIN
+    // the pointer provided to this function is managed by the caller and should be freed afterwards
+    // the addInternalMemoryData expects pointer to immutable storage that will not be freed
+    // therefore we make a copy here
+    // the copy is likely to be reported as memory leak, but it is intentional
+    void *p = malloc(size);
+    if (!p)
+        throw std::bad_alloc();
+    memcpy(p, data, size);
+    vts::detail::addInternalMemoryData(name,
+        (const unsigned char *)p, size);
+    C_END
+}
+*/
+
+bool vtsInternalMemoryExists(const char *name)
+{
+    C_BEGIN
+    return vts::detail::existsInternalMemoryData(name);
+    C_END
+    return false;
+}
+
+void vtsInternalMemoryRead(const char *name,
+    void **data, uint32 *size)
+{
+    C_BEGIN
+    vts::detail::readInternalMemoryData(name,
+        *(const unsigned char**)data, *size);
+    C_END
+}
+
 #ifdef __cplusplus
 } // extern C
 #endif

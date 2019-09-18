@@ -68,6 +68,22 @@ set(DATA_LIST
     data/shaders/texture.frag.glsl
     data/shaders/texture.vert.glsl
     data/textures/compas.png
+    data/textures/blueNoise/0.png
+    data/textures/blueNoise/1.png
+    data/textures/blueNoise/2.png
+    data/textures/blueNoise/3.png
+    data/textures/blueNoise/4.png
+    data/textures/blueNoise/5.png
+    data/textures/blueNoise/6.png
+    data/textures/blueNoise/7.png
+    data/textures/blueNoise/8.png
+    data/textures/blueNoise/9.png
+    data/textures/blueNoise/10.png
+    data/textures/blueNoise/11.png
+    data/textures/blueNoise/12.png
+    data/textures/blueNoise/13.png
+    data/textures/blueNoise/14.png
+    data/textures/blueNoise/15.png
 )
 
 buildsys_pack_data(initializeRenderData)

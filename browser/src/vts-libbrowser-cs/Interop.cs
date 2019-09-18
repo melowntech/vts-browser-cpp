@@ -179,6 +179,13 @@ public static extern IntPtr vtsErrCodeToName(int code);
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsErrClear();
 
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.I1)]
+public static extern bool vtsInternalMemoryExists([MarshalAs(UnmanagedType.LPStr)] string name);
+
+[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+public static extern void vtsInternalMemoryRead([MarshalAs(UnmanagedType.LPStr)] string name, ref IntPtr data, ref uint size);
+
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void vtsLogCallbackType([MarshalAs(UnmanagedType.LPStr)] string msg);
 

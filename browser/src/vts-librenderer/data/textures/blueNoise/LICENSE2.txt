@@ -1,0 +1,5 @@
+This is a modified version of blue noise textures acquired at
+http://momentsingraphics.de/BlueNoise.html (last visited 2019-09-17).
+
+This directory contains only a subset of the original data.
+The files in this directory were reexported as monochromatic png files.

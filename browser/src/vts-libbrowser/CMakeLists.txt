@@ -71,6 +71,7 @@ set(PUB_HDR_LIST
     include/vts-browser/celestial.h
     include/vts-browser/fetcher.h
     include/vts-browser/foundation.h
+    include/vts-browser/internalMemory.h
     include/vts-browser/log.h
     include/vts-browser/map.h
     include/vts-browser/math.h

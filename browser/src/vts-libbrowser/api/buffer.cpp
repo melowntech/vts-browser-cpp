@@ -76,7 +76,7 @@ std::string uniqueName()
     return ss.str();
 }
 
-typedef std::map<std::string, std::pair<size_t, const unsigned char *>>
+typedef std::map<std::string, std::pair<uint32, const unsigned char *>>
     dataMapType;
 
 dataMapType &dataMap()
@@ -246,16 +246,25 @@ uint32 BufferStream::position() const
     return gptr() - eback();
 }
 
-void addInternalMemoryData(const std::string name,
-                           const unsigned char *data, size_t size)
+void addInternalMemoryData(const std::string &name,
+                           const unsigned char *data, uint32 size)
 {
     assert(!existsInternalMemoryData(name));
     dataMap()[name] = std::make_pair(size, data);
 }
 
-bool existsInternalMemoryData(const std::string &path)
+bool existsInternalMemoryData(const std::string &name)
 {
-    return dataMap().find(path) != dataMap().end();
+    return dataMap().find(name) != dataMap().end();
+}
+
+void readInternalMemoryData(const std::string &name,
+    const unsigned char *&data, uint32 &size)
+{
+    assert(existsInternalMemoryData(name));
+    const auto &it = dataMap().at(name);
+    size = it.first;
+    data = it.second;
 }
 
 } // namespace detail

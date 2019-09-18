@@ -221,6 +221,7 @@ public:
     RenderContext *const api;
 
     std::shared_ptr<Texture> texCompas;
+    std::shared_ptr<Texture> texBlueNoise; // uses texture array!
     std::shared_ptr<ShaderAtm> shaderSurface;
     std::shared_ptr<ShaderAtm> shaderBackground;
     std::shared_ptr<Shader> shaderInfographics;

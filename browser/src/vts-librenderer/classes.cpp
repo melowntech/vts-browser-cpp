@@ -436,7 +436,8 @@ void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec,
     if (GLAD_GL_EXT_texture_filter_anisotropic)
     {
         glTexParameterf(GL_TEXTURE_2D,
-                        GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropySamples);
+                        GL_TEXTURE_MAX_ANISOTROPY_EXT,
+                        maxAnisotropySamples);
     }
 
     switch (spec.filterMode)
@@ -455,6 +456,13 @@ void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec,
     CHECK_GL("load texture");
     info.ramMemoryCost += sizeof(*this);
     info.gpuMemoryCost += spec.buffer.size();
+}
+
+void Texture::setId(uint32 id)
+{
+    clear();
+    this->id = id;
+    this->grayscale = false;
 }
 
 uint32 Texture::getId() const

@@ -90,6 +90,7 @@ public:
     void bind();
     void load(ResourceInfo &info, GpuTextureSpec &spec,
             const std::string &debugId);
+    void setId(uint32 id);
     uint32 getId() const;
     bool getGrayscale() const;
 

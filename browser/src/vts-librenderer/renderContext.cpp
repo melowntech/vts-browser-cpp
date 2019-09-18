@@ -51,11 +51,49 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     // load texture compas
     {
         texCompas = std::make_shared<Texture>();
-        vts::GpuTextureSpec spec(vts::readInternalMemoryBuffer(
+        GpuTextureSpec spec(vts::readInternalMemoryBuffer(
             "data/textures/compas.png"));
         spec.verticalFlip();
-        vts::ResourceInfo ri;
+        ResourceInfo ri;
         texCompas->load(ri, spec, "data/textures/compas.png");
+    }
+
+    // load texture blue noise
+    {
+        texBlueNoise = std::make_shared<Texture>();
+        texBlueNoise->debugId = "blueNoise";
+        Buffer buff;
+        buff.allocate(64 * 64 * 16);
+        for (uint32 i = 0; i < 16; i++)
+        {
+            std::stringstream ss;
+            ss << "data/textures/blueNoise/" << i << ".png";
+            GpuTextureSpec spec(vts::readInternalMemoryBuffer(ss.str()));
+            assert(spec.width == 64);
+            assert(spec.height == 64);
+            assert(spec.components == 1);
+            assert(spec.type == GpuTypeEnum::UnsignedByte);
+            assert(spec.buffer.size() == 64 * 64);
+            spec.verticalFlip();
+            memcpy(buff.data() + (64 * 64 * i), spec.buffer.data(), 64 * 64);
+        }
+        glActiveTexture(GL_TEXTURE0 + 9);
+        GLuint id = 0;
+        glGenTextures(1, &id);
+        texBlueNoise->setId(id);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, id);
+        if (GLAD_GL_KHR_debug)
+        {
+            glObjectLabel(GL_TEXTURE, id,
+                texBlueNoise->debugId.length(),
+                texBlueNoise->debugId.data());
+        }
+        glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_R8, 64, 64, 16, 0,
+            GL_RED, GL_UNSIGNED_BYTE, buff.data());
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glActiveTexture(GL_TEXTURE0);
+        CHECK_GL("load texture blue noise");
     }
 
     // load shader texture

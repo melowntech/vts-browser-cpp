@@ -37,6 +37,8 @@
 @property (weak, nonatomic) IBOutlet UISegmentedControl *optTraversalSurfaces;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *optTraversalGeodata;
 @property (weak, nonatomic) IBOutlet UISlider *optQualityDegrad;
+@property (weak, nonatomic) IBOutlet UISwitch *optAtmosphere;
+@property (weak, nonatomic) IBOutlet UISwitch *optLodBlending;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *optControlType;
 @property (weak, nonatomic) IBOutlet UISlider *optTouchSize;
 @property (weak, nonatomic) IBOutlet UISwitch *optTouchAreas;
@@ -64,6 +66,10 @@ namespace
             camera->options().traverseModeSurfaces = (vts::TraverseMode)[coder decodeIntForKey:@"traverseMode"];
         if ([coder containsValueForKey:@"maxTexelToPixelScale"])
             camera->options().maxTexelToPixelScale = [coder decodeDoubleForKey:@"maxTexelToPixelScale"];
+        if ([coder containsValueForKey:@"atmosphere"])
+            view->options().renderAtmosphere = [coder decodeBoolForKey:@"atmosphere"];
+        if ([coder containsValueForKey:@"lodBlending"])
+            camera->options().lodBlending = [coder decodeBoolForKey:@"lodBlending"] ? 2 : 0;
         if ([coder containsValueForKey:@"controlType"])
             extraConfig.controlType = [coder decodeIntForKey:@"controlType"];
         if ([coder containsValueForKey:@"touchSize"])
@@ -85,6 +91,8 @@ namespace
 
         [coder encodeInt:(int)camera->options().traverseModeSurfaces forKey:@"traverseMode"];
         [coder encodeDouble:camera->options().maxTexelToPixelScale forKey:@"maxTexelToPixelScale"];
+        [coder encodeBool:(camera->options().lodBlending > 0) forKey:@"lodBlending"];
+        [coder encodeBool:view->options().renderAtmosphere forKey:@"atmosphere"];
         [coder encodeInt:extraConfig.controlType forKey:@"controlType"];
         [coder encodeFloat:extraConfig.touchSize forKey:@"touchSize"];
         [coder encodeBool:extraConfig.showControlAreas forKey:@"showControlAreas"];
@@ -117,6 +125,8 @@ void loadAppConfig()
     _optTraversalSurfaces.selectedSegmentIndex = (int)camera->options().traverseModeSurfaces;
     _optTraversalGeodata.selectedSegmentIndex = (int)camera->options().traverseModeGeodata;
     _optQualityDegrad.value = camera->options().maxTexelToPixelScale;
+    _optAtmosphere.on = view->options().renderAtmosphere;
+    _optLodBlending.on = camera->options().lodBlending > 0;
     // controls
     _optTouchSize.enabled = extraConfig.controlType == 0;
     _optTouchAreas.enabled = extraConfig.controlType == 0;
@@ -150,6 +160,18 @@ void loadAppConfig()
 - (IBAction)optQualityDegradChanged:(UISlider *)sender
 {
     camera->options().maxTexelToPixelScale = sender.value;
+    saveConfig();
+}
+
+- (IBAction)optAtmosphereChanged:(UISwitch *)sender
+{
+    view->options().renderAtmosphere = sender.on;
+    saveConfig();
+}
+
+- (IBAction)optLodBlendingChanged:(UISwitch *)sender
+{
+    camera->options().lodBlending = sender.on ? 2 : 0;
     saveConfig();
 }
 

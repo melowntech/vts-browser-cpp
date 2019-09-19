@@ -1,7 +1,7 @@
 
 uniform sampler2D texColor;
 uniform sampler2D texMask;
-uniform sampler2DArray texBlueNoise;
+uniform lowp sampler2DArray texBlueNoise;
 
 layout(std140) uniform uboSurface
 {

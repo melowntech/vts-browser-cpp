@@ -79,10 +79,10 @@
                                 <rect key="frame" x="0.0" y="64" width="1024" height="655"/>
                                 <subviews>
                                     <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="KYJ-Lc-quQ">
-                                        <rect key="frame" x="0.0" y="0.0" width="1024" height="472.5"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="1024" height="550.5"/>
                                         <subviews>
                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="eIR-VC-jQw">
-                                                <rect key="frame" x="0.0" y="0.0" width="1024" height="146.5"/>
+                                                <rect key="frame" x="0.0" y="0.0" width="1024" height="224.5"/>
                                                 <subviews>
                                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Rendering" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="9fE-kB-QGR">
                                                         <rect key="frame" x="8" y="8" width="1008" height="20.5"/>
@@ -157,11 +157,45 @@
                                                             </slider>
                                                         </subviews>
                                                     </stackView>
+                                                    <stackView opaque="NO" contentMode="scaleToFill" alignment="center" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="H4t-dl-OFG">
+                                                        <rect key="frame" x="8" y="146.5" width="1008" height="31"/>
+                                                        <subviews>
+                                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Atmosphere:" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="out-Ip-Aia">
+                                                                <rect key="frame" x="0.0" y="5.5" width="949" height="20.5"/>
+                                                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                                <nil key="textColor"/>
+                                                                <nil key="highlightedColor"/>
+                                                            </label>
+                                                            <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="right" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="3ee-IX-LXb">
+                                                                <rect key="frame" x="959" y="0.0" width="51" height="31"/>
+                                                                <connections>
+                                                                    <action selector="optAtmosphereChanged:" destination="0jM-kM-7j6" eventType="valueChanged" id="JSL-gh-Lej"/>
+                                                                </connections>
+                                                            </switch>
+                                                        </subviews>
+                                                    </stackView>
+                                                    <stackView opaque="NO" contentMode="scaleToFill" alignment="center" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="H4D-Fd-ddI">
+                                                        <rect key="frame" x="8" y="185.5" width="1008" height="31"/>
+                                                        <subviews>
+                                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Lod blending:" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="xfO-5b-1PP">
+                                                                <rect key="frame" x="0.0" y="5.5" width="949" height="20.5"/>
+                                                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                                <nil key="textColor"/>
+                                                                <nil key="highlightedColor"/>
+                                                            </label>
+                                                            <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="right" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="08T-Wi-TTf">
+                                                                <rect key="frame" x="959" y="0.0" width="51" height="31"/>
+                                                                <connections>
+                                                                    <action selector="optLodBlendingChanged:" destination="0jM-kM-7j6" eventType="valueChanged" id="bdB-kG-u6G"/>
+                                                                </connections>
+                                                            </switch>
+                                                        </subviews>
+                                                    </stackView>
                                                 </subviews>
                                                 <edgeInsets key="layoutMargins" top="8" left="8" bottom="8" right="8"/>
                                             </stackView>
                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="dxF-se-jT3">
-                                                <rect key="frame" x="0.0" y="158.5" width="1024" height="227.5"/>
+                                                <rect key="frame" x="0.0" y="236.5" width="1024" height="227.5"/>
                                                 <subviews>
                                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Controls" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="OIU-8b-ljy">
                                                         <rect key="frame" x="8" y="8" width="1008" height="20.5"/>
@@ -262,7 +296,7 @@
                                                 <edgeInsets key="layoutMargins" top="8" left="8" bottom="8" right="8"/>
                                             </stackView>
                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="JfZ-2i-9io">
-                                                <rect key="frame" x="0.0" y="398" width="1024" height="74.5"/>
+                                                <rect key="frame" x="0.0" y="476" width="1024" height="74.5"/>
                                                 <subviews>
                                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Reset" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="K6A-am-499">
                                                         <rect key="frame" x="8" y="8" width="1008" height="20.5"/>
@@ -315,9 +349,11 @@
                     <tabBarItem key="tabBarItem" title="Options" id="5xo-bf-2x5"/>
                     <simulatedTabBarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
+                        <outlet property="optAtmosphere" destination="3ee-IX-LXb" id="Y2B-iv-UOt"/>
                         <outlet property="optControlCompas" destination="7qT-eP-KOu" id="nys-5X-nya"/>
                         <outlet property="optControlScales" destination="8Z7-tS-zlh" id="UHp-vk-7Xt"/>
                         <outlet property="optControlType" destination="fDB-SD-hjM" id="joc-Li-R9b"/>
+                        <outlet property="optLodBlending" destination="08T-Wi-TTf" id="6dg-sW-vaG"/>
                         <outlet property="optQualityDegrad" destination="jDI-IS-zIu" id="mTp-vk-Qdi"/>
                         <outlet property="optTouchAreas" destination="DO2-fd-7BZ" id="D0R-aC-ruO"/>
                         <outlet property="optTouchSize" destination="Jc6-dK-4PP" id="eeo-ZA-4iu"/>
@@ -869,7 +905,7 @@
                                 <rect key="frame" x="0.0" y="120" width="1024" height="648"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <prototypes>
-                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" misplaced="YES" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="SearchCell" id="KYb-YJ-Gza" customClass="SearchCell">
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="SearchCell" id="KYb-YJ-Gza" customClass="SearchCell">
                                         <rect key="frame" x="0.0" y="28" width="1024" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="KYb-YJ-Gza" id="yxf-AE-mWL">

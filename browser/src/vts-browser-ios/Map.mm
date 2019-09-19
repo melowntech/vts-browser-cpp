@@ -133,10 +133,6 @@ void mapInitialize()
     }
     */
 
-    // configure the map for mobile use
-    defaultMapOptions(map->options(), camera->options());
-    loadAppConfig();
-
     // configure opengl contexts
     {
         dataContext = [[EAGLContext alloc] initWithAPI: kEAGLRenderingAPIOpenGLES3];
@@ -234,6 +230,10 @@ void mapInitialize()
         map->dataAllRun();
         [EAGLContext setCurrentContext:nullptr];
     });
+    
+    // configure the map for mobile use
+    defaultMapOptions(map->options(), camera->options());
+    loadAppConfig();
 
     // prepare timer
     timer = [[TimerObj alloc] init];

@@ -166,11 +166,13 @@ public:
     mat4 davidProj;
     mat4 davidProjInv;
     vec3 zBufferOffsetValues;
+    double elapsedTime;
     uint32 width;
     uint32 height;
     uint32 antialiasingPrev;
-    double elapsedTime;
+    uint32 frameIndex;
     bool projected;
+    bool lodBlendingWithDithering;
 
     RenderViewImpl(Camera *camera, RenderView *api,
         RenderContextImpl *context);

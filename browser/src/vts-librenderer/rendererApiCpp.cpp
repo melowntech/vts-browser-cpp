@@ -27,6 +27,7 @@
 #include <vts-browser/map.hpp>
 #include <vts-browser/mapCallbacks.hpp>
 #include <vts-browser/camera.hpp>
+#include <vts-browser/cameraOptions.hpp>
 
 #include <optick.h>
 
@@ -110,6 +111,8 @@ void RenderView::render()
     impl->draws = &impl->camera->draws();
     impl->body = &impl->camera->map()->celestialBody();
     impl->projected = impl->camera->map()->getMapProjected();
+    impl->lodBlendingWithDithering
+        = !impl->camera->options().lodBlendingTransparent;
     impl->atmosphereDensityTexture
         = (Texture*)impl->camera->map()->atmosphereDensityTexture().get();
     impl->elapsedTime = impl->camera->map()->lastRenderUpdateElapsedTime();

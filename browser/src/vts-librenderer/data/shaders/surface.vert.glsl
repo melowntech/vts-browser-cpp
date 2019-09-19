@@ -3,10 +3,10 @@ layout(std140) uniform uboSurface
 {
     mat4 uniP;
     mat4 uniMv;
-    mat3x4 uniUvMat;
+    mat3x4 uniUvMat; // + blendingCoverage
     vec4 uniUvClip;
     vec4 uniColor;
-    ivec4 uniFlags; // mask, monochromatic, flat shading, uv source
+    ivec4 uniFlags; // mask, monochromatic, flat shading, uv source, lodBlendingWithDithering, ... frameIndex
 };
 
 layout(location = 0) in vec3 inPosition;
@@ -23,6 +23,11 @@ out float varAtmDensity;
 out float gl_ClipDistance[4];
 #endif
 
+bool getFlag(int i)
+{
+    return (uniFlags[i / 8] & (1 << (i % 8))) != 0;
+}
+
 void main()
 {
 #ifndef VTS_NO_CLIP
@@ -34,7 +39,7 @@ void main()
 
     vec4 vp = uniMv * vec4(inPosition, 1.0);
     gl_Position = uniP * vp;
-    varUvTex = vec2(mat3(uniUvMat) * vec3(uniFlags.w > 0
+    varUvTex = vec2(mat3(uniUvMat) * vec3(getFlag(3)
             ? inUvExternal : inUvInternal, 1.0));
     varViewPosition = vp.xyz;
 #ifdef VTS_ATM_PER_VERTEX

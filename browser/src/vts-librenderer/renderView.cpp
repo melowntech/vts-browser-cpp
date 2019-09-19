@@ -81,11 +81,13 @@ RenderViewImpl::RenderViewImpl(
     body(nullptr),
     atmosphereDensityTexture(nullptr),
     lastUboViewPointer(nullptr),
+    elapsedTime(0),
     width(0),
     height(0),
     antialiasingPrev(0),
-    elapsedTime(0),
-    projected(false)
+    frameIndex(0),
+    projected(false),
+    lodBlendingWithDithering(false)
 {
     uboAtm = std::make_shared<UniformBuffer>();
     uboAtm->debugId = "uboAtm";
@@ -125,10 +127,10 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
     {
         mat4f p;
         mat4f mv;
-        mat3x4f uvMat;
+        mat3x4f uvMat; // + blendingCoverage
         vec4f uvClip;
         vec4f color;
-        vec4si32 flags; // mask, monochromatic, flat shading, uv source
+        vec4si32 flags; // mask, monochromatic, flat shading, uv source, lodBlendingWithDithering, ... frameIndex
     } uboSurface;
 
     uboSurface.p = proj.cast<float>();
@@ -136,14 +138,26 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
     uboSurface.uvMat = mat3x4f(rawToMat3(t.uvm));
     uboSurface.uvClip = rawToVec4(t.uvClip);
     uboSurface.color = rawToVec4(t.color);
+    sint32 flags = 0;
+    if (t.texMask)
+        flags |= 1 << 0;
+    if (tex->getGrayscale())
+        flags |= 1 << 1;
+    if (t.flatShading)
+        flags |= 1 << 2;
+    if (t.externalUv)
+        flags |= 1 << 3;
     if (!std::isnan(t.blendingCoverage))
-        uboSurface.color[3] *= t.blendingCoverage;
-    uboSurface.flags = vec4si32(
-                t.texMask ? 1 : -1,
-                tex->getGrayscale() ? 1 : -1,
-                t.flatShading ? 1 : -1,
-                t.externalUv ? 1 : -1
-                );
+    {
+        if (lodBlendingWithDithering)
+        {
+            uboSurface.uvMat.data[0][3] = t.blendingCoverage;
+            flags |= 1 << 4;
+        }
+        else
+            uboSurface.color[3] *= t.blendingCoverage;
+    }
+    uboSurface.flags = vec4si32(flags, 0, 0, frameIndex);
 
     auto ubo = getUbo();
     ubo->debugId = "UboSurface";
@@ -494,6 +508,7 @@ void RenderViewImpl::renderEntry()
     CHECK_GL("pre-frame check");
     clearGlState();
     uboCacheIndex = 0;
+    frameIndex++;
 
     assert(context->shaderSurface);
     view = rawToMat4(draws->camera.view);

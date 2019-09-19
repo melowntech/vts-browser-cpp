@@ -90,9 +90,14 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
         }
         glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_R8, 64, 64, 16, 0,
             GL_RED, GL_UNSIGNED_BYTE, buff.data());
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glActiveTexture(GL_TEXTURE0);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY,
+            GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY,
+            GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_REPEAT);
+        glActiveTexture(GL_TEXTURE0 + 0);
         CHECK_GL("load texture blue noise");
     }
 
@@ -128,7 +133,8 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
              });
         shaderSurface->bindTextureLocations({
                 { "texColor", 0 },
-                { "texMask", 1 }
+                { "texMask", 1 },
+                { "texBlueNoise", 9 }
             });
         shaderSurface->initializeAtmosphere();
     }

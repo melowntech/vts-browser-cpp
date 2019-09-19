@@ -1,15 +1,16 @@
 
 uniform sampler2D texColor;
 uniform sampler2D texMask;
+uniform sampler2DArray texBlueNoise;
 
 layout(std140) uniform uboSurface
 {
     mat4 uniP;
     mat4 uniMv;
-    mat3x4 uniUvMat;
+    mat3x4 uniUvMat; // + blendingCoverage
     vec4 uniUvClip;
     vec4 uniColor;
-    ivec4 uniFlags; // mask, monochromatic, flat shading, uv source
+    ivec4 uniFlags; // mask, monochromatic, flat shading, uv source, lodBlendingWithDithering, ... frameIndex
 };
 
 in vec2 varUvTex;
@@ -19,6 +20,11 @@ in float varAtmDensity;
 #endif
 
 layout(location = 0) out vec4 outColor;
+
+bool getFlag(int i)
+{
+    return (uniFlags[i / 8] & (1 << (i % 8))) != 0;
+}
 
 void main()
 {
@@ -34,7 +40,7 @@ void main()
 #endif
 
     // mask
-    if (uniFlags.x > 0)
+    if (getFlag(0))
     {
         // assuming mipmaps are not needed:
         //   is textureLod more efficient than regular texture access?
@@ -42,7 +48,16 @@ void main()
             discard;
     }
 
-    if (uniFlags.z > 0)
+    // dithered lod blending
+    if (getFlag(4))
+    {
+        float smpl = texelFetch(texBlueNoise, ivec3(
+            ivec2(gl_FragCoord.xy) % 64, uniFlags.w % 16), 0).x;
+        if (uniUvMat[0][3] < smpl)
+            discard;
+    }
+
+    if (getFlag(2))
     {
         // flat shading
         vec3 n = normalize(cross(viewDx, viewDy));
@@ -54,10 +69,11 @@ void main()
         outColor = textureGrad(texColor, varUvTex, uvDx, uvDy);
 
         // monochromatic texture
-        if (uniFlags.y > 0)
+        if (getFlag(1))
             outColor = outColor.rrra;
     }
 
+    // atmosphere
     outColor *= uniColor;
 #ifdef VTS_ATM_PER_VERTEX
     outColor = atmColor(varAtmDensity, outColor);

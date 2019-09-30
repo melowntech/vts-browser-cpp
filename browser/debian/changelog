@@ -1,3 +1,9 @@
+vts-browser (0.22) melown-xenial; urgency=medium
+
+  * dithering-based lod blending
+
+ -- Tomas Maly <tomas.maly@melown.com>  Mon, 30 Sep 2019 16:29:53 +0200
+
 vts-browser (0.21) melown-xenial; urgency=medium
 
   * geodata icons

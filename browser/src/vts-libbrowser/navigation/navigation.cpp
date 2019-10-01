@@ -446,7 +446,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
                 eye -= forward * l;
                 vec3 eyeNav = convertor->physToNav(eye);
                 double altitude = nan1();
-                if (camera->map->getSurfaceOverEllipsoid(altitude,
+                if (camera->getSurfaceOverEllipsoid(altitude,
                     eyeNav, sampleSize))
                 {
                     double threshold = thresholdBase * fraction;
@@ -594,10 +594,10 @@ void NavigationImpl::updateNavigation(double elapsedTime)
         if (!std::isnan(fadeOutFactor))
         {
             double surfaceOverEllipsoid = nan1();
-            if (map->getSurfaceOverEllipsoid(
+            if (camera->getSurfaceOverEllipsoid(
                 surfaceOverEllipsoid, targetPosition,
                 verticalExtent / options.lodSelectionSamplesForAltitude,
-                options.debugRenderAltitudeSurrogates ? camera : nullptr))
+                options.debugRenderAltitudeSurrogates))
             {
                 double &pa = targetPosition[2];
                 if (positionAltitudeReset)

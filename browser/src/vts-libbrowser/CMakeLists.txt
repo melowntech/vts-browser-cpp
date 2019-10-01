@@ -92,6 +92,7 @@ set(SRC_LIST
     api/mathColor.cpp
     api/options.cpp
     api/statistics.cpp
+    camera/altitude.cpp
     camera/boundLayers.cpp
     camera/camera.cpp
     camera/cameraApi.cpp
@@ -103,7 +104,6 @@ set(SRC_LIST
     image/image.hpp
     image/jpeg.cpp
     image/png.cpp
-    map/altitude.cpp
     map/atmosphereDensityTexture.cpp
     map/celestialBody.cpp
     map/coordsManip.cpp

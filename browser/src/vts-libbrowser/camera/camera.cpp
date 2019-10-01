@@ -644,7 +644,7 @@ void CameraImpl::renderUpdate()
             vec3 navPos = map->convertor->physToNav(eye);
             c.altitudeOverEllipsoid = navPos[2];
             double tmp;
-            if (map->getSurfaceOverEllipsoid(tmp, navPos, 10))
+            if (getSurfaceOverEllipsoid(tmp, navPos, 10))
                 c.altitudeOverSurface = c.altitudeOverEllipsoid - tmp;
             else
                 c.altitudeOverSurface = nan1();
@@ -717,7 +717,7 @@ void CameraImpl::suggestedNearFar(double &near_, double &far_)
 {
     vec3 navPos = map->convertor->physToNav(eye);
     double altitude;
-    if (!map->getSurfaceOverEllipsoid(altitude, navPos, 10))
+    if (!getSurfaceOverEllipsoid(altitude, navPos, 10))
         altitude = nan1();
     bool projected = map->mapconfig->navigationSrsType()
         == vtslibs::registry::Srs::Type::projected;

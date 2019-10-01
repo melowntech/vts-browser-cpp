@@ -1305,6 +1305,12 @@ public:
                 nk_label(&ctx, "Altitude Over Surface:", NK_TEXT_LEFT);
                 sprintf(buffer, "%.8f", c.altitudeOverSurface);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                nk_label(&ctx, "Near:", NK_TEXT_LEFT);
+                sprintf(buffer, "%.3f", c.proj[14] / (c.proj[10] - 1));
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                nk_label(&ctx, "Far:", NK_TEXT_LEFT);
+                sprintf(buffer, "%.3f", c.proj[14] / (c.proj[10] + 1));
+                nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_tree_pop(&ctx);
             }
 

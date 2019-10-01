@@ -171,6 +171,8 @@ public:
     void sortOpaqueFrontToBack();
     void renderUpdate();
     void suggestedNearFar(double &near_, double &far_);
+    bool getSurfaceOverEllipsoid(double &result, const vec3 &navPos,
+        double sampleSize, bool renderDebug = false);
 };
 
 void updateNavigation(std::weak_ptr<NavigationImpl> &nav, double elapsedTime);

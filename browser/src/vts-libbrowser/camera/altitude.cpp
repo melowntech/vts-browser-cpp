@@ -164,18 +164,17 @@ double altitudeInterpolation(
     );
 }
 
-TraverseNode *findTravSds(TraverseNode *where,
-        const vec2 &pointSds, uint32 maxLod, uint32 currentTime)
+TraverseNode *findTravSds(CameraImpl *camera, TraverseNode *where,
+        const vec2 &pointSds, uint32 maxLod)
 {
     assert(where && where->meta);
     TraverseNode *t = where;
     while (t->id().lod < maxLod)
     {
-        t->lastAccessTime = currentTime;
         auto p = t;
         for (auto &it : t->childs)
         {
-            if (!it->meta)
+            if (!camera->travInit(it.get()))
                 continue;
             if (!it->nodeInfo.inside(vecToUblas<math::Point2>(pointSds)))
                 continue;
@@ -191,14 +190,14 @@ TraverseNode *findTravSds(TraverseNode *where,
 } // namespace
 
 
-bool MapImpl::getSurfaceOverEllipsoid(double &result,
-    const vec3 &navPos, double sampleSize,
-    CameraImpl *debugCamera)
+bool CameraImpl::getSurfaceOverEllipsoid(
+    double &result, const vec3 &navPos,
+    double sampleSize, bool renderDebug)
 {
-    assert(convertor);
-    assert(!layers.empty());
+    assert(map->convertor);
+    assert(!map->layers.empty());
 
-    TraverseNode *root = layers[0]->traverseRoot.get();
+    TraverseNode *root = map->layers[0]->traverseRoot.get();
     if (!root || !root->meta)
         return false;
 
@@ -206,16 +205,19 @@ bool MapImpl::getSurfaceOverEllipsoid(double &result,
     vec2 sds;
     boost::optional<NodeInfo> info;
     uint32 index = 0;
-    for (auto &it : mapconfig->referenceFrame.division.nodes)
+    for (auto &it : map->mapconfig->referenceFrame.division.nodes)
     {
-        struct I { uint32 &i; I(uint32 &i) : i(i) {} ~I() { ++i; } } inc(index);
+        struct I {
+            uint32 &i; I(uint32 &i) : i(i) {} ~I() { ++i; }
+        } inc(index);
         if (it.second.partitioning.mode
                 != vtslibs::registry::PartitioningMode::bisection)
             continue;
-        const NodeInfo &ni = mapconfig->referenceDivisionNodeInfos[index];
+        const NodeInfo &ni
+            = map->mapconfig->referenceDivisionNodeInfos[index];
         try
         {
-            sds = vec3to2(convertor->convert(navPos,
+            sds = vec3to2(map->convertor->convert(navPos,
                 Srs::Navigation, it.second));
             if (!ni.inside(vecToUblas<math::Point2>(sds)))
                 continue;
@@ -272,7 +274,7 @@ bool MapImpl::getSurfaceOverEllipsoid(double &result,
     const TraverseNode *nodes[4];
     for (int i = 0; i < 4; i++)
     {
-        auto t = findTravSds(travRoot, points[i], desiredLod, renderTickIndex);
+        auto t = findTravSds(this, travRoot, points[i], desiredLod);
         if (!t)
             return false;
         if (!t->surrogateNav)
@@ -288,13 +290,13 @@ bool MapImpl::getSurfaceOverEllipsoid(double &result,
     bool resValid = !std::isnan(res);
 
     // debug visualization
-    if (debugCamera)
+    if (renderDebug)
     {
         for (int i = 0; i < 4; i++)
         {
             const TraverseNode *t = nodes[i];
             RenderSimpleTask task;
-            task.mesh = getMesh("internal://data/meshes/sphere.obj");
+            task.mesh = map->getMesh("internal://data/meshes/sphere.obj");
             task.mesh->priority = std::numeric_limits<float>::infinity();
             if (*task.mesh)
             {
@@ -302,8 +304,7 @@ bool MapImpl::getSurfaceOverEllipsoid(double &result,
                     * scaleMatrix(t->nodeInfo.extents().size() * 0.035);
                 float c = resValid ? 1.0 : 0.0;
                 task.color = vec4f(c, c, c, 1.f);
-                debugCamera->draws.infographics.push_back(
-                    debugCamera->convert(task));
+                draws.infographics.push_back(convert(task));
             }
         }
     }

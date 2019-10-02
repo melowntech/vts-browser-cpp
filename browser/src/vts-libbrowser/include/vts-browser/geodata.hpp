@@ -117,10 +117,12 @@ public:
 
     struct VTS_API LabelFlat
     {
+        float outline[4];
         float color[4];
         float color2[4];
-        float size;
         float offset;
+        float margin;
+        float size; // meters
     };
 
     struct VTS_API LabelScreen

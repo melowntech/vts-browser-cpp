@@ -1610,7 +1610,7 @@ if (cond == #OP) \
         if (layer.isMember("importance-weight"))
             importance *= convertToDouble(
                 evaluate(layer["importance-weight"]));
-        if (importance == importance
+        if (!std::isnan(importance)
             && browserOptions.isMember("mapFeaturesReduceMode")
             && browserOptions["mapFeaturesReduceMode"].asString()
                 == "scr-count7")
@@ -1860,9 +1860,58 @@ if (cond == #OP) \
 
     void processFeatureLabelFlat(const Value &layer, GpuGeodataSpec spec)
     {
-        (void)layer;
-        (void)spec;
-        // todo
+        findFonts(layer["line-label-font"], spec.fontCascade);
+
+        spec.type = GpuGeodataSpec::Type::LabelFlat;
+
+        vecToRaw(layer.isMember("line-label-color")
+            ? convertColor(layer["line-label-color"])
+            : vec4f(1, 1, 1, 1),
+            spec.unionData.labelFlat.color);
+        vecToRaw(layer.isMember("line-label-color2")
+            ? convertColor(layer["line-label-color2"])
+            : vec4f(0, 0, 0, 1),
+            spec.unionData.labelFlat.color2);
+
+        vecToRaw(layer.isMember("line-label-outline")
+            ? convertVector4(layer["line-label-outline"])
+            : vec4f(0.27, 0.75, 2.2, 2.2),
+            spec.unionData.labelFlat.outline);
+
+        spec.unionData.labelFlat.offset
+            = layer.isMember("line-label-offset")
+            ? convertToDouble(layer["line-label-offset"])
+            : 0;
+
+        spec.unionData.labelFlat.margin
+            = layer.isMember("line-label-no-overlap-margin")
+            ? convertToDouble(layer["line-label-no-overlap-margin"])
+            : 0;
+
+        spec.unionData.labelFlat.size
+            = layer.isMember("line-label-size")
+            ? convertToDouble(layer["line-label-size"])
+            : 1;
+
+        std::string text = evaluate(layer.isMember("line-label-source")
+            ? layer["line-label-source"] : "$name").asString();
+        if (text.empty())
+            return;
+
+        std::string hysteresisId = addHysteresisIdSpec(layer, spec);
+
+        float importance = addImportanceSpec(layer, spec);
+
+        GpuGeodataSpec &data = findSpecData(spec);
+        auto arr = getFeaturePositions();
+        cullOutsideFeatures(arr);
+        data.positions.reserve(data.positions.size() + arr.size());
+        data.positions.insert(data.positions.end(), arr.begin(), arr.end());
+        data.texts.reserve(data.texts.size() + arr.size());
+        for (uint32 i = 0, cnt = arr.size(); i < cnt; i++)
+            data.texts.push_back(text);
+        addHysteresisIdItems(hysteresisId, data, arr.size());
+        addImportanceItems(importance, data, arr.size());
     }
 
     void processFeatureLabelScreen(const Value &layer, GpuGeodataSpec spec)

@@ -368,6 +368,29 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
             });
     }
 
+    // load shader geodata label flat
+    {
+        shaderGeodataLabelFlat = std::make_shared<Shader>();
+        shaderGeodataLabelFlat->debugId
+            = "data/shaders/geodataLabelFlat.*.glsl";
+        Buffer vert = readInternalMemoryBuffer(
+            "data/shaders/geodataLabelFlat.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
+            "data/shaders/geodataLabelFlat.frag.glsl");
+        shaderGeodataLabelFlat->load(geo + vert.str(), geo + frag.str());
+        shaderGeodataLabelFlat->bindTextureLocations({
+                { "texGlyphs", 0 }
+            });
+        shaderGeodataLabelFlat->bindUniformBlockLocations({
+                { "uboCameraData", 0 },
+                { "uboViewData", 1 },
+                { "uboLabelFlat", 2 }
+            });
+        shaderGeodataLabelFlat->loadUniformLocations({
+                "uniPass"
+            });
+    }
+
     // load shader geodata label screen
     {
         shaderGeodataLabelScreen = std::make_shared<Shader>();
@@ -384,7 +407,7 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
         shaderGeodataLabelScreen->bindUniformBlockLocations({
                 { "uboCameraData", 0 },
                 { "uboViewData", 1 },
-                { "uboText", 2 }
+                { "uboLabelScreen", 2 }
             });
         shaderGeodataLabelScreen->loadUniformLocations({
                 "uniPass"

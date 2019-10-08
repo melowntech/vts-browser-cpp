@@ -1,11 +1,11 @@
 
-layout(std140) uniform uboText
+layout(std140) uniform uboLabelScreen
 {
     vec4 uniColor[2];
     vec4 uniOutline;
     vec4 uniPosition; // xyz, scale
     vec4 uniOffset;
-    vec4 uniCoordinates[1000];
+    vec4 uniCoordinates[500];
     // 0, 1: position
     // 2, 3: uv
     // 2: + plane index (multiplied by 2)

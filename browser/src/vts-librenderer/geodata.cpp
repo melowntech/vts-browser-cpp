@@ -34,10 +34,10 @@
 namespace vts { namespace renderer
 {
 
-GeodataBase::GeodataBase() : renderer(nullptr), info(nullptr)
+GeodataTile::GeodataTile() : renderer(nullptr), info(nullptr)
 {}
 
-void GeodataBase::load(RenderContextImpl *renderer, ResourceInfo &info,
+void GeodataTile::load(RenderContextImpl *renderer, ResourceInfo &info,
     GpuGeodataSpec &specp, const std::string &debugId)
 {
     this->debugId = debugId;
@@ -54,8 +54,6 @@ void GeodataBase::load(RenderContextImpl *renderer, ResourceInfo &info,
         if (!std::isnan(c))
             c = std::cos(c * M_PI / 180.0);
     }
-
-    copyFonts();
 
     switch (spec.type)
     {
@@ -86,6 +84,7 @@ void GeodataBase::load(RenderContextImpl *renderer, ResourceInfo &info,
 
     // free some memory
     std::vector<std::string>().swap(spec.texts);
+    std::vector<std::shared_ptr<void>>().swap(spec.fontCascade);
 
     // compute memory requirements
     this->info->ramMemoryCost += getTotalPoints()
@@ -99,13 +98,13 @@ void GeodataBase::load(RenderContextImpl *renderer, ResourceInfo &info,
     CHECK_GL("load geodata");
 }
 
-void GeodataBase::addMemory(ResourceInfo &other)
+void GeodataTile::addMemory(ResourceInfo &other)
 {
     info->ramMemoryCost += other.ramMemoryCost;
     info->gpuMemoryCost += other.gpuMemoryCost;
 }
 
-uint32 GeodataBase::getTotalPoints() const
+uint32 GeodataTile::getTotalPoints() const
 {
     uint32 totalPoints = 0;
     for (const auto &li : spec.positions)
@@ -113,7 +112,7 @@ uint32 GeodataBase::getTotalPoints() const
     return totalPoints;
 }
 
-vec3f GeodataBase::modelUp(const vec3f &modelPos)
+vec3f GeodataTile::modelUp(const vec3f &modelPos)
 {
     vec3 mp3 = modelPos.cast<double>();
     vec4 mp4 = vec3to4(mp3, 1);
@@ -126,7 +125,7 @@ vec3f GeodataBase::modelUp(const vec3f &modelPos)
     return normalize(mn3).cast<float>();
 }
 
-void GeodataBase::copyPoints()
+void GeodataTile::copyPoints()
 {
     mat4 model = rawToMat4(spec.model);
     assert(points.empty());
@@ -191,7 +190,7 @@ float Rect::height() const
     return b[1] - a[1];
 }
 
-GeodataJob::GeodataJob(const std::shared_ptr<GeodataBase> &g,
+GeodataJob::GeodataJob(const std::shared_ptr<GeodataTile> &g,
     uint32 itemIndex)
     : g(g), labelOffset(0, 0), refPoint(nan2().cast<float>()),
     itemIndex(itemIndex), importance(nan1()), opacity(1), depth(nan1())
@@ -312,7 +311,7 @@ bool RenderViewImpl::geodataDepthVisibility(const vec3 &pos, float threshold)
 }
 
 mat4 RenderViewImpl::depthOffsetCorrection(
-    const std::shared_ptr<GeodataBase> &g) const
+    const std::shared_ptr<GeodataTile> &g) const
 {
     vec3 zbo = rawToVec3(g->spec.commonData.zBufferOffset).cast<double>();
     double off = dot(zbo, zBufferOffsetValues) * 0.0001;
@@ -423,7 +422,7 @@ void RenderViewImpl::renderGeodataQuad(const GeodataJob &job,
     context->meshQuad->dispatch();
 }
 
-void RenderViewImpl::bindUboView(const std::shared_ptr<GeodataBase> &g)
+void RenderViewImpl::bindUboView(const std::shared_ptr<GeodataTile> &g)
 {
     if (g.get() == lastUboViewPointer)
         return;
@@ -641,19 +640,39 @@ void RenderViewImpl::regenerateJobCollision(GeodataJob &j)
     }
 }
 
-void RenderViewImpl::regenerateJob(GeodataJob &j)
+void RenderViewImpl::regenerateJobLabelFlat(GeodataJob &j)
+{
+    // todo tmpGlyphCenters
+}
+
+void RenderViewImpl::regenerateJobLabelScreen(GeodataJob &j)
 {
     const auto &g = j.g;
+    const auto &t = g->texts[j.itemIndex];
+    float sc = options.textScale * 2; // NDC space is twice as large
+    vec2f sd = vec2f(sc / width, sc / height);
+    vec2f org = numericOrigin(g->spec.unionData.labelScreen.origin)
+        - vec2f(0.5f, 0.5f);
+    j.labelOffset = vec2f(
+        g->spec.unionData.labelScreen.offset[0] * 2 / width,
+        g->spec.unionData.labelScreen.offset[1] * 2 / height
+    ) - org.cwiseProduct(t.originSize).cwiseProduct(sd);
+    vec2f off = j.labelOffset + j.refPoint;
+    j.labelRect = Rect(
+        t.collision.a.cwiseProduct(sd) + off,
+        t.collision.b.cwiseProduct(sd) + off
+    );
+}
 
-    switch (g->spec.type)
+void RenderViewImpl::regenerateJob(GeodataJob &j)
+{
+    switch (j.g->spec.type)
     {
-    case GpuGeodataSpec::Type::Invalid:
-        throw std::invalid_argument("Invalid geodata type enum");
-
     case GpuGeodataSpec::Type::PointFlat:
     case GpuGeodataSpec::Type::PointScreen:
     case GpuGeodataSpec::Type::LineFlat:
     case GpuGeodataSpec::Type::LineScreen:
+    case GpuGeodataSpec::Type::Triangles:
         return; // nothing
 
     case GpuGeodataSpec::Type::IconFlat:
@@ -671,38 +690,21 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
 
     case GpuGeodataSpec::Type::LabelFlat:
     {
-        // todo
+        regenerateJobCommon(j);
+        regenerateJobLabelFlat(j);
     } break;
 
     case GpuGeodataSpec::Type::LabelScreen:
     {
         regenerateJobCommon(j);
-
-        // label rect
-        {
-            const auto &t = g->texts[j.itemIndex];
-            float sc = options.textScale * 2; // NDC space is twice as large
-            vec2f sd = vec2f(sc / width, sc / height);
-            vec2f org = numericOrigin(g->spec.unionData.labelScreen.origin)
-                - vec2f(0.5f, 0.5f);
-            j.labelOffset = vec2f(
-                g->spec.unionData.labelScreen.offset[0] * 2 / width,
-                g->spec.unionData.labelScreen.offset[1] * 2 / height
-            ) - org.cwiseProduct(t.originSize).cwiseProduct(sd);
-            vec2f off = j.labelOffset + j.refPoint;
-            j.labelRect = Rect(
-                t.collision.a.cwiseProduct(sd) + off,
-                t.collision.b.cwiseProduct(sd) + off
-            );
-        }
-
+        regenerateJobLabelScreen(j);
         regenerateJobIcon(j);
         regenerateJobStick(j);
         regenerateJobCollision(j);
     } break;
 
-    case GpuGeodataSpec::Type::Triangles:
-        return; // nothing
+    case GpuGeodataSpec::Type::Invalid:
+        throw std::invalid_argument("Invalid geodata type enum");
     }
 }
 
@@ -711,11 +713,13 @@ void RenderViewImpl::generateJobs()
     geodataJobs.clear();
     for (const auto &t : draws->geodata)
     {
-        std::shared_ptr<GeodataBase> g
-            = std::static_pointer_cast<GeodataBase>(t.geodata);
+        std::shared_ptr<GeodataTile> g
+            = std::static_pointer_cast<GeodataTile>(t.geodata);
 
-        if (draws->camera.viewExtent < g->spec.commonData.tileVisibility[0]
-            || draws->camera.viewExtent >= g->spec.commonData.tileVisibility[1])
+        if (draws->camera.viewExtent
+            < g->spec.commonData.tileVisibility[0]
+            || draws->camera.viewExtent
+            >= g->spec.commonData.tileVisibility[1])
             continue;
 
         switch (g->spec.type)
@@ -735,10 +739,6 @@ void RenderViewImpl::generateJobs()
 
         case GpuGeodataSpec::Type::IconFlat:
         case GpuGeodataSpec::Type::LabelFlat:
-        {
-            // todo
-        } break;
-
         case GpuGeodataSpec::Type::IconScreen:
         case GpuGeodataSpec::Type::LabelScreen:
         {
@@ -990,15 +990,59 @@ void RenderViewImpl::renderIcon(const GeodataJob &job)
     context->meshQuad->dispatch();
 }
 
-void RenderViewImpl::renderLabel(const GeodataJob &job)
+void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
 {
-    struct UboText
+    struct UboLabelFlat
+    {
+        vec4f color[2];
+        vec4f outline;
+        vec4f position; // xyz
+        vec4f coordinates[1000];
+    } data;
+
+    const auto &g = job.g;
+    const auto &t = g->texts[job.itemIndex];
+
+    data.color[0] = rawToVec4(g->spec.unionData.labelScreen.color);
+    data.color[1] = rawToVec4(g->spec.unionData.labelScreen.color2);
+    data.color[0][3] *= job.opacity;
+    data.color[1][3] *= job.opacity;
+    data.outline = g->outline;
+    data.position = vec3to4(job.modelPosition(), 0);
+    assert(t.coordinates.size() <= 500);
+    //std::copy(t.coordinates.begin(), t.coordinates.end(), data.coordinates);
+    // todo
+
+    context->shaderGeodataLabelFlat->bind();
+    auto ubo = getUbo();
+    ubo->debugId = "UboLabelFlat";
+    ubo->bind();
+    ubo->load(&data,
+        16 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size());
+    ubo->bindToIndex(2);
+
+    context->meshEmpty->bind();
+    for (int pass = 0; pass < 2; pass++)
+    {
+        context->shaderGeodataLabelFlat->uniform(0, pass);
+        for (auto &w : t.subtexts)
+        {
+            w.texture->bind();
+            context->meshEmpty->dispatch(
+                w.coordinatesStart, w.coordinatesCount);
+        }
+    }
+}
+
+void RenderViewImpl::renderLabelScreen(const GeodataJob &job)
+{
+    struct UboLabelScreen
     {
         vec4f color[2];
         vec4f outline;
         vec4f position; // xyz, scale
         vec4f offset;
-        vec4f coordinates[1000];
+        vec4f coordinates[500];
     } data;
 
     const auto &g = job.g;
@@ -1011,16 +1055,12 @@ void RenderViewImpl::renderLabel(const GeodataJob &job)
     data.outline = g->outline;
     data.position = vec3to4(job.modelPosition(), options.textScale * 2);
     data.offset = vec4f(job.labelOffset[0], job.labelOffset[1], 0, 0);
-
-    {
-        vec4f *o = data.coordinates;
-        for (const vec4f &c : t.coordinates)
-            *o++ = c;
-    }
+    assert(t.coordinates.size() <= 500);
+    std::copy(t.coordinates.begin(), t.coordinates.end(), data.coordinates);
 
     context->shaderGeodataLabelScreen->bind();
     auto ubo = getUbo();
-    ubo->debugId = "UboText";
+    ubo->debugId = "UboLabelScreen";
     ubo->bind();
     ubo->load(&data,
         20 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size());
@@ -1030,7 +1070,7 @@ void RenderViewImpl::renderLabel(const GeodataJob &job)
     for (int pass = 0; pass < 2; pass++)
     {
         context->shaderGeodataLabelScreen->uniform(0, pass);
-        for (auto &w : t.words)
+        for (auto &w : t.subtexts)
         {
             w.texture->bind();
             context->meshEmpty->dispatch(
@@ -1093,7 +1133,13 @@ void RenderViewImpl::renderJobs()
 
         case GpuGeodataSpec::Type::LabelFlat:
         {
-            // todo
+            if (!geodataTestVisibility(
+                g->spec.commonData.visibilities,
+                job.worldPosition(), job.worldUp()))
+                continue;
+
+            bindUboView(g);
+            renderLabelFlat(job);
         } break;
 
         case GpuGeodataSpec::Type::LabelScreen:
@@ -1107,7 +1153,7 @@ void RenderViewImpl::renderJobs()
             renderStick(job);
             if (job.g->spec.commonData.icon.scale > 0)
                 renderIcon(job);
-            renderLabel(job);
+            renderLabelScreen(job);
         } break;
 
         case GpuGeodataSpec::Type::Triangles:
@@ -1135,7 +1181,7 @@ void RenderViewImpl::renderJobs()
 void RenderContext::loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec,
     const std::string &debugId)
 {
-    auto r = std::make_shared<GeodataBase>();
+    auto r = std::make_shared<GeodataTile>();
     r->load(&*impl, info, spec, debugId);
     info.userData = r;
 }

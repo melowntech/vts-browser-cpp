@@ -51,6 +51,8 @@ set(DATA_LIST
     data/shaders/geodataColor.vert.glsl
     data/shaders/geodataIcon.frag.glsl
     data/shaders/geodataIcon.vert.glsl
+    data/shaders/geodataLabelFlat.frag.glsl
+    data/shaders/geodataLabelFlat.vert.glsl
     data/shaders/geodataLabelScreen.frag.glsl
     data/shaders/geodataLabelScreen.vert.glsl
     data/shaders/geodataLine.frag.glsl

@@ -47,7 +47,7 @@ namespace renderer
 {
 
 class RenderContextImpl;
-class GeodataBase;
+class GeodataTile;
 struct Text;
 
 // reading depth immediately requires implicit sync between cpu and gpu, which is wasteful
@@ -114,7 +114,7 @@ struct Rect
 
 struct GeodataJob
 {
-    std::shared_ptr<GeodataBase> g;
+    std::shared_ptr<GeodataTile> g;
     Rect collisionRect; // ndc space (-1..1)
     Rect iconRect;
     Rect stickRect;
@@ -125,7 +125,7 @@ struct GeodataJob
     float importance;
     float opacity; // 0..1
     float depth; // ndc space (0..1) - with z-buffer-offset applied
-    GeodataJob(const std::shared_ptr<GeodataBase> &g, uint32 itemIndex);
+    GeodataJob(const std::shared_ptr<GeodataTile> &g, uint32 itemIndex);
     vec3f modelPosition() const;
     vec3 worldPosition() const;
     vec3f worldUp() const;
@@ -156,7 +156,7 @@ public:
     CameraDraws *draws;
     const MapCelestialBody *body;
     Texture *atmosphereDensityTexture;
-    GeodataBase *lastUboViewPointer;
+    GeodataTile *lastUboViewPointer;
     mat4 view;
     mat4 viewInv;
     mat4 proj;
@@ -191,10 +191,10 @@ public:
         const float visibility[4],
         const vec3 &pos, const vec3f &up);
     bool geodataDepthVisibility(const vec3 &pos, float threshold);
-    mat4 depthOffsetCorrection(const std::shared_ptr<GeodataBase> &g) const;
+    mat4 depthOffsetCorrection(const std::shared_ptr<GeodataTile> &g) const;
     void renderGeodataQuad(const GeodataJob &job,
         const Rect &rect, const vec4f &color);
-    void bindUboView(const std::shared_ptr<GeodataBase> &gg);
+    void bindUboView(const std::shared_ptr<GeodataTile> &gg);
     void computeZBufferOffsetValues();
     void bindUboCamera();
     void renderGeodata();
@@ -202,6 +202,8 @@ public:
     void regenerateJobIcon(GeodataJob &j);
     void regenerateJobStick(GeodataJob &j);
     void regenerateJobCollision(GeodataJob &j);
+    void regenerateJobLabelFlat(GeodataJob &j);
+    void regenerateJobLabelScreen(GeodataJob &j);
     void regenerateJob(GeodataJob &j);
     void generateJobs();
     void sortJobsByZIndexAndImportance();
@@ -213,7 +215,8 @@ public:
     void renderStick(const GeodataJob &job);
     void renderPointOrLine(const GeodataJob &job);
     void renderIcon(const GeodataJob &job);
-    void renderLabel(const GeodataJob &job);
+    void renderLabelFlat(const GeodataJob &job);
+    void renderLabelScreen(const GeodataJob &job);
     void renderJobs();
 };
 
@@ -235,6 +238,7 @@ public:
     std::shared_ptr<Shader> shaderGeodataLineFlat;
     std::shared_ptr<Shader> shaderGeodataLineScreen;
     std::shared_ptr<Shader> shaderGeodataIconScreen;
+    std::shared_ptr<Shader> shaderGeodataLabelFlat;
     std::shared_ptr<Shader> shaderGeodataLabelScreen;
     std::shared_ptr<Shader> shaderGeodataTriangle;
     std::shared_ptr<Mesh> meshQuad; // positions: -1 .. 1

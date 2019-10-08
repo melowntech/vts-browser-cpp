@@ -120,8 +120,8 @@ public:
         float outline[4];
         float color[4];
         float color2[4];
-        float offset;
-        float margin;
+        float offset; // meters
+        float marginMult; // size multiplier
         float size; // meters
     };
 

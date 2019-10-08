@@ -79,7 +79,7 @@ float oneMeterInModel(const mat4 &model, const mat4 &modelInv)
 
 } // namespace
 
-void GeodataBase::loadLines()
+void GeodataTile::loadLines()
 {
     uint32 totalPoints = getTotalPoints(); // example: 7
     uint32 linesCount = spec.positions.size(); // 2
@@ -229,7 +229,7 @@ void GeodataBase::loadLines()
     }
 }
 
-void GeodataBase::loadPoints()
+void GeodataTile::loadPoints()
 {
     uint32 totalPoints = getTotalPoints(); // example: 7
     uint32 trianglesCount = totalPoints * 2; // 14
@@ -331,14 +331,14 @@ void GeodataBase::loadPoints()
     }
 }
 
-void GeodataBase::loadIcons()
+void GeodataTile::loadIcons()
 {
     assert(spec.iconCoords.size() == spec.positions.size());
     copyPoints();
     info->ramMemoryCost += points.size() * sizeof(decltype(points[0]));
 }
 
-void GeodataBase::loadTriangles()
+void GeodataTile::loadTriangles()
 {
     // prepare mesh
     {

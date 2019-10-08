@@ -35,7 +35,7 @@ namespace vts { namespace renderer
 
 class Font;
 
-struct Word
+struct Subtext
 {
     std::shared_ptr<Font> font;
     std::shared_ptr<Texture> texture;
@@ -43,14 +43,17 @@ struct Word
     uint16 coordinatesStart;
     uint16 coordinatesCount;
 
-    Word() : fileIndex(-1), coordinatesStart(0), coordinatesCount(0)
+    Subtext() : fileIndex(-1), coordinatesStart(0), coordinatesCount(0)
     {}
 };
 
 struct Text
 {
-    std::vector<vec4f> coordinates;
-    std::vector<Word> words;
+    std::vector<float> lineVertPositions; // positions of line vertices in range -1 .. 1
+    std::vector<float> lineGlyphPositions; // position of glyph's centers along the line in range -1 .. 1
+    std::vector<vec4f> tmpGlyphCenters; // clip space
+    std::vector<vec4f> coordinates; // x, y, uv.s (+ plane index * 2), uv.t - four vec4f per glyph
+    std::vector<Subtext> subtexts;
     Rect collision;
     vec2f originSize;
 
@@ -65,7 +68,7 @@ struct Point
     vec3f modelPosition;
 };
 
-class GeodataBase : public std::enable_shared_from_this<GeodataBase>
+class GeodataTile : public std::enable_shared_from_this<GeodataTile>
 {
 public:
     std::string debugId;
@@ -86,7 +89,7 @@ public:
 
     std::vector<Point> points;
 
-    GeodataBase();
+    GeodataTile();
     void load(RenderContextImpl *renderer, ResourceInfo &info,
         GpuGeodataSpec &specp, const std::string &debugId);
     void addMemory(ResourceInfo &other);

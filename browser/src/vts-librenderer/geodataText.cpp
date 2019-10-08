@@ -377,32 +377,32 @@ Text generateTexts(std::vector<TmpLine> &lines)
     // sort into groups
     struct WordCompare
     {
-        bool operator () (const Word &a, const Word &b) const
+        bool operator () (const Subtext &a, const Subtext &b) const
         {
             if (a.font == b.font)
                 return a.fileIndex < b.fileIndex;
             return a.font < b.font;
         }
     };
-    std::map<Word, std::vector<TmpGlyph>, WordCompare> groups;
+    std::map<Subtext, std::vector<TmpGlyph>, WordCompare> groups;
     for (TmpLine &line : lines)
     {
         for (const TmpGlyph &g : line.glyphs)
         {
-            Word w;
+            Subtext w;
             w.font = g.font;
             w.fileIndex = g.font->glyphs[g.glyphIndex].fileIndex;
             groups[w].push_back(g);
         }
     }
 
-    // generate words
+    // generate subtexts
     Text text;
     text.coordinates.reserve(1020);
     uint32 vertexIndex = 0;
     for (auto &grp : groups)
     {
-        Word w(grp.first);
+        Subtext w(grp.first);
         w.coordinatesStart = vertexIndex;
         for (const TmpGlyph &tg : grp.second)
         {
@@ -424,13 +424,13 @@ Text generateTexts(std::vector<TmpLine> &lines)
             vertexIndex += 6;
 
             // todo better handle shader limit
-            if (text.coordinates.size() >= 990)
+            if (text.coordinates.size() >= 480)
             {
-                text.words.push_back(std::move(w));
+                text.subtexts.push_back(std::move(w));
                 return text;
             }
         }
-        text.words.push_back(std::move(w));
+        text.subtexts.push_back(std::move(w));
     }
     text.coordinates.shrink_to_fit();
     return text;
@@ -455,18 +455,25 @@ float numericAlign(GpuGeodataSpec::TextAlign a)
 
 } // namespace
 
-void GeodataBase::copyFonts()
+void GeodataTile::copyFonts()
 {
     fontCascade.reserve(spec.fontCascade.size());
     for (auto &i : spec.fontCascade)
         fontCascade.push_back(std::static_pointer_cast<Font>(i));
-    std::vector<std::shared_ptr<void>>().swap(spec.fontCascade);
+
+    // prepare outline
+    {
+        float os = std::sqrt(2) / spec.unionData.labelScreen.size;
+        outline = rawToVec4(spec.unionData.labelScreen.outline)
+            .cwiseProduct(vec4f(1, 1, os, os));
+    }
 }
 
-void GeodataBase::loadLabelScreens()
+void GeodataTile::loadLabelScreens()
 {
     assert(spec.texts.size() == spec.positions.size());
     copyPoints();
+    copyFonts();
 
     float align = numericAlign(spec.unionData.labelScreen.textAlign);
     for (uint32 i = 0, e = spec.texts.size(); i != e; i++)
@@ -480,30 +487,37 @@ void GeodataBase::loadLabelScreens()
         t.collision = textCollision(lines);
         t.originSize = originSize;
         info->ramMemoryCost += t.coordinates.size() * sizeof(vec4f);
-        info->ramMemoryCost += t.words.size() * sizeof(Word);
+        info->ramMemoryCost += t.subtexts.size() * sizeof(Subtext);
         texts.push_back(std::move(t));
     }
     info->ramMemoryCost += texts.size() * sizeof(decltype(texts[0]));
-
-    // prepare outline
-    {
-        float os = std::sqrt(2) / spec.unionData.labelScreen.size;
-        outline = rawToVec4(spec.unionData.labelScreen.outline)
-                        .cwiseProduct(vec4f(1, 1, os, os));
-    }
 }
 
-void GeodataBase::loadLabelFlats()
+void GeodataTile::loadLabelFlats()
 {
-    // todo
+    assert(spec.texts.size() == spec.positions.size());
+    copyPoints();
+    copyFonts();
+
+    for (uint32 i = 0, e = spec.texts.size(); i != e; i++)
+    {
+        std::vector<TmpLine> lines = textToGlyphs(
+            spec.texts[i], fontCascade);
+        textLayout(spec.unionData.labelFlat.size, 0.5, lines);
+        Text t = generateTexts(lines);
+        info->ramMemoryCost += t.coordinates.size() * sizeof(vec4f);
+        info->ramMemoryCost += t.subtexts.size() * sizeof(Subtext);
+        texts.push_back(std::move(t));
+    }
+    info->ramMemoryCost += texts.size() * sizeof(decltype(texts[0]));
 }
 
-bool GeodataBase::checkTextures()
+bool GeodataTile::checkTextures()
 {
     bool ok = true;
     for (auto &t : texts)
     {
-        for (auto &w : t.words)
+        for (auto &w : t.subtexts)
         {
             if (w.texture)
                 continue;

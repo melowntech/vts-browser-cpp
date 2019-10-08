@@ -82,7 +82,7 @@ VTS_API vec3f normalize(const vec3f &a);
 VTS_API vec3f anyPerpendicular(const vec3f &v);
 VTS_API vec3f min(const vec3f &a, const vec3f &b);
 VTS_API vec3f max(const vec3f &a, const vec3f &b);
-VTS_API vec3f interpolate(const vec3f &a, const vec3f &b, double f);
+VTS_API vec3f interpolate(const vec3f &a, const vec3f &b, float f);
 
 VTS_API mat4 frustumMatrix(double left, double right,
                            double bottom, double top,

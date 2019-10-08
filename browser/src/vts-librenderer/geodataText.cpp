@@ -453,6 +453,61 @@ float numericAlign(GpuGeodataSpec::TextAlign a)
     return align;
 }
 
+void textLinePositions(GeodataTile *g,
+    const std::vector<std::array<float, 3>> &positions, Text &t)
+{
+    mat4 model = rawToMat4(g->spec.model);
+    const auto &m2w = [&](const std::array<float, 3> &pos)
+    {
+        return vec4to3(vec4(model
+            * vec3to4(rawToVec3(pos.data()), 1).cast<double>()));
+    };
+
+    // precompute absolute distances
+    std::vector<double> dists;
+    dists.reserve(positions.size());
+    double totalDist = 0;
+    {
+        vec3 lastPos = m2w(positions[0]);
+        for (const auto &it : positions)
+        {
+            vec3 p = m2w(it);
+            totalDist += length(vec3(lastPos - p));
+            dists.push_back(totalDist);
+            lastPos = p;
+        }
+        assert(totalDist > 1e-7);
+    }
+
+    // normalize distance-along-the-line into -1..1 range
+    std::vector<float> &lvp = t.lineVertPositions;
+    lvp.reserve(positions.size());
+    for (uint32 i = 0, e = positions.size(); i != e; i++)
+        lvp.push_back(2 * dists[i] / totalDist - 1);
+    assert(std::abs(lvp[0] + 1) < 1e-7);
+    assert(std::abs(lvp[lvp.size() - 1] - 1) < 1e-7);
+
+    // find center of the line
+    for (uint32 i = 0, e = positions.size() - 1; i != e; i++)
+    {
+        if (lvp[i + 1] > 0)
+        {
+            float f = (-lvp[i]) / (lvp[i + 1] - lvp[i]);
+            Point t;
+            t.modelPosition = interpolate(rawToVec3(positions[i].data()),
+                rawToVec3(positions[i + 1].data()), (float)f);
+            t.worldPosition = interpolate(m2w(positions[i]),
+                m2w(positions[i + 1]), (double)f);
+            t.worldUp = normalize(t.worldPosition).cast<float>();
+            g->points.push_back(t);
+            break;
+        }
+    }
+
+    // find line-positions for each glyph
+    // todo
+}
+
 } // namespace
 
 void GeodataTile::copyFonts()
@@ -496,20 +551,22 @@ void GeodataTile::loadLabelScreens()
 void GeodataTile::loadLabelFlats()
 {
     assert(spec.texts.size() == spec.positions.size());
-    copyPoints();
     copyFonts();
-
+    points.reserve(spec.positions.size());
     for (uint32 i = 0, e = spec.texts.size(); i != e; i++)
     {
+        assert(spec.positions[i].size() > 1); // line must have at least two points
         std::vector<TmpLine> lines = textToGlyphs(
             spec.texts[i], fontCascade);
         textLayout(spec.unionData.labelFlat.size, 0.5, lines);
         Text t = generateTexts(lines);
+        textLinePositions(this, spec.positions[i], t);
         info->ramMemoryCost += t.coordinates.size() * sizeof(vec4f);
         info->ramMemoryCost += t.subtexts.size() * sizeof(Subtext);
         texts.push_back(std::move(t));
     }
     info->ramMemoryCost += texts.size() * sizeof(decltype(texts[0]));
+    assert(points.size() == spec.positions.size());
 }
 
 bool GeodataTile::checkTextures()

@@ -223,6 +223,15 @@ bool isLayerStyleRequested(const Value &v)
     return true;
 }
 
+template<class V>
+static void erase_if(V &v, const std::vector<bool> &pred)
+{
+    auto p = pred.begin();
+    v.erase(std::remove_if(v.begin(), v.end(), [p](auto&) mutable {
+        return *p++;
+        }), v.end());
+}
+
 template<bool Validating>
 struct geoContext
 {
@@ -530,7 +539,7 @@ struct geoContext
         {
             // validate that all vectors are of same length
             {
-                uint32 itemsCount = 0;
+                std::size_t itemsCount = 0;
                 const auto &c = [&](std::size_t s)
                 {
                     if (s)
@@ -538,9 +547,7 @@ struct geoContext
                         if (itemsCount == 0)
                             itemsCount = s;
                         else if (itemsCount != s)
-                        {
                             assert(false);
-                        }
                     }
                 };
                 c(spec.positions.size());
@@ -1834,6 +1841,7 @@ if (cond == #OP) \
         const auto arr = getFeaturePositions();
         data.positions.reserve(data.positions.size() + arr.size());
         data.positions.insert(data.positions.end(), arr.begin(), arr.end());
+        eliminateSingularLines(data);
     }
 
     void processFeatureIcon(const Value &layer, GpuGeodataSpec spec)
@@ -1904,7 +1912,6 @@ if (cond == #OP) \
 
         GpuGeodataSpec &data = findSpecData(spec);
         auto arr = getFeaturePositions();
-        cullOutsideFeatures(arr);
         data.positions.reserve(data.positions.size() + arr.size());
         data.positions.insert(data.positions.end(), arr.begin(), arr.end());
         data.texts.reserve(data.texts.size() + arr.size());
@@ -1912,6 +1919,7 @@ if (cond == #OP) \
             data.texts.push_back(text);
         addHysteresisIdItems(hysteresisId, data, arr.size());
         addImportanceItems(importance, data, arr.size());
+        eliminateSingularLines(data);
     }
 
     void processFeatureLabelScreen(const Value &layer, GpuGeodataSpec spec)
@@ -2108,6 +2116,12 @@ if (cond == #OP) \
             return a;
         }
 
+        vec3 m2w(const Point &p) const
+        {
+            return vec4to3(vec4(model
+                * vec3to4(rawToVec3(p.data()).cast<double>(), 1.0)));
+        }
+
         mat4 model;
 
     private:
@@ -2196,8 +2210,7 @@ if (cond == #OP) \
         {
             v.erase(std::remove_if(v.begin(), v.end(),
                 [&](const Point &p) {
-                vec3 a = vec4to3(vec4(group->model
-                    * vec3to4(rawToVec3(p.data()).cast<double>(), 1.0)));
+                vec3 a = group->m2w(p);
                 for (int i = 0; i < 3; i++)
                 {
                     if (a[i] < aabbPhys[0][i])
@@ -2209,9 +2222,33 @@ if (cond == #OP) \
             }), v.end());
         }
         fps.erase(std::remove_if(fps.begin(), fps.end(),
-            [&](const std::vector<Point> &v) {
+            [](const std::vector<Point> &v) {
             return v.empty();
         }), fps.end());
+    }
+
+    void eliminateSingularLines(GpuGeodataSpec &data) const
+    {
+        std::vector<bool> removes;
+        removes.reserve(data.positions.size());
+        for (auto &v : data.positions)
+        {
+            vec3 l = nan3();
+            v.erase(std::remove_if(v.begin(), v.end(),
+                [&](const Point &pp) {
+                    vec3 p = group->m2w(pp);
+                    if (length(vec3(l - p)) < 1e-5)
+                        return true;
+                    l = p;
+                    return false;
+            }), v.end());
+            removes.push_back(v.size() <= 1);
+        }
+        erase_if(data.positions, removes);
+        erase_if(data.iconCoords, removes);
+        erase_if(data.texts, removes);
+        erase_if(data.hysteresisIds, removes);
+        erase_if(data.importances, removes);
     }
 
     // cache data

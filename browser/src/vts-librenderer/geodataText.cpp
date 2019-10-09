@@ -453,6 +453,37 @@ float numericAlign(GpuGeodataSpec::TextAlign a)
     return align;
 }
 
+template<class T>
+T interpFactor(T what, T before, T after)
+{
+    return (what - before) / (after - before);
+}
+
+template<class T>
+bool arrayPosition(const std::vector<T> &v, T p, uint32 &index, T &factor)
+{
+    assert(v.size() > 1);
+    if (p <= v[0])
+    {
+        index = 0;
+        factor = 0;
+        return false;
+    }
+    if (p >= v[v.size() - 1])
+    {
+        index = v.size() - 2;
+        factor = 1;
+        return false;
+    }
+    assert(index < v.size() - 1);
+    while (v[index] >= p)
+        index--;
+    while (v[index + 1] <= p)
+        index++;
+    factor = interpFactor(p, v[index], v[index + 1]);
+    return true;
+}
+
 void textLinePositions(GeodataTile *g,
     const std::vector<std::array<float, 3>> &positions, Text &t)
 {
@@ -487,25 +518,33 @@ void textLinePositions(GeodataTile *g,
     assert(std::abs(lvp[0] + 1) < 1e-7);
     assert(std::abs(lvp[lvp.size() - 1] - 1) < 1e-7);
 
-    // find center of the line
-    for (uint32 i = 0, e = positions.size() - 1; i != e; i++)
+    // find line-positions for each glyph
+    uint32 gc = t.coordinates.size() / 4;
+    t.lineGlyphPositions.reserve(gc);
+    for (uint32 i = 0; i < gc; i++)
     {
-        if (lvp[i + 1] > 0)
-        {
-            float f = (-lvp[i]) / (lvp[i + 1] - lvp[i]);
-            Point t;
-            t.modelPosition = interpolate(rawToVec3(positions[i].data()),
-                rawToVec3(positions[i + 1].data()), (float)f);
-            t.worldPosition = interpolate(m2w(positions[i]),
-                m2w(positions[i + 1]), (double)f);
-            t.worldUp = normalize(t.worldPosition).cast<float>();
-            g->points.push_back(t);
-            break;
-        }
+        float x = 0;
+        for (uint32 j = 0; j < 4; j++)
+            x += t.coordinates[i * 4 + j][0];
+        x *= 0.25;
+        for (uint32 j = 0; j < 4; j++)
+            t.coordinates[i * 4 + j][0] -= x;
+        t.lineGlyphPositions.push_back(2 * (x + totalDist * 0.5) / totalDist - 1);
     }
 
-    // find line-positions for each glyph
-    // todo
+    // find center of the line
+    {
+        uint32 i = 0;
+        float f;
+        arrayPosition<float>(lvp, 0, i, f);
+        Point t;
+        t.modelPosition = interpolate(rawToVec3(positions[i].data()),
+            rawToVec3(positions[i + 1].data()), (float)f);
+        t.worldPosition = interpolate(m2w(positions[i]),
+            m2w(positions[i + 1]), (double)f);
+        t.worldUp = normalize(t.worldPosition).cast<float>();
+        g->points.push_back(t);
+    }
 }
 
 } // namespace
@@ -582,6 +621,36 @@ bool GeodataTile::checkTextures()
                 w.font->fontHandle->requestTexture(w.fileIndex));
             ok = ok && !!w.texture;
         }
+    }
+    return ok;
+}
+
+bool regenerateJobLabelFlat(RenderViewImpl *rv, GeodataJob &j)
+{
+    const auto &g = j.g;
+    auto &t = g->texts[j.itemIndex];
+    const auto &mps = g->spec.positions[j.itemIndex];
+    const mat4f mvp = (rv->viewProj * g->model).cast<float>();
+    t.tmpGlyphCentersClip.clear();
+    t.tmpGlyphCentersClip.reserve(t.lineGlyphPositions.size());
+    t.tmpGlyphCentersWorld.clear();
+    t.tmpGlyphCentersWorld.reserve(t.lineGlyphPositions.size());
+    // todo find scale depending on view
+    float scale = rv->options.textScale;
+    bool ok = true;
+    uint32 vi = 0;
+    for (uint32 i = 0, e = t.lineGlyphPositions.size(); i != e; i++)
+    {
+        float lp = t.lineGlyphPositions[i];
+        float f;
+        ok = arrayPosition(t.lineVertPositions, lp, vi, f) && ok;
+        vec3f mpa = rawToVec3(mps[vi].data());
+        vec3f mpb = rawToVec3(mps[vi + 1].data());
+        vec3f mp = interpolate(mpa, mpb, f);
+        vec4f cp = mvp * vec3to4(mp, 1);
+        t.tmpGlyphCentersClip.push_back(vec3to2(vec4to3(cp, true)));
+        vec3 wp = vec4to3(vec4(g->model * (vec3to4(mp, 1).cast<double>())));
+        t.tmpGlyphCentersWorld.push_back(wp);
     }
     return ok;
 }

@@ -642,7 +642,8 @@ void RenderViewImpl::regenerateJobCollision(GeodataJob &j)
 
 void RenderViewImpl::regenerateJobLabelFlat(GeodataJob &j)
 {
-    // todo tmpGlyphCenters
+    bool valid = vts::renderer::regenerateJobLabelFlat(this, j);
+    // todo eliminate invalid
 }
 
 void RenderViewImpl::regenerateJobLabelScreen(GeodataJob &j)

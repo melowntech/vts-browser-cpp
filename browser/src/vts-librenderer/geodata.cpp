@@ -1010,16 +1010,34 @@ void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
     data.color[1][3] *= job.opacity;
     data.outline = g->outline;
     data.position = vec3to4(job.modelPosition(), 0);
+    assert(t.tmpGlyphCentersWorld.size() <= 125);
     assert(t.coordinates.size() <= 500);
-    //std::copy(t.coordinates.begin(), t.coordinates.end(), data.coordinates);
-    // todo
+    {
+        double scale = options.textScale;
+        mat4 vp = proj * depthOffsetCorrection(g) * view;
+        vec3 camRight = vec4to3(vec4(viewInv * vec4(1, 0, 0, 0)));
+        vec3 camUp = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
+        vec4f *c = data.coordinates;
+        for (uint32 i = 0, e = t.tmpGlyphCentersWorld.size(); i != e; i++)
+        {
+            vec3 center = t.tmpGlyphCentersWorld[i];
+            for (uint32 j = 0; j < 4; j++)
+            {
+                vec4f coord = t.coordinates[i * 4 + j];
+                vec3 wp = center + (coord[0] * camRight
+                    + coord[1] * camUp) * scale;
+                *c++ = vec4(vp * vec3to4(wp, 1)).cast<float>();
+                *c++ = coord;
+            }
+        }
+    }
 
     context->shaderGeodataLabelFlat->bind();
     auto ubo = getUbo();
     ubo->debugId = "UboLabelFlat";
     ubo->bind();
     ubo->load(&data,
-        16 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size());
+        16 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size() * 2);
     ubo->bindToIndex(2);
 
     context->meshEmpty->bind();
@@ -1030,7 +1048,7 @@ void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
         {
             w.texture->bind();
             context->meshEmpty->dispatch(
-                w.coordinatesStart, w.coordinatesCount);
+                w.indicesStart, w.indicesCount);
         }
     }
 }
@@ -1075,7 +1093,7 @@ void RenderViewImpl::renderLabelScreen(const GeodataJob &job)
         {
             w.texture->bind();
             context->meshEmpty->dispatch(
-                w.coordinatesStart, w.coordinatesCount);
+                w.indicesStart, w.indicesCount);
         }
     }
 }

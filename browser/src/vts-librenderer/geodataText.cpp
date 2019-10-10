@@ -403,7 +403,7 @@ Text generateTexts(std::vector<TmpLine> &lines)
     for (auto &grp : groups)
     {
         Subtext w(grp.first);
-        w.coordinatesStart = vertexIndex;
+        w.indicesStart = vertexIndex;
         for (const TmpGlyph &tg : grp.second)
         {
             const Glyph &g = tg.font->glyphs[tg.glyphIndex];
@@ -420,7 +420,7 @@ Text generateTexts(std::vector<TmpLine> &lines)
                 c[2] += g.plane * 2;
                 text.coordinates.push_back(c);
             }
-            w.coordinatesCount += 6;
+            w.indicesCount += 6;
             vertexIndex += 6;
 
             // todo better handle shader limit
@@ -641,7 +641,7 @@ bool regenerateJobLabelFlat(RenderViewImpl *rv, GeodataJob &j)
     uint32 vi = 0;
     for (uint32 i = 0, e = t.lineGlyphPositions.size(); i != e; i++)
     {
-        float lp = t.lineGlyphPositions[i];
+        float lp = t.lineGlyphPositions[i] * scale;
         float f;
         ok = arrayPosition(t.lineVertPositions, lp, vi, f) && ok;
         vec3f mpa = rawToVec3(mps[vi].data());

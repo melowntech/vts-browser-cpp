@@ -40,10 +40,10 @@ struct Subtext
     std::shared_ptr<Font> font;
     std::shared_ptr<Texture> texture;
     uint16 fileIndex;
-    uint16 coordinatesStart;
-    uint16 coordinatesCount;
+    uint16 indicesStart;
+    uint16 indicesCount;
 
-    Subtext() : fileIndex(-1), coordinatesStart(0), coordinatesCount(0)
+    Subtext() : fileIndex(-1), indicesStart(0), indicesCount(0)
     {}
 };
 

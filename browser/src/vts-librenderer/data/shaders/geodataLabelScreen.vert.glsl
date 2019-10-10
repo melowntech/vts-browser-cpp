@@ -25,9 +25,10 @@ void main()
     // 1-3-2
     int tri = (gl_VertexID / 3) % 2;
     int vert = gl_VertexID % 3;
-    int coordId = tri == 0 ? vert :
+    int vertId = tri == 0 ? vert :
         vert == 0 ? 1 : vert == 1 ? 3 : 2;
-    vec4 coord = uniCoordinates[coordId + 4 * (gl_VertexID / 6)];
+    int coordId = 4 * (gl_VertexID / 6) + vertId;
+    vec4 coord = uniCoordinates[coordId];
     vec2 pos = coord.xy;
     varPlane = int(coord.z) / 2;
     varUv = coord.zw;

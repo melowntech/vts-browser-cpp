@@ -27,7 +27,7 @@ void main()
     float c = uniOutline[uniPass];
     float d = uniOutline[uniPass + 2];
     float a = smoothstep(c - d, c + d, t);
-    outColor = uniColor[1 - uniPass];
+    outColor = uniColor[uniPass];
     outColor.a *= a;
 }
 

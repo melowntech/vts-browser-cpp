@@ -104,18 +104,20 @@ VTS_API mat4 scaleMatrix(const vec3 &vec);
 VTS_API mat4 translationMatrix(double tx, double ty, double tz);
 VTS_API mat4 translationMatrix(const vec3 &vec);
 
-VTS_API vec4 vec3to4(vec3 v, double w);
-VTS_API vec3 vec4to3(vec4 v, bool division = false);
-VTS_API vec3 vec2to3(vec2 v, double w);
-VTS_API vec2 vec3to2(vec3 v, bool division = false);
+VTS_API vec4 vec3to4(const vec3 &v, double w);
+VTS_API vec3 vec4to3(const vec4 &v, bool division = false);
+VTS_API vec3 vec2to3(const vec2 &v, double w);
+VTS_API vec2 vec3to2(const vec3 &v, bool division = false);
+VTS_API vec2 vec4to2(const vec4 &v, bool division = false);
 
-VTS_API vec4f vec3to4(vec3f v, float w);
-VTS_API vec3f vec4to3(vec4f v, bool division = false);
-VTS_API vec3f vec2to3(vec2f v, float w);
-VTS_API vec2f vec3to2(vec3f v, bool division = false);
+VTS_API vec4f vec3to4(const vec3f &v, float w);
+VTS_API vec3f vec4to3(const vec4f &v, bool division = false);
+VTS_API vec3f vec2to3(const vec2f &v, float w);
+VTS_API vec2f vec3to2(const vec3f &v, bool division = false);
+VTS_API vec2f vec4to2(const vec4f &v, bool division = false);
 
-VTS_API vec2ui16 vec2to2ui16(vec2 v, bool normalized = true);
-VTS_API vec2ui16 vec2to2ui16(vec2f v, bool normalized = true);
+VTS_API vec2ui16 vec2to2ui16(const vec2 &v, bool normalized = true);
+VTS_API vec2ui16 vec2to2ui16(const vec2f &v, bool normalized = true);
 
 VTS_API mat3 mat4to3(const mat4 &mat);
 VTS_API mat4 mat3to4(const mat3 &mat);

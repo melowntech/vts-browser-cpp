@@ -353,88 +353,109 @@ mat4 translationMatrix(const vec3 &vec)
     return translationMatrix(vec(0), vec(1), vec(2));
 }
 
-vec4 vec3to4(vec3 v, double w)
+vec4 vec3to4(const vec3 &v, double w)
 {
     vec4 res;
-    res(0) = v(0);
-    res(1) = v(1);
-    res(2) = v(2);
-    res(3) = w;
+    res[0] = v[0];
+    res[1] = v[1];
+    res[2] = v[2];
+    res[3] = w;
     return res;
 }
 
-vec3 vec4to3(vec4 v, bool division)
+vec3 vec4to3(const vec4 &v, bool division)
 {
     vec3 res;
+    res[0] = v[0];
+    res[1] = v[1];
+    res[2] = v[2];
     if (division)
-        v = v / v(3);
-    res(0) = v(0);
-    res(1) = v(1);
-    res(2) = v(2);
+        res /= v[3];
     return res;
 }
 
-vec3 vec2to3(vec2 v, double w)
+vec3 vec2to3(const vec2 &v, double w)
 {
     vec3 res;
-    res(0) = v(0);
-    res(1) = v(1);
-    res(2) = w;
+    res[0] = v[0];
+    res[1] = v[1];
+    res[2] = w;
     return res;
 }
 
-vec2 vec3to2(vec3 v, bool division)
+vec2 vec3to2(const vec3 &v, bool division)
 {
     vec2 res;
+    res[0] = v[0];
+    res[1] = v[1];
     if (division)
-        v = v / v(2);
-    res(0) = v(0);
-    res(1) = v(1);
+        res /= v[2];
     return res;
 }
 
-vec4f vec3to4(vec3f v, float w)
+vec2 vec4to2(const vec4 &v, bool division)
+{
+    vec2 res;
+    res[0] = v[0];
+    res[1] = v[1];
+    if (division)
+        res /= v[3];
+    return res;
+}
+
+vec4f vec3to4(const vec3f &v, float w)
 {
     vec4f res;
-    res(0) = v(0);
-    res(1) = v(1);
-    res(2) = v(2);
-    res(3) = w;
+    res[0] = v[0];
+    res[1] = v[1];
+    res[2] = v[2];
+    res[3] = w;
     return res;
 }
 
-vec3f vec4to3(vec4f v, bool division)
+vec3f vec4to3(const vec4f &v, bool division)
 {
     vec3f res;
+    res[0] = v[0];
+    res[1] = v[1];
+    res[2] = v[2];
     if (division)
-        v = v / v(3);
-    res(0) = v(0);
-    res(1) = v(1);
-    res(2) = v(2);
+        res /= v[3];
     return res;
 }
 
-vec3f vec2to3(vec2f v, float w)
+vec3f vec2to3(const vec2f &v, float w)
 {
     vec3f res;
-    res(0) = v(0);
-    res(1) = v(1);
-    res(2) = w;
+    res[0] = v[0];
+    res[1] = v[1];
+    res[2] = w;
     return res;
 }
 
-vec2f vec3to2(vec3f v, bool division)
+vec2f vec3to2(const vec3f &v, bool division)
 {
     vec2f res;
+    res[0] = v[0];
+    res[1] = v[1];
     if (division)
-        v = v / v(2);
-    res(0) = v(0);
-    res(1) = v(1);
+        res /= v[2];
     return res;
 }
 
-vec2ui16 vec2to2ui16(vec2 v, bool normalized)
+vec2f vec4to2(const vec4f &v, bool division)
 {
+    vec2f res;
+    res[0] = v[0];
+    res[1] = v[1];
+    if (division)
+        res /= v[3];
+    return res;
+}
+
+vec2ui16 vec2to2ui16(const vec2 &p, bool normalized)
+{
+    vec2 v = p;
     if (normalized)
     {
         v *= 65535.0;
@@ -444,8 +465,9 @@ vec2ui16 vec2to2ui16(vec2 v, bool normalized)
     return v.cast<uint16>();
 }
 
-vec2ui16 vec2to2ui16(vec2f v, bool normalized)
+vec2ui16 vec2to2ui16(const vec2f &p, bool normalized)
 {
+    vec2f v = p;
     if (normalized)
     {
         v *= 65535.0f;

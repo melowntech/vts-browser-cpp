@@ -391,6 +391,12 @@ vec2f numericOrigin(GpuGeodataSpec::Origin o)
     return origin;
 }
 
+vec4f fontOutline(float size, const vec4f &specOutline)
+{
+    float os = std::sqrt(2) / size;
+    return specOutline.cwiseProduct(vec4f(1, 1, os, os));
+}
+
 } // namespace
 
 void RenderViewImpl::renderGeodataQuad(const GeodataJob &job,
@@ -1004,23 +1010,19 @@ void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
     const auto &g = job.g;
     const auto &t = g->texts[job.itemIndex];
 
-    data.color[0] = rawToVec4(g->spec.unionData.labelScreen.color);
-    data.color[1] = rawToVec4(g->spec.unionData.labelScreen.color2);
-    data.color[0][3] *= job.opacity;
-    data.color[1][3] *= job.opacity;
-    data.outline = g->outline;
-    data.position = vec3to4(job.modelPosition(), 0);
-    assert(t.tmpGlyphCentersWorld.size() <= 125);
-    assert(t.coordinates.size() <= 500);
+    // generate vertex positions
+    float scale;
     {
-        double scale = options.textScale;
+        std::vector<vec3> worldPos;
+        preDrawJobLabelFlat(this, job, worldPos, scale);
+        assert(worldPos.size() <= 125);
         mat4 vp = proj * depthOffsetCorrection(g) * view;
         vec3 camRight = vec4to3(vec4(viewInv * vec4(1, 0, 0, 0)));
         vec3 camUp = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
         vec4f *c = data.coordinates;
-        for (uint32 i = 0, e = t.tmpGlyphCentersWorld.size(); i != e; i++)
+        for (uint32 i = 0, e = worldPos.size(); i != e; i++)
         {
-            vec3 center = t.tmpGlyphCentersWorld[i];
+            vec3 center = worldPos[i];
             for (uint32 j = 0; j < 4; j++)
             {
                 vec4f coord = t.coordinates[i * 4 + j];
@@ -1031,6 +1033,15 @@ void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
             }
         }
     }
+
+    data.color[0] = rawToVec4(g->spec.unionData.labelFlat.color2);
+    data.color[1] = rawToVec4(g->spec.unionData.labelFlat.color);
+    data.color[0][3] *= job.opacity;
+    data.color[1][3] *= job.opacity;
+    data.outline = fontOutline(g->spec.unionData.labelFlat.size,
+        rawToVec4(g->spec.unionData.labelFlat.outline));
+    data.position = vec3to4(job.modelPosition(), 0);
+    assert(t.coordinates.size() <= 500);
 
     context->shaderGeodataLabelFlat->bind();
     auto ubo = getUbo();
@@ -1067,11 +1078,12 @@ void RenderViewImpl::renderLabelScreen(const GeodataJob &job)
     const auto &g = job.g;
     const auto &t = g->texts[job.itemIndex];
 
-    data.color[0] = rawToVec4(g->spec.unionData.labelScreen.color);
-    data.color[1] = rawToVec4(g->spec.unionData.labelScreen.color2);
+    data.color[0] = rawToVec4(g->spec.unionData.labelScreen.color2);
+    data.color[1] = rawToVec4(g->spec.unionData.labelScreen.color);
     data.color[0][3] *= job.opacity;
     data.color[1][3] *= job.opacity;
-    data.outline = g->outline;
+    data.outline = fontOutline(g->spec.unionData.labelScreen.size,
+        rawToVec4(g->spec.unionData.labelScreen.outline));
     data.position = vec3to4(job.modelPosition(), options.textScale * 2);
     data.offset = vec4f(job.labelOffset[0], job.labelOffset[1], 0, 0);
     assert(t.coordinates.size() <= 500);

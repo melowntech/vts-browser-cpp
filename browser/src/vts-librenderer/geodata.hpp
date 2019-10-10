@@ -51,7 +51,6 @@ struct Text
 {
     std::vector<float> lineVertPositions; // positions of line vertices in range -1 .. 1
     std::vector<float> lineGlyphPositions; // position of glyph's centers along the line in range -1 .. 1
-    std::vector<vec3> tmpGlyphCentersWorld;
     std::vector<vec2f> tmpGlyphCentersClip;
     std::vector<vec4f> coordinates; // x, y, uv.s (+ plane index * 2), uv.t - four vec4f per glyph
     std::vector<Subtext> subtexts;
@@ -84,7 +83,6 @@ public:
     std::shared_ptr<Texture> texture;
     std::shared_ptr<UniformBuffer> uniform;
 
-    vec4f outline;
     std::vector<std::shared_ptr<Font>> fontCascade;
     std::vector<Text> texts;
 
@@ -107,7 +105,9 @@ public:
     bool checkTextures();
 };
 
-bool regenerateJobLabelFlat(RenderViewImpl *rv, GeodataJob &j);
+bool regenerateJobLabelFlat(const RenderViewImpl *rv, GeodataJob &j);
+void preDrawJobLabelFlat(const RenderViewImpl *rv, const GeodataJob &j,
+    std::vector<vec3> &worldPos, float &scale);
 
 } } // namespace vts renderer priv
 

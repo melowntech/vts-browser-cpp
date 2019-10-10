@@ -547,6 +547,12 @@ void textLinePositions(GeodataTile *g,
     }
 }
 
+float labelFlatScale(const RenderViewImpl *rv, const GeodataJob &j)
+{
+    // todo
+    return rv->options.textScale;
+}
+
 } // namespace
 
 void GeodataTile::copyFonts()
@@ -554,13 +560,6 @@ void GeodataTile::copyFonts()
     fontCascade.reserve(spec.fontCascade.size());
     for (auto &i : spec.fontCascade)
         fontCascade.push_back(std::static_pointer_cast<Font>(i));
-
-    // prepare outline
-    {
-        float os = std::sqrt(2) / spec.unionData.labelScreen.size;
-        outline = rawToVec4(spec.unionData.labelScreen.outline)
-            .cwiseProduct(vec4f(1, 1, os, os));
-    }
 }
 
 void GeodataTile::loadLabelScreens()
@@ -625,7 +624,7 @@ bool GeodataTile::checkTextures()
     return ok;
 }
 
-bool regenerateJobLabelFlat(RenderViewImpl *rv, GeodataJob &j)
+bool regenerateJobLabelFlat(const RenderViewImpl *rv, GeodataJob &j)
 {
     const auto &g = j.g;
     auto &t = g->texts[j.itemIndex];
@@ -633,10 +632,7 @@ bool regenerateJobLabelFlat(RenderViewImpl *rv, GeodataJob &j)
     const mat4f mvp = (rv->viewProj * g->model).cast<float>();
     t.tmpGlyphCentersClip.clear();
     t.tmpGlyphCentersClip.reserve(t.lineGlyphPositions.size());
-    t.tmpGlyphCentersWorld.clear();
-    t.tmpGlyphCentersWorld.reserve(t.lineGlyphPositions.size());
-    // todo find scale depending on view
-    float scale = rv->options.textScale;
+    float scale = labelFlatScale(rv, j);
     bool ok = true;
     uint32 vi = 0;
     for (uint32 i = 0, e = t.lineGlyphPositions.size(); i != e; i++)
@@ -648,11 +644,32 @@ bool regenerateJobLabelFlat(RenderViewImpl *rv, GeodataJob &j)
         vec3f mpb = rawToVec3(mps[vi + 1].data());
         vec3f mp = interpolate(mpa, mpb, f);
         vec4f cp = mvp * vec3to4(mp, 1);
-        t.tmpGlyphCentersClip.push_back(vec3to2(vec4to3(cp, true)));
-        vec3 wp = vec4to3(vec4(g->model * (vec3to4(mp, 1).cast<double>())));
-        t.tmpGlyphCentersWorld.push_back(wp);
+        t.tmpGlyphCentersClip.push_back(vec4to2(cp, true));
     }
     return ok;
+}
+
+void preDrawJobLabelFlat(const RenderViewImpl *rv, const GeodataJob &j,
+    std::vector<vec3> &worldPos, float &scale)
+{
+    const auto &g = j.g;
+    auto &t = g->texts[j.itemIndex];
+    const auto &mps = g->spec.positions[j.itemIndex];
+    worldPos.clear();
+    worldPos.reserve(t.lineGlyphPositions.size());
+    scale = labelFlatScale(rv, j);
+    uint32 vi = 0;
+    for (uint32 i = 0, e = t.lineGlyphPositions.size(); i != e; i++)
+    {
+        float lp = t.lineGlyphPositions[i] * scale;
+        float f;
+        arrayPosition(t.lineVertPositions, lp, vi, f);
+        vec3f mpa = rawToVec3(mps[vi].data());
+        vec3f mpb = rawToVec3(mps[vi + 1].data());
+        vec3f mp = interpolate(mpa, mpb, f);
+        vec3 wp = vec4to3(vec4(g->model * (vec3to4(mp, 1).cast<double>())));
+        worldPos.push_back(wp);
+    }
 }
 
 } } // namespace vts renderer

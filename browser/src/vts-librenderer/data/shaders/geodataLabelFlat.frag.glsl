@@ -21,6 +21,12 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
-    outColor = vec4(varUv, 0, 1);
+    vec4 t4 = texture(texGlyphs, varUv);
+    float t = t4[varPlane];
+    float c = uniOutline[uniPass];
+    float d = uniOutline[uniPass + 2];
+    float a = smoothstep(c - d, c + d, t);
+    outColor = uniColor[uniPass];
+    outColor.a *= a;
 }
 

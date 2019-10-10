@@ -261,7 +261,7 @@ bool MainWindow::processEvents()
                 && event.button.button == SDL_BUTTON_LEFT)
         {
             vts::vec3 posPhys = getWorldPositionFromCursor();
-            if (posPhys(0) == posPhys(0))
+            if (!std::isnan(posPhys(0)))
             {
                 double posNav[3];
                 map->convert(posPhys.data(), posNav,

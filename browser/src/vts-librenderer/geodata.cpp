@@ -24,7 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vts-browser/cameraDraws.hpp>
 #include <vts-browser/celestial.hpp>
 
 #include <optick.h>

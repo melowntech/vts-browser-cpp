@@ -549,8 +549,8 @@ void textLinePositions(GeodataTile *g,
 
 float labelFlatScale(const RenderViewImpl *rv, const GeodataJob &j)
 {
-    // todo
-    return rv->options.textScale;
+    float scale = rv->draws->camera.viewExtent / rv->height;
+    return scale * rv->options.textScale;
 }
 
 } // namespace

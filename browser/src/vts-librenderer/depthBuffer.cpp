@@ -150,7 +150,6 @@ double DepthBuffer::valuePix(uint32 x, uint32 y)
     {
         uint32 u;
         float f;
-        unsigned char c[4];
     } u;
 
     u.u = ((uint32*)buffer.data())[x + y * w[index]];
@@ -161,8 +160,11 @@ double DepthBuffer::value(double x, double y)
 {
     if (x < -1 || x > 1 || y < -1 || y > 1)
         return nan1();
-    return valuePix((x * 0.5 + 0.5) * (w[index] - 1),
+    double v = valuePix((x * 0.5 + 0.5) * (w[index] - 1),
         (y * 0.5 + 0.5) * (h[index] - 1));
+    if (v >= 1 - 1e-15)
+        return nan1(); // far plane - no depth
+    return v;
 }
 
 } } // namespace vts renderer

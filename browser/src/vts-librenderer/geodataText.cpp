@@ -488,7 +488,7 @@ void textLinePositions(GeodataTile *g,
     const std::vector<std::array<float, 3>> &positions, Text &t)
 {
     mat4 model = rawToMat4(g->spec.model);
-    const auto &m2w = [&](const std::array<float, 3> &pos)
+    const auto &m2w = [&](const std::array<float, 3> &pos) -> vec3
     {
         return vec4to3(vec4(model
             * vec3to4(rawToVec3(pos.data()), 1).cast<double>()));
@@ -550,7 +550,28 @@ void textLinePositions(GeodataTile *g,
 float labelFlatScale(const RenderViewImpl *rv, const GeodataJob &j)
 {
     float scale = rv->draws->camera.viewExtent / rv->height;
-    return scale * rv->options.textScale;
+    scale *= rv->options.textScale;
+    {
+        // negative scale if the text is reversed
+        const auto &g = j.g;
+        auto &t = g->texts[j.itemIndex];
+        uint32 index = 0;
+        float dummyFactor;
+        arrayPosition(t.lineVertPositions, 0.f, index, dummyFactor);
+        const auto &mps = g->spec.positions[j.itemIndex];
+        vec3 md = (rawToVec3(mps[index + 1].data())
+            - rawToVec3(mps[index].data())).cast<double>();
+        vec3 d1 = normalize(vec4to3(vec4(g->model * vec3to4(md, 0))));
+        //vec3 c = normalize(vec3(rawToVec3(rv->draws->camera.eye)
+        //    - j.worldPosition()));
+        //vec3 u = j.worldUp().cast<double>();
+        //vec3 d2 = normalize(cross(u, c));
+        vec3 d2 = vec4to3(vec4(rv->viewInv * vec4(1, 0, 0, 0)));
+        double dt = dot(d1, d2);
+        if (dt < 0)
+            scale *= -1;
+    }
+    return scale;
 }
 
 } // namespace
@@ -670,6 +691,7 @@ void preDrawJobLabelFlat(const RenderViewImpl *rv, const GeodataJob &j,
         vec3 wp = vec4to3(vec4(g->model * (vec3to4(mp, 1).cast<double>())));
         worldPos.push_back(wp);
     }
+    scale = std::abs(scale);
 }
 
 } } // namespace vts renderer

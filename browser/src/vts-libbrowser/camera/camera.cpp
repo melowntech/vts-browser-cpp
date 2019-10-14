@@ -300,7 +300,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     if (options.debugRenderTileBoxes
         || (options.debugRenderSubtileBoxes && isSubNode))
     {
-        vec4f color;
+        vec4f color = vec4f(1, 1, 1, 1);
         if (trav->layer->freeLayer)
         {
             switch (trav->layer->freeLayer->type)

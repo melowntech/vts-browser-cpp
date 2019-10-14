@@ -199,11 +199,37 @@ double CameraImpl::coarsenessValue(TraverseNode *trav)
             vec3 c2 = c1 + up;
             c1 = vec4to3(vec4(viewProjRender * vec3to4(c1, 1)), true);
             c2 = vec4to3(vec4(viewProjRender * vec3to4(c2, 1)), true);
-            double len = std::abs(c2[1] - c1[1])
-                * windowHeight * 0.5;
+            double len = std::abs(c2[1] - c1[1]);
             result = std::max(result, len);
         }
-        return result;
+        return result * windowHeight * 0.5;
+    }
+}
+
+void CameraImpl::renderNodeBox(TraverseNode *trav, const vec4f &color)
+{
+    assert(trav);
+    assert(trav->meta);
+
+    RenderSimpleTask task;
+    task.mesh = map->getMesh("internal://data/meshes/line.obj");
+    task.mesh->priority = std::numeric_limits<float>::infinity();
+    if (!task.ready())
+        return;
+
+    task.color = color;
+    static const uint32 cora[] = {
+        0, 0, 1, 2, 4, 4, 5, 6, 0, 1, 2, 3
+    };
+    static const uint32 corb[] = {
+        1, 2, 3, 3, 5, 6, 7, 7, 4, 5, 6, 7
+    };
+    for (uint32 i = 0; i < 12; i++)
+    {
+        vec3 a = trav->cornersPhys[cora[i]];
+        vec3 b = trav->cornersPhys[corb[i]];
+        task.model = lookAt(a, b);
+        draws.infographics.emplace_back(convert(task));
     }
 }
 
@@ -272,62 +298,33 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
 
     // tile box
     if (options.debugRenderTileBoxes
-            || (options.debugRenderSubtileBoxes && isSubNode))
+        || (options.debugRenderSubtileBoxes && isSubNode))
     {
-        RenderSimpleTask task;
-        task.mesh = map->getMesh("internal://data/meshes/line.obj");
-        task.mesh->priority = std::numeric_limits<float>::infinity();
+        vec4f color = vec4f(1, 1, 1, 1);
         if (trav->layer->freeLayer)
         {
             switch (trav->layer->freeLayer->type)
             {
             case vtslibs::registry::FreeLayer::Type::meshTiles:
-                task.color = vec4f(1, 0, 0, 1);
+                color = vec4f(1, 0, 0, 1);
                 break;
             case vtslibs::registry::FreeLayer::Type::geodataTiles:
-                task.color = vec4f(0, 1, 0, 1);
+                color = vec4f(0, 1, 0, 1);
                 break;
             case vtslibs::registry::FreeLayer::Type::geodata:
-                task.color = vec4f(0, 0, 1, 1);
+                color = vec4f(0, 0, 1, 1);
                 break;
             default:
-                task.color = vec4f(1, 1, 1, 1);
+                color = vec4f(1, 1, 1, 1);
                 break;
             }
         }
-        static const uint32 cora[] = {
-            0, 0, 1, 2, 4, 4, 5, 6, 0, 1, 2, 3
-        };
-        static const uint32 corb[] = {
-            1, 2, 3, 3, 5, 6, 7, 7, 4, 5, 6, 7
-        };
-        if (task.ready())
-        {
-            // regular tile box
-            if (options.debugRenderTileBoxes && !isSubNode)
-            {
-                for (uint32 i = 0; i < 12; i++)
-                {
-                    vec3 a = trav->cornersPhys[cora[i]];
-                    vec3 b = trav->cornersPhys[corb[i]];
-                    task.model = lookAt(a, b);
-                    draws.infographics.emplace_back(convert(task));
-                }
-            }
-            // sub tile box
-            for (int i = 0; i < 3; i++)
-                task.color[i] *= 0.5;
-            if (options.debugRenderSubtileBoxes && isSubNode)
-            {
-                for (uint32 i = 0; i < 12; i++)
-                {
-                    vec3 a = orig->cornersPhys[cora[i]];
-                    vec3 b = orig->cornersPhys[corb[i]];
-                    task.model = lookAt(a, b);
-                    draws.infographics.emplace_back(convert(task));
-                }
-            }
-        }
+        if (options.debugRenderTileBoxes && !isSubNode)
+            renderNodeBox(trav, color);
+        for (int i = 0; i < 3; i++)
+            color[i] *= 0.5;
+        if (options.debugRenderSubtileBoxes && isSubNode)
+            renderNodeBox(orig, color);
     }
 
     // credits

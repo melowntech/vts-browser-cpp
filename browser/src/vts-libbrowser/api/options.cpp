@@ -340,7 +340,7 @@ FetcherOptions::FetcherOptions() :
     timeout(30000),
     extraFileLog(false),
     maxHostConnections(0),
-    maxTotalConnections(10),
+    maxTotalConnections(0),
     maxCacheConections(0),
     pipelining(2)
 {}

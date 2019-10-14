@@ -134,6 +134,7 @@ public:
     bool visibilityTest(TraverseNode *trav);
     bool coarsenessTest(TraverseNode *trav);
     double coarsenessValue(TraverseNode *trav);
+    void renderNodeBox(TraverseNode *trav, const vec4f &color);
     void renderNode(TraverseNode *trav, TraverseNode *orig);
     void renderNode(TraverseNode *trav);
     void renderNodeCoarser(TraverseNode *trav, TraverseNode *orig);

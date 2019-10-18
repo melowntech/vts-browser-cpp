@@ -1014,19 +1014,32 @@ void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
     {
         std::vector<vec3> worldPos;
         preDrawJobLabelFlat(this, job, worldPos, scale);
+        assert(worldPos.size() >= 2);
         assert(worldPos.size() <= 125);
+        std::vector<vec3> worldFwd;
+        worldFwd.reserve(worldPos.size());
+        worldFwd.push_back(worldPos[1] - worldPos[0]);
+        for (uint32 i = 1, e = worldPos.size() - 1; i != e; i++)
+            worldFwd.push_back(worldPos[i + 1] - worldPos[i - 1]);
+        worldFwd.push_back(worldPos[worldPos.size() - 1]
+            - worldPos[worldPos.size() - 2]);
+        assert(worldPos.size() == worldFwd.size());
+        for (auto &it : worldFwd)
+            it = normalize(it);
         mat4 vp = proj * depthOffsetCorrection(g) * view;
-        vec3 camRight = vec4to3(vec4(viewInv * vec4(1, 0, 0, 0)));
-        vec3 camUp = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
+        vec3 right = vec4to3(vec4(viewInv * vec4(1, 0, 0, 0)));
+        vec3 up = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
         vec4f *c = data.coordinates;
         for (uint32 i = 0, e = worldPos.size(); i != e; i++)
         {
             vec3 center = worldPos[i];
+            //vec3 right = worldFwd[i];
+            //vec3 up = normalize(cross(normalize(center), right));
             for (uint32 j = 0; j < 4; j++)
             {
                 vec4f coord = t.coordinates[i * 4 + j];
-                vec3 wp = center + (coord[0] * camRight
-                    + coord[1] * camUp) * scale;
+                vec3 wp = center + (coord[0] * right
+                    + coord[1] * up) * scale;
                 *c++ = vec4(vp * vec3to4(wp, 1)).cast<float>();
                 *c++ = coord;
             }

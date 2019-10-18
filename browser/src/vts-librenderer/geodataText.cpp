@@ -63,16 +63,16 @@ struct TmpLine
     {}
 };
 
-struct AlgorithmHolder
+struct BidiAlgorithm
 {
     SBAlgorithmRef algorithm;
 
-    AlgorithmHolder(SBCodepointSequence *codepoints) : algorithm(nullptr)
+    BidiAlgorithm(SBCodepointSequence *codepoints) : algorithm(nullptr)
     {
         algorithm = SBAlgorithmCreate(codepoints);
     }
 
-    ~AlgorithmHolder()
+    ~BidiAlgorithm()
     {
         SBAlgorithmRelease(algorithm);
     }
@@ -80,18 +80,18 @@ struct AlgorithmHolder
     SBAlgorithmRef operator () () { return algorithm; };
 };
 
-struct ParagraphHolder
+struct BidiParagraph
 {
     SBParagraphRef paragraph;
 
-    ParagraphHolder(SBAlgorithmRef bidiAlgorithm, SBUInteger paragraphStart)
+    BidiParagraph(SBAlgorithmRef bidiAlgorithm, SBUInteger paragraphStart)
         : paragraph(nullptr)
     {
         paragraph = SBAlgorithmCreateParagraph(bidiAlgorithm,
                 paragraphStart, INT32_MAX, SBLevelDefaultLTR);
     }
 
-    ~ParagraphHolder()
+    ~BidiParagraph()
     {
         SBParagraphRelease(paragraph);
     }
@@ -99,18 +99,18 @@ struct ParagraphHolder
     SBParagraphRef operator () () { return paragraph; };
 };
 
-struct LineHolder
+struct BidiLine
 {
     SBLineRef paragraphLine;
 
-    LineHolder(SBParagraphRef paragraph, SBUInteger lineStart,
+    BidiLine(SBParagraphRef paragraph, SBUInteger lineStart,
         SBUInteger paragraphLength) : paragraphLine(nullptr)
     {
         paragraphLine = SBParagraphCreateLine(paragraph,
             lineStart, paragraphLength);
     }
 
-    ~LineHolder()
+    ~BidiLine()
     {
         SBLineRelease(paragraphLine);
     }
@@ -118,16 +118,16 @@ struct LineHolder
     SBLineRef operator () () { return paragraphLine; };
 };
 
-struct BufferHolder
+struct HarfBuffer
 {
     hb_buffer_t *buffer;
 
-    BufferHolder() : buffer(nullptr)
+    HarfBuffer() : buffer(nullptr)
     {
         buffer = hb_buffer_create();
     }
 
-    ~BufferHolder()
+    ~HarfBuffer()
     {
         hb_buffer_destroy(buffer);
     }
@@ -135,30 +135,147 @@ struct BufferHolder
     hb_buffer_t *operator () () { return buffer; };
 };
 
+// append B to the end of A
+void appendLine(TmpLine &a, TmpLine &b)
+{
+    for (auto &it : b.glyphs)
+        a.glyphs.push_back(std::move(it));
+}
+
+TmpLine textRunToGlyphs(
+    const std::string &s,
+    const std::vector<std::shared_ptr<Font>> &fontCascade,
+    SBUInteger offset, SBUInteger length, uint32 fontIndex,
+    bool rtl)
+{
+    while (length && s[offset + length - 1] == '\n')
+        length--;
+
+    if (length == 0)
+        return {};
+
+    bool terminal = fontIndex >= fontCascade.size();
+    std::shared_ptr<Font> fnt = fontCascade[terminal ? 0 : fontIndex];
+
+    HarfBuffer buffer;
+    hb_buffer_add_utf8(buffer(),
+        s.data(), s.length(), offset, length);
+    hb_buffer_set_direction(buffer(),
+        rtl ? HB_DIRECTION_RTL : HB_DIRECTION_LTR);
+    hb_buffer_guess_segment_properties(buffer());
+    hb_shape(fnt->font, buffer(), nullptr, 0);
+
+    uint32 len = hb_buffer_get_length(buffer());
+    hb_glyph_info_t *info
+        = hb_buffer_get_glyph_infos(buffer(), nullptr);
+    hb_glyph_position_t *pos
+        = hb_buffer_get_glyph_positions(buffer(), nullptr);
+
+    TmpLine line;
+    line.glyphs.reserve(len);
+
+    if (!terminal)
+    {
+        // we have another font available to use
+        // so we search for tofus
+        bool hasTofu = false;
+        for (uint32 i = 0; i < len; i++)
+        {
+            if (info[i].codepoint == 0)
+            {
+                hasTofu = true;
+                break;
+            }
+        }
+
+        // if any tofu was found, split the text into parts
+        // each part is either all tofu or no tofu
+        if (hasTofu)
+        {
+            // RTL text has clusters in reverse order
+            //   reverse it back to simplify the algorithm
+            if (rtl)
+                std::reverse(info, info + len);
+
+            bool lastTofu = info[0].codepoint == 0;
+            bool hadTofu = lastTofu;
+            uint32 lastCluster = info[0].cluster;
+            for (uint32 i = 1; i < len; i++)
+            {
+                bool currentTofu = info[i].codepoint == 0;
+                if (currentTofu != lastTofu)
+                {
+                    // there are rare situations where harfbuzz
+                    //   puts some tofu and non-tofu
+                    //   into same cluster,
+                    //   which prevents me to split them
+                    // for a lack of better ideas
+                    //   we send these sequences to next font
+                    //   without splitting
+                    uint32 currentCluster = info[i].cluster;
+                    if (currentCluster != lastCluster)
+                    {
+                        appendLine(line, textRunToGlyphs(s, fontCascade,
+                            lastCluster, currentCluster - lastCluster,
+                            fontIndex + hadTofu, rtl));
+                        lastCluster = currentCluster;
+                        hadTofu = currentTofu;
+                    }
+                    lastTofu = currentTofu;
+                    hadTofu = hadTofu || currentTofu;
+                }
+            }
+            {
+                uint32 currentCluster = offset + length;
+                appendLine(line, textRunToGlyphs(s, fontCascade,
+                    lastCluster, currentCluster - lastCluster,
+                    fontIndex + hadTofu, rtl));
+            }
+            return line;
+        }
+    }
+
+    // add glyphs information to output
+    for (uint32 i = 0; i < len; i++)
+    {
+        assert(pos[i].y_advance == 0);
+        uint16 gi = info[i].codepoint;
+        assert(gi < fnt->glyphs.size());
+        TmpGlyph g;
+        g.font = fnt;
+        g.glyphIndex = gi;
+        g.advance = pos[i].x_advance / 64.f;
+        g.offset = vec2f(pos[i].x_offset, pos[i].y_offset) / 64;
+        line.glyphs.push_back(g);
+    }
+    return line;
+}
+
 std::vector<TmpLine> textToGlyphs(
     const std::string &s,
     const std::vector<std::shared_ptr<Font>> &fontCascade)
 {
     std::vector<TmpLine> lines;
-
     SBCodepointSequence codepoints
         = { SBStringEncodingUTF8, (void*)s.data(), s.length() };
-    AlgorithmHolder bidiAlgorithm(&codepoints);
+    BidiAlgorithm bidiAlgorithm(&codepoints);
     SBUInteger paragraphStart = 0;
     while (true)
     {
-        ParagraphHolder paragraph(bidiAlgorithm(), paragraphStart);
+        BidiParagraph paragraph(bidiAlgorithm(), paragraphStart);
         if (!paragraph())
             break;
+
         SBUInteger paragraphLength = SBParagraphGetLength(paragraph());
         SBUInteger lineStart = paragraphStart;
         paragraphStart += paragraphLength;
 
         while (true)
         {
-            LineHolder paragraphLine(paragraph(), lineStart, paragraphLength);
+            BidiLine paragraphLine(paragraph(), lineStart, paragraphLength);
             if (!paragraphLine())
                 break;
+
             SBUInteger lineLength = SBLineGetLength(paragraphLine());
             lineStart += lineLength;
             paragraphLength -= lineLength;
@@ -167,154 +284,17 @@ std::vector<TmpLine> textToGlyphs(
             const SBRun *runArray = SBLineGetRunsPtr(paragraphLine());
 
             TmpLine line;
-            line.glyphs.reserve(lineLength);
-
+            line.glyphs.reserve(lineLength * 2 + 5);
             for (uint32 runIndex = 0; runIndex < runCount; runIndex++)
             {
                 const SBRun *run = runArray + runIndex;
-
-                // bidi is running, harf is buzzing
-
-                struct Buzz
-                {
-                    SBUInteger offset;
-                    SBUInteger length;
-                    uint32 font;
-                    Buzz(const SBRun *run, uint32 o, uint32 l, uint32 f)
-                        : offset(o), length(l), font(f)
-                    {
-                        (void)run;
-                        assert(offset >= run->offset);
-                        assert(offset + length <= run->offset + run->length);
-                    }
-                };
-
-                // the text needs to be split into parts with different font
-
-                std::list<Buzz> runs;
-
-                // harfbuzz cannot handle new lines
-                runs.emplace_back(run, run->offset,
-                    s[run->offset + run->length - 1] == '\n'
-                    ? run->length - 1 : run->length, 0);
-
-                while (!runs.empty())
-                {
-                    Buzz r = runs.front();
-                    runs.pop_front();
-                    if (r.length == 0)
-                        continue;
-
-                    bool terminal = r.font >= fontCascade.size();
-                    std::shared_ptr<Font> fnt = fontCascade
-                                    [terminal ? 0 : r.font];
-
-                    BufferHolder buffer;
-                    hb_buffer_add_utf8(buffer(),
-                        (char*)codepoints.stringBuffer,
-                        codepoints.stringLength,
-                        r.offset, r.length);
-                    hb_buffer_set_direction(buffer(), (run->level % 2) == 0
-                        ? HB_DIRECTION_LTR : HB_DIRECTION_RTL);
-                    hb_buffer_guess_segment_properties(buffer());
-                    hb_shape(fnt->font, buffer(), nullptr, 0);
-
-                    uint32 len = hb_buffer_get_length(buffer());
-                    hb_glyph_info_t *info
-                        = hb_buffer_get_glyph_infos(buffer(), nullptr);
-                    hb_glyph_position_t *pos
-                        = hb_buffer_get_glyph_positions(buffer(), nullptr);
-
-                    if (!terminal)
-                    {
-                        // we have another font available to use
-                        // so we search for tofus
-                        bool hasTofu = false;
-                        for (uint32 i = 0; i < len; i++)
-                        {
-                            if (info[i].codepoint == 0)
-                            {
-                                hasTofu = true;
-                                break;
-                            }
-                        }
-
-                        // if any tofu was found, split the text into parts
-                        // each part is either all tofu or no tofu
-                        if (hasTofu)
-                        {
-                            // RTL text has clusters in reverse order
-                            //   reverse it back to simplify the algorithm
-                            if ((run->level % 2) == 1)
-                                std::reverse(info, info + len);
-
-                            runs.reverse();
-                            bool lastTofu = info[0].codepoint == 0;
-                            bool hadTofu = lastTofu;
-                            uint32 lastCluster = info[0].cluster;
-                            for (uint32 i = 1; i < len; i++)
-                            {
-                                // there are rare situations where harfbuzz
-                                //   puts some tofus and non-tofus
-                                //   into same cluster,
-                                //   which prevents me to split them
-                                // for a lack of better ideas
-                                //   we send these sequences to next font
-                                //   without proper splitting
-                                bool currentTofu = info[i].codepoint == 0;
-                                if (currentTofu != lastTofu)
-                                {
-                                    uint32 currentCluster
-                                        = info[i].cluster;
-                                    if (currentCluster != lastCluster)
-                                    {
-                                        runs.emplace_back(run, lastCluster,
-                                            currentCluster - lastCluster,
-                                            r.font + hadTofu);
-                                        lastCluster = currentCluster;
-                                        hadTofu = currentTofu;
-                                    }
-                                    lastTofu = currentTofu;
-                                    hadTofu = hadTofu || currentTofu;
-                                }
-                            }
-                            {
-                                uint32 currentCluster
-                                    = r.offset + r.length;
-                                runs.emplace_back(run, lastCluster,
-                                    currentCluster - lastCluster,
-                                    r.font + hadTofu);
-                            }
-                            runs.reverse();
-                            continue;
-                        }
-                    }
-
-                    // add glyphs information to output
-                    for (uint32 i = 0; i < len; i++)
-                    {
-                        assert(pos[i].y_advance == 0);
-                        uint16 gi = info[i].codepoint;
-                        assert(gi < fnt->glyphs.size());
-                        TmpGlyph g;
-                        g.font = fnt;
-                        g.glyphIndex = gi;
-                        g.advance = pos[i].x_advance / 64.f;
-                        g.offset = vec2f(pos[i].x_offset,
-                                pos[i].y_offset) / 64;
-                        line.glyphs.push_back(g);
-                    }
-                }
+                appendLine(line, textRunToGlyphs(s, fontCascade,
+                    run->offset, run->length, 0, (run->level % 2) == 1));
             }
-
-            lines.push_back(std::move(line));
+            if (!line.glyphs.empty())
+                lines.push_back(std::move(line));
         }
     }
-
-    // erase empty lines
-    lines.erase(std::remove_if(lines.begin(), lines.end(),
-        [](const TmpLine &l) { return l.glyphs.empty(); }), lines.end());
-
     return lines;
 }
 
@@ -342,6 +322,17 @@ vec2f textLayout(float size, float align,
         }
         res[1] = -o[1];
     }
+
+    // reorder glyphs
+    /*
+    for (TmpLine &line : lines)
+    {
+        std::sort(line.glyphs.begin(), line.glyphs.end(), [](
+            const TmpGlyph &a, const TmpGlyph &b) {
+                return a.position[0] < b.position[0];
+            });
+    }
+    */
 
     // center the entire text
     vec2f off = res.cwiseProduct(vec2f(-0.5, 0.5)) + vec2f(0, -size);

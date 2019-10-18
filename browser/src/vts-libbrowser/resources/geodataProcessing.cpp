@@ -523,7 +523,7 @@ struct geoContext
         this->group.reset();
 
 #ifndef NDEBUG
-        finalValidation();
+        finalAsserts();
 #endif // !NDEBUG
 
         // put cache into queue for upload
@@ -533,7 +533,7 @@ struct geoContext
                 std::move(const_cast<GpuGeodataSpec&>(spec)));
     }
 
-    void finalValidation()
+    void finalAsserts()
     {
         for (const GpuGeodataSpec &spec : cacheData)
         {
@@ -555,6 +555,12 @@ struct geoContext
                 c(spec.texts.size());
                 c(spec.hysteresisIds.size());
                 c(spec.importances.size());
+            }
+            // validate texts
+            for (const std::string &s : spec.texts)
+            {
+                for (unsigned char c : s)
+                    assert(c >= 32 || c == '\n');
             }
         }
     }

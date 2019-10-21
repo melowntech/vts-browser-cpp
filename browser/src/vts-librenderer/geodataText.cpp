@@ -323,17 +323,6 @@ vec2f textLayout(float size, float align,
         res[1] = -o[1];
     }
 
-    // reorder glyphs
-    /*
-    for (TmpLine &line : lines)
-    {
-        std::sort(line.glyphs.begin(), line.glyphs.end(), [](
-            const TmpGlyph &a, const TmpGlyph &b) {
-                return a.position[0] < b.position[0];
-            });
-    }
-    */
-
     // center the entire text
     vec2f off = res.cwiseProduct(vec2f(-0.5, 0.5)) + vec2f(0, -size);
     for (TmpLine &line : lines)
@@ -365,42 +354,29 @@ Rect textCollision(const std::vector<TmpLine> &lines)
 
 Text generateTexts(std::vector<TmpLine> &lines)
 {
-    // sort into groups
-    struct WordCompare
-    {
-        bool operator () (const Subtext &a, const Subtext &b) const
-        {
-            if (a.font == b.font)
-                return a.fileIndex < b.fileIndex;
-            return a.font < b.font;
-        }
-    };
-    std::map<Subtext, std::vector<TmpGlyph>, WordCompare> groups;
-    for (TmpLine &line : lines)
-    {
-        for (const TmpGlyph &g : line.glyphs)
-        {
-            Subtext w;
-            w.font = g.font;
-            w.fileIndex = g.font->glyphs[g.glyphIndex].fileIndex;
-            groups[w].push_back(g);
-        }
-    }
-
-    // generate subtexts
     Text text;
-    text.coordinates.reserve(1020);
+    text.coordinates.reserve(500);
     uint32 vertexIndex = 0;
-    for (auto &grp : groups)
+    Subtext st;
+    for (const TmpLine &line : lines)
     {
-        Subtext w(grp.first);
-        w.indicesStart = vertexIndex;
-        for (const TmpGlyph &tg : grp.second)
+        for (const TmpGlyph &tg : line.glyphs)
         {
-            const Glyph &g = tg.font->glyphs[tg.glyphIndex];
+            auto fileIndex = tg.font->glyphs[tg.glyphIndex].fileIndex;
+            if (st.font != tg.font || st.fileIndex != fileIndex)
+            {
+                if (st.indicesCount > 0)
+                    text.subtexts.push_back(std::move(st));
+                st = Subtext();
+                st.font = tg.font;
+                st.fileIndex = fileIndex;
+                st.indicesStart = vertexIndex;
+            }
+
             // 2--3
             // |  |
             // 0--1
+            const Glyph &g = tg.font->glyphs[tg.glyphIndex];
             for (int i = 0; i < 4; i++)
             {
                 vec4f c;
@@ -411,18 +387,19 @@ Text generateTexts(std::vector<TmpLine> &lines)
                 c[2] += g.plane * 2;
                 text.coordinates.push_back(c);
             }
-            w.indicesCount += 6;
+            st.indicesCount += 6;
             vertexIndex += 6;
 
             // todo better handle shader limit
             if (text.coordinates.size() >= 480)
             {
-                text.subtexts.push_back(std::move(w));
+                text.subtexts.push_back(std::move(st));
                 return text;
             }
         }
-        text.subtexts.push_back(std::move(w));
     }
+    if (st.indicesCount > 0)
+        text.subtexts.push_back(std::move(st));
     text.coordinates.shrink_to_fit();
     return text;
 }
@@ -508,6 +485,7 @@ void textLinePositions(GeodataTile *g,
         lvp.push_back(2 * dists[i] / totalDist - 1);
     assert(std::abs(lvp[0] + 1) < 1e-7);
     assert(std::abs(lvp[lvp.size() - 1] - 1) < 1e-7);
+    assert(std::is_sorted(lvp.begin(), lvp.end()));
 
     // find line-positions for each glyph
     uint32 gc = t.coordinates.size() / 4;
@@ -520,8 +498,11 @@ void textLinePositions(GeodataTile *g,
         x *= 0.25;
         for (uint32 j = 0; j < 4; j++)
             t.coordinates[i * 4 + j][0] -= x;
-        t.lineGlyphPositions.push_back(2 * (x + totalDist * 0.5) / totalDist - 1);
+        float lgp = 2 * (x + totalDist * 0.5) / totalDist - 1;
+        t.lineGlyphPositions.push_back(lgp);
     }
+    //assert(std::is_sorted(t.lineGlyphPositions.begin(),
+    //    t.lineGlyphPositions.end()));
 
     // find center of the line
     {
@@ -608,7 +589,8 @@ void GeodataTile::loadLabelFlats()
         assert(spec.positions[i].size() > 1); // line must have at least two points
         std::vector<TmpLine> lines = textToGlyphs(
             spec.texts[i], fontCascade);
-        textLayout(spec.unionData.labelFlat.size, 0.5, lines);
+        textLayout(spec.unionData.labelFlat.size, 0.5, lines); // align to center
+        assert(lines.size() == 1); // flat labels may not be multi-line
         Text t = generateTexts(lines);
         textLinePositions(this, spec.positions[i], t);
         info->ramMemoryCost += t.coordinates.size() * sizeof(vec4f);

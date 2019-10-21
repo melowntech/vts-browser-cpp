@@ -47,11 +47,11 @@ void decodeImage(const Buffer &in, Buffer &out,
     else
     {
         // raw image data - assume square
-        out = in.copy();
         components = 4;
-        width = height = std::sqrt(out.size() / 4);
-        if (out.size() != width * height * components)
+        width = height = std::sqrt(in.size() / components);
+        if (in.size() != width * height * components)
             LOGTHROW(err1, std::runtime_error) << "Raw image is not square";
+        out = in.copy();
     }
 }
 

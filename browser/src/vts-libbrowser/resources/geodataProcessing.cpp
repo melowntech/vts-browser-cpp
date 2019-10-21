@@ -199,6 +199,13 @@ std::string utf8substr(const std::string &str, sint32 start, uint32 length)
     return s32to8(s);
 }
 
+void newLinesToSpaces(std::string &str)
+{
+    for (char &c : str)
+        if (c == '\n')
+            c = ' ';
+}
+
 double str2num(const std::string &s)
 {
     if (s.empty())
@@ -1911,6 +1918,9 @@ if (cond == #OP) \
             ? layer["line-label-source"] : "$name").asString();
         if (text.empty())
             return;
+
+        // flat labels may not be multi-line
+        newLinesToSpaces(text);
 
         std::string hysteresisId = addHysteresisIdSpec(layer, spec);
 

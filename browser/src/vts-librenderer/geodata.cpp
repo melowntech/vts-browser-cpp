@@ -1027,14 +1027,14 @@ void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
         for (auto &it : worldFwd)
             it = normalize(it);
         mat4 vp = proj * depthOffsetCorrection(g) * view;
-        vec3 right = vec4to3(vec4(viewInv * vec4(1, 0, 0, 0)));
-        vec3 up = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
+        //vec3 right = vec4to3(vec4(viewInv * vec4(1, 0, 0, 0)));
+        //vec3 up = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
         vec4f *c = data.coordinates;
         for (uint32 i = 0, e = worldPos.size(); i != e; i++)
         {
             vec3 center = worldPos[i];
-            //vec3 right = worldFwd[i];
-            //vec3 up = normalize(cross(normalize(center), right));
+            vec3 right = worldFwd[i];
+            vec3 up = normalize(cross(normalize(center), right));
             for (uint32 j = 0; j < 4; j++)
             {
                 vec4f coord = t.coordinates[i * 4 + j];

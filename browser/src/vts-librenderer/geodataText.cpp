@@ -136,7 +136,7 @@ struct HarfBuffer
 };
 
 // append B to the end of A
-void appendLine(TmpLine &a, TmpLine &b)
+void appendLine(TmpLine &a, TmpLine &&b)
 {
     for (auto &it : b.glyphs)
         a.glyphs.push_back(std::move(it));

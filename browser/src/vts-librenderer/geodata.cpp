@@ -648,6 +648,7 @@ void RenderViewImpl::regenerateJobCollision(GeodataJob &j)
 void RenderViewImpl::regenerateJobLabelFlat(GeodataJob &j)
 {
     bool valid = vts::renderer::regenerateJobLabelFlat(this, j);
+    (void)valid;
     // todo eliminate invalid
 }
 

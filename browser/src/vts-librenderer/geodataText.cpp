@@ -428,20 +428,20 @@ T interpFactor(T what, T before, T after)
 }
 
 template<class T>
-bool arrayPosition(const std::vector<T> &v, T p, uint32 &index, T &factor)
+void arrayPosition(const std::vector<T> &v, T p, uint32 &index, T &factor)
 {
     assert(v.size() > 1);
     if (p <= v[0])
     {
         index = 0;
         factor = 0;
-        return false;
+        return;
     }
     if (p >= v[v.size() - 1])
     {
         index = v.size() - 2;
         factor = 1;
-        return false;
+        return;
     }
     assert(index < v.size() - 1);
     while (v[index] >= p)
@@ -449,7 +449,6 @@ bool arrayPosition(const std::vector<T> &v, T p, uint32 &index, T &factor)
     while (v[index + 1] <= p)
         index++;
     factor = interpFactor(p, v[index], v[index + 1]);
-    return true;
 }
 
 void textLinePositions(GeodataTile *g,
@@ -519,14 +518,23 @@ void textLinePositions(GeodataTile *g,
     }
 }
 
-float labelFlatScale(const RenderViewImpl *rv, const GeodataJob &j)
+float labelFlatScale(const RenderViewImpl *rv,
+    const GeodataJob &j, bool &allFit)
 {
     float scale = rv->draws->camera.viewExtent / rv->height;
     scale *= rv->options.textScale;
+    const auto &g = j.g;
+    auto &t = g->texts[j.itemIndex];
+    {
+        // smaller scale if the original scale would not fit
+        const float m = 1 / std::max(-t.lineGlyphPositions[0],
+            t.lineGlyphPositions[t.lineGlyphPositions.size() - 1]);
+        allFit = scale < m;
+        if (!allFit)
+            scale = m;
+    }
     {
         // negative scale if the text is reversed
-        const auto &g = j.g;
-        auto &t = g->texts[j.itemIndex];
         uint32 index = 0;
         float dummyFactor;
         arrayPosition(t.lineVertPositions, 0.f, index, dummyFactor);
@@ -534,10 +542,6 @@ float labelFlatScale(const RenderViewImpl *rv, const GeodataJob &j)
         vec3 md = (rawToVec3(mps[index + 1].data())
             - rawToVec3(mps[index].data())).cast<double>();
         vec3 d1 = normalize(vec4to3(vec4(g->model * vec3to4(md, 0))));
-        //vec3 c = normalize(vec3(rawToVec3(rv->draws->camera.eye)
-        //    - j.worldPosition()));
-        //vec3 u = j.worldUp().cast<double>();
-        //vec3 d2 = normalize(cross(u, c));
         vec3 d2 = vec4to3(vec4(rv->viewInv * vec4(1, 0, 0, 0)));
         double dt = dot(d1, d2);
         if (dt < 0)
@@ -626,21 +630,21 @@ bool regenerateJobLabelFlat(const RenderViewImpl *rv, GeodataJob &j)
     const mat4f mvp = (rv->viewProj * g->model).cast<float>();
     t.tmpGlyphCentersClip.clear();
     t.tmpGlyphCentersClip.reserve(t.lineGlyphPositions.size());
-    float scale = labelFlatScale(rv, j);
-    bool ok = true;
+    bool allFit;
+    float scale = labelFlatScale(rv, j, allFit);
     uint32 vi = 0;
     for (uint32 i = 0, e = t.lineGlyphPositions.size(); i != e; i++)
     {
         float lp = t.lineGlyphPositions[i] * scale;
         float f;
-        ok = arrayPosition(t.lineVertPositions, lp, vi, f) && ok;
+        arrayPosition(t.lineVertPositions, lp, vi, f);
         vec3f mpa = rawToVec3(mps[vi].data());
         vec3f mpb = rawToVec3(mps[vi + 1].data());
         vec3f mp = interpolate(mpa, mpb, f);
         vec4f cp = mvp * vec3to4(mp, 1);
         t.tmpGlyphCentersClip.push_back(vec4to2(cp, true));
     }
-    return ok;
+    return allFit;
 }
 
 void preDrawJobLabelFlat(const RenderViewImpl *rv, const GeodataJob &j,
@@ -651,7 +655,8 @@ void preDrawJobLabelFlat(const RenderViewImpl *rv, const GeodataJob &j,
     const auto &mps = g->spec.positions[j.itemIndex];
     worldPos.clear();
     worldPos.reserve(t.lineGlyphPositions.size());
-    scale = labelFlatScale(rv, j);
+    bool dummyAllFit;
+    scale = labelFlatScale(rv, j, dummyAllFit);
     uint32 vi = 0;
     for (uint32 i = 0, e = t.lineGlyphPositions.size(); i != e; i++)
     {

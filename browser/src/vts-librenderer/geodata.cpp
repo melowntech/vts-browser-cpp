@@ -645,11 +645,10 @@ void RenderViewImpl::regenerateJobCollision(GeodataJob &j)
     }
 }
 
-void RenderViewImpl::regenerateJobLabelFlat(GeodataJob &j)
+bool RenderViewImpl::regenerateJobLabelFlat(GeodataJob &j)
 {
-    bool valid = vts::renderer::regenerateJobLabelFlat(this, j);
-    (void)valid;
-    // todo eliminate invalid
+    return vts::renderer::regenerateJobLabelFlat(this, j);
+    // todo rectangles
 }
 
 void RenderViewImpl::regenerateJobLabelScreen(GeodataJob &j)
@@ -671,7 +670,7 @@ void RenderViewImpl::regenerateJobLabelScreen(GeodataJob &j)
     );
 }
 
-void RenderViewImpl::regenerateJob(GeodataJob &j)
+bool RenderViewImpl::regenerateJob(GeodataJob &j)
 {
     switch (j.g->spec.type)
     {
@@ -680,7 +679,7 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
     case GpuGeodataSpec::Type::LineFlat:
     case GpuGeodataSpec::Type::LineScreen:
     case GpuGeodataSpec::Type::Triangles:
-        return; // nothing
+        break; // nothing
 
     case GpuGeodataSpec::Type::IconFlat:
     {
@@ -698,7 +697,7 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
     case GpuGeodataSpec::Type::LabelFlat:
     {
         regenerateJobCommon(j);
-        regenerateJobLabelFlat(j);
+        return regenerateJobLabelFlat(j);
     } break;
 
     case GpuGeodataSpec::Type::LabelScreen:
@@ -713,6 +712,7 @@ void RenderViewImpl::regenerateJob(GeodataJob &j)
     case GpuGeodataSpec::Type::Invalid:
         throw std::invalid_argument("Invalid geodata type enum");
     }
+    return true;
 }
 
 void RenderViewImpl::generateJobs()
@@ -767,8 +767,8 @@ void RenderViewImpl::generateJobs()
                     g->spec.commonData.depthVisibilityThreshold))
                     continue;
 
-                regenerateJob(j);
-                geodataJobs.push_back(std::move(j));
+                if (regenerateJob(j))
+                    geodataJobs.push_back(std::move(j));
             }
         } break;
         }

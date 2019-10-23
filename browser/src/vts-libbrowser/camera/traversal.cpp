@@ -597,7 +597,7 @@ bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
     geo->updatePriority(trav->priority);
     geo->update(style.second, features.second,
         map->mapconfig->browserOptions.value,
-        trav->aabbPhys, trav->id().lod);
+        trav->aabbPhys, trav->id());
     switch (map->getResourceValidity(geo))
     {
     case Validity::Invalid:

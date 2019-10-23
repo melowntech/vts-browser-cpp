@@ -402,7 +402,7 @@ struct geoContext
         features(stringToJson(*data->features)),
         browserOptions(*data->browserOptions),
         aabbPhys{ data->aabbPhys[0], data->aabbPhys[1] },
-        lod(data->lod),
+        tileId(data->tileId),
         compatibility(getCompatibilityMode(data)),
         currentLayer(nullptr)
     {}
@@ -663,10 +663,19 @@ struct geoContext
             if (name == "#language")
                 return data->map->options.language;
             if (name == "#lod")
-                return lod;
+                return tileId.lod;
+            if (name == "#ix")
+                return tileId.x;
+            if (name == "#iy")
+                return tileId.y;
             if (name == "#tileSize")
             {
                 // todo
+                return Value();
+            }
+            if (Validating)
+            {
+                THROW << "Undefined identifier <" << name << ">";
             }
             return Value();
         default:
@@ -1059,12 +1068,12 @@ if (fnc == #NAME) \
 
         // 'discrete', 'discrete2', 'linear', 'linear2'
         if (fnc == "discrete")
-            return evaluatePairsArray<false>(lod, expression[fnc]);
+            return evaluatePairsArray<false>(tileId.lod, expression[fnc]);
         if (fnc == "discrete2")
             return evaluatePairsArray<false>(expression[fnc][0],
                 expression[fnc][1]);
         if (fnc == "linear")
-            return evaluatePairsArray<true>(lod, expression[fnc]);
+            return evaluatePairsArray<true>(tileId.lod, expression[fnc]);
         if (fnc == "linear2")
             return evaluatePairsArray<true>(expression[fnc][0],
                 expression[fnc][1]);
@@ -1078,7 +1087,7 @@ if (fnc == #NAME) \
             float l = convertToDouble(arr[0]);
             float v = convertToDouble(arr[1]);
             float bf = arr.size() == 3 ? convertToDouble(arr[2]) : 1;
-            return Value(std::pow(2 * bf, l - lod) * v);
+            return Value(std::pow(2 * bf, l - tileId.lod) * v);
         }
 
         // 'log-scale'
@@ -2090,7 +2099,7 @@ if (cond == #OP) \
     Value features;
     Value browserOptions;
     const vec3 aabbPhys[2];
-    const uint32 lod;
+    const TileId tileId;
     const bool compatibility;
 
     // processing data

@@ -224,7 +224,7 @@ FetchTask::ResourceType GeodataStylesheet::resourceType() const
 }
 
 GeodataTile::GeodataTile(MapImpl *map, const std::string &name)
-    : Resource(map, name), lod(0)
+    : Resource(map, name)
 {
     state = Resource::State::ready;
 
@@ -246,7 +246,7 @@ void GeodataTile::update(
     const std::shared_ptr<GeodataStylesheet> &s,
     const std::shared_ptr<const std::string> &f,
     const std::shared_ptr<const Json::Value> &b,
-    const vec3 ab[2], uint32 l)
+    const vec3 ab[2], const TileId &tid)
 {
     switch ((Resource::State)state)
     {
@@ -256,14 +256,14 @@ void GeodataTile::update(
     case Resource::State::errorFatal: // allow reloading when sources change, even if it failed before
     case Resource::State::ready:
         if (style != s || features != f || browserOptions != b
-            || lod != l || ab[0] != aabbPhys[0] || ab[1] != aabbPhys[1])
+            || tileId != tid || ab[0] != aabbPhys[0] || ab[1] != aabbPhys[1])
         {
             style = s;
             features = f;
             browserOptions = b;
             aabbPhys[0] = ab[0];
             aabbPhys[1] = ab[1];
-            lod = l;
+            tileId = tid;
             state = Resource::State::downloading;
             map->resources.queGeodata.push(
                 std::dynamic_pointer_cast<GeodataTile>(shared_from_this()));

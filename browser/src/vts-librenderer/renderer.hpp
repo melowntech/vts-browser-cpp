@@ -202,9 +202,9 @@ public:
     void regenerateJobIcon(GeodataJob &j);
     void regenerateJobStick(GeodataJob &j);
     void regenerateJobCollision(GeodataJob &j);
-    void regenerateJobLabelFlat(GeodataJob &j);
+    bool regenerateJobLabelFlat(GeodataJob &j);
     void regenerateJobLabelScreen(GeodataJob &j);
-    void regenerateJob(GeodataJob &j);
+    bool regenerateJob(GeodataJob &j);
     void generateJobs();
     void sortJobsByZIndexAndImportance();
     void renderJobsDebugRects();

@@ -27,6 +27,8 @@
 #ifndef GEODATA_HPP_o84d6
 #define GEODATA_HPP_o84d6
 
+#include <vts-libs/registry/referenceframe.hpp>
+
 #include "include/vts-browser/math.hpp"
 #include "include/vts-browser/geodata.hpp"
 #include "resource.hpp"
@@ -38,6 +40,8 @@ namespace Json
 
 namespace vts
 {
+
+using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
 
 enum class Validity;
 
@@ -82,7 +86,7 @@ public:
         const std::shared_ptr<GeodataStylesheet> &style,
         const std::shared_ptr<const std::string> &features,
         const std::shared_ptr<const Json::Value> &browserOptions,
-        const vec3 aabbPhys[2], uint32 lod);
+        const vec3 aabbPhys[2], const TileId &tileId);
     void process();
 
     std::vector<RenderGeodataTask> renders;
@@ -91,7 +95,7 @@ public:
     std::shared_ptr<const std::string> features;
     std::shared_ptr<const Json::Value> browserOptions;
     vec3 aabbPhys[2];
-    uint32 lod;
+    TileId tileId;
 };
 
 } // namespace vts

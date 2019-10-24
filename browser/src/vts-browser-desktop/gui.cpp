@@ -97,6 +97,7 @@ static const char *geodataDebugNames[] = {
     "off",
     "importance",
     "rects",
+    "glyphs",
 };
 
 static const char *fpsSlowdownNames[] = {

@@ -628,11 +628,13 @@ bool regenerateJobLabelFlat(const RenderViewImpl *rv, GeodataJob &j)
     auto &t = g->texts[j.itemIndex];
     const auto &mps = g->spec.positions[j.itemIndex];
     const mat4f mvp = (rv->viewProj * g->model).cast<float>();
-    t.tmpGlyphCentersClip.clear();
-    t.tmpGlyphCentersClip.reserve(t.lineGlyphPositions.size());
+    t.collisionGlyphsRects.clear();
+    t.collisionGlyphsRects.reserve(t.lineGlyphPositions.size());
     bool allFit;
     float scale = labelFlatScale(rv, j, allFit);
     uint32 vi = 0;
+    float cs1 = g->spec.unionData.labelFlat.size * rv->options.textScale;
+    vec2f cs = vec2f(cs1 / rv->width, cs1 / rv->height);
     for (uint32 i = 0, e = t.lineGlyphPositions.size(); i != e; i++)
     {
         float lp = t.lineGlyphPositions[i] * scale;
@@ -641,8 +643,9 @@ bool regenerateJobLabelFlat(const RenderViewImpl *rv, GeodataJob &j)
         vec3f mpa = rawToVec3(mps[vi].data());
         vec3f mpb = rawToVec3(mps[vi + 1].data());
         vec3f mp = interpolate(mpa, mpb, f);
-        vec4f cp = mvp * vec3to4(mp, 1);
-        t.tmpGlyphCentersClip.push_back(vec4to2(cp, true));
+        vec4f cp4 = mvp * vec3to4(mp, 1);
+        vec2f cp = vec4to2(cp4, true);
+        t.collisionGlyphsRects.push_back(Rect(cp - cs, cp + cs));
     }
     return allFit;
 }

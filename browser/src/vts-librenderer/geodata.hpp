@@ -52,7 +52,7 @@ struct Text
 {
     std::vector<float> lineVertPositions; // positions of line vertices in range -1 .. 1
     std::vector<float> lineGlyphPositions; // position of glyph's centers along the line in range -1 .. 1
-    std::vector<vec2f> tmpGlyphCentersClip;
+    std::vector<Rect> collisionGlyphsRects;
     std::vector<vec4f> coordinates; // x, y, uv.s (+ plane index * 2), uv.t - four vec4f per glyph
     std::vector<Subtext> subtexts;
     Rect collision;

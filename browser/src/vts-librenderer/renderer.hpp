@@ -208,6 +208,7 @@ public:
     void generateJobs();
     void sortJobsByZIndexAndImportance();
     void renderJobsDebugRects();
+    void renderJobsDebugGlyphs();
     void renderJobsDebugImportance();
     void filterJobsByResolvingCollisions();
     void processJobsHysteresis();

@@ -481,6 +481,8 @@ void RenderViewImpl::renderGeodata()
     renderJobs();
     if (options.renderGeodataDebug == 2)
         renderJobsDebugRects();
+    if (options.renderGeodataDebug == 3)
+        renderJobsDebugGlyphs();
     geodataJobs.clear();
 
     glDepthMask(GL_TRUE);
@@ -647,8 +649,13 @@ void RenderViewImpl::regenerateJobCollision(GeodataJob &j)
 
 bool RenderViewImpl::regenerateJobLabelFlat(GeodataJob &j)
 {
-    return vts::renderer::regenerateJobLabelFlat(this, j);
-    // todo rectangles
+    bool valid = vts::renderer::regenerateJobLabelFlat(this, j);
+    const auto &g = j.g;
+    const auto &t = g->texts[j.itemIndex];
+    j.collisionRect = Rect();
+    for (const auto &it : t.collisionGlyphsRects)
+        j.collisionRect = Rect::merge(j.collisionRect, it);
+    return valid;
 }
 
 void RenderViewImpl::regenerateJobLabelScreen(GeodataJob &j)
@@ -794,11 +801,11 @@ void RenderViewImpl::sortJobsByZIndexAndImportance()
 
 void RenderViewImpl::renderJobsDebugRects()
 {
-    vec4f colorCollision = vec4f(0.5, 0.5, 0.5, 0.4);
-    vec4f colorStick = vec4f(0, 0, 0.5, 0.4);
-    vec4f colorIcon = vec4f(0, 0.5, 0, 0.4);
-    vec4f colorLabel = vec4f(0.5, 0, 0, 0.4);
-    vec4f colorRef = vec4f(1, 0, 1, 1);
+    static const vec4f colorCollision = vec4f(0.5, 0.5, 0.5, 0.4);
+    static const vec4f colorStick = vec4f(0, 0, 0.5, 0.4);
+    static const vec4f colorIcon = vec4f(0, 0.5, 0, 0.4);
+    static const vec4f colorLabel = vec4f(0.5, 0, 0, 0.4);
+    static const vec4f colorRef = vec4f(1, 0, 1, 1);
     for (const GeodataJob &job : geodataJobs)
     {
         if (job.itemIndex == (uint32)-1)
@@ -810,6 +817,19 @@ void RenderViewImpl::renderJobsDebugRects()
         renderGeodataQuad(job, job.labelRect, colorLabel);
         renderGeodataQuad(job, pointToRect(job.refPoint,
             width, height), colorRef);
+    }
+}
+
+void RenderViewImpl::renderJobsDebugGlyphs()
+{
+    static const vec4f colorCollision = vec4f(1, 1, 0, 0.4);
+    for (const GeodataJob &job : geodataJobs)
+    {
+        if (job.itemIndex == (uint32)-1)
+            continue;
+        bindUboView(job.g);
+        for (const auto &it : job.g->texts[job.itemIndex].collisionGlyphsRects)
+            renderGeodataQuad(job, it, colorCollision);
     }
 }
 
@@ -878,7 +898,7 @@ void RenderViewImpl::processJobsHysteresis()
         return;
     }
 
-    for (auto it = hysteresisJobs.begin(); it != hysteresisJobs.end(); )
+    for (auto &it = hysteresisJobs.begin(); it != hysteresisJobs.end(); )
     {
         it->second.opacity -= elapsedTime
             / it->second.g->spec.commonData.hysteresisDuration[1];
@@ -912,11 +932,11 @@ void RenderViewImpl::processJobsHysteresis()
         if (it.second.opacity > 0.f)
         {
             regenerateJob(it.second);
-            geodataJobs.push_back(it.second);
+            geodataJobs.push_back(std::move(it.second));
         }
     }
-
     hysteresisJobs.clear();
+
     geodataJobs.erase(std::remove_if(geodataJobs.begin(),
         geodataJobs.end(), [&](GeodataJob &it) {
         if (it.itemIndex == (uint32)-1 || it.g->spec.hysteresisIds.empty())

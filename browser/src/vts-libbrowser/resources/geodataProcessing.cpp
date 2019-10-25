@@ -1923,6 +1923,16 @@ if (cond == #OP) \
             ? convertToDouble(layer["line-label-size"])
             : 1;
 
+        if (compatibility)
+        {
+            bool screenFlat = layer.isMember("line-label-type")
+                && layer["line-label-type"] == "screen-flat";
+            if (!screenFlat)
+                spec.unionData.labelFlat.size *= 1.5;
+            else
+                spec.unionData.labelFlat.size *= 0.9;
+        }
+
         std::string text = evaluate(layer.isMember("line-label-source")
             ? layer["line-label-source"] : "$name").asString();
         if (text.empty())

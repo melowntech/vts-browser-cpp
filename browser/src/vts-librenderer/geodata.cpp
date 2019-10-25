@@ -954,7 +954,7 @@ void RenderViewImpl::processJobsHysteresis()
         return;
     }
 
-    for (auto &it = hysteresisJobs.begin(); it != hysteresisJobs.end(); )
+    for (auto it = hysteresisJobs.begin(); it != hysteresisJobs.end(); )
     {
         it->second.opacity -= elapsedTime
             / it->second.g->spec.commonData.hysteresisDuration[1];

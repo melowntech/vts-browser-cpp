@@ -179,6 +179,52 @@ bool Rect::overlaps(const Rect &a, const Rect &b)
     return true;
 }
 
+bool overlaps(const GeodataJob &a, const GeodataJob &b)
+{
+    if (!Rect::overlaps(a.collisionRect, b.collisionRect))
+        return false;
+
+    const auto &getRects = [](const GeodataJob &a) -> const std::vector<Rect>&
+    {
+        static const std::vector<Rect> empty;
+        if (a.g->texts.empty())
+            return empty;
+        assert(a.itemIndex != (uint32)-1);
+        return a.g->texts[a.itemIndex].collisionGlyphsRects;
+    };
+    const auto &ra = getRects(a);
+    const auto &rb = getRects(b);
+
+    if (ra.empty() && rb.empty())
+        return true;
+
+    const auto &test = [](const std::vector<Rect> &a, const Rect &b)
+    {
+        for (const auto &ra : a)
+            if (Rect::overlaps(ra, b))
+                return true;
+        return false;
+    };
+
+    if (ra.empty() != rb.empty())
+    {
+        if (ra.empty())
+            return test(rb, a.collisionRect);
+        else
+            return test(ra, b.collisionRect);
+    }
+
+    assert(!ra.empty() && !rb.empty());
+    for (const auto &ca : ra)
+    {
+        if (!Rect::overlaps(ca, b.collisionRect))
+            continue;
+        if (test(rb, ca))
+            return true;
+    }
+    return false;
+}
+
 float Rect::width() const
 {
     return b[0] - a[0];
@@ -867,27 +913,37 @@ void RenderViewImpl::renderJobsDebugImportance()
 
 void RenderViewImpl::filterJobsByResolvingCollisions()
 {
-    float pixels = width * height;
+    const float pixels = width * height;
     uint32 index = 0;
-    std::vector<Rect> rects;
-    rects.reserve(geodataJobs.size());
-    geodataJobs.erase(std::remove_if(geodataJobs.begin(),
-        geodataJobs.end(), [&](const GeodataJob &l) {
-        float limitFactor = l.g->spec.commonData.featuresLimitPerPixelSquared;
+    std::vector<GeodataJob> result;
+    result.reserve(geodataJobs.size());
+    for (auto &it : geodataJobs)
+    {
+        const float limitFactor = it.g->spec.commonData
+            .featuresLimitPerPixelSquared;
         if (index > limitFactor * pixels)
-            return true;
-        if (l.collisionRect.valid())
+            continue;
+        if (it.collisionRect.valid())
         {
-            const Rect mr = l.collisionRect;
-            for (const Rect &r : rects)
-                if (Rect::overlaps(mr, r))
-                    return true;
-            rects.push_back(mr);
+            bool ok = true;
+            for (const auto &r : result)
+            {
+                if (!r.collisionRect.valid())
+                    continue;
+                if (overlaps(it, r))
+                {
+                    ok = false;
+                    break;
+                }
+            }
+            if (!ok)
+                continue;
         }
         if (!std::isnan(limitFactor))
             index++;
-        return false;
-    }), geodataJobs.end());
+        result.push_back(std::move(it));
+    }
+    std::swap(result, geodataJobs);
 }
 
 void RenderViewImpl::processJobsHysteresis()

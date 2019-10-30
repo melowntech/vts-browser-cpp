@@ -567,7 +567,10 @@ struct geoContext
             for (const std::string &s : spec.texts)
             {
                 for (unsigned char c : s)
+                {
+                    (void)c;
                     assert(c >= 32 || c == '\n');
+                }
             }
         }
     }

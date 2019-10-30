@@ -1923,14 +1923,19 @@ if (cond == #OP) \
             ? convertToDouble(layer["line-label-size"])
             : 1;
 
+        spec.unionData.labelFlat.units
+            = (layer.isMember("line-label-type")
+            && layer["line-label-type"] == "screen-flat")
+            ? GpuGeodataSpec::Units::Pixels
+            : GpuGeodataSpec::Units::Meters;
+
         if (compatibility)
         {
-            bool screenFlat = layer.isMember("line-label-type")
-                && layer["line-label-type"] == "screen-flat";
-            if (!screenFlat)
-                spec.unionData.labelFlat.size *= 1.5;
+            if (spec.unionData.labelFlat.units
+                == GpuGeodataSpec::Units::Meters)
+                spec.unionData.labelFlat.size *= 1.6;
             else
-                spec.unionData.labelFlat.size *= 0.9;
+                spec.unionData.labelFlat.size *= 0.85;
         }
 
         std::string text = evaluate(layer.isMember("line-label-source")

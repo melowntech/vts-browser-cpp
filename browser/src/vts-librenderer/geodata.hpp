@@ -57,8 +57,9 @@ struct Text
     std::vector<Subtext> subtexts;
     Rect collision;
     vec2f originSize;
+    float size;
 
-    Text() : originSize(nan2().cast<float>())
+    Text() : originSize(nan2().cast<float>()), size(-1)
     {}
 };
 

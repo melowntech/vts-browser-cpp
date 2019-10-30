@@ -518,13 +518,32 @@ void textLinePositions(GeodataTile *g,
     }
 }
 
+float compensatePerspective(const RenderViewImpl *rv,
+    const GeodataJob &j)
+{
+    double mydist = length(vec3(j.worldPosition()
+        - rawToVec3(rv->draws->camera.eye)));
+    double refdist = rv->draws->camera.tagretDistance;
+    return mydist / refdist;
+}
+
 float labelFlatScale(const RenderViewImpl *rv,
     const GeodataJob &j, bool &allFit)
 {
-    float scale = rv->draws->camera.viewExtent / rv->height;
-    scale *= rv->options.textScale;
     const auto &g = j.g;
     auto &t = g->texts[j.itemIndex];
+    float scale = rv->options.textScale;
+    if (g->spec.unionData.labelFlat.units
+        == GpuGeodataSpec::Units::Pixels)
+    {
+        scale *= rv->draws->camera.viewExtent / rv->height;
+        scale *= compensatePerspective(rv, j);
+    }
+    else
+    {
+        scale *= g->spec.unionData.labelFlat.size / 25;
+    }
+
     {
         // smaller scale if the original scale would not fit
         const float m = 1 / std::max(-t.lineGlyphPositions[0],
@@ -533,6 +552,7 @@ float labelFlatScale(const RenderViewImpl *rv,
         if (!allFit)
             scale = m;
     }
+
     {
         // negative scale if the text is reversed
         uint32 index = 0;
@@ -574,6 +594,7 @@ void GeodataTile::loadLabelScreens()
             spec.unionData.labelScreen.size,
             align, lines);
         Text t = generateTexts(lines);
+        t.size = spec.unionData.labelScreen.size;
         t.collision = textCollision(lines);
         t.originSize = originSize;
         info->ramMemoryCost += t.coordinates.size() * sizeof(vec4f);
@@ -593,9 +614,13 @@ void GeodataTile::loadLabelFlats()
         assert(spec.positions[i].size() > 1); // line must have at least two points
         std::vector<TmpLine> lines = textToGlyphs(
             spec.texts[i], fontCascade);
-        textLayout(spec.unionData.labelFlat.size, 0.5, lines); // align to center
+        float size = spec.unionData.labelFlat.units
+            == GpuGeodataSpec::Units::Meters
+            ? 25 : spec.unionData.labelFlat.size;
+        textLayout(size, 0.5, lines); // align to center
         assert(lines.size() == 1); // flat labels may not be multi-line
         Text t = generateTexts(lines);
+        t.size = size;
         textLinePositions(this, spec.positions[i], t);
         info->ramMemoryCost += t.coordinates.size() * sizeof(vec4f);
         info->ramMemoryCost += t.subtexts.size() * sizeof(Subtext);
@@ -633,7 +658,7 @@ bool regenerateJobLabelFlat(const RenderViewImpl *rv, GeodataJob &j)
     bool allFit;
     float scale = labelFlatScale(rv, j, allFit);
     uint32 vi = 0;
-    float cs1 = g->spec.unionData.labelFlat.size * rv->options.textScale;
+    float cs1 = t.size * std::abs(scale) / compensatePerspective(rv, j) / rv->draws->camera.viewExtent * rv->height;
     vec2f cs = vec2f(cs1 / rv->width, cs1 / rv->height);
     for (uint32 i = 0, e = t.lineGlyphPositions.size(); i != e; i++)
     {

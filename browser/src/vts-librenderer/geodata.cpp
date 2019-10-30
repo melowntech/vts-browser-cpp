@@ -144,7 +144,10 @@ Rect::Rect() : a(nan2().cast<float>()), b(nan2().cast<float>())
 {}
 
 Rect::Rect(const vec2f &a, const vec2f &b) : a(a), b(b)
-{}
+{
+    assert(a[0] <= b[0]);
+    assert(a[1] <= b[1]);
+}
 
 bool Rect::valid() const
 {
@@ -1127,7 +1130,7 @@ void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
     data.color[1] = rawToVec4(g->spec.unionData.labelFlat.color);
     data.color[0][3] *= job.opacity;
     data.color[1][3] *= job.opacity;
-    data.outline = fontOutline(g->spec.unionData.labelFlat.size,
+    data.outline = fontOutline(t.size,
         rawToVec4(g->spec.unionData.labelFlat.outline));
     data.position = vec3to4(job.modelPosition(), 0);
     assert(t.coordinates.size() <= 500);
@@ -1171,7 +1174,7 @@ void RenderViewImpl::renderLabelScreen(const GeodataJob &job)
     data.color[1] = rawToVec4(g->spec.unionData.labelScreen.color);
     data.color[0][3] *= job.opacity;
     data.color[1][3] *= job.opacity;
-    data.outline = fontOutline(g->spec.unionData.labelScreen.size,
+    data.outline = fontOutline(t.size * options.textScale,
         rawToVec4(g->spec.unionData.labelScreen.outline));
     data.position = vec3to4(job.modelPosition(), options.textScale * 2);
     data.offset = vec4f(job.labelOffset[0], job.labelOffset[1], 0, 0);

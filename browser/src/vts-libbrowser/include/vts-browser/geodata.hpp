@@ -120,9 +120,10 @@ public:
         float outline[4];
         float color[4];
         float color2[4];
-        float offset; // meters
+        float offset;
         float marginMult; // size multiplier
-        float size; // meters
+        float size;
+        Units units;
     };
 
     struct VTS_API LabelScreen

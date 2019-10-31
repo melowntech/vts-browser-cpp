@@ -83,7 +83,7 @@ public:
 
     std::shared_ptr<Mesh> mesh;
     std::shared_ptr<Texture> texture;
-    std::shared_ptr<UniformBuffer> uniform;
+    std::unique_ptr<UniformBuffer> uniform;
 
     std::vector<std::shared_ptr<Font>> fontCascade;
     std::vector<Text> texts;

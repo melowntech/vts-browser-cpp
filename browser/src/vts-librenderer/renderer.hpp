@@ -149,10 +149,7 @@ public:
     DepthBuffer depthBuffer;
     std::vector<GeodataJob> geodataJobs;
     std::unordered_map<std::string, GeodataJob> hysteresisJobs;
-    std::shared_ptr<UniformBuffer> uboAtm;
-    std::shared_ptr<UniformBuffer> uboGeodataCamera;
     std::vector<std::unique_ptr<UniformBuffer>> uboCacheVector;
-    uint32 uboCacheIndex;
     CameraDraws *draws;
     const MapCelestialBody *body;
     Texture *atmosphereDensityTexture;
@@ -176,7 +173,7 @@ public:
 
     RenderViewImpl(Camera *camera, RenderView *api,
         RenderContextImpl *context);
-    UniformBuffer *getUbo();
+    UniformBuffer *getUboForFrame();
     void drawSurface(const DrawSurfaceTask &t);
     void drawInfographic(const DrawSimpleTask &t);
     void updateFramebuffers();

@@ -76,7 +76,6 @@ RenderViewImpl::RenderViewImpl(
     camera(camera),
     api(api),
     context(context),
-    uboCacheIndex(0),
     draws(nullptr),
     body(nullptr),
     atmosphereDensityTexture(nullptr),
@@ -89,19 +88,14 @@ RenderViewImpl::RenderViewImpl(
     projected(false),
     lodBlendingWithDithering(false)
 {
-    uboAtm = std::make_shared<UniformBuffer>();
-    uboAtm->debugId = "uboAtm";
-    uboGeodataCamera = std::make_shared<UniformBuffer>();
-    uboGeodataCamera->debugId = "uboGeodataCamera";
     depthBuffer.meshQuad = context->meshQuad;
     depthBuffer.shaderCopyDepth = context->shaderCopyDepth;
 }
 
-UniformBuffer *RenderViewImpl::getUbo()
+UniformBuffer *RenderViewImpl::getUboForFrame()
 {
-    if (uboCacheIndex >= uboCacheVector.size())
-        uboCacheVector.emplace_back(new UniformBuffer());
-    return &*uboCacheVector[uboCacheIndex++];
+    uboCacheVector.emplace_back(std::make_unique<UniformBuffer>());
+    return &**uboCacheVector.rbegin();
 }
 
 void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
@@ -131,13 +125,13 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
         vec4f uvClip;
         vec4f color;
         vec4si32 flags; // mask, monochromatic, flat shading, uv source, lodBlendingWithDithering, ... frameIndex
-    } uboSurface;
+    } data;
 
-    uboSurface.p = proj.cast<float>();
-    uboSurface.mv = rawToMat4(t.mv);
-    uboSurface.uvMat = mat3x4f(rawToMat3(t.uvm));
-    uboSurface.uvClip = rawToVec4(t.uvClip);
-    uboSurface.color = rawToVec4(t.color);
+    data.p = proj.cast<float>();
+    data.mv = rawToMat4(t.mv);
+    data.uvMat = mat3x4f(rawToMat3(t.uvm));
+    data.uvClip = rawToVec4(t.uvClip);
+    data.color = rawToVec4(t.color);
     sint32 flags = 0;
     if (t.texMask)
         flags |= 1 << 0;
@@ -151,19 +145,19 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
     {
         if (lodBlendingWithDithering)
         {
-            uboSurface.uvMat.data[0][3] = t.blendingCoverage;
+            data.uvMat.data[0][3] = t.blendingCoverage;
             flags |= 1 << 4;
         }
         else
-            uboSurface.color[3] *= t.blendingCoverage;
+            data.color[3] *= t.blendingCoverage;
     }
-    uboSurface.flags = vec4si32(flags, 0, 0, frameIndex);
+    data.flags = vec4si32(flags, 0, 0, frameIndex);
 
-    auto ubo = getUbo();
-    ubo->debugId = "UboSurface";
-    ubo->bind();
-    ubo->load(uboSurface);
-    ubo->bindToIndex(1);
+    UniformBuffer ubo;
+    ubo.debugId = "UboSurface";
+    ubo.bind();
+    ubo.load(data, GL_STREAM_DRAW);
+    ubo.bindToIndex(1);
 
     if (t.texMask)
     {
@@ -188,17 +182,17 @@ void RenderViewImpl::drawInfographic(const DrawSimpleTask &t)
         mat4f mvp;
         vec4f color;
         vec4si32 useColorTexture;
-    } uboInfographics;
+    } data;
 
-    uboInfographics.mvp = proj.cast<float>() * rawToMat4(t.mv);
-    uboInfographics.color = rawToVec4(t.color);
-    uboInfographics.useColorTexture[0] = !!t.texColor;
+    data.mvp = proj.cast<float>() * rawToMat4(t.mv);
+    data.color = rawToVec4(t.color);
+    data.useColorTexture[0] = !!t.texColor;
 
-    auto ubo = std::make_shared<UniformBuffer>();
-    ubo->debugId = "UboInfographics";
-    ubo->bind();
-    ubo->load(uboInfographics);
-    ubo->bindToIndex(1);
+    UniformBuffer ubo;
+    ubo.debugId = "UboInfographics";
+    ubo.bind();
+    ubo.load(data, GL_STREAM_DRAW);
+    ubo.bindToIndex(1);
 
     if (t.texColor)
     {
@@ -506,8 +500,8 @@ void RenderViewImpl::renderValid()
 void RenderViewImpl::renderEntry()
 {
     CHECK_GL("pre-frame check");
+    uboCacheVector.clear();
     clearGlState();
-    uboCacheIndex = 0;
     frameIndex++;
 
     assert(context->shaderSurface);
@@ -635,11 +629,10 @@ void RenderViewImpl::updateAtmosphereBuffer()
         memset(&atmBlock, 0, sizeof(atmBlock));
     }
 
-    // Load it in
+    auto uboAtm = getUboForFrame();
+    uboAtm->debugId = "uboAtm";
     uboAtm->bind();
-    uboAtm->load(atmBlock);
-
-    // Bind atmosphere uniform buffer to index 0
+    uboAtm->load(atmBlock, GL_STATIC_DRAW);
     uboAtm->bindToIndex(0);
 }
 

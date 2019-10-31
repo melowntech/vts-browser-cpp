@@ -465,10 +465,10 @@ void RenderViewImpl::renderGeodataQuad(const GeodataJob &job,
     data.modelPos = vec3to4(job.modelPosition(), 1.f);
     data.color = color;
 
-    auto ubo = getUbo();
+    auto ubo = std::make_unique<UniformBuffer>();
     ubo->debugId = "UboColor";
     ubo->bind();
-    ubo->load(data);
+    ubo->load(data, GL_STREAM_DRAW);
     ubo->bindToIndex(2);
 
     context->shaderGeodataColor->bind();
@@ -502,10 +502,10 @@ void RenderViewImpl::bindUboView(const std::shared_ptr<GeodataTile> &g)
     data.mv = mv.cast<float>();
     data.mvInv = mvInv.cast<float>();
 
-    auto ubo = getUbo();
+    auto ubo = getUboForFrame();
     ubo->debugId = "UboViewData";
     ubo->bind();
-    ubo->load(data);
+    ubo->load(data, GL_STATIC_DRAW);
     ubo->bindToIndex(1);
 }
 
@@ -591,8 +591,10 @@ void RenderViewImpl::bindUboCamera()
     data.cameraParams = vec4f(width, height,
         draws->camera.viewExtent, 0);
 
+    auto uboGeodataCamera = getUboForFrame();
+    uboGeodataCamera->debugId = "uboGeodataCamera";
     uboGeodataCamera->bind();
-    uboGeodataCamera->load(data);
+    uboGeodataCamera->load(data, GL_STATIC_DRAW);
     uboGeodataCamera->bindToIndex(0);
 }
 
@@ -1063,11 +1065,11 @@ void RenderViewImpl::renderIcon(const GeodataJob &job)
     data.color[3] *= job.opacity;
     data.uvs = rawToVec4(job.g->spec.iconCoords[job.itemIndex].data());
 
-    auto ubo = getUbo();
-    ubo->debugId = "UboIcon";
-    ubo->bind();
-    ubo->load(data);
-    ubo->bindToIndex(2);
+    UniformBuffer ubo;
+    ubo.debugId = "UboIcon";
+    ubo.bind();
+    ubo.load(data, GL_STREAM_DRAW);
+    ubo.bindToIndex(2);
 
     ((Texture*)job.g->spec.bitmap.get())->bind();
 
@@ -1136,12 +1138,13 @@ void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
     assert(t.coordinates.size() <= 500);
 
     context->shaderGeodataLabelFlat->bind();
-    auto ubo = getUbo();
-    ubo->debugId = "UboLabelFlat";
-    ubo->bind();
-    ubo->load(&data,
-        16 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size() * 2);
-    ubo->bindToIndex(2);
+    UniformBuffer ubo;
+    ubo.debugId = "UboLabelFlat";
+    ubo.bind();
+    ubo.load(&data,
+        16 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size() * 2,
+              GL_STREAM_DRAW);
+    ubo.bindToIndex(2);
 
     context->meshEmpty->bind();
     for (int pass = 0; pass < 2; pass++)
@@ -1182,12 +1185,13 @@ void RenderViewImpl::renderLabelScreen(const GeodataJob &job)
     std::copy(t.coordinates.begin(), t.coordinates.end(), data.coordinates);
 
     context->shaderGeodataLabelScreen->bind();
-    auto ubo = getUbo();
-    ubo->debugId = "UboLabelScreen";
-    ubo->bind();
-    ubo->load(&data,
-        20 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size());
-    ubo->bindToIndex(2);
+    UniformBuffer ubo;
+    ubo.debugId = "UboLabelScreen";
+    ubo.bind();
+    ubo.load(&data,
+        20 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size(),
+             GL_STREAM_DRAW);
+    ubo.bindToIndex(2);
 
     context->meshEmpty->bind();
     for (int pass = 0; pass < 2; pass++)

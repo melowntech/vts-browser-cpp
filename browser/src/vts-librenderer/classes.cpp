@@ -635,7 +635,7 @@ void RenderContext::loadMesh(ResourceInfo &info, GpuMeshSpec &spec,
 }
 
 UniformBuffer::UniformBuffer() :
-    ubo(0), capacity(0)
+    ubo(0), lastUsage(0), capacity(0)
 {}
 
 UniformBuffer::~UniformBuffer()
@@ -648,6 +648,7 @@ void UniformBuffer::clear()
     if (ubo)
         glDeleteBuffers(1, &ubo);
     ubo = 0;
+    lastUsage = 0;
     capacity = 0;
 }
 
@@ -673,9 +674,14 @@ void UniformBuffer::bindToIndex(uint32 index)
     glBindBufferBase(GL_UNIFORM_BUFFER, index, ubo);
 }
 
-void UniformBuffer::load(const void *data, std::size_t size)
+void UniformBuffer::load(const void *data, std::size_t size, uint32 usage)
 {
     assert(ubo != 0);
+
+    // not for reading
+    assert(usage != GL_STREAM_READ);
+    assert(usage != GL_STATIC_READ);
+    assert(usage != GL_DYNAMIC_READ);
 
 #ifdef VTSR_UWP
     // angle/directx seems to not like changing a buffer
@@ -684,18 +690,26 @@ void UniformBuffer::load(const void *data, std::size_t size)
     bind();
 #endif // VTSR_UWP
 
-    if (size <= capacity)
+    if (size <= capacity && usage == lastUsage)
+    {
+        // usage must be GL_DYNAMIC_*
+        assert(usage != GL_STREAM_COPY);
+        assert(usage != GL_STREAM_DRAW);
+        assert(usage != GL_STATIC_COPY);
+        assert(usage != GL_STATIC_DRAW);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, size, data);
+    }
     else
     {
-        glBufferData(GL_UNIFORM_BUFFER, size, data, GL_DYNAMIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, size, data, usage);
+        lastUsage = usage;
         capacity = size;
     }
 }
 
-void UniformBuffer::load(const Buffer &buffer)
+void UniformBuffer::load(const Buffer &buffer, uint32 usage)
 {
-    load(buffer.data(), buffer.size());
+    load(buffer.data(), buffer.size(), usage);
 }
 
 uint32 UniformBuffer::getUbo() const

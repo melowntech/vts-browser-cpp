@@ -221,10 +221,10 @@ void GeodataTile::loadLines()
             uboLineData.uniUnitsRadius[1]
                 *= oneMeterInModel(model, modelInv);
 
-        uniform = std::make_shared<UniformBuffer>();
+        uniform = std::make_unique<UniformBuffer>();
         uniform->debugId = debugId;
         uniform->bind();
-        uniform->load(uboLineData);
+        uniform->load(uboLineData, GL_STATIC_DRAW);
         info->gpuMemoryCost += sizeof(uboLineData);
     }
 }
@@ -323,10 +323,10 @@ void GeodataTile::loadPoints()
             uboPointData.uniUnitsRadius[1]
                 *= oneMeterInModel(model, modelInv);
 
-        uniform = std::make_shared<UniformBuffer>();
+        uniform = std::make_unique<UniformBuffer>();
         uniform->debugId = debugId;
         uniform->bind();
-        uniform->load(uboPointData);
+        uniform->load(uboPointData, GL_STATIC_DRAW);
         info->gpuMemoryCost += sizeof(uboPointData);
     }
 }
@@ -375,10 +375,10 @@ void GeodataTile::loadTriangles()
             = rawToVec4(spec.commonData.visibilities);
         uboTriangleData.shading = (sint32)spec.unionData.triangles.style;
 
-        uniform = std::make_shared<UniformBuffer>();
+        uniform = std::make_unique<UniformBuffer>();
         uniform->debugId = debugId;
         uniform->bind();
-        uniform->load(uboTriangleData);
+        uniform->load(uboTriangleData, GL_STATIC_DRAW);
         info->gpuMemoryCost += sizeof(uboTriangleData);
     }
 }

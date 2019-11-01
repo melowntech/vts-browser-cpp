@@ -165,7 +165,8 @@ std::string MapRuntimeOptions::toJson() const
 }
 
 CameraOptions::CameraOptions() :
-    maxTexelToPixelScale(1.2),
+    targetPixelRatioSurfaces(1.2),
+    targetPixelRatioGeodata(1.2),
     cullingOffsetDistance(0.0),
     fixedTraversalDistance(10000),
     fixedTraversalLod(15),
@@ -194,7 +195,8 @@ CameraOptions::CameraOptions(const std::string &json)
 void CameraOptions::applyJson(const std::string &json)
 {
     Json::Value v = stringToJson(json);
-    AJ(maxTexelToPixelScale, asDouble);
+    AJ(targetPixelRatioSurfaces, asDouble);
+    AJ(targetPixelRatioGeodata, asDouble);
     AJ(cullingOffsetDistance, asDouble);
     AJ(fixedTraversalDistance, asDouble);
     AJ(fixedTraversalLod, asUInt);
@@ -216,7 +218,8 @@ void CameraOptions::applyJson(const std::string &json)
 std::string CameraOptions::toJson() const
 {
     Json::Value v;
-    TJ(maxTexelToPixelScale, asDouble);
+    TJ(targetPixelRatioSurfaces, asDouble);
+    TJ(targetPixelRatioGeodata, asDouble);
     TJ(cullingOffsetDistance, asDouble);
     TJ(fixedTraversalDistance, asDouble);
     TJ(fixedTraversalLod, asUInt);

@@ -43,9 +43,10 @@ public:
     std::string toJson() const;
 
     // maximum ratio of texture details to the viewport resolution
-    // increasing this ratio yealds less detailed map
+    // increasing this ratio yields less detailed map
     //   but reduces memory usage and network bandwidth
-    double maxTexelToPixelScale;
+    double targetPixelRatioSurfaces;
+    double targetPixelRatioGeodata;
 
     // nodes this far from the camera frustum will still be included for render
     // this is useful to include shadow casters outside camera frustum

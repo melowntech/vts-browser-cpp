@@ -642,6 +642,13 @@ public:
                     }
                     nk_label(&ctx, "", NK_TEXT_RIGHT);
 
+                    // targetPixelRatioSurfaces
+                    nk_label(&ctx, "Target ratio:", NK_TEXT_LEFT);
+                    c.targetPixelRatioSurfaces = nk_slide_float(&ctx,
+                        0.3, c.targetPixelRatioSurfaces, 30, 0.1);
+                    sprintf(buffer, "%3.1f", c.targetPixelRatioSurfaces);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
                     // traverse mode (geodata)
                     nk_label(&ctx, "Geodata:", NK_TEXT_LEFT);
                     if (nk_combo_begin_label(&ctx,
@@ -660,6 +667,13 @@ public:
                         nk_combo_end(&ctx);
                     }
                     nk_label(&ctx, "", NK_TEXT_RIGHT);
+
+                    // targetPixelRatioGeodata
+                    nk_label(&ctx, "Target ratio:", NK_TEXT_LEFT);
+                    c.targetPixelRatioGeodata = nk_slide_float(&ctx,
+                        0.3, c.targetPixelRatioGeodata, 30, 0.1);
+                    sprintf(buffer, "%3.1f", c.targetPixelRatioGeodata);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                     // balanced grids
                     if (c.traverseModeSurfaces == TraverseMode::Balanced
@@ -741,13 +755,6 @@ public:
                     c.cullingOffsetDistance = nk_slide_float(&ctx,
                         0.0, c.cullingOffsetDistance, 500, 1.0);
                     sprintf(buffer, "%3.1f", c.cullingOffsetDistance);
-                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-
-                    // maxTexelToPixelScale
-                    nk_label(&ctx, "Texel to pixel:", NK_TEXT_LEFT);
-                    c.maxTexelToPixelScale = nk_slide_float(&ctx,
-                            0.3, c.maxTexelToPixelScale, 30, 0.1);
-                    sprintf(buffer, "%3.1f", c.maxTexelToPixelScale);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                     // antialiasing samples

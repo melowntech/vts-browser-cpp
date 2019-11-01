@@ -146,7 +146,10 @@ bool CameraImpl::visibilityTest(TraverseNode *trav)
 bool CameraImpl::coarsenessTest(TraverseNode *trav)
 {
     assert(trav->meta);
-    return coarsenessValue(trav) < options.maxTexelToPixelScale;
+    return coarsenessValue(trav)
+        < (trav->layer->isGeodata()
+        ? options.targetPixelRatioGeodata
+        : options.targetPixelRatioSurfaces);
 }
 
 namespace

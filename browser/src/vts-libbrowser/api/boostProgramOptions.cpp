@@ -164,9 +164,13 @@ void optionsConfigCamera(
     sanitizeSection(section);
     desc.add_options()
 
-    ((section + "maxTexelToPixelScale").c_str(),
-        po::value<double>(&opts->maxTexelToPixelScale),
-        "Maximum ratio of texture details to the viewport resolution.")
+    ((section + "targetPixelRatioSurfaces").c_str(),
+        po::value<double>(&opts->targetPixelRatioSurfaces),
+        "Target ratio of texture details to the viewport resolution.")
+
+    ((section + "targetPixelRatioGeodata").c_str(),
+        po::value<double>(&opts->targetPixelRatioGeodata),
+        "Target ratio of texture details to the viewport resolution.")
 
     ((section + "traverseModeSurfaces").c_str(),
         po::value<TraverseMode>(&opts->traverseModeSurfaces),

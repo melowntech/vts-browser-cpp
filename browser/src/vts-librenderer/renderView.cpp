@@ -153,7 +153,7 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
     data.flags = vec4si32(flags, 0, 0, frameIndex);
 
     auto ubo = getUbo();
-    ubo->debugId = "UboSurface";
+    ubo->setDebugId("UboSurface");
     ubo->bind();
     ubo->load(data, GL_DYNAMIC_DRAW);
     ubo->bindToIndex(1);
@@ -188,7 +188,7 @@ void RenderViewImpl::drawInfographic(const DrawSimpleTask &t)
     data.useColorTexture[0] = !!t.texColor;
 
     auto ubo = getUbo();
-    ubo->debugId = "UboInfographics";
+    ubo->setDebugId("UboInfographics");
     ubo->bind();
     ubo->load(data, GL_DYNAMIC_DRAW);
     ubo->bindToIndex(1);
@@ -629,7 +629,7 @@ void RenderViewImpl::updateAtmosphereBuffer()
     }
 
     auto uboAtm = getUbo();
-    uboAtm->debugId = "uboAtm";
+    uboAtm->setDebugId("uboAtm");
     uboAtm->bind();
     uboAtm->load(atmBlock, GL_DYNAMIC_DRAW);
     uboAtm->bindToIndex(0);

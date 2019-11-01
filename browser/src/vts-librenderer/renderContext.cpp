@@ -61,7 +61,6 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     // load texture blue noise
     {
         texBlueNoise = std::make_shared<Texture>();
-        texBlueNoise->debugId = "blueNoise";
         Buffer buff;
         buff.allocate(64 * 64 * 16);
         for (uint32 i = 0; i < 16; i++)
@@ -82,12 +81,7 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
         glGenTextures(1, &id);
         texBlueNoise->setId(id);
         glBindTexture(GL_TEXTURE_2D_ARRAY, id);
-        if (GLAD_GL_KHR_debug)
-        {
-            glObjectLabel(GL_TEXTURE, id,
-                texBlueNoise->debugId.length(),
-                texBlueNoise->debugId.data());
-        }
+        texBlueNoise->setDebugId("blueNoise");
         glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_R8, 64, 64, 16, 0,
             GL_RED, GL_UNSIGNED_BYTE, buff.data());
         glTexParameteri(GL_TEXTURE_2D_ARRAY,
@@ -104,8 +98,8 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     // load shader texture
     {
         shaderTexture = std::make_shared<Shader>();
-        shaderTexture->debugId
-            = "data/shaders/texture.*.glsl";
+        shaderTexture->setDebugId(
+            "data/shaders/texture.*.glsl");
         shaderTexture->loadInternal(
             "data/shaders/texture.vert.glsl",
             "data/shaders/texture.frag.glsl");
@@ -121,8 +115,8 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     // load shader surface
     {
         shaderSurface = std::make_shared<ShaderAtm>();
-        shaderSurface->debugId
-            = "data/shaders/surface.*.glsl";
+        shaderSurface->setDebugId(
+            "data/shaders/surface.*.glsl");
         Buffer vert = readInternalMemoryBuffer(
             "data/shaders/surface.vert.glsl");
         Buffer frag = readInternalMemoryBuffer(
@@ -142,8 +136,8 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     // load shader infographic
     {
         shaderInfographics = std::make_shared<Shader>();
-        shaderInfographics->debugId
-            = "data/shaders/infographic.*.glsl";
+        shaderInfographics->setDebugId(
+            "data/shaders/infographic.*.glsl");
         shaderInfographics->loadInternal(
             "data/shaders/infographics.vert.glsl",
             "data/shaders/infographics.frag.glsl");
@@ -159,8 +153,8 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     // load shader background
     {
         shaderBackground = std::make_shared<ShaderAtm>();
-        shaderBackground->debugId
-            = "data/shaders/background.*.glsl";
+        shaderBackground->setDebugId(
+            "data/shaders/background.*.glsl");
         Buffer vert = readInternalMemoryBuffer(
             "data/shaders/background.vert.glsl");
         Buffer frag = readInternalMemoryBuffer(
@@ -178,8 +172,8 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     // load shader copy depth
     {
         shaderCopyDepth = std::make_shared<Shader>();
-        shaderCopyDepth->debugId
-            = "data/shaders/copyDepth.*.glsl";
+        shaderCopyDepth->setDebugId(
+            "data/shaders/copyDepth.*.glsl");
         shaderCopyDepth->loadInternal(
             "data/shaders/copyDepth.vert.glsl",
             "data/shaders/copyDepth.frag.glsl");
@@ -254,8 +248,7 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     // load shader geodata color
     {
         shaderGeodataColor = std::make_shared<Shader>();
-        shaderGeodataColor->debugId
-            = "data/shaders/geodataColor.*.glsl";
+        shaderGeodataColor->setDebugId("data/shaders/geodataColor.*.glsl");
         Buffer vert = readInternalMemoryBuffer(
             "data/shaders/geodataColor.vert.glsl");
         Buffer frag = readInternalMemoryBuffer(
@@ -271,8 +264,8 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     // load shader geodata point flat
     {
         shaderGeodataPointFlat = std::make_shared<Shader>();
-        shaderGeodataPointFlat->debugId
-            = "data/shaders/geodataPointFlat.*.glsl";
+        shaderGeodataPointFlat->setDebugId(
+            "data/shaders/geodataPointFlat.*.glsl");
         Buffer vert = readInternalMemoryBuffer(
             "data/shaders/geodataPointFlat.vert.glsl");
         Buffer frag = readInternalMemoryBuffer(
@@ -291,8 +284,8 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     // load shader geodata point screen
     {
         shaderGeodataPointScreen = std::make_shared<Shader>();
-        shaderGeodataPointScreen->debugId
-            = "data/shaders/geodataPointScreen.*.glsl";
+        shaderGeodataPointScreen->setDebugId(
+            "data/shaders/geodataPointScreen.*.glsl");
         Buffer vert = readInternalMemoryBuffer(
             "data/shaders/geodataPointScreen.vert.glsl");
         Buffer frag = readInternalMemoryBuffer(
@@ -311,8 +304,8 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     // load shader geodata line flat
     {
         shaderGeodataLineFlat = std::make_shared<Shader>();
-        shaderGeodataLineFlat->debugId
-            = "data/shaders/geodataLineFlat.*.glsl";
+        shaderGeodataLineFlat->setDebugId(
+            "data/shaders/geodataLineFlat.*.glsl");
         Buffer vert = readInternalMemoryBuffer(
             "data/shaders/geodataLineFlat.vert.glsl");
         Buffer frag = readInternalMemoryBuffer(
@@ -331,8 +324,8 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     // load shader geodata line screen
     {
         shaderGeodataLineScreen = std::make_shared<Shader>();
-        shaderGeodataLineScreen->debugId
-            = "data/shaders/geodataLineScreen.*.glsl";
+        shaderGeodataLineScreen->setDebugId(
+            "data/shaders/geodataLineScreen.*.glsl");
         Buffer vert = readInternalMemoryBuffer(
             "data/shaders/geodataLineScreen.vert.glsl");
         Buffer frag = readInternalMemoryBuffer(
@@ -351,8 +344,8 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     // load shader geodata icon screen
     {
         shaderGeodataIconScreen = std::make_shared<Shader>();
-        shaderGeodataIconScreen->debugId
-            = "data/shaders/geodataIcon.*.glsl";
+        shaderGeodataIconScreen->setDebugId(
+            "data/shaders/geodataIcon.*.glsl");
         Buffer vert = readInternalMemoryBuffer(
             "data/shaders/geodataIcon.vert.glsl");
         Buffer frag = readInternalMemoryBuffer(
@@ -371,8 +364,8 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     // load shader geodata label flat
     {
         shaderGeodataLabelFlat = std::make_shared<Shader>();
-        shaderGeodataLabelFlat->debugId
-            = "data/shaders/geodataLabelFlat.*.glsl";
+        shaderGeodataLabelFlat->setDebugId(
+            "data/shaders/geodataLabelFlat.*.glsl");
         Buffer vert = readInternalMemoryBuffer(
             "data/shaders/geodataLabelFlat.vert.glsl");
         Buffer frag = readInternalMemoryBuffer(
@@ -394,8 +387,8 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     // load shader geodata label screen
     {
         shaderGeodataLabelScreen = std::make_shared<Shader>();
-        shaderGeodataLabelScreen->debugId
-            = "data/shaders/geodataLabelScreen.*.glsl";
+        shaderGeodataLabelScreen->setDebugId(
+            "data/shaders/geodataLabelScreen.*.glsl");
         Buffer vert = readInternalMemoryBuffer(
             "data/shaders/geodataLabelScreen.vert.glsl");
         Buffer frag = readInternalMemoryBuffer(
@@ -417,8 +410,8 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     // load shader geodata triangle
     {
         shaderGeodataTriangle = std::make_shared<Shader>();
-        shaderGeodataTriangle->debugId
-            = "data/shaders/geodataTriangle.*.glsl";
+        shaderGeodataTriangle->setDebugId(
+            "data/shaders/geodataTriangle.*.glsl");
         Buffer vert = readInternalMemoryBuffer(
             "data/shaders/geodataTriangle.vert.glsl");
         Buffer frag = readInternalMemoryBuffer(

@@ -563,6 +563,18 @@ struct geoContext
                 c(spec.hysteresisIds.size());
                 c(spec.importances.size());
             }
+
+            // validate positions
+            for (const auto &it1 : spec.positions)
+            {
+                for (const auto &it2 : it1)
+                {
+                    assert(!std::isnan(it2[0])
+                        && !std::isnan(it2[1])
+                        && !std::isnan(it2[2]));
+                }
+            }
+
             // validate texts
             for (const std::string &s : spec.texts)
             {
@@ -1602,7 +1614,7 @@ if (cond == #OP) \
             data.iconCoords.push_back(uv);
     }
 
-    std::string addHysteresisIdSpec(const Value &layer,
+    std::string getHysteresisIdSpec(const Value &layer,
         GpuGeodataSpec &spec)
     {
         std::string hysteresisId;
@@ -1632,7 +1644,7 @@ if (cond == #OP) \
             data.hysteresisIds.push_back(hysteresisId);
     }
 
-    float addImportanceSpec(const Value &layer,
+    float getImportanceSpec(const Value &layer,
         GpuGeodataSpec &spec, float *overrideMargin = nullptr)
     {
         float importance = nan1();
@@ -1877,9 +1889,9 @@ if (cond == #OP) \
         spec.type = GpuGeodataSpec::Type::IconScreen;
         addIconSpec(layer, spec);
 
-        std::string hysteresisId = addHysteresisIdSpec(layer, spec);
+        std::string hysteresisId = getHysteresisIdSpec(layer, spec);
 
-        float importance = addImportanceSpec(layer, spec,
+        float importance = getImportanceSpec(layer, spec,
             spec.commonData.icon.margin);
 
         GpuGeodataSpec &data = findSpecData(spec);
@@ -1949,9 +1961,9 @@ if (cond == #OP) \
         // flat labels may not be multi-line
         newLinesToSpaces(text);
 
-        std::string hysteresisId = addHysteresisIdSpec(layer, spec);
+        std::string hysteresisId = getHysteresisIdSpec(layer, spec);
 
-        float importance = addImportanceSpec(layer, spec);
+        float importance = getImportanceSpec(layer, spec);
 
         GpuGeodataSpec &data = findSpecData(spec);
         auto arr = getFeaturePositions();
@@ -2041,9 +2053,9 @@ if (cond == #OP) \
         if (text.empty())
             return;
 
-        std::string hysteresisId = addHysteresisIdSpec(layer, spec);
+        std::string hysteresisId = getHysteresisIdSpec(layer, spec);
 
-        float importance = addImportanceSpec(layer, spec,
+        float importance = getImportanceSpec(layer, spec,
             spec.unionData.labelScreen.margin);
 
         GpuGeodataSpec &data = findSpecData(spec);
@@ -2137,7 +2149,11 @@ if (cond == #OP) \
             double resolution = group["resolution"].asDouble();
             vec3 mm = bb - aa;
             double ms = length(mm) * 0.01;
-            orthonormalize = mat4to3(scaleMatrix(mm / resolution / ms));
+            if (ms < 1e-15)
+                orthonormalize = identityMatrix3();
+            else
+                orthonormalize = mat4to3(scaleMatrix(mm / resolution / ms));
+            assert(!std::isnan(orthonormalize(0, 0)));
             model = translationMatrix(aa) * scaleMatrix(ms);
         }
 
@@ -2146,6 +2162,9 @@ if (cond == #OP) \
             validateArrayLength(v, 3, 3, "Point must have 3 coordinates");
             vec3 p = vec3(v[0].asDouble(), v[1].asDouble(), v[2].asDouble());
             vec3f f = vec3(orthonormalize * p).cast<float>();
+            assert(!std::isnan(f[0])
+                && !std::isnan(f[1])
+                && !std::isnan(f[2]));
             return { f[0], f[1], f[2] };
         }
 

@@ -51,7 +51,7 @@ namespace
 
 void setDebugLabel(GLenum type, GLuint id, std::string name)
 {
-    if (!GLAD_GL_KHR_debug || name.empty())
+    if (!GLAD_GL_KHR_debug || name.empty() || id == 0)
         return;
     name = name.substr(0, 200);
     glObjectLabel(type, id, name.length(), name.data());
@@ -74,6 +74,12 @@ void Shader::clear()
 Shader::~Shader()
 {
     clear();
+}
+
+void Shader::setDebugId(const std::string &name)
+{
+    this->debugId = name;
+    setDebugLabel(GL_PROGRAM, id, debugId);
 }
 
 void Shader::bind()
@@ -125,7 +131,6 @@ void Shader::load(const std::string &vertexShader,
 {
     clear();
     id = glCreateProgram();
-    setDebugLabel(GL_PROGRAM, id, debugId);
     try
     {
         GLuint v = loadShader(preamble
@@ -163,6 +168,7 @@ void Shader::load(const std::string &vertexShader,
         id = 0;
         throw;
     }
+    setDebugId(debugId);
     glFinish();
     CHECK_GL("load shader program");
 }
@@ -281,6 +287,12 @@ void Texture::clear()
 Texture::~Texture()
 {
     clear();
+}
+
+void Texture::setDebugId(const std::string &name)
+{
+    this->debugId = name;
+    setDebugLabel(GL_TEXTURE, id, name);
 }
 
 void Texture::bind()
@@ -411,8 +423,6 @@ bool gpuTypeInteger(GpuTypeEnum type)
 void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec,
     const std::string &debugId)
 {
-    this->debugId = debugId;
-
     assert(spec.buffer.size() == spec.width * spec.height
            * spec.components * gpuTypeSize(spec.type)
            || spec.buffer.size() == 0);
@@ -420,7 +430,6 @@ void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec,
     clear();
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
-    setDebugLabel(GL_TEXTURE, id, debugId);
     glTexImage2D(GL_TEXTURE_2D, 0, findInternalFormat(spec),
                  spec.width, spec.height, 0,
                  findFormat(spec), (GLenum)spec.type, spec.buffer.data());
@@ -451,7 +460,7 @@ void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec,
     }
 
     grayscale = spec.components == 1;
-
+    setDebugId(debugId);
     glFinish();
     CHECK_GL("load texture");
     info.ramMemoryCost += sizeof(*this);
@@ -501,6 +510,12 @@ void Mesh::clear()
 Mesh::~Mesh()
 {
     clear();
+}
+
+void Mesh::setDebugId(const std::string &id)
+{
+    this->debugId = id;
+    setDebugLabel(GL_VERTEX_ARRAY, vao, debugId);
 }
 
 void Mesh::bind()
@@ -566,8 +581,6 @@ void Mesh::dispatch(uint32 offset, uint32 count)
 void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp,
     const std::string &debugId)
 {
-    this->debugId = debugId;
-
     clear();
     spec = std::move(specp);
     GLuint vao = 0;
@@ -591,6 +604,7 @@ void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp,
     }
     glBindVertexArray(0);
     glDeleteVertexArrays(1, &vao);
+    setDebugId(debugId);
     glFinish();
     CHECK_GL("load mesh");
     info.ramMemoryCost += sizeof(*this);
@@ -661,6 +675,12 @@ UniformBuffer &UniformBuffer::operator = (UniformBuffer &&other)
     return *this;
 }
 
+void UniformBuffer::setDebugId(const std::string &id)
+{
+    this->debugId = id;
+    setDebugLabel(GL_BUFFER, ubo, debugId);
+}
+
 void UniformBuffer::clear()
 {
     if (ubo)
@@ -676,7 +696,7 @@ void UniformBuffer::bindInit()
     {
         glGenBuffers(1, &ubo);
         glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-        setDebugLabel(GL_BUFFER, ubo, debugId);
+        setDebugId(debugId);
     }
 }
 

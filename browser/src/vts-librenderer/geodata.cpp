@@ -136,6 +136,7 @@ void GeodataTile::copyPoints()
         t.worldPosition = vec4to3(vec4(model
             * vec3to4(t.modelPosition, 1).cast<double>()));
         t.worldUp = normalize(t.worldPosition).cast<float>();
+        assert(!std::isnan(t.worldPosition[0]));
         points.push_back(t);
     }
 }
@@ -253,7 +254,9 @@ vec3f GeodataJob::modelPosition() const
 vec3 GeodataJob::worldPosition() const
 {
     assert(itemIndex != (uint32)-1);
-    return g->points[itemIndex].worldPosition;
+    const auto res = g->points[itemIndex].worldPosition;
+    assert(!std::isnan(res[0]));
+    return res;
 }
 
 vec3f GeodataJob::worldUp() const
@@ -498,7 +501,7 @@ void RenderViewImpl::renderGeodataQuad(const GeodataJob &job,
     data.color = color;
 
     auto ubo = std::make_unique<UniformBuffer>();
-    ubo->debugId = "UboColor";
+    ubo->setDebugId("UboColor");
     ubo->bind();
     ubo->load(data, GL_STREAM_DRAW);
     ubo->bindToIndex(2);
@@ -535,7 +538,7 @@ void RenderViewImpl::bindUboView(const std::shared_ptr<GeodataTile> &g)
     data.mvInv = mvInv.cast<float>();
 
     auto ubo = getUbo();
-    ubo->debugId = "UboViewData";
+    ubo->setDebugId("UboViewData");
     ubo->bind();
     ubo->load(data, GL_DYNAMIC_DRAW);
     ubo->bindToIndex(1);
@@ -624,7 +627,7 @@ void RenderViewImpl::bindUboCamera()
         draws->camera.viewExtent, 0);
 
     auto uboGeodataCamera = getUbo();
-    uboGeodataCamera->debugId = "uboGeodataCamera";
+    uboGeodataCamera->setDebugId("uboGeodataCamera");
     uboGeodataCamera->bind();
     uboGeodataCamera->load(data, GL_DYNAMIC_DRAW);
     uboGeodataCamera->bindToIndex(0);
@@ -651,6 +654,7 @@ void RenderViewImpl::regenerateJobCommon(GeodataJob &j)
     const vec3 ndc = vec4to3(clip, true);
     j.refPoint = vec3to2(ndc).cast<float>();
     j.depth = ndc[2];
+    assert(!std::isnan(j.refPoint[0]) && !std::isnan(j.refPoint[1]));
 }
 
 void RenderViewImpl::regenerateJobIcon(GeodataJob &j)
@@ -1098,7 +1102,7 @@ void RenderViewImpl::renderIcon(const GeodataJob &job)
     data.uvs = rawToVec4(job.g->spec.iconCoords[job.itemIndex].data());
 
     auto ubo = getUbo();
-    ubo->debugId = "UboIcon";
+    ubo->setDebugId("UboIcon");
     ubo->bind();
     ubo->load(data, GL_DYNAMIC_DRAW);
     ubo->bindToIndex(2);
@@ -1171,7 +1175,7 @@ void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
 
     context->shaderGeodataLabelFlat->bind();
     auto ubo = getUbo();
-    ubo->debugId = "UboLabelFlat";
+    ubo->setDebugId("UboLabelFlat");
     ubo->bind();
     ubo->load(&data,
         16 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size() * 2,
@@ -1218,7 +1222,7 @@ void RenderViewImpl::renderLabelScreen(const GeodataJob &job)
 
     context->shaderGeodataLabelScreen->bind();
     auto ubo = getUbo();
-    ubo->debugId = "UboLabelScreen";
+    ubo->setDebugId("UboLabelScreen");
     ubo->bind();
     ubo->load(&data,
         20 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size(),

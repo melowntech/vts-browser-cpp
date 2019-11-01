@@ -39,11 +39,12 @@ namespace vts { namespace renderer
 
 class VTSR_API Shader
 {
-public:
     std::string debugId;
 
+public:
     Shader();
     ~Shader();
+    void setDebugId(const std::string &id);
     void clear();
     void bind();
     void load(const std::string &vertexShader,
@@ -81,11 +82,12 @@ private:
 
 class VTSR_API Texture
 {
-public:
     std::string debugId;
 
+public:
     Texture();
     ~Texture();
+    void setDebugId(const std::string &id);
     void clear();
     void bind();
     void load(ResourceInfo &info, GpuTextureSpec &spec,
@@ -101,11 +103,12 @@ private:
 
 class VTSR_API Mesh
 {
-public:
     std::string debugId;
 
+public:
     Mesh();
     ~Mesh();
+    void setDebugId(const std::string &id);
     void clear();
     void bind();
     void dispatch();
@@ -124,16 +127,17 @@ private:
 
 class VTSR_API UniformBuffer
 {
-public:
     std::string debugId;
 
+public:
     UniformBuffer();
     ~UniformBuffer();
     UniformBuffer(UniformBuffer &&other);
     UniformBuffer &operator = (UniformBuffer &&other);
+    void setDebugId(const std::string &id);
     void clear();
-    void bind(); // use for uploading the data
-    void bindToIndex(uint32 index); // use for rendering
+    void bind(); // used for uploading the data
+    void bindToIndex(uint32 index); // used for rendering
     void load(const void *data, std::size_t size, uint32 usage);
     void load(const Buffer &buffer, uint32 usage);
 
@@ -146,9 +150,9 @@ public:
     uint32 getUbo() const;
 
 private:
+    std::size_t capacity;
     uint32 ubo;
     uint32 lastUsage;
-    std::size_t capacity;
 
     void bindInit();
 };

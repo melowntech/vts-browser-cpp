@@ -191,7 +191,7 @@ public:
         // load shader
         {
             shader = std::make_shared<Shader>();
-            shader->debugId = "data/shaders/gui.*.glsl";
+            shader->setDebugId("data/shaders/gui.*.glsl");
             Buffer vert = readInternalMemoryBuffer(
                         "data/shaders/gui.vert.glsl");
             Buffer frag = readInternalMemoryBuffer(
@@ -230,7 +230,7 @@ public:
                 sizeof(vertex), (void*)16);
             mesh = std::make_shared<Mesh>();
             mesh->load(vao, vbo, vio);
-            mesh->debugId = "guiMesh";
+            mesh->setDebugId("guiMesh");
         }
 
         // load control options

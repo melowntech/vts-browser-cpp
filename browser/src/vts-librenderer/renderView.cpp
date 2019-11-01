@@ -92,10 +92,9 @@ RenderViewImpl::RenderViewImpl(
     depthBuffer.shaderCopyDepth = context->shaderCopyDepth;
 }
 
-UniformBuffer *RenderViewImpl::getUboForFrame()
+UniformBuffer *RenderViewImpl::getUbo()
 {
-    uboCacheVector.emplace_back(std::make_unique<UniformBuffer>());
-    return &**uboCacheVector.rbegin();
+    return uboCache.get();
 }
 
 void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
@@ -153,11 +152,11 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
     }
     data.flags = vec4si32(flags, 0, 0, frameIndex);
 
-    UniformBuffer ubo;
-    ubo.debugId = "UboSurface";
-    ubo.bind();
-    ubo.load(data, GL_STREAM_DRAW);
-    ubo.bindToIndex(1);
+    auto ubo = getUbo();
+    ubo->debugId = "UboSurface";
+    ubo->bind();
+    ubo->load(data, GL_DYNAMIC_DRAW);
+    ubo->bindToIndex(1);
 
     if (t.texMask)
     {
@@ -188,11 +187,11 @@ void RenderViewImpl::drawInfographic(const DrawSimpleTask &t)
     data.color = rawToVec4(t.color);
     data.useColorTexture[0] = !!t.texColor;
 
-    UniformBuffer ubo;
-    ubo.debugId = "UboInfographics";
-    ubo.bind();
-    ubo.load(data, GL_STREAM_DRAW);
-    ubo.bindToIndex(1);
+    auto ubo = getUbo();
+    ubo->debugId = "UboInfographics";
+    ubo->bind();
+    ubo->load(data, GL_DYNAMIC_DRAW);
+    ubo->bindToIndex(1);
 
     if (t.texColor)
     {
@@ -500,7 +499,7 @@ void RenderViewImpl::renderValid()
 void RenderViewImpl::renderEntry()
 {
     CHECK_GL("pre-frame check");
-    uboCacheVector.clear();
+    uboCache.frame();
     clearGlState();
     frameIndex++;
 
@@ -629,10 +628,10 @@ void RenderViewImpl::updateAtmosphereBuffer()
         memset(&atmBlock, 0, sizeof(atmBlock));
     }
 
-    auto uboAtm = getUboForFrame();
+    auto uboAtm = getUbo();
     uboAtm->debugId = "uboAtm";
     uboAtm->bind();
-    uboAtm->load(atmBlock, GL_STATIC_DRAW);
+    uboAtm->load(atmBlock, GL_DYNAMIC_DRAW);
     uboAtm->bindToIndex(0);
 }
 

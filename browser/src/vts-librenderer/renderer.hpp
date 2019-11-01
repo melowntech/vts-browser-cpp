@@ -137,6 +137,15 @@ extern float maxAnisotropySamples;
 void clearGlState();
 void enableClipDistance(bool enable);
 
+struct UboCache
+{
+    std::vector<std::unique_ptr<UniformBuffer>> data;
+    uint32 current, last, prev;
+    UboCache();
+    UniformBuffer *get();
+    void frame();
+};
+
 class RenderViewImpl
 {
 public:
@@ -147,9 +156,9 @@ public:
     RenderVariables vars;
     RenderOptions options;
     DepthBuffer depthBuffer;
+    UboCache uboCache;
     std::vector<GeodataJob> geodataJobs;
     std::unordered_map<std::string, GeodataJob> hysteresisJobs;
-    std::vector<std::unique_ptr<UniformBuffer>> uboCacheVector;
     CameraDraws *draws;
     const MapCelestialBody *body;
     Texture *atmosphereDensityTexture;
@@ -173,7 +182,7 @@ public:
 
     RenderViewImpl(Camera *camera, RenderView *api,
         RenderContextImpl *context);
-    UniformBuffer *getUboForFrame();
+    UniformBuffer *getUbo();
     void drawSurface(const DrawSurfaceTask &t);
     void drawInfographic(const DrawSimpleTask &t);
     void updateFramebuffers();

@@ -643,6 +643,24 @@ UniformBuffer::~UniformBuffer()
     clear();
 }
 
+UniformBuffer::UniformBuffer(UniformBuffer &&other)
+    : ubo(0), lastUsage(0), capacity(0)
+{
+    std::swap(debugId, other.debugId);
+    std::swap(ubo, other.ubo);
+    std::swap(lastUsage, other.lastUsage);
+    std::swap(capacity, other.capacity);
+}
+
+UniformBuffer &UniformBuffer::operator = (UniformBuffer &&other)
+{
+    std::swap(debugId, other.debugId);
+    std::swap(ubo, other.ubo);
+    std::swap(lastUsage, other.lastUsage);
+    std::swap(capacity, other.capacity);
+    return *this;
+}
+
 void UniformBuffer::clear()
 {
     if (ubo)

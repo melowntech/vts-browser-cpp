@@ -129,6 +129,8 @@ public:
 
     UniformBuffer();
     ~UniformBuffer();
+    UniformBuffer(UniformBuffer &&other);
+    UniformBuffer &operator = (UniformBuffer &&other);
     void clear();
     void bind(); // use for uploading the data
     void bindToIndex(uint32 index); // use for rendering

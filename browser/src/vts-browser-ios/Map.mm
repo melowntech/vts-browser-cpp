@@ -243,7 +243,7 @@ void defaultMapOptions(vts::MapRuntimeOptions &mapOptions, vts::CameraOptions &c
 {
     mapOptions = vts::MapRuntimeOptions();
     cameraOptions = vts::CameraOptions();
-    cameraOptions.maxTexelToPixelScale = 3.2;
+    cameraOptions.targetPixelRatioSurfaces = 3.2;
     mapOptions.maxResourceProcessesPerTick = -1; // the resources are processed on a separate thread
     mapOptions.targetResourcesMemoryKB = 200 * 1024;
 }

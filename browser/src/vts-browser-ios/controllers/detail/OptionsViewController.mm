@@ -64,8 +64,8 @@ namespace
 
         if ([coder containsValueForKey:@"traverseMode"])
             camera->options().traverseModeSurfaces = (vts::TraverseMode)[coder decodeIntForKey:@"traverseMode"];
-        if ([coder containsValueForKey:@"maxTexelToPixelScale"])
-            camera->options().maxTexelToPixelScale = [coder decodeDoubleForKey:@"maxTexelToPixelScale"];
+        if ([coder containsValueForKey:@"targetPixelRatioSurfaces"])
+            camera->options().targetPixelRatioSurfaces = [coder decodeDoubleForKey:@"targetPixelRatioSurfaces"];
         if ([coder containsValueForKey:@"atmosphere"])
             view->options().renderAtmosphere = [coder decodeBoolForKey:@"atmosphere"];
         if ([coder containsValueForKey:@"lodBlending"])
@@ -90,7 +90,7 @@ namespace
         NSKeyedArchiver *coder = [[NSKeyedArchiver alloc] initForWritingWithMutableData:data];
 
         [coder encodeInt:(int)camera->options().traverseModeSurfaces forKey:@"traverseMode"];
-        [coder encodeDouble:camera->options().maxTexelToPixelScale forKey:@"maxTexelToPixelScale"];
+        [coder encodeDouble:camera->options().targetPixelRatioSurfaces forKey:@"targetPixelRatioSurfaces"];
         [coder encodeBool:(camera->options().lodBlending > 0) forKey:@"lodBlending"];
         [coder encodeBool:view->options().renderAtmosphere forKey:@"atmosphere"];
         [coder encodeInt:extraConfig.controlType forKey:@"controlType"];
@@ -124,7 +124,7 @@ void loadAppConfig()
     // rendering
     _optTraversalSurfaces.selectedSegmentIndex = (int)camera->options().traverseModeSurfaces;
     _optTraversalGeodata.selectedSegmentIndex = (int)camera->options().traverseModeGeodata;
-    _optQualityDegrad.value = camera->options().maxTexelToPixelScale;
+    _optQualityDegrad.value = camera->options().targetPixelRatioSurfaces;
     _optAtmosphere.on = view->options().renderAtmosphere;
     _optLodBlending.on = camera->options().lodBlending > 0;
     // controls
@@ -159,7 +159,7 @@ void loadAppConfig()
 
 - (IBAction)optQualityDegradChanged:(UISlider *)sender
 {
-    camera->options().maxTexelToPixelScale = sender.value;
+    camera->options().targetPixelRatioSurfaces = sender.value;
     saveConfig();
 }
 

@@ -569,6 +569,7 @@ struct geoContext
             {
                 for (const auto &it2 : it1)
                 {
+                    (void)it2;
                     assert(!std::isnan(it2[0])
                         && !std::isnan(it2[1])
                         && !std::isnan(it2[2]));

@@ -70,6 +70,38 @@ void enableClipDistance(bool enable)
 #endif
 }
 
+UboCache::UboCache() : current(0), last(0), prev(0)
+{}
+
+UniformBuffer *UboCache::get()
+{
+    if ((current + 1) % data.size() == prev)
+    {
+        // grow the buffer
+        data.insert(data.begin() + prev, nullptr);
+        prev++;
+        if (last > current)
+            last++;
+    }
+    auto &c = data[current];
+    current = (current + 1) % data.size();
+    if (!c)
+        c = std::make_unique<UniformBuffer>();
+    return &*c;
+}
+
+void UboCache::frame()
+{
+    if (data.empty())
+    {
+        // initialize the buffer
+        data.reserve(1000);
+        data.resize(100);
+    }
+    prev = last;
+    last = current;
+}
+
 RenderViewImpl::RenderViewImpl(
     Camera *camera, RenderView *api,
     RenderContextImpl *context) :

@@ -141,104 +141,6 @@ void GeodataTile::copyPoints()
     }
 }
 
-Rect::Rect() : a(nan2().cast<float>()), b(nan2().cast<float>())
-{}
-
-Rect::Rect(const vec2f &a, const vec2f &b) : a(a), b(b)
-{
-    assert(a[0] <= b[0]);
-    assert(a[1] <= b[1]);
-}
-
-bool Rect::valid() const
-{
-    return !std::isnan(a[0]) && !std::isnan(a[1])
-        && !std::isnan(b[0]) && !std::isnan(b[1]);
-}
-
-Rect Rect::merge(const Rect &a, const Rect &b)
-{
-    if (!a.valid())
-        return b;
-    if (!b.valid())
-        return a;
-    Rect r;
-    for (int i = 0; i < 2; i++)
-    {
-        r.a[i] = std::min(a.a[i], b.a[i]);
-        r.b[i] = std::max(a.b[i], b.b[i]);
-    }
-    return r;
-}
-
-bool Rect::overlaps(const Rect &a, const Rect &b)
-{
-    for (int i = 0; i < 2; i++)
-    {
-        if (a.b[i] < b.a[i])
-            return false;
-        if (a.a[i] > b.b[i])
-            return false;
-    }
-    return true;
-}
-
-bool overlaps(const GeodataJob &a, const GeodataJob &b)
-{
-    if (!Rect::overlaps(a.collisionRect, b.collisionRect))
-        return false;
-
-    const auto &getRects = [](const GeodataJob &a) -> const std::vector<Rect>&
-    {
-        static const std::vector<Rect> empty;
-        if (a.g->texts.empty())
-            return empty;
-        assert(a.itemIndex != (uint32)-1);
-        return a.g->texts[a.itemIndex].collisionGlyphsRects;
-    };
-    const auto &ra = getRects(a);
-    const auto &rb = getRects(b);
-
-    if (ra.empty() && rb.empty())
-        return true;
-
-    const auto &test = [](const std::vector<Rect> &a, const Rect &b)
-    {
-        for (const auto &ra : a)
-            if (Rect::overlaps(ra, b))
-                return true;
-        return false;
-    };
-
-    if (ra.empty() != rb.empty())
-    {
-        if (ra.empty())
-            return test(rb, a.collisionRect);
-        else
-            return test(ra, b.collisionRect);
-    }
-
-    assert(!ra.empty() && !rb.empty());
-    for (const auto &ca : ra)
-    {
-        if (!Rect::overlaps(ca, b.collisionRect))
-            continue;
-        if (test(rb, ca))
-            return true;
-    }
-    return false;
-}
-
-float Rect::width() const
-{
-    return b[0] - a[0];
-}
-
-float Rect::height() const
-{
-    return b[1] - a[1];
-}
-
 GeodataJob::GeodataJob(const std::shared_ptr<GeodataTile> &g,
     uint32 itemIndex)
     : g(g), labelOffset(0, 0), refPoint(nan2().cast<float>()),
@@ -265,36 +167,67 @@ vec3f GeodataJob::worldUp() const
     return g->points[itemIndex].worldUp;
 }
 
-UboCache::UboCache() : current(0), last(0), prev(0)
-{}
-
-UniformBuffer *UboCache::get()
+namespace
 {
-    if ((current + 1) % data.size() == prev)
+    Rect ndcToPixels(const RenderViewImpl *impl, const Rect &r)
     {
-        // grow the buffer
-        data.insert(data.begin() + prev, nullptr);
-        prev++;
-        if (last > current)
-            last++;
+        vec2f s = vec2f(impl->width, impl->height);
+        return Rect(r.a.cwiseProduct(s), r.b.cwiseProduct(s));
     }
-    auto &c = data[current];
-    current = (current + 1) % data.size();
-    if (!c)
-        c = std::make_unique<UniformBuffer>();
-    return &*c;
 }
 
-void UboCache::frame()
+bool RenderViewImpl::collides(const GeodataJob &a, const GeodataJob &b)
 {
-    if (data.empty())
+    if (!overlaps(a.collisionRect, b.collisionRect))
+        return false;
+
+    const auto &getSubs = [this](const GeodataJob &a) -> std::vector<Circle>
     {
-        // initialize the buffer
-        data.reserve(1000);
-        data.resize(100);
+        if (a.g->texts.empty())
+            return {};
+        assert(a.itemIndex != (uint32)-1);
+        const auto &src = a.g->texts[a.itemIndex].collisionGlyphsRects;
+        std::vector<Circle> result;
+        result.reserve(src.size());
+        for (const auto &it : src)
+            result.push_back(r2c(ndcToPixels(this, it)));
+        return result;
+    };
+    const auto &ra = getSubs(a);
+    const auto &rb = getSubs(b);
+
+    if (ra.empty() && rb.empty())
+        return true;
+
+    const auto &test = [](const std::vector<Circle> &a, const Rect &b)
+    {
+        for (const auto &ra : a)
+            if (overlaps(ra, b))
+                return true;
+        return false;
+    };
+
+    const Rect pra = ndcToPixels(this, a.collisionRect);
+    const Rect prb = ndcToPixels(this, b.collisionRect);
+
+    if (ra.empty() != rb.empty())
+    {
+        if (ra.empty())
+            return test(rb, pra);
+        else
+            return test(ra, prb);
     }
-    prev = last;
-    last = current;
+
+    assert(!ra.empty() && !rb.empty());
+    for (const auto &ca : ra)
+    {
+        if (!overlaps(ca, prb))
+            continue;
+        for (const auto &cb : rb)
+            if (overlaps(ca, cb))
+                return true;
+    }
+    return false;
 }
 
 bool RenderViewImpl::geodataTestVisibility(
@@ -319,46 +252,6 @@ bool RenderViewImpl::geodataTestVisibility(
         if (sp[i] < -sp[3] || sp[i] > sp[3])
             return false; // near & far planes culling
     return true;
-}
-
-namespace
-{
-    double raySphereTest(const vec3 &orig, const vec3 &dir, double radius)
-    {
-        double radius2 = radius * radius;
-        vec3 L = -orig;
-        double tca = dot(L, dir);
-        double d2 = dot(L, L) - tca * tca;
-        if (d2 > radius2)
-            return nan1();
-        double thc = std::sqrt(radius2 - d2);
-        double t0 = tca - thc;
-        double t1 = tca + thc;
-        if (t0 > t1)
-            std::swap(t0, t1);
-        if (t0 < 0)
-        {
-            t0 = t1;
-            if (t0 < 0)
-                return nan1();
-        }
-        return t0;
-    }
-
-    double rayEllipsoidTest(const vec3 &orig, const vec3 &dir,
-        double radiusXY, double radiusZ)
-    {
-        double r = radiusXY / radiusZ;
-        vec3 o = vec3(orig[0], orig[1], orig[2] * r); // ellipsoid to sphere
-        vec3 d = vec3(dir[0], dir[1], dir[2] * r);
-        d = normalize(d);
-        double t = raySphereTest(o, d, radiusXY);
-        if (std::isnan(t))
-            return nan1();
-        vec3 p = o + d * t;
-        p = vec3(p[0], p[1], p[2] / r); // sphere to ellipsoid
-        return length(vec3(p - o));
-    }
 }
 
 bool RenderViewImpl::geodataDepthVisibility(const vec3 &pos, float threshold)
@@ -730,7 +623,7 @@ void RenderViewImpl::regenerateJobCollision(GeodataJob &j)
         icon.a -= marginIcon;
         icon.b += marginIcon;
 
-        j.collisionRect = Rect::merge(label, icon);
+        j.collisionRect = merge(label, icon);
     }
 }
 
@@ -741,7 +634,7 @@ bool RenderViewImpl::regenerateJobLabelFlat(GeodataJob &j)
     const auto &t = g->texts[j.itemIndex];
     j.collisionRect = Rect();
     for (const auto &it : t.collisionGlyphsRects)
-        j.collisionRect = Rect::merge(j.collisionRect, it);
+        j.collisionRect = merge(j.collisionRect, it);
     return valid;
 }
 
@@ -971,7 +864,7 @@ void RenderViewImpl::filterJobsByResolvingCollisions()
             {
                 if (!r.collisionRect.valid())
                     continue;
-                if (overlaps(it, r))
+                if (collides(it, r))
                 {
                     ok = false;
                     break;

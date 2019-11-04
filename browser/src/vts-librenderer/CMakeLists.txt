@@ -36,6 +36,8 @@ set(SRC_LIST
     rendererApiCpp.cpp
     renderContext.cpp
     renderView.cpp
+    shapes.cpp
+    shapes.hpp
 )
 
 set(DATA_LIST

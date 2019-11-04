@@ -36,6 +36,8 @@
 #include "include/vts-renderer/classes.hpp"
 #include "include/vts-renderer/renderer.hpp"
 
+#include "shapes.hpp"
+
 namespace vts
 {
 
@@ -98,18 +100,6 @@ public:
     };
 
     void initializeAtmosphere();
-};
-
-struct Rect
-{
-    vec2f a, b;
-    Rect();
-    Rect(const vec2f &a, const vec2f &b);
-    bool valid() const;
-    float width() const;
-    float height() const;
-    static Rect merge(const Rect &a, const Rect &b);
-    static bool overlaps(const Rect &a, const Rect &b);
 };
 
 struct GeodataJob
@@ -193,6 +183,7 @@ public:
     void renderValid();
     void renderEntry();
 
+    bool collides(const GeodataJob &a, const GeodataJob &b);
     bool geodataTestVisibility(
         const float visibility[4],
         const vec3 &pos, const vec3f &up);

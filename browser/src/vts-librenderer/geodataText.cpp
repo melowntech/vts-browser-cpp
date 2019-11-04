@@ -346,7 +346,7 @@ Rect textCollision(const std::vector<TmpLine> &lines)
     for (const TmpLine &line : lines)
     {
         for (const TmpGlyph &g : line.glyphs)
-            collision = Rect::merge(collision,
+            collision = merge(collision,
                 Rect(g.position, g.position + g.size));
     }
     return collision;

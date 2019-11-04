@@ -622,11 +622,14 @@ void RenderViewImpl::regenerateJobCollision(GeodataJob &j)
 bool RenderViewImpl::regenerateJobLabelFlat(GeodataJob &j)
 {
     bool valid = vts::renderer::regenerateJobLabelFlat(this, j);
-    const auto &g = j.g;
-    const auto &t = g->texts[j.itemIndex];
-    j.collisionRect = Rect();
-    for (const auto &it : t.collisionGlyphsRects)
-        j.collisionRect = merge(j.collisionRect, it);
+    if (j.g->spec.commonData.preventOverlap)
+    {
+        const auto &g = j.g;
+        const auto &t = g->texts[j.itemIndex];
+        j.collisionRect = Rect();
+        for (const auto &it : t.collisionGlyphsRects)
+            j.collisionRect = merge(j.collisionRect, it);
+    }
     return valid;
 }
 

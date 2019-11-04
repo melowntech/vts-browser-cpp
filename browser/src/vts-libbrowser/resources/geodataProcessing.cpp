@@ -1929,6 +1929,9 @@ if (cond == #OP) \
             ? convertToDouble(layer["line-label-offset"])
             : 0;
 
+        spec.commonData.preventOverlap
+            = layer.isMember("line-label-no-overlap-margin");
+
         spec.unionData.labelFlat.marginMult
             = layer.isMember("line-label-no-overlap-margin")
             ? convertToDouble(layer["line-label-no-overlap-margin"])

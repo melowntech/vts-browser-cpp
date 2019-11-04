@@ -555,16 +555,13 @@ float labelFlatScale(const RenderViewImpl *rv,
 
     {
         // negative scale if the text is reversed
-        uint32 index = 0;
-        float dummyFactor;
-        arrayPosition(t.lineVertPositions, 0.f, index, dummyFactor);
         const auto &mps = g->spec.positions[j.itemIndex];
-        vec3 md = (rawToVec3(mps[index + 1].data())
-            - rawToVec3(mps[index].data())).cast<double>();
-        vec3 d1 = normalize(vec4to3(vec4(g->model * vec3to4(md, 0))));
-        vec3 d2 = vec4to3(vec4(rv->viewInv * vec4(1, 0, 0, 0)));
-        double dt = dot(d1, d2);
-        if (dt < 0)
+        mat4 mvp = rv->viewProj * g->model;
+        vec3 sa = vec4to3(vec4(mvp * vec3to4(rawToVec3(
+            mps.rbegin()->data()).cast<double>(), 1.0)), true);
+        vec3 sb = vec4to3(vec4(mvp * vec3to4(rawToVec3(
+            mps.begin()->data()).cast<double>(), 1.0)), true);
+        if (sa[0] < sb[0])
             scale *= -1;
     }
     return scale;

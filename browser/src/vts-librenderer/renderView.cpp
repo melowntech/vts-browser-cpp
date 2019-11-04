@@ -71,7 +71,11 @@ void enableClipDistance(bool enable)
 }
 
 UboCache::UboCache() : current(0), last(0), prev(0)
-{}
+{
+    // initialize the buffer
+    data.reserve(1000);
+    data.resize(10);
+}
 
 UniformBuffer *UboCache::get()
 {
@@ -92,12 +96,6 @@ UniformBuffer *UboCache::get()
 
 void UboCache::frame()
 {
-    if (data.empty())
-    {
-        // initialize the buffer
-        data.reserve(1000);
-        data.resize(100);
-    }
     prev = last;
     last = current;
 }
@@ -124,9 +122,15 @@ RenderViewImpl::RenderViewImpl(
     depthBuffer.shaderCopyDepth = context->shaderCopyDepth;
 }
 
-UniformBuffer *RenderViewImpl::getUbo()
+UniformBuffer *RenderViewImpl::useDisposableUbo(uint32 bindIndex,
+    void *data, uint32 size)
 {
-    return uboCache.get();
+    UniformBuffer *ubo = size > 256
+        ? uboCacheLarge.get() : uboCacheSmall.get();
+    ubo->bind();
+    ubo->load(data, size, GL_DYNAMIC_DRAW);
+    ubo->bindToIndex(bindIndex);
+    return ubo;
 }
 
 void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
@@ -184,11 +188,7 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
     }
     data.flags = vec4si32(flags, 0, 0, frameIndex);
 
-    auto ubo = getUbo();
-    ubo->setDebugId("UboSurface");
-    ubo->bind();
-    ubo->load(data, GL_DYNAMIC_DRAW);
-    ubo->bindToIndex(1);
+    useDisposableUbo(1, data)->setDebugId("UboSurface");
 
     if (t.texMask)
     {
@@ -219,11 +219,7 @@ void RenderViewImpl::drawInfographic(const DrawSimpleTask &t)
     data.color = rawToVec4(t.color);
     data.useColorTexture[0] = !!t.texColor;
 
-    auto ubo = getUbo();
-    ubo->setDebugId("UboInfographics");
-    ubo->bind();
-    ubo->load(data, GL_DYNAMIC_DRAW);
-    ubo->bindToIndex(1);
+    useDisposableUbo(1, data)->setDebugId("UboInfographics");
 
     if (t.texColor)
     {
@@ -531,7 +527,8 @@ void RenderViewImpl::renderValid()
 void RenderViewImpl::renderEntry()
 {
     CHECK_GL("pre-frame check");
-    uboCache.frame();
+    uboCacheLarge.frame();
+    uboCacheSmall.frame();
     clearGlState();
     frameIndex++;
 
@@ -660,11 +657,7 @@ void RenderViewImpl::updateAtmosphereBuffer()
         memset(&atmBlock, 0, sizeof(atmBlock));
     }
 
-    auto uboAtm = getUbo();
-    uboAtm->setDebugId("uboAtm");
-    uboAtm->bind();
-    uboAtm->load(atmBlock, GL_DYNAMIC_DRAW);
-    uboAtm->bindToIndex(0);
+    useDisposableUbo(0, atmBlock)->setDebugId("uboAtm");
 }
 
 void RenderViewImpl::getWorldPosition(const double screenPos[2],

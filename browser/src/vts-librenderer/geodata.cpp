@@ -430,11 +430,7 @@ void RenderViewImpl::bindUboView(const std::shared_ptr<GeodataTile> &g)
     data.mv = mv.cast<float>();
     data.mvInv = mvInv.cast<float>();
 
-    auto ubo = getUbo();
-    ubo->setDebugId("UboViewData");
-    ubo->bind();
-    ubo->load(data, GL_DYNAMIC_DRAW);
-    ubo->bindToIndex(1);
+    useDisposableUbo(1, data)->setDebugId("UboViewData");
 }
 
 void RenderViewImpl::renderGeodata()
@@ -519,11 +515,7 @@ void RenderViewImpl::bindUboCamera()
     data.cameraParams = vec4f(width, height,
         draws->camera.viewExtent, 0);
 
-    auto uboGeodataCamera = getUbo();
-    uboGeodataCamera->setDebugId("uboGeodataCamera");
-    uboGeodataCamera->bind();
-    uboGeodataCamera->load(data, GL_DYNAMIC_DRAW);
-    uboGeodataCamera->bindToIndex(0);
+    useDisposableUbo(0, data)->setDebugId("uboGeodataCamera");
 }
 
 void RenderViewImpl::regenerateJobCommon(GeodataJob &j)
@@ -994,11 +986,7 @@ void RenderViewImpl::renderIcon(const GeodataJob &job)
     data.color[3] *= job.opacity;
     data.uvs = rawToVec4(job.g->spec.iconCoords[job.itemIndex].data());
 
-    auto ubo = getUbo();
-    ubo->setDebugId("UboIcon");
-    ubo->bind();
-    ubo->load(data, GL_DYNAMIC_DRAW);
-    ubo->bindToIndex(2);
+    useDisposableUbo(2, data)->setDebugId("UboIcon");
 
     ((Texture*)job.g->spec.bitmap.get())->bind();
 
@@ -1067,13 +1055,9 @@ void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
     assert(t.coordinates.size() <= 500);
 
     context->shaderGeodataLabelFlat->bind();
-    auto ubo = getUbo();
-    ubo->setDebugId("UboLabelFlat");
-    ubo->bind();
-    ubo->load(&data,
-        16 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size() * 2,
-              GL_DYNAMIC_DRAW);
-    ubo->bindToIndex(2);
+    useDisposableUbo(2, &data,
+        16 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size() * 2
+    )->setDebugId("UboLabelFlat");
 
     context->meshEmpty->bind();
     for (int pass = 0; pass < 2; pass++)
@@ -1114,13 +1098,9 @@ void RenderViewImpl::renderLabelScreen(const GeodataJob &job)
     std::copy(t.coordinates.begin(), t.coordinates.end(), data.coordinates);
 
     context->shaderGeodataLabelScreen->bind();
-    auto ubo = getUbo();
-    ubo->setDebugId("UboLabelScreen");
-    ubo->bind();
-    ubo->load(&data,
-        20 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size(),
-              GL_DYNAMIC_DRAW);
-    ubo->bindToIndex(2);
+    useDisposableUbo(2, &data,
+        20 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size()
+    )->setDebugId("UboLabelScreen");
 
     context->meshEmpty->bind();
     for (int pass = 0; pass < 2; pass++)

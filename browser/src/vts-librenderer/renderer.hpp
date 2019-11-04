@@ -146,7 +146,8 @@ public:
     RenderVariables vars;
     RenderOptions options;
     DepthBuffer depthBuffer;
-    UboCache uboCache;
+    UboCache uboCacheSmall;
+    UboCache uboCacheLarge;
     std::vector<GeodataJob> geodataJobs;
     std::unordered_map<std::string, GeodataJob> hysteresisJobs;
     CameraDraws *draws;
@@ -172,7 +173,13 @@ public:
 
     RenderViewImpl(Camera *camera, RenderView *api,
         RenderContextImpl *context);
-    UniformBuffer *getUbo();
+
+    UniformBuffer *useDisposableUbo(uint32 bindIndex,
+        void *data, uint32 size);
+    template<class T>
+    UniformBuffer *useDisposableUbo(uint32 bindIndex, const T &value)
+    { return useDisposableUbo(bindIndex, (void*)&value, sizeof(value)); }
+
     void drawSurface(const DrawSurfaceTask &t);
     void drawInfographic(const DrawSimpleTask &t);
     void updateFramebuffers();

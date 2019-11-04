@@ -649,7 +649,7 @@ void RenderContext::loadMesh(ResourceInfo &info, GpuMeshSpec &spec,
 }
 
 UniformBuffer::UniformBuffer() :
-    ubo(0), lastUsage(0), capacity(0)
+    capacity(0), ubo(0), lastUsage(0)
 {}
 
 UniformBuffer::~UniformBuffer()
@@ -657,8 +657,8 @@ UniformBuffer::~UniformBuffer()
     clear();
 }
 
-UniformBuffer::UniformBuffer(UniformBuffer &&other)
-    : ubo(0), lastUsage(0), capacity(0)
+UniformBuffer::UniformBuffer(UniformBuffer &&other) :
+    capacity(0), ubo(0), lastUsage(0)
 {
     std::swap(debugId, other.debugId);
     std::swap(ubo, other.ubo);

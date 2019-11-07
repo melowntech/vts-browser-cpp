@@ -34,7 +34,6 @@ sudo apt install \
     python-minimal \
     libboost-all-dev \
     libeigen3-dev \
-    libgdal-dev \
     libproj-dev \
     libgeographic-dev \
     libjsoncpp-dev \
@@ -67,7 +66,6 @@ Install all required libraries using eg. brew or ports.
 sudo port install \
     cmake \
     boost \
-    gdal \
     geographiclib \
     jsoncpp \
     eigen3 \

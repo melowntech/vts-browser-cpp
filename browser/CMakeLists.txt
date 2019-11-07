@@ -7,11 +7,6 @@ if(APPLE)
     cmake_minimum_required(VERSION 3.9.1 FATAL_ERROR)
 endif()
 
-# disable 32 bit builds
-if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
-    message(FATAL_ERROR "64 bit generator is required.")
-endif()
-
 # by default, this is OSS build (can be overridden by customer machinery)
 set(BUILDSYS_DEFAULT_CUSTOMER_NAME oss)
 set(BUILDSYS_CPP_STANDARD 14)

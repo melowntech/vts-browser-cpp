@@ -30,8 +30,6 @@
 
 #include <boost/utility/in_place_factory.hpp>
 #include <GeographicLib/Geodesic.hpp>
-#include <ogr_spatialref.h>
-#include <gdalwarper.h>
 #include <proj_api.h>
 
 #include <vts-libs/vts/csconvertor.hpp>
@@ -58,19 +56,13 @@ const char *pjFind(const char *p)
     return nullptr;
 }
 
-void GDALErrorHandlerEmpty(CPLErr, int, const char *)
+struct projInitClass
 {
-    // do nothing
-}
-
-struct gdalInitClass
-{
-    gdalInitClass()
+    projInitClass()
     {
         pj_set_finder(&pjFind);
-        CPLSetErrorHandler(&GDALErrorHandlerEmpty);
     }
-} gdalInitInstance;
+} projInitInstance;
 
 class CoordManipImpl : public CoordManip
 {
@@ -92,11 +84,12 @@ public:
         LOG(info1) << "Creating coordinate systems manipulator";
         // create geodesic
         {
-            auto r = mapconfig.srs(mapconfig.referenceFrame.model.navigationSrs)
-                        .srsDef.reference();
-            auto a = r.GetSemiMajor();
-            auto b = r.GetSemiMinor();
-            LOG(info1) << "Creating geodesic manipulator: a=<" << a << ">, b=<" << b << ">";
+            auto r = geo::ellipsoid(mapconfig.srs(mapconfig
+                .referenceFrame.model.navigationSrs).srsDef);
+            auto a = r[0];
+            auto b = r[2];
+            LOG(info1) << "Creating geodesic manipulator: a=<"
+                       << a << ">, b=<" << b << ">";
             geodesic_ = boost::in_place(a, (a - b) / a);
         }
         addSrsDef("$search$", searchSrs);

@@ -15,8 +15,6 @@ endif()
 
 buildsys_fix_symlinks(${CMAKE_CURRENT_SOURCE_DIR})
 
-find_package(GDAL 2 REQUIRED)
-include_directories(SYSTEM ${GDAL_INCLUDE_DIR})
 find_package(Proj REQUIRED)
 include_directories(SYSTEM ${PROJ_INCLUDE_DIR})
 find_package(GeographicLib REQUIRED)

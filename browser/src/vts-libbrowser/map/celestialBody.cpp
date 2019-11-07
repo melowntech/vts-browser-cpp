@@ -24,7 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ogr_spatialref.h>
 #include <vts-libs/vts/atmospheredensitytexture.hpp>
 #include <vts-libs/vts/urltemplate.hpp>
 
@@ -51,9 +50,7 @@ MapCelestialBody::Atmosphere::Atmosphere() :
 
 bool Mapconfig::isEarth() const
 {
-    auto n = srs(referenceFrame.model.physicalSrs);
-    auto r = n.srsDef.reference();
-    auto a = r.GetSemiMajor();
+    double a = geo::ellipsoid(srs(referenceFrame.model.physicalSrs).srsDef)[0];
     return std::abs(a - 6378137) < 50000;
 }
 
@@ -62,10 +59,9 @@ void Mapconfig::initializeCelestialBody()
     map->body = MapCelestialBody();
     {
         // find body radius based on reference frame
-        auto n = srs(referenceFrame.model.physicalSrs);
-        auto r = n.srsDef.reference();
-        map->body.majorRadius = r.GetSemiMajor();
-        map->body.minorRadius = r.GetSemiMinor();
+        auto r = geo::ellipsoid(srs(referenceFrame.model.physicalSrs).srsDef);
+        map->body.majorRadius = r[0];
+        map->body.minorRadius = r[2];
     }
 
     MapCelestialBody::Atmosphere &a = map->body.atmosphere;

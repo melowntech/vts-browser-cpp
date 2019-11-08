@@ -14,11 +14,16 @@ set(EXTRA_LIB_DEPS)
 set(EXTRA_LIB_MODULES)
 
 if(BUILDSYS_IOS)
+    # ios
     list(APPEND EXTRA_LIB_DEPS iconv objc "-framework CoreGraphics")
     list(APPEND EXTRA_SRC_LIST fetcher/ios.mm)
 elseif(BUILDSYS_UWP)
+    # universal windows platform
     list(APPEND EXTRA_SRC_LIST fetcher/uwp.cpp)
     set_source_files_properties(fetcher/uwp.cpp PROPERTIES COMPILE_FLAGS "/ZW")
+elseif(BUILDSYS_WASM)
+    # web assembly
+    list(APPEND EXTRA_SRC_LIST fetcher/wasm.cpp)
 else()
     # desktop
     buildsys_fix_symlinks(${CMAKE_CURRENT_SOURCE_DIR}/fetcher)
@@ -217,7 +222,10 @@ if(BUILDSYS_EMBEDDED)
     target_compile_definitions(vts-browser PRIVATE VTS_EMBEDDED)
 endif()
 if(BUILDSYS_IOS)
-    target_compile_definitions(vts-browser PRIVATE VTS_IOS)
+    #target_compile_definitions(vts-browser PRIVATE VTS_IOS)
+endif()
+if(BUILDSYS_WASM)
+    add_dependencies(vts-browser zlibstatic) # fix weird error that no rule exists for zlibstatic
 endif()
 if(BUILDSYS_UWP)
     foreach(conf IN ITEMS ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE})
@@ -225,7 +233,7 @@ if(BUILDSYS_UWP)
         set_target_properties(vts-browser PROPERTIES LINK_FLAGS_${conf_upper} "/NODEFAULTLIB:vccorlib /NODEFAULTLIB:msvcrt vccorlib.lib msvcrt.lib")
     endforeach(conf)
     set_target_properties(vts-browser PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB:vccorlibd /NODEFAULTLIB:msvcrtd vccorlibd.lib msvcrtd.lib")
-    target_compile_definitions(vts-browser PRIVATE VTS_UWP)
+    #target_compile_definitions(vts-browser PRIVATE VTS_UWP)
 endif()
 
 

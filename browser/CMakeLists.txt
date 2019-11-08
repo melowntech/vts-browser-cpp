@@ -71,7 +71,10 @@ add_subdirectory(src/vts-librenderer)
 include_directories(src/vts-librenderer/include)
 
 # application
-if(BUILDSYS_UWP)
+if(BUILDSYS_WASM)
+    message(STATUS "including vts-browser-wasm")
+    add_subdirectory(src/vts-browser-wasm)
+elseif(BUILDSYS_UWP)
     message(STATUS "including vts-browser-uwp")
     add_subdirectory(src/vts-browser-uwp)
 elseif(BUILDSYS_IOS)

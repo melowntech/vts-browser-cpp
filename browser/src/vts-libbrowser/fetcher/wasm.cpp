@@ -24,6 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdio.h>
+#include <string.h>
+#include <emscripten/fetch.h>
+
 #include "../include/vts-browser/fetcher.hpp"
 
 namespace vts
@@ -32,7 +36,37 @@ namespace vts
 namespace
 {
 
-class FetcherImpl : public Fetcher
+class WasmTask
+{
+public:
+    std::shared_ptr<class FetcherImpl> fetcher;
+    std::shared_ptr<FetchTask> task;
+
+    void done(emscripten_fetch_t *fetch)
+    {
+        task->reply.code = fetch->status;
+        task->reply.content.allocate(fetch->numBytes);
+        memcpy(task->reply.content.data(), fetch->data, fetch->numBytes);
+    }
+};
+
+void downloadDone(emscripten_fetch_t *fetch)
+{
+    WasmTask *wt = (WasmTask*)fetch->userData;
+    try
+    {
+        wt->done(fetch);
+    }
+    catch (...)
+    {
+        // dont care
+    }
+    emscripten_fetch_close(fetch);
+    wt->task->fetchDone();
+    delete wt;
+}
+
+class FetcherImpl : public Fetcher, std::enable_shared_from_this<FetcherImpl>
 {
 public:
     FetcherImpl(const FetcherOptions &options)
@@ -47,12 +81,23 @@ public:
     void finalize() override
     {}
 
-    void fetch(const std::shared_ptr<FetchTask> &task_) override
+    void fetch(const std::shared_ptr<FetchTask> &task) override
     {
-        const std::shared_ptr<FetchTask> task = task_;
         try
         {
-            // todo
+            WasmTask *wt = new WasmTask();
+            wt->fetcher = shared_from_this();
+            wt->task = task;
+            emscripten_fetch_attr_t attr;
+            emscripten_fetch_attr_init(&attr);
+            attr.userData = wt;
+            strcpy(attr.requestMethod, "GET");
+            // todo attr.timeoutMSecs
+            // todo attr.requestHeaders
+            attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
+            attr.onsuccess = downloadDone;
+            attr.onerror = downloadDone;
+            emscripten_fetch(&attr, task->query.url.c_str());
         }
         catch (...)
         {

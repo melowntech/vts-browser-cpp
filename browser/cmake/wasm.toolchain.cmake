@@ -45,36 +45,11 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 
 
-set(common_flags "-s WASM=1 -s USE_ZLIB=1 -s USE_LIBPNG=1 -s USE_LIBJPEG=1 -s USE_FREETYPE=1 -s USE_HARFBUZZ=1")
+set(common_flags "-s WASM=1 -s USE_PTHREADS=1 -s USE_ZLIB=1 -s USE_LIBPNG=1 -s USE_LIBJPEG=1 -s USE_FREETYPE=1 -s USE_HARFBUZZ=1 -s ASSERTIONS=1 -s ALLOW_MEMORY_GROWTH=1 -s WASM_MEM_MAX=67108864")
 set(CMAKE_C_FLAGS_INIT "${common_flags}")
 set(CMAKE_CXX_FLAGS_INIT "${common_flags}")
-#set(CMAKE_EXE_LINKER_FLAGS_INIT "${common_flags}")
-#set(CMAKE_SHARED_LINKER_FLAGS_INIT "${common_flags}")
-#set(CMAKE_STATIC_LINKER_FLAGS_INIT "${common_flags}")
-#set(CMAKE_MODULE_LINKER_FLAGS_INIT "${common_flags}")
-#set(CMAKE_CXX_FLAGS_RELEASE_INIT "-DNDEBUG -O3")
-#set(CMAKE_EXE_LINKER_FLAGS_RELEASE_INIT "-O3 --llvm-lto 1")
-
-
-
-
-
 
 
 set(VTS_BROWSER_TYPE STATIC CACHE STRING "Type of browser libraries" FORCE)
-
-
-
-## Prefixes/suffixes for building
-#set(CMAKE_STATIC_LIBRARY_PREFIX "")
-#set(CMAKE_STATIC_LIBRARY_SUFFIX ".bc")
-#set(CMAKE_EXECUTABLE_SUFFIX ".js")
-#
-## Prefixes/suffixes for finding libraries
-#set(CMAKE_FIND_LIBRARY_PREFIXES "")
-#set(CMAKE_FIND_LIBRARY_SUFFIXES ".bc")
-#
-#set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-#set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-isystem")
 
 

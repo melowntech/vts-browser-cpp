@@ -78,7 +78,11 @@ public:
         {
             if (root.empty())
             {
+#ifdef __EMSCRIPTEN__
+                root = "/home";
+#else
                 root = utility::homeDir().string();
+#endif
                 if (root.empty())
                 {
                     LOGTHROW(err3, std::runtime_error)

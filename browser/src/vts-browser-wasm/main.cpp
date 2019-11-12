@@ -31,39 +31,16 @@
 #include <vts-browser/navigation.hpp>
 #include <vts-renderer/renderer.hpp>
 
-#include <thread>
-
-#define SDL_MAIN_HANDLED
+#include <emscripten.h>
 #include <SDL2/SDL.h>
 
 SDL_Window *window;
 SDL_GLContext renderContext;
-SDL_GLContext dataContext;
 std::shared_ptr<vts::Map> map;
 std::shared_ptr<vts::Camera> cam;
 std::shared_ptr<vts::Navigation> nav;
 std::shared_ptr<vts::renderer::RenderContext> context;
 std::shared_ptr<vts::renderer::RenderView> view;
-std::thread dataThread;
-bool shouldClose = false;
-
-void dataEntry()
-{
-    vts::setLogThreadName("data");
-
-    // the browser uses separate thread for uploading resources to gpu memory
-    //   this thread must have access to an OpenGL context
-    //   and the context must be shared with the one used for rendering
-    SDL_GL_MakeCurrent(window, dataContext);
-    vts::renderer::installGlDebugCallback();
-
-    // this will block until map->renderFinalize
-    //   is called in the rendering thread
-    map->dataAllRun();
-
-    SDL_GL_DeleteContext(dataContext);
-    dataContext = nullptr;
-}
 
 void updateResolution()
 {
@@ -73,6 +50,47 @@ void updateResolution()
     ro.width = w;
     ro.height = h;
     cam->setViewportSize(ro.width, ro.height);
+}
+
+void loopIteration()
+{
+    // process events
+    {
+        SDL_Event event;
+        while (SDL_PollEvent(&event))
+        {
+            switch (event.type)
+            {
+            // handle window close
+            case SDL_APP_TERMINATING:
+            case SDL_QUIT:
+                emscripten_cancel_main_loop();
+                return;
+            // handle mouse events
+            case SDL_MOUSEMOTION:
+            {
+                // relative mouse position
+                double p[3] = { (double)event.motion.xrel,
+                            (double)event.motion.yrel, 0 };
+                if (event.motion.state & SDL_BUTTON(SDL_BUTTON_LEFT))
+                    nav->pan(p);
+                if (event.motion.state & SDL_BUTTON(SDL_BUTTON_RIGHT))
+                    nav->rotate(p);
+            } break;
+            case SDL_MOUSEWHEEL:
+                nav->zoom(event.wheel.y);
+                break;
+            }
+        }
+    }
+
+    // update and render
+    updateResolution();
+    map->dataUpdate();
+    map->renderUpdate(0.01);
+    cam->renderUpdate();
+    view->render();
+    SDL_GL_SwapWindow(window);
 }
 
 int main(int, char *[])
@@ -85,24 +103,17 @@ int main(int, char *[])
         throw std::runtime_error("Failed to initialize SDL");
     }
 
-    // configure parameters for OpenGL context
-    // we do not need default depth buffer, the rendering library uses its own
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
     SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    // use OpenGL version 3.3 core profile
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
-                        SDL_GL_CONTEXT_PROFILE_CORE);
-    // enable sharing resources between multiple OpenGL contexts
-    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
     // create window
     vts::log(vts::LogLevel::info3, "Creating window");
     {
-        window = SDL_CreateWindow("vts-browser-minimal-cpp",
+        window = SDL_CreateWindow("vts-browser-wasm",
             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
             800, 600,
             SDL_WINDOW_MAXIMIZED | SDL_WINDOW_OPENGL
@@ -114,108 +125,30 @@ int main(int, char *[])
         throw std::runtime_error("Failed to create window");
     }
 
-    // create OpenGL contexts
-    vts::log(vts::LogLevel::info3, "Creating OpenGL contexts");
-    dataContext = SDL_GL_CreateContext(window);
+    // create OpenGL context
+    vts::log(vts::LogLevel::info3, "Creating OpenGL context");
     renderContext = SDL_GL_CreateContext(window);
-    SDL_GL_SetSwapInterval(1); // enable v-sync
-
-    // create instance of the vts::Map class
-    map = std::make_shared<vts::Map>();
-
-    // make vts renderer library load OpenGL function pointers
-    // this calls installGlDebugCallback for the current context too
     vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
 
-    // create the renderer library context
+    // initialize browser and renderer
+    vts::log(vts::LogLevel::info3, "Creating browser map");
+    map = std::make_shared<vts::Map>();
     context = std::make_shared<vts::renderer::RenderContext>();
-
-    // set required callbacks for creating mesh and texture resources
     context->bindLoadFunctions(map.get());
-
-    // launch the data thread
-    dataThread = std::thread(&dataEntry);
-
-    // create a camera and acquire its navigation handle
     cam = map->createCamera();
     nav = cam->createNavigation();
-
-    // create renderer view
     view = context->createView(cam.get());
-
-    // initialize the map for rendering
     updateResolution();
+    map->dataInitialize();
     map->renderInitialize();
 
-    // pass a mapconfig url to the map
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
 
-    // acquire current time (for measuring how long each frame takes)
-    uint32 lastRenderTime = SDL_GetTicks();
-
-    // main event loop
-    while (!shouldClose)
-    {
-        // process events
-        {
-            SDL_Event event;
-            while (SDL_PollEvent(&event))
-            {
-                switch (event.type)
-                {
-                // handle window close
-                case SDL_APP_TERMINATING:
-                case SDL_QUIT:
-                    shouldClose = true;
-                    break;
-                // handle mouse events
-                case SDL_MOUSEMOTION:
-                {
-                    // relative mouse position
-                    double p[3] = { (double)event.motion.xrel,
-                                (double)event.motion.yrel, 0 };
-                    if (event.motion.state & SDL_BUTTON(SDL_BUTTON_LEFT))
-                        nav->pan(p);
-                    if (event.motion.state & SDL_BUTTON(SDL_BUTTON_RIGHT))
-                        nav->rotate(p);
-                } break;
-                case SDL_MOUSEWHEEL:
-                    nav->zoom(event.wheel.y);
-                    break;
-                }
-            }
-        }
-
-        // update navigation etc.
-        updateResolution();
-        uint32 currentRenderTime = SDL_GetTicks();
-        map->renderUpdate((currentRenderTime - lastRenderTime) * 1e-3);
-        cam->renderUpdate();
-        lastRenderTime = currentRenderTime;
-
-        // actually render the map
-        view->render();
-        SDL_GL_SwapWindow(window);
-    }
-
-    // release all
-    view.reset();
-    nav.reset();
-    cam.reset();
-    map->renderFinalize();
-    dataThread.join();
-    context.reset();
-    map.reset();
-
-    SDL_GL_DeleteContext(renderContext);
-    renderContext = nullptr;
-    SDL_DestroyWindow(window);
-    window = nullptr;
-
+    // run the game loop
+    vts::log(vts::LogLevel::info3, "Starting the game loop");
+    emscripten_set_main_loop(loopIteration, 0, true);
     return 0;
 }
-
-
 
 

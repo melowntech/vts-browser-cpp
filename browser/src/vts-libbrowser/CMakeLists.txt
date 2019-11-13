@@ -24,7 +24,6 @@ elseif(BUILDSYS_UWP)
 elseif(BUILDSYS_WASM)
     # web assembly
     list(APPEND EXTRA_SRC_LIST fetcher/wasm.cpp)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s FETCH=1")
 else()
     # desktop
     buildsys_fix_symlinks(${CMAKE_CURRENT_SOURCE_DIR}/fetcher)

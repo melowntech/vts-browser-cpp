@@ -37,13 +37,6 @@ namespace
 class FetcherImpl : public Fetcher
 {
 public:
-
-    virtual void initialize()
-    {}
-
-    virtual void finalize()
-    {}
-
     NSURLSession *session;
 
     void completed(const std::shared_ptr<FetchTask> &task, NSData *data, NSHTTPURLResponse *response)

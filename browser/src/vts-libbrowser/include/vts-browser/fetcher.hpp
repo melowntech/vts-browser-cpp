@@ -146,8 +146,9 @@ public:
     static std::shared_ptr<Fetcher> create(const FetcherOptions &options);
 
     virtual ~Fetcher();
-    virtual void initialize() = 0;
-    virtual void finalize() = 0;
+    virtual void initialize();
+    virtual void finalize();
+    virtual void update();
     virtual void fetch(const std::shared_ptr<FetchTask> &) = 0;
 };
 

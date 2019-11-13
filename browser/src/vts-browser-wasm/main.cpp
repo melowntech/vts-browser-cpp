@@ -147,7 +147,7 @@ int main(int, char *[])
 
     // run the game loop
     vts::log(vts::LogLevel::info3, "Starting the game loop");
-    emscripten_set_main_loop(loopIteration, 0, true);
+    emscripten_set_main_loop(&loopIteration, 0, true);
     return 0;
 }
 

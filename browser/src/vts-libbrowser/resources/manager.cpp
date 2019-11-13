@@ -358,9 +358,10 @@ void MapImpl::resourcesDownloadsEntry()
             resources.fetching.con.wait(lock);
             res1.swap(resources.fetching.resources);
         }
+        OPTICK_EVENT("process");
+        resources.fetcher->update();
         if (resources.downloads >= options.maxConcurrentDownloads)
             continue; // skip processing if no download slots are available
-        OPTICK_EVENT("process");
         typedef std::pair<float, std::shared_ptr<Resource>> PR;
         std::vector<PR> res;
         for (const auto &w : res1)

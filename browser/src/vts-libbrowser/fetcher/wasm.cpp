@@ -28,7 +28,10 @@
 #include <string.h>
 #include <emscripten/fetch.h>
 
+#include "dbglog/dbglog.hpp"
 #include "../include/vts-browser/fetcher.hpp"
+
+#include <list>
 
 namespace vts
 {
@@ -38,36 +41,52 @@ namespace
 
 class WasmTask
 {
-public:
-    std::shared_ptr<class FetcherImpl> fetcher;
     std::shared_ptr<FetchTask> task;
+    emscripten_fetch_t *fetch;
 
-    void done(emscripten_fetch_t *fetch)
+public:
+    WasmTask(const std::shared_ptr<FetchTask> &task)
+        : task(task), fetch(nullptr)
     {
+        emscripten_fetch_attr_t attr;
+        emscripten_fetch_attr_init(&attr);
+        attr.userData = this;
+        strcpy(attr.requestMethod, "GET");
+        // todo attr.timeoutMSecs
+        // todo attr.requestHeaders
+        attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY
+                //| EMSCRIPTEN_FETCH_WAITABLE
+                | EMSCRIPTEN_FETCH_SYNCHRONOUS;
+        // waitable fetch is not yet implemented in emscripten for WASM
+        // use synchronous fetch as a temporary workaround
+        fetch = emscripten_fetch(&attr, task->query.url.c_str());
+    }
+
+    ~WasmTask()
+    {
+        task->fetchDone();
+        emscripten_fetch_close(fetch);
+    }
+
+    WasmTask(const WasmTask &) = delete;
+    WasmTask &operator = (const WasmTask &) = delete;
+
+    bool update()
+    {
+        auto ret = emscripten_fetch_wait(fetch, 0);
+        if (ret == EMSCRIPTEN_RESULT_TIMED_OUT)
+            return false; // todo handle other error codes
         task->reply.code = fetch->status;
         task->reply.content.allocate(fetch->numBytes);
         memcpy(task->reply.content.data(), fetch->data, fetch->numBytes);
+        return true;
     }
 };
 
-void downloadDone(emscripten_fetch_t *fetch)
+class FetcherImpl : public Fetcher
 {
-    WasmTask *wt = (WasmTask*)fetch->userData;
-    try
-    {
-        wt->done(fetch);
-    }
-    catch (...)
-    {
-        // dont care
-    }
-    emscripten_fetch_close(fetch);
-    wt->task->fetchDone();
-    delete wt;
-}
+    std::list<std::unique_ptr<WasmTask>> tasks;
 
-class FetcherImpl : public Fetcher, std::enable_shared_from_this<FetcherImpl>
-{
 public:
     FetcherImpl(const FetcherOptions &options)
     {}
@@ -75,35 +94,26 @@ public:
     ~FetcherImpl()
     {}
 
-    void initialize() override
-    {}
-
     void finalize() override
-    {}
+    {
+        tasks.clear();
+    }
+
+    void update() override
+    {
+        auto it = tasks.begin();
+        while (it != tasks.end())
+        {
+            if ((*it)->update())
+                it = tasks.erase(it);
+            else
+                it++;
+        }
+    }
 
     void fetch(const std::shared_ptr<FetchTask> &task) override
     {
-        try
-        {
-            WasmTask *wt = new WasmTask();
-            wt->fetcher = shared_from_this();
-            wt->task = task;
-            emscripten_fetch_attr_t attr;
-            emscripten_fetch_attr_init(&attr);
-            attr.userData = wt;
-            strcpy(attr.requestMethod, "GET");
-            // todo attr.timeoutMSecs
-            // todo attr.requestHeaders
-            attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
-            attr.onsuccess = downloadDone;
-            attr.onerror = downloadDone;
-            emscripten_fetch(&attr, task->query.url.c_str());
-        }
-        catch (...)
-        {
-            task->reply.code = FetchTask::ExtraCodes::InternalError;
-            task->fetchDone();
-        }
+        tasks.insert(tasks.end(), std::make_unique<WasmTask>(task));
     }
 };
 

@@ -34,6 +34,15 @@ namespace vts
 Fetcher::~Fetcher()
 {}
 
+void Fetcher::initialize()
+{}
+
+void Fetcher::finalize()
+{}
+
+void Fetcher::update()
+{}
+
 FetchTask::Query::Query(const std::string &url,
                         FetchTask::ResourceType resourceType) :
     url(url), resourceType(resourceType)

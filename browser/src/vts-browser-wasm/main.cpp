@@ -28,6 +28,7 @@
 #include <vts-browser/map.hpp>
 #include <vts-browser/mapOptions.hpp>
 #include <vts-browser/camera.hpp>
+#include <vts-browser/cameraOptions.hpp>
 #include <vts-browser/navigation.hpp>
 #include <vts-renderer/renderer.hpp>
 
@@ -87,7 +88,7 @@ void loopIteration()
     // update and render
     updateResolution();
     map->dataUpdate();
-    map->renderUpdate(0.01);
+    map->renderUpdate(0.1);
     cam->renderUpdate();
     view->render();
     SDL_GL_SwapWindow(window);
@@ -141,6 +142,11 @@ int main(int, char *[])
     updateResolution();
     map->dataInitialize();
     map->renderInitialize();
+
+    // temporary overrides for debugging
+    cam->options().traverseModeSurfaces = vts::TraverseMode::Hierarchical;
+    cam->options().traverseModeGeodata = vts::TraverseMode::None;
+    cam->options().debugRenderTileBoxes = true;
 
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");

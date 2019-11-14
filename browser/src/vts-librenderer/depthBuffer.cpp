@@ -127,6 +127,8 @@ void DepthBuffer::performCopy(uint32 sourceTexture,
         if (buffer.size() < reqsiz)
             buffer.allocate(reqsiz);
 
+        // webgl does not have buffer mapping
+        // see https://github.com/emscripten-core/emscripten/issues/5861
         glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo[index]);
         void *ptr = glMapBufferRange(GL_PIXEL_PACK_BUFFER,
             0, reqsiz, GL_MAP_READ_BIT);

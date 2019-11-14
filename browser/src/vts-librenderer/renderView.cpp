@@ -262,8 +262,10 @@ void RenderViewImpl::updateFramebuffers()
         glGenTextures(1, &vars.depthRenderTexId);
         glBindTexture(vars.textureTargetType, vars.depthRenderTexId);
         if (GLAD_GL_KHR_debug)
+        {
             glObjectLabel(GL_TEXTURE, vars.depthRenderTexId,
                 -1, "depthRenderTexId");
+        }
         if (antialiasingPrev > 1)
         {
             glTexImage2DMultisample(vars.textureTargetType,
@@ -302,8 +304,10 @@ void RenderViewImpl::updateFramebuffers()
             glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
         }
         if (GLAD_GL_KHR_debug)
+        {
             glObjectLabel(GL_TEXTURE, vars.depthReadTexId,
                 -1, "depthReadTexId");
+        }
         CHECK_GL("update depth texture for sampling");
 
         // color texture for rendering
@@ -311,12 +315,16 @@ void RenderViewImpl::updateFramebuffers()
         glGenTextures(1, &vars.colorRenderTexId);
         glBindTexture(vars.textureTargetType, vars.colorRenderTexId);
         if (GLAD_GL_KHR_debug)
+        {
             glObjectLabel(GL_TEXTURE, vars.colorRenderTexId,
                 -1, "colorRenderTexId");
+        }
         if (antialiasingPrev > 1)
+        {
             glTexImage2DMultisample(
                 vars.textureTargetType, antialiasingPrev, GL_RGB8,
                 options.width, options.height, GL_TRUE);
+        }
         else
         {
             glTexImage2D(vars.textureTargetType, 0, GL_RGB8,
@@ -349,8 +357,10 @@ void RenderViewImpl::updateFramebuffers()
             glBindTexture(GL_TEXTURE_2D, vars.colorReadTexId);
         }
         if (GLAD_GL_KHR_debug)
+        {
             glObjectLabel(GL_TEXTURE, vars.colorReadTexId,
                 -1, "colorReadTexId");
+        }
         CHECK_GL("update color texture for sampling");
 
         // render frame buffer
@@ -358,8 +368,10 @@ void RenderViewImpl::updateFramebuffers()
         glGenFramebuffers(1, &vars.frameRenderBufferId);
         glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
         if (GLAD_GL_KHR_debug)
+        {
             glObjectLabel(GL_FRAMEBUFFER, vars.frameRenderBufferId,
                 -1, "frameRenderBufferId");
+        }
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
             vars.textureTargetType, vars.depthRenderTexId, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
@@ -397,6 +409,7 @@ void RenderViewImpl::renderValid()
     updateAtmosphereBuffer();
 
     // render opaque
+    if (!draws->opaque.empty())
     {
         OPTICK_EVENT("opaque");
         glDisable(GL_BLEND);
@@ -411,6 +424,7 @@ void RenderViewImpl::renderValid()
     }
 
     // render background (atmosphere)
+    if (options.renderAtmosphere)
     {
         OPTICK_EVENT("background");
         // corner directions
@@ -436,6 +450,7 @@ void RenderViewImpl::renderValid()
     }
 
     // render transparent
+    if (!draws->transparent.empty())
     {
         OPTICK_EVENT("transparent");
         glEnable(GL_BLEND);
@@ -501,12 +516,15 @@ void RenderViewImpl::renderValid()
     {
         OPTICK_EVENT("copy_depth_to_cpu");
         clearGlState();
+#ifndef VTSR_WASM
         depthBuffer.performCopy(vars.depthReadTexId, width, height, viewProj);
+#endif
         glViewport(0, 0, options.width, options.height);
         glScissor(0, 0, options.width, options.height);
         glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
         glEnable(GL_BLEND);
         glEnable(GL_DEPTH_TEST);
+        CHECK_GL("copy depth");
     }
 
     // render geodata
@@ -514,13 +532,40 @@ void RenderViewImpl::renderValid()
     CHECK_GL("rendered geodata");
 
     // render infographics
+    if (!draws->infographics.empty())
     {
         OPTICK_EVENT("infographics");
         glDisable(GL_DEPTH_TEST);
+#ifdef VTSR_WASM
+        {
+            // "WebGL: drawArrays: Texture would be read by unit 6,
+            //   but written by framebuffer attachment DEPTH_ATTACHMENT,
+            //   which would be illegal feedback."
+            // WebGL is stupid and emits this error even that depth testing
+            //   (thus also depth writing) is disabled.
+            // We workaround this by temporarily detaching
+            //   the texture from the frame buffer.
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, vars.frameRenderBufferId);
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
+                GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D,
+                0, 0);
+            checkGlFramebuffer(GL_DRAW_FRAMEBUFFER);
+        }
+#endif
         context->shaderInfographics->bind();
         for (const DrawSimpleTask &t : draws->infographics)
             drawInfographic(t);
         CHECK_GL("rendered infographics");
+#ifdef VTSR_WASM
+        {
+            // Reattach the depth texture to the frame buffer
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, vars.frameRenderBufferId);
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
+                GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D,
+                vars.depthReadTexId, 0);
+            checkGlFramebuffer(GL_DRAW_FRAMEBUFFER);
+        }
+#endif
     }
 }
 

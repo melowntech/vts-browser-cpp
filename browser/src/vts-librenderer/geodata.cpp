@@ -1029,8 +1029,6 @@ void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
         for (auto &it : worldFwd)
             it = normalize(it);
         mat4 vp = proj * depthOffsetCorrection(g) * view;
-        //vec3 right = vec4to3(vec4(viewInv * vec4(1, 0, 0, 0)));
-        //vec3 up = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
         vec4f *c = data.coordinates;
         for (uint32 i = 0, e = worldPos.size(); i != e; i++)
         {
@@ -1059,7 +1057,11 @@ void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
 
     context->shaderGeodataLabelFlat->bind();
     useDisposableUbo(2, &data,
+#ifdef VTSR_WASM
+        sizeof(UboLabelFlat) // webgl restrictions
+#else
         16 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size() * 2
+#endif
     )->setDebugId("UboLabelFlat");
 
     context->meshEmpty->bind();
@@ -1102,7 +1104,11 @@ void RenderViewImpl::renderLabelScreen(const GeodataJob &job)
 
     context->shaderGeodataLabelScreen->bind();
     useDisposableUbo(2, &data,
+#ifdef VTSR_WASM
+        sizeof(UboLabelScreen) // webgl restrictions
+#else
         20 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size()
+#endif
     )->setDebugId("UboLabelScreen");
 
     context->meshEmpty->bind();

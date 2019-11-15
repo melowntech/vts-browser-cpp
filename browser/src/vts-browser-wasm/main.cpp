@@ -26,9 +26,7 @@
 
 #include <vts-browser/log.hpp>
 #include <vts-browser/map.hpp>
-#include <vts-browser/mapOptions.hpp>
 #include <vts-browser/camera.hpp>
-#include <vts-browser/cameraOptions.hpp>
 #include <vts-browser/navigation.hpp>
 #include <vts-renderer/renderer.hpp>
 
@@ -42,6 +40,7 @@ std::shared_ptr<vts::Camera> cam;
 std::shared_ptr<vts::Navigation> nav;
 std::shared_ptr<vts::renderer::RenderContext> context;
 std::shared_ptr<vts::renderer::RenderView> view;
+uint32 lastRenderTime;
 
 void updateResolution()
 {
@@ -88,7 +87,9 @@ void loopIteration()
     // update and render
     updateResolution();
     map->dataUpdate();
-    map->renderUpdate(0.1);
+    uint32 currentRenderTime = SDL_GetTicks();
+    map->renderUpdate((currentRenderTime - lastRenderTime) * 1e-3);
+    lastRenderTime = currentRenderTime;
     cam->renderUpdate();
     view->render();
     SDL_GL_SwapWindow(window);
@@ -116,9 +117,7 @@ int main(int, char *[])
     {
         window = SDL_CreateWindow("vts-browser-wasm",
             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-            800, 600,
-            SDL_WINDOW_MAXIMIZED | SDL_WINDOW_OPENGL
-            | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+            800, 600, SDL_WINDOW_OPENGL);
     }
     if (!window)
     {
@@ -143,16 +142,12 @@ int main(int, char *[])
     map->dataInitialize();
     map->renderInitialize();
 
-    // temporary overrides for debugging
-    //cam->options().traverseModeSurfaces = vts::TraverseMode::Hierarchical;
-    cam->options().traverseModeGeodata = vts::TraverseMode::None;
-    //cam->options().debugRenderTileBoxes = true;
-
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
 
     // run the game loop
     vts::log(vts::LogLevel::info3, "Starting the game loop");
+    lastRenderTime = SDL_GetTicks();
     emscripten_set_main_loop(&loopIteration, 0, true);
     return 0;
 }

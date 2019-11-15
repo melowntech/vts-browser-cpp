@@ -144,9 +144,9 @@ int main(int, char *[])
     map->renderInitialize();
 
     // temporary overrides for debugging
-    cam->options().traverseModeSurfaces = vts::TraverseMode::Hierarchical;
+    //cam->options().traverseModeSurfaces = vts::TraverseMode::Hierarchical;
     cam->options().traverseModeGeodata = vts::TraverseMode::None;
-    cam->options().debugRenderTileBoxes = true;
+    //cam->options().debugRenderTileBoxes = true;
 
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");

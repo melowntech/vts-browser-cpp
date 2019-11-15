@@ -181,7 +181,7 @@ double CameraImpl::coarsenessValue(TraverseNode *trav)
         return trav->texelSize;
 
     if (map->options.debugCoarsenessDisks
-        && trav->diskHalfAngle == trav->diskHalfAngle)
+        && !std::isnan(trav->diskHalfAngle))
     {
         // test the value at point at the distance from the disk
         double dist = distanceToDisk(trav->diskNormalPhys,

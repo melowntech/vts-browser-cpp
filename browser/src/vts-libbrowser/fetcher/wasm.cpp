@@ -48,6 +48,7 @@ public:
     WasmTask(const std::shared_ptr<FetchTask> &task)
         : task(task), fetch(nullptr)
     {
+        //LOG(info3) << "fetch: " << task->query.url;
         emscripten_fetch_attr_t attr;
         emscripten_fetch_attr_init(&attr);
         attr.userData = this;
@@ -76,6 +77,7 @@ public:
         auto ret = emscripten_fetch_wait(fetch, 0);
         if (ret == EMSCRIPTEN_RESULT_TIMED_OUT)
             return false; // todo handle other error codes
+        //LOG(info3) << "fetch status: " << fetch->status << ", readyState: " << fetch->readyState;
         task->reply.code = fetch->status;
         task->reply.content.allocate(fetch->numBytes);
         memcpy(task->reply.content.data(), fetch->data, fetch->numBytes);
@@ -101,6 +103,7 @@ public:
 
     void update() override
     {
+        /*
         auto it = tasks.begin();
         while (it != tasks.end())
         {
@@ -109,11 +112,14 @@ public:
             else
                 it++;
         }
+        */
     }
 
     void fetch(const std::shared_ptr<FetchTask> &task) override
     {
-        tasks.insert(tasks.end(), std::make_unique<WasmTask>(task));
+        //tasks.insert(tasks.end(), std::make_unique<WasmTask>(task));
+        auto t = std::make_unique<WasmTask>(task);
+        while (!t->update()) {}
     }
 };
 

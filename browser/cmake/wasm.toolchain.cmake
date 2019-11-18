@@ -45,9 +45,25 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 
 
-set(common_flags "-s WASM=1 -s USE_PTHREADS=1 -s FETCH=1 -s USE_ZLIB=1 -s USE_LIBPNG=1 -s USE_LIBJPEG=1 -s USE_FREETYPE=1 -s USE_HARFBUZZ=1 -s DISABLE_EXCEPTION_CATCHING=0 -s ASSERTIONS=1 -s ALLOW_MEMORY_GROWTH=1 -s WASM_MEM_MAX=67108864")
-set(CMAKE_C_FLAGS_INIT "${common_flags}")
-set(CMAKE_CXX_FLAGS_INIT "${common_flags}")
+set(common_flags "-s WASM=1 -s USE_PTHREADS=1 -s FETCH=1 -s USE_ZLIB=1 -s USE_LIBPNG=1 -s USE_LIBJPEG=1 -s USE_FREETYPE=1 -s USE_HARFBUZZ=1 -s USE_WEBGL2=1 -s FULL_ES3=1 -s DISABLE_EXCEPTION_CATCHING=0 -s ALLOW_MEMORY_GROWTH=1 -s TOTAL_MEMORY=134217728 -s WASM_MEM_MAX=1073741824 -s STRICT=1")
+set(debug_flags "-s ASSERTIONS=1 -s SAFE_HEAP=1 -s DEMANGLE_SUPPORT=1 -s GL_DEBUG=1 -s PTHREADS_DEBUG=1 -s FETCH_DEBUG=1 -g -O0")
+set(release_flags "-Os")
+set(CMAKE_C_FLAGS_INIT "")
+set(CMAKE_CXX_FLAGS_INIT "")
+foreach(conf IN ITEMS ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE})
+    string(TOUPPER ${conf} conf_upper)
+    set(CMAKE_C_FLAGS_${conf_upper}_INIT "${common_flags}")
+    set(CMAKE_CXX_FLAGS_${conf_upper}_INIT "${common_flags}")
+    if(${conf_upper} MATCHES "DEBUG")
+        set(CMAKE_C_FLAGS_${conf_upper}_INIT "${CMAKE_C_FLAGS_${conf_upper}_INIT} ${debug_flags}")
+        set(CMAKE_CXX_FLAGS_${conf_upper}_INIT "${CMAKE_CXX_FLAGS_${conf_upper}_INIT} ${debug_flags}")
+    else()
+        set(CMAKE_C_FLAGS_${conf_upper}_INIT "${CMAKE_C_FLAGS_${conf_upper}_INIT} ${release_flags}")
+        set(CMAKE_CXX_FLAGS_${conf_upper}_INIT "${CMAKE_CXX_FLAGS_${conf_upper}_INIT} ${release_flags}")
+    endif()
+endforeach(conf)
+
+
 
 
 set(VTS_BROWSER_TYPE STATIC CACHE STRING "Type of browser libraries" FORCE)

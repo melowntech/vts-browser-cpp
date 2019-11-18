@@ -27,6 +27,7 @@
 #include <vts-browser/log.hpp>
 #include <vts-browser/map.hpp>
 #include <vts-browser/camera.hpp>
+#include <vts-browser/cameraOptions.hpp>
 #include <vts-browser/navigation.hpp>
 #include <vts-renderer/renderer.hpp>
 
@@ -97,6 +98,8 @@ void loopIteration()
 
 int main(int, char *[])
 {
+    //vts::setLogMask(vts::LogLevel::noDebug);
+
     // initialize SDL
     vts::log(vts::LogLevel::info3, "Initializing SDL library");
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
@@ -141,6 +144,8 @@ int main(int, char *[])
     updateResolution();
     map->dataInitialize();
     map->renderInitialize();
+
+    //cam->options().traverseModeGeodata = vts::TraverseMode::None;
 
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");

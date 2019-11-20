@@ -76,28 +76,31 @@ public:
     {
         if (options.diskCache)
         {
+#ifdef __EMSCRIPTEN__
+            LOGTHROW(err4, std::logic_error)
+                << "Disk Cache is not awailable in WASM";
+#else
             if (root.empty())
             {
-#ifdef __EMSCRIPTEN__
                 root = "/home";
-#else
                 root = utility::homeDir().string();
-#endif
                 if (root.empty())
                 {
                     LOGTHROW(err3, std::runtime_error)
-                        << "invalid home dir, the cache path must be defined";
+                        << "Invalid home dir, the cache path must be defined";
                 }
                 root += "/.cache/vts-browser/";
             }
             if (root.back() != '/')
                 root += "/";
             LOG(info2) << "Disk cache path: <" << root << ">";
+#endif
         }
     }
 
     void write(CacheData &&cd)
     {
+#ifndef __EMSCRIPTEN__
         if (disabled)
             return;
         OPTICK_EVENT();
@@ -122,10 +125,14 @@ public:
         {
             // do nothing
         }
+#endif
     }
 
     CacheData read(const std::string &nameParam)
     {
+#ifdef __EMSCRIPTEN__
+        return {};
+#else
         if (disabled)
             return {};
         OPTICK_EVENT();
@@ -173,10 +180,12 @@ public:
         {
             return {};
         }
+#endif
     }
 
     void purge()
     {
+#ifndef __EMSCRIPTEN__
         if (disabled)
             return;
         OPTICK_EVENT();
@@ -195,6 +204,7 @@ public:
         {
             LOG(warn3) << "Purging cache failed: <" << e.what() << ">";
         }
+#endif
     }
 
     std::string convertNameToCache(const std::string &path)

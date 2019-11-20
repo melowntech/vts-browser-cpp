@@ -7,7 +7,8 @@ set(SRC_LIST
 )
 
 # the "-Wl,--no-check-features is temporary workaround until https://github.com/emscripten-ports/HarfBuzz/issues/1 is fixed"
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2 -Wl,--no-check-features --emrun")
+# the current emscripten FETCH works with synchronous operations only and we workaround that with many threads
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2 -Wl,--no-check-features --emrun -s PTHREAD_POOL_SIZE=30 -s ALLOW_MEMORY_GROWTH=1 -s TOTAL_MEMORY=134217728 -s WASM_MEM_MAX=1073741824")
 
 add_executable(vts-browser-wasm ${SRC_LIST})
 target_link_libraries(vts-browser-wasm ${MODULE_LIBRARIES})

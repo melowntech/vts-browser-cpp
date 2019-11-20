@@ -93,6 +93,7 @@ void GpuTexture::load()
     this->width = spec.width;
     this->height = spec.height;
 
+#ifndef __EMSCRIPTEN__
     if (map->options.debugExtractRawResources)
     {
         static const std::string prefix = "extracted/";
@@ -109,6 +110,7 @@ void GpuTexture::load()
             writeLocalFileBuffer(path, out);
         }
     }
+#endif
 
     spec.verticalFlip();
     map->callbacks.loadTexture(info, spec, name);

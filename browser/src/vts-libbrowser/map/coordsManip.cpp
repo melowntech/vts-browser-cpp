@@ -56,10 +56,40 @@ const char *pjFind(const char *p)
     return nullptr;
 }
 
+// disable PROJ's file access on some systems
+PAFile pjFOpen(projCtx ctx, const char *filename, const char *access)
+{
+    return nullptr;
+}
+size_t pjFRead(void *buffer, size_t size, size_t nmemb, PAFile file)
+{
+    return 0;
+}
+int pjFSeek(PAFile file, long offset, int whence)
+{
+    return 0;
+}
+long pjFTell(PAFile file)
+{
+    return 0;
+}
+void pjFClose(PAFile)
+{}
+
 struct projInitClass
 {
+    projFileAPI_t pjFileApi;
+
     projInitClass()
     {
+        pjFileApi.FOpen = &pjFOpen;
+        pjFileApi.FRead = &pjFRead;
+        pjFileApi.FSeek = &pjFSeek;
+        pjFileApi.FTell = &pjFTell;
+        pjFileApi.FClose = &pjFClose;
+#ifdef __EMSCRIPTEN__
+        pj_ctx_set_fileapi(pj_get_default_ctx(), &pjFileApi);
+#endif
         pj_set_finder(&pjFind);
     }
 } projInitInstance;

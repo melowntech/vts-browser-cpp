@@ -47,6 +47,7 @@ void GpuFont::load()
 {
     LOG(info2) << "Loading font <" << name << ">";
 
+#ifndef __EMSCRIPTEN__
     if (map->options.debugExtractRawResources)
     {
         static const std::string prefix = "extracted/";
@@ -60,6 +61,7 @@ void GpuFont::load()
             writeLocalFileBuffer(path, fetch->reply.content);
         }
     }
+#endif
 
     GpuFontSpec spec;
     spec.data = std::move(fetch->reply.content);

@@ -27,26 +27,24 @@
 #include <vts-browser/log.hpp>
 #include <vts-browser/map.hpp>
 #include <vts-browser/camera.hpp>
-#include <vts-browser/cameraOptions.hpp>
 #include <vts-browser/navigation.hpp>
 #include <vts-renderer/renderer.hpp>
 
 #include <emscripten.h>
-#include <SDL2/SDL.h>
+#include <emscripten/html5.h>
 
-SDL_Window *window;
-SDL_GLContext renderContext;
 std::shared_ptr<vts::Map> map;
 std::shared_ptr<vts::Camera> cam;
 std::shared_ptr<vts::Navigation> nav;
 std::shared_ptr<vts::renderer::RenderContext> context;
 std::shared_ptr<vts::renderer::RenderView> view;
-uint32 lastRenderTime;
+EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx;
 
 void updateResolution()
 {
     int w = 0, h = 0;
-    SDL_GL_GetDrawableSize(window, &w, &h);
+    //emscripten_get_canvas_element_size(nullptr, &w, &h);
+    emscripten_webgl_get_drawing_buffer_size(ctx, &w, &h);
     auto &ro = view->options();
     ro.width = w;
     ro.height = h;
@@ -56,82 +54,32 @@ void updateResolution()
 void loopIteration()
 {
     // process events
-    {
-        SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
-            switch (event.type)
-            {
-            // handle window close
-            case SDL_APP_TERMINATING:
-            case SDL_QUIT:
-                emscripten_cancel_main_loop();
-                return;
-            // handle mouse events
-            case SDL_MOUSEMOTION:
-            {
-                // relative mouse position
-                double p[3] = { (double)event.motion.xrel,
-                            (double)event.motion.yrel, 0 };
-                if (event.motion.state & SDL_BUTTON(SDL_BUTTON_LEFT))
-                    nav->pan(p);
-                if (event.motion.state & SDL_BUTTON(SDL_BUTTON_RIGHT))
-                    nav->rotate(p);
-            } break;
-            case SDL_MOUSEWHEEL:
-                nav->zoom(event.wheel.y);
-                break;
-            }
-        }
-    }
+    // todo
 
     // update and render
     updateResolution();
     map->dataUpdate();
-    uint32 currentRenderTime = SDL_GetTicks();
-    map->renderUpdate((currentRenderTime - lastRenderTime) * 1e-3);
-    lastRenderTime = currentRenderTime;
+    map->renderUpdate(0.1);
     cam->renderUpdate();
     view->render();
-    SDL_GL_SwapWindow(window);
 }
 
 int main(int, char *[])
 {
-    //vts::setLogMask(vts::LogLevel::noDebug);
-
-    // initialize SDL
-    vts::log(vts::LogLevel::info3, "Initializing SDL library");
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
-    {
-        vts::log(vts::LogLevel::err4, SDL_GetError());
-        throw std::runtime_error("Failed to initialize SDL");
-    }
-
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
-    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-
-    // create window
-    vts::log(vts::LogLevel::info3, "Creating window");
-    {
-        window = SDL_CreateWindow("vts-browser-wasm",
-            SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-            800, 600, SDL_WINDOW_OPENGL);
-    }
-    if (!window)
-    {
-        vts::log(vts::LogLevel::err4, SDL_GetError());
-        throw std::runtime_error("Failed to create window");
-    }
-
     // create OpenGL context
     vts::log(vts::LogLevel::info3, "Creating OpenGL context");
-    renderContext = SDL_GL_CreateContext(window);
-    vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
+    {
+        EmscriptenWebGLContextAttributes attr;
+        emscripten_webgl_init_context_attributes(&attr);
+        attr.alpha = attr.depth = attr.stencil = 0;
+        attr.antialias = 0;
+        attr.majorVersion = 2;
+        attr.minorVersion = 0;
+        ctx = emscripten_webgl_create_context("#canvas", &attr);
+    }
+    emscripten_webgl_make_context_current(ctx);
+    vts::log(vts::LogLevel::info2, "Initializing OpenGL function pointers");
+    vts::renderer::loadGlFunctions(&emscripten_webgl_get_proc_address);
 
     // initialize browser and renderer
     vts::log(vts::LogLevel::info3, "Creating browser map");
@@ -145,14 +93,11 @@ int main(int, char *[])
     map->dataInitialize();
     map->renderInitialize();
 
-    //cam->options().traverseModeGeodata = vts::TraverseMode::None;
-
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
 
     // run the game loop
     vts::log(vts::LogLevel::info3, "Starting the game loop");
-    lastRenderTime = SDL_GetTicks();
     emscripten_set_main_loop(&loopIteration, 0, true);
     return 0;
 }

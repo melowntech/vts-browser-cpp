@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang=en-us>
+
+<head>
+    <meta charset=utf-8>
+    <meta content="text/html; charset=utf-8" http-equiv=Content-Type>
+    <link rel="stylesheet" type="text/css" href="vts.css">
+    <title>vts-browser-wasm-canvas</title>
+</head>
+
+<body>
+    <canvas id=canvas oncontextmenu=event.preventDefault() webglcontextlost="alert('WebGL context lost. You will need to reload the page.')" tabindex=-1></canvas>
+    <script>
+        var Module =
+        {
+            canvas: document.getElementById("canvas")
+        };
+    </script>
+    <script src="vts.js"></script>
+    <script async src=vts-browser-wasm-canvas.js></script>
+</body>
+
+</html>

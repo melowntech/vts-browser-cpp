@@ -34,6 +34,7 @@
 #include <vts-browser/cameraStatistics.hpp>
 #include <vts-browser/navigation.hpp>
 #include <vts-browser/navigationOptions.hpp>
+#include <vts-browser/position.hpp>
 #include <vts-renderer/renderer.hpp>
 using vts::vec3;
 
@@ -102,6 +103,19 @@ void updateResolution()
     cam->setViewportSize(ro.width, ro.height);
 }
 
+EM_JS(void, updateStatisticsJs,
+      (const char *id, const char *value),
+{
+    document.getElementById(UTF8ToString(id)).innerHTML = UTF8ToString(value)
+});
+
+void updateStatistics()
+{
+    updateStatisticsJs("statisticsMap", map->statistics().toJson().c_str());
+    updateStatisticsJs("statisticsCamera", cam->statistics().toJson().c_str());
+    updateStatisticsJs("position", nav->getPosition().toJson().c_str());
+}
+
 void loopIteration()
 {
     auto currentTimestamp = loopTimer::now();
@@ -113,6 +127,8 @@ void loopIteration()
     map->renderUpdate(elapsedTime);
     cam->renderUpdate();
     view->render();
+    if ((map->statistics().renderTicks % 10) == 0)
+        updateStatistics();
 }
 
 int main(int, char *[])

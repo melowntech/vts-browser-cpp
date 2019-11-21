@@ -25,10 +25,15 @@
  */
 
 #include <vts-browser/log.hpp>
+#include <vts-browser/math.hpp>
 #include <vts-browser/map.hpp>
 #include <vts-browser/camera.hpp>
 #include <vts-browser/navigation.hpp>
 #include <vts-renderer/renderer.hpp>
+using vts::vec3;
+
+#include <chrono>
+using loopTimer = std::chrono::high_resolution_clock;
 
 #include <emscripten.h>
 #include <emscripten/html5.h>
@@ -38,12 +43,53 @@ std::shared_ptr<vts::Camera> cam;
 std::shared_ptr<vts::Navigation> nav;
 std::shared_ptr<vts::renderer::RenderContext> context;
 std::shared_ptr<vts::renderer::RenderView> view;
+vec3 prevMousePosition;
+auto lastFrameTimestamp = loopTimer::now();
 EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx;
+
+EM_BOOL mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *)
+{
+    vec3 current = vec3(e->clientX, e->clientY, 0);
+    vec3 move = current - prevMousePosition;
+    prevMousePosition = current;
+    switch (eventType)
+    {
+    case EMSCRIPTEN_EVENT_MOUSEMOVE:
+        switch (e->buttons)
+        {
+        case 1: // LMB
+            nav->pan(move.data());
+            break;
+        case 2: // RMB
+            nav->rotate(move.data());
+            break;
+        }
+        break;
+    }
+    return true;
+}
+
+EM_BOOL wheelEvent(int, const EmscriptenWheelEvent *e, void *)
+{
+    double d = e->deltaY;
+    switch (e->deltaMode)
+    {
+    case DOM_DELTA_PIXEL:
+        d /= 30;
+        break;
+    case DOM_DELTA_LINE:
+        break;
+    case DOM_DELTA_PAGE:
+        d *= 80;
+        break;
+    }
+    nav->zoom(-d);
+    return true;
+}
 
 void updateResolution()
 {
     int w = 0, h = 0;
-    //emscripten_get_canvas_element_size(nullptr, &w, &h);
     emscripten_webgl_get_drawing_buffer_size(ctx, &w, &h);
     auto &ro = view->options();
     ro.width = w;
@@ -53,13 +99,13 @@ void updateResolution()
 
 void loopIteration()
 {
-    // process events
-    // todo
-
-    // update and render
+    auto currentTimestamp = loopTimer::now();
+    double elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(
+                currentTimestamp - lastFrameTimestamp).count() / 1e6;
+    lastFrameTimestamp = currentTimestamp;
     updateResolution();
     map->dataUpdate();
-    map->renderUpdate(0.1);
+    map->renderUpdate(elapsedTime);
     cam->renderUpdate();
     view->render();
 }
@@ -81,6 +127,12 @@ int main(int, char *[])
     vts::log(vts::LogLevel::info2, "Initializing OpenGL function pointers");
     vts::renderer::loadGlFunctions(&emscripten_webgl_get_proc_address);
 
+    // initialize event callbacks
+    emscripten_set_mouseenter_callback("#canvas", nullptr, true, &mouseEvent);
+    emscripten_set_mousedown_callback("#canvas", nullptr, true, &mouseEvent);
+    emscripten_set_mousemove_callback("#canvas", nullptr, true, &mouseEvent);
+    emscripten_set_wheel_callback("#canvas", nullptr, true, &wheelEvent);
+
     // initialize browser and renderer
     vts::log(vts::LogLevel::info3, "Creating browser map");
     map = std::make_shared<vts::Map>();
@@ -98,6 +150,7 @@ int main(int, char *[])
 
     // run the game loop
     vts::log(vts::LogLevel::info3, "Starting the game loop");
+    lastFrameTimestamp = loopTimer::now();
     emscripten_set_main_loop(&loopIteration, 0, true);
     return 0;
 }

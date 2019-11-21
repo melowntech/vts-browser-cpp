@@ -92,7 +92,6 @@ void loopIteration()
     lastRenderTime = currentRenderTime;
     cam->renderUpdate();
     view->render();
-    SDL_GL_SwapWindow(window);
 }
 
 int main(int, char *[])

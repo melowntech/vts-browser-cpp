@@ -9,15 +9,15 @@
 </head>
 
 <body>
-    <canvas id=canvas oncontextmenu=event.preventDefault() webglcontextlost="alert('WebGL context lost. You will need to reload the page.')" tabindex=-1></canvas>
+    <canvas id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
     <script>
         var Module =
         {
             canvas: document.getElementById("canvas")
         };
     </script>
-    <script src="vts.js"></script>
     <script async src=vts-browser-wasm-canvas.js></script>
+    <script src="vts.js"></script>
 </body>
 
 </html>

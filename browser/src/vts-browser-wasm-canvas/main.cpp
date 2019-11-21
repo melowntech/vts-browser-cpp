@@ -27,8 +27,13 @@
 #include <vts-browser/log.hpp>
 #include <vts-browser/math.hpp>
 #include <vts-browser/map.hpp>
+#include <vts-browser/mapOptions.hpp>
+#include <vts-browser/mapStatistics.hpp>
 #include <vts-browser/camera.hpp>
+#include <vts-browser/cameraOptions.hpp>
+#include <vts-browser/cameraStatistics.hpp>
 #include <vts-browser/navigation.hpp>
+#include <vts-browser/navigationOptions.hpp>
 #include <vts-renderer/renderer.hpp>
 using vts::vec3;
 
@@ -83,7 +88,7 @@ EM_BOOL wheelEvent(int, const EmscriptenWheelEvent *e, void *)
         d *= 80;
         break;
     }
-    nav->zoom(-d);
+    nav->zoom(d * -0.21);
     return true;
 }
 

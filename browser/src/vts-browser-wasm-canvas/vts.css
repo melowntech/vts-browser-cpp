@@ -2,12 +2,13 @@
 body
 {
     margin: 0;
-    padding: none
+    padding: 0;
+    overflow: hidden;
 }
 
-canvas#canvas
+canvas
 {
-    border: 0 none;
+    border: none;
     background-color: #000;
     position: absolute;
     left: 0;
@@ -16,3 +17,63 @@ canvas#canvas
     height: 100%;
     z-index: -999;
 }
+
+.window
+{
+    width: 300px;
+    border: 2px solid #777;
+    background-color: #111;
+    color: white;
+}
+
+.header
+{
+    width: 300px;
+    padding: 10px;
+}
+
+.content
+{
+    width: 288px;
+    padding: 6px;
+}
+
+.content>*
+{
+    width: 100%;
+}
+
+.draggable
+{
+    position: absolute;
+}
+
+.draggable .header
+{
+    cursor: move;
+}
+
+.collapsible
+{
+    border: none;
+    outline: none;
+    padding: 6px;
+    text-align: center;
+    cursor: pointer;
+    background-color: #333;
+    border-bottom: 2px solid #555;
+    color: white;
+}
+
+.collapsible:hover
+{
+    background-color: #444;
+}
+
+.collapsible+*
+{
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+

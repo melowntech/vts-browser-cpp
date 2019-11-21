@@ -10,6 +10,60 @@
 
 <body>
     <canvas id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+    <div>
+        <div class="window draggable" style="left: 20px">
+            <button class="header collapsible">Options</button>
+            <div class=content>
+                <button class=collapsible>Navigation</button>
+                <div>
+                    navigation options
+                </div>
+                <button class=collapsible>Rendering</button>
+                <div>
+                    rendering options
+                </div>
+                <button class=collapsible>Display</button>
+                <div>
+                    display options
+                </div>
+                <button class=collapsible>Debug</button>
+                <div>
+                    debug options
+                </div>
+            </div>
+        </div>
+        <div class="window draggable" style="left: 350px">
+            <button class="header collapsible">Statistics</button>
+            <div class=content>
+                <button class=collapsible>Timing</button>
+                <div id=statisticsTiming>
+                    timing stats
+                </div>
+                <button class=collapsible>Resources</button>
+                <div id=statisticsResources>
+                    resources stats
+                </div>
+                <button class=collapsible>Traversal</button>
+                <div id=statisticsTraversal>
+                    traversal stats
+                </div>
+            </div>
+        </div>
+        <div class="window draggable" style="left: 680px">
+            <button class="header collapsible">Position</button>
+            <div class=content>
+                <div id=position>
+                    position
+                </div>
+            </div>
+        </div>
+        <div class="window draggable" style="left: 1010px">
+            <button class="header collapsible">Search</button>
+            <div class=content>
+                search
+            </div>
+        </div>
+    </div>
     <script>
         var Module =
         {

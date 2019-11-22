@@ -438,7 +438,6 @@ void RenderViewImpl::renderGeodata()
     OPTICK_EVENT();
 
     glDepthMask(GL_FALSE);
-
     glStencilFunc(GL_EQUAL, 0, 0xFF);
     glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 
@@ -1057,7 +1056,7 @@ void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
 
     context->shaderGeodataLabelFlat->bind();
     useDisposableUbo(2, &data,
-#ifdef VTSR_WASM
+#ifdef __EMSCRIPTEN__
         sizeof(UboLabelFlat) // webgl restrictions
 #else
         16 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size() * 2
@@ -1104,7 +1103,7 @@ void RenderViewImpl::renderLabelScreen(const GeodataJob &job)
 
     context->shaderGeodataLabelScreen->bind();
     useDisposableUbo(2, &data,
-#ifdef VTSR_WASM
+#ifdef __EMSCRIPTEN__
         sizeof(UboLabelScreen) // webgl restrictions
 #else
         20 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size()

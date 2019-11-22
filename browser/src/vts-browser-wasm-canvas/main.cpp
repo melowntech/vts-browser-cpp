@@ -58,6 +58,8 @@ EM_BOOL mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *)
     vec3 current = vec3(e->clientX, e->clientY, 0);
     vec3 move = current - prevMousePosition;
     prevMousePosition = current;
+    if (!map->getMapconfigAvailable())
+        return false;
     switch (eventType)
     {
     case EMSCRIPTEN_EVENT_MOUSEMOVE:
@@ -69,6 +71,21 @@ EM_BOOL mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *)
         case 2: // RMB
             nav->rotate(move.data());
             break;
+        }
+        break;
+    case EMSCRIPTEN_EVENT_DBLCLICK:
+        if (e->button == 0) // LMB
+        {
+            vec3 wp;
+            view->getWorldPosition(current.data(), wp.data());
+            if (!std::isnan(wp[0]) && !std::isnan(wp[1]) && !std::isnan(wp[2]))
+            {
+                vec3 np;
+                map->convert(wp.data(), np.data(),
+                             vts::Srs::Physical, vts::Srs::Navigation);
+                nav->setPoint(np.data());
+                nav->options().type = vts::NavigationType::Quick;
+            }
         }
         break;
     }
@@ -152,6 +169,7 @@ int main(int, char *[])
     emscripten_set_mouseenter_callback("#canvas", nullptr, true, &mouseEvent);
     emscripten_set_mousedown_callback("#canvas", nullptr, true, &mouseEvent);
     emscripten_set_mousemove_callback("#canvas", nullptr, true, &mouseEvent);
+    emscripten_set_dblclick_callback("#canvas", nullptr, true, &mouseEvent);
     emscripten_set_wheel_callback("#canvas", nullptr, true, &wheelEvent);
 
     // initialize browser and renderer

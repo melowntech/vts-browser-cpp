@@ -28,6 +28,10 @@
 
 #include "renderer.hpp"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 namespace vts { namespace renderer
 {
 
@@ -127,14 +131,21 @@ void DepthBuffer::performCopy(uint32 sourceTexture,
         if (buffer.size() < reqsiz)
             buffer.allocate(reqsiz);
 
-        // webgl does not have buffer mapping
-        // see https://github.com/emscripten-core/emscripten/issues/5861
         glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo[index]);
+#ifdef __EMSCRIPTEN__
+        // see https://github.com/emscripten-core/emscripten/issues/5861
+        // glGetBufferSubData(GL_PIXEL_PACK_BUFFER, 0, reqsiz, buffer.data());
+        EM_ASM_(
+        {
+            Module.ctx.getBufferSubData(Module.ctx.PIXEL_PACK_BUFFER, 0, HEAPU8.subarray($0, $0 + $1));
+        }, buffer.data(), reqsiz);
+#else
         void *ptr = glMapBufferRange(GL_PIXEL_PACK_BUFFER,
             0, reqsiz, GL_MAP_READ_BIT);
         assert(ptr);
         memcpy(buffer.data(), ptr, reqsiz);
         glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+#endif
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
         CHECK_GL("read the depth (pbo to cpu)");

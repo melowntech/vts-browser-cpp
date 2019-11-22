@@ -14,13 +14,30 @@
         <div class="window draggable" style="left: 20px">
             <button class="header collapsible">Options</button>
             <div class=content>
-                <button class=collapsible>Navigation</button>
-                <div>
-                    navigation options
-                </div>
                 <button class=collapsible>Rendering</button>
                 <div>
-                    rendering options
+                    <table>
+                        <tr><td>Surfaces<td>
+                            <select name=traverseModeSurfaces class=options>
+                                <option value=none>None</option>
+                                <option value=flat>Flat</option>
+                                <option value=stable>Stable</option>
+                                <option value=balanced>Balanced</option>
+                                <option value=hierarchical>Hierarchical</option>
+                                <option value=fixed>Fixed</option>
+                            </select>
+                        </tr>
+                        <tr><td>Geodata<td>
+                            <select name=traverseModeGeodata class=options>
+                                <option value=none>None</option>
+                                <option value=flat>Flat</option>
+                                <option value=stable>Stable</option>
+                                <option value=balanced>Balanced</option>
+                                <option value=hierarchical>Hierarchical</option>
+                                <option value=fixed>Fixed</option>
+                            </select>
+                        </tr>
+                    </table>
                 </div>
                 <button class=collapsible>Display</button>
                 <div>
@@ -70,14 +87,8 @@
             </div>
         </div>
     </div>
-    <script>
-        var Module =
-        {
-            canvas: document.getElementById("canvas")
-        };
-    </script>
-    <script async src=vts-browser-wasm-canvas.js></script>
     <script src="vts.js"></script>
+    <script async src=vts-browser-wasm-canvas.js></script>
 </body>
 
 </html>

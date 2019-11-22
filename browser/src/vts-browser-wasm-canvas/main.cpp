@@ -60,6 +60,20 @@ vec3 prevMousePosition;
 timerPoint lastFrameTimestamp;
 EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx;
 
+extern "C" EMSCRIPTEN_KEEPALIVE void applyOptions(const char *json)
+{
+    if(!map)
+        return;
+    {
+        std::stringstream ss;
+        ss << "Changing options: " << json;
+        vts::log(vts::LogLevel::info3, ss.str());
+    }
+    map->options().applyJson(json);
+    cam->options().applyJson(json);
+    nav->options().applyJson(json);
+}
+
 timerPoint now()
 {
     return timerClock::now();
@@ -106,6 +120,8 @@ EM_BOOL mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *)
 
 EM_BOOL wheelEvent(int, const EmscriptenWheelEvent *e, void *)
 {
+    if (!map->getMapconfigAvailable())
+        return false;
     double d = e->deltaY;
     switch (e->deltaMode)
     {

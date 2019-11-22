@@ -77,4 +77,24 @@ function draggableElement(elmnt)
         draggableElement(coll[i])
 }
 
-
+// apply options
+var applyOptionsCpp
+var Module =
+{
+    onRuntimeInitialized: function()
+    {
+        applyOptionsCpp = Module.cwrap("applyOptions", null, ["string"])
+        //setTimeout(function(){ applyOptionsCpp('{ "traverseModeGeodata":"none" }') }, 1000)
+    },
+}
+function applyOption(e)
+{
+    let t = e.target
+    applyOptionsCpp('{ "' + t.name + '":"' + t.value + '" }')
+}
+{
+    let coll = document.getElementsByClassName("options")
+    let i
+    for (i = 0; i < coll.length; i++)
+        coll[i].onchange = applyOption
+}

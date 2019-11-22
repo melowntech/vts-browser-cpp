@@ -36,13 +36,17 @@
 #include <vts-browser/navigationOptions.hpp>
 #include <vts-browser/position.hpp>
 #include <vts-renderer/renderer.hpp>
-using vts::vec3;
 
+#include <sstream>
+#include <iomanip>
 #include <chrono>
-using loopTimer = std::chrono::high_resolution_clock;
 
 #include <emscripten.h>
 #include <emscripten/html5.h>
+
+using vts::vec3;
+using timerClock = std::chrono::high_resolution_clock;
+using timerPoint = std::chrono::time_point<timerClock>;
 
 std::string jsonToHtml(const std::string &json);
 std::string positionToHtml(const vts::Position &pos);
@@ -53,8 +57,13 @@ std::shared_ptr<vts::Navigation> nav;
 std::shared_ptr<vts::renderer::RenderContext> context;
 std::shared_ptr<vts::renderer::RenderView> view;
 vec3 prevMousePosition;
-auto lastFrameTimestamp = loopTimer::now();
+timerPoint lastFrameTimestamp;
 EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx;
+
+timerPoint now()
+{
+    return timerClock::now();
+}
 
 EM_BOOL mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *)
 {
@@ -129,26 +138,49 @@ EM_JS(void, setHtml,
     document.getElementById(UTF8ToString(id)).innerHTML = UTF8ToString(value)
 });
 
-void updateStatistics()
+std::string toTime(const timerPoint &s, const timerPoint &e)
 {
-    setHtml("statisticsMap", jsonToHtml(map->statistics().toJson()).c_str());
-    setHtml("statisticsCamera", jsonToHtml(cam->statistics().toJson()).c_str());
-    setHtml("position", positionToHtml(nav->getPosition()).c_str());
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(3);
+    ss << std::chrono::duration_cast<std::chrono::microseconds>(
+                    e - s).count() / 1e6 << " s";
+    return ss.str();
 }
 
 void loopIteration()
 {
-    auto currentTimestamp = loopTimer::now();
-    double elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(
-                currentTimestamp - lastFrameTimestamp).count() / 1e6;
-    lastFrameTimestamp = currentTimestamp;
+    timerPoint currentTimestamp = now();
     updateResolution();
+    timerPoint a = now();
     map->dataUpdate();
-    map->renderUpdate(elapsedTime);
+    timerPoint b = now();
+    {
+        double elapsedTime = std::chrono::duration_cast<
+                std::chrono::microseconds>(
+                currentTimestamp - lastFrameTimestamp).count() / 1e6;
+        map->renderUpdate(elapsedTime);
+    }
+    timerPoint c = now();
     cam->renderUpdate();
+    timerPoint d = now();
     view->render();
+    timerPoint e = now();
     if ((map->statistics().renderTicks % 10) == 0)
-        updateStatistics();
+    {
+        setHtml("timeFrame",
+                toTime(lastFrameTimestamp, currentTimestamp).c_str());
+        setHtml("timeData", toTime(a, b).c_str());
+        setHtml("timeMap", toTime(b, c).c_str());
+        setHtml("timeCamera", toTime(c, d).c_str());
+        setHtml("timeView", toTime(d, e).c_str());
+        setHtml("statisticsMap",
+                jsonToHtml(map->statistics().toJson()).c_str());
+        setHtml("statisticsCamera",
+                jsonToHtml(cam->statistics().toJson()).c_str());
+        setHtml("position",
+                positionToHtml(nav->getPosition()).c_str());
+    }
+    lastFrameTimestamp = currentTimestamp;
 }
 
 int main(int, char *[])
@@ -192,7 +224,7 @@ int main(int, char *[])
 
     // run the game loop
     vts::log(vts::LogLevel::info3, "Starting the game loop");
-    lastFrameTimestamp = loopTimer::now();
+    lastFrameTimestamp = now();
     emscripten_set_main_loop(&loopIteration, 0, true);
     return 0;
 }

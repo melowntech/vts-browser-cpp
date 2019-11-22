@@ -4,6 +4,7 @@ define_module(BINARY vts-browser-wasm-canvas DEPENDS
 
 set(SRC_LIST
     main.cpp
+    toHtml.cpp
 )
 
 set(WEBFILES_LIST

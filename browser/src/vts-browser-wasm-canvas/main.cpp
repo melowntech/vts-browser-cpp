@@ -44,6 +44,9 @@ using loopTimer = std::chrono::high_resolution_clock;
 #include <emscripten.h>
 #include <emscripten/html5.h>
 
+std::string jsonToHtml(const std::string &json);
+std::string positionToHtml(const vts::Position &pos);
+
 std::shared_ptr<vts::Map> map;
 std::shared_ptr<vts::Camera> cam;
 std::shared_ptr<vts::Navigation> nav;
@@ -120,7 +123,7 @@ void updateResolution()
     cam->setViewportSize(ro.width, ro.height);
 }
 
-EM_JS(void, updateStatisticsJs,
+EM_JS(void, setHtml,
       (const char *id, const char *value),
 {
     document.getElementById(UTF8ToString(id)).innerHTML = UTF8ToString(value)
@@ -128,9 +131,9 @@ EM_JS(void, updateStatisticsJs,
 
 void updateStatistics()
 {
-    updateStatisticsJs("statisticsMap", map->statistics().toJson().c_str());
-    updateStatisticsJs("statisticsCamera", cam->statistics().toJson().c_str());
-    updateStatisticsJs("position", nav->getPosition().toJson().c_str());
+    setHtml("statisticsMap", jsonToHtml(map->statistics().toJson()).c_str());
+    setHtml("statisticsCamera", jsonToHtml(cam->statistics().toJson()).c_str());
+    setHtml("position", positionToHtml(nav->getPosition()).c_str());
 }
 
 void loopIteration()

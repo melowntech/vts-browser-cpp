@@ -36,11 +36,23 @@ canvas
 {
     width: 288px;
     padding: 6px;
+    max-height: 600px;
+    overflow: auto;
 }
 
 .content>*
 {
     width: 100%;
+}
+
+.content table
+{
+    width: 100%;
+}
+
+.content table tr:nth-child(even)
+{
+    background-color: #181818;
 }
 
 .draggable
@@ -74,6 +86,11 @@ canvas
 {
     padding-top: 6px;
     padding-bottom: 6px;
+}
+
+.number
+{
+    text-align: right;
 }
 
 

@@ -50,6 +50,8 @@ using timerPoint = std::chrono::time_point<timerClock>;
 
 std::string jsonToHtml(const std::string &json);
 std::string positionToHtml(const vts::Position &pos);
+void applyRenderOptions(const std::string &json,
+        vts::renderer::RenderOptions &opt);
 
 std::shared_ptr<vts::Map> map;
 std::shared_ptr<vts::Camera> cam;
@@ -72,6 +74,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void applyOptions(const char *json)
     map->options().applyJson(json);
     cam->options().applyJson(json);
     nav->options().applyJson(json);
+    applyRenderOptions(json, view->options());
 }
 
 timerPoint now()
@@ -237,6 +240,11 @@ int main(int, char *[])
 
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
+
+    // callback into javascript
+    EM_ASM(
+        Module.onMapCreated()
+    );
 
     // run the game loop
     vts::log(vts::LogLevel::info3, "Starting the game loop");

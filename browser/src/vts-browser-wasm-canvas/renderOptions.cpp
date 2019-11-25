@@ -24,44 +24,34 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JSON_HPP_sgf56489dh4d69
-#define JSON_HPP_sgf56489dh4d69
+#include <vts-browser/log.hpp>
+#include <vts-browser/math.hpp>
+#include <vts-renderer/renderer.hpp>
 
-#include <json/json.h>
+#include "vts-libbrowser/utilities/json.hpp"
+
 #include <sstream>
+#include <iomanip>
 
-namespace vts
+using namespace vts;
+
+void applyRenderOptions(const std::string &json,
+        vts::renderer::RenderOptions &opt)
 {
-
-Json::Value stringToJson(const std::string &s);
-std::string jsonToString(const Json::Value &value);
-
-// json to enum
-template<class T>
-T jToE(const Json::Value &j)
-{
-    std::string s = j.asString();
-    T e;
-    std::istringstream ss(s);
-    ss >> e;
-    return e;
+    struct T : public vtsCRenderOptionsBase
+    {
+        void apply(const std::string &json)
+        {
+            Json::Value v = stringToJson(json);
+            AJ(textScale, asFloat);
+            AJ(antialiasingSamples, asUInt);
+            AJ(renderGeodataDebug, asUInt);
+            AJ(renderAtmosphere, asBool);
+            AJ(renderPolygonEdges, asBool);
+            AJ(geodataHysteresis, asBool);
+        }
+    };
+    T t = (T&)opt;
+    t.apply(json);
+    opt = (vts::renderer::RenderOptions&)t;
 }
-
-// enum to json
-template<class T>
-Json::Value eToJ(T e)
-{
-    std::ostringstream ss;
-    ss << e;
-    std::string s = ss.str();
-    return s;
-}
-
-} // namespace vts
-
-#define TJ(NAME, AS) v[#NAME] = NAME ;
-#define AJ(NAME, AS) if (v.isMember(#NAME)) NAME = v[#NAME].AS();
-#define TJE(NAME, TYPE) v[#NAME] = eToJ<TYPE>(NAME);
-#define AJE(NAME, TYPE) if (v.isMember(#NAME)) { NAME = jToE<TYPE>(v[#NAME]); }
-
-#endif

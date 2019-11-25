@@ -40,6 +40,7 @@ canvas.addEventListener("webglcontextlost", function()
 }
 
 // draggable elements
+var draggableZIndex = 1
 function draggableElement(elmnt)
 {
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0
@@ -53,6 +54,7 @@ function draggableElement(elmnt)
         pos4 = e.clientY
         elmnt.style.top = (elmnt.offsetTop - pos2) + "px"
         elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"
+        elmnt.style.zIndex = draggableZIndex++
     }
     function closeDragElement()
     {
@@ -79,22 +81,39 @@ function draggableElement(elmnt)
 
 // apply options
 var applyOptionsCpp
+function applyOption(e)
+{
+    let t = e.target
+    if (t.tagName == "SELECT")
+    {
+        if (isNaN(t.value))
+            applyOptionsCpp('{ "' + t.name + '":"' + t.value + '" }')
+        else
+            applyOptionsCpp('{ "' + t.name + '":' + t.value + ' }')
+    }
+    else if (t.tagName == "INPUT")
+    {
+        if (t.type == "checkbox")
+            applyOptionsCpp('{ "' + t.name + '":' + (t.checked ? "true" : "false") + ' }')
+    }
+}
 var Module =
 {
     onRuntimeInitialized: function()
     {
         applyOptionsCpp = Module.cwrap("applyOptions", null, ["string"])
-        //setTimeout(function(){ applyOptionsCpp('{ "traverseModeGeodata":"none" }') }, 1000)
     },
+    onMapCreated: function()
+    {
+        // todo load initial values for all options
+
+        // initialize options events
+        {
+            let coll = document.getElementsByClassName("options")
+            let i
+            for (i = 0; i < coll.length; i++)
+                coll[i].onchange = applyOption
+        }
+    }
 }
-function applyOption(e)
-{
-    let t = e.target
-    applyOptionsCpp('{ "' + t.name + '":"' + t.value + '" }')
-}
-{
-    let coll = document.getElementsByClassName("options")
-    let i
-    for (i = 0; i < coll.length; i++)
-        coll[i].onchange = applyOption
-}
+

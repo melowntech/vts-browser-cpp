@@ -66,6 +66,7 @@ void DepthBuffer::performCopy(uint32 sourceTexture,
     glViewport(0, 0, paramW, paramH);
 
     // copy depth to texture (perform conversion)
+    if (paramW * paramH != 0)
     {
         OPTICK_EVENT("copy_depth_to_texture_with_conversion");
 
@@ -111,8 +112,11 @@ void DepthBuffer::performCopy(uint32 sourceTexture,
             h[index] = paramH;
         }
 
-        glReadPixels(0, 0, w[index], h[index],
-            GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        if (paramW * paramH != 0)
+        {
+            glReadPixels(0, 0, w[index], h[index],
+                GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        }
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
         CHECK_GL("read the depth (texture to pbo)");

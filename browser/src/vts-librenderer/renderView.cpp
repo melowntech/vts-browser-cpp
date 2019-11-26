@@ -524,7 +524,14 @@ void RenderViewImpl::renderValid()
     {
         OPTICK_EVENT("copy_depth_to_cpu");
         clearGlState();
-        depthBuffer.performCopy(vars.depthReadTexId, width, height, viewProj);
+        if ((frameIndex % 2) == 1)
+        {
+            uint32 dw = width;
+            uint32 dh = height;
+            if (!options.debugDepthFeedback)
+                dw = dh = 0;
+            depthBuffer.performCopy(vars.depthReadTexId, dw, dh, viewProj);
+        }
         glViewport(0, 0, options.width, options.height);
         glScissor(0, 0, options.width, options.height);
         glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);

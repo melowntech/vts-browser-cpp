@@ -24,14 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vts-browser/log.hpp>
-#include <vts-browser/math.hpp>
 #include <vts-renderer/renderer.hpp>
-
 #include "vts-libbrowser/utilities/json.hpp"
-
-#include <sstream>
-#include <iomanip>
 
 using namespace vts;
 
@@ -49,6 +43,7 @@ void applyRenderOptions(const std::string &json,
             AJ(renderAtmosphere, asBool);
             AJ(renderPolygonEdges, asBool);
             AJ(geodataHysteresis, asBool);
+            AJ(debugDepthFeedback, asBool);
         }
     };
     T t = (T&)opt;

@@ -47,6 +47,7 @@ RenderOptions::RenderOptions()
 #endif // !VTSR_EMBEDDED
     renderAtmosphere = true;
     geodataHysteresis = true;
+    debugDepthFeedback = true;
     colorToTargetFrameBuffer = true;
 }
 

@@ -942,6 +942,10 @@ public:
                 mr.debugCoarsenessDisks = nk_check_label(&ctx,
                     "Coarseness disks", mr.debugCoarsenessDisks);
 
+                // depth feedback
+                r.debugDepthFeedback = nk_check_label(&ctx,
+                    "Depth feedback", r.debugDepthFeedback);
+
                 // geodata validation
                 {
                     bool old = mr.debugValidateGeodataStyles;

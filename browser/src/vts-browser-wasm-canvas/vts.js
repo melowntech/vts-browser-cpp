@@ -94,6 +94,8 @@ function applyOption(e)
     {
         if (t.type == "checkbox")
             applyOptionsCpp('{ "' + t.name + '":' + (t.checked ? "true" : "false") + ' }')
+        else if (t.type == "range" || t.type == "number")
+            applyOptionsCpp('{ "' + t.name + '":' + t.value + ' }')
     }
 }
 function setOption(t, options)
@@ -104,6 +106,8 @@ function setOption(t, options)
     {
         if (t.type == "checkbox")
             t.checked = options[t.name] == "true"
+        else if (t.type == "range" || t.type == "number")
+            t.value = options[t.name]
     }
 }
 var Module =

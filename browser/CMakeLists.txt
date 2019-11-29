@@ -1,5 +1,6 @@
 # bootstrap build system
 cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
+include(cmake/buildsys_initial_validation.cmake)
 project(vts-browser)
 
 if(APPLE)

@@ -14,6 +14,9 @@ layout(std140) uniform uboSurface
 };
 
 in vec2 varUvTex;
+#ifdef VTS_NO_CLIP
+in vec2 varUvExternal;
+#endif
 in vec3 varViewPosition;
 #ifdef VTS_ATM_PER_VERTEX
 in float varAtmDensity;
@@ -35,8 +38,14 @@ void main()
     vec3 viewDy = dFdy(varViewPosition);
 
 #ifdef VTS_NO_CLIP
-	// no hardware clipping, do it here instead
-	// todo
+    // no hardware clipping, do it here instead
+    vec4 clipDistance;
+    clipDistance[0] = (varUvExternal[0] - uniUvClip[0]) * +1.0;
+    clipDistance[1] = (varUvExternal[1] - uniUvClip[1]) * +1.0;
+    clipDistance[2] = (varUvExternal[0] - uniUvClip[2]) * -1.0;
+    clipDistance[3] = (varUvExternal[1] - uniUvClip[3]) * -1.0;
+    if (any(lessThan(clipDistance, vec4(0.0))))
+        discard;
 #endif
 
     // mask

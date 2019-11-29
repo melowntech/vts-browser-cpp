@@ -258,8 +258,6 @@ int main(int, char *[])
         auto &m = map->options();
         m.targetResourcesMemoryKB = 512 * 1024;
         auto &c = cam->options();
-        c.traverseModeSurfaces = vts::TraverseMode::Hierarchical; // temporarily change traversal
-        c.lodBlending = 0; // temporarily disable lod blending
     }
 
     // callback into javascript

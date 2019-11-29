@@ -188,8 +188,14 @@ set(DATA_LIST
     data/meshes/quad.obj
     data/meshes/rect.obj
     data/meshes/sphere.obj
-    data/textures/helper.jpg
 )
+if(NOT BUILDSYS_EMBEDDED)
+    set(DATA_LIST
+        ${DATA_LIST}
+        data/textures/helper.jpg
+    )
+endif()
+
 
 buildsys_pack_data(initializeBrowserData)
 add_library(vts-browser ${VTS_BROWSER_BUILD_LIBRARY} ${SRC_LIST} ${PUB_HDR_LIST} ${DATA_LIST})

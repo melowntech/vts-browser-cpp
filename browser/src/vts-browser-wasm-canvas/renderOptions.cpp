@@ -50,3 +50,25 @@ void applyRenderOptions(const std::string &json,
     t.apply(json);
     opt = (vts::renderer::RenderOptions&)t;
 }
+
+std::string getRenderOptions(const vts::renderer::RenderOptions &opt)
+{
+    struct T : public vtsCRenderOptionsBase
+    {
+        std::string get() const
+        {
+            Json::Value v;
+            TJ(textScale, asFloat);
+            TJ(antialiasingSamples, asUInt);
+            TJ(renderGeodataDebug, asUInt);
+            TJ(renderAtmosphere, asBool);
+            TJ(renderPolygonEdges, asBool);
+            TJ(geodataHysteresis, asBool);
+            TJ(debugDepthFeedback, asBool);
+            return jsonToString(v);
+        }
+    };
+    const T t = (const T&)opt;
+    return t.get();
+}
+

@@ -52,6 +52,7 @@ std::string jsonToHtml(const std::string &json);
 std::string positionToHtml(const vts::Position &pos);
 void applyRenderOptions(const std::string &json,
         vts::renderer::RenderOptions &opt);
+std::string getRenderOptions(const vts::renderer::RenderOptions &opt);
 
 std::shared_ptr<vts::Map> map;
 std::shared_ptr<vts::Camera> cam;
@@ -75,6 +76,19 @@ extern "C" EMSCRIPTEN_KEEPALIVE void applyOptions(const char *json)
     cam->options().applyJson(json);
     nav->options().applyJson(json);
     applyRenderOptions(json, view->options());
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE const char *getOptions()
+{
+    if(!map)
+        return "";
+    static std::string result; // NOT REENTRANT!!, for JS interop (quick and dirty :D)
+    result = "";
+    result += map->options().toJson();
+    result += cam->options().toJson();
+    result += nav->options().toJson();
+    result += getRenderOptions(view->options());
+    return result.c_str();
 }
 
 timerPoint now()
@@ -209,9 +223,8 @@ int main(int, char *[])
     {
         EmscriptenWebGLContextAttributes attr;
         emscripten_webgl_init_context_attributes(&attr);
-        attr.alpha = attr.depth = attr.stencil = 0;
-        attr.antialias = 0;
-        attr.majorVersion = 2;
+        attr.alpha = attr.depth = attr.stencil = attr.antialias = 0; // we have our own render target
+        attr.majorVersion = 2; // WebGL 2.0
         attr.minorVersion = 0;
         ctx = emscripten_webgl_create_context("#canvas", &attr);
     }
@@ -240,6 +253,14 @@ int main(int, char *[])
 
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
+
+    {
+        auto &m = map->options();
+        m.targetResourcesMemoryKB = 512 * 1024;
+        auto &c = cam->options();
+        c.traverseModeSurfaces = vts::TraverseMode::Hierarchical; // temporarily change traversal
+        c.lodBlending = 0; // temporarily disable lod blending
+    }
 
     // callback into javascript
     EM_ASM(

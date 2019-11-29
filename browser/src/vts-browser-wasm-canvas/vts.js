@@ -24,8 +24,7 @@ canvas.addEventListener("webglcontextlost", function()
 // collapsible elements
 {
     let coll = document.getElementsByClassName("collapsible")
-    let i
-    for (i = 0; i < coll.length; i++)
+    for (let i = 0; i < coll.length; i++)
     {
         let content = coll[i].nextElementSibling
         content.style.display = "none"
@@ -74,13 +73,13 @@ function draggableElement(elmnt)
 }
 {
     let coll = document.getElementsByClassName("draggable")
-    let i
-    for (i = 0; i < coll.length; i++)
+    for (let i = 0; i < coll.length; i++)
         draggableElement(coll[i])
 }
 
 // apply options
 var applyOptionsCpp
+var getOptionsCpp
 function applyOption(e)
 {
     let t = e.target
@@ -97,22 +96,47 @@ function applyOption(e)
             applyOptionsCpp('{ "' + t.name + '":' + (t.checked ? "true" : "false") + ' }')
     }
 }
+function setOption(t, options)
+{
+    if (t.tagName == "SELECT")
+        t.value = options[t.name]
+    else if (t.tagName == "INPUT")
+    {
+        if (t.type == "checkbox")
+            t.checked = options[t.name] == "true"
+    }
+}
 var Module =
 {
     onRuntimeInitialized: function()
     {
         applyOptionsCpp = Module.cwrap("applyOptions", null, ["string"])
+        getOptionsCpp = Module.cwrap("getOptions", "string", null)
     },
     onMapCreated: function()
     {
-        // todo load initial values for all options
-
         // initialize options events
         {
+            let optionsRaw = getOptionsCpp()
+            let lines = optionsRaw.split("\n").filter(function(l)
+            {
+                return l.match(/\:/)
+            })
+            let options = new Object()
+            lines.forEach(function(l)
+            {
+                l = l.replace(/\,|\"/g, "")
+                let pair = l.split(":")
+                let name = pair[0].trim()
+                let value = pair[1].trim()
+                options[name] = value
+            })
             let coll = document.getElementsByClassName("options")
-            let i
-            for (i = 0; i < coll.length; i++)
+            for (let i = 0; i < coll.length; i++)
+            {
+                setOption(coll[i], options)
                 coll[i].onchange = applyOption
+            }
         }
     }
 }

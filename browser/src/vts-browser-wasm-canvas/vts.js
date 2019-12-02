@@ -77,6 +77,22 @@ function draggableElement(elmnt)
         draggableElement(coll[i])
 }
 
+// search
+var searchCpp;
+var gotoPositionCpp;
+function search()
+{
+    if (!searchCpp)
+        return
+    searchCpp(document.getElementById("searchQuery").value)
+}
+function gotoPosition(x, y, z, ve)
+{
+    if (!gotoPositionCpp)
+        return
+    gotoPositionCpp(x, y, z, ve)
+}
+
 // apply options
 var applyOptionsCpp
 var getOptionsCpp
@@ -114,6 +130,8 @@ var Module =
 {
     onRuntimeInitialized: function()
     {
+        searchCpp = Module.cwrap("search", null, ["string"])
+        gotoPositionCpp = Module.cwrap("gotoPosition", null, ["number", "number", "number", "number"])
         applyOptionsCpp = Module.cwrap("applyOptions", null, ["string"])
         getOptionsCpp = Module.cwrap("getOptions", "string", null)
     },

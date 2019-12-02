@@ -99,4 +99,14 @@ canvas
     font-family: monospace;
 }
 
+.searchItem::after
+{
+    content: "";
+    clear: both;
+    display: table;
+}
 
+.searchItem button
+{
+    float: right;
+}

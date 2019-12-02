@@ -35,6 +35,7 @@
 #include <vts-browser/navigation.hpp>
 #include <vts-browser/navigationOptions.hpp>
 #include <vts-browser/position.hpp>
+#include <vts-browser/search.hpp>
 #include <vts-renderer/renderer.hpp>
 
 #include <sstream>
@@ -59,9 +60,42 @@ std::shared_ptr<vts::Camera> cam;
 std::shared_ptr<vts::Navigation> nav;
 std::shared_ptr<vts::renderer::RenderContext> context;
 std::shared_ptr<vts::renderer::RenderView> view;
+std::shared_ptr<vts::SearchTask> srch;
 vec3 prevMousePosition;
 timerPoint lastFrameTimestamp;
 EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx;
+
+EM_JS(void, setHtml,
+      (const char *id, const char *value),
+{
+    document.getElementById(UTF8ToString(id)).innerHTML = UTF8ToString(value)
+});
+
+extern "C" EMSCRIPTEN_KEEPALIVE void search(const char *query)
+{
+    if(!map)
+        return;
+    if (!map->searchable())
+    {
+        setHtml("searchResults", "Search not available");
+        return;
+    }
+    srch = map->search(query);
+    setHtml("searchResults", "Searching...");
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE void gotoPosition(
+        double x, double y, double z, double ve)
+{
+    if(!map)
+        return;
+    nav->setViewExtent(std::max(ve * 2, 6667.0));
+    nav->setRotation({0,270,0});
+    nav->resetAltitude();
+    nav->resetNavigationMode();
+    nav->setPoint({x, y, z});
+    nav->options().type = vts::NavigationType::FlyOver;
+}
 
 extern "C" EMSCRIPTEN_KEEPALIVE void applyOptions(const char *json)
 {
@@ -110,9 +144,11 @@ EM_BOOL mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *)
         {
         case 1: // LMB
             nav->pan(move.data());
+            nav->options().type = vts::NavigationType::Quick;
             break;
         case 2: // RMB
             nav->rotate(move.data());
+            nav->options().type = vts::NavigationType::Quick;
             break;
         }
         break;
@@ -165,12 +201,6 @@ void updateResolution()
     cam->setViewportSize(ro.width, ro.height);
 }
 
-EM_JS(void, setHtml,
-      (const char *id, const char *value),
-{
-    document.getElementById(UTF8ToString(id)).innerHTML = UTF8ToString(value)
-});
-
 std::string toTime(const timerPoint &s, const timerPoint &e)
 {
     std::stringstream ss;
@@ -184,6 +214,26 @@ void loopIteration()
 {
     timerPoint currentTimestamp = now();
     updateResolution();
+    { // search
+        if (srch && srch->done)
+        {
+            std::stringstream ss;
+            for (const auto &it : srch->results)
+            {
+                ss << "<div class=searchItem><hr>";
+                ss << it.displayName;
+                ss << "<button "
+                   << "onclick=\"gotoPosition("
+                   << it.position[0] << ", "
+                   << it.position[1] << ", "
+                   << it.position[2] << ", "
+                   << it.radius << ")\">Go</button>";
+                ss << "</div>";
+            }
+            setHtml("searchResults", ss.str().c_str());
+            srch.reset();
+        }
+    }
     timerPoint a = now();
     map->dataUpdate();
     timerPoint b = now();

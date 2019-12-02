@@ -65,8 +65,7 @@ vec3 prevMousePosition;
 timerPoint lastFrameTimestamp;
 EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx;
 
-EM_JS(void, setHtml,
-      (const char *id, const char *value),
+EM_JS(void, setHtml, (const char *id, const char *value),
 {
     document.getElementById(UTF8ToString(id)).innerHTML = UTF8ToString(value)
 });
@@ -123,11 +122,6 @@ extern "C" EMSCRIPTEN_KEEPALIVE const char *getOptions()
     result += nav->options().toJson();
     result += getRenderOptions(view->options());
     return result.c_str();
-}
-
-timerPoint now()
-{
-    return timerClock::now();
 }
 
 EM_BOOL mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *)
@@ -201,20 +195,89 @@ void updateResolution()
     cam->setViewportSize(ro.width, ro.height);
 }
 
-std::string toTime(const timerPoint &s, const timerPoint &e)
+timerPoint now()
 {
-    std::stringstream ss;
-    ss << std::fixed << std::setprecision(3);
-    ss << std::chrono::duration_cast<std::chrono::microseconds>(
-                    e - s).count() / 1e6 << " s";
-    return ss.str();
+    return timerClock::now();
+}
+
+struct durationsBuffer
+{
+    static const uint32 N = 60;
+    float buffer[N];
+
+    durationsBuffer()
+    {
+        for (auto &i : buffer)
+            i = 0;
+    }
+
+    float avg() const
+    {
+        float sum = 0;
+        for (float i : buffer)
+            sum += i;
+        return sum / N;
+    }
+
+    float max() const
+    {
+        float m = 0;
+        for (float i : buffer)
+            m = std::max(m, i);
+        return m;
+    }
+
+    void update(float t)
+    {
+        buffer[map->statistics().renderTicks % N] = t;
+    }
+
+    void update(const timerPoint &a, const timerPoint &b)
+    {
+        update(std::chrono::duration_cast<
+               std::chrono::microseconds>(b - a).count() / 1000.0);
+    }
+};
+
+durationsBuffer durationFrame, durationData,
+    durationMap, durationCamera, durationView;
+
+void updateStatisticsHtml()
+{
+    // timing
+    {
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(1);
+        ss << "<table>";
+        ss << "<tr><td>frame<td class=number>" << durationFrame.avg()
+           << "<td class=number>" << durationFrame.max() << "</tr>";
+        ss << "<tr><td>data<td class=number>" << durationData.avg()
+           << "<td class=number>" << durationData.max() << "</tr>";
+        ss << "<tr><td>map<td class=number>" << durationMap.avg()
+           << "<td class=number>" << durationMap.max() << "</tr>";
+        ss << "<tr><td>camera<td class=number>" << durationCamera.avg()
+           << "<td class=number>" << durationCamera.max() << "</tr>";
+        ss << "<tr><td>view<td class=number>" << durationView.avg()
+           << "<td class=number>" << durationView.max() << "</tr>";
+        ss << "</table>";
+        setHtml("statisticsTiming", ss.str().c_str());
+    }
+
+    setHtml("statisticsMap",
+            jsonToHtml(map->statistics().toJson()).c_str());
+    setHtml("statisticsCamera",
+            jsonToHtml(cam->statistics().toJson()).c_str());
+    setHtml("position",
+            positionToHtml(nav->getPosition()).c_str());
 }
 
 void loopIteration()
 {
     timerPoint currentTimestamp = now();
     updateResolution();
-    { // search
+
+    // search
+    {
         if (srch && srch->done)
         {
             std::stringstream ss;
@@ -234,8 +297,10 @@ void loopIteration()
             srch.reset();
         }
     }
+
     timerPoint a = now();
     map->dataUpdate();
+
     timerPoint b = now();
     {
         double elapsedTime = std::chrono::duration_cast<
@@ -243,26 +308,21 @@ void loopIteration()
                 currentTimestamp - lastFrameTimestamp).count() / 1e6;
         map->renderUpdate(elapsedTime);
     }
+
     timerPoint c = now();
     cam->renderUpdate();
+
     timerPoint d = now();
     view->render();
+
     timerPoint e = now();
-    if ((map->statistics().renderTicks % 10) == 0)
-    {
-        setHtml("timeFrame",
-                toTime(lastFrameTimestamp, currentTimestamp).c_str());
-        setHtml("timeData", toTime(a, b).c_str());
-        setHtml("timeMap", toTime(b, c).c_str());
-        setHtml("timeCamera", toTime(c, d).c_str());
-        setHtml("timeView", toTime(d, e).c_str());
-        setHtml("statisticsMap",
-                jsonToHtml(map->statistics().toJson()).c_str());
-        setHtml("statisticsCamera",
-                jsonToHtml(cam->statistics().toJson()).c_str());
-        setHtml("position",
-                positionToHtml(nav->getPosition()).c_str());
-    }
+    durationFrame.update(lastFrameTimestamp, currentTimestamp);
+    durationData.update(a, b);
+    durationMap.update(b, c);
+    durationCamera.update(c, d);
+    durationView.update(d, e);
+    if ((map->statistics().renderTicks % durationsBuffer::N) == 0)
+        updateStatisticsHtml();
     lastFrameTimestamp = currentTimestamp;
 }
 

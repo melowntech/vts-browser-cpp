@@ -41,7 +41,6 @@ void applyRenderOptions(const std::string &json,
             AJ(antialiasingSamples, asUInt);
             AJ(renderGeodataDebug, asUInt);
             AJ(renderAtmosphere, asBool);
-            AJ(renderPolygonEdges, asBool);
             AJ(geodataHysteresis, asBool);
             AJ(debugDepthFeedback, asBool);
         }
@@ -62,7 +61,6 @@ std::string getRenderOptions(const vts::renderer::RenderOptions &opt)
             TJ(antialiasingSamples, asUInt);
             TJ(renderGeodataDebug, asUInt);
             TJ(renderAtmosphere, asBool);
-            TJ(renderPolygonEdges, asBool);
             TJ(geodataHysteresis, asBool);
             TJ(debugDepthFeedback, asBool);
             return jsonToString(v);

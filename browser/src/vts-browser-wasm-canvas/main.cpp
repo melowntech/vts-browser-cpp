@@ -182,6 +182,7 @@ EM_BOOL wheelEvent(int, const EmscriptenWheelEvent *e, void *)
         break;
     }
     nav->zoom(d * -0.21);
+    nav->options().type = vts::NavigationType::Quick;
     return true;
 }
 
@@ -200,12 +201,12 @@ timerPoint now()
     return timerClock::now();
 }
 
-struct durationsBuffer
+struct durationBuffer
 {
     static const uint32 N = 60;
     float buffer[N];
 
-    durationsBuffer()
+    durationBuffer()
     {
         for (auto &i : buffer)
             i = 0;
@@ -239,7 +240,7 @@ struct durationsBuffer
     }
 };
 
-durationsBuffer durationFrame, durationData,
+durationBuffer durationFrame, durationData,
     durationMap, durationCamera, durationView;
 
 void updateStatisticsHtml()
@@ -321,7 +322,7 @@ void loopIteration()
     durationMap.update(b, c);
     durationCamera.update(c, d);
     durationView.update(d, e);
-    if ((map->statistics().renderTicks % durationsBuffer::N) == 0)
+    if ((map->statistics().renderTicks % durationBuffer::N) == 0)
         updateStatisticsHtml();
     lastFrameTimestamp = currentTimestamp;
 }

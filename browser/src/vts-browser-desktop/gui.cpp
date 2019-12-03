@@ -1875,11 +1875,9 @@ public:
                 {
                     if (nk_button_label(&ctx, "Go"))
                     {
-                        double pr = window->map->celestialBody().majorRadius;
                         window->navigation->setSubjective(false, false);
                         window->navigation->setViewExtent(std::max(
-                        6667.0 * pr / window->map->celestialBody().majorRadius,
-                            r.radius * 2));
+                                            6667.0, r.radius * 2));
                         window->navigation->setRotation({0,270,0});
                         window->navigation->resetAltitude();
                         window->navigation->resetNavigationMode();

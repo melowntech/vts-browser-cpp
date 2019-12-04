@@ -160,6 +160,10 @@ var Module =
                 coll[i].onchange = applyOption
             }
         }
+        // clear status
+        {
+            document.getElementById("status").innerHTML = ""
+        }
     }
 }
 

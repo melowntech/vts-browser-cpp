@@ -10,7 +10,28 @@
 
 <body>
     <canvas id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
-    <div>
+    <div id=status-overlay>
+        <div id=status>
+            <h3>Supported browsers:</h3>
+            <ul>
+                <li>Google Chrome
+                <li>Mozilla Firefox - requires enabling shared buffers,
+                    visit <i>about:config</i> and enable <i>javascript.options.shared_memory</i>
+            </ul>
+            Other browsers currently do not meet requirements.<br>
+            Requires desktop browsers.
+            <hr>
+            <h2>Initializing...</h2>
+            This may take up to a minute, depending on your computer and network speed.<br>
+            Check your browser's console if the loading takes too long.
+        </div>
+    </div>
+    <div id=credits-overlay>
+        <div id=credits>
+            Made by <a href="https://www.melowntech.com/" target=_blank>Melown Technologies SE</a>
+        </div>
+    </div>
+    <div id=menus>
         <div class="window draggable" style="left: 20px">
             <button class="header collapsible">Options</button>
             <div class=content>
@@ -153,8 +174,9 @@
             </div>
         </div>
     </div>
-    <script src="vts.js"></script>
+    <script src=vts.js></script>
     <script async src=vts-browser-wasm-canvas.js></script>
 </body>
 
 </html>
+

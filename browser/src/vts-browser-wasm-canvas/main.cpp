@@ -32,6 +32,7 @@
 #include <vts-browser/camera.hpp>
 #include <vts-browser/cameraOptions.hpp>
 #include <vts-browser/cameraStatistics.hpp>
+#include <vts-browser/cameraCredits.hpp>
 #include <vts-browser/navigation.hpp>
 #include <vts-browser/navigationOptions.hpp>
 #include <vts-browser/position.hpp>
@@ -270,6 +271,11 @@ void updateStatisticsHtml()
             jsonToHtml(cam->statistics().toJson()).c_str());
     setHtml("position",
             positionToHtml(nav->getPosition()).c_str());
+
+    // credits
+    {
+        setHtml("credits", cam->credits().textShort().c_str());
+    }
 }
 
 void loopIteration()

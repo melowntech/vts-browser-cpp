@@ -636,8 +636,8 @@ void CameraImpl::renderUpdate()
         matToRaw(viewActual, c.view);
         matToRaw(apiProj, c.proj);
         vecToRaw(eye, c.eye);
-        c.tagretDistance = length(vec3(target - eye));
-        c.viewExtent = c.tagretDistance / (c.proj[5] * 0.5);
+        c.targetDistance = length(vec3(target - eye));
+        c.viewExtent = c.targetDistance / (c.proj[5] * 0.5);
 
         // altitudes
         {

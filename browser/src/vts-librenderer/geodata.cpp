@@ -466,7 +466,7 @@ void RenderViewImpl::computeZBufferOffsetValues()
     vec3 up2 = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
     double tiltFactor = std::acos(std::max(
         dot(up1, up2), 0.0)) / M_PI_2;
-    double distance = draws->camera.tagretDistance;
+    double distance = draws->camera.targetDistance;
     double distanceFactor = 1 / std::max(1.0,
         std::log(distance) / std::log(1.04));
     zBufferOffsetValues = vec3(1, distanceFactor, tiltFactor);
@@ -482,7 +482,7 @@ void RenderViewImpl::computeZBufferOffsetValues()
     //   and the values already in z-buffer are compatible
 
     double factor = std::max(draws->camera.altitudeOverEllipsoid,
-        draws->camera.tagretDistance) / 600000;
+        draws->camera.targetDistance) / 600000;
     double davidNear = std::max(2.0, factor * 40);
     double davidFar = 600000 * std::max(1.0, factor) * 20;
 

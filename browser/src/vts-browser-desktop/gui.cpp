@@ -1306,7 +1306,7 @@ public:
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 const auto &c = window->camera->draws().camera;
                 nk_label(&ctx, "Target Distance:", NK_TEXT_LEFT);
-                sprintf(buffer, "%.8f", c.tagretDistance);
+                sprintf(buffer, "%.8f", c.targetDistance);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "View Extent:", NK_TEXT_LEFT);
                 sprintf(buffer, "%.8f", c.viewExtent);

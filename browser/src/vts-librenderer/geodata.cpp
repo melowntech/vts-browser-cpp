@@ -438,7 +438,6 @@ void RenderViewImpl::renderGeodata()
     OPTICK_EVENT();
 
     glDepthMask(GL_FALSE);
-
     glStencilFunc(GL_EQUAL, 0, 0xFF);
     glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 
@@ -467,7 +466,7 @@ void RenderViewImpl::computeZBufferOffsetValues()
     vec3 up2 = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
     double tiltFactor = std::acos(std::max(
         dot(up1, up2), 0.0)) / M_PI_2;
-    double distance = draws->camera.tagretDistance;
+    double distance = draws->camera.targetDistance;
     double distanceFactor = 1 / std::max(1.0,
         std::log(distance) / std::log(1.04));
     zBufferOffsetValues = vec3(1, distanceFactor, tiltFactor);
@@ -483,7 +482,7 @@ void RenderViewImpl::computeZBufferOffsetValues()
     //   and the values already in z-buffer are compatible
 
     double factor = std::max(draws->camera.altitudeOverEllipsoid,
-        draws->camera.tagretDistance) / 600000;
+        draws->camera.targetDistance) / 600000;
     double davidNear = std::max(2.0, factor * 40);
     double davidFar = 600000 * std::max(1.0, factor) * 20;
 
@@ -1029,8 +1028,6 @@ void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
         for (auto &it : worldFwd)
             it = normalize(it);
         mat4 vp = proj * depthOffsetCorrection(g) * view;
-        //vec3 right = vec4to3(vec4(viewInv * vec4(1, 0, 0, 0)));
-        //vec3 up = vec4to3(vec4(viewInv * vec4(0, 1, 0, 0)));
         vec4f *c = data.coordinates;
         for (uint32 i = 0, e = worldPos.size(); i != e; i++)
         {
@@ -1059,7 +1056,11 @@ void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
 
     context->shaderGeodataLabelFlat->bind();
     useDisposableUbo(2, &data,
+#ifdef __EMSCRIPTEN__
+        sizeof(UboLabelFlat) // webgl restrictions
+#else
         16 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size() * 2
+#endif
     )->setDebugId("UboLabelFlat");
 
     context->meshEmpty->bind();
@@ -1102,7 +1103,11 @@ void RenderViewImpl::renderLabelScreen(const GeodataJob &job)
 
     context->shaderGeodataLabelScreen->bind();
     useDisposableUbo(2, &data,
+#ifdef __EMSCRIPTEN__
+        sizeof(UboLabelScreen) // webgl restrictions
+#else
         20 * sizeof(float) + 4 * sizeof(float) * t.coordinates.size()
+#endif
     )->setDebugId("UboLabelScreen");
 
     context->meshEmpty->bind();

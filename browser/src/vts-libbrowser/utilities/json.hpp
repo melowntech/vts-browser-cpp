@@ -27,7 +27,7 @@
 #ifndef JSON_HPP_sgf56489dh4d69
 #define JSON_HPP_sgf56489dh4d69
 
-#include <jsoncpp/json.hpp>
+#include <json/json.h>
 #include <sstream>
 
 namespace vts

@@ -45,6 +45,7 @@ void GeodataFeatures::load()
     LOG(info2) << "Loading geodata features <" << name << ">";
     data = std::make_shared<const std::string>(fetch->reply.content.str());
 
+#ifndef __EMSCRIPTEN__
     if (map->options.debugExtractRawResources)
     {
         static const std::string prefix = "extracted/";
@@ -58,6 +59,7 @@ void GeodataFeatures::load()
             writeLocalFileBuffer(path, Buffer(*data));
         }
     }
+#endif
 }
 
 FetchTask::ResourceType GeodataFeatures::resourceType() const
@@ -79,6 +81,7 @@ void GeodataStylesheet::load()
     data = fetch->reply.content.str();
     dependenciesLoaded = false;
 
+#ifndef __EMSCRIPTEN__
     if (map->options.debugExtractRawResources)
     {
         static const std::string prefix = "extracted/";
@@ -92,6 +95,7 @@ void GeodataStylesheet::load()
             writeLocalFileBuffer(path, Buffer(data));
         }
     }
+#endif
 }
 
 namespace

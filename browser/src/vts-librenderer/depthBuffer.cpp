@@ -28,6 +28,10 @@
 
 #include "renderer.hpp"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 namespace vts { namespace renderer
 {
 
@@ -62,6 +66,7 @@ void DepthBuffer::performCopy(uint32 sourceTexture,
     glViewport(0, 0, paramW, paramH);
 
     // copy depth to texture (perform conversion)
+    if (paramW * paramH != 0)
     {
         OPTICK_EVENT("copy_depth_to_texture_with_conversion");
 
@@ -107,8 +112,11 @@ void DepthBuffer::performCopy(uint32 sourceTexture,
             h[index] = paramH;
         }
 
-        glReadPixels(0, 0, w[index], h[index],
-            GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        if (paramW * paramH != 0)
+        {
+            glReadPixels(0, 0, w[index], h[index],
+                GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        }
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
         CHECK_GL("read the depth (texture to pbo)");
@@ -128,11 +136,20 @@ void DepthBuffer::performCopy(uint32 sourceTexture,
             buffer.allocate(reqsiz);
 
         glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo[index]);
+#ifdef __EMSCRIPTEN__
+        // see https://github.com/emscripten-core/emscripten/issues/5861
+        // glGetBufferSubData(GL_PIXEL_PACK_BUFFER, 0, reqsiz, buffer.data());
+        EM_ASM_(
+        {
+            Module.ctx.getBufferSubData(Module.ctx.PIXEL_PACK_BUFFER, 0, HEAPU8.subarray($0, $0 + $1));
+        }, buffer.data(), reqsiz);
+#else
         void *ptr = glMapBufferRange(GL_PIXEL_PACK_BUFFER,
             0, reqsiz, GL_MAP_READ_BIT);
         assert(ptr);
         memcpy(buffer.data(), ptr, reqsiz);
         glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+#endif
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
         CHECK_GL("read the depth (pbo to cpu)");

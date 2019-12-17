@@ -26,32 +26,19 @@
 
 #include "../include/vts-browser/foundation.hpp"
 #include "case.hpp"
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#else
 #include "case/lower.hpp"
 #include "case/title.hpp"
 #include "case/upper.hpp"
+#endif
 
 #include <utf8.h>
 
 namespace vts
 {
-
-void concatenate(std::string &r, const uint32 *v, uint32 c)
-{
-    if (v)
-    {
-        char a[30];
-        const uint32 *e = v;
-        while (*e)
-            e++;
-        auto b = utf8::utf32to8(v, e, a);
-        r += std::string(a, b);
-    }
-    else
-    {
-        uint32 a[2] = { c, 0 };
-        concatenate(r, a, 0);
-    }
-}
 
 bool isWhitespace(uint32 v)
 {
@@ -81,6 +68,72 @@ bool isWhitespace(uint32 v)
         return false;
     }
 }
+
+#ifdef __EMSCRIPTEN__
+
+std::string lowercase(const std::string &s)
+{
+    std::string res;
+    res.resize((s.size() + 10) * 2);
+    EM_ASM_({
+        var j = UTF8ToString($0);
+        j = j.toLowerCase();
+        stringToUTF8(j, $1, $2);
+    }, s.c_str(), res.data(), res.size());
+    res.resize(std::strlen(res.data()));
+    return res;
+}
+
+std::string uppercase(const std::string &s)
+{
+    std::string res;
+    res.resize((s.size() + 10) * 2);
+    EM_ASM_({
+        var j = UTF8ToString($0);
+        j = j.toUpperCase();
+        stringToUTF8(j, $1, $2);
+    }, s.c_str(), res.data(), res.size());
+    res.resize(std::strlen(res.data()));
+    return res;
+}
+
+std::string titlecase(const std::string &s)
+{
+    std::string res;
+    res.resize((s.size() + 10) * 2);
+    EM_ASM_({
+        var j = UTF8ToString($0);
+        j = j.toTitleCase();
+        stringToUTF8(j, $1, $2);
+    }, s.c_str(), res.data(), res.size());
+    res.resize(std::strlen(res.data()));
+    return res;
+}
+
+#else // __EMSCRIPTEN__
+
+namespace
+{
+
+void concatenate(std::string &r, const uint32 *v, uint32 c)
+{
+    if (v)
+    {
+        char a[30];
+        const uint32 *e = v;
+        while (*e)
+            e++;
+        auto b = utf8::utf32to8(v, e, a);
+        r += std::string(a, b);
+    }
+    else
+    {
+        uint32 a[2] = { c, 0 };
+        concatenate(r, a, 0);
+    }
+}
+
+} // namespace
 
 std::string lowercase(const std::string &s)
 {
@@ -128,5 +181,7 @@ std::string titlecase(const std::string &s)
     }
     return r;
 }
+
+#endif // __EMSCRIPTEN__
 
 } // namespace vts

@@ -46,11 +46,11 @@ const std::string extractUrlHost(const std::string &url)
         a = 0;
     else
         a += 3;
-    
+
     auto b = url.find("/", a);
     if (b == std::string::npos)
         b = url.length();
-    
+
     return url.substr(a, b - a);
 }
 

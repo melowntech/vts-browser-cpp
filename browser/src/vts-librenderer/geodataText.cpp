@@ -523,7 +523,7 @@ float compensatePerspective(const RenderViewImpl *rv,
 {
     double mydist = length(vec3(j.worldPosition()
         - rawToVec3(rv->draws->camera.eye)));
-    double refdist = rv->draws->camera.tagretDistance;
+    double refdist = rv->draws->camera.targetDistance;
     return mydist / refdist;
 }
 

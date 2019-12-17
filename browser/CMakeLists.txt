@@ -1,5 +1,6 @@
 # bootstrap build system
 cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
+include(cmake/buildsys_initial_validation.cmake)
 project(vts-browser)
 
 if(APPLE)
@@ -73,7 +74,8 @@ include_directories(src/vts-librenderer/include)
 # application
 if(BUILDSYS_WASM)
     message(STATUS "including vts-browser-wasm")
-    add_subdirectory(src/vts-browser-wasm)
+    add_subdirectory(src/vts-browser-wasm-canvas)
+    add_subdirectory(src/vts-browser-wasm-sdl)
 elseif(BUILDSYS_UWP)
     message(STATUS "including vts-browser-uwp")
     add_subdirectory(src/vts-browser-uwp)

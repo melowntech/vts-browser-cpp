@@ -1,34 +1,34 @@
 <img width="390" alt="VTS Browser JS" src="https://github.com/melowntech/assets/blob/master/vts-browser-cpp/vts-browser-cpp-no-left-margin.png?raw=true">
 
-[VTS Browser CPP](https://github.com/melowntech/vts-browser-cpp) is a collection of libraries
-that bring VTS client capabilities to your native applications.
+[VTS Browser CPP](https://github.com/melowntech/vts-browser-cpp)
+is a collection of libraries that bring VTS frontend capabilities to your native applications.
 
 ## Examples
 
-### Unity 3D Integration Example
+### Unity 3D integration example
 
 [![Youtube Preview](https://raw.githubusercontent.com/melowntech/vts-browser-unity-plugin/master/screenshots/alps-aircraft.png)](https://www.youtube.com/watch?v=FuVA15Cj54k&feature=youtu.be)
 
-(Click the image to play)
+(Click to play the video)
 
-### iOS App Example
+### iOS app example
 
 [![Youtube Preview](https://raw.githubusercontent.com/wiki/melowntech/vts-browser-cpp/vts-browser-ios.jpg)](https://www.youtube.com/watch?v=BP_zyMTHVlg&feature=youtu.be)
 
-(Click the image to play)
+(Click to play the video)
 
 ## Features
 
 - Highly flexible -> almost all aspects can be changed through configuration.
 - Rendering API independent -> the browser library, on its own, does not render anything.
   Instead, it just tells the application what to render.
-  - Additional OpenGL (ES) rendering library is also provided.
+  - Optional OpenGL (ES) rendering library is also provided.
 - Clean C++ API.
   - C and C# bindings are available too.
-- Works on Windows, Linux, macOS and iOS.
+- Works on Windows, UWP (experimental), Linux, Web Assembly (experimental), macOS and iOS.
   - We also provide [plugin for VTS integration into Unity 3D](https://github.com/melowntech/vts-browser-unity-plugin).
   - And [javascript browser](https://github.com/melowntech/vts-browser-js) for integration with websites.
-- Simple -> minimal application using these libraries has about 200 LOC.
+- Simple -> minimal application using these libraries has about 300 LOC.
   See [vts-browser-minimal](https://github.com/melowntech/vts-browser-cpp/wiki/examples-minimal).
 
 ### WIP
@@ -44,9 +44,7 @@ Browser documentation is available at the
 Documentation for the whole VTS is at
 [VTS Geospatial](https://vts-geospatial.org).
 
-## Obtaining the VTS Browser Libraries
-
-### Install from Melown Repository (Linux Desktop)
+## Installing from Melown repository (Linux desktop only)
 
 We provide pre-compiled packages for some popular linux distributions.
 See [Melown OSS package repository](https://cdn.melown.com/packages/) for more information.
@@ -56,11 +54,13 @@ _libvts-browser-dbg_ (debug symbols for the library),
 _libvts-browser-dev_ (developer files for the library)
 and _vts-browser-desktop_ (example application).
 
-### Building From Source
+## Building and using the browser
 
-See [BUILDING.md](BUILDING.md) for detailed instructions.
+See [BUILDING.md](BUILDING.md) for instructions to build the libraries from source.
 
-## Running Example Application
+See [USING.md](USING.md) for instructions to write a simple app with VTS browser.
+
+## Running example application
 
 Run the desktop example application with default mapconfig (our Intergeo presentation):
 ```bash
@@ -72,16 +72,12 @@ Run the desktop example application with specific mapconfig:
 vts-browser-desktop https://cdn.melown.com/mario/store/melown2015/map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json
 ```
 
-## Development Using the Libraries
-
-See [USING.md](USING.md) for detailed instructions.
-
-## Bug Reports
+## Bug reports
 
 For bug reports or enhancement suggestions use the
 [Issue tracker](https://github.com/melowntech/vts-browser-cpp/issues).
 
-## How to Contribute
+## How to contribute
 
 Check the [CONTRIBUTING.md](CONTRIBUTING.md) file.
 

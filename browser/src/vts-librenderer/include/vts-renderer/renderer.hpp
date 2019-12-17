@@ -27,6 +27,9 @@
 #ifndef RENDERER_HPP_sghvfwjfn
 #define RENDERER_HPP_sghvfwjfn
 
+#include <string>
+#include <memory>
+
 #include "rendererCommon.h"
 #include "foundation.hpp"
 

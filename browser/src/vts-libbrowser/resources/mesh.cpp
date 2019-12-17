@@ -217,6 +217,7 @@ void MeshAggregate::load()
         part.surfaceReference = m.surfaceReference;
         submeshes.push_back(part);
 
+#ifndef __EMSCRIPTEN__
         if (map->options.debugExtractRawResources)
         {
             static const std::string prefix = "extracted/";
@@ -253,6 +254,7 @@ void MeshAggregate::load()
                 vtslibs::vts::saveSubMeshAsObj(f, msh, mi);
             }
         }
+#endif
 
         map->callbacks.loadMesh(gm->info, spec, gm->name);
         gm->state = Resource::State::ready;

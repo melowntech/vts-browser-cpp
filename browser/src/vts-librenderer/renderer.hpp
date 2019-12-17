@@ -97,6 +97,7 @@ public:
         vec4f uniAtmSizes; // atmosphere thickness (divided by major axis), major / minor axes ratio, inverze major axis
         vec4f uniAtmCoefs; // horizontal exponent, colorGradientExponent
         vec3f uniAtmCameraPosition; // world position of camera (divided by major axis)
+        float _dummy; // the AtmBlock may not be smaller than corresponding definition in the shader (WebGL restriction)
     };
 
     void initializeAtmosphere();

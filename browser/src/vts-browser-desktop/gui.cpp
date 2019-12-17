@@ -995,6 +995,10 @@ public:
                 mr.debugCoarsenessDisks = nk_check_label(&ctx,
                     "Coarseness disks", mr.debugCoarsenessDisks);
 
+                // depth feedback
+                r.debugDepthFeedback = nk_check_label(&ctx,
+                    "Depth feedback", r.debugDepthFeedback);
+
                 // geodata validation
                 {
                     bool old = mr.debugValidateGeodataStyles;
@@ -1355,7 +1359,7 @@ public:
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 const auto &c = window->camera->draws().camera;
                 nk_label(&ctx, "Target Distance:", NK_TEXT_LEFT);
-                sprintf(buffer, "%.8f", c.tagretDistance);
+                sprintf(buffer, "%.8f", c.targetDistance);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "View Extent:", NK_TEXT_LEFT);
                 sprintf(buffer, "%.8f", c.viewExtent);
@@ -1924,11 +1928,9 @@ public:
                 {
                     if (nk_button_label(&ctx, "Go"))
                     {
-                        double pr = window->map->celestialBody().majorRadius;
                         window->navigation->setSubjective(false, false);
                         window->navigation->setViewExtent(std::max(
-                        6667.0 * pr / window->map->celestialBody().majorRadius,
-                            r.radius * 2));
+                                            6667.0, r.radius * 2));
                         window->navigation->setRotation({0,270,0});
                         window->navigation->resetAltitude();
                         window->navigation->resetNavigationMode();

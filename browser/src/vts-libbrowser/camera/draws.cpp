@@ -91,7 +91,6 @@ bool RenderGeodataTask::ready() const
 }
 
 RenderSimpleTask::RenderSimpleTask() : model(identityMatrix4()),
-    uvm(identityMatrix3().cast<float>()),
     color(1, 1, 1, 1)
 {}
 

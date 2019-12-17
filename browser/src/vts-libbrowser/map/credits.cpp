@@ -91,6 +91,16 @@ void Credits::hit(Scope scope, vtslibs::registry::CreditId id, uint32 lod)
     it->maxLod = std::max(it->maxLod, lod);
 }
 
+std::string Credits::findId(vtslibs::registry::CreditId id) const
+{
+    auto t = stor(id, std::nothrow);
+    if (!t || t->notice.empty())
+        return "";
+
+    return t->id;
+}
+
+
 void Credits::tick(CameraCredits &credits)
 {
     OPTICK_EVENT();

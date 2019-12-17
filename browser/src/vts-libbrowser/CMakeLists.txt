@@ -189,6 +189,7 @@ set(DATA_LIST
     data/meshes/rect.obj
     data/meshes/sphere.obj
     data/textures/helper.jpg
+    data/textures/debugFont2.png
 )
 
 buildsys_pack_data(initializeBrowserData)

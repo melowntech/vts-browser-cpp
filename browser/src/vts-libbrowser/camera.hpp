@@ -134,6 +134,9 @@ public:
     bool visibilityTest(TraverseNode *trav);
     bool coarsenessTest(TraverseNode *trav);
     double coarsenessValue(TraverseNode *trav);
+    float getTextSize(float size, const std::string &text);
+    void renderText(TraverseNode *trav, float x, float y, const vec4f &color,
+                   float size, const std::string &text, bool centerText = true);
     void renderNodeBox(TraverseNode *trav, const vec4f &color);
     void renderNode(TraverseNode *trav, TraverseNode *orig);
     void renderNode(TraverseNode *trav);

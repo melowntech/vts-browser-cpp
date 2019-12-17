@@ -42,6 +42,7 @@ public:
     std::shared_ptr<GpuMesh> mesh;
     std::shared_ptr<GpuTexture> textureColor;
     std::shared_ptr<GpuTexture> textureMask;
+    std::string boundLayerId;
     mat4 model;
     mat3f uvm;
     vec4f color;
@@ -67,7 +68,6 @@ public:
     std::shared_ptr<GpuMesh> mesh;
     std::shared_ptr<GpuTexture> textureColor;
     mat4 model;
-    mat3f uvm;
     vec4f color;
 
     RenderSimpleTask();

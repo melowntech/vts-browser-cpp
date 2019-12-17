@@ -90,6 +90,17 @@ public:
     bool debugRenderSurrogates;
     bool debugRenderMeshBoxes;
     bool debugRenderTileBoxes;
+    bool debugRenderTileDiagnostics;
+    bool debugRenderTileLod;
+    bool debugRenderTileIndices;
+    bool debugRenderTileTexelSize;
+    bool debugRenderTileTextureSize;
+    bool debugRenderTileFaces;
+    bool debugRenderTileGeodataOnly;
+    bool debugRenderTileSurface;
+    bool debugRenderTileBoundLayer;
+    bool debugRenderTileCredits;
+    bool debugRenderTileBigText;
     bool debugRenderSubtileBoxes;
 };
 

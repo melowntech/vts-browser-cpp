@@ -799,10 +799,6 @@ public:
                 r.renderAtmosphere = nk_check_label(&ctx,
                     "Atmosphere", r.renderAtmosphere);
 
-                // render mesh boxes
-                c.debugRenderMeshBoxes = nk_check_label(&ctx,
-                    "Mesh boxes", c.debugRenderMeshBoxes);
-
                 // render tile boxes
                 c.debugRenderTileBoxes = nk_check_label(&ctx,
                     "Tile boxes", c.debugRenderTileBoxes);
@@ -810,6 +806,12 @@ public:
                 // render subtile boxes
                 c.debugRenderSubtileBoxes = nk_check_label(&ctx,
                     "Subtile boxes", c.debugRenderSubtileBoxes);
+
+                // render mesh boxes
+                c.debugRenderMeshBoxes = nk_check_label(&ctx,
+                    "Mesh boxes", c.debugRenderMeshBoxes);
+
+                nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
 
                 // render surrogates
                 c.debugRenderSurrogates = nk_check_label(&ctx,
@@ -840,6 +842,59 @@ public:
                     "Compas", &a.renderCompas);
 
                 // end group
+                nk_tree_pop(&ctx);
+            }
+
+            // Tile Diagnostics
+            c.debugRenderTileDiagnostics = false;
+            if (nk_tree_push(&ctx, NK_TREE_TAB, "Tile diagnostics",
+                NK_MINIMIZED))
+            {
+                c.debugRenderTileDiagnostics = true;
+
+                float ratio2[] = { width * 0.45f, width * 0.45f };
+                nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio2);
+
+                // Bigger Text
+                c.debugRenderTileBigText = nk_check_label(&ctx,
+                    "Big Text", c.debugRenderTileBigText);
+
+                // Only Geodata
+                c.debugRenderTileGeodataOnly = nk_check_label(&ctx,
+                    "Only Geodata", c.debugRenderTileGeodataOnly);
+
+                // LODs
+                c.debugRenderTileLod = nk_check_label(&ctx,
+                    "LOD", c.debugRenderTileLod);
+
+                // Indices
+                c.debugRenderTileIndices = nk_check_label(&ctx,
+                    "Indices", c.debugRenderTileIndices);
+
+                // Texelsize
+                c.debugRenderTileTexelSize = nk_check_label(&ctx,
+                    "Texel size", c.debugRenderTileTexelSize);
+
+                // Face count
+                c.debugRenderTileFaces = nk_check_label(&ctx,
+                    "Face count", c.debugRenderTileFaces);
+
+                // Texture size
+                c.debugRenderTileTextureSize = nk_check_label(&ctx,
+                    "Texture size", c.debugRenderTileTextureSize);
+
+                // Surface
+                c.debugRenderTileSurface = nk_check_label(&ctx,
+                    "Surface", c.debugRenderTileSurface);
+
+                // Bound layer
+                c.debugRenderTileBoundLayer = nk_check_label(&ctx,
+                    "Bound layer", c.debugRenderTileBoundLayer);
+
+                // Credits
+                c.debugRenderTileCredits = nk_check_label(&ctx,
+                    "Credits", c.debugRenderTileCredits);
+
                 nk_tree_pop(&ctx);
             }
 

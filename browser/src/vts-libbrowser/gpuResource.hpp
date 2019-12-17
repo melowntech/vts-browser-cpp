@@ -39,6 +39,7 @@ public:
     GpuMesh(MapImpl *map, const std::string &name);
     void load() override;
     FetchTask::ResourceType resourceType() const override;
+    uint32 faces;
 };
 
 class GpuTexture : public Resource

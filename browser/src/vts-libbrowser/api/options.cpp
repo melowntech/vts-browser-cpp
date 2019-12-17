@@ -182,6 +182,17 @@ CameraOptions::CameraOptions() :
     debugRenderSurrogates(false),
     debugRenderMeshBoxes(false),
     debugRenderTileBoxes(false),
+    debugRenderTileLod(false),
+    debugRenderTileDiagnostics(false),
+    debugRenderTileIndices(false),
+    debugRenderTileTexelSize(false),
+    debugRenderTileTextureSize(false),
+    debugRenderTileGeodataOnly(false),
+    debugRenderTileSurface(false),
+    debugRenderTileBoundLayer(false),
+    debugRenderTileCredits(false),
+    debugRenderTileBigText(false),
+    debugRenderTileFaces(false),
     debugRenderSubtileBoxes(false)
 {}
 
@@ -212,6 +223,17 @@ void CameraOptions::applyJson(const std::string &json)
     AJ(debugRenderSurrogates, asBool);
     AJ(debugRenderMeshBoxes, asBool);
     AJ(debugRenderTileBoxes, asBool);
+    AJ(debugRenderTileLod, asBool);
+    AJ(debugRenderTileDiagnostics, asBool);
+    AJ(debugRenderTileIndices, asBool);
+    AJ(debugRenderTileTexelSize, asBool);
+    AJ(debugRenderTileTextureSize, asBool);
+    AJ(debugRenderTileGeodataOnly, asBool);
+    AJ(debugRenderTileSurface, asBool);
+    AJ(debugRenderTileBoundLayer, asBool);
+    AJ(debugRenderTileCredits, asBool);
+    AJ(debugRenderTileBigText, asBool);
+    AJ(debugRenderTileFaces, asBool);
     AJ(debugRenderSubtileBoxes, asBool);
 }
 
@@ -235,6 +257,17 @@ std::string CameraOptions::toJson() const
     TJ(debugRenderSurrogates, asBool);
     TJ(debugRenderMeshBoxes, asBool);
     TJ(debugRenderTileBoxes, asBool);
+    TJ(debugRenderTileLod, asBool);
+    TJ(debugRenderTileDiagnostics, asBool);
+    TJ(debugRenderTileIndices, asBool);
+    TJ(debugRenderTileTexelSize, asBool);
+    TJ(debugRenderTileTextureSize, asBool);
+    TJ(debugRenderTileGeodataOnly, asBool);
+    TJ(debugRenderTileSurface, asBool);
+    TJ(debugRenderTileBoundLayer, asBool);
+    TJ(debugRenderTileCredits, asBool);
+    TJ(debugRenderTileBigText, asBool);
+    TJ(debugRenderTileFaces, asBool);
     TJ(debugRenderSubtileBoxes, asBool);
     return jsonToString(v);
 }

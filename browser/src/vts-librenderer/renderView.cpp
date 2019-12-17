@@ -212,12 +212,21 @@ void RenderViewImpl::drawInfographic(const DrawSimpleTask &t)
     {
         mat4f mvp;
         vec4f color;
-        vec4si32 useColorTexture;
+        vec4f data;
+        vec4f data2;
     } data;
 
     data.mvp = proj.cast<float>() * rawToMat4(t.mv);
     data.color = rawToVec4(t.color);
-    data.useColorTexture[0] = !!t.texColor;
+
+    data.data = vec4f(t.data[0], t.data[1], t.data[2], t.data[3]);
+    data.data2 = vec4f(t.data2[0], t.data2[1], t.data2[2], t.data2[3]);
+
+    if (!t.texColor)
+    {
+        data.data[0] = 0;
+        data.data[1] = 0;
+    }
 
     useDisposableUbo(1, data)->setDebugId("UboInfographics");
 

@@ -209,6 +209,127 @@ double CameraImpl::coarsenessValue(TraverseNode *trav)
     }
 }
 
+float CameraImpl::getTextSize(float size, const std::string &text)
+{
+    float x = 0;
+    float sizeX = size - 1;
+    float sizeX2 = round(size * 0.5);
+
+    for (uint32 i = 0, li = text.size(); i < li; i++)
+    {
+        uint8 c = text[i] - 32;
+
+        switch (c)
+        {
+        case 1:
+        case 7:
+        case 12:
+        case 14:
+        case 27: //:
+        case 28: //;
+        case 64: //'
+        case 73: //i
+        case 76: //l
+        case 84: //t
+            x += sizeX2;
+            break;
+
+        default:
+            x += sizeX;
+            break;
+        }
+    }
+
+    return x;
+}
+
+void CameraImpl::renderText(TraverseNode *trav, float x, float y,
+    const vec4f &color, float size,
+    const std::string &text, bool centerText)
+{
+    assert(trav);
+    assert(trav->meta);
+
+    RenderSimpleTask task;
+    task.mesh = map->getMesh("internal://data/meshes/rect.obj");
+    task.mesh->priority = std::numeric_limits<float>::infinity();
+
+    task.textureColor =
+        map->getTexture("internal://data/textures/debugFont2.png");
+    task.textureColor->priority = std::numeric_limits<float>::infinity();
+
+    task.model = translationMatrix(*trav->surrogatePhys);
+    task.color = color;
+
+    if (centerText)
+        x -= round(getTextSize(size, text) * 0.5);
+
+    float sizeX = size - 1;
+    float sizeX2 = round(size * 0.5);
+    float texelX = 1 / 256;
+    float texelY = 1 / 128;
+
+    if (task.ready())
+    {
+
+        //black box
+        {
+            auto ctask = convert(task);
+            float l = getTextSize(size, text);
+            ctask.data[0] = size + 2;
+            ctask.data[1] = (l + 2) / (size + 2);
+            ctask.data[2] = 2.0 / windowWidth;
+            ctask.data[3] = 2.0 / windowHeight;
+            ctask.data2[0] = -1000;
+            ctask.data2[1] = 0;
+            ctask.data2[2] = x - 1;
+            ctask.data2[3] = y - 1;
+            draws.infographics.emplace_back(ctask);
+        }
+
+        for (uint32 i = 0, li = text.size(); i < li; i++)
+        {
+            auto ctask = convert(task);
+            uint8 c = text[i] - 32;
+            uint32 charPosX = (c & 15) << 4;
+            uint32 charPosY = (c >> 4) * 19;
+
+            ctask.data[0] = size;
+            ctask.data[2] = 2.0 / windowWidth;
+            ctask.data[3] = 2.0 / windowHeight;
+
+            ctask.data2[0] = charPosX;
+            ctask.data2[1] = charPosY;
+            ctask.data2[2] = x;
+            ctask.data2[3] = y;
+
+            switch (c)
+            {
+            case 1:
+            case 7:
+            case 12:
+            case 14:
+            case 27: //:
+            case 28: //;
+            case 64: //'
+            case 73: //i
+            case 76: //l
+            case 84: //t
+                ctask.data[1] = 0.5;// sizeX2;
+                x += sizeX2;
+                break;
+
+            default:
+                ctask.data[1] = 1; // sizeX;
+                x += sizeX;
+                break;
+            }
+
+            draws.infographics.emplace_back(ctask);
+        }
+    }
+}
+
 void CameraImpl::renderNodeBox(TraverseNode *trav, const vec4f &color)
 {
     assert(trav);
@@ -254,6 +375,11 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     statistics.nodesRenderedPerLod[std::min<uint32>(
         trav->id().lod, CameraStatistics::MaxLods - 1)]++;
 
+    // credits
+    for (auto &it : trav->credits)
+        map->credits->hit(trav->layer->creditScope, it,
+            trav->nodeInfo.distanceFromRoot());
+
     bool isSubNode = trav != orig;
 
     // surfaces
@@ -278,7 +404,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
         task.mesh = map->getMesh("internal://data/meshes/sphere.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
         task.model = translationMatrix(*trav->surrogatePhys)
-                * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
+            * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
         task.color = vec3to4(trav->surface->color, task.color(3));
         if (task.ready())
             draws.infographics.emplace_back(convert(task));
@@ -300,8 +426,9 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     }
 
     // tile box
-    if (options.debugRenderTileBoxes
-        || (options.debugRenderSubtileBoxes && isSubNode))
+    if (!options.debugRenderTileDiagnostics
+        && (options.debugRenderTileBoxes
+            || (options.debugRenderSubtileBoxes && isSubNode)))
     {
         vec4f color = vec4f(1, 1, 1, 1);
         if (trav->layer->freeLayer)
@@ -322,18 +449,151 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
                 break;
             }
         }
+
         if (options.debugRenderTileBoxes && !isSubNode)
             renderNodeBox(trav, color);
+
         for (int i = 0; i < 3; i++)
             color[i] *= 0.5;
         if (options.debugRenderSubtileBoxes && isSubNode)
             renderNodeBox(orig, color);
     }
 
-    // credits
-    for (auto &it : trav->credits)
-        map->credits->hit(trav->layer->creditScope, it,
-                             trav->nodeInfo.distanceFromRoot());
+
+    // tile options
+    if (!(options.debugRenderTileGeodataOnly && !trav->layer->isGeodata())
+        && options.debugRenderTileDiagnostics && !isSubNode)
+    {
+        renderNodeBox(trav, vec4f(0, 0, 1, 1));
+
+        char stmp[1024];
+        auto id = trav->nodeInfo.nodeId();
+        float size = options.debugRenderTileBigText ? 12 : 8;
+
+        if (options.debugRenderTileLod)
+        {
+            sprintf(stmp, "%d", id.lod);
+            renderText(trav, 0, 0, vec4f(1, 0, 0, 1), size, stmp);
+        }
+
+        if (options.debugRenderTileIndices)
+        {
+            sprintf(stmp, "%d %d", id.x, id.y);
+            renderText(trav, 0, -(size + 2), vec4f(0, 1, 1, 1), size, stmp);
+        }
+
+        if (options.debugRenderTileTexelSize)
+        {
+            sprintf(stmp, "%.2f %.2f",
+                trav->texelSize, coarsenessValue(trav));
+            renderText(trav, 0, (size + 2), vec4f(1, 0, 1, 1), size, stmp);
+        }
+
+        if (options.debugRenderTileFaces)
+        {
+            uint32 i = 0;
+            for (RenderSurfaceTask &r : trav->opaque)
+            {
+                if (r.mesh.get())
+                {
+                    sprintf(stmp, "[%d] %d", i++, r.mesh->faces);
+                    renderText(trav, 0, (size + 2) * i,
+                        vec4f(1, 0, 1, 1), size, stmp);
+                }
+            }
+            for (RenderSurfaceTask &r : trav->transparent)
+            {
+                if (r.mesh.get())
+                {
+                    sprintf(stmp, "[%d] %d", i++, r.mesh->faces);
+                    renderText(trav, 0, (size + 2) * i,
+                        vec4f(1, 0, 1, 1), size, stmp);
+                }
+            }
+        }
+
+        if (options.debugRenderTileTextureSize)
+        {
+            uint32 i = 0;
+            for (RenderSurfaceTask &r : trav->opaque)
+            {
+                if (r.mesh.get() && r.textureColor.get())
+                {
+                    sprintf(stmp, "[%d] %dx%d", i++,
+                        r.textureColor->width, r.textureColor->height);
+                    renderText(trav, 0, (size + 2) * i,
+                        vec4f(1, 1, 1, 1), size, stmp);
+                }
+            }
+            for (RenderSurfaceTask &r : trav->transparent)
+            {
+                if (r.mesh.get() && r.textureColor.get())
+                {
+                    sprintf(stmp, "[%d] %dx%d", i++,
+                        r.textureColor->width, r.textureColor->height);
+                    renderText(trav, 0, (size + 2) * i,
+                        vec4f(1, 1, 1, 1), size, stmp);
+                }
+            }
+        }
+
+        if (options.debugRenderTileSurface && trav->surface)
+        {
+            std::string stmp2;
+            if (trav->surface->alien)
+            {
+                renderText(trav, 0, (size + 2),
+                    vec4f(1, 1, 1, 1), size, "<Alien>");
+            }
+
+            const auto &names = trav->surface->name;
+            for (uint32 i = 0, li = names.size(); i < li; i++)
+            {
+                sprintf(stmp, "[%d] %s", i, names[i].c_str());
+                renderText(trav, 0,
+                    (size + 2) * (i + (trav->surface->alien ? 1 : 0)),
+                    vec4f(1, 1, 1, 1), size, stmp);
+            }
+        }
+
+        if (options.debugRenderTileBoundLayer)
+        {
+            uint32 i = 0;
+            for (RenderSurfaceTask &r : trav->opaque)
+            {
+                if (!r.boundLayerId.empty())
+                {
+                    sprintf(stmp, "[%d] %s", i, r.boundLayerId.c_str());
+                    renderText(trav, 0, (size + 2) * (i++),
+                        vec4f(1, 1, 1, 1), size, stmp);
+                }
+            }
+
+            for (RenderSurfaceTask &r : trav->transparent)
+            {
+                if (!r.boundLayerId.empty())
+                {
+                    sprintf(stmp, "[%d] %s", i, r.boundLayerId.c_str());
+                    renderText(trav, 0, (size + 2) * (i++),
+                        vec4f(1, 1, 1, 1), size, stmp);
+                }
+            }
+        }
+
+        if (options.debugRenderTileCredits)
+        {
+            uint32 i = 0;
+            for (auto &it : trav->credits)
+            {
+                sprintf(stmp, "[%d] %s", i,
+                    map->credits->findId(it).c_str());
+                renderText(trav, 0, (size + 2) * (i++),
+                    vec4f(1, 1, 1, 1), size, stmp);
+            }
+
+
+        }
+    }
 }
 
 void CameraImpl::renderNode(TraverseNode *trav)

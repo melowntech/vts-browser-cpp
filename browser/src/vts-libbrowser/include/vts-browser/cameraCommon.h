@@ -49,6 +49,8 @@ typedef struct vtsCDrawSimpleBase
 {
     float mv[16];
     float color[4];
+    float data[4];
+    float data2[4];
 } vtsCDrawSimpleBase;
 
 typedef struct vtsCCameraBase

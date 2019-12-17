@@ -508,6 +508,8 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
                 task.model = part.normToPhys;
                 task.uvm = b.uvMatrix();
                 task.externalUv = true;
+                task.boundLayerId = b.id;
+
                 if (b.transparent || task.textureMask)
                     newTransparent.push_back(task);
                 else

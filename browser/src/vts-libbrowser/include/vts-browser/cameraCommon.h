@@ -49,8 +49,8 @@ typedef struct vtsCDrawSimpleBase
 {
     float mv[16];
     float color[4];
-    float data[4];
-    float data2[4];
+    float data[4]; // useColorTexture, noTransparencyWithDepth, diagnosticsText
+    float data2[4]; // diagnosticsText
 } vtsCDrawSimpleBase;
 
 typedef struct vtsCCameraBase

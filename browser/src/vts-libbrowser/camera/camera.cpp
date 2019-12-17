@@ -266,8 +266,6 @@ void CameraImpl::renderText(TraverseNode *trav, float x, float y,
 
     float sizeX = size - 1;
     float sizeX2 = round(size * 0.5);
-    float texelX = 1 / 256;
-    float texelY = 1 / 128;
 
     if (task.ready())
     {
@@ -459,7 +457,6 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
             renderNodeBox(orig, color);
     }
 
-
     // tile options
     if (!(options.debugRenderTileGeodataOnly && !trav->layer->isGeodata())
         && options.debugRenderTileDiagnostics && !isSubNode)
@@ -545,7 +542,6 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
                 renderText(trav, 0, (size + 2),
                     vec4f(1, 1, 1, 1), size, "<Alien>");
             }
-
             const auto &names = trav->surface->name;
             for (uint32 i = 0, li = names.size(); i < li; i++)
             {
@@ -590,8 +586,6 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
                 renderText(trav, 0, (size + 2) * (i++),
                     vec4f(1, 1, 1, 1), size, stmp);
             }
-
-
         }
     }
 }

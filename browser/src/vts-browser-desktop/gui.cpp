@@ -799,6 +799,10 @@ public:
                 r.renderAtmosphere = nk_check_label(&ctx,
                     "Atmosphere", r.renderAtmosphere);
 
+                // render mesh boxes
+                c.debugRenderMeshBoxes = nk_check_label(&ctx,
+                    "Mesh boxes", c.debugRenderMeshBoxes);
+
                 // render tile boxes
                 c.debugRenderTileBoxes = nk_check_label(&ctx,
                     "Tile boxes", c.debugRenderTileBoxes);
@@ -806,12 +810,6 @@ public:
                 // render subtile boxes
                 c.debugRenderSubtileBoxes = nk_check_label(&ctx,
                     "Subtile boxes", c.debugRenderSubtileBoxes);
-
-                // render mesh boxes
-                c.debugRenderMeshBoxes = nk_check_label(&ctx,
-                    "Mesh boxes", c.debugRenderMeshBoxes);
-
-                nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
 
                 // render surrogates
                 c.debugRenderSurrogates = nk_check_label(&ctx,

@@ -182,18 +182,18 @@ CameraOptions::CameraOptions() :
     debugRenderSurrogates(false),
     debugRenderMeshBoxes(false),
     debugRenderTileBoxes(false),
-    debugRenderTileLod(false),
+    debugRenderSubtileBoxes(false),
     debugRenderTileDiagnostics(false),
+    debugRenderTileGeodataOnly(false),
+    debugRenderTileBigText(false),
+    debugRenderTileLod(false),
     debugRenderTileIndices(false),
     debugRenderTileTexelSize(false),
     debugRenderTileTextureSize(false),
-    debugRenderTileGeodataOnly(false),
+    debugRenderTileFaces(false),
     debugRenderTileSurface(false),
     debugRenderTileBoundLayer(false),
-    debugRenderTileCredits(false),
-    debugRenderTileBigText(false),
-    debugRenderTileFaces(false),
-    debugRenderSubtileBoxes(false)
+    debugRenderTileCredits(false)
 {}
 
 CameraOptions::CameraOptions(const std::string &json)
@@ -223,18 +223,18 @@ void CameraOptions::applyJson(const std::string &json)
     AJ(debugRenderSurrogates, asBool);
     AJ(debugRenderMeshBoxes, asBool);
     AJ(debugRenderTileBoxes, asBool);
-    AJ(debugRenderTileLod, asBool);
+    AJ(debugRenderSubtileBoxes, asBool);
     AJ(debugRenderTileDiagnostics, asBool);
+    AJ(debugRenderTileGeodataOnly, asBool);
+    AJ(debugRenderTileBigText, asBool);
+    AJ(debugRenderTileLod, asBool);
     AJ(debugRenderTileIndices, asBool);
     AJ(debugRenderTileTexelSize, asBool);
     AJ(debugRenderTileTextureSize, asBool);
-    AJ(debugRenderTileGeodataOnly, asBool);
+    AJ(debugRenderTileFaces, asBool);
     AJ(debugRenderTileSurface, asBool);
     AJ(debugRenderTileBoundLayer, asBool);
     AJ(debugRenderTileCredits, asBool);
-    AJ(debugRenderTileBigText, asBool);
-    AJ(debugRenderTileFaces, asBool);
-    AJ(debugRenderSubtileBoxes, asBool);
 }
 
 std::string CameraOptions::toJson() const
@@ -257,18 +257,18 @@ std::string CameraOptions::toJson() const
     TJ(debugRenderSurrogates, asBool);
     TJ(debugRenderMeshBoxes, asBool);
     TJ(debugRenderTileBoxes, asBool);
-    TJ(debugRenderTileLod, asBool);
+    TJ(debugRenderSubtileBoxes, asBool);
     TJ(debugRenderTileDiagnostics, asBool);
+    TJ(debugRenderTileGeodataOnly, asBool);
+    TJ(debugRenderTileBigText, asBool);
+    TJ(debugRenderTileLod, asBool);
     TJ(debugRenderTileIndices, asBool);
     TJ(debugRenderTileTexelSize, asBool);
     TJ(debugRenderTileTextureSize, asBool);
-    TJ(debugRenderTileGeodataOnly, asBool);
+    TJ(debugRenderTileFaces, asBool);
     TJ(debugRenderTileSurface, asBool);
     TJ(debugRenderTileBoundLayer, asBool);
     TJ(debugRenderTileCredits, asBool);
-    TJ(debugRenderTileBigText, asBool);
-    TJ(debugRenderTileFaces, asBool);
-    TJ(debugRenderSubtileBoxes, asBool);
     return jsonToString(v);
 }
 

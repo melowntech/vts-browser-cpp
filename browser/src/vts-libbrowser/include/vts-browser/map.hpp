@@ -105,7 +105,7 @@ public:
     //     dataFinalize(); }
     // dataAllRun will return after renderFinalize has been called
     // the dataAllRun must be called on a separate thread,
-    //   but is more cpu efficient than dataTick
+    //   but is more cpu efficient than dataUpdate
     void dataAllRun();
 
     void renderInitialize();

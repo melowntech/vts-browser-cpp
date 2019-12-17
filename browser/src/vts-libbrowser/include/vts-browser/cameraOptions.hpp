@@ -90,18 +90,19 @@ public:
     bool debugRenderSurrogates;
     bool debugRenderMeshBoxes;
     bool debugRenderTileBoxes;
+    bool debugRenderSubtileBoxes;
+
     bool debugRenderTileDiagnostics;
+    bool debugRenderTileGeodataOnly;
+    bool debugRenderTileBigText;
     bool debugRenderTileLod;
     bool debugRenderTileIndices;
     bool debugRenderTileTexelSize;
     bool debugRenderTileTextureSize;
     bool debugRenderTileFaces;
-    bool debugRenderTileGeodataOnly;
     bool debugRenderTileSurface;
     bool debugRenderTileBoundLayer;
     bool debugRenderTileCredits;
-    bool debugRenderTileBigText;
-    bool debugRenderSubtileBoxes;
 };
 
 } // namespace vts

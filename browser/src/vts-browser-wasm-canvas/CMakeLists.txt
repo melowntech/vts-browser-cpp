@@ -16,7 +16,8 @@ set(WEBFILES_LIST
 
 # the "-Wl,--no-check-features is temporary workaround until https://github.com/emscripten-ports/HarfBuzz/issues/1 is fixed"
 # the current emscripten FETCH works with synchronous operations only and we workaround that with many threads
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,--no-check-features -s PTHREAD_POOL_SIZE=30 -s TOTAL_MEMORY=128MB -s ALLOW_MEMORY_GROWTH=1 -s WASM_MEM_MAX=512MB -s EXTRA_EXPORTED_RUNTIME_METHODS='[cwrap]'")
+# google chrome has an issue with growing memory, so we use large initial buffer to avoid the growth at all
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,--no-check-features -s PTHREAD_POOL_SIZE=30 -s TOTAL_MEMORY=512MB -s ALLOW_MEMORY_GROWTH=1 -s WASM_MEM_MAX=512MB -s EXTRA_EXPORTED_RUNTIME_METHODS='[cwrap]'")
 
 add_executable(vts-browser-wasm-canvas ${SRC_LIST} ${WEBFILES_LIST})
 target_link_libraries(vts-browser-wasm-canvas ${MODULE_LIBRARIES} "GL")

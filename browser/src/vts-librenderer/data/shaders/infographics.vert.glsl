@@ -29,10 +29,10 @@ void main()
         pos.xy *= vec2(data[2],data[3]);
         pos.xy *= pos.w;
 
-        float texelX = 1.0 / 256.0;
-        float texelY = 1.0 / 128.0;
+        const float texelX = 1.0 / 256.0;
+        const float texelY = 1.0 / 128.0;
 
-        varUvs = vec2((data2[0] + inUvInternal.x*16.0*data[1]-2) * texelX,
+        varUvs = vec2((data2[0] + inUvInternal.x*16.0*data[1]-2.0) * texelX,
                         1.0-((data2[1] + inUvInternal.y * 16.0-1.0)) * texelY);
 
         gl_Position = pos;

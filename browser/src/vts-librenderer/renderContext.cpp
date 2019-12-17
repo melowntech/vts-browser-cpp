@@ -185,6 +185,22 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
             });
     }
 
+    // load shader fxaa
+    {
+        shaderFXAA = std::make_shared<Shader>();
+        shaderFXAA->setDebugId(
+            "data/shaders/fxaa.*.glsl");
+        shaderFXAA->loadInternal(
+            "data/shaders/fxaa.vert.glsl",
+            "data/shaders/fxaa.frag.glsl");
+        //shaderCopyDepth->loadUniformLocations({
+        //        "uniTexPos"
+        //    });
+        shaderFXAA->bindTextureLocations({
+                { "texColor", 9 }
+            });
+    }
+
     // load mesh quad
     {
         meshQuad = std::make_shared<Mesh>();

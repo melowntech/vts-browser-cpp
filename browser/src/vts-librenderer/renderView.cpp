@@ -32,6 +32,8 @@
 
 #include "renderer.hpp"
 
+#define FXAA
+
 namespace vts { namespace renderer
 {
 
@@ -116,7 +118,9 @@ RenderViewImpl::RenderViewImpl(
     antialiasingPrev(0),
     frameIndex(0),
     projected(false),
-    lodBlendingWithDithering(false)
+    lodBlendingWithDithering(false),
+    frameRender2BufferId(0),
+    colorRender2TexId(0)
 {
     depthBuffer.meshQuad = context->meshQuad;
     depthBuffer.shaderCopyDepth = context->shaderCopyDepth;
@@ -244,6 +248,10 @@ void RenderViewImpl::updateFramebuffers()
 {
     OPTICK_EVENT();
 
+    #ifdef FXAA
+        options.antialiasingSamples = 0;
+    #endif
+
     if (options.width != width || options.height != height
         || options.antialiasingSamples != antialiasingPrev)
     {
@@ -265,6 +273,11 @@ void RenderViewImpl::updateFramebuffers()
             glDeleteTextures(1, &vars.colorRenderTexId);
         vars.depthReadTexId = vars.depthRenderTexId = 0;
         vars.colorReadTexId = vars.colorRenderTexId = 0;
+
+        #ifdef FXAA
+            glDeleteTextures(1, &colorRender2TexId);
+            colorRender2TexId = 0;
+        #endif
 
         // depth texture for rendering
         glActiveTexture(GL_TEXTURE0 + 5);
@@ -357,6 +370,26 @@ void RenderViewImpl::updateFramebuffers()
             vars.colorReadTexId = vars.colorRenderTexId;
             glBindTexture(GL_TEXTURE_2D, vars.colorReadTexId);
         }
+
+
+        #ifdef FXAA
+            // color texture for fxaa
+            if (antialiasingPrev < 2)
+            {
+                glActiveTexture(GL_TEXTURE0 + 9);
+
+                glGenTextures(1, &colorRender2TexId);
+                glBindTexture(GL_TEXTURE_2D, colorRender2TexId);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8,
+                    options.width, options.height,
+                    0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                    GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                    GL_NEAREST);
+            }
+        #endif
+
         if (GLAD_GL_KHR_debug)
             glObjectLabel(GL_TEXTURE, vars.colorReadTexId,
                 -1, "colorReadTexId");
@@ -390,6 +423,22 @@ void RenderViewImpl::updateFramebuffers()
 
         glActiveTexture(GL_TEXTURE0);
         CHECK_GL("update frame buffer");
+
+        #ifdef FXAA
+            if (antialiasingPrev < 2)
+            {
+                // render frame buffer2
+                glDeleteFramebuffers(1, &frameRender2BufferId);
+                glGenFramebuffers(1, &frameRender2BufferId);
+                glBindFramebuffer(GL_FRAMEBUFFER, frameRender2BufferId);
+                if (GLAD_GL_KHR_debug)
+                    glObjectLabel(GL_FRAMEBUFFER, frameRender2BufferId,
+                        -1, "frameRender2BufferId");
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                    vars.textureTargetType, colorRender2TexId, 0);
+                checkGlFramebuffer(GL_FRAMEBUFFER);
+            }
+        #endif
     }
 }
 
@@ -531,6 +580,38 @@ void RenderViewImpl::renderValid()
             drawInfographic(t);
         CHECK_GL("rendered infographics");
     }
+
+    //render colorRender to colorRender2
+    #ifdef FXAA
+        {
+            OPTICK_EVENT("fxaa");
+
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameRender2BufferId);
+            CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
+            CHECK_GL_FRAMEBUFFER(GL_DRAW_FRAMEBUFFER);
+            glBlitFramebuffer(0, 0, options.width, options.height,
+                0, 0, options.width, options.height,
+                GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+
+            glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
+            CHECK_GL_FRAMEBUFFER(GL_FRAMEBUFFER);
+
+            context->shaderFXAA->bind();
+            //context->texCompas->bind();
+            //glBindTexture(GL_TEXTURE_2D, vars.colorRenderTexId);
+
+            glActiveTexture(GL_TEXTURE0 + 9);
+            glBindTexture(GL_TEXTURE_2D, colorRender2TexId);
+
+            context->meshQuad->bind();
+            context->meshQuad->dispatch();
+
+
+            CHECK_GL("rendered fxaa");
+        }
+    #endif
 }
 
 void RenderViewImpl::renderEntry()
@@ -553,7 +634,9 @@ void RenderViewImpl::renderEntry()
     // initialize opengl
     glViewport(0, 0, options.width, options.height);
     glScissor(0, 0, options.width, options.height);
+
     glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
+
     CHECK_GL_FRAMEBUFFER(GL_FRAMEBUFFER);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_CULL_FACE);

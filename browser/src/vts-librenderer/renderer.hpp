@@ -168,6 +168,9 @@ public:
     uint32 height;
     uint32 antialiasingPrev;
     uint32 frameIndex;
+    uint32 frameRender2BufferId;
+    uint32 colorRender2TexId; 
+
     bool projected;
     bool lodBlendingWithDithering;
 
@@ -236,6 +239,7 @@ public:
     std::shared_ptr<ShaderAtm> shaderBackground;
     std::shared_ptr<Shader> shaderInfographics;
     std::shared_ptr<Shader> shaderTexture;
+    std::shared_ptr<Shader> shaderFXAA;
     std::shared_ptr<Shader> shaderCopyDepth;
     std::shared_ptr<Shader> shaderGeodataColor;
     std::shared_ptr<Shader> shaderGeodataPointFlat;

@@ -24,7 +24,7 @@ void main()
     if (data[1] == 0.0)
     {
         if (gl_FragCoord.z > depthNorm)
-            outColor.a *= (data[1] != 0.0) ? 0.7 : 0.1;
+            outColor.a *= 0.1;
     }
 }
 

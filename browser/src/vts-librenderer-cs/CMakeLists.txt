@@ -9,7 +9,7 @@ set(SRC_LIST
 	RenderView.cs
 )
 
-add_library(vts-renderer-cs ${SRC_LIST})
+add_library(vts-renderer-cs SHARED ${SRC_LIST})
 add_dependencies(vts-renderer-cs vts-renderer)
 target_link_libraries(vts-renderer-cs vts-browser-cs)
 set_target_properties(vts-renderer-cs PROPERTIES VS_GLOBAL_ROOTNAMESPACE "vts")

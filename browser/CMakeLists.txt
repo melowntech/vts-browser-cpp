@@ -1,12 +1,7 @@
 # bootstrap build system
 cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
-include(cmake/buildsys_initial_validation.cmake)
 project(vts-browser)
-
-if(APPLE)
-    # earlier versions of CMake on apple had an error that include paths were not considered SYSTEM where they should be
-    cmake_minimum_required(VERSION 3.9.1 FATAL_ERROR)
-endif()
+include(cmake/buildsys_initial_validation.cmake)
 
 # by default, this is OSS build (can be overridden by customer machinery)
 set(BUILDSYS_DEFAULT_CUSTOMER_NAME oss)

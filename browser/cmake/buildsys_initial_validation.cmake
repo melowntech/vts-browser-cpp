@@ -11,5 +11,9 @@ if("${CMAKE_BINARY_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
     message(FATAL_ERROR "In-source build is disabled. Remove the already generated files and start again from dedicated build directory.")
 endif()
 
+# earlier versions of CMake on apple had an error that include paths were not considered SYSTEM where they should be
+if(APPLE)
+    cmake_minimum_required(VERSION 3.9.1 FATAL_ERROR)
+endif()
 
 

@@ -668,15 +668,6 @@ void vtsDrawsGeodataGroup(vtsHCamera cam,
 }
 */
 
-void vtsDrawsInfographicsGroup(vtsHCamera cam,
-    void **group, uint32 *count)
-{
-    C_BEGIN
-    *group = cam->p->draws().infographics.data();
-    *count = cam->p->draws().infographics.size();
-    C_END
-}
-
 void vtsDrawsCollidersGroup(vtsHCamera cam,
     void **group, uint32 *count)
 {
@@ -696,18 +687,6 @@ void vtsDrawsSurfaceTask(void *group, uint32 index,
     *texColor = t->texColor.get();
     *texMask = t->texMask.get();
     *baseStruct = (vtsCDrawSurfaceBase*)t;
-    C_END
-}
-
-void vtsDrawsInfographicsTask(void *group, uint32 index,
-    void **mesh, void **texColor,
-    vtsCDrawInfographicsBase **baseStruct)
-{
-    C_BEGIN
-    vts::DrawInfographicsTask *t = (vts::DrawInfographicsTask *)group + index;
-    *mesh = t->mesh.get();
-    *texColor = t->texColor.get();
-    *baseStruct = (vtsCDrawInfographicsBase*)t;
     C_END
 }
 
@@ -1428,25 +1407,6 @@ void vtsMathInverse33(double result[9], const double r[9])
 ////////////////////////////////////////////////////////////////////////////
 // INTERNAL MEMORY
 ////////////////////////////////////////////////////////////////////////////
-
-/*
-void vtsInternalMemoryAdd(const char *name,
-    void *data, uint32 size)
-{
-    C_BEGIN
-    // the pointer provided to this function is managed by the caller and should be freed afterwards
-    // the addInternalMemoryData expects pointer to immutable storage that will not be freed
-    // therefore we make a copy here
-    // the copy is likely to be reported as memory leak, but it is intentional
-    void *p = malloc(size);
-    if (!p)
-        throw std::bad_alloc();
-    memcpy(p, data, size);
-    vts::detail::addInternalMemoryData(name,
-        (const unsigned char *)p, size);
-    C_END
-}
-*/
 
 bool vtsInternalMemoryExists(const char *name)
 {

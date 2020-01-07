@@ -33,11 +33,6 @@
 extern "C" {
 #endif
 
-/*
-VTS_API void vtsInternalMemoryAdd(const char *name,
-    void *data, uint32 size);
-*/
-
 VTS_API bool vtsInternalMemoryExists(const char *name);
 
 // the data pointer may point to text/code mapped memory and may not be modified nor freed!

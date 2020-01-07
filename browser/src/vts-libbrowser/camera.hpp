@@ -57,11 +57,13 @@ class TraverseNode;
 class NavigationImpl;
 class RenderSurfaceTask;
 class RenderGeodataTask;
-class RenderSimpleTask;
+class RenderInfographicsTask;
+class RenderColliderTask;
 class GpuTexture;
 class DrawSurfaceTask;
 class DrawGeodataTask;
-class DrawSimpleTask;
+class DrawInfographicsTask;
+class DrawColliderTask;
 class MapLayer;
 class BoundParamInfo;
 
@@ -148,7 +150,8 @@ public:
     DrawSurfaceTask convert(const RenderSurfaceTask &task,
                             const vec4f &uvClip, float blendingCoverage);
     DrawGeodataTask convert(const RenderGeodataTask &task);
-    DrawSimpleTask convert(const RenderSimpleTask &task);
+    DrawInfographicsTask convert(const RenderInfographicsTask &task);
+    DrawColliderTask convert(const RenderColliderTask &task);
     bool generateMonolithicGeodataTrav(TraverseNode *trav);
     std::shared_ptr<GpuTexture> travInternalTexture(TraverseNode *trav,
                                                   uint32 subMeshIndex);

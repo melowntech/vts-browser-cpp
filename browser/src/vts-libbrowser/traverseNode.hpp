@@ -45,7 +45,8 @@ class SurfaceInfo;
 class Resource;
 class RenderSurfaceTask;
 class RenderGeodataTask;
-class RenderSimpleTask;
+//class RenderInfographicsTask;
+class RenderColliderTask;
 class MeshAggregate;
 
 class TraverseNode
@@ -90,7 +91,7 @@ public:
     std::vector<RenderSurfaceTask> opaque;
     std::vector<RenderSurfaceTask> transparent;
     std::vector<RenderGeodataTask> geodata;
-    std::vector<RenderSimpleTask> colliders;
+    std::vector<RenderColliderTask> colliders;
 
     TraverseNode(MapLayer *layer, TraverseNode *parent,
         const NodeInfo &nodeInfo);

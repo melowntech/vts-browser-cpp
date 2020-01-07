@@ -295,7 +295,7 @@ bool CameraImpl::getSurfaceOverEllipsoid(
         for (int i = 0; i < 4; i++)
         {
             const TraverseNode *t = nodes[i];
-            RenderSimpleTask task;
+            RenderInfographicsTask task;
             task.mesh = map->getMesh("internal://data/meshes/sphere.obj");
             task.mesh->priority = std::numeric_limits<float>::infinity();
             if (*task.mesh)

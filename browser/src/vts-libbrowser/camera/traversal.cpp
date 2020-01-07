@@ -559,7 +559,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
         {
             const MeshPart &part = meshAgg->submeshes[subMeshIndex];
             std::shared_ptr<GpuMesh> mesh = part.renderable;
-            RenderSimpleTask task;
+            RenderColliderTask task;
             task.mesh = mesh;
             task.model = part.normToPhys;
             trav->colliders.push_back(task);

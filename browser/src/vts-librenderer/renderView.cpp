@@ -202,7 +202,7 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
     m->dispatch();
 }
 
-void RenderViewImpl::drawInfographic(const DrawSimpleTask &t)
+void RenderViewImpl::drawInfographics(const DrawInfographicsTask &t)
 {
     Mesh *m = (Mesh*)t.mesh.get();
     if (!m)
@@ -212,21 +212,21 @@ void RenderViewImpl::drawInfographic(const DrawSimpleTask &t)
     {
         mat4f mvp;
         vec4f color;
+        vec4f flags; // type, useTexture, useDepth
         vec4f data;
         vec4f data2;
     } data;
 
     data.mvp = proj.cast<float>() * rawToMat4(t.mv);
     data.color = rawToVec4(t.color);
-
-    data.data = vec4f(t.data[0], t.data[1], t.data[2], t.data[3]);
-    data.data2 = vec4f(t.data2[0], t.data2[1], t.data2[2], t.data2[3]);
-
-    if (!t.texColor)
-    {
-        data.data[0] = 0;
-        data.data[1] = 0;
-    }
+    data.flags = vec4f(
+        t.type,
+        !!t.texColor,
+        t.type ? 0 : 1,
+        0
+    );
+    data.data = rawToVec4(t.data);
+    data.data2 = rawToVec4(t.data2);
 
     useDisposableUbo(1, data)->setDebugId("UboInfographics");
 
@@ -559,8 +559,8 @@ void RenderViewImpl::renderValid()
         OPTICK_EVENT("infographics");
         glDisable(GL_DEPTH_TEST);
         context->shaderInfographics->bind();
-        for (const DrawSimpleTask &t : draws->infographics)
-            drawInfographic(t);
+        for (const DrawInfographicsTask &t : draws->infographics)
+            drawInfographics(t);
         CHECK_GL("rendered infographics");
     }
 }

@@ -669,7 +669,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
     if (options.debugRenderObjectPosition)
     {
         vec3 phys = map->convertor->navToPhys(p);
-        RenderSimpleTask r;
+        RenderInfographicsTask r;
         r.mesh = map->getMesh("internal://data/meshes/cube.obj");
         r.mesh->priority = std::numeric_limits<float>::infinity();
         r.textureColor = map->getTexture(
@@ -685,7 +685,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
     if (options.debugRenderTargetPosition)
     {
         vec3 phys = map->convertor->navToPhys(tp);
-        RenderSimpleTask r;
+        RenderInfographicsTask r;
         r.mesh = map->getMesh("internal://data/meshes/cube.obj");
         r.mesh->priority = std::numeric_limits<float>::infinity();
         r.textureColor = map->getTexture(

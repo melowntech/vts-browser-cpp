@@ -56,6 +56,7 @@
 #include "../include/vts-browser/search.h"
 #include "../include/vts-browser/search.hpp"
 #include "../include/vts-browser/view.hpp"
+#include "../include/vts-browser/internalMemory.h"
 
 #include "../utilities/json.hpp"
 #include "../mapApiC.hpp"
@@ -698,15 +699,26 @@ void vtsDrawsSurfaceTask(void *group, uint32 index,
     C_END
 }
 
-void vtsDrawsSimpleTask(void *group, uint32 index,
+void vtsDrawsInfographicsTask(void *group, uint32 index,
     void **mesh, void **texColor,
-    vtsCDrawSimpleBase **baseStruct)
+    vtsCDrawInfographicsBase **baseStruct)
 {
     C_BEGIN
-    vts::DrawSimpleTask *t = (vts::DrawSimpleTask *)group + index;
+    vts::DrawInfographicsTask *t = (vts::DrawInfographicsTask *)group + index;
     *mesh = t->mesh.get();
     *texColor = t->texColor.get();
-    *baseStruct = (vtsCDrawSimpleBase*)t;
+    *baseStruct = (vtsCDrawInfographicsBase*)t;
+    C_END
+}
+
+void vtsDrawsColliderTask(void *group, uint32 index,
+    void **mesh,
+    vtsCDrawColliderBase **baseStruct)
+{
+    C_BEGIN
+    vts::DrawColliderTask *t = (vts::DrawColliderTask *)group + index;
+    *mesh = t->mesh.get();
+    *baseStruct = (vtsCDrawColliderBase*)t;
     C_END
 }
 
@@ -1189,7 +1201,7 @@ void vtsCallbacksMapconfigReady(vtsHMap map,
     C_END
 }
 
-void vtsProjFinder(vtsProjFinderCallbackType callback)
+void vtsCallbacksProjFinder(vtsProjFinderCallbackType callback)
 {
     struct Callback
     {

@@ -250,7 +250,7 @@ void CameraImpl::renderText(TraverseNode *trav, float x, float y,
     assert(trav);
     assert(trav->meta);
 
-    RenderSimpleTask task;
+    RenderInfographicsTask task;
     task.mesh = map->getMesh("internal://data/meshes/rect.obj");
     task.mesh->priority = std::numeric_limits<float>::infinity();
 
@@ -269,8 +269,7 @@ void CameraImpl::renderText(TraverseNode *trav, float x, float y,
 
     if (task.ready())
     {
-
-        //black box
+        // black box
         {
             auto ctask = convert(task);
             float l = getTextSize(size, text);
@@ -282,6 +281,7 @@ void CameraImpl::renderText(TraverseNode *trav, float x, float y,
             ctask.data2[1] = 0;
             ctask.data2[2] = x - 1;
             ctask.data2[3] = y - 1;
+            ctask.type = 1;
             draws.infographics.emplace_back(ctask);
         }
 
@@ -323,6 +323,7 @@ void CameraImpl::renderText(TraverseNode *trav, float x, float y,
                 break;
             }
 
+            ctask.type = 1;
             draws.infographics.emplace_back(ctask);
         }
     }
@@ -333,7 +334,7 @@ void CameraImpl::renderNodeBox(TraverseNode *trav, const vec4f &color)
     assert(trav);
     assert(trav->meta);
 
-    RenderSimpleTask task;
+    RenderInfographicsTask task;
     task.mesh = map->getMesh("internal://data/meshes/line.obj");
     task.mesh->priority = std::numeric_limits<float>::infinity();
     if (!task.ready())
@@ -391,14 +392,14 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     {
         for (const RenderGeodataTask &r : trav->geodata)
             draws.geodata.emplace_back(convert(r));
-        for (const RenderSimpleTask &r : trav->colliders)
+        for (const RenderColliderTask &r : trav->colliders)
             draws.colliders.emplace_back(convert(r));
     }
 
     // surrogate
     if (options.debugRenderSurrogates && trav->surrogatePhys)
     {
-        RenderSimpleTask task;
+        RenderInfographicsTask task;
         task.mesh = map->getMesh("internal://data/meshes/sphere.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
         task.model = translationMatrix(*trav->surrogatePhys)
@@ -413,7 +414,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     {
         for (RenderSurfaceTask &r : trav->opaque)
         {
-            RenderSimpleTask task;
+            RenderInfographicsTask task;
             task.model = r.model;
             task.mesh = map->getMesh("internal://data/meshes/aabb.obj");
             task.mesh->priority = std::numeric_limits<float>::infinity();
@@ -854,7 +855,7 @@ void CameraImpl::renderUpdate()
     else
     {
         // render original camera
-        RenderSimpleTask task;
+        RenderInfographicsTask task;
         task.mesh = map->getMesh("internal://data/meshes/line.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
         task.color = vec4f(0, 1, 0, 1);

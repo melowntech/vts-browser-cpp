@@ -56,10 +56,9 @@ namespace vts
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct DrawSimpleBase
+    public struct DrawColliderBase
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)] public float[] mv;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)] public float[] color;
     }
 
     public struct DrawSurfaceTask
@@ -70,11 +69,10 @@ namespace vts
         public Object texMask;
     }
 
-    public struct DrawSimpleTask
+    public struct DrawColliderTask
     {
-        public DrawSimpleBase data;
+        public DrawColliderBase data;
         public Object mesh;
-        public Object texColor;
     }
 
     public struct Atmosphere
@@ -144,8 +142,7 @@ namespace vts
         public Celestial celestial;
         public List<DrawSurfaceTask> opaque;
         public List<DrawSurfaceTask> transparent;
-        public List<DrawSimpleTask> infographics;
-        public List<DrawSimpleTask> colliders;
+        public List<DrawColliderTask> colliders;
 
         private Object Load(IntPtr ptr)
         {
@@ -178,24 +175,23 @@ namespace vts
             }
         }
 
-        private void LoadSimple(ref List<DrawSimpleTask> tasks, IntPtr group, uint cnt)
+        private void LoadColliders(ref List<DrawColliderTask> tasks, IntPtr group, uint cnt)
         {
             Util.CheckInterop();
             if (tasks == null)
-                tasks = new List<DrawSimpleTask>((int)cnt);
+                tasks = new List<DrawColliderTask>((int)cnt);
             else
                 tasks.Clear();
             for (uint i = 0; i < cnt; i++)
             {
-                DrawSimpleTask t;
-                IntPtr pm = IntPtr.Zero, ptc = IntPtr.Zero, pbs = IntPtr.Zero;
-                BrowserInterop.vtsDrawsSimpleTask(group, i, ref pm, ref ptc, ref pbs);
+                DrawColliderTask t;
+                IntPtr pm = IntPtr.Zero, pbs = IntPtr.Zero;
+                BrowserInterop.vtsDrawsColliderTask(group, i, ref pm, ref pbs);
                 Util.CheckInterop();
                 if (pm == IntPtr.Zero)
                     continue;
-                t.data = (DrawSimpleBase)Marshal.PtrToStructure(pbs, typeof(DrawSimpleBase));
+                t.data = (DrawColliderBase)Marshal.PtrToStructure(pbs, typeof(DrawColliderBase));
                 t.mesh = Load(pm);
-                t.texColor = Load(ptc);
                 tasks.Add(t);
             }
         }
@@ -212,10 +208,8 @@ namespace vts
             LoadSurfaces(ref opaque, group, cnt);
             BrowserInterop.vtsDrawsTransparentGroup(cam.Handle, ref group, ref cnt);
             LoadSurfaces(ref transparent, group, cnt);
-            BrowserInterop.vtsDrawsInfographicsGroup(cam.Handle, ref group, ref cnt);
-            LoadSimple(ref infographics, group, cnt);
             BrowserInterop.vtsDrawsCollidersGroup(cam.Handle, ref group, ref cnt);
-            LoadSimple(ref colliders, group, cnt);
+            LoadColliders(ref colliders, group, cnt);
         }
     }
 }

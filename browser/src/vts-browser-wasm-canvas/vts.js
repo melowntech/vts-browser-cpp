@@ -126,6 +126,14 @@ function setOption(t, options)
             t.value = options[t.name]
     }
 }
+function tileDiagnosticsClick(button)
+{
+    let content = button.nextElementSibling
+    if (content.style.display === "block")
+        applyOptionsCpp('{ "debugRenderTileDiagnostics":false }')
+    else
+        applyOptionsCpp('{ "debugRenderTileDiagnostics":true }')
+}
 var Module =
 {
     onRuntimeInitialized: function()

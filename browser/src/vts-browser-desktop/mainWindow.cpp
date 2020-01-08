@@ -328,7 +328,6 @@ void MainWindow::run()
     updateWindowSize();
 
     setMapConfigPath(appOptions.paths[0]);
-    map->renderInitialize();
     gui.initialize(this);
     if (appOptions.screenshotOnFullRender)
         gui.visible(false);

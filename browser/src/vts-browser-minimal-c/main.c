@@ -129,18 +129,11 @@ int main()
     // acquire render view for the camera
     view = vtsRenderContextCreateView(context, cam);
     check();
+    updateResolution();
+    check();
 
     // set required callbacks for creating mesh and texture resources
     vtsRenderContextBindLoadFunctions(context, map);
-    check();
-
-    // initialize the resource processing with default fetcher
-    vtsMapDataInitialize(map);
-    check();
-
-    // initialize the render preparation component of the map
-    updateResolution();
-    vtsMapRenderInitialize(map);
     check();
 
     // configure an url to the map that should be displayed
@@ -222,8 +215,6 @@ int main()
     check();
 
     // release the map
-    vtsMapDataFinalize(map);
-    check();
     vtsNavigationDestroy(nav);
     check();
     vtsCameraDestroy(cam);

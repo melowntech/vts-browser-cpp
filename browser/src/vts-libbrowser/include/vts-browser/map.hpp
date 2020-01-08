@@ -92,9 +92,6 @@ public:
 
     Position getMapDefaultPosition() const;
 
-    [[deprecated]] void dataInitialize() {}
-    [[deprecated]] void dataFinalize() {}
-
     // dataUpdate does at most MapOptions.maxResourceProcessesPerTick
     //   operations and returns
     // you should call it periodically
@@ -105,7 +102,6 @@ public:
     //   but is more cpu efficient than dataUpdate
     void dataAllRun();
 
-    [[deprecated]] void renderInitialize() {}
     void renderUpdate(double elapsedTime); // seconds since last call
     void renderFinalize();
     double lastRenderUpdateElapsedTime() const;

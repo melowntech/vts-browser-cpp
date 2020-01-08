@@ -393,13 +393,6 @@ double vtsMapGetRenderProgress(vtsHMap map)
     return 0.0;
 }
 
-void vtsMapDataInitialize(vtsHMap map)
-{
-    C_BEGIN
-    map->p->dataInitialize();
-    C_END
-}
-
 void vtsMapDataUpdate(vtsHMap map)
 {
     C_BEGIN
@@ -407,24 +400,10 @@ void vtsMapDataUpdate(vtsHMap map)
     C_END
 }
 
-void vtsMapDataFinalize(vtsHMap map)
-{
-    C_BEGIN
-    map->p->dataFinalize();
-    C_END
-}
-
 void vtsMapDataAllRun(vtsHMap map)
 {
     C_BEGIN
     map->p->dataAllRun();
-    C_END
-}
-
-void vtsMapRenderInitialize(vtsHMap map)
-{
-    C_BEGIN
-    map->p->renderInitialize();
     C_END
 }
 

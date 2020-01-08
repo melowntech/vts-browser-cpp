@@ -142,10 +142,7 @@ int main(int, char *[])
 
     // create renderer view
     view = context->createView(cam.get());
-
-    // initialize the map for rendering
     updateResolution();
-    map->renderInitialize();
 
     // pass a mapconfig url to the map
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"

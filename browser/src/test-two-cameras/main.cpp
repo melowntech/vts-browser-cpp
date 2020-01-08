@@ -121,7 +121,6 @@ int main(int, char *[])
     view1 = context->createView(cam1.get());
     view2 = context->createView(cam2.get());
 
-    map->renderInitialize();
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
 

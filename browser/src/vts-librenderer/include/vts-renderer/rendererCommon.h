@@ -34,6 +34,19 @@ extern "C" {
 #endif
 
 // options provided from the application (you set these)
+typedef struct vtsCContextOptionsBase
+{
+    // when using separate thread with separate OpenGL context for uploading
+    //   data to GPU memory it is required to call glFinish to wait for
+    //   the data to be completely uploaded before they can be used in
+    //   the rendering thread
+    // calling glFinish when data uploads and rendering are done on the same
+    //   thread/context can lead to pointless and significant performance
+    //   degradation and can therefore be changed here
+    bool callGlFinishAfterUploadingData;
+} vtsCContextOptionsBase;
+
+// options provided from the application (you set these)
 typedef struct vtsCRenderOptionsBase
 {
     // additional scaling of text rendering

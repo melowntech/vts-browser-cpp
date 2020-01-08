@@ -182,10 +182,8 @@ void GeodataTile::loadLines()
         tex.filterMode = GpuTextureSpec::FilterMode::Nearest;
         tex.wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
         makeTextureMoreSquare(tex);
-        ResourceInfo ri;
-        renderer->api->loadTexture(ri, tex, debugId);
-        this->texture = std::static_pointer_cast<Texture>(ri.userData);
-        addMemory(ri);
+        texture = std::make_shared<Texture>();
+        texture->load(*info, tex, debugId);
     }
 
     // prepare the mesh
@@ -195,10 +193,8 @@ void GeodataTile::loadLines()
         msh.indices = std::move(indBuffer);
         msh.indicesCount = indicesCount;
         msh.indexMode = GpuTypeEnum::UnsignedInt;
-        ResourceInfo ri;
-        renderer->api->loadMesh(ri, msh, debugId);
-        this->mesh = std::static_pointer_cast<Mesh>(ri.userData);
-        addMemory(ri);
+        mesh = std::make_shared<Mesh>();
+        mesh->load(*info, msh, debugId);
     }
 
     // prepare UBO
@@ -284,10 +280,8 @@ void GeodataTile::loadPoints()
         tex.filterMode = GpuTextureSpec::FilterMode::Nearest;
         tex.wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
         makeTextureMoreSquare(tex);
-        ResourceInfo ri;
-        renderer->api->loadTexture(ri, tex, debugId);
-        this->texture = std::static_pointer_cast<Texture>(ri.userData);
-        addMemory(ri);
+        texture = std::make_shared<Texture>();
+        texture->load(*info, tex, debugId);
     }
 
     // prepare the mesh
@@ -297,10 +291,8 @@ void GeodataTile::loadPoints()
         msh.indices = std::move(indBuffer);
         msh.indicesCount = indicesCount;
         msh.indexMode = GpuTypeEnum::UnsignedInt;
-        ResourceInfo ri;
-        renderer->api->loadMesh(ri, msh, debugId);
-        this->mesh = std::static_pointer_cast<Mesh>(ri.userData);
-        addMemory(ri);
+        mesh = std::make_shared<Mesh>();
+        mesh->load(*info, msh, debugId);
     }
 
     // prepare UBO
@@ -354,10 +346,8 @@ void GeodataTile::loadTriangles()
             for (const auto &it2 : it1)
                 for (float it : it2)
                     *f++ = it;
-        ResourceInfo ri;
-        renderer->api->loadMesh(ri, msh, debugId);
-        this->mesh = std::static_pointer_cast<Mesh>(ri.userData);
-        addMemory(ri);
+        mesh = std::make_shared<Mesh>();
+        mesh->load(*info, msh, debugId);
     }
 
     // prepare UBO

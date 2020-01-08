@@ -1225,9 +1225,17 @@ void RenderViewImpl::renderJobs()
 void RenderContext::loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec,
     const std::string &debugId)
 {
+    OPTICK_EVENT();
+
     auto r = std::make_shared<GeodataTile>();
     r->load(&*impl, info, spec, debugId);
     info.userData = r;
+
+    if (impl->options.callGlFinishAfterUploadingData)
+    {
+        OPTICK_EVENT("glFinish");
+        glFinish();
+    }
 }
 
 } } // namespace vts renderer

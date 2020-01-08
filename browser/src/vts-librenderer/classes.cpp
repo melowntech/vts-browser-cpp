@@ -26,6 +26,8 @@
 
 #include "renderer.hpp"
 
+#include <optick.h>
+
 namespace vts { namespace renderer
 {
 
@@ -169,7 +171,6 @@ void Shader::load(const std::string &vertexShader,
         throw;
     }
     setDebugId(debugId);
-    glFinish();
     CHECK_GL("load shader program");
 }
 
@@ -461,7 +462,6 @@ void Texture::load(ResourceInfo &info, vts::GpuTextureSpec &spec,
 
     grayscale = spec.components == 1;
     setDebugId(debugId);
-    glFinish();
     CHECK_GL("load texture");
     info.ramMemoryCost += sizeof(*this);
     info.gpuMemoryCost += spec.buffer.size();
@@ -487,9 +487,17 @@ bool Texture::getGrayscale() const
 void RenderContext::loadTexture(ResourceInfo &info, GpuTextureSpec &spec,
     const std::string &debugId)
 {
+    OPTICK_EVENT();
+
     auto r = std::make_shared<Texture>();
     r->load(info, spec, debugId);
     info.userData = r;
+
+    if (impl->options.callGlFinishAfterUploadingData)
+    {
+        OPTICK_EVENT("glFinish");
+        glFinish();
+    }
 }
 
 Mesh::Mesh() :
@@ -605,7 +613,6 @@ void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp,
     glBindVertexArray(0);
     glDeleteVertexArrays(1, &vao);
     setDebugId(debugId);
-    glFinish();
     CHECK_GL("load mesh");
     info.ramMemoryCost += sizeof(*this);
     info.gpuMemoryCost += spec.vertices.size() + spec.indices.size();
@@ -643,9 +650,17 @@ uint32 Mesh::getVio() const
 void RenderContext::loadMesh(ResourceInfo &info, GpuMeshSpec &spec,
     const std::string &debugId)
 {
+    OPTICK_EVENT();
+
     auto r = std::make_shared<Mesh>();
     r->load(info, spec, debugId);
     info.userData = r;
+
+    if (impl->options.callGlFinishAfterUploadingData)
+    {
+        OPTICK_EVENT("glFinish");
+        glFinish();
+    }
 }
 
 UniformBuffer::UniformBuffer() :

@@ -231,6 +231,8 @@ class RenderContextImpl
 public:
     RenderContext *const api;
 
+    ContextOptions options;
+
     std::shared_ptr<Texture> texCompas;
     std::shared_ptr<Texture> texBlueNoise; // uses texture array!
     std::shared_ptr<ShaderAtm> shaderSurface;

@@ -127,16 +127,18 @@ public:
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
         std::list<std::weak_ptr<SearchTask>> searchTasks;
         std::string authPath;
-        std::atomic<uint32> downloads;
+        std::atomic<uint32> downloads; // number of active downloads
         uint32 progressEstimationMaxResources;
 
         ThreadQueue<std::weak_ptr<Resource>> queCacheRead;
+        ThreadQueue<std::weak_ptr<Resource>> queDecode;
         ThreadQueue<std::weak_ptr<Resource>> queUpload;
         ThreadQueue<CacheData> queCacheWrite;
         ThreadQueue<std::weak_ptr<GpuAtmosphereDensityTexture>> queAtmosphere;
         ThreadQueue<std::weak_ptr<GeodataTile>> queGeodata;
         std::thread thrCacheReader;
         std::thread thrCacheWriter;
+        std::thread thrDecoder;
         std::thread thrAtmosphereGenerator;
         std::thread thrGeodataProcessor;
 
@@ -161,8 +163,6 @@ public:
     void purgeViewCache();
 
     // rendering
-    void renderInitialize();
-    void renderFinalize();
     void renderUpdate(double elapsedTime);
     bool prerequisitesCheck();
     void initializeNavigation();
@@ -176,13 +176,10 @@ public:
     void traverseClearing(TraverseNode *trav);
 
     // resources methods
-    void resourceDataInitialize();
-    void resourceDataFinalize();
     void resourceDataUpdate();
     void resourceDataRun();
-    void resourceRenderInitialize();
-    void resourceRenderFinalize();
-    void resourceRenderUpdate();
+    void resourceFinalize();
+    void resourceUpdate();
 
     bool resourcesTryRemove(std::shared_ptr<Resource> &r);
     void resourcesRemoveOld();
@@ -191,15 +188,18 @@ public:
     void resourcesDownloadsEntry();
     void resourcesAtmosphereGeneratorEntry();
     void resourcesGeodataProcessorEntry();
+    void resourcesDecodeProcessorEntry();
     void resourceUpdateStatistics(const std::shared_ptr<Resource> &r);
+    void resourceDecodeProcess(const std::shared_ptr<Resource> &r);
     void resourceUploadProcess(const std::shared_ptr<Resource> &r);
+    void resourceSaveCorruptedFile(const std::shared_ptr<Resource> &r);
 
     void cacheInit();
     void cacheWriteEntry();
     void cacheWrite(CacheData &&data);
     void cacheReadEntry();
     void cacheReadProcess(const std::shared_ptr<Resource> &r);
-    CacheData cacheRead(std::string name);
+    CacheData cacheRead(const std::string &name);
     void cachePurge();
 
     void touchResource(const std::shared_ptr<Resource> &resource);

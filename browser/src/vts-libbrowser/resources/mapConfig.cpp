@@ -48,10 +48,10 @@ Mapconfig::Mapconfig(MapImpl *map, const std::string &name)
 Mapconfig::~Mapconfig()
 {}
 
-void Mapconfig::load()
+void Mapconfig::decode()
 {
     assert(map->layers.empty());
-    LOG(info2) << "Parsing mapconfig <" << name << ">";
+    LOG(info2) << "Decoding mapconfig <" << name << ">";
 
     // clear
     *(vtslibs::vts::MapConfig*)this = vtslibs::vts::MapConfig();

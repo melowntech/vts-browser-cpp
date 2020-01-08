@@ -38,7 +38,7 @@ class BoundMetaTile : public Resource
 {
 public:
     BoundMetaTile(MapImpl *map, const std::string &name);
-    void load() override;
+    void decode() override;
     FetchTask::ResourceType resourceType() const override;
 
     uint8 flags[vtslibs::registry::BoundLayer::rasterMetatileWidth
@@ -49,7 +49,7 @@ class MetaTile : public Resource, public vtslibs::vts::MetaTile
 {
 public:
     MetaTile(MapImpl *map, const std::string &name);
-    void load() override;
+    void decode() override;
     FetchTask::ResourceType resourceType() const override;
 };
 

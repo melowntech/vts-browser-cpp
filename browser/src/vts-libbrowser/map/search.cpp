@@ -247,7 +247,7 @@ SearchTaskImpl::SearchTaskImpl(MapImpl *map, const std::string &name) :
     validitySrs(map->mapconfig->browserOptions.searchSrs)
 {}
 
-void SearchTaskImpl::load()
+void SearchTaskImpl::decode()
 {
     data = std::move(fetch->reply.content);
 }

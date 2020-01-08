@@ -257,7 +257,7 @@ void MapImpl::cacheWrite(CacheData &&data)
     resources.cache->write(std::move(data));
 }
 
-CacheData MapImpl::cacheRead(std::string name)
+CacheData MapImpl::cacheRead(const std::string &name)
 {
     return resources.cache->read(name);
 }

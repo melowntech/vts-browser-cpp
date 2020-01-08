@@ -158,8 +158,8 @@ std::ostream &operator << (std::ostream &stream, Resource::State state)
         case Resource::State::downloaded:
             stream << "downloaded";
             break;
-        case Resource::State::uploading:
-            stream << "uploading";
+        case Resource::State::decoded:
+            stream << "decoded";
             break;
         case Resource::State::ready:
             stream << "ready";

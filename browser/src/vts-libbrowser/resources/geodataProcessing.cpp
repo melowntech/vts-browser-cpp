@@ -2327,12 +2327,30 @@ if (cond == #OP) \
 
 } // namespace
 
-void GeodataTile::load()
+void GeodataTile::decode()
 {
-    LOG(info2) << "Loading (gpu) geodata <" << name << ">";
+    OPTICK_EVENT();
+    OPTICK_TAG("name", name.c_str());
+    LOG(info2) << "Decoding geodata <" << name << ">";
 
     // this resource is not meant to be downloaded
     assert(!fetch);
+
+    if (map->options.debugValidateGeodataStyles)
+    {
+        geoContext<true> ctx(this);
+        ctx.process();
+    }
+    else
+    {
+        geoContext<false> ctx(this);
+        ctx.process();
+    }
+}
+
+void GeodataTile::upload()
+{
+    LOG(info2) << "Uploading geodata <" << name << ">";
 
     // upload
     renders.clear();
@@ -2359,47 +2377,28 @@ void GeodataTile::load()
     }
 }
 
-void GeodataTile::process()
-{
-    OPTICK_EVENT();
-    OPTICK_TAG("name", name.c_str());
-    LOG(info2) << "Processing geodata <" << name << ">";
-
-    if (map->options.debugValidateGeodataStyles)
-    {
-        geoContext<true> ctx(this);
-        ctx.process();
-    }
-    else
-    {
-        geoContext<false> ctx(this);
-        ctx.process();
-    }
-
-    state = Resource::State::downloaded;
-    map->resources.queUpload.push(shared_from_this());
-}
-
 void MapImpl::resourcesGeodataProcessorEntry()
+{
+    OPTICK_THREAD("geodata");
+    setLogThreadName("geodata processor");
+    while (!resources.queGeodata.stopped())
     {
-        OPTICK_THREAD("geodata");
-        setLogThreadName("geodata processor");
-        while (!resources.queGeodata.stopped())
+        std::weak_ptr<GeodataTile> w;
+        resources.queGeodata.waitPop(w);
+        std::shared_ptr<GeodataTile> r = w.lock();
+        if (!r)
+            continue;
+        try
         {
-            std::weak_ptr<GeodataTile> w;
-            resources.queGeodata.waitPop(w);
-            std::shared_ptr<GeodataTile> r = w.lock();
-            if (!r)
-                continue;
-            try
-            {
-                r->process();
-            }
-            catch (const std::exception &)
-            {
-                r->state = Resource::State::errorFatal;
-            }
+            r->decode();
+            r->state = Resource::State::decoded;
+            resources.queUpload.push(r);
+        }
+        catch (const std::exception &)
+        {
+            r->state = Resource::State::errorFatal;
         }
     }
+}
 
 } // namespace vts

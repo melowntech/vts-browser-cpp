@@ -47,9 +47,9 @@ GpuTextureSpec::GpuTextureSpec(const Buffer &buffer) : GpuTextureSpec()
 
 void GpuTextureSpec::verticalFlip()
 {
-    unsigned lineSize = width * components;
+    uint32 lineSize = width * components;
     Buffer tmp(lineSize);
-    for (unsigned y = 0; y < height / 2; y++)
+    for (uint32 y = 0; y < height / 2; y++)
     {
         char *a = buffer.data() + y * lineSize;
         char *b = buffer.data()
@@ -84,14 +84,15 @@ GpuTexture::GpuTexture(MapImpl *map, const std::string &name) :
     width(0), height(0)
 {}
 
-void GpuTexture::load()
+void GpuTexture::decode()
 {
-    LOG(info2) << "Loading (gpu) texture <" << name << ">";
-    GpuTextureSpec spec(fetch->reply.content);
-    spec.filterMode = filterMode;
-    spec.wrapMode = wrapMode;
-    this->width = spec.width;
-    this->height = spec.height;
+    LOG(info1) << "Decoding texture <" << name << ">";
+    std::shared_ptr<GpuTextureSpec> spec
+        = std::make_shared<GpuTextureSpec>(fetch->reply.content);
+    this->width = spec->width;
+    this->height = spec->height;
+    spec->filterMode = filterMode;
+    spec->wrapMode = wrapMode;
 
 #ifndef __EMSCRIPTEN__
     if (map->options.debugExtractRawResources)
@@ -105,15 +106,22 @@ void GpuTexture::load()
         {
             boost::filesystem::create_directories(prefix + b);
             Buffer out;
-            encodePng(spec.buffer, out,
-                spec.width, spec.height, spec.components);
+            encodePng(spec->buffer, out,
+                spec->width, spec->height, spec->components);
             writeLocalFileBuffer(path, out);
         }
     }
 #endif
 
-    spec.verticalFlip();
-    map->callbacks.loadTexture(info, spec, name);
+    spec->verticalFlip();
+    decodeData = std::static_pointer_cast<void>(spec);
+}
+
+void GpuTexture::upload()
+{
+    LOG(info2) << "Uploading texture <" << name << ">";
+    auto spec = std::static_pointer_cast<GpuTextureSpec>(decodeData);
+    map->callbacks.loadTexture(info, *spec, name);
     info.ramMemoryCost += sizeof(*this);
 }
 

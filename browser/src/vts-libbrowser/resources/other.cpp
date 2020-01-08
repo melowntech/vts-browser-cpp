@@ -42,9 +42,8 @@ MetaTile::MetaTile(vts::MapImpl *map, const std::string &name) :
     vtslibs::vts::MetaTile(vtslibs::vts::TileId(), 0)
 {}
 
-void MetaTile::load()
+void MetaTile::decode()
 {
-    LOG(info2) << "Loading meta tile <" << name << ">";
     detail::BufferStream w(fetch->reply.content);
     *(vtslibs::vts::MetaTile*)this
             = vtslibs::vts::loadMetaTile(w, 5, name);
@@ -67,9 +66,8 @@ NavTile::NavTile(MapImpl *map, const std::string &name) :
     Resource(map, name)
 {}
 
-void NavTile::load()
+void NavTile::decode()
 {
-    LOG(info2) << "Loading navigation tile <" << name << ">";
     GpuTextureSpec spec;
     decodeImage(fetch->reply.content, spec.buffer,
                 spec.width, spec.height, spec.components);
@@ -96,9 +94,8 @@ BoundMetaTile::BoundMetaTile(MapImpl *map, const std::string &name) :
     Resource(map, name)
 {}
 
-void BoundMetaTile::load()
+void BoundMetaTile::decode()
 {
-    LOG(info2) << "Loading bound meta tile <" << name << ">";
     Buffer buffer = std::move(fetch->reply.content);
     GpuTextureSpec spec;
     decodeImage(buffer, spec.buffer,
@@ -122,7 +119,7 @@ ExternalBoundLayer::ExternalBoundLayer(MapImpl *map, const std::string &name)
     priority = std::numeric_limits<float>::infinity();
 }
 
-void ExternalBoundLayer::load()
+void ExternalBoundLayer::decode()
 {
     detail::BufferStream w(fetch->reply.content);
     *(vtslibs::registry::BoundLayer*)this
@@ -140,7 +137,7 @@ ExternalFreeLayer::ExternalFreeLayer(MapImpl *map, const std::string &name)
     priority = std::numeric_limits<float>::infinity();
 }
 
-void ExternalFreeLayer::load()
+void ExternalFreeLayer::decode()
 {
     detail::BufferStream w(fetch->reply.content);
     *(vtslibs::registry::FreeLayer*)this
@@ -158,9 +155,8 @@ TilesetMapping::TilesetMapping(MapImpl *map, const std::string &name) :
     priority = std::numeric_limits<float>::infinity();
 }
 
-void TilesetMapping::load()
+void TilesetMapping::decode()
 {
-    LOG(info2) << "Loading tileset mapping <" << name << ">";
     dataRaw = vtslibs::vts::deserializeTsMap(fetch->reply.content.str());
 }
 

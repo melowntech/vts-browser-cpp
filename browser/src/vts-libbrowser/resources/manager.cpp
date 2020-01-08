@@ -36,6 +36,26 @@
 namespace vts
 {
 
+void MapImpl::resourceSaveCorruptedFile(const std::shared_ptr<Resource> &r)
+{
+    if (!options.debugSaveCorruptedFiles)
+        return;
+    try
+    {
+        std::string path = std::string() + "corrupted/"
+            + convertNameToPath(r->name, false);
+        writeLocalFileBuffer(path, r->fetch->reply.content);
+        LOG(info1) << "Resource <" << r->name
+            << "> saved into file <"
+            << path << "> for further inspection";
+    }
+    catch (...)
+    {
+        LOG(warn1) << "Failed saving corrupted resource <" << r->name
+            << "> for further inspection";
+    }
+}
+
 ////////////////////////////
 // A FETCH THREAD
 ////////////////////////////
@@ -141,9 +161,52 @@ void FetchTaskImpl::fetchDone()
                 // this allows another thread to immediately start
                 //   processing the content, including its modification,
                 //   and must therefore be the last action in this thread
-                map->resources.queUpload.push(rs);
+                map->resources.queDecode.push(rs);
             }
         }
+    }
+}
+
+////////////////////////////
+// DECODE THREAD
+////////////////////////////
+
+void MapImpl::resourceDecodeProcess(const std::shared_ptr<Resource> &r)
+{
+    OPTICK_EVENT();
+    OPTICK_TAG("name", r->name.c_str());
+
+    assert(r->state == Resource::State::downloaded);
+    statistics.resourcesDecoded++;
+    try
+    {
+        r->decode();
+        r->state = Resource::State::decoded;
+        resources.queUpload.push(r);
+    }
+    catch (const std::exception &e)
+    {
+        LOG(err3) << "Failed decoding resource <" << r->name
+            << ">, exception <" << e.what() << ">";
+        resourceSaveCorruptedFile(r);
+        statistics.resourcesFailed++;
+        r->state = Resource::State::errorFatal;
+    }
+    r->fetch.reset();
+}
+
+void MapImpl::resourcesDecodeProcessorEntry()
+{
+    OPTICK_THREAD("decode");
+    setLogThreadName("decode");
+    while (!resources.queDecode.stopped())
+    {
+        std::weak_ptr<Resource> w;
+        resources.queDecode.waitPop(w);
+        std::shared_ptr<Resource> r = w.lock();
+        if (!r)
+            continue;
+        resourceDecodeProcess(r);
     }
 }
 
@@ -156,50 +219,23 @@ void MapImpl::resourceUploadProcess(const std::shared_ptr<Resource> &r)
     OPTICK_EVENT();
     OPTICK_TAG("name", r->name.c_str());
 
-    assert(r->state == Resource::State::downloaded);
+    assert(r->state == Resource::State::decoded);
     r->info.gpuMemoryCost = r->info.ramMemoryCost = 0;
-    statistics.resourcesProcessed++;
+    statistics.resourcesUploaded++;
     try
     {
-        r->load();
+        r->upload();
         r->state = Resource::State::ready;
     }
     catch (const std::exception &e)
     {
-        LOG(err3) << "Failed processing resource <" << r->name
+        LOG(err3) << "Failed uploading resource <" << r->name
             << ">, exception <" << e.what() << ">";
-        if (options.debugSaveCorruptedFiles)
-        {
-            std::string path = std::string() + "corrupted/"
-                + convertNameToPath(r->name, false);
-            try
-            {
-                writeLocalFileBuffer(path, r->fetch->reply.content);
-                LOG(info1) << "Resource <" << r->name
-                    << "> saved into file <"
-                    << path << "> for further inspection";
-            }
-            catch (...)
-            {
-                LOG(warn1) << "Failed saving resource <" << r->name
-                    << "> into file <"
-                    << path << "> for further inspection";
-            }
-        }
+        resourceSaveCorruptedFile(r);
         statistics.resourcesFailed++;
         r->state = Resource::State::errorFatal;
     }
-    r->fetch.reset();
-}
-
-void MapImpl::resourceDataInitialize()
-{
-    LOG(info3) << "Data initialize";
-}
-
-void MapImpl::resourceDataFinalize()
-{
-    LOG(info3) << "Data finalize";
+    r->decodeData.reset();
 }
 
 void MapImpl::resourceDataUpdate()
@@ -339,7 +375,7 @@ void MapImpl::cacheReadProcess(const std::shared_ptr<Resource> &r)
     }
 
     if (r->state == Resource::State::downloaded)
-        resources.queUpload.push(r);
+        resources.queDecode.push(r);
 }
 
 ////////////////////////////
@@ -587,7 +623,7 @@ void MapImpl::resourceUpdateStatistics(const std::shared_ptr<Resource> &r)
     case Resource::State::startDownload:
     case Resource::State::downloading:
     case Resource::State::downloaded:
-    case Resource::State::uploading:
+    case Resource::State::decoded:
         statistics.resourcesPreparing++;
         break;
     case Resource::State::ready:
@@ -598,16 +634,13 @@ void MapImpl::resourceUpdateStatistics(const std::shared_ptr<Resource> &r)
     }
 }
 
-void MapImpl::resourceRenderInitialize()
-{}
-
-void MapImpl::resourceRenderFinalize()
+void MapImpl::resourceFinalize()
 {
     resources.queUpload.terminate();
     resources.resources.clear();
 }
 
-void MapImpl::resourceRenderUpdate()
+void MapImpl::resourceUpdate()
 {
     OPTICK_EVENT();
     // resourcesPreparing is used to determine mapRenderComplete
@@ -617,16 +650,18 @@ void MapImpl::resourceRenderUpdate()
         = resources.resources.size();
     statistics.resourcesDownloading
         = resources.downloads;
-    statistics.resourcesQueueUpload
-        = resources.queUpload.estimateSize();
     statistics.resourcesQueueCacheRead
         = resources.queCacheRead.estimateSize();
     statistics.resourcesQueueCacheWrite
         = resources.queCacheWrite.estimateSize();
-    statistics.resourcesQueueAtmosphere
-        = resources.queAtmosphere.estimateSize();
+    statistics.resourcesQueueDecode
+        = resources.queDecode.estimateSize();
+    statistics.resourcesQueueUpload
+        = resources.queUpload.estimateSize();
     statistics.resourcesQueueGeodata
         = resources.queGeodata.estimateSize();
+    statistics.resourcesQueueAtmosphere
+        = resources.queAtmosphere.estimateSize();
 
     // split workload into multiple render frames
     switch (renderTickIndex % 3)

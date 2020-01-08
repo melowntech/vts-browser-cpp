@@ -37,7 +37,8 @@ class GpuMesh : public Resource
 {
 public:
     GpuMesh(MapImpl *map, const std::string &name);
-    void load() override;
+    void decode() override;
+    void upload() override;
     FetchTask::ResourceType resourceType() const override;
     uint32 faces;
 };
@@ -46,7 +47,8 @@ class GpuTexture : public Resource
 {
 public:
     GpuTexture(MapImpl *map, const std::string &name);
-    void load() override;
+    void decode() override;
+    void upload() override;
     FetchTask::ResourceType resourceType() const override;
     GpuTextureSpec::FilterMode filterMode;
     GpuTextureSpec::WrapMode wrapMode;
@@ -57,14 +59,15 @@ class GpuAtmosphereDensityTexture : public GpuTexture
 {
 public:
     GpuAtmosphereDensityTexture(MapImpl *map, const std::string &name);
-    void load() override;
+    void decode() override;
 };
 
 class GpuFont : public Resource, public FontHandle
 {
 public:
     GpuFont(MapImpl *map, const std::string &name);
-    void load() override;
+    void decode() override;
+    void upload() override;
     std::shared_ptr<void> requestTexture(uint32 index) override;
     FetchTask::ResourceType resourceType() const override;
     std::vector<std::shared_ptr<GpuTexture>> texturePlanes;
@@ -92,7 +95,8 @@ class MeshAggregate : public Resource
 {
 public:
     MeshAggregate(MapImpl *map, const std::string &name);
-    void load() override;
+    void decode() override;
+    void upload() override;
     FetchTask::ResourceType resourceType() const override;
 
     std::vector<MeshPart> submeshes;

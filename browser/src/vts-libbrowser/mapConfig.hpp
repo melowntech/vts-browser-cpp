@@ -55,7 +55,7 @@ class ExternalBoundLayer : public Resource,
 {
 public:
     ExternalBoundLayer(MapImpl *map, const std::string &name);
-    void load() override;
+    void decode() override;
     FetchTask::ResourceType resourceType() const override;
 };
 
@@ -64,7 +64,7 @@ class ExternalFreeLayer : public Resource,
 {
 public:
     ExternalFreeLayer(MapImpl *map, const std::string &name);
-    void load() override;
+    void decode() override;
     FetchTask::ResourceType resourceType() const override;
 };
 
@@ -85,7 +85,7 @@ public:
 
     Mapconfig(MapImpl *map, const std::string &name);
     ~Mapconfig();
-    void load() override;
+    void decode() override;
     FetchTask::ResourceType resourceType() const override;
     vtslibs::registry::Srs::Type navigationSrsType() const;
 

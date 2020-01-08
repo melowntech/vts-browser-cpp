@@ -43,9 +43,9 @@ GpuFont::GpuFont(MapImpl *map, const std::string &name) :
     priority = std::numeric_limits<float>::infinity();
 }
 
-void GpuFont::load()
+void GpuFont::decode()
 {
-    LOG(info2) << "Loading font <" << name << ">";
+    LOG(info2) << "Decoding font <" << name << ">";
 
 #ifndef __EMSCRIPTEN__
     if (map->options.debugExtractRawResources)
@@ -63,10 +63,17 @@ void GpuFont::load()
     }
 #endif
 
-    GpuFontSpec spec;
-    spec.data = std::move(fetch->reply.content);
-    spec.handle = std::dynamic_pointer_cast<FontHandle>(shared_from_this());
-    map->callbacks.loadFont(info, spec, name);
+    std::shared_ptr<GpuFontSpec> spec = std::make_shared<GpuFontSpec>();
+    spec->data = std::move(fetch->reply.content);
+    spec->handle = std::dynamic_pointer_cast<FontHandle>(shared_from_this());
+    decodeData = std::static_pointer_cast<void>(spec);
+}
+
+void GpuFont::upload()
+{
+    LOG(info2) << "Uploading font <" << name << ">";
+    auto spec = std::static_pointer_cast<GpuFontSpec>(decodeData);
+    map->callbacks.loadFont(info, *spec, name);
 }
 
 std::shared_ptr<void> GpuFont::requestTexture(uint32 index)

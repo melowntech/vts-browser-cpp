@@ -1095,10 +1095,11 @@ public:
                     float ratio2[] = { width * 0.45f, width * 0.45f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio2);
 
-                    S("Upload:", ms.resourcesQueueUpload, "");
-                    S("Geodata:", ms.resourcesQueueGeodata, "");
                     S("Cache read:", ms.resourcesQueueCacheRead, "");
                     S("Cache write:", ms.resourcesQueueCacheWrite, "");
+                    S("Decode:", ms.resourcesQueueDecode, "");
+                    S("Upload:", ms.resourcesQueueUpload, "");
+                    S("Geodata:", ms.resourcesQueueGeodata, "");
 
                     nk_tree_pop(&ctx);
                 }
@@ -1112,7 +1113,8 @@ public:
                     S("Active:", ms.resourcesActive, "");
                     S("Downloaded:", ms.resourcesDownloaded, "");
                     S("Disk loaded:", ms.resourcesDiskLoaded, "");
-                    S("Processed:", ms.resourcesProcessed, "");
+                    S("Decoded:", ms.resourcesDecoded, "");
+                    S("Uploaded:", ms.resourcesUploaded, "");
                     S("Created:", ms.resourcesCreated, "");
                     S("Released:", ms.resourcesReleased, "");
                     S("Failed:", ms.resourcesFailed, "");

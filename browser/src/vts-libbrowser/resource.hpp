@@ -51,7 +51,7 @@ public:
         startDownload,
         downloading,
         downloaded,
-        uploading, // to gpu memory
+        decoded,
         ready,
         errorFatal,
         errorRetry,
@@ -62,19 +62,21 @@ public:
     Resource(const Resource &other) = delete;
     Resource &operator = (const Resource &other) = delete;
     virtual ~Resource();
-    virtual void load() = 0;
+    virtual void decode() = 0; // eg. decode an image
+    virtual void upload() {}; // call the resource callback
     virtual FetchTask::ResourceType resourceType() const = 0;
     bool allowDiskCache() const;
     static bool allowDiskCache(FetchTask::ResourceType type);
     void updatePriority(float priority);
     void updateAvailability(const std::shared_ptr<void> &availTest);
     void forceRedownload();
-    operator bool() const; // return state == ready
+    explicit operator bool() const; // return state == ready
 
     const std::string name;
     MapImpl *const map;
     std::atomic<State> state;
     ResourceInfo info;
+    std::shared_ptr<void> decodeData;
     std::shared_ptr<FetchTaskImpl> fetch;
     std::time_t retryTime;
     uint32 retryNumber;

@@ -24,9 +24,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dbglog/dbglog.hpp>
-
 #include "../include/vts-browser/fetcher.hpp"
+
+#include <dbglog/dbglog.hpp>
 
 namespace vts
 {

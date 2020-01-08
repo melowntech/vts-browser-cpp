@@ -24,9 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../include/vts-browser/buffer.hpp"
+
 #include <png.h>
 #include <dbglog/dbglog.hpp>
-#include "../include/vts-browser/buffer.hpp"
 
 namespace vts
 {

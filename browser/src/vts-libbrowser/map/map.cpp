@@ -24,8 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <optick.h>
-
 #include "../include/vts-browser/exceptions.hpp"
 #include "../include/vts-browser/cameraDraws.hpp"
 #include "../include/vts-browser/cameraOptions.hpp"
@@ -40,6 +38,8 @@
 #include "../credits.hpp"
 #include "../coordsManip.hpp"
 #include "../map.hpp"
+
+#include <optick.h>
 
 namespace vts
 {

@@ -24,6 +24,8 @@
 * POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <string>
+
 namespace vts
 {
 

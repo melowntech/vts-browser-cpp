@@ -24,14 +24,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../include/vts-browser/mapOptions.hpp"
+#include "../map.hpp"
+
 #include <boost/filesystem.hpp>
 #include <utility/path.hpp> // homeDir
 #include <utility/md5.hpp>
 #include <dbglog/dbglog.hpp>
 #include <optick.h>
-
-#include "../include/vts-browser/mapOptions.hpp"
-#include "../map.hpp"
 
 namespace vts
 {

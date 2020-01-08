@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <memory>
 #include "../include/vts-browser/math.hpp"
+#include <memory>
 
 namespace vts
 {

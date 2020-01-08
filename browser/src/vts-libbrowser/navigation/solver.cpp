@@ -24,9 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dbglog/dbglog.hpp>
 #include "../include/vts-browser/navigationOptions.hpp"
 #include "solver.hpp"
+
+#include <dbglog/dbglog.hpp>
 
 namespace vts
 {

@@ -24,12 +24,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <memory>
-#include <sstream>
+#include "json.hpp"
 
 #include <dbglog/dbglog.hpp>
 
-#include "json.hpp"
+#include <memory>
+#include <sstream>
 
 namespace vts
 {

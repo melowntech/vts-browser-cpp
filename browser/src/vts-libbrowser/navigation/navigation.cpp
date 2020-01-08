@@ -24,8 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <optick.h>
-
 #include "../include/vts-browser/camera.hpp"
 
 #include "../navigation.hpp"
@@ -36,6 +34,8 @@
 #include "../renderTasks.hpp"
 #include "../gpuResource.hpp"
 #include "solver.hpp"
+
+#include <optick.h>
 
 namespace vts
 {

@@ -24,9 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <unordered_map>
-#include <memory>
-#include <functional>
+#include "../coordsManip.hpp"
 
 #include <boost/utility/in_place_factory.hpp>
 #include <GeographicLib/Geodesic.hpp>
@@ -35,7 +33,9 @@
 #include <vts-libs/vts/csconvertor.hpp>
 #include <vts-libs/vts/mapconfig.hpp>
 
-#include "../coordsManip.hpp"
+#include <unordered_map>
+#include <memory>
+#include <functional>
 
 namespace vts
 {

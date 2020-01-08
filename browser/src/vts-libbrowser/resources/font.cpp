@@ -24,12 +24,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dbglog/dbglog.hpp>
-#include <sstream>
-
 #include "../gpuResource.hpp"
 #include "../fetchTask.hpp"
 #include "../map.hpp"
+
+#include <dbglog/dbglog.hpp>
+#include <sstream>
 
 namespace vts
 {

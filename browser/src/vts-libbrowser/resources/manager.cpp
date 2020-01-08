@@ -24,14 +24,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <optick.h>
-
 #include "../include/vts-browser/log.hpp"
 
 #include "../fetchTask.hpp"
 #include "../map.hpp"
 #include "../authConfig.hpp"
 #include "../utilities/dataUrl.hpp"
+
+#include <optick.h>
 
 namespace vts
 {
@@ -178,6 +178,7 @@ void MapImpl::resourceDecodeProcess(const std::shared_ptr<Resource> &r)
 
     assert(r->state == Resource::State::downloaded);
     statistics.resourcesDecoded++;
+    r->info.gpuMemoryCost = r->info.ramMemoryCost = 0;
     try
     {
         r->decode();
@@ -220,7 +221,6 @@ void MapImpl::resourceUploadProcess(const std::shared_ptr<Resource> &r)
     OPTICK_TAG("name", r->name.c_str());
 
     assert(r->state == Resource::State::decoded);
-    r->info.gpuMemoryCost = r->info.ramMemoryCost = 0;
     statistics.resourcesUploaded++;
     try
     {
@@ -274,7 +274,7 @@ void MapImpl::resourceDataRun()
 
 void MapImpl::cacheWriteEntry()
 {
-    OPTICK_THREAD("cacheWriter");
+    OPTICK_THREAD("cache writer");
     setLogThreadName("cache writer");
     while (!resources.queCacheWrite.stopped())
     {
@@ -291,7 +291,7 @@ void MapImpl::cacheWriteEntry()
 
 void MapImpl::cacheReadEntry()
 {
-    OPTICK_THREAD("cacheReader");
+    OPTICK_THREAD("cache reader");
     setLogThreadName("cache reader");
     while (!resources.queCacheRead.stopped())
     {
@@ -394,7 +394,7 @@ void MapImpl::resourcesDownloadsEntry()
             resources.fetching.con.wait(lock);
             res1.swap(resources.fetching.resources);
         }
-        OPTICK_EVENT("process");
+        OPTICK_EVENT("update");
         resources.fetcher->update();
         if (resources.downloads >= options.maxConcurrentDownloads)
             continue; // skip processing if no download slots are available
@@ -636,7 +636,10 @@ void MapImpl::resourceUpdateStatistics(const std::shared_ptr<Resource> &r)
 
 void MapImpl::resourceFinalize()
 {
+    // allow the dataAllRun method to return to the caller
     resources.queUpload.terminate();
+
+    // clear the resources now while all the necessary things are still working
     resources.resources.clear();
 }
 

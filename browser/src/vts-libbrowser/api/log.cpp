@@ -24,10 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dbglog/dbglog.hpp>
-
 #include "../include/vts-browser/log.hpp"
 #include "../utilities/threadName.hpp"
+
+#include <dbglog/dbglog.hpp>
 
 namespace vts
 {

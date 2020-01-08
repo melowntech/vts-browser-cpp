@@ -24,6 +24,9 @@
 * POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "../include/vts-browser/foundation.hpp"
+#include "detectLanguage.hpp"
+
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -39,9 +42,6 @@
 
 #include <dbglog/dbglog.hpp>
 #include <utility/getenv.hpp>
-
-#include "../include/vts-browser/foundation.hpp"
-#include "detectLanguage.hpp"
 
 namespace vts
 {

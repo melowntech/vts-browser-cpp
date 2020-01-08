@@ -24,13 +24,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vts-libs/registry/json.hpp>
-#include <vts-libs/registry/io.hpp>
-#include <boost/lexical_cast.hpp>
-
 #include "../include/vts-browser/math.hpp"
 #include "../utilities/json.hpp"
 #include "../position.hpp"
+
+#include <vts-libs/registry/json.hpp>
+#include <vts-libs/registry/io.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace vts
 {

@@ -30,6 +30,8 @@
 #include "include/vts-browser/math.hpp"
 #include "resource.hpp"
 
+#include <vector>
+
 namespace vts
 {
 

@@ -24,15 +24,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dbglog/dbglog.hpp>
-#include <vts-libs/vts/meshio.hpp>
-
 #include "../image/image.hpp"
 #include "../metaTile.hpp"
 #include "../navTile.hpp"
 #include "../fetchTask.hpp"
 #include "../mapConfig.hpp"
 #include "../tilesetMapping.hpp"
+
+#include <dbglog/dbglog.hpp>
+#include <vts-libs/vts/meshio.hpp>
 
 namespace vts
 {

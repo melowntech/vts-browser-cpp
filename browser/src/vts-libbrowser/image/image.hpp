@@ -27,7 +27,6 @@
 #ifndef IMAGE_H_erweubdnu
 #define IMAGE_H_erweubdnu
 
-#include <string>
 #include "../include/vts-browser/buffer.hpp"
 
 namespace vts

@@ -26,7 +26,6 @@
 
 #include <boost/algorithm/string.hpp>
 #include <utility/enum-io.hpp>
-#include <dbglog/dbglog.hpp>
 
 #include "../include/vts-browser/boostProgramOptions.hpp"
 #include "../include/vts-browser/mapOptions.hpp"
@@ -34,6 +33,8 @@
 #include "../include/vts-browser/navigationOptions.hpp"
 #include "../include/vts-browser/fetcher.hpp"
 #include "../include/vts-browser/log.hpp"
+
+#include <dbglog/dbglog.hpp>
 
 namespace po = boost::program_options;
 

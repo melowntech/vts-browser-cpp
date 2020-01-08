@@ -24,8 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <optick.h>
-
 #include "../include/vts-browser/search.hpp"
 
 #include "../utilities/json.hpp"
@@ -34,6 +32,8 @@
 #include "../fetchTask.hpp"
 #include "../mapConfig.hpp"
 #include "../map.hpp"
+
+#include <optick.h>
 
 namespace vts
 {

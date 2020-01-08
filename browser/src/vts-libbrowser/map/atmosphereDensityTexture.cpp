@@ -24,10 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dbglog/dbglog.hpp>
-#include <vts-libs/vts/atmospheredensitytexture.hpp>
-#include <optick.h>
-
 #include "../include/vts-browser/log.hpp"
 #include "../include/vts-browser/celestial.hpp"
 
@@ -36,6 +32,10 @@
 #include "../fetchTask.hpp"
 #include "../map.hpp"
 #include "../mapConfig.hpp"
+
+#include <dbglog/dbglog.hpp>
+#include <vts-libs/vts/atmospheredensitytexture.hpp>
+#include <optick.h>
 
 namespace vts
 {

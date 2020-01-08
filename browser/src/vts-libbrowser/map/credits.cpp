@@ -24,11 +24,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vts-libs/vts/mapconfig.hpp>
-#include <optick.h>
-
 #include "../utilities/json.hpp"
 #include "../credits.hpp"
+
+#include <vts-libs/vts/mapconfig.hpp>
+#include <optick.h>
 
 namespace vts
 {

@@ -24,9 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vts-libs/registry/json.hpp>
-#include <vts-libs/registry/io.hpp>
-
 #include "../include/vts-browser/map.hpp"
 #include "../include/vts-browser/view.hpp"
 #include "../utilities/json.hpp"
@@ -38,6 +35,9 @@
 #include "../credits.hpp"
 #include "../geodata.hpp"
 #include "../position.hpp"
+
+#include <vts-libs/registry/json.hpp>
+#include <vts-libs/registry/io.hpp>
 
 namespace vts
 {

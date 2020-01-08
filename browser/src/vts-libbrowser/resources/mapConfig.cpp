@@ -24,13 +24,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vts-libs/vts/mapconfig-json.hpp>
-
 #include "../mapConfig.hpp"
 #include "../map.hpp"
 #include "../fetchTask.hpp"
 #include "../credits.hpp"
 #include "../renderInfos.hpp"
+
+#include <vts-libs/vts/mapconfig-json.hpp>
 
 namespace vts
 {

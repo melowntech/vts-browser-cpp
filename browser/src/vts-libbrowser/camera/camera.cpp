@@ -24,9 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <unordered_set>
-#include <optick.h>
-
 #include "../camera.hpp"
 #include "../traverseNode.hpp"
 #include "../renderTasks.hpp"
@@ -38,6 +35,9 @@
 #include "../credits.hpp"
 #include "../coordsManip.hpp"
 #include "../hashTileId.hpp"
+
+#include <unordered_set>
+#include <optick.h>
 
 namespace vts
 {

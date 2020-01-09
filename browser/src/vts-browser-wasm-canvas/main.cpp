@@ -365,8 +365,6 @@ int main(int, char *[])
     nav = cam->createNavigation();
     view = context->createView(cam.get());
     updateResolution();
-    map->dataInitialize();
-    map->renderInitialize();
 
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");

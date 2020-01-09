@@ -46,6 +46,7 @@ set(CMAKE_SHARED_LIBRARY_RUNTIME_C_FLAG -Wl,-rpath,)
 # hack: overcome issue in try_compile for xcode generator
 set(CMAKE_MACOSX_BUNDLE TRUE)
 set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "NO")
+set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
 
 # set the find root to the iOS developer roots and to user defined paths
 set(CMAKE_FIND_ROOT_PATH ${CMAKE_OSX_SYSROOT} ${CMAKE_IOS_SDK_ROOT} ${CMAKE_PREFIX_PATH})

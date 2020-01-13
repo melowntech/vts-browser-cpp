@@ -71,6 +71,13 @@ EM_JS(void, setHtml, (const char *id, const char *value),
     document.getElementById(UTF8ToString(id)).innerHTML = UTF8ToString(value)
 });
 
+extern "C" EMSCRIPTEN_KEEPALIVE void setMapconfig(const char *url)
+{
+    if(!map)
+        return;
+    map->setMapconfigPath(url);
+}
+
 extern "C" EMSCRIPTEN_KEEPALIVE void search(const char *query)
 {
     if(!map)

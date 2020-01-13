@@ -134,6 +134,16 @@ function tileDiagnosticsClick(button)
     else
         applyOptionsCpp('{ "debugRenderTileDiagnostics":true }')
 }
+
+// mapconfig
+var mapconfigCpp
+function mapconfig()
+{
+    let url = document.getElementById("mapconfig").value
+    mapconfigCpp(url)
+}
+
+// initialize
 var Module =
 {
     onRuntimeInitialized: function()
@@ -142,6 +152,7 @@ var Module =
         gotoPositionCpp = Module.cwrap("gotoPosition", null, ["number", "number", "number", "number"])
         applyOptionsCpp = Module.cwrap("applyOptions", null, ["string"])
         getOptionsCpp = Module.cwrap("getOptions", "string", null)
+        mapconfigCpp = Module.cwrap("setMapconfig", null, ["string"])
     },
     onMapCreated: function()
     {

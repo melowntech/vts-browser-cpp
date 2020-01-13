@@ -17,7 +17,7 @@
             We also require running on desktop platforms. Mobile version may not work either.
             <hr>
             <h2>Initializing...</h2>
-            This may take up to a minute, depending on your computer and network speed.<br>
+            This may take some time, depending on your computer and network speed.<br>
             Check your browser's console if the loading takes too long.
         </div>
     </div>
@@ -187,19 +187,20 @@
                 </div>
                 <button class=collapsible>Map</button>
                 <div id=statisticsMap>
-                    map stats
                 </div>
                 <button class=collapsible>Camera</button>
                 <div id=statisticsCamera>
-                    camera stats
                 </div>
             </div>
         </div>
         <div class="window draggable" style="left: 680px">
             <button class="header collapsible">Position</button>
             <div class=content>
+                <div>
+                    <input type=url id=mapconfig placeholder="mapconfig url">
+                    <button onclick=mapconfig()>Go</button>
+                </div>
                 <div id=position>
-                    position
                 </div>
             </div>
         </div>

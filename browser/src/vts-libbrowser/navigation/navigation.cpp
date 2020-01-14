@@ -438,12 +438,12 @@ void NavigationImpl::updateNavigation(double elapsedTime)
             double sampleSize = verticalExtent
                 / options.lodSelectionSamplesForAltitude;
             double thresholdBase = verticalExtent * 0.15;
+            vec3 eyeStart, forward, up;
+            positionToCamera(eyeStart, forward, up, normalizedRotation, p);
             for (double fraction = 0.3; fraction < 1.0; fraction += 0.05)
             {
                 double l = ll * fraction;
-                vec3 eye, forward, up;
-                positionToCamera(eye, forward, up, normalizedRotation, p);
-                eye -= forward * l;
+                vec3 eye = eyeStart - forward * l;
                 vec3 eyeNav = convertor->physToNav(eye);
                 double altitude = nan1();
                 if (camera->getSurfaceOverEllipsoid(altitude,

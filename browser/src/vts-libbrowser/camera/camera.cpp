@@ -899,7 +899,7 @@ void CameraImpl::renderUpdate()
             vec3 navPos = map->convertor->physToNav(eye);
             c.altitudeOverEllipsoid = navPos[2];
             double tmp;
-            if (getSurfaceOverEllipsoid(tmp, navPos, 10))
+            if (getSurfaceOverEllipsoid(tmp, navPos, c.viewExtent / 8))
                 c.altitudeOverSurface = c.altitudeOverEllipsoid - tmp;
             else
                 c.altitudeOverSurface = nan1();
@@ -948,7 +948,7 @@ void computeNearFar(double &near_, double &far_, double altitude,
     double major = body.majorRadius;
     double flat = major / body.minorRadius;
     cameraPos[2] *= flat;
-    double ground = major + (altitude == altitude ? altitude : 0.0);
+    double ground = major + (std::isnan(altitude) ? 0.0 : altitude);
     double l = projected ? cameraPos[2] + major : length(cameraPos);
     double a = std::max(1.0, l - ground);
 

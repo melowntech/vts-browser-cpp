@@ -164,7 +164,7 @@ void atmosphereDerivedAttributes(const MapCelestialBody &body,
     // using the atmosphere thickness quantile directly might lead to
     //   sharp edge at the atmosphere boundary,
     //   therefore we have to recompute the properties for a custom quantile
-    double targetQuantile = 1e-6;
+    static const double targetQuantile = 1e-6;
     double k = std::log(1 / a.thicknessQuantile) / a.thickness;
     boundaryThickness = std::log(1 / targetQuantile) / k;
 

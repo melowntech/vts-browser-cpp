@@ -2131,7 +2131,7 @@ if (cond == #OP) \
     const GeodataStylesheet *const stylesheet;
     Value style;
     Value features;
-    Value browserOptions;
+    const Value &browserOptions;
     const vec3 aabbPhys[2];
     const TileId tileId;
     const bool compatibility;

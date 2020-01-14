@@ -234,8 +234,8 @@ GeodataTile::GeodataTile(MapImpl *map, const std::string &name)
 
     // initialize aabb to universe
     {
-        double di = std::numeric_limits<double>::infinity();
-        vec3 vi(di, di, di);
+        static const double di = std::numeric_limits<double>::infinity();
+        static const vec3 vi(di, di, di);
         aabbPhys[0] = -vi;
         aabbPhys[1] = vi;
     }
@@ -280,7 +280,7 @@ void GeodataTile::update(
     }
 }
 
-GpuGeodataSpec::GpuGeodataSpec()
+GpuGeodataSpec::GpuGeodataSpec() : type(GpuGeodataSpec::Type::Invalid)
 {
     matToRaw(identityMatrix4(), model);
 }

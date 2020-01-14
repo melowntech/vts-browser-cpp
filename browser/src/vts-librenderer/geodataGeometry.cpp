@@ -356,14 +356,15 @@ void GeodataTile::loadTriangles()
         {
             vec4f color;
             vec4f visibilities;
-            sint32 shading;
+            vec4si32 flags; // shading
         };
         UboTriangleData uboTriangleData;
 
         uboTriangleData.color = rawToVec4(spec.unionData.triangles.color);
         uboTriangleData.visibilities
             = rawToVec4(spec.commonData.visibilities);
-        uboTriangleData.shading = (sint32)spec.unionData.triangles.style;
+        uboTriangleData.flags
+                = vec4si32((sint32)spec.unionData.triangles.style, 0, 0, 0);
 
         uniform = std::make_unique<UniformBuffer>();
         uniform->setDebugId(debugId);

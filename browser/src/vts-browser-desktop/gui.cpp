@@ -736,9 +736,9 @@ public:
                     {
                         // lodBlendingDuration
                         nk_label(&ctx, "Blend duration:", NK_TEXT_LEFT);
-                        c.lodBlendingDuration = nk_slide_int(&ctx,
-                            0, c.lodBlendingDuration, 1000, 5);
-                        sprintf(buffer, "%4d", c.lodBlendingDuration);
+                        c.lodBlendingDuration = nk_slide_float(&ctx,
+                            0, c.lodBlendingDuration, 60, 0.05);
+                        sprintf(buffer, "%5.2f", c.lodBlendingDuration);
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                         // lodBlendingTransparent

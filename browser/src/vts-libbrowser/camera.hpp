@@ -84,7 +84,7 @@ class OldDraw
 public:
     TileId trav;
     TileId orig;
-    uint32 age;
+    double age;
 
     OldDraw(const CurrentDraw &current);
     OldDraw(const TileId &id);

@@ -168,12 +168,12 @@ CameraOptions::CameraOptions() :
     targetPixelRatioSurfaces(1.2),
     targetPixelRatioGeodata(1.2),
     cullingOffsetDistance(0.0),
+    lodBlendingDuration(0.5),
     fixedTraversalDistance(10000),
     fixedTraversalLod(15),
     balancedGridLodOffset(5),
     balancedGridNeighborsDistance(1),
     lodBlending(2),
-    lodBlendingDuration(30),
     traverseModeSurfaces(TraverseMode::Balanced),
     traverseModeGeodata(TraverseMode::Stable),
     lodBlendingTransparent(false),
@@ -209,12 +209,12 @@ void CameraOptions::applyJson(const std::string &json)
     AJ(targetPixelRatioSurfaces, asDouble);
     AJ(targetPixelRatioGeodata, asDouble);
     AJ(cullingOffsetDistance, asDouble);
+    AJ(lodBlendingDuration, asUInt);
     AJ(fixedTraversalDistance, asDouble);
     AJ(fixedTraversalLod, asUInt);
     AJ(balancedGridLodOffset, asUInt);
     AJ(balancedGridNeighborsDistance, asUInt);
     AJ(lodBlending, asUInt);
-    AJ(lodBlendingDuration, asUInt);
     AJE(traverseModeSurfaces, TraverseMode);
     AJE(traverseModeGeodata, TraverseMode);
     AJ(lodBlendingTransparent, asBool);
@@ -243,12 +243,12 @@ std::string CameraOptions::toJson() const
     TJ(targetPixelRatioSurfaces, asDouble);
     TJ(targetPixelRatioGeodata, asDouble);
     TJ(cullingOffsetDistance, asDouble);
+    TJ(lodBlendingDuration, asUInt);
     TJ(fixedTraversalDistance, asDouble);
     TJ(fixedTraversalLod, asUInt);
     TJ(balancedGridLodOffset, asUInt);
     TJ(balancedGridNeighborsDistance, asUInt);
     TJ(lodBlending, asUInt);
-    TJ(lodBlendingDuration, asUInt);
     TJE(traverseModeSurfaces, TraverseMode);
     TJE(traverseModeGeodata, TraverseMode);
     TJ(lodBlendingTransparent, asBool);

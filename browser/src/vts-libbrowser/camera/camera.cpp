@@ -706,7 +706,7 @@ void CameraImpl::renderNodeDraws(TraverseNode *trav,
 namespace
 {
 
-float timeToBlendingCoverage(uint32 age, uint32 duration)
+double timeToBlendingCoverage(double age, double duration)
 {
     /*
       opacity
@@ -720,9 +720,9 @@ float timeToBlendingCoverage(uint32 age, uint32 duration)
 
     assert(age <= duration * 3 / 2);
     if (age < duration / 2)
-        return float(age) / (duration / 2);
+        return double(age) / (duration / 2);
     if (age > duration)
-        return 1 - float(age - duration) / (duration / 2);
+        return 1 - double(age - duration) / (duration / 2);
     return nan1(); // full opacity is signaled by nan
 }
 
@@ -751,17 +751,19 @@ void CameraImpl::resolveBlending(TraverseNode *root,
 
     // update blendDraws age and remove old
     {
-        uint32 duration = options.lodBlendingDuration * 3 / 2;
+        double elapsed = map->lastElapsedFrameTime;
+        double duration = options.lodBlendingDuration * 3 / 2;
         auto &old = layer.blendDraws;
         old.erase(std::remove_if(old.begin(), old.end(),
             [&](OldDraw &b) {
-            return ++b.age > duration;
+                b.age += elapsed;
+                return b.age > duration;
         }), old.end());
     }
 
     // apply current draws
     {
-        uint32 halfDuration = options.lodBlendingDuration / 2;
+        double halfDuration = options.lodBlendingDuration / 2;
         std::unordered_set<OldDraw, OldHash> currentSet(currentDraws.begin(),
             currentDraws.end());
         for (auto &b : layer.blendDraws)
@@ -784,8 +786,8 @@ void CameraImpl::resolveBlending(TraverseNode *root,
     // detect appearing draws that have nothing to blend with
     if (options.lodBlending >= 2)
     {
-        uint32 halfDuration = options.lodBlendingDuration / 2;
-        uint32 duration = options.lodBlendingDuration;
+        double halfDuration = options.lodBlendingDuration / 2;
+        double duration = options.lodBlendingDuration;
         std::unordered_set<TileId> opaqueTiles;
         for (auto &b : layer.blendDraws)
             if (b.age >= halfDuration && b.age <= duration)

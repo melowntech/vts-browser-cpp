@@ -39,7 +39,7 @@ canvas.addEventListener("webglcontextlost", function()
 }
 
 // draggable elements
-var draggableZIndex = 1
+var draggableZIndex = 100
 function draggableElement(elmnt)
 {
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0
@@ -53,7 +53,6 @@ function draggableElement(elmnt)
         pos4 = e.clientY
         elmnt.style.top = (elmnt.offsetTop - pos2) + "px"
         elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"
-        elmnt.style.zIndex = draggableZIndex++
     }
     function closeDragElement()
     {
@@ -68,6 +67,7 @@ function draggableElement(elmnt)
         pos4 = e.clientY
         document.onmouseup = closeDragElement
         document.onmousemove = elementDrag
+        elmnt.style.zIndex = draggableZIndex++
     }
     elmnt.querySelector('.header').onmousedown = dragMouseDown
 }
@@ -137,10 +137,31 @@ function tileDiagnosticsClick(button)
 
 // mapconfig
 var mapconfigCpp
+var viewPresetCpp
 function mapconfig()
 {
     let url = document.getElementById("mapconfig").value
     mapconfigCpp(url)
+}
+function viewPreset()
+{
+    let select = document.getElementById("viewPreset")
+    let preset = select.options[select.selectedIndex].innerHTML
+    viewPresetCpp(preset)
+}
+
+// position
+var positionCpp
+function position()
+{
+    let pos = document.getElementById("positionInput")
+    positionCpp(pos.value)
+}
+function positionToClipboard()
+{
+    let pos = document.getElementById("positionCurrent")
+    pos.select()
+    document.execCommand("copy")
 }
 
 // initialize
@@ -153,6 +174,8 @@ var Module =
         applyOptionsCpp = Module.cwrap("applyOptions", null, ["string"])
         getOptionsCpp = Module.cwrap("getOptions", "string", null)
         mapconfigCpp = Module.cwrap("setMapconfig", null, ["string"])
+        viewPresetCpp = Module.cwrap("setViewPreset", null, ["string"])
+        positionCpp = Module.cwrap("setPosition", null, ["string"])
     },
     onMapCreated: function()
     {

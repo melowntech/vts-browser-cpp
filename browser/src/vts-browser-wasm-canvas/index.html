@@ -194,13 +194,27 @@
             </div>
         </div>
         <div class="window draggable" style="left: 680px">
-            <button class="header collapsible">Position</button>
+            <button class="header collapsible">View</button>
             <div class=content>
+                <button class="header collapsible">Mapconfig</button>
                 <div>
-                    <input type=url id=mapconfig placeholder="mapconfig url">
-                    <button onclick=mapconfig()>Go</button>
+                    <div>
+                        <input type=url id=mapconfig onchange=mapconfig() placeholder="mapconfig url" class=fullWidth>
+                    </div>
+                    <div>
+                        <select id=viewPreset onchange=viewPreset() class=fullWidth></select>
+                    </div>
                 </div>
-                <div id=position>
+                <button class="header collapsible">Position</button>
+                <div>
+                    <input type=text id=positionCurrent class=fullWidth readonly>
+                    <br>
+                    <button onclick=positionToClipboard()>Copy</button>
+                    <div id=positionTable>
+                    </div>
+                    <input type=text id=positionInput onpaste=position() placeholder=position class=fullWidth>
+                    <br>
+                    <button onclick=position()>Go</button>
                 </div>
             </div>
         </div>
@@ -208,7 +222,7 @@
             <button class="header collapsible">Search</button>
             <div class=content>
                 <div>
-                    <input type=text id=searchQuery oninput=search() placeholder=query>
+                    <input type=text id=searchQuery oninput=search() placeholder=query class=fullWidth>
                 </div>
                 <div id=searchResults>
                 </div>

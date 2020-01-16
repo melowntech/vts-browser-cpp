@@ -434,33 +434,33 @@ void NavigationImpl::updateNavigation(double elapsedTime)
         // detect terrain obscurance
         {
             OPTICK_EVENT("terrainObscurance");
-            double ll = objectiveDistance();
-            double sampleSize = verticalExtent
-                / options.lodSelectionSamplesForAltitude;
-            double thresholdBase = verticalExtent * 0.15;
-            vec3 eyeStart, forward, up;
-            positionToCamera(eyeStart, forward, up, normalizedRotation, p);
-            for (double fraction = 0.3; fraction < 1.0; fraction += 0.05)
+            const bool debug = options.debugRenderCameraObstructionSurrogates;
+            const double objDist = objectiveDistance();
+            const double sampleSize = camera->getSurfaceAltitudeSamples() / 2;
+            const double thresholdBase = verticalExtent * 0.15;
+            vec3 centerBase, forward, up;
+            positionToCamera(centerBase, forward, up, normalizedRotation, p);
+            double altCenter = convertor->convert(centerBase,
+                Srs::Physical, Srs::Navigation)[2];
+            double alpha = 0;
+            // start at 0.3 between target and eye (closer to the target)
+            // and go towards eye
+            for (double fraction = 0.3; fraction < 1.01; fraction += 0.05)
             {
-                double l = ll * fraction;
-                vec3 eye = eyeStart - forward * l;
-                vec3 eyeNav = convertor->physToNav(eye);
+                double l = objDist * fraction;
+                vec3 center = centerBase - forward * l;
+                vec3 centerNav = convertor->physToNav(center);
                 double altitude = nan1();
-                if (camera->getSurfaceOverEllipsoid(altitude,
-                    eyeNav, sampleSize))
-                {
-                    double threshold = thresholdBase * fraction;
-                    altitude = eyeNav[2] - altitude;
-                    if (altitude < threshold)
-                    {
-                        double a1 = std::sin(-degToRad(tilt)) * l;
-                        double a2 = a1 + threshold - altitude;
-                        double t = -radToDeg(std::asin(a2 / l));
-                        if (!std::isnan(t))
-                            tilt = t;
-                    }
-                }
+                if (!camera->getSurfaceOverEllipsoid(altitude,
+                    centerNav, sampleSize, debug))
+                    continue;
+                altitude += thresholdBase * fraction * fraction;
+                altitude -= altCenter;
+                double a = radToDeg(std::asin(altitude / l));
+                if (!std::isnan(a))
+                    alpha = std::max(alpha, a);
             }
+            tilt = std::min(tilt, -alpha);
         }
 
         tilt = clamp(tilt, options.tiltLimitAngleLow,
@@ -596,8 +596,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
             double surfaceOverEllipsoid = nan1();
             if (camera->getSurfaceOverEllipsoid(
                 surfaceOverEllipsoid, targetPosition,
-                verticalExtent / options.lodSelectionSamplesForAltitude,
-                options.debugRenderAltitudeSurrogates))
+                -1, options.debugRenderAltitudeSurrogates))
             {
                 double &pa = targetPosition[2];
                 if (positionAltitudeReset)
@@ -641,16 +640,19 @@ void NavigationImpl::updateNavigation(double elapsedTime)
     // update the camera
     {
         Camera *cam = camera->camera;
-        vec3 eye, forward, up, target;
-        positionToCamera(eye, forward, up, r, p);
+        vec3 center, forward, up, eye, target;
+        positionToCamera(center, forward, up, r, p);
         if (type == Type::objective)
         {
             // objective position to subjective
-            target = eye;
-            eye -= forward * objectiveDistance();
+            eye = center - forward * objectiveDistance();
+            target = center;
         }
         else
-            target = eye + forward;
+        {
+            eye = center;
+            target = center + forward;
+        }
         {
             double eye2[3], target2[3], up2[3];
             vecToRaw(eye, eye2);

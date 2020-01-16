@@ -179,7 +179,8 @@ public:
     void renderUpdate();
     void suggestedNearFar(double &near_, double &far_);
     bool getSurfaceOverEllipsoid(double &result, const vec3 &navPos,
-        double sampleSize, bool renderDebug = false);
+        double sampleSize = -1, bool renderDebug = false);
+    double getSurfaceAltitudeSamples();
 };
 
 void updateNavigation(std::weak_ptr<NavigationImpl> &nav, double elapsedTime);

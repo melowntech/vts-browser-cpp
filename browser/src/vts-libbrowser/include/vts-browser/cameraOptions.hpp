@@ -55,6 +55,11 @@ public:
     // duration of lod blending in seconds
     double lodBlendingDuration;
 
+    // number of virtual samples to fit the view-extent
+    // it is used to determine lod index at which to retrieve
+    //   the altitude used to correct camera position
+    double samplesForAltitudeLodSelection;
+
     // maximum distance of meshes emitted for fixed traversal mode
     // defined in physical length units (meters)
     double fixedTraversalDistance;

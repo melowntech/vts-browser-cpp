@@ -85,11 +85,6 @@ public:
     double flyOverMotionChangeFraction;
     double flyOverRotationChangeSpeed;
 
-    // number of virtual samples to fit the view-extent
-    // it is used to determine lod index at which to retrieve
-    //   the altitude used to correct camera position
-    uint32 lodSelectionSamplesForAltitude;
-
     NavigationType type;
     NavigationMode mode;
 
@@ -108,6 +103,7 @@ public:
     bool debugRenderObjectPosition;
     bool debugRenderTargetPosition;
     bool debugRenderAltitudeSurrogates;
+    bool debugRenderCameraObstructionSurrogates;
 };
 
 } // namespace vts

@@ -598,9 +598,9 @@ public:
 
                     // navigation samples per view extent
                     nk_label(&ctx, "Nav. samples:", NK_TEXT_LEFT);
-                    n.lodSelectionSamplesForAltitude = nk_slide_int(&ctx,
-                            1, n.lodSelectionSamplesForAltitude, 16, 1);
-                    sprintf(buffer, "%3d", n.lodSelectionSamplesForAltitude);
+                    c.samplesForAltitudeLodSelection = nk_slide_float(&ctx,
+                            1, c.samplesForAltitudeLodSelection, 16, 1);
+                    sprintf(buffer, "%4.1f", c.samplesForAltitudeLodSelection);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                     // altitude fade out
@@ -826,6 +826,11 @@ public:
                 // altitude surrogates
                 n.debugRenderAltitudeSurrogates = nk_check_label(&ctx,
                     "Altitude surrogates", n.debugRenderAltitudeSurrogates);
+
+                // obstruction surrogates
+                n.debugRenderCameraObstructionSurrogates = nk_check_label(&ctx,
+                    "Obstruction surrogates",
+                    n.debugRenderCameraObstructionSurrogates);
 
                 // flat shading
                 c.debugFlatShading = nk_check_label(&ctx,

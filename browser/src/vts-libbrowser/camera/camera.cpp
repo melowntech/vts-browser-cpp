@@ -57,6 +57,19 @@ OldDraw::OldDraw(const TileId &id) : trav(id), orig(id), age(0)
 
 CameraImpl::CameraImpl(MapImpl *map, Camera *cam) :
     map(map), camera(cam),
+    viewProjActual(identityMatrix4()),
+    viewProjRender(identityMatrix4()),
+    viewProjCulling(identityMatrix4()),
+    viewActual(identityMatrix4()),
+    apiProj(identityMatrix4()),
+    cullingPlanes { nan4(), nan4(), nan4(), nan4(), nan4(), nan4() },
+    perpendicularUnitVector(nan3()),
+    forwardUnitVector(nan3()),
+    cameraPosPhys(nan3()),
+    focusPosPhys(nan3()),
+    eye(nan3()),
+    target(nan3()),
+    up(nan3()),
     diskNominalDistance(0),
     windowWidth(0), windowHeight(0)
 {}

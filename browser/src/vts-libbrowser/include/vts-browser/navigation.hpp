@@ -43,7 +43,7 @@ class NavigationOptions;
 class NavigationImpl;
 class Position;
 
-class VTS_API Navigation
+class VTS_API Navigation : private Immovable
 {
 public:
     explicit Navigation(CameraImpl *cam);

@@ -37,7 +37,7 @@
 namespace vts
 {
 
-class VTS_API FetchTask
+class VTS_API FetchTask : private Immovable
 {
 public:
     enum class ResourceType
@@ -140,7 +140,7 @@ public:
     sint32 pipelining;
 };
 
-class VTS_API Fetcher
+class VTS_API Fetcher : private Immovable
 {
 public:
     static std::shared_ptr<Fetcher> create(const FetcherOptions &options);

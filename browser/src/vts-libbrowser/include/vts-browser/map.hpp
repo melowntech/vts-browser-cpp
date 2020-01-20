@@ -50,7 +50,7 @@ class MapImpl;
 class Position;
 
 // fundamental class which orchestrates all the vts tasks
-class VTS_API Map
+class VTS_API Map : private Immovable
 {
 public:
     Map();

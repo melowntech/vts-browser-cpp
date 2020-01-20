@@ -96,7 +96,7 @@ public:
     std::vector<OldDraw> blendDraws;
 };
 
-class CameraImpl
+class CameraImpl : private Immovable
 {
 public:
     MapImpl *const map;
@@ -131,7 +131,8 @@ public:
     CameraImpl(MapImpl *map, Camera *cam);
     void clear();
     Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
-        std::vector<BoundParamInfo> &boundList, double priority);
+        std::vector<BoundParamInfo> &boundList,
+        double priority);
     void touchDraws(TraverseNode *trav);
     bool visibilityTest(TraverseNode *trav);
     bool coarsenessTest(TraverseNode *trav);

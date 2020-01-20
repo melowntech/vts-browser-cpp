@@ -49,7 +49,7 @@ class RenderGeodataTask;
 class RenderColliderTask;
 class MeshAggregate;
 
-class TraverseNode
+class TraverseNode : private Immovable
 {
 public:
     struct Obb

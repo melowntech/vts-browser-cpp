@@ -67,7 +67,7 @@ struct VTSR_API RenderVariables : public vtsCRenderVariablesBase
     RenderVariables();
 };
 
-class VTSR_API RenderView
+class VTSR_API RenderView : private Immovable
 {
 public:
     RenderView(RenderContextImpl *context, Camera *cam);
@@ -91,7 +91,7 @@ private:
     friend RenderContext;
 };
 
-class VTSR_API RenderContext
+class VTSR_API RenderContext : private Immovable
 {
 public:
     // load all shaders and initialize all state required for the rendering

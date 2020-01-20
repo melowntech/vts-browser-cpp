@@ -44,7 +44,7 @@ class Map;
 class Navigation;
 class CameraImpl;
 
-class VTS_API Camera
+class VTS_API Camera : private Immovable
 {
 public:
     explicit Camera(MapImpl *map);

@@ -37,7 +37,7 @@ namespace vts
 class TraverseNode;
 class CameraImpl;
 
-class SubtilesMerger
+class SubtilesMerger : private Immovable
 {
 public:
     struct Subtile

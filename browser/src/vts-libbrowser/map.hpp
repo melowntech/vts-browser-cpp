@@ -80,7 +80,7 @@ class Cache;
 
 using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
 
-class CacheData
+class CacheData // : private Immovable
 {
 public:
     CacheData();
@@ -92,7 +92,7 @@ public:
     bool availFailed;
 };
 
-class MapImpl
+class MapImpl : private Immovable
 {
 public:
     MapImpl(Map *map,
@@ -118,7 +118,7 @@ public:
     bool mapconfigAvailable;
     bool mapconfigReady;
 
-    class Resources
+    class Resources : private Immovable
     {
     public:
         std::shared_ptr<Fetcher> fetcher;

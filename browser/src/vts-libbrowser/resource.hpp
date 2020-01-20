@@ -41,7 +41,8 @@ namespace vts
 class MapImpl;
 class FetchTaskImpl;
 
-class Resource : public std::enable_shared_from_this<Resource>
+class Resource : public std::enable_shared_from_this<Resource>,
+        private Immovable
 {
 public:
     enum class State
@@ -63,7 +64,7 @@ public:
     Resource &operator = (const Resource &other) = delete;
     virtual ~Resource();
     virtual void decode() = 0; // eg. decode an image
-    virtual void upload() {}; // call the resource callback
+    virtual void upload() {} // call the resource callback
     virtual FetchTask::ResourceType resourceType() const = 0;
     bool allowDiskCache() const;
     static bool allowDiskCache(FetchTask::ResourceType type);

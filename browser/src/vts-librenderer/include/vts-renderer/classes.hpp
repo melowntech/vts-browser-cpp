@@ -37,7 +37,7 @@
 namespace vts { namespace renderer
 {
 
-class VTSR_API Shader
+class VTSR_API Shader : private Immovable
 {
     std::string debugId;
 
@@ -80,7 +80,7 @@ private:
     int loadShader(const std::string &source, int stage) const;
 };
 
-class VTSR_API Texture
+class VTSR_API Texture : private Immovable
 {
     std::string debugId;
 
@@ -101,7 +101,7 @@ private:
     bool grayscale;
 };
 
-class VTSR_API Mesh
+class VTSR_API Mesh : private Immovable
 {
     std::string debugId;
 
@@ -125,7 +125,7 @@ private:
     uint32 vao, vbo, vio;
 };
 
-class VTSR_API UniformBuffer
+class VTSR_API UniformBuffer : private Immovable
 {
     std::string debugId;
 

@@ -161,6 +161,15 @@ UTILITY_GENERATE_ENUM_IO(TraverseMode,
 
 #endif // UTILITY_GENERATE_ENUM_IO
 
+struct Immovable
+{
+    Immovable() = default;
+    Immovable(const Immovable &) = delete;
+    Immovable(Immovable &&) = delete;
+    Immovable &operator = (const Immovable &) = delete;
+    Immovable &operator = (Immovable &&) = delete;
+};
+
 } // namespace vts
 
 #endif

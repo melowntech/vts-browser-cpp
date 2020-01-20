@@ -39,7 +39,7 @@
 namespace vts
 {
 
-class Credits
+class Credits : private Immovable
 {
 public:
     enum class Scope

@@ -39,7 +39,7 @@ class CameraImpl;
 class Navigation;
 class TemporalNavigationState;
 
-class NavigationImpl
+class NavigationImpl : private Immovable
 {
 public:
     typedef vtslibs::registry::Position::Type Type;

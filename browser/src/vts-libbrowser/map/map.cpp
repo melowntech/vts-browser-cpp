@@ -188,7 +188,7 @@ void MapImpl::purgeViewCache()
         {
             cam->statistics = CameraStatistics();
             cam->draws = CameraDraws();
-            cam->credits = CameraCredits();
+            cam->credits.clear();
         }
     }
 }

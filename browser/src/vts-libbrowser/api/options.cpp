@@ -50,7 +50,8 @@ MapCreateOptions::MapCreateOptions() :
     hashCachePaths(true),
     searchUrlFallbackOutsideEarth(false),
     browserOptionsSearchUrls(true),
-    atmosphereDensityTexture(true)
+    atmosphereDensityTexture(true),
+    debugUseExtraThreads(true)
 {}
 
 MapCreateOptions::MapCreateOptions(const std::string &json)
@@ -75,6 +76,7 @@ void MapCreateOptions::applyJson(const std::string &json)
     AJ(searchUrlFallbackOutsideEarth, asBool);
     AJ(browserOptionsSearchUrls, asBool);
     AJ(atmosphereDensityTexture, asBool);
+    AJ(debugUseExtraThreads, asBool);
 }
 
 std::string MapCreateOptions::toJson() const
@@ -92,6 +94,7 @@ std::string MapCreateOptions::toJson() const
     TJ(searchUrlFallbackOutsideEarth, asBool);
     TJ(browserOptionsSearchUrls, asBool);
     TJ(atmosphereDensityTexture, asBool);
+    TJ(debugUseExtraThreads, asBool);
     return jsonToString(v);
 }
 

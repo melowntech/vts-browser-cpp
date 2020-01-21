@@ -176,19 +176,24 @@ public:
     void traverseClearing(TraverseNode *trav);
 
     // resources methods
-    void resourceDataUpdate();
-    void resourceDataRun();
-    void resourceFinalize();
-    void resourceUpdate();
+    void resourcesFinalize();
+    void resourcesRenderUpdate();
+    void resourcesDataUpdate();
+    uint32 resourcesDataUpdateOne();
 
     bool resourcesTryRemove(std::shared_ptr<Resource> &r);
     void resourcesRemoveOld();
     void resourcesCheckInitialized();
     void resourcesStartDownloads();
     void resourcesDownloadsEntry();
+    void resourcesUploadProcessorEntry();
     void resourcesAtmosphereGeneratorEntry();
     void resourcesGeodataProcessorEntry();
     void resourcesDecodeProcessorEntry();
+    bool resourcesUploadProcessOne();
+    bool resourcesAtmosphereProcessOne();
+    bool resourcesGeodataProcessOne();
+    bool resourcesDecodeProcessOne();
     void resourceUpdateStatistics(const std::shared_ptr<Resource> &r);
     void resourceDecodeProcess(const std::shared_ptr<Resource> &r);
     void resourceUploadProcess(const std::shared_ptr<Resource> &r);

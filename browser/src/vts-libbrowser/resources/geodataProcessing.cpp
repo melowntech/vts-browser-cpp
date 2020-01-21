@@ -2408,4 +2408,26 @@ void MapImpl::resourcesGeodataProcessorEntry()
     }
 }
 
+bool MapImpl::resourcesGeodataProcessOne()
+{
+    std::weak_ptr<GeodataTile> w;
+    if (!resources.queGeodata.tryPop(w))
+        return false;
+    std::shared_ptr<GeodataTile> r = w.lock();
+    if (!r)
+        return resourcesGeodataProcessOne();
+    try
+    {
+        r->decode();
+        r->state = Resource::State::decoded;
+        resources.queUpload.push(r);
+    }
+    catch (const std::exception &)
+    {
+        statistics.resourcesFailed++;
+        r->state = Resource::State::errorFatal;
+    }
+    return true;
+}
+
 } // namespace vts

@@ -217,24 +217,24 @@ double Map::getMapRenderProgress() const
 
 void Map::dataUpdate()
 {
-    impl->resourceDataUpdate();
+    impl->resourcesDataUpdate();
 }
 
 void Map::dataAllRun()
 {
-    impl->resourceDataRun();
+    impl->resourcesUploadProcessorEntry();
 }
 
 void Map::renderUpdate(double elapsedTime)
 {
     impl->statistics.renderTicks = ++impl->renderTickIndex;
-    impl->resourceUpdate();
+    impl->resourcesRenderUpdate();
     impl->renderUpdate(elapsedTime);
 }
 
 void Map::renderFinalize()
 {
-    impl->resourceFinalize();
+    impl->resourcesFinalize();
 }
 
 double Map::lastRenderUpdateElapsedTime() const

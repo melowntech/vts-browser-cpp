@@ -24,9 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vts-browser/log.hpp>
-#include <vts-browser/math.hpp>
-#include <vts-browser/position.hpp>
+#include "common.hpp"
 
 #include <vector>
 #include <sstream>

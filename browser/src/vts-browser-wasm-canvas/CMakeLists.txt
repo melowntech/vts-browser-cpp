@@ -3,8 +3,11 @@ define_module(BINARY vts-browser-wasm-canvas DEPENDS
     vts-browser vts-renderer jsoncpp)
 
 set(SRC_LIST
+    common.hpp
+    inputs.cpp
+    jsInterop.cpp
     main.cpp
-    renderOptions.cpp
+    timer.hpp
     toHtml.cpp
 )
 

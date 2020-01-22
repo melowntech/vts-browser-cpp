@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017 Melown Technologies SE
+ * Copyright (c) 2020 Melown Technologies SE
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -24,49 +24,37 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <vts-browser/log.hpp>
+#include <vts-browser/math.hpp>
+#include <vts-browser/map.hpp>
+#include <vts-browser/camera.hpp>
+#include <vts-browser/navigation.hpp>
+#include <vts-browser/position.hpp>
+#include <vts-browser/search.hpp>
 #include <vts-renderer/renderer.hpp>
-#include "vts-libbrowser/utilities/json.hpp"
 
-using namespace vts;
 
-void applyRenderOptions(const std::string &json,
-        vts::renderer::RenderOptions &opt)
-{
-    struct T : public vtsCRenderOptionsBase
-    {
-        void apply(const std::string &json)
-        {
-            Json::Value v = stringToJson(json);
-            AJ(textScale, asFloat);
-            AJ(antialiasingSamples, asUInt);
-            AJ(renderGeodataDebug, asUInt);
-            AJ(renderAtmosphere, asBool);
-            AJ(geodataHysteresis, asBool);
-            AJ(debugDepthFeedback, asBool);
-        }
-    };
-    T t = (T&)opt;
-    t.apply(json);
-    opt = (vts::renderer::RenderOptions&)t;
-}
+#include <emscripten.h>
+#include <emscripten/html5.h>
 
-std::string getRenderOptions(const vts::renderer::RenderOptions &opt)
-{
-    struct T : public vtsCRenderOptionsBase
-    {
-        std::string get() const
-        {
-            Json::Value v;
-            TJ(textScale, asFloat);
-            TJ(antialiasingSamples, asUInt);
-            TJ(renderGeodataDebug, asUInt);
-            TJ(renderAtmosphere, asBool);
-            TJ(geodataHysteresis, asBool);
-            TJ(debugDepthFeedback, asBool);
-            return jsonToString(v);
-        }
-    };
-    const T t = (const T&)opt;
-    return t.get();
-}
+
+using vts::vec3;
+
+
+std::string jsonToHtml(const std::string &json);
+std::string positionToHtml(const vts::Position &pos);
+
+extern "C" void setHtml(const char *id, const char *value);
+extern "C" void setInputValue(const char *id, const char *value);
+
+EM_BOOL mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *);
+EM_BOOL wheelEvent(int, const EmscriptenWheelEvent *e, void *);
+
+
+extern std::shared_ptr<vts::Map> map;
+extern std::shared_ptr<vts::Camera> cam;
+extern std::shared_ptr<vts::Navigation> nav;
+extern std::shared_ptr<vts::SearchTask> srch;
+extern std::shared_ptr<vts::renderer::RenderContext> context;
+extern std::shared_ptr<vts::renderer::RenderView> view;
 

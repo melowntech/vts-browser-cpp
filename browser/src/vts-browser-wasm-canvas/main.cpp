@@ -24,203 +24,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vts-browser/log.hpp>
-#include <vts-browser/math.hpp>
-#include <vts-browser/map.hpp>
+#include "common.hpp"
+#include "timer.hpp"
+
 #include <vts-browser/mapOptions.hpp>
-#include <vts-browser/mapStatistics.hpp>
 #include <vts-browser/mapCallbacks.hpp>
-#include <vts-browser/camera.hpp>
-#include <vts-browser/cameraOptions.hpp>
+#include <vts-browser/mapStatistics.hpp>
 #include <vts-browser/cameraStatistics.hpp>
 #include <vts-browser/cameraCredits.hpp>
-#include <vts-browser/navigation.hpp>
-#include <vts-browser/navigationOptions.hpp>
-#include <vts-browser/position.hpp>
-#include <vts-browser/search.hpp>
-#include <vts-renderer/renderer.hpp>
 
-#include <sstream>
 #include <iomanip>
-#include <chrono>
-
-#include <emscripten.h>
-#include <emscripten/html5.h>
-
-using vts::vec3;
-using timerClock = std::chrono::high_resolution_clock;
-using timerPoint = std::chrono::time_point<timerClock>;
-
-std::string jsonToHtml(const std::string &json);
-std::string positionToHtml(const vts::Position &pos);
-void applyRenderOptions(const std::string &json,
-        vts::renderer::RenderOptions &opt);
-std::string getRenderOptions(const vts::renderer::RenderOptions &opt);
 
 std::shared_ptr<vts::Map> map;
 std::shared_ptr<vts::Camera> cam;
 std::shared_ptr<vts::Navigation> nav;
+std::shared_ptr<vts::SearchTask> srch;
 std::shared_ptr<vts::renderer::RenderContext> context;
 std::shared_ptr<vts::renderer::RenderView> view;
-std::shared_ptr<vts::SearchTask> srch;
-vec3 prevMousePosition;
-timerPoint lastFrameTimestamp;
+TimerPoint lastFrameTimestamp;
 EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx;
-
-EM_JS(void, setHtml, (const char *id, const char *value),
-{
-    document.getElementById(UTF8ToString(id)).innerHTML = UTF8ToString(value)
-});
-
-EM_JS(void, setInputValue, (const char *id, const char *value),
-{
-    document.getElementById(UTF8ToString(id)).value = UTF8ToString(value)
-});
-
-extern "C" EMSCRIPTEN_KEEPALIVE void setMapconfig(const char *url)
-{
-    if(!map)
-        return;
-    map->setMapconfigPath(url);
-}
-
-extern "C" EMSCRIPTEN_KEEPALIVE void setViewPreset(const char *preset)
-{
-    if(!map || !map->getMapconfigAvailable())
-        return;
-    map->setViewCurrent(preset);
-}
-
-extern "C" EMSCRIPTEN_KEEPALIVE void setPosition(const char *pos)
-{
-    if(!nav || !map->getMapconfigAvailable())
-        return;
-    try
-    {
-        vts::Position p(pos);
-        nav->setPosition(p);
-    }
-    catch (...)
-    {
-        // do nothing
-    }
-}
-
-extern "C" EMSCRIPTEN_KEEPALIVE void search(const char *query)
-{
-    if(!map)
-        return;
-    if (!map->searchable())
-    {
-        setHtml("searchResults", "Search not available");
-        return;
-    }
-    srch = map->search(query);
-    setHtml("searchResults", "Searching...");
-}
-
-extern "C" EMSCRIPTEN_KEEPALIVE void gotoPosition(
-        double x, double y, double z, double ve)
-{
-    if(!map)
-        return;
-    nav->setViewExtent(std::max(ve * 2, 6667.0));
-    nav->setRotation({0,270,0});
-    nav->resetAltitude();
-    nav->resetNavigationMode();
-    nav->setPoint({x, y, z});
-    nav->options().type = vts::NavigationType::FlyOver;
-}
-
-extern "C" EMSCRIPTEN_KEEPALIVE void applyOptions(const char *json)
-{
-    if(!map)
-        return;
-    {
-        std::stringstream ss;
-        ss << "Changing options: " << json;
-        vts::log(vts::LogLevel::info3, ss.str());
-    }
-    map->options().applyJson(json);
-    cam->options().applyJson(json);
-    nav->options().applyJson(json);
-    applyRenderOptions(json, view->options());
-}
-
-extern "C" EMSCRIPTEN_KEEPALIVE const char *getOptions()
-{
-    if(!map)
-        return "";
-    static std::string result; // NOT REENTRANT!!, for JS interop (quick and dirty :D)
-    result = "";
-    result += map->options().toJson();
-    result += cam->options().toJson();
-    result += nav->options().toJson();
-    result += getRenderOptions(view->options());
-    return result.c_str();
-}
-
-EM_BOOL mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *)
-{
-    vec3 current = vec3(e->clientX, e->clientY, 0);
-    vec3 move = current - prevMousePosition;
-    prevMousePosition = current;
-    if (!map->getMapconfigAvailable())
-        return false;
-    switch (eventType)
-    {
-    case EMSCRIPTEN_EVENT_MOUSEMOVE:
-        switch (e->buttons)
-        {
-        case 1: // LMB
-            nav->pan(move.data());
-            nav->options().type = vts::NavigationType::Quick;
-            break;
-        case 2: // RMB
-            nav->rotate(move.data());
-            nav->options().type = vts::NavigationType::Quick;
-            break;
-        }
-        break;
-    case EMSCRIPTEN_EVENT_DBLCLICK:
-        if (e->button == 0) // LMB
-        {
-            vec3 wp;
-            view->getWorldPosition(current.data(), wp.data());
-            if (!std::isnan(wp[0]) && !std::isnan(wp[1]) && !std::isnan(wp[2]))
-            {
-                vec3 np;
-                map->convert(wp.data(), np.data(),
-                             vts::Srs::Physical, vts::Srs::Navigation);
-                nav->setPoint(np.data());
-                nav->options().type = vts::NavigationType::Quick;
-            }
-        }
-        break;
-    }
-    return true;
-}
-
-EM_BOOL wheelEvent(int, const EmscriptenWheelEvent *e, void *)
-{
-    if (!map || !map->getMapconfigAvailable())
-        return false;
-    double d = e->deltaY;
-    switch (e->deltaMode)
-    {
-    case DOM_DELTA_PIXEL:
-        d /= 30;
-        break;
-    case DOM_DELTA_LINE:
-        break;
-    case DOM_DELTA_PAGE:
-        d *= 80;
-        break;
-    }
-    nav->zoom(d * -0.21);
-    nav->options().type = vts::NavigationType::Quick;
-    return true;
-}
 
 void updateResolution()
 {
@@ -232,51 +54,7 @@ void updateResolution()
     cam->setViewportSize(ro.width, ro.height);
 }
 
-timerPoint now()
-{
-    return timerClock::now();
-}
-
-struct durationBuffer
-{
-    static const uint32 N = 60;
-    float buffer[N];
-
-    durationBuffer()
-    {
-        for (auto &i : buffer)
-            i = 0;
-    }
-
-    float avg() const
-    {
-        float sum = 0;
-        for (float i : buffer)
-            sum += i;
-        return sum / N;
-    }
-
-    float max() const
-    {
-        float m = 0;
-        for (float i : buffer)
-            m = std::max(m, i);
-        return m;
-    }
-
-    void update(float t)
-    {
-        buffer[map->statistics().renderTicks % N] = t;
-    }
-
-    void update(const timerPoint &a, const timerPoint &b)
-    {
-        update(std::chrono::duration_cast<
-               std::chrono::microseconds>(b - a).count() / 1000.0);
-    }
-};
-
-durationBuffer durationFrame, durationData,
+DurationBuffer durationFrame, durationData,
     durationMap, durationCamera, durationView;
 
 void updateStatisticsHtml()
@@ -331,7 +109,7 @@ void mapconfAvailable()
 
 void loopIteration()
 {
-    timerPoint currentTimestamp = now();
+    TimerPoint currentTimestamp = now();
     updateResolution();
 
     // search
@@ -354,10 +132,10 @@ void loopIteration()
         srch.reset();
     }
 
-    timerPoint a = now();
+    TimerPoint a = now();
     map->dataUpdate();
 
-    timerPoint b = now();
+    TimerPoint b = now();
     {
         double elapsedTime = std::chrono::duration_cast<
                 std::chrono::microseconds>(
@@ -365,19 +143,19 @@ void loopIteration()
         map->renderUpdate(elapsedTime);
     }
 
-    timerPoint c = now();
+    TimerPoint c = now();
     cam->renderUpdate();
 
-    timerPoint d = now();
+    TimerPoint d = now();
     view->render();
 
-    timerPoint e = now();
+    TimerPoint e = now();
     durationFrame.update(lastFrameTimestamp, currentTimestamp);
     durationData.update(a, b);
     durationMap.update(b, c);
     durationCamera.update(c, d);
     durationView.update(d, e);
-    if ((map->statistics().renderTicks % durationBuffer::N) == 0)
+    if ((map->statistics().renderTicks % DurationBuffer::N) == 0)
         updateStatisticsHtml();
     lastFrameTimestamp = currentTimestamp;
 }

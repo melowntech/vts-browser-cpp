@@ -189,8 +189,9 @@ void SurfaceStack::generateFree(MapImpl *map,
     switch (freeLayer.type)
     {
     case vtslibs::registry::FreeLayer::Type::external:
-        assert(false);
-        break;
+        LOGTHROW(fatal, std::logic_error)
+                << "Trying to use external free layer directly";
+        throw;
     case vtslibs::registry::FreeLayer::Type::meshTiles:
     {
         SurfaceInfo item(
@@ -213,7 +214,8 @@ void SurfaceStack::generateFree(MapImpl *map,
         surfaces.push_back(item);
     } break;
     default:
-        LOGTHROW(fatal, std::logic_error) << "Not implemented free layer type";
+        LOGTHROW(fatal, std::logic_error)
+                << "Not implemented free layer type";
         throw;
     }
 }

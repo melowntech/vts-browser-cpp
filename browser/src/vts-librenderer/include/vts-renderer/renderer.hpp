@@ -51,6 +51,7 @@ namespace renderer
 class RenderContext;
 class RenderViewImpl;
 class RenderContextImpl;
+class RenderDraws;
 
 struct VTSR_API ContextOptions : public vtsCContextOptionsBase
 {
@@ -76,6 +77,7 @@ public:
     RenderOptions &options();
     const RenderVariables &variables() const;
     void render();
+    void render(RenderDraws *draws);
 
     // reconstruct world position for mouse picking
     // uses data from last call to render

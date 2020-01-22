@@ -32,6 +32,7 @@
 #include <optick.h>
 
 #include "renderer.hpp"
+#include "include/vts-renderer/renderDraws.hpp"
 
 namespace vts { namespace renderer
 {
@@ -96,6 +97,23 @@ std::shared_ptr<RenderView> RenderContext::createView(Camera *cam)
     return std::make_shared<RenderView>(impl.get(), cam);
 }
 
+RenderDraws::RenderDraws(Camera *cam)
+    : elapsedTime(nan1()),
+      projected(false),
+      lodBlendingWithDithering(false),
+      map(cam->map())
+{
+    draws = cam->draws();
+    body = map->celestialBody();
+    projected = map->getMapProjected();
+    lodBlendingWithDithering
+        = !cam->options().lodBlendingTransparent;
+    atmosphereDensityTexture
+        = std::static_pointer_cast<Texture>(
+                map->atmosphereDensityTexture());
+    elapsedTime = map->lastRenderUpdateElapsedTime();
+}
+
 RenderView::RenderView(RenderContextImpl *context, Camera *cam)
 {
     assert(context);
@@ -121,7 +139,6 @@ const RenderVariables &RenderView::variables() const
 void RenderView::render()
 {
     OPTICK_EVENT();
-
     impl->draws = &impl->camera->draws();
     impl->body = &impl->camera->map()->celestialBody();
     impl->projected = impl->camera->map()->getMapProjected();
@@ -130,6 +147,24 @@ void RenderView::render()
     impl->atmosphereDensityTexture
         = (Texture*)impl->camera->map()->atmosphereDensityTexture().get();
     impl->elapsedTime = impl->camera->map()->lastRenderUpdateElapsedTime();
+    impl->renderEntry();
+    impl->draws = nullptr;
+    impl->body = nullptr;
+    impl->atmosphereDensityTexture = nullptr;
+}
+
+void RenderView::render(RenderDraws *draws)
+{
+    OPTICK_EVENT();
+    assert(impl->camera->map() == draws->map);
+    impl->draws = &draws->draws;
+    impl->body = &draws->body;
+    impl->projected = draws->projected;
+    impl->lodBlendingWithDithering
+            = draws->lodBlendingWithDithering;
+    impl->atmosphereDensityTexture
+            = draws->atmosphereDensityTexture.get();
+    impl->elapsedTime = draws->elapsedTime;
     impl->renderEntry();
     impl->draws = nullptr;
     impl->body = nullptr;

@@ -32,17 +32,25 @@
 
 #include "vts-libbrowser/utilities/json.hpp"
 
+#include <emscripten.h>
+#include <emscripten/html5.h>
+
+
 // CPP -> JS
 
-EM_JS(void, setHtml, (const char *id, const char *value),
+void setHtml(const char *id, const std::string &value)
 {
-    document.getElementById(UTF8ToString(id)).innerHTML = UTF8ToString(value)
-});
+    //MAIN_THREAD_ASYNC_EM_ASM({
+    //    document.getElementById(UTF8ToString($0)).innerHTML = UTF8ToString($1)
+    //}, id, value.c_str());
+}
 
-EM_JS(void, setInputValue, (const char *id, const char *value),
+void setInputValue(const char *id, const std::string &value)
 {
-    document.getElementById(UTF8ToString(id)).value = UTF8ToString(value)
-});
+    //MAIN_THREAD_ASYNC_EM_ASM({
+    //    document.getElementById(UTF8ToString($0)).value = UTF8ToString($1)
+    //}, id, value.c_str());
+}
 
 // JS -> CPP
 
@@ -148,6 +156,8 @@ std::string getRenderOptions(const renderer::RenderOptions &opt)
 
 } // namespace
 
+extern std::shared_ptr<vts::renderer::RenderView> view; // only for the options
+
 extern "C" EMSCRIPTEN_KEEPALIVE void applyOptions(const char *json)
 {
     if(!map)
@@ -155,7 +165,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void applyOptions(const char *json)
     {
         std::stringstream ss;
         ss << "Changing options: " << json;
-        vts::log(vts::LogLevel::info3, ss.str());
+        vts::log(vts::LogLevel::info2, ss.str());
     }
     map->options().applyJson(json);
     cam->options().applyJson(json);

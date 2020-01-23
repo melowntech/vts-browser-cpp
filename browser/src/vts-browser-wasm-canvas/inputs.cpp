@@ -28,10 +28,15 @@
 
 #include <vts-browser/navigationOptions.hpp>
 
+#include <emscripten/html5.h>
+
+vec3 getWorldPosition(const vec3 &input);
+
 vec3 prevMousePosition;
 
 EM_BOOL mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *)
 {
+    //vts::log(vts::LogLevel::info2, "Mouse event");
     vec3 current = vec3(e->clientX, e->clientY, 0);
     vec3 move = current - prevMousePosition;
     prevMousePosition = current;
@@ -55,8 +60,7 @@ EM_BOOL mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *)
     case EMSCRIPTEN_EVENT_DBLCLICK:
         if (e->button == 0) // LMB
         {
-            vec3 wp;
-            view->getWorldPosition(current.data(), wp.data());
+            vec3 wp = getWorldPosition(current);
             if (!std::isnan(wp[0]) && !std::isnan(wp[1]) && !std::isnan(wp[2]))
             {
                 vec3 np;
@@ -73,6 +77,7 @@ EM_BOOL mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *)
 
 EM_BOOL wheelEvent(int, const EmscriptenWheelEvent *e, void *)
 {
+    //vts::log(vts::LogLevel::info2, "Mouse wheel event");
     if (!map || !map->getMapconfigAvailable())
         return false;
     double d = e->deltaY;
@@ -87,7 +92,7 @@ EM_BOOL wheelEvent(int, const EmscriptenWheelEvent *e, void *)
         d *= 80;
         break;
     }
-    nav->zoom(d * -0.21);
+    nav->zoom(d * -0.25);
     nav->options().type = vts::NavigationType::Quick;
     return true;
 }

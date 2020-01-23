@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2020 Melown Technologies SE
+ * Copyright (c) 2017 Melown Technologies SE
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -24,33 +24,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vts-browser/log.hpp>
-#include <vts-browser/math.hpp>
-#include <vts-browser/map.hpp>
-#include <vts-browser/camera.hpp>
-#include <vts-browser/navigation.hpp>
-#include <vts-browser/position.hpp>
-#include <vts-browser/search.hpp>
-#include <vts-renderer/renderer.hpp>
+#include "common.hpp"
+#include "timer.hpp"
+
+#include "vts-libbrowser/utilities/threadQueue.hpp"
+#include <vts-renderer/renderDraws.hpp>
 
 
-using vts::vec3;
+void createRenderThread();
 
-
-std::string jsonToHtml(const std::string &json);
-std::string positionToHtml(const vts::Position &pos);
-
-void setHtml(const char *id, const std::string &value);
-void setInputValue(const char *id, const std::string &value);
-
-struct EmscriptenMouseEvent;
-struct EmscriptenWheelEvent;
-int mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *);
-int wheelEvent(int, const EmscriptenWheelEvent *e, void *);
-
-
-extern std::shared_ptr<vts::Map> map;
-extern std::shared_ptr<vts::Camera> cam;
-extern std::shared_ptr<vts::Navigation> nav;
-extern std::shared_ptr<vts::SearchTask> srch;
+typedef vts::ThreadQueue<std::unique_ptr<vts::renderer::RenderDraws>>
+    DrawsQueue;
+extern DrawsQueue drawsQueue;
+extern DurationBuffer durationData, durationView;
+extern uint32 displayWidth, displayHeight;
 

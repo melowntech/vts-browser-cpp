@@ -181,7 +181,7 @@ double CameraImpl::coarsenessValue(TraverseNode *trav)
         return trav->texelSize;
 
     if (map->options.debugCoarsenessDisks
-        && trav->diskHalfAngle == trav->diskHalfAngle)
+        && !std::isnan(trav->diskHalfAngle))
     {
         // test the value at point at the distance from the disk
         double dist = distanceToDisk(trav->diskNormalPhys,
@@ -272,17 +272,17 @@ void CameraImpl::renderText(TraverseNode *trav, float x, float y,
 
         //black box
         {
-            auto ctask = convert(task);
-            float l = getTextSize(size, text);
-            ctask.data[0] = size + 2;
-            ctask.data[1] = (l + 2) / (size + 2);
-            ctask.data[2] = 2.0 / windowWidth;
-            ctask.data[3] = 2.0 / windowHeight;
-            ctask.data2[0] = -1000;
-            ctask.data2[1] = 0;
-            ctask.data2[2] = x - 1;
-            ctask.data2[3] = y - 1;
-            draws.infographics.emplace_back(ctask);
+            //auto ctask = convert(task);
+            //float l = getTextSize(size, text);
+            //ctask.data[0] = size + 2;
+            //ctask.data[1] = (l + 2) / (size + 2);
+            //ctask.data[2] = 2.0 / windowWidth;
+            //ctask.data[3] = 2.0 / windowHeight;
+            //ctask.data2[0] = -1000;
+            //ctask.data2[1] = 0;
+            //ctask.data2[2] = x - 1;
+            //ctask.data2[3] = y - 1;
+            //draws.infographics.emplace_back(ctask);
         }
 
         for (uint32 i = 0, li = text.size(); i < li; i++)
@@ -890,8 +890,8 @@ void CameraImpl::renderUpdate()
         matToRaw(viewActual, c.view);
         matToRaw(apiProj, c.proj);
         vecToRaw(eye, c.eye);
-        c.tagretDistance = length(vec3(target - eye));
-        c.viewExtent = c.tagretDistance / (c.proj[5] * 0.5);
+        c.targetDistance = length(vec3(target - eye));
+        c.viewExtent = c.targetDistance / (c.proj[5] * 0.5);
 
         // altitudes
         {

@@ -97,6 +97,7 @@ public:
         vec4f uniAtmSizes; // atmosphere thickness (divided by major axis), major / minor axes ratio, inverze major axis
         vec4f uniAtmCoefs; // horizontal exponent, colorGradientExponent
         vec3f uniAtmCameraPosition; // world position of camera (divided by major axis)
+        float _dummy; // the AtmBlock may not be smaller than corresponding definition in the shader (WebGL restriction)
     };
 
     void initializeAtmosphere();
@@ -188,6 +189,7 @@ public:
     void updateFramebuffers();
     void updateAtmosphereBuffer();
     void getWorldPosition(const double screenPos[2], double worldPos[3]);
+    void applyFilter(const std::shared_ptr<Shader> &shader);
     void renderCompass(const double screenPosSize[3],
         const double mapRotation[3]);
     void renderValid();
@@ -239,7 +241,13 @@ public:
     std::shared_ptr<ShaderAtm> shaderBackground;
     std::shared_ptr<Shader> shaderInfographics;
     std::shared_ptr<Shader> shaderTexture;
+    std::shared_ptr<Shader> shaderGreyscale;
+    std::shared_ptr<Shader> shaderDepth;
+    std::shared_ptr<Shader> shaderDOF;
+    std::shared_ptr<Shader> shaderDOF2;
     std::shared_ptr<Shader> shaderFXAA;
+    std::shared_ptr<Shader> shaderFXAA2;
+    std::shared_ptr<Shader> shaderSSAO;
     std::shared_ptr<Shader> shaderCopyDepth;
     std::shared_ptr<Shader> shaderGeodataColor;
     std::shared_ptr<Shader> shaderGeodataPointFlat;

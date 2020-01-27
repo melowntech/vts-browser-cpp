@@ -24,48 +24,49 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CAMERA_COMMON_H_desgjjgf
-#define CAMERA_COMMON_H_desgjjgf
+#include <vts-renderer/renderer.hpp>
+#include "vts-libbrowser/utilities/json.hpp"
 
-#include "foundation.h"
+using namespace vts;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct vtsCDrawSurfaceBase
+void applyRenderOptions(const std::string &json,
+        vts::renderer::RenderOptions &opt)
 {
-    float mv[16];
-    float uvm[9];
-    float color[4]; // alpha is transparency
-    float uvClip[4];
-    float center[3];
-    float blendingCoverage;
-    bool externalUv;
-    bool flatShading;
-} vtsCDrawSurfaceBase;
+    struct T : public vtsCRenderOptionsBase
+    {
+        void apply(const std::string &json)
+        {
+            Json::Value v = stringToJson(json);
+            AJ(textScale, asFloat);
+            AJ(antialiasingSamples, asUInt);
+            AJ(renderGeodataDebug, asUInt);
+            AJ(renderAtmosphere, asBool);
+            AJ(geodataHysteresis, asBool);
+            AJ(debugDepthFeedback, asBool);
+        }
+    };
+    T t = (T&)opt;
+    t.apply(json);
+    opt = (vts::renderer::RenderOptions&)t;
+}
 
-typedef struct vtsCDrawSimpleBase
+std::string getRenderOptions(const vts::renderer::RenderOptions &opt)
 {
-    float mv[16];
-    float color[4];
-    float data[4]; // useColorTexture, noTransparencyWithDepth, diagnosticsText
-    float data2[4]; // diagnosticsText
-} vtsCDrawSimpleBase;
+    struct T : public vtsCRenderOptionsBase
+    {
+        std::string get() const
+        {
+            Json::Value v;
+            TJ(textScale, asFloat);
+            TJ(antialiasingSamples, asUInt);
+            TJ(renderGeodataDebug, asUInt);
+            TJ(renderAtmosphere, asBool);
+            TJ(geodataHysteresis, asBool);
+            TJ(debugDepthFeedback, asBool);
+            return jsonToString(v);
+        }
+    };
+    const T t = (const T&)opt;
+    return t.get();
+}
 
-typedef struct vtsCCameraBase
-{
-    double view[16];
-    double proj[16];
-    double eye[3]; // position in world (physical) space
-    double targetDistance; // distance of the eye to center of orbit
-    double viewExtent; // window height projected to world at the target distance
-    double altitudeOverEllipsoid; // altitude of the eye over ellipsoid
-    double altitudeOverSurface; // altitude of the eye over surface
-} vtsCCameraBase;
-
-#ifdef __cplusplus
-} // extern C
-#endif
-
-#endif

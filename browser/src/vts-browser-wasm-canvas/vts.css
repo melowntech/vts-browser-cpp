@@ -1,0 +1,152 @@
+
+body
+{
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-size: 0.8em;
+    font-family: sans-serif;
+}
+
+#canvas
+{
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -10;
+    border: none;
+    background-color: #000;
+}
+
+#status-overlay
+{
+    z-index: -5;
+}
+
+#credits-overlay
+{
+    z-index: 5;
+}
+
+#menus
+{
+    z-index: 10;
+}
+
+#status
+{
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+}
+
+#credits
+{
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, 0);
+    bottom: 0;
+    padding: 10px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+#credits a
+{
+    color: white;
+}
+
+.window
+{
+    width: 300px;
+    border: 2px solid #777;
+    background-color: #111;
+    color: white;
+}
+
+.header
+{
+    width: 300px;
+    padding: 10px;
+}
+
+.content
+{
+    width: 288px;
+    padding: 6px;
+    max-height: 600px;
+    overflow: auto;
+}
+
+.content>*
+{
+    width: 100%;
+}
+
+.content table
+{
+    width: 100%;
+}
+
+.content table tr:nth-child(even)
+{
+    background-color: #181818;
+}
+
+.draggable
+{
+    position: absolute;
+}
+
+.draggable .header
+{
+    cursor: move;
+}
+
+.collapsible
+{
+    border: none;
+    outline: none;
+    padding: 6px;
+    text-align: center;
+    cursor: pointer;
+    background-color: #333;
+    border-bottom: 2px solid #555;
+    color: white;
+    font-size: 1em;
+    font-family: serif;
+}
+
+.collapsible:hover
+{
+    background-color: #444;
+}
+
+.collapsible+*
+{
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+.number
+{
+    text-align: right;
+    font-size: 1.5em;
+    font-family: monospace;
+}
+
+.searchItem::after
+{
+    content: "";
+    clear: both;
+    display: table;
+}
+
+.searchItem button
+{
+    float: right;
+}

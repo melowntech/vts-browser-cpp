@@ -14,6 +14,9 @@ layout(location = 1) in vec2 inUvInternal;
 layout(location = 2) in vec2 inUvExternal;
 
 out vec2 varUvTex;
+#ifdef VTS_NO_CLIP
+out vec2 varUvExternal;
+#endif
 out vec3 varViewPosition;
 #ifdef VTS_ATM_PER_VERTEX
 out float varAtmDensity;
@@ -30,7 +33,9 @@ bool getFlag(int i)
 
 void main()
 {
-#ifndef VTS_NO_CLIP
+#ifdef VTS_NO_CLIP
+    varUvExternal = inUvExternal;
+#else
     gl_ClipDistance[0] = (inUvExternal[0] - uniUvClip[0]) * +1.0;
     gl_ClipDistance[1] = (inUvExternal[1] - uniUvClip[1]) * +1.0;
     gl_ClipDistance[2] = (inUvExternal[0] - uniUvClip[2]) * -1.0;

@@ -45,8 +45,16 @@ RenderOptions::RenderOptions()
 #else
     antialiasingSamples = 4;
 #endif // !VTSR_EMBEDDED
+    filterAA = 0;
+    filterDOF = 0;
+    filterDOFBlur = 10.0;
+    filterDOFAperture = 0.0;
+    filterDOFFocus = true;
+    filterSSAO = 0;
+    filterFX = 0;
     renderAtmosphere = true;
     geodataHysteresis = true;
+    debugDepthFeedback = true;
     colorToTargetFrameBuffer = true;
 }
 

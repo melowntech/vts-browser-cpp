@@ -276,7 +276,7 @@ void CameraImpl::travDetermineMetaImpl(TraverseNode *trav)
         }
 
         // obb
-        if (trav->nodeInfo.distanceFromRoot() > 4)
+        if (trav->id().lod > 4)
         {
             vec3 center = vec3(0,0,0);
             for (uint32 i = 0; i < 8; i++)
@@ -305,7 +305,7 @@ void CameraImpl::travDetermineMetaImpl(TraverseNode *trav)
         }
 
         // disks
-        if (trav->nodeInfo.distanceFromRoot() > 4)
+        if (trav->id().lod > 4)
         {
             vec2 sds2 = vec2((fu + fl) * 0.5);
             vec3 sds = vec2to3(sds2, double(trav->meta->geomExtents.z.min));
@@ -347,7 +347,7 @@ void CameraImpl::travDetermineMetaImpl(TraverseNode *trav)
     }
 
     // aabb
-    if (trav->nodeInfo.distanceFromRoot() > 2)
+    if (trav->id().lod > 2)
     {
         trav->aabbPhys[0] = trav->aabbPhys[1] = trav->cornersPhys[0];
         for (const vec3 &it : trav->cornersPhys)

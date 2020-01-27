@@ -48,8 +48,18 @@ set(DATA_LIST
     data/shaders/color.vert.glsl
     data/shaders/copyDepth.frag.glsl
     data/shaders/copyDepth.vert.glsl
-    data/shaders/fxaa.frag.glsl
-    data/shaders/fxaa.vert.glsl
+    data/shaders/filters/greyscale.frag.glsl
+    data/shaders/filters/greyscale.vert.glsl
+    data/shaders/filters/fxaa.frag.glsl
+    data/shaders/filters/fxaa.vert.glsl
+    data/shaders/filters/fxaa2.vert.glsl
+    data/shaders/filters/fxaa2.frag.glsl
+    data/shaders/filters/depth.vert.glsl
+    data/shaders/filters/depth.frag.glsl
+    data/shaders/filters/dof.vert.glsl
+    data/shaders/filters/dof.frag.glsl
+    data/shaders/filters/dof2.vert.glsl
+    data/shaders/filters/dof2.frag.glsl
     data/shaders/geodata.inc.glsl
     data/shaders/geodataColor.frag.glsl
     data/shaders/geodataColor.vert.glsl

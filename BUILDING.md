@@ -1,29 +1,9 @@
 
-# Build for Windows Desktop
+# Build for Linux desktop
 
-You have multiple options:
-
- - Download (or build) and install all required dependencies yourself.
-   Then use cmake.
- - (Recommended) Use [Build Wrapper](https://github.com/melowntech/vts-browser-cpp-build-wrapper) instead.
-   The wrapper has integrated build scripts for all dependencies making building the browser a peace of cake :D
-
-# Build for UWP (Universal Windows Platform)
-
-You have multiple options:
-
- - Build all required dependencies yourself.
-   Then use cmake with -DCMAKE_TOOLCHAIN_FILE=\<path-to-our-uwp.toolchain.cmake\>.
- - (Recommended) Use [Build Wrapper](https://github.com/melowntech/vts-browser-cpp-build-wrapper) instead.
-   The wrapper has integrated build scripts for all dependencies making building the browser a peace of cake :D
-
-# Build for Linux Desktop
-
-The Gdal library must be version 2. Additional source list is required on eg. Ubuntu Xenial.
-
-```bash
-sudo add-apt-repository ppa:ubuntugis/ppa
-```
+These instructions apply when building vts browser with system dependencies.
+To build VTS with embedded dependencies, use the
+[Build Wrapper](https://github.com/melowntech/vts-browser-cpp-build-wrapper) instead.
 
 Install packages that are required to build the library.
 
@@ -31,6 +11,8 @@ Install packages that are required to build the library.
 sudo apt update
 sudo apt install \
     cmake \
+    nasm \
+    libssl-dev \
     python-minimal \
     libboost-all-dev \
     libeigen3-dev \
@@ -58,69 +40,7 @@ And run the example application.
 bin/vts-browser-desktop
 ```
 
-# Build for macOS
+# Build for other platforms
 
-Install all required libraries using eg. brew or ports.
-
-```bash
-sudo port install \
-    cmake \
-    boost \
-    geographiclib \
-    jsoncpp \
-    eigen3 \
-    libsdl2
-```
-
-Clone the git repository with all submodules.
-Use cmake to generate xcode project.
-
-```bash
-git clone --recursive https://github.com/melowntech/vts-browser-cpp.git
-cd vts-browser-cpp/browser
-mkdir build-osx
-cd build-osx
-cmake -GXcode ..
-```
-
-Use the generated xcode project as usual.
-
-# Build for iOS
-
-You have multiple options:
-
- - Build all required dependencies yourself.
-   Then use cmake with -DCMAKE_TOOLCHAIN_FILE=\<path-to-our-ios.toolchain.cmake\>.
- - (Recommended) Use [Build Wrapper](https://github.com/melowntech/vts-browser-cpp-build-wrapper) instead.
-   The wrapper has integrated build scripts for all dependencies making building the browser a peace of cake :D
-
-# Recommended Folder Structure
-
-```
-├── vts-browser-cpp
-│   ├── browser
-│   │   ├── build
-│   │   │   ├── vts-browser-cpp.sln -- here is your project for Windows
-│   │   │   ├── Makefile -- here is your makefile for Linux
-│   │   │   └── vts-browser.xcodeproj -- here is your project for Mac
-│   │   ├── build-uwp
-│   │   │   ├── vts-browser-cpp.sln -- here is your solution for UWP
-│   │   ├── build-ios
-│   │   │   └── vts-browser.xcodeproj -- here is your project for iOS
-│   │   ├── cmake
-│   │   │   ├── ios.toolchain.cmake -- this is where CMAKE_TOOLCHAIN_FILE points to when building for iOS
-│   │   │   └── uwp.toolchain.cmake -- this is where CMAKE_TOOLCHAIN_FILE points to when building for UWP
-│   │   └── CMakeLists.txt
-│   ├── externals
-│   │   └── vts-libs -- if this folder is empty, you forgot to clone the submodules (run 'git submodule update --init --recursive' to initialize the submodules now)
-│   │       ├── LICENSE
-│   │       └── README.md
-│   ├── BUILDING.md
-│   ├── LICENSE
-│   └── README.md
-└── your-new-awesome-application-using-vts
-    └── CMakeLists.txt
-```
-
-
-
+Use [Build Wrapper](https://github.com/melowntech/vts-browser-cpp-build-wrapper) instead.
+The wrapper has integrated build scripts for all dependencies making building the browser a peace of cake :D

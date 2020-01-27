@@ -1,5 +1,5 @@
 
-# Using the Libraries
+# Using the libraries
 
 Install the libraries from apt packages or [build](BUILDING.md) them.
 

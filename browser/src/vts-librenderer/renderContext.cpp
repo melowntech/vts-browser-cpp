@@ -185,21 +185,88 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
             });
     }
 
+    // load shader greyscale
+    {
+        shaderGreyscale = std::make_shared<Shader>();
+        shaderGreyscale->setDebugId(
+            "data/shaders/filters/greyscale.*.glsl");
+        shaderGreyscale->loadInternal(
+            "data/shaders/filters/greyscale.vert.glsl",
+            "data/shaders/filters/greyscale.frag.glsl");
+        shaderGreyscale->bindTextureLocations({
+                { "texColor", 9 }
+            });
+    }
+
+    // load shader depth
+    {
+        shaderDepth = std::make_shared<Shader>();
+        shaderDepth->setDebugId(
+            "data/shaders/filters/depth.*.glsl");
+        shaderDepth->loadInternal(
+            "data/shaders/filters/depth.vert.glsl",
+            "data/shaders/filters/depth.frag.glsl");
+        shaderDepth->bindTextureLocations({
+                { "texColor", 5 }
+            });
+    }
+
+    // load shader dof
+    {
+        shaderDOF = std::make_shared<Shader>();
+        shaderDOF->setDebugId(
+            "data/shaders/filters/dof.*.glsl");
+        shaderDOF->loadInternal(
+            "data/shaders/filters/dof.vert.glsl",
+            "data/shaders/filters/dof.frag.glsl");
+        shaderDOF->bindTextureLocations({
+                { "texColor", 9 },
+                { "texDepth", 5 }
+            });
+    }
+
+    // load shader dofH
+    {
+        shaderDOF2 = std::make_shared<Shader>();
+        shaderDOF2->setDebugId(
+            "data/shaders/filters/dof2.*.glsl");
+        shaderDOF2->loadInternal(
+            "data/shaders/filters/dof2.vert.glsl",
+            "data/shaders/filters/dof2.frag.glsl");
+        shaderDOF2->bindTextureLocations({
+                { "texColor", 9 },
+                { "texDepth", 5 }
+            });
+    }
+
+
+
     // load shader fxaa
     {
         shaderFXAA = std::make_shared<Shader>();
         shaderFXAA->setDebugId(
-            "data/shaders/fxaa.*.glsl");
+            "data/shaders/filters/fxaa.*.glsl");
         shaderFXAA->loadInternal(
-            "data/shaders/fxaa.vert.glsl",
-            "data/shaders/fxaa.frag.glsl");
-        //shaderCopyDepth->loadUniformLocations({
-        //        "uniTexPos"
-        //    });
+            "data/shaders/filters/fxaa.vert.glsl",
+            "data/shaders/filters/fxaa.frag.glsl");
         shaderFXAA->bindTextureLocations({
                 { "texColor", 9 }
             });
     }
+
+    // load shader fxaa2
+    {
+        shaderFXAA2 = std::make_shared<Shader>();
+        shaderFXAA2->setDebugId(
+            "data/shaders/filters/fxaa2.*.glsl");
+        shaderFXAA2->loadInternal(
+            "data/shaders/filters/fxaa2.vert.glsl",
+            "data/shaders/filters/fxaa2.frag.glsl");
+        shaderFXAA2->bindTextureLocations({
+                { "texColor", 9 }
+            });
+    }
+
 
     // load mesh quad
     {

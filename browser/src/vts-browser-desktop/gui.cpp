@@ -93,6 +93,31 @@ static const char *lodBlendingModeNames[] = {
     "precise",
 };
 
+static const char *filterAANames[] = {
+    "msaa",
+    "none",
+    "fxaa",
+    "fxaa2",
+};
+
+static const char *filterSSAONames[] = {
+    "none",
+    "ssao",
+    "ssao2",
+};
+
+static const char *filterDOFNames[] = {
+    "none",
+    "dof",
+    "dof2",
+};
+
+static const char *filterFXNames[] = {
+    "none",
+    "greyscale",
+    "depth",
+};
+
 static const char *geodataDebugNames[] = {
     "off",
     "importance",
@@ -843,6 +868,116 @@ public:
                 nk_tree_pop(&ctx);
             }
 
+            // post processing
+            if (nk_tree_push(&ctx, NK_TREE_TAB, "Postprocessing", NK_MINIMIZED))
+            {
+                nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
+
+                // antialiasing
+                nk_label(&ctx, "Antialiasing:", NK_TEXT_LEFT);
+                if (nk_combo_begin_label(&ctx,
+                    filterAANames[r.filterAA],
+                    nk_vec2(nk_widget_width(&ctx), 200)))
+                {
+                    nk_layout_row_dynamic(&ctx, 16, 1);
+                    for (unsigned i = 0; i < sizeof(filterAANames)
+                        / sizeof(filterAANames[0]); i++)
+                    {
+                        if (nk_combo_item_label(&ctx,
+                            filterAANames[i],
+                            NK_TEXT_LEFT))
+                            r.filterAA = i;
+                    }
+                    nk_combo_end(&ctx);
+                }
+/*/
+                // ssao
+                nk_label(&ctx, "SSAO:", NK_TEXT_LEFT);
+                if (nk_combo_begin_label(&ctx,
+                    filterSSAONames[r.filterSSAO],
+                    nk_vec2(nk_widget_width(&ctx), 200)))
+                {
+                    nk_layout_row_dynamic(&ctx, 16, 1);
+                    for (unsigned i = 0; i < sizeof(filterSSAONames)
+                        / sizeof(filterSSAONames[0]); i++)
+                    {
+                        if (nk_combo_item_label(&ctx,
+                            filterSSAONames[i],
+                            NK_TEXT_LEFT))
+                            r.filterSSAO = i;
+                    }
+                    nk_combo_end(&ctx);
+                }
+*/
+                // dof
+                nk_label(&ctx, "DOF:", NK_TEXT_LEFT);
+                if (nk_combo_begin_label(&ctx,
+                    filterDOFNames[r.filterDOF],
+                    nk_vec2(nk_widget_width(&ctx), 200)))
+                {
+                    nk_layout_row_dynamic(&ctx, 16, 1);
+                    for (unsigned i = 0; i < sizeof(filterDOFNames)
+                        / sizeof(filterDOFNames[0]); i++)
+                    {
+                        if (nk_combo_item_label(&ctx,
+                            filterDOFNames[i],
+                            NK_TEXT_LEFT))
+                            r.filterDOF = i;
+                    }
+                    nk_combo_end(&ctx);
+                }
+
+                // DOF Options
+                if (r.filterDOF > 0)
+                {
+                    {
+                        float ratio[] = { width * 0.2f, width * 0.65f,
+                                          width * 0.1f };
+
+                        nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
+
+                        nk_label(&ctx, "Blur:", NK_TEXT_LEFT);
+                        r.filterDOFBlur = nk_slide_float(&ctx,
+                            1, r.filterDOFBlur, 20, 0.1);
+                        sprintf(buffer, "%.1f", r.filterDOFBlur);
+                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                        nk_label(&ctx, "Aperture:", NK_TEXT_LEFT);
+                        r.filterDOFAperture = nk_slide_float(&ctx,
+                            -15, r.filterDOFAperture, 15, 0.01);
+                        sprintf(buffer, "%.1f", r.filterDOFAperture);
+                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                        nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
+
+                        r.filterDOFFocus = nk_check_label(&ctx,
+                            "Focused foreground", r.filterDOFFocus);
+
+                    }
+                }
+
+                // FX
+                nk_label(&ctx, "FX:", NK_TEXT_LEFT);
+                if (nk_combo_begin_label(&ctx,
+                    filterFXNames[r.filterFX],
+                    nk_vec2(nk_widget_width(&ctx), 200)))
+                {
+                    nk_layout_row_dynamic(&ctx, 16, 1);
+                    for (unsigned i = 0; i < sizeof(filterFXNames)
+                        / sizeof(filterFXNames[0]); i++)
+                    {
+                        if (nk_combo_item_label(&ctx,
+                            filterFXNames[i],
+                            NK_TEXT_LEFT))
+                            r.filterFX = i;
+                    }
+                    nk_combo_end(&ctx);
+                }
+
+                // end group
+                nk_tree_pop(&ctx);
+            }
+
             // Tile Diagnostics
             c.debugRenderTileDiagnostics = false;
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Tile diagnostics",
@@ -994,6 +1129,10 @@ public:
                 // coarseness disks
                 mr.debugCoarsenessDisks = nk_check_label(&ctx,
                     "Coarseness disks", mr.debugCoarsenessDisks);
+
+                // depth feedback
+                r.debugDepthFeedback = nk_check_label(&ctx,
+                    "Depth feedback", r.debugDepthFeedback);
 
                 // geodata validation
                 {
@@ -1355,7 +1494,7 @@ public:
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 const auto &c = window->camera->draws().camera;
                 nk_label(&ctx, "Target Distance:", NK_TEXT_LEFT);
-                sprintf(buffer, "%.8f", c.tagretDistance);
+                sprintf(buffer, "%.8f", c.targetDistance);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 nk_label(&ctx, "View Extent:", NK_TEXT_LEFT);
                 sprintf(buffer, "%.8f", c.viewExtent);
@@ -1924,11 +2063,9 @@ public:
                 {
                     if (nk_button_label(&ctx, "Go"))
                     {
-                        double pr = window->map->celestialBody().majorRadius;
                         window->navigation->setSubjective(false, false);
                         window->navigation->setViewExtent(std::max(
-                        6667.0 * pr / window->map->celestialBody().majorRadius,
-                            r.radius * 2));
+                                            6667.0, r.radius * 2));
                         window->navigation->setRotation({0,270,0});
                         window->navigation->resetAltitude();
                         window->navigation->resetNavigationMode();

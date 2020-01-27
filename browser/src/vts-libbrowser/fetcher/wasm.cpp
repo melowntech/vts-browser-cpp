@@ -30,8 +30,10 @@
 
 #include "dbglog/dbglog.hpp"
 #include "../include/vts-browser/fetcher.hpp"
+#include "../utilities/threadQueue.hpp"
 
 #include <list>
+#include <thread>
 
 namespace vts
 {
@@ -85,22 +87,42 @@ public:
 
 class FetcherImpl : public Fetcher
 {
-    std::list<std::unique_ptr<WasmTask>> tasks;
+    //std::list<std::unique_ptr<WasmTask>> tasks;
+    ThreadQueue<std::shared_ptr<FetchTask>> que;
+    std::vector<std::thread> thrs;
 
 public:
     FetcherImpl(const FetcherOptions &options)
-    {}
+    {
+        static const uint32 thrsCnt = 20;
+        thrs.reserve(thrsCnt);
+        for (uint32 i = 0; i < thrsCnt; i++)
+            thrs.push_back(std::thread(&FetcherImpl::thrEntry, this));
+    }
 
-    ~FetcherImpl()
-    {}
+    void thrEntry()
+    {
+        while (true)
+        {
+            std::shared_ptr<FetchTask> task;
+            if (!que.waitPop(task))
+                return;
+            auto t = std::make_unique<WasmTask>(task);
+            while (!t->update()) {}
+        }
+    }
 
     void finalize() override
     {
-        tasks.clear();
+        //tasks.clear();
+        que.terminate();
+        for (auto &it : thrs)
+            it.join();
     }
 
     void update() override
     {
+        /*
         auto it = tasks.begin();
         while (it != tasks.end())
         {
@@ -109,11 +131,13 @@ public:
             else
                 it++;
         }
+        */
     }
 
     void fetch(const std::shared_ptr<FetchTask> &task) override
     {
-        tasks.insert(tasks.end(), std::make_unique<WasmTask>(task));
+        //tasks.insert(tasks.end(), std::make_unique<WasmTask>(task));
+        que.push(task);
     }
 };
 

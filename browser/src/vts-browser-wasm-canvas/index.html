@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang=en-us>
+
+<head>
+    <meta charset=utf-8>
+    <meta content="text/html; charset=utf-8" http-equiv=Content-Type>
+    <link rel="stylesheet" type="text/css" href="vts.css">
+    <title>vts-browser-wasm-canvas</title>
+</head>
+
+<body>
+    <canvas id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+    <div id=status-overlay>
+        <div id=status>
+            <h2>Requirements</h2>
+            We use cutting edge technology, which is currently supported by <b>Google Chrome</b> only.<br>
+            We also require running on desktop platforms. Mobile version may not work either.
+            <hr>
+            <h2>Initializing...</h2>
+            This may take up to a minute, depending on your computer and network speed.<br>
+            Check your browser's console if the loading takes too long.
+        </div>
+    </div>
+    <div id=credits-overlay>
+        <div id=credits>
+            Made by <a href="https://www.melowntech.com/" target=_blank>Melown Technologies SE</a>
+        </div>
+    </div>
+    <div id=menus>
+        <div class="window draggable" style="left: 20px">
+            <button class="header collapsible">Options</button>
+            <div class=content>
+                <button class=collapsible>Rendering</button>
+                <div>
+                    <table>
+                        <tr><td>Surfaces<td>
+                            <select name=traverseModeSurfaces class=options>
+                                <option value=none>None</option>
+                                <option value=flat>Flat</option>
+                                <option value=stable>Stable</option>
+                                <option value=balanced>Balanced</option>
+                                <option value=hierarchical>Hierarchical</option>
+                                <option value=fixed>Fixed</option>
+                            </select>
+                        </tr>
+                        <tr>
+                            <td>Pixel Ratio
+                            <td><input type=range min=0.1 max=5 step=0.1 name=targetPixelRatioSurfaces class=options>
+                        </tr>
+                        <tr><td>Geodata<td>
+                            <select name=traverseModeGeodata class=options>
+                                <option value=none>None</option>
+                                <option value=flat>Flat</option>
+                                <option value=stable>Stable</option>
+                                <option value=balanced>Balanced</option>
+                                <option value=hierarchical>Hierarchical</option>
+                                <option value=fixed>Fixed</option>
+                            </select>
+                        </tr>
+                        <tr>
+                            <td>Pixel Ratio
+                            <td><input type=range min=0.1 max=5 step=0.1 name=targetPixelRatioGeodata class=options>
+                        </tr>
+                        <tr><td>Lod Blending<td>
+                            <select name=lodBlending class=options>
+                                <option value=0>Off</option>
+                                <option value=1>Basic</option>
+                                <option value=2>Precise</option>
+                            </select>
+                        </tr>
+                    </table>
+                </div>
+                <button class=collapsible>Display</button>
+                <div>
+                    <table>
+                        <tr>
+                            <td>Atmosphere
+                            <td><input type=checkbox name=renderAtmosphere class=options>
+                        </tr>
+                        <tr>
+                            <td>Mesh Boxes
+                            <td><input type=checkbox name=debugRenderMeshBoxes class=options>
+                        </tr>
+                        <tr>
+                            <td>Tile Boxes
+                            <td><input type=checkbox name=debugRenderTileBoxes class=options>
+                        </tr>
+                        <tr>
+                            <td>Subtile Boxes
+                            <td><input type=checkbox name=debugRenderSubtileBoxes class=options>
+                        </tr>
+                        <tr>
+                            <td>Surrogates
+                            <td><input type=checkbox name=debugRenderSurrogates class=options>
+                        </tr>
+                        <tr>
+                            <td>Flat Shading
+                            <td><input type=checkbox name=debugFlatShading class=options>
+                        </tr>
+                    </table>
+                </div>
+                <button class=collapsible>Debug</button>
+                <div>
+                    <table>
+                        <tr>
+                            <td>Geodata Hysteresis
+                            <td><input type=checkbox name=geodataHysteresis class=options>
+                        </tr>
+                        <tr>
+                            <td>Fps Compensation
+                            <td><input type=checkbox name=fpsCompensation class=options>
+                        </tr>
+                        <tr>
+                            <td>Altitude Corrections
+                            <td><input type=checkbox name=enableAltitudeCorrections class=options>
+                        </tr>
+                        <tr>
+                            <td>Camera Normalization
+                            <td><input type=checkbox name=enableNormalization class=options>
+                        </tr>
+                        <tr>
+                            <td>Detached Camera
+                            <td><input type=checkbox name=debugDetachedCamera class=options>
+                        </tr>
+                        <tr>
+                            <td>Coarseness Disks
+                            <td><input type=checkbox name=debugCoarsenessDisks class=options>
+                        </tr>
+                        <tr>
+                            <td>Depth Feedback
+                            <td><input type=checkbox name=debugDepthFeedback class=options>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="window draggable" style="left: 350px">
+            <button class="header collapsible">Statistics</button>
+            <div class=content>
+                <button class=collapsible>Timing</button>
+                <div id=statisticsTiming>
+                </div>
+                <button class=collapsible>Map</button>
+                <div id=statisticsMap>
+                    map stats
+                </div>
+                <button class=collapsible>Camera</button>
+                <div id=statisticsCamera>
+                    camera stats
+                </div>
+            </div>
+        </div>
+        <div class="window draggable" style="left: 680px">
+            <button class="header collapsible">Position</button>
+            <div class=content>
+                <div id=position>
+                    position
+                </div>
+            </div>
+        </div>
+        <div class="window draggable" style="left: 1010px">
+            <button class="header collapsible">Search</button>
+            <div class=content>
+                <div>
+                    <input type=text id=searchQuery oninput=search() placeholder=query>
+                </div>
+                <div id=searchResults>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src=vts.js></script>
+    <script async src=vts-browser-wasm-canvas.js></script>
+</body>
+
+</html>
+

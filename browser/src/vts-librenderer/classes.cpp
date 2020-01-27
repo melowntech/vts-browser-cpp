@@ -26,6 +26,8 @@
 
 #include "renderer.hpp"
 
+#include <thread>
+
 #include <optick.h>
 
 namespace vts { namespace renderer
@@ -47,6 +49,28 @@ std::string Shader::preamble =
         "precision highp float;\n"
         "precision highp int;\n"
     ;
+
+namespace privat
+{
+
+#ifndef NDEBUG
+
+uint64 currentThreadId()
+{
+    return std::hash<std::thread::id>()(std::this_thread::get_id());
+}
+
+ResourceBase::ResourceBase() : thrId(currentThreadId())
+{}
+
+ResourceBase::~ResourceBase()
+{
+    assert(thrId == currentThreadId());
+}
+
+#endif
+
+} // namespace privat
 
 namespace
 {
@@ -194,7 +218,7 @@ void Shader::uniformMat3(uint32 location, const float *value, uint32 count)
 
 void Shader::uniformVec4(uint32 location, const float *value, uint32 count)
 {
-	static_assert(sizeof(float) == sizeof(GLfloat), "incompatible types");
+    static_assert(sizeof(float) == sizeof(GLfloat), "incompatible types");
     glUniform4fv(uniformLocations[location], count, value);
 }
 
@@ -207,10 +231,10 @@ void Shader::uniformVec2(uint32 location, const float *value, uint32 count)
 {
     glUniform2fv(uniformLocations[location], count, value);
 }
-    
+
 void Shader::uniformVec4(uint32 location, const int *value, uint32 count)
 {
-	static_assert(sizeof(int) == sizeof(GLint), "incompatible types");
+    static_assert(sizeof(int) == sizeof(GLint), "incompatible types");
     glUniform4iv(uniformLocations[location], count, value);
 }
 

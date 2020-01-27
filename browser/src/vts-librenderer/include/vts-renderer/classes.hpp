@@ -37,7 +37,23 @@
 namespace vts { namespace renderer
 {
 
-class VTSR_API Shader : private Immovable
+namespace privat
+{
+
+class VTSR_API ResourceBase : private Immovable
+{
+#ifndef NDEBUG
+public:
+    ResourceBase();
+    ~ResourceBase();
+private:
+    uint64 thrId;
+#endif
+};
+
+} // namespace privat
+
+class VTSR_API Shader : private privat::ResourceBase
 {
     std::string debugId;
 
@@ -80,7 +96,7 @@ private:
     int loadShader(const std::string &source, int stage) const;
 };
 
-class VTSR_API Texture : private Immovable
+class VTSR_API Texture : private privat::ResourceBase
 {
     std::string debugId;
 
@@ -101,7 +117,7 @@ private:
     bool grayscale;
 };
 
-class VTSR_API Mesh : private Immovable
+class VTSR_API Mesh : private privat::ResourceBase
 {
     std::string debugId;
 
@@ -125,7 +141,7 @@ private:
     uint32 vao, vbo, vio;
 };
 
-class VTSR_API UniformBuffer : private Immovable
+class VTSR_API UniformBuffer : private privat::ResourceBase
 {
     std::string debugId;
 

@@ -171,7 +171,7 @@ CameraOptions::CameraOptions() :
     targetPixelRatioSurfaces(1.2),
     targetPixelRatioGeodata(1.2),
     cullingOffsetDistance(0.0),
-    lodBlendingDuration(0.5),
+    lodBlendingDuration(1.0),
     samplesForAltitudeLodSelection(8),
     fixedTraversalDistance(10000),
     fixedTraversalLod(15),

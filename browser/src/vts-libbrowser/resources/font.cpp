@@ -99,7 +99,7 @@ std::shared_ptr<void> GpuFont::requestTexture(uint32 index)
     else
         map->touchResource(t);
     if (*t)
-        return t->info.userData;
+        return t->getUserData();
     return nullptr;
 }
 

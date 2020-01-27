@@ -26,6 +26,7 @@
 
 #include "../include/vts-browser/mapOptions.hpp"
 #include "../map.hpp"
+#include "../resource.hpp"
 
 #include <boost/filesystem.hpp>
 #include <utility/path.hpp> // homeDir

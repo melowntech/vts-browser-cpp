@@ -266,8 +266,8 @@ std::shared_ptr<void> Map::atmosphereDensityTexture()
 {
     if (getMapconfigAvailable() && impl->mapconfig->atmosphereDensityTexture
         && *impl->mapconfig->atmosphereDensityTexture)
-        return impl->mapconfig->atmosphereDensityTexture->info.userData;
-    return nullptr;
+        return impl->mapconfig->atmosphereDensityTexture->getUserData();
+    return {};
 }
 
 void Map::convert(const double pointFrom[3], double pointTo[3],

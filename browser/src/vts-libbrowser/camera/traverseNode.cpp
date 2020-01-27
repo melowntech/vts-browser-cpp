@@ -28,6 +28,7 @@
 #include "../traverseNode.hpp"
 #include "../renderTasks.hpp"
 #include "../hashTileId.hpp"
+#include "../geodata.hpp"
 
 namespace vts
 {
@@ -81,23 +82,21 @@ void TraverseNode::clearRenders()
 {
     opaque.clear();
     transparent.clear();
-    geodata.clear();
     colliders.clear();
-    touchResource.reset();
     meshAgg.reset();
+    geodataAgg.reset();
     determined = false;
 }
 
 bool TraverseNode::rendersReady() const
 {
     assert(determined);
+    if (geodataAgg && !*geodataAgg)
+        return false;
     for (auto &it : opaque)
         if (!it.ready())
             return false;
     for (auto &it : transparent)
-        if (!it.ready())
-            return false;
-    for (auto &it : geodata)
         if (!it.ready())
             return false;
     for (auto &it : colliders)
@@ -108,8 +107,8 @@ bool TraverseNode::rendersReady() const
 
 bool TraverseNode::rendersEmpty() const
 {
-    return opaque.empty() && transparent.empty()
-        && geodata.empty() && colliders.empty();
+    return opaque.empty() && transparent.empty() && colliders.empty()
+            && (!geodataAgg || geodataAgg->renders.empty());
 }
 
 } // namespace vts

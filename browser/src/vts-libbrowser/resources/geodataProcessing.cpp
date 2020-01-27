@@ -1362,7 +1362,7 @@ if (cond == #OP) \
         auto it = stylesheet->fonts.find(name);
         if (it == stylesheet->fonts.end())
             THROW << "Could not find font <" << name << ">";
-        output.push_back(it->second->info.userData);
+        output.push_back(it->second->getUserData());
     }
 
     void findFonts(const Value &expression,
@@ -1551,7 +1551,7 @@ if (cond == #OP) \
         auto tex = stylesheet->bitmaps.at(btm);
         assert(stylesheet->map->getResourceValidity(tex)
             == Validity::Valid);
-        spec.bitmap = tex->info.userData;
+        spec.bitmap = tex->getUserData();
 
         spec.commonData.icon.scale
             = layer.isMember("icon-scale")
@@ -2364,22 +2364,21 @@ void GeodataTile::upload()
     uint32 index = 0;
     for (auto &spec : specsToUpload)
     {
-        RenderGeodataTask t;
-        t.geodata = std::make_shared<GpuGeodata>();
+        ResourceInfo t;
         std::stringstream ss;
         ss << name << "#" << index++;
-        map->callbacks.loadGeodata(t.geodata->info, spec, ss.str());
-        renders.push_back(t);
+        map->callbacks.loadGeodata(t, spec, ss.str());
+        renders.push_back(std::move(t));
     }
     std::vector<GpuGeodataSpec>().swap(specsToUpload);
 
     // memory consumption
     info.ramMemoryCost = sizeof(*this)
-        + renders.size() * sizeof(RenderGeodataTask);
-    for (const RenderGeodataTask &it : renders)
+        + renders.size() * sizeof(ResourceInfo);
+    for (const ResourceInfo &it : renders)
     {
-        info.gpuMemoryCost += it.geodata->info.gpuMemoryCost;
-        info.ramMemoryCost += it.geodata->info.ramMemoryCost;
+        info.gpuMemoryCost += it.gpuMemoryCost;
+        info.ramMemoryCost += it.ramMemoryCost;
     }
 }
 
@@ -2398,7 +2397,7 @@ void MapImpl::resourcesGeodataProcessorEntry()
         {
             r->decode();
             r->state = Resource::State::decoded;
-            resources.queUpload.push(r);
+            resources.queUpload.push(UploadData(r));
         }
         catch (const std::exception &)
         {
@@ -2420,7 +2419,7 @@ bool MapImpl::resourcesGeodataProcessOne()
     {
         r->decode();
         r->state = Resource::State::decoded;
-        resources.queUpload.push(r);
+        resources.queUpload.push(UploadData(r));
     }
     catch (const std::exception &)
     {

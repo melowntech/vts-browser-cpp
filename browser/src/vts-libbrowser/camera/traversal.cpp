@@ -441,13 +441,13 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
     {
     case Validity::Invalid:
         trav->surface = nullptr;
-        trav->touchResource = nullptr;
         trav->meshAgg = nullptr;
+        trav->geodataAgg = nullptr;
         return false;
     case Validity::Indeterminate:
         return false;
     case Validity::Valid:
-        trav->touchResource = meshAgg;
+        trav->meshAgg = meshAgg;
         break;
     }
 
@@ -604,20 +604,19 @@ bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
     {
     case Validity::Invalid:
         trav->surface = nullptr;
-        trav->touchResource = nullptr;
+        trav->meshAgg = nullptr;
+        trav->geodataAgg= nullptr;
         return false;
     case Validity::Indeterminate:
         return false;
     case Validity::Valid:
-        trav->touchResource = geo;
         break;
     }
 
     // determined
     assert(!trav->determined);
     assert(trav->rendersEmpty());
-    for (auto it : geo->renders)
-        trav->geodata.push_back(it);
+    trav->geodataAgg = geo;
 
     return true;
 }

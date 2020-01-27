@@ -81,6 +81,11 @@ Resource::~Resource()
 {
     LOG(debug) << "Destroying resource <" << name
                << "> at <" << this << ">";
+    if (info.userData)
+    {
+        map->resources.queUpload.push(
+            UploadData(info.userData, 0));
+    }
 }
 
 bool Resource::allowDiskCache() const
@@ -137,6 +142,11 @@ void Resource::forceRedownload()
 Resource::operator bool() const
 {
     return state == Resource::State::ready;
+}
+
+std::shared_ptr<void> Resource::getUserData() const
+{
+    return std::shared_ptr<void>(shared_from_this(), info.userData.get());
 }
 
 std::ostream &operator << (std::ostream &stream, Resource::State state)

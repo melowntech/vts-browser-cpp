@@ -75,12 +75,6 @@ public:
     std::vector<std::shared_ptr<GpuTexture>> texturePlanes;
 };
 
-class GpuGeodata : private Immovable
-{
-public:
-    ResourceInfo info;
-};
-
 class MeshPart
 {
 public:

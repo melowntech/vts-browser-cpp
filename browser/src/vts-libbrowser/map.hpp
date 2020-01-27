@@ -77,47 +77,14 @@ class Credits;
 class FetchTaskImpl;
 class GpuFont;
 class Cache;
+class UploadData;
+class CacheData;
 
 using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
-
-class CacheData // : private Immovable
-{
-public:
-    CacheData();
-    CacheData(FetchTaskImpl *task, bool availFailed = false);
-    //std::shared_ptr<void> availTest;
-    Buffer buffer;
-    std::string name;
-    sint64 expires;
-    bool availFailed;
-};
 
 class MapImpl : private Immovable
 {
 public:
-    MapImpl(Map *map,
-            const MapCreateOptions &options,
-            const std::shared_ptr<Fetcher> &fetcher);
-    ~MapImpl();
-
-    Map *const map;
-    const MapCreateOptions createOptions;
-    MapCallbacks callbacks;
-    MapStatistics statistics;
-    MapRuntimeOptions options;
-    MapCelestialBody body;
-    std::shared_ptr<Mapconfig> mapconfig;
-    std::shared_ptr<CoordManip> convertor;
-    std::shared_ptr<Credits> credits;
-    std::vector<std::shared_ptr<MapLayer>> layers;
-    std::vector<std::weak_ptr<CameraImpl>> cameras;
-    std::string mapconfigPath;
-    std::string mapconfigView;
-    double lastElapsedFrameTime;
-    uint32 renderTickIndex;
-    bool mapconfigAvailable;
-    bool mapconfigReady;
-
     class Resources : private Immovable
     {
     public:
@@ -132,7 +99,7 @@ public:
 
         ThreadQueue<std::weak_ptr<Resource>> queCacheRead;
         ThreadQueue<std::weak_ptr<Resource>> queDecode;
-        ThreadQueue<std::weak_ptr<Resource>> queUpload;
+        ThreadQueue<UploadData> queUpload;
         ThreadQueue<CacheData> queCacheWrite;
         ThreadQueue<std::weak_ptr<GpuAtmosphereDensityTexture>> queAtmosphere;
         ThreadQueue<std::weak_ptr<GeodataTile>> queGeodata;
@@ -155,6 +122,29 @@ public:
 
         Resources();
     } resources;
+
+    Map *const map;
+    const MapCreateOptions createOptions;
+    MapCallbacks callbacks;
+    MapStatistics statistics;
+    MapRuntimeOptions options;
+    MapCelestialBody body;
+    std::shared_ptr<Mapconfig> mapconfig;
+    std::shared_ptr<CoordManip> convertor;
+    std::shared_ptr<Credits> credits;
+    std::vector<std::shared_ptr<MapLayer>> layers;
+    std::vector<std::weak_ptr<CameraImpl>> cameras;
+    std::string mapconfigPath;
+    std::string mapconfigView;
+    double lastElapsedFrameTime;
+    uint32 renderTickIndex;
+    bool mapconfigAvailable;
+    bool mapconfigReady;
+
+    MapImpl(Map *map,
+            const MapCreateOptions &options,
+            const std::shared_ptr<Fetcher> &fetcher);
+    ~MapImpl();
 
     // map api methods
     void setMapconfigPath(const std::string &mapconfigPath,

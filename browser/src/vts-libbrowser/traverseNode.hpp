@@ -44,10 +44,9 @@ class MetaTile;
 class SurfaceInfo;
 class Resource;
 class RenderSurfaceTask;
-class RenderGeodataTask;
-//class RenderInfographicsTask;
 class RenderColliderTask;
 class MeshAggregate;
+class GeodataTile;
 
 class TraverseNode : private Immovable
 {
@@ -87,10 +86,9 @@ public:
     // renders
     bool determined; // draws are fully loaded (draws may be empty)
     std::shared_ptr<MeshAggregate> meshAgg;
-    std::shared_ptr<Resource> touchResource;
+    std::shared_ptr<GeodataTile> geodataAgg;
     std::vector<RenderSurfaceTask> opaque;
     std::vector<RenderSurfaceTask> transparent;
-    std::vector<RenderGeodataTask> geodata;
     std::vector<RenderColliderTask> colliders;
 
     TraverseNode(MapLayer *layer, TraverseNode *parent,

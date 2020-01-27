@@ -56,7 +56,6 @@ class Camera;
 class TraverseNode;
 class NavigationImpl;
 class RenderSurfaceTask;
-class RenderGeodataTask;
 class RenderInfographicsTask;
 class RenderColliderTask;
 class GpuTexture;
@@ -150,7 +149,6 @@ public:
     DrawSurfaceTask convert(const RenderSurfaceTask &task);
     DrawSurfaceTask convert(const RenderSurfaceTask &task,
                             const vec4f &uvClip, float blendingCoverage);
-    DrawGeodataTask convert(const RenderGeodataTask &task);
     DrawInfographicsTask convert(const RenderInfographicsTask &task);
     DrawColliderTask convert(const RenderColliderTask &task);
     bool generateMonolithicGeodataTrav(TraverseNode *trav);

@@ -59,6 +59,26 @@ void MapImpl::resourceSaveCorruptedFile(const std::shared_ptr<Resource> &r)
     }
 }
 
+UploadData::UploadData()
+{}
+
+UploadData::UploadData(const std::shared_ptr<Resource> &resource)
+    : uploadData(resource)
+{}
+
+UploadData::UploadData(std::shared_ptr<void> &userData, int)
+{
+    std::swap(userData, destroyData);
+}
+
+void UploadData::process()
+{
+    destroyData.reset();
+    auto r = uploadData.lock();
+    if (r)
+        r->map->resourceUploadProcess(r);
+}
+
 ////////////////////////////
 // A FETCH THREAD
 ////////////////////////////
@@ -186,7 +206,7 @@ void MapImpl::resourceDecodeProcess(const std::shared_ptr<Resource> &r)
     {
         r->decode();
         r->state = Resource::State::decoded;
-        resources.queUpload.push(r);
+        resources.queUpload.push(UploadData(r));
     }
     catch (const std::exception &e)
     {
@@ -255,13 +275,10 @@ void MapImpl::resourceUploadProcess(const std::shared_ptr<Resource> &r)
 
 bool MapImpl::resourcesUploadProcessOne()
 {
-    std::weak_ptr<Resource> w;
+    UploadData w;
     if (!resources.queUpload.tryPop(w))
         return false;
-    std::shared_ptr<Resource> r = w.lock();
-    if (!r)
-        return resourcesUploadProcessOne();
-    resourceUploadProcess(r);
+    w.process();
     return true;
 }
 
@@ -272,12 +289,9 @@ void MapImpl::resourcesUploadProcessorEntry()
     {
         while (!resources.queUpload.stopped())
         {
-            std::weak_ptr<Resource> w;
+            UploadData w;
             resources.queUpload.waitPop(w);
-            std::shared_ptr<Resource> r = w.lock();
-            if (!r)
-                continue;
-            resourceUploadProcess(r);
+            w.process();
         }
     }
     else

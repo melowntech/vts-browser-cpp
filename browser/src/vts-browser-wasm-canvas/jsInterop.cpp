@@ -34,22 +34,43 @@
 
 #include <emscripten.h>
 #include <emscripten/html5.h>
+#include <emscripten/threading.h>
 
+#include <cstdlib> // std::malloc
+#include <cstring> // std::strcpy
 
 // CPP -> JS
 
+extern "C" void setHtmlImpl(const char *id, char *str)
+{
+    EM_ASM({
+        document.getElementById(UTF8ToString($0)).innerHTML = UTF8ToString($1)
+    }, id, str);
+    std::free(str);
+}
+
+extern "C" void setInputValueImpl(const char *id, char *str)
+{
+    EM_ASM({
+        document.getElementById(UTF8ToString($0)).value = UTF8ToString($1)
+    }, id, str);
+    std::free(str);
+}
+
 void setHtml(const char *id, const std::string &value)
 {
-    //MAIN_THREAD_ASYNC_EM_ASM({
-    //    document.getElementById(UTF8ToString($0)).innerHTML = UTF8ToString($1)
-    //}, id, value.c_str());
+    char *str = (char*)std::malloc(value.length() + 1);
+    std::strcpy(str, value.c_str());
+    emscripten_async_run_in_main_runtime_thread(
+                EM_FUNC_SIG_VII, &setHtmlImpl, id, str);
 }
 
 void setInputValue(const char *id, const std::string &value)
 {
-    //MAIN_THREAD_ASYNC_EM_ASM({
-    //    document.getElementById(UTF8ToString($0)).value = UTF8ToString($1)
-    //}, id, value.c_str());
+    char *str = (char*)std::malloc(value.length() + 1);
+    std::strcpy(str, value.c_str());
+    emscripten_async_run_in_main_runtime_thread(
+                EM_FUNC_SIG_VII, &setInputValueImpl, id, str);
 }
 
 // JS -> CPP

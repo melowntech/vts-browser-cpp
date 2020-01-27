@@ -48,7 +48,10 @@ class Texture;
 class VTSR_API RenderDraws : private Immovable
 {
 public:
+    RenderDraws();
     explicit RenderDraws(Camera *cam);
+
+    void swap(Camera *cam);
 
     CameraDraws draws;
     MapCelestialBody body;

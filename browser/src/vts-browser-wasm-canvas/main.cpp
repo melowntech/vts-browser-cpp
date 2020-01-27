@@ -41,8 +41,7 @@ std::shared_ptr<vts::Camera> cam;
 std::shared_ptr<vts::Navigation> nav;
 std::shared_ptr<vts::SearchTask> srch;
 
-DurationBuffer durationFrame, durationData,
-    durationMap, durationCamera, durationView;
+DurationBuffer durationMainFrame, durationMainMap, durationMainCamera;
 
 namespace
 {
@@ -56,16 +55,34 @@ void updateStatisticsHtml()
         std::stringstream ss;
         ss << std::fixed << std::setprecision(1);
         ss << "<table>";
-        ss << "<tr><td>frame<td class=number>" << durationFrame.avg()
-           << "<td class=number>" << durationFrame.max() << "</tr>";
-        ss << "<tr><td>data<td class=number>" << durationData.avg()
-           << "<td class=number>" << durationData.max() << "</tr>";
-        ss << "<tr><td>map<td class=number>" << durationMap.avg()
-           << "<td class=number>" << durationMap.max() << "</tr>";
-        ss << "<tr><td>camera<td class=number>" << durationCamera.avg()
-           << "<td class=number>" << durationCamera.max() << "</tr>";
-        ss << "<tr><td>view<td class=number>" << durationView.avg()
-           << "<td class=number>" << durationView.max() << "</tr>";
+        ss << "<tr><td>main frame<td class=number><b>"
+           << durationMainFrame.avg()
+           << "</b><td class=number>"
+           << durationMainFrame.max() << "</tr>";
+        ss << "<tr><td>main map<td class=number>"
+           << durationMainMap.avg()
+           << "<td class=number>"
+           << durationMainMap.max() << "</tr>";
+        ss << "<tr><td>main camera<td class=number>"
+           << durationMainCamera.avg()
+           << "<td class=number>"
+           << durationMainCamera.max() << "</tr>";
+        ss << "<tr><td>render frame<td class=number><b>"
+           << durationRenderFrame.avg()
+           << "</b><td class=number>"
+           << durationRenderFrame.max() << "</tr>";
+        ss << "<tr><td>render data<td class=number>"
+           << durationRenderData.avg()
+           << "<td class=number>"
+           << durationRenderData.max() << "</tr>";
+        ss << "<tr><td>render render<td class=number>"
+           << durationRenderRender.avg()
+           << "<td class=number>"
+           << durationRenderRender.max() << "</tr>";
+        ss << "<tr><td>render swap<td class=number>"
+           << durationRenderSwap.avg()
+           << "<td class=number>"
+           << durationRenderSwap.max() << "</tr>";
         ss << "</table>";
         setHtml("statisticsTiming", ss.str());
     }
@@ -125,19 +142,12 @@ void loopIteration()
 {
     //vts::log(vts::LogLevel::info2, "Main loop iteration");
 
-    // quick hack to slow down this thread when rendering cannot keep up
-    if (drawsQueue.estimateSize() > 2)
-    {
-        vts::log(vts::LogLevel::warn2, "Rendering cannot keep up");
-        return;
-    }
-
     updateSearch();
 
     TimerPoint a = now();
     {
         TimerPoint currentTimestamp = now();
-        durationFrame.update(lastFrameTimestamp, currentTimestamp);
+        durationMainFrame.update(lastFrameTimestamp, currentTimestamp);
         double elapsedTime = std::chrono::duration_cast<
                 std::chrono::microseconds>(
                 currentTimestamp - lastFrameTimestamp).count() / 1e6;
@@ -148,11 +158,17 @@ void loopIteration()
     TimerPoint b = now();
     cam->setViewportSize(displayWidth, displayHeight);
     cam->renderUpdate();
-    drawsQueue.push(std::make_unique<vts::renderer::RenderDraws>(cam.get()));
 
     TimerPoint c = now();
-    durationMap.update(a, b);
-    durationCamera.update(b, c);
+    {
+        std::unique_ptr<vts::renderer::RenderDraws> rd;
+        drawsQueue2.waitPop(rd);
+        rd->swap(cam.get());
+        drawsQueue.push(std::move(rd));
+    }
+
+    durationMainMap.update(a, b);
+    durationMainCamera.update(b, c);
     if ((map->statistics().renderTicks % DurationBuffer::N) == 0)
         updateStatisticsHtml();
 }

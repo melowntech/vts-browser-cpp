@@ -30,14 +30,18 @@
 #include <emscripten/html5.h>
 #include <emscripten/threading.h>
 
-#include <future> // your life is pointless without it
+#include <future> // our life is pointless without it
 #include <mutex>
+
+//#define RENDER_EXPLICIT_SWAP
 
 std::shared_ptr<vts::renderer::RenderContext> context;
 std::shared_ptr<vts::renderer::RenderView> view;
 std::mutex mutex;
-DrawsQueue drawsQueue;
+DrawsQueue drawsQueue, drawsQueue2;
 uint32 displayWidth, displayHeight;
+DurationBuffer durationRenderFrame, durationRenderData,
+    durationRenderRender, durationRenderSwap;
 
 namespace
 {
@@ -60,18 +64,32 @@ void updateResolution()
 void loopIteration()
 {
     //vts::log(vts::LogLevel::info2, "Render loop iteration");
+
+    TimerPoint a = now();
     map->dataUpdate(); // outside lock
-    std::unique_ptr<vts::renderer::RenderDraws> d;
-    if (!drawsQueue.waitPop(d))
-    {
-        vts::log(vts::LogLevel::warn2, "Nothing to render");
-        return;
-    }
+
+    TimerPoint b = now();
+    std::unique_ptr<vts::renderer::RenderDraws> rd;
+    drawsQueue.waitPop(rd);
+
+    TimerPoint c = now();
     updateResolution();
     {
         std::lock_guard<std::mutex> lock(mutex);
-        view->render(d.get());
+        view->render(rd.get());
     }
+    drawsQueue2.push(std::move(rd));
+
+    TimerPoint d = now();
+#ifdef RENDER_EXPLICIT_SWAP
+    emscripten_webgl_commit_frame();
+#endif
+
+    TimerPoint e = now();
+    durationRenderFrame.update(a, e);
+    durationRenderData.update(a, b);
+    durationRenderRender.update(c, d);
+    durationRenderSwap.update(d, e);
 }
 
 void *renderThreadEntry(void*)
@@ -86,6 +104,9 @@ void *renderThreadEntry(void*)
         attr.alpha = attr.depth = attr.stencil = attr.antialias = 0; // we have our own render target
         attr.majorVersion = 2; // WebGL 2.0
         attr.minorVersion = 0;
+#ifdef RENDER_EXPLICIT_SWAP
+        attr.explicitSwapControl = true;
+#endif
         ctx = emscripten_webgl_create_context("#display", &attr);
         if (!ctx)
         {
@@ -107,9 +128,22 @@ void *renderThreadEntry(void*)
     updateResolution();
     threadInitialized.set_value();
 
+    // create 3 buffers:
+    // 1. buffer is being written to
+    // 2. buffer is being rendered from
+    // 3. buffer is transient to give threads some additional space to breathe
+    for (int i = 0; i < 3; i++)
+        drawsQueue2.push(std::make_unique<vts::renderer::RenderDraws>());
+
     // run rendering loop
     vts::log(vts::LogLevel::info3, "Starting rendering loop");
+#ifdef RENDER_EXPLICIT_SWAP
+    while (true)
+        loopIteration();
+#else
     emscripten_set_main_loop(&loopIteration, 0, true);
+#endif
+
     return nullptr;
 }
 

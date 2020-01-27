@@ -35,7 +35,10 @@ void createRenderThread();
 
 typedef vts::ThreadQueue<std::unique_ptr<vts::renderer::RenderDraws>>
     DrawsQueue;
-extern DrawsQueue drawsQueue;
-extern DurationBuffer durationData, durationView;
+extern DrawsQueue drawsQueue, drawsQueue2;
 extern uint32 displayWidth, displayHeight;
+extern DurationBuffer durationRenderFrame, durationRenderData,
+    durationRenderRender, durationRenderSwap;
+
+
 

@@ -97,13 +97,23 @@ std::shared_ptr<RenderView> RenderContext::createView(Camera *cam)
     return std::make_shared<RenderView>(impl.get(), cam);
 }
 
-RenderDraws::RenderDraws(Camera *cam)
+RenderDraws::RenderDraws()
     : elapsedTime(nan1()),
       projected(false),
       lodBlendingWithDithering(false),
-      map(cam->map())
+      map(nullptr)
+{}
+
+RenderDraws::RenderDraws(Camera *cam)
+    : RenderDraws()
 {
-    draws = cam->draws();
+    swap(cam);
+}
+
+void RenderDraws::swap(Camera *cam)
+{
+    map = cam->map();
+    std::swap(draws, cam->draws());
     body = map->celestialBody();
     projected = map->getMapProjected();
     lodBlendingWithDithering

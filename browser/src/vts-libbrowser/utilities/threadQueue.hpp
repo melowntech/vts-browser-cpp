@@ -92,6 +92,15 @@ public:
         con.notify_all();
     }
 
+    void purge()
+    {
+        {
+            std::lock_guard<std::mutex> lock(mut);
+            q.clear();
+        }
+        con.notify_all();
+    }
+
     bool stopped() const
     {
         return stop;

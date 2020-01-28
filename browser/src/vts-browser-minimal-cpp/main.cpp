@@ -120,15 +120,15 @@ int main(int, char *[])
     renderContext = SDL_GL_CreateContext(window);
     SDL_GL_SetSwapInterval(1); // enable v-sync
 
-    // create instance of the vts::Map class
-    map = std::make_shared<vts::Map>();
-
     // make vts renderer library load OpenGL function pointers
     // this calls installGlDebugCallback for the current context too
     vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
 
     // create the renderer library context
     context = std::make_shared<vts::renderer::RenderContext>();
+
+    // create instance of the vts::Map class
+    map = std::make_shared<vts::Map>();
 
     // set required callbacks for creating mesh and texture resources
     context->bindLoadFunctions(map.get());
@@ -197,13 +197,13 @@ int main(int, char *[])
     }
 
     // release all
-    view.reset();
     nav.reset();
     cam.reset();
-    map->renderFinalize();
+    view.reset();
+    map->renderFinalize(); // this allows the dataThread to finish
     dataThread.join();
-    context.reset();
     map.reset();
+    context.reset();
 
     SDL_GL_DeleteContext(renderContext);
     renderContext = nullptr;

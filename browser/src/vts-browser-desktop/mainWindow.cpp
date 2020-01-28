@@ -131,10 +131,7 @@ MainWindow::MainWindow(struct SDL_Window *window, void *renderContext,
 }
 
 MainWindow::~MainWindow()
-{
-    if (map)
-        map->renderFinalize();
-}
+{}
 
 void MainWindow::renderFrame()
 {
@@ -426,12 +423,13 @@ void MainWindow::run()
         timingFrameSmooth.add(timingTotalFrame);
     }
 
-    gui.finalize();
-
     // closing the whole app may take some time (waiting on pending downloads)
     //   therefore we hide the window here so that the user
     //   does not get disturbed by it
     SDL_HideWindow(window);
+
+    gui.finalize();
+    map->renderFinalize();
 }
 
 void MainWindow::colorizeMarks()

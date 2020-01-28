@@ -166,9 +166,10 @@ public:
     void traverseClearing(TraverseNode *trav);
 
     // resources methods
-    void resourcesFinalize();
-    void resourcesRenderUpdate();
+    void resourcesDataFinalize();
+    void resourcesRenderFinalize();
     void resourcesDataUpdate();
+    void resourcesRenderUpdate();
     uint32 resourcesDataUpdateOne();
 
     bool resourcesTryRemove(std::shared_ptr<Resource> &r);

@@ -102,6 +102,9 @@ public:
     //   but is more cpu efficient than dataUpdate
     void dataAllRun();
 
+    // use dataFinalize to release all pending resources
+    void dataFinalize();
+
     void renderUpdate(double elapsedTime); // seconds since last call
     void renderFinalize();
     double lastRenderUpdateElapsedTime() const;

@@ -349,6 +349,11 @@ uint32 MapImpl::resourcesDataUpdateOne()
     return processed;
 }
 
+void MapImpl::resourcesDataFinalize()
+{
+    resources.queUpload.purge();
+}
+
 ////////////////////////////
 // CACHE WRITE THREAD
 ////////////////////////////
@@ -715,13 +720,16 @@ void MapImpl::resourceUpdateStatistics(const std::shared_ptr<Resource> &r)
     }
 }
 
-void MapImpl::resourcesFinalize()
+void MapImpl::resourcesRenderFinalize()
 {
-    // allow the dataAllRun method to return to the caller
-    resources.queUpload.terminate();
+    // release resources hold by the map and all layers
+    purgeMapconfig();
 
     // clear the resources now while all the necessary things are still working
     resources.resources.clear();
+
+    // allow the dataAllRun method to return to the caller
+    resources.queUpload.terminate();
 }
 
 void MapImpl::resourcesRenderUpdate()

@@ -223,6 +223,12 @@ void Map::dataUpdate()
 void Map::dataAllRun()
 {
     impl->resourcesUploadProcessorEntry();
+    dataFinalize();
+}
+
+void Map::dataFinalize()
+{
+    impl->resourcesDataFinalize();
 }
 
 void Map::renderUpdate(double elapsedTime)
@@ -234,7 +240,7 @@ void Map::renderUpdate(double elapsedTime)
 
 void Map::renderFinalize()
 {
-    impl->resourcesFinalize();
+    impl->resourcesRenderFinalize();
 }
 
 double Map::lastRenderUpdateElapsedTime() const

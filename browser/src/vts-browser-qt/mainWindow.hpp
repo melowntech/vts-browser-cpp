@@ -65,10 +65,10 @@ public:
 
     std::shared_ptr<Gl> gl;
     std::shared_ptr<Gl> gl2;
+    std::shared_ptr<vts::renderer::RenderContext> context;
     std::shared_ptr<vts::Map> map;
     std::shared_ptr<vts::Camera> camera;
     std::shared_ptr<vts::Navigation> navigation;
-    std::shared_ptr<vts::renderer::RenderContext> context;
     std::shared_ptr<vts::renderer::RenderView> view;
 
     QPoint lastMousePosition;

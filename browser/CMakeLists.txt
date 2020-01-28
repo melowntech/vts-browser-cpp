@@ -94,8 +94,8 @@ else()
         add_subdirectory(src/vts-browser-desktop)
 
         # two cameras
-        message(STATUS "including test-two-cameras")
-        add_subdirectory(src/test-two-cameras)
+        message(STATUS "including two-cameras")
+        add_subdirectory(src/vts-browser-two-cameras)
     else()
         message(WARNING "SDL was not found, many example applications will be skipped")
     endif()

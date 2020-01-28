@@ -88,6 +88,9 @@ MainWindow::MainWindow()
 
 MainWindow::~MainWindow()
 {
+    view.reset();
+    navigation.reset();
+    camera.reset();
     if (map)
         map->renderFinalize();
     if (dataThread.joinable())

@@ -82,6 +82,7 @@ public:
     ~GeodataTile();
     void decode() override;
     void upload() override;
+    bool requiresUpload() override { return true; }
     FetchTask::ResourceType resourceType() const override;
     void update(
         const std::shared_ptr<GeodataStylesheet> &style,

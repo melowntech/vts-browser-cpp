@@ -205,8 +205,13 @@ void MapImpl::resourceDecodeProcess(const std::shared_ptr<Resource> &r)
     try
     {
         r->decode();
-        r->state = Resource::State::decoded;
-        resources.queUpload.push(UploadData(r));
+        if (r->requiresUpload())
+        {
+            r->state = Resource::State::decoded;
+            resources.queUpload.push(UploadData(r));
+        }
+        else
+            r->state = Resource::State::ready;
     }
     catch (const std::exception &e)
     {

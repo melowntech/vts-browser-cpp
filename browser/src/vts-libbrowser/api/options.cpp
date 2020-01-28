@@ -104,7 +104,7 @@ MapRuntimeOptions::MapRuntimeOptions() :
     renderTilesScale(1.001),
     targetResourcesMemoryKB(0),
     maxConcurrentDownloads(25),
-    maxResourceProcessesPerTick(3),
+    maxResourceProcessesPerTick(10),
     maxFetchRedirections(5),
     maxFetchRetries(5),
     fetchFirstRetryTimeOffset(1),

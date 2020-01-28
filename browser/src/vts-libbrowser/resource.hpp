@@ -63,6 +63,7 @@ public:
     virtual ~Resource();
     virtual void decode() = 0; // eg. decode an image
     virtual void upload() {} // call the resource callback
+    virtual bool requiresUpload() { return false; }
     virtual FetchTask::ResourceType resourceType() const = 0;
     bool allowDiskCache() const;
     static bool allowDiskCache(FetchTask::ResourceType type);

@@ -32,14 +32,14 @@
 #include <vts-browser/cameraStatistics.hpp>
 #include <vts-browser/cameraCredits.hpp>
 
-#include <emscripten.h>
-#include <emscripten/html5.h>
 #include <iomanip>
 
 std::shared_ptr<vts::Map> map;
 std::shared_ptr<vts::Camera> cam;
 std::shared_ptr<vts::Navigation> nav;
 std::shared_ptr<vts::SearchTask> srch;
+
+pthread_t main_thread_id;
 
 DurationBuffer durationMainFrame, durationMainMap, durationMainCamera;
 
@@ -140,7 +140,7 @@ void updateSearch()
 
 void loopIteration()
 {
-    //vts::log(vts::LogLevel::info2, "Main loop iteration");
+    vts::log(vts::LogLevel::info2, "Main loop iteration");
 
     updateSearch();
 
@@ -156,7 +156,6 @@ void loopIteration()
     }
 
     TimerPoint b = now();
-    cam->setViewportSize(displayWidth, displayHeight);
     cam->renderUpdate();
 
     TimerPoint c = now();
@@ -178,6 +177,8 @@ void loopIteration()
 int main(int, char *[])
 {
     //vts::setLogMask(vts::LogLevel::verbose);
+
+    main_thread_id = pthread_self();
 
     // initialize browser and renderer
     vts::log(vts::LogLevel::info3, "Creating vts browser");
@@ -201,6 +202,9 @@ int main(int, char *[])
     emscripten_set_mousemove_callback("#display", nullptr, true, &mouseEvent);
     emscripten_set_dblclick_callback("#display", nullptr, true, &mouseEvent);
     emscripten_set_wheel_callback("#display", nullptr, true, &wheelEvent);
+    emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW
+                                   , nullptr, true, &resizeEvent);
+    resizeEvent(0, nullptr, nullptr);
 
     // start rendering thread
     vts::log(vts::LogLevel::info3, "Create rendering thread");

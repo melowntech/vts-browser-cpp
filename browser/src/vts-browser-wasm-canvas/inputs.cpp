@@ -28,8 +28,6 @@
 
 #include <vts-browser/navigationOptions.hpp>
 
-#include <emscripten/html5.h>
-
 vec3 getWorldPosition(const vec3 &input);
 
 vec3 prevMousePosition;
@@ -94,6 +92,19 @@ EM_BOOL wheelEvent(int, const EmscriptenWheelEvent *e, void *)
     }
     nav->zoom(d * -0.25);
     nav->options().type = vts::NavigationType::Quick;
+    return true;
+}
+
+EM_BOOL resizeEvent(int, const EmscriptenUiEvent *e, void *)
+{
+    //vts::log(vts::LogLevel::info2, "Window resize event");
+
+    double width, height;
+    emscripten_get_element_css_size("#display", &width, &height);
+    emscripten_set_canvas_element_size("#display", int(width), int(height));
+    if (cam)
+        cam->setViewportSize((uint32)width, (uint32)height);
+
     return true;
 }
 

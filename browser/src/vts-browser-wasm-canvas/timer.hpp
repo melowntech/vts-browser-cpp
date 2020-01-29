@@ -26,8 +26,6 @@
 
 #include "common.hpp"
 
-#include <vts-browser/mapStatistics.hpp>
-
 #include <chrono>
 
 using TimerClock = std::chrono::high_resolution_clock;
@@ -42,6 +40,7 @@ struct DurationBuffer
 {
     static const uint32 N = 60;
     float buffer[N];
+    int index = 0;
 
     DurationBuffer()
     {
@@ -67,7 +66,7 @@ struct DurationBuffer
 
     void update(float t)
     {
-        buffer[map->statistics().renderTicks % N] = t;
+        buffer[index++ % N] = t;
     }
 
     void update(const TimerPoint &a, const TimerPoint &b)

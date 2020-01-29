@@ -27,7 +27,10 @@
 #include "common.hpp"
 #include "timer.hpp"
 
+// this is internal header from the VTS browser implementation
+//   and should not be used in other applications
 #include "vts-libbrowser/utilities/threadQueue.hpp"
+
 #include <vts-renderer/renderDraws.hpp>
 
 
@@ -36,7 +39,6 @@ void createRenderThread();
 typedef vts::ThreadQueue<std::unique_ptr<vts::renderer::RenderDraws>>
     DrawsQueue;
 extern DrawsQueue drawsQueue, drawsQueue2;
-extern uint32 displayWidth, displayHeight;
 extern DurationBuffer durationRenderFrame, durationRenderData,
     durationRenderRender, durationRenderSwap;
 

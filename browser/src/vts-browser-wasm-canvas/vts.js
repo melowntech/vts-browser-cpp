@@ -1,19 +1,4 @@
 
-// canvas size
-function updateCanvasSize()
-{
-    var canvas = document.getElementById("display")
-    let displayWidth  = canvas.clientWidth
-    let displayHeight = canvas.clientHeight
-    if (canvas.width  != displayWidth || canvas.height != displayHeight)
-    {
-        canvas.width  = displayWidth
-        canvas.height = displayHeight
-    }
-}
-updateCanvasSize()
-window.addEventListener("resize", updateCanvasSize)
-
 // collapsible elements
 {
     let coll = document.getElementsByClassName("collapsible")

@@ -26,10 +26,6 @@
 
 #include "render.hpp"
 
-#include <emscripten.h>
-#include <emscripten/html5.h>
-#include <emscripten/threading.h>
-
 #include <future> // our life is pointless without it
 #include <mutex>
 
@@ -39,7 +35,6 @@ std::shared_ptr<vts::renderer::RenderContext> context;
 std::shared_ptr<vts::renderer::RenderView> view;
 std::mutex mutex;
 DrawsQueue drawsQueue, drawsQueue2;
-uint32 displayWidth, displayHeight;
 DurationBuffer durationRenderFrame, durationRenderData,
     durationRenderRender, durationRenderSwap;
 
@@ -57,8 +52,6 @@ void updateResolution()
     auto &ro = view->options();
     ro.width = w;
     ro.height = h;
-    displayWidth = w;
-    displayHeight = h;
 }
 
 void loopIteration()

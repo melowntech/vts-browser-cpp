@@ -33,6 +33,10 @@
 #include <vts-browser/search.hpp>
 #include <vts-renderer/renderer.hpp>
 
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#include <emscripten/threading.h>
+
 
 using vts::vec3;
 
@@ -43,14 +47,15 @@ std::string positionToHtml(const vts::Position &pos);
 void setHtml(const char *id, const std::string &value);
 void setInputValue(const char *id, const std::string &value);
 
-struct EmscriptenMouseEvent;
-struct EmscriptenWheelEvent;
-int mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *);
-int wheelEvent(int, const EmscriptenWheelEvent *e, void *);
+EM_BOOL mouseEvent(int, const EmscriptenMouseEvent *e, void *);
+EM_BOOL wheelEvent(int, const EmscriptenWheelEvent *e, void *);
+EM_BOOL resizeEvent(int, const EmscriptenUiEvent *e, void *);
 
 
 extern std::shared_ptr<vts::Map> map;
 extern std::shared_ptr<vts::Camera> cam;
 extern std::shared_ptr<vts::Navigation> nav;
 extern std::shared_ptr<vts::SearchTask> srch;
+
+extern pthread_t main_thread_id;
 

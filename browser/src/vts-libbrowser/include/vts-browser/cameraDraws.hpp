@@ -51,12 +51,19 @@ public:
     DrawGeodataTask();
 };
 
-class VTS_API DrawSimpleTask : public vtsCDrawSimpleBase
+class VTS_API DrawInfographicsTask : public vtsCDrawInfographicsBase
 {
 public:
     std::shared_ptr<void> mesh;
     std::shared_ptr<void> texColor;
-    DrawSimpleTask();
+    DrawInfographicsTask();
+};
+
+class VTS_API DrawColliderTask : public vtsCDrawColliderBase
+{
+public:
+    std::shared_ptr<void> mesh;
+    DrawColliderTask();
 };
 
 class VTS_API CameraDraws
@@ -74,11 +81,11 @@ public:
     std::vector<DrawGeodataTask> geodata;
 
     // visualization of debug data
-    std::vector<DrawSimpleTask> infographics;
+    std::vector<DrawInfographicsTask> infographics;
 
     // meshes suitable for collision detection
     // each nodes mesh is reported only once
-    std::vector<DrawSimpleTask> colliders;
+    std::vector<DrawColliderTask> colliders;
 
     struct VTS_API Camera : public vtsCCameraBase
     {

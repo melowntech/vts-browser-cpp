@@ -24,8 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <optick.h>
-
 #include "../include/vts-browser/log.hpp"
 
 #include "../fetchTask.hpp"
@@ -33,8 +31,30 @@
 #include "../authConfig.hpp"
 #include "../utilities/dataUrl.hpp"
 
+#include <optick.h>
+
 namespace vts
 {
+
+void MapImpl::resourceSaveCorruptedFile(const std::shared_ptr<Resource> &r)
+{
+    if (!options.debugSaveCorruptedFiles)
+        return;
+    try
+    {
+        std::string path = std::string() + "corrupted/"
+            + convertNameToPath(r->name, false);
+        writeLocalFileBuffer(path, r->fetch->reply.content);
+        LOG(info1) << "Resource <" << r->name
+            << "> saved into file <"
+            << path << "> for further inspection";
+    }
+    catch (...)
+    {
+        LOG(warn1) << "Failed saving corrupted resource <" << r->name
+            << "> for further inspection";
+    }
+}
 
 ////////////////////////////
 // A FETCH THREAD
@@ -141,9 +161,53 @@ void FetchTaskImpl::fetchDone()
                 // this allows another thread to immediately start
                 //   processing the content, including its modification,
                 //   and must therefore be the last action in this thread
-                map->resources.queUpload.push(rs);
+                map->resources.queDecode.push(rs);
             }
         }
+    }
+}
+
+////////////////////////////
+// DECODE THREAD
+////////////////////////////
+
+void MapImpl::resourceDecodeProcess(const std::shared_ptr<Resource> &r)
+{
+    OPTICK_EVENT();
+    OPTICK_TAG("name", r->name.c_str());
+
+    assert(r->state == Resource::State::downloaded);
+    statistics.resourcesDecoded++;
+    r->info.gpuMemoryCost = r->info.ramMemoryCost = 0;
+    try
+    {
+        r->decode();
+        r->state = Resource::State::decoded;
+        resources.queUpload.push(r);
+    }
+    catch (const std::exception &e)
+    {
+        LOG(err3) << "Failed decoding resource <" << r->name
+            << ">, exception <" << e.what() << ">";
+        resourceSaveCorruptedFile(r);
+        statistics.resourcesFailed++;
+        r->state = Resource::State::errorFatal;
+    }
+    r->fetch.reset();
+}
+
+void MapImpl::resourcesDecodeProcessorEntry()
+{
+    OPTICK_THREAD("decode");
+    setLogThreadName("decode");
+    while (!resources.queDecode.stopped())
+    {
+        std::weak_ptr<Resource> w;
+        resources.queDecode.waitPop(w);
+        std::shared_ptr<Resource> r = w.lock();
+        if (!r)
+            continue;
+        resourceDecodeProcess(r);
     }
 }
 
@@ -156,50 +220,22 @@ void MapImpl::resourceUploadProcess(const std::shared_ptr<Resource> &r)
     OPTICK_EVENT();
     OPTICK_TAG("name", r->name.c_str());
 
-    assert(r->state == Resource::State::downloaded);
-    r->info.gpuMemoryCost = r->info.ramMemoryCost = 0;
-    statistics.resourcesProcessed++;
+    assert(r->state == Resource::State::decoded);
+    statistics.resourcesUploaded++;
     try
     {
-        r->load();
+        r->upload();
         r->state = Resource::State::ready;
     }
     catch (const std::exception &e)
     {
-        LOG(err3) << "Failed processing resource <" << r->name
+        LOG(err3) << "Failed uploading resource <" << r->name
             << ">, exception <" << e.what() << ">";
-        if (options.debugSaveCorruptedFiles)
-        {
-            std::string path = std::string() + "corrupted/"
-                + convertNameToPath(r->name, false);
-            try
-            {
-                writeLocalFileBuffer(path, r->fetch->reply.content);
-                LOG(info1) << "Resource <" << r->name
-                    << "> saved into file <"
-                    << path << "> for further inspection";
-            }
-            catch (...)
-            {
-                LOG(warn1) << "Failed saving resource <" << r->name
-                    << "> into file <"
-                    << path << "> for further inspection";
-            }
-        }
+        resourceSaveCorruptedFile(r);
         statistics.resourcesFailed++;
         r->state = Resource::State::errorFatal;
     }
-    r->fetch.reset();
-}
-
-void MapImpl::resourceDataInitialize()
-{
-    LOG(info3) << "Data initialize";
-}
-
-void MapImpl::resourceDataFinalize()
-{
-    LOG(info3) << "Data finalize";
+    r->decodeData.reset();
 }
 
 void MapImpl::resourceDataUpdate()
@@ -238,7 +274,7 @@ void MapImpl::resourceDataRun()
 
 void MapImpl::cacheWriteEntry()
 {
-    OPTICK_THREAD("cacheWriter");
+    OPTICK_THREAD("cache writer");
     setLogThreadName("cache writer");
     while (!resources.queCacheWrite.stopped())
     {
@@ -255,7 +291,7 @@ void MapImpl::cacheWriteEntry()
 
 void MapImpl::cacheReadEntry()
 {
-    OPTICK_THREAD("cacheReader");
+    OPTICK_THREAD("cache reader");
     setLogThreadName("cache reader");
     while (!resources.queCacheRead.stopped())
     {
@@ -339,7 +375,7 @@ void MapImpl::cacheReadProcess(const std::shared_ptr<Resource> &r)
     }
 
     if (r->state == Resource::State::downloaded)
-        resources.queUpload.push(r);
+        resources.queDecode.push(r);
 }
 
 ////////////////////////////
@@ -358,7 +394,7 @@ void MapImpl::resourcesDownloadsEntry()
             resources.fetching.con.wait(lock);
             res1.swap(resources.fetching.resources);
         }
-        OPTICK_EVENT("process");
+        OPTICK_EVENT("update");
         resources.fetcher->update();
         if (resources.downloads >= options.maxConcurrentDownloads)
             continue; // skip processing if no download slots are available
@@ -587,7 +623,7 @@ void MapImpl::resourceUpdateStatistics(const std::shared_ptr<Resource> &r)
     case Resource::State::startDownload:
     case Resource::State::downloading:
     case Resource::State::downloaded:
-    case Resource::State::uploading:
+    case Resource::State::decoded:
         statistics.resourcesPreparing++;
         break;
     case Resource::State::ready:
@@ -598,16 +634,16 @@ void MapImpl::resourceUpdateStatistics(const std::shared_ptr<Resource> &r)
     }
 }
 
-void MapImpl::resourceRenderInitialize()
-{}
-
-void MapImpl::resourceRenderFinalize()
+void MapImpl::resourceFinalize()
 {
+    // allow the dataAllRun method to return to the caller
     resources.queUpload.terminate();
+
+    // clear the resources now while all the necessary things are still working
     resources.resources.clear();
 }
 
-void MapImpl::resourceRenderUpdate()
+void MapImpl::resourceUpdate()
 {
     OPTICK_EVENT();
     // resourcesPreparing is used to determine mapRenderComplete
@@ -617,16 +653,18 @@ void MapImpl::resourceRenderUpdate()
         = resources.resources.size();
     statistics.resourcesDownloading
         = resources.downloads;
-    statistics.resourcesQueueUpload
-        = resources.queUpload.estimateSize();
     statistics.resourcesQueueCacheRead
         = resources.queCacheRead.estimateSize();
     statistics.resourcesQueueCacheWrite
         = resources.queCacheWrite.estimateSize();
-    statistics.resourcesQueueAtmosphere
-        = resources.queAtmosphere.estimateSize();
+    statistics.resourcesQueueDecode
+        = resources.queDecode.estimateSize();
+    statistics.resourcesQueueUpload
+        = resources.queUpload.estimateSize();
     statistics.resourcesQueueGeodata
         = resources.queGeodata.estimateSize();
+    statistics.resourcesQueueAtmosphere
+        = resources.queAtmosphere.estimateSize();
 
     // split workload into multiple render frames
     switch (renderTickIndex % 3)

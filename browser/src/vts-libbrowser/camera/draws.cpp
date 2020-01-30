@@ -33,7 +33,8 @@ namespace vts
 
 DrawSurfaceTask::DrawSurfaceTask()
 {
-    memset((vtsCDrawSurfaceBase*)this, 0, sizeof(vtsCDrawSurfaceBase));
+    memset((vtsCDrawSurfaceBase*)this, 0,
+        sizeof(vtsCDrawSurfaceBase));
     color[3] = 1;
     blendingCoverage = 1;
     vecToRaw(vec4f(-1, -1, 2, 2), uvClip);
@@ -42,10 +43,17 @@ DrawSurfaceTask::DrawSurfaceTask()
 DrawGeodataTask::DrawGeodataTask()
 {}
 
-DrawSimpleTask::DrawSimpleTask()
+DrawInfographicsTask::DrawInfographicsTask()
 {
-    memset((vtsCDrawSimpleBase*)this, 0, sizeof(vtsCDrawSimpleBase));
+    memset((vtsCDrawInfographicsBase*)this, 0,
+        sizeof(vtsCDrawInfographicsBase));
     color[3] = 1;
+}
+
+DrawColliderTask::DrawColliderTask()
+{
+    memset((vtsCDrawColliderBase*)this, 0,
+        sizeof(vtsCDrawColliderBase));
 }
 
 CameraDraws::Camera::Camera()
@@ -90,15 +98,25 @@ bool RenderGeodataTask::ready() const
     return true;
 }
 
-RenderSimpleTask::RenderSimpleTask() : model(identityMatrix4()),
+RenderInfographicsTask::RenderInfographicsTask() : model(identityMatrix4()),
     color(1, 1, 1, 1)
 {}
 
-bool RenderSimpleTask::ready() const
+bool RenderInfographicsTask::ready() const
 {
     if (mesh && !*mesh)
         return false;
     if (textureColor && !*textureColor)
+        return false;
+    return true;
+}
+
+RenderColliderTask::RenderColliderTask() : model(identityMatrix4())
+{}
+
+bool RenderColliderTask::ready() const
+{
+    if (mesh && !*mesh)
         return false;
     return true;
 }
@@ -154,9 +172,21 @@ DrawGeodataTask CameraImpl::convert(const RenderGeodataTask &task)
     return result;
 }
 
-DrawSimpleTask CameraImpl::convert(const RenderSimpleTask &task)
+DrawInfographicsTask CameraImpl::convert(const RenderInfographicsTask &task)
 {
-    return vts::convert<DrawSimpleTask, RenderSimpleTask>(this, task);
+    return vts::convert<DrawInfographicsTask,
+        RenderInfographicsTask>(this, task);
+}
+
+DrawColliderTask CameraImpl::convert(const RenderColliderTask &task)
+{
+    assert(task.ready());
+    DrawColliderTask result;
+    if (task.mesh)
+        result.mesh = task.mesh->info.userData;
+    mat4f mv = mat4(viewActual * task.model).cast<float>();
+    matToRaw(mv, result.mv);
+    return result;
 }
 
 } // namespace vts

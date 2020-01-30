@@ -56,6 +56,7 @@
 #include "../include/vts-browser/search.h"
 #include "../include/vts-browser/search.hpp"
 #include "../include/vts-browser/view.hpp"
+#include "../include/vts-browser/internalMemory.h"
 
 #include "../utilities/json.hpp"
 #include "../mapApiC.hpp"
@@ -392,13 +393,6 @@ double vtsMapGetRenderProgress(vtsHMap map)
     return 0.0;
 }
 
-void vtsMapDataInitialize(vtsHMap map)
-{
-    C_BEGIN
-    map->p->dataInitialize();
-    C_END
-}
-
 void vtsMapDataUpdate(vtsHMap map)
 {
     C_BEGIN
@@ -406,24 +400,10 @@ void vtsMapDataUpdate(vtsHMap map)
     C_END
 }
 
-void vtsMapDataFinalize(vtsHMap map)
-{
-    C_BEGIN
-    map->p->dataFinalize();
-    C_END
-}
-
 void vtsMapDataAllRun(vtsHMap map)
 {
     C_BEGIN
     map->p->dataAllRun();
-    C_END
-}
-
-void vtsMapRenderInitialize(vtsHMap map)
-{
-    C_BEGIN
-    map->p->renderInitialize();
     C_END
 }
 
@@ -667,15 +647,6 @@ void vtsDrawsGeodataGroup(vtsHCamera cam,
 }
 */
 
-void vtsDrawsInfographicsGroup(vtsHCamera cam,
-    void **group, uint32 *count)
-{
-    C_BEGIN
-    *group = cam->p->draws().infographics.data();
-    *count = cam->p->draws().infographics.size();
-    C_END
-}
-
 void vtsDrawsCollidersGroup(vtsHCamera cam,
     void **group, uint32 *count)
 {
@@ -698,15 +669,14 @@ void vtsDrawsSurfaceTask(void *group, uint32 index,
     C_END
 }
 
-void vtsDrawsSimpleTask(void *group, uint32 index,
-    void **mesh, void **texColor,
-    vtsCDrawSimpleBase **baseStruct)
+void vtsDrawsColliderTask(void *group, uint32 index,
+    void **mesh,
+    vtsCDrawColliderBase **baseStruct)
 {
     C_BEGIN
-    vts::DrawSimpleTask *t = (vts::DrawSimpleTask *)group + index;
+    vts::DrawColliderTask *t = (vts::DrawColliderTask *)group + index;
     *mesh = t->mesh.get();
-    *texColor = t->texColor.get();
-    *baseStruct = (vtsCDrawSimpleBase*)t;
+    *baseStruct = (vtsCDrawColliderBase*)t;
     C_END
 }
 
@@ -1189,7 +1159,7 @@ void vtsCallbacksMapconfigReady(vtsHMap map,
     C_END
 }
 
-void vtsProjFinder(vtsProjFinderCallbackType callback)
+void vtsCallbacksProjFinder(vtsProjFinderCallbackType callback)
 {
     struct Callback
     {
@@ -1416,25 +1386,6 @@ void vtsMathInverse33(double result[9], const double r[9])
 ////////////////////////////////////////////////////////////////////////////
 // INTERNAL MEMORY
 ////////////////////////////////////////////////////////////////////////////
-
-/*
-void vtsInternalMemoryAdd(const char *name,
-    void *data, uint32 size)
-{
-    C_BEGIN
-    // the pointer provided to this function is managed by the caller and should be freed afterwards
-    // the addInternalMemoryData expects pointer to immutable storage that will not be freed
-    // therefore we make a copy here
-    // the copy is likely to be reported as memory leak, but it is intentional
-    void *p = malloc(size);
-    if (!p)
-        throw std::bad_alloc();
-    memcpy(p, data, size);
-    vts::detail::addInternalMemoryData(name,
-        (const unsigned char *)p, size);
-    C_END
-}
-*/
 
 bool vtsInternalMemoryExists(const char *name)
 {

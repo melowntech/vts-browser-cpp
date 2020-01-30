@@ -110,6 +110,7 @@ public:
 bool regenerateJobLabelFlat(const RenderViewImpl *rv, GeodataJob &j);
 void preDrawJobLabelFlat(const RenderViewImpl *rv, const GeodataJob &j,
     std::vector<vec3> &worldPos, float &scale);
+vec3 drawJobLabelFlatSingleDirection(const GeodataJob &j);
 
 } } // namespace vts renderer
 

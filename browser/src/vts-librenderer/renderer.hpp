@@ -43,7 +43,7 @@ namespace vts
 
 class CameraDraws;
 class DrawSurfaceTask;
-class DrawSimpleTask;
+class DrawInfographicsTask;
 
 namespace renderer
 {
@@ -185,7 +185,7 @@ public:
     { return useDisposableUbo(bindIndex, (void*)&value, sizeof(value)); }
 
     void drawSurface(const DrawSurfaceTask &t);
-    void drawInfographic(const DrawSimpleTask &t);
+    void drawInfographics(const DrawInfographicsTask &t);
     void updateFramebuffers();
     void updateAtmosphereBuffer();
     void getWorldPosition(const double screenPos[2], double worldPos[3]);
@@ -234,6 +234,8 @@ class RenderContextImpl
 {
 public:
     RenderContext *const api;
+
+    ContextOptions options;
 
     std::shared_ptr<Texture> texCompas;
     std::shared_ptr<Texture> texBlueNoise; // uses texture array!

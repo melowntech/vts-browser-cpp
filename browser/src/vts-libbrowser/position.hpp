@@ -27,7 +27,8 @@
 #ifndef POSITION_HPP_t44hj4tz5858
 #define POSITION_HPP_t44hj4tz5858
 
-#include <vts-libs/registry/types.hpp>
+#include <vts-libs/registry/referenceframe.hpp>
+//#include <vts-libs/registry/types.hpp>
 #include "include/vts-browser/position.hpp"
 
 namespace vts

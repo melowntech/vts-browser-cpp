@@ -36,6 +36,14 @@
 namespace vts { namespace renderer
 {
 
+ContextOptions::ContextOptions()
+{
+    memset(this, 0, sizeof(*this));
+#ifndef __EMSCRIPTEN__
+    callGlFinishAfterUploadingData = true;
+#endif // !__EMSCRIPTEN__
+}
+
 RenderOptions::RenderOptions()
 {
     memset(this, 0, sizeof(*this));
@@ -70,6 +78,11 @@ RenderContext::RenderContext()
 
 RenderContext::~RenderContext()
 {}
+
+ContextOptions &RenderContext::options()
+{
+    return impl->options;
+}
 
 void RenderContext::bindLoadFunctions(Map *map)
 {

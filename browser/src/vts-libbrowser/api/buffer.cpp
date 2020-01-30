@@ -24,8 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cstring>
-#include <map>
+#include "../include/vts-browser/buffer.hpp"
 
 #ifdef _WIN32
 #include <windows.h> // GetCurrentProcessId
@@ -36,7 +35,8 @@
 #include <boost/filesystem.hpp>
 #include <dbglog/dbglog.hpp>
 
-#include "../include/vts-browser/buffer.hpp"
+#include <cstring>
+#include <map>
 
 void initializeBrowserData();
 namespace

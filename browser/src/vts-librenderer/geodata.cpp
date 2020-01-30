@@ -1011,19 +1011,24 @@ void RenderViewImpl::renderLabelFlat(const GeodataJob &job)
     const auto &t = g->texts[job.itemIndex];
 
     // generate vertex positions
-    float scale;
     {
+        float scale;
         std::vector<vec3> worldPos;
         preDrawJobLabelFlat(this, job, worldPos, scale);
-        assert(worldPos.size() >= 2);
+        assert(worldPos.size() >= 1);
         assert(worldPos.size() <= 125);
         std::vector<vec3> worldFwd;
         worldFwd.reserve(worldPos.size());
-        worldFwd.push_back(worldPos[1] - worldPos[0]);
-        for (uint32 i = 1, e = worldPos.size() - 1; i != e; i++)
-            worldFwd.push_back(worldPos[i + 1] - worldPos[i - 1]);
-        worldFwd.push_back(worldPos[worldPos.size() - 1]
-            - worldPos[worldPos.size() - 2]);
+        if (worldPos.size() == 1)
+            worldFwd.push_back(drawJobLabelFlatSingleDirection(job));
+        else
+        {
+            worldFwd.push_back(worldPos[1] - worldPos[0]);
+            for (uint32 i = 1, e = worldPos.size() - 1; i != e; i++)
+                worldFwd.push_back(worldPos[i + 1] - worldPos[i - 1]);
+            worldFwd.push_back(worldPos[worldPos.size() - 1]
+                - worldPos[worldPos.size() - 2]);
+        }
         assert(worldPos.size() == worldFwd.size());
         for (auto &it : worldFwd)
             it = normalize(it);
@@ -1225,9 +1230,17 @@ void RenderViewImpl::renderJobs()
 void RenderContext::loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec,
     const std::string &debugId)
 {
+    OPTICK_EVENT();
+
     auto r = std::make_shared<GeodataTile>();
     r->load(&*impl, info, spec, debugId);
     info.userData = r;
+
+    if (impl->options.callGlFinishAfterUploadingData)
+    {
+        OPTICK_EVENT("glFinish");
+        glFinish();
+    }
 }
 
 } } // namespace vts renderer

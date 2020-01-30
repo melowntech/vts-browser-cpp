@@ -29,6 +29,7 @@
 #include <vts-browser/map.hpp>
 #include <vts-browser/mapOptions.hpp>
 #include <vts-browser/mapStatistics.hpp>
+#include <vts-browser/mapCallbacks.hpp>
 #include <vts-browser/camera.hpp>
 #include <vts-browser/cameraOptions.hpp>
 #include <vts-browser/cameraStatistics.hpp>
@@ -70,6 +71,40 @@ EM_JS(void, setHtml, (const char *id, const char *value),
 {
     document.getElementById(UTF8ToString(id)).innerHTML = UTF8ToString(value)
 });
+
+EM_JS(void, setInputValue, (const char *id, const char *value),
+{
+    document.getElementById(UTF8ToString(id)).value = UTF8ToString(value)
+});
+
+extern "C" EMSCRIPTEN_KEEPALIVE void setMapconfig(const char *url)
+{
+    if(!map)
+        return;
+    map->setMapconfigPath(url);
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE void setViewPreset(const char *preset)
+{
+    if(!map || !map->getMapconfigAvailable())
+        return;
+    map->setViewCurrent(preset);
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE void setPosition(const char *pos)
+{
+    if(!nav || !map->getMapconfigAvailable())
+        return;
+    try
+    {
+        vts::Position p(pos);
+        nav->setPosition(p);
+    }
+    catch (...)
+    {
+        // do nothing
+    }
+}
 
 extern "C" EMSCRIPTEN_KEEPALIVE void search(const char *query)
 {
@@ -168,7 +203,7 @@ EM_BOOL mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *)
 
 EM_BOOL wheelEvent(int, const EmscriptenWheelEvent *e, void *)
 {
-    if (!map->getMapconfigAvailable())
+    if (!map || !map->getMapconfigAvailable())
         return false;
     double d = e->deltaY;
     switch (e->deltaMode)
@@ -265,17 +300,33 @@ void updateStatisticsHtml()
         setHtml("statisticsTiming", ss.str().c_str());
     }
 
+    // statistics
     setHtml("statisticsMap",
             jsonToHtml(map->statistics().toJson()).c_str());
     setHtml("statisticsCamera",
             jsonToHtml(cam->statistics().toJson()).c_str());
-    setHtml("position",
-            positionToHtml(nav->getPosition()).c_str());
+
+    // position
+    vts::Position pos = nav->getPosition();
+    setInputValue("positionCurrent", pos.toUrl().c_str());
+    setHtml("positionTable", positionToHtml(pos).c_str());
 
     // credits
+    setHtml("credits", cam->credits().textShort().c_str());
+}
+
+void mapconfAvailable()
+{
+    std::stringstream ss;
+    std::string current = map->getViewCurrent();
+    for (const std::string &s : map->getViewNames())
     {
-        setHtml("credits", cam->credits().textShort().c_str());
+        ss << "<option";
+        if (s == current)
+            ss << " selected";
+        ss << ">" << s << "</option>\n";
     }
+    setHtml("viewPreset", ss.str().c_str());
 }
 
 void loopIteration()
@@ -284,25 +335,23 @@ void loopIteration()
     updateResolution();
 
     // search
+    if (srch && srch->done)
     {
-        if (srch && srch->done)
+        std::stringstream ss;
+        for (const auto &it : srch->results)
         {
-            std::stringstream ss;
-            for (const auto &it : srch->results)
-            {
-                ss << "<div class=searchItem><hr>";
-                ss << it.displayName;
-                ss << "<button "
-                   << "onclick=\"gotoPosition("
-                   << it.position[0] << ", "
-                   << it.position[1] << ", "
-                   << it.position[2] << ", "
-                   << it.radius << ")\">Go</button>";
-                ss << "</div>";
-            }
-            setHtml("searchResults", ss.str().c_str());
-            srch.reset();
+            ss << "<div class=searchItem><hr>";
+            ss << it.displayName;
+            ss << "<button "
+               << "onclick=\"gotoPosition("
+               << it.position[0] << ", "
+               << it.position[1] << ", "
+               << it.position[2] << ", "
+               << it.radius << ")\">Go</button>";
+            ss << "</div>";
         }
+        setHtml("searchResults", ss.str().c_str());
+        srch.reset();
     }
 
     timerPoint a = now();
@@ -359,14 +408,13 @@ int main(int, char *[])
     // initialize browser and renderer
     vts::log(vts::LogLevel::info3, "Creating browser map");
     map = std::make_shared<vts::Map>();
+    map->callbacks().mapconfigAvailable = &mapconfAvailable;
     context = std::make_shared<vts::renderer::RenderContext>();
     context->bindLoadFunctions(map.get());
     cam = map->createCamera();
     nav = cam->createNavigation();
     view = context->createView(cam.get());
     updateResolution();
-    map->dataInitialize();
-    map->renderInitialize();
 
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");

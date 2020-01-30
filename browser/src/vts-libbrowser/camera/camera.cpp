@@ -24,9 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <unordered_set>
-#include <optick.h>
-
 #include "../camera.hpp"
 #include "../traverseNode.hpp"
 #include "../renderTasks.hpp"
@@ -38,6 +35,9 @@
 #include "../credits.hpp"
 #include "../coordsManip.hpp"
 #include "../hashTileId.hpp"
+
+#include <unordered_set>
+#include <optick.h>
 
 namespace vts
 {
@@ -250,7 +250,7 @@ void CameraImpl::renderText(TraverseNode *trav, float x, float y,
     assert(trav);
     assert(trav->meta);
 
-    RenderSimpleTask task;
+    RenderInfographicsTask task;
     task.mesh = map->getMesh("internal://data/meshes/rect.obj");
     task.mesh->priority = std::numeric_limits<float>::infinity();
 
@@ -269,20 +269,20 @@ void CameraImpl::renderText(TraverseNode *trav, float x, float y,
 
     if (task.ready())
     {
-
-        //black box
+        // black box
         {
-            //auto ctask = convert(task);
-            //float l = getTextSize(size, text);
-            //ctask.data[0] = size + 2;
-            //ctask.data[1] = (l + 2) / (size + 2);
-            //ctask.data[2] = 2.0 / windowWidth;
-            //ctask.data[3] = 2.0 / windowHeight;
-            //ctask.data2[0] = -1000;
-            //ctask.data2[1] = 0;
-            //ctask.data2[2] = x - 1;
-            //ctask.data2[3] = y - 1;
-            //draws.infographics.emplace_back(ctask);
+            auto ctask = convert(task);
+            float l = getTextSize(size, text);
+            ctask.data[0] = size + 2;
+            ctask.data[1] = (l + 2) / (size + 2);
+            ctask.data[2] = 2.0 / windowWidth;
+            ctask.data[3] = 2.0 / windowHeight;
+            ctask.data2[0] = -1000;
+            ctask.data2[1] = 0;
+            ctask.data2[2] = x - 1;
+            ctask.data2[3] = y - 1;
+            ctask.type = 1;
+            draws.infographics.emplace_back(ctask);
         }
 
         for (uint32 i = 0, li = text.size(); i < li; i++)
@@ -323,6 +323,7 @@ void CameraImpl::renderText(TraverseNode *trav, float x, float y,
                 break;
             }
 
+            ctask.type = 1;
             draws.infographics.emplace_back(ctask);
         }
     }
@@ -333,7 +334,7 @@ void CameraImpl::renderNodeBox(TraverseNode *trav, const vec4f &color)
     assert(trav);
     assert(trav->meta);
 
-    RenderSimpleTask task;
+    RenderInfographicsTask task;
     task.mesh = map->getMesh("internal://data/meshes/line.obj");
     task.mesh->priority = std::numeric_limits<float>::infinity();
     if (!task.ready())
@@ -391,14 +392,14 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     {
         for (const RenderGeodataTask &r : trav->geodata)
             draws.geodata.emplace_back(convert(r));
-        for (const RenderSimpleTask &r : trav->colliders)
+        for (const RenderColliderTask &r : trav->colliders)
             draws.colliders.emplace_back(convert(r));
     }
 
     // surrogate
     if (options.debugRenderSurrogates && trav->surrogatePhys)
     {
-        RenderSimpleTask task;
+        RenderInfographicsTask task;
         task.mesh = map->getMesh("internal://data/meshes/sphere.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
         task.model = translationMatrix(*trav->surrogatePhys)
@@ -413,7 +414,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     {
         for (RenderSurfaceTask &r : trav->opaque)
         {
-            RenderSimpleTask task;
+            RenderInfographicsTask task;
             task.model = r.model;
             task.mesh = map->getMesh("internal://data/meshes/aabb.obj");
             task.mesh->priority = std::numeric_limits<float>::infinity();
@@ -705,7 +706,7 @@ void CameraImpl::renderNodeDraws(TraverseNode *trav,
 namespace
 {
 
-float timeToBlendingCoverage(uint32 age, uint32 duration)
+double timeToBlendingCoverage(double age, double duration)
 {
     /*
       opacity
@@ -719,9 +720,9 @@ float timeToBlendingCoverage(uint32 age, uint32 duration)
 
     assert(age <= duration * 3 / 2);
     if (age < duration / 2)
-        return float(age) / (duration / 2);
+        return double(age) / (duration / 2);
     if (age > duration)
-        return 1 - float(age - duration) / (duration / 2);
+        return 1 - double(age - duration) / (duration / 2);
     return nan1(); // full opacity is signaled by nan
 }
 
@@ -750,17 +751,19 @@ void CameraImpl::resolveBlending(TraverseNode *root,
 
     // update blendDraws age and remove old
     {
-        uint32 duration = options.lodBlendingDuration * 3 / 2;
+        double elapsed = map->lastElapsedFrameTime;
+        double duration = options.lodBlendingDuration * 3 / 2;
         auto &old = layer.blendDraws;
         old.erase(std::remove_if(old.begin(), old.end(),
             [&](OldDraw &b) {
-            return ++b.age > duration;
+                b.age += elapsed;
+                return b.age > duration;
         }), old.end());
     }
 
     // apply current draws
     {
-        uint32 halfDuration = options.lodBlendingDuration / 2;
+        double halfDuration = options.lodBlendingDuration / 2;
         std::unordered_set<OldDraw, OldHash> currentSet(currentDraws.begin(),
             currentDraws.end());
         for (auto &b : layer.blendDraws)
@@ -783,8 +786,8 @@ void CameraImpl::resolveBlending(TraverseNode *root,
     // detect appearing draws that have nothing to blend with
     if (options.lodBlending >= 2)
     {
-        uint32 halfDuration = options.lodBlendingDuration / 2;
-        uint32 duration = options.lodBlendingDuration;
+        double halfDuration = options.lodBlendingDuration / 2;
+        double duration = options.lodBlendingDuration;
         std::unordered_set<TileId> opaqueTiles;
         for (auto &b : layer.blendDraws)
             if (b.age >= halfDuration && b.age <= duration)
@@ -854,7 +857,7 @@ void CameraImpl::renderUpdate()
     else
     {
         // render original camera
-        RenderSimpleTask task;
+        RenderInfographicsTask task;
         task.mesh = map->getMesh("internal://data/meshes/line.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
         task.color = vec4f(0, 1, 0, 1);
@@ -898,7 +901,7 @@ void CameraImpl::renderUpdate()
             vec3 navPos = map->convertor->physToNav(eye);
             c.altitudeOverEllipsoid = navPos[2];
             double tmp;
-            if (getSurfaceOverEllipsoid(tmp, navPos, 10))
+            if (getSurfaceOverEllipsoid(tmp, navPos))
                 c.altitudeOverSurface = c.altitudeOverEllipsoid - tmp;
             else
                 c.altitudeOverSurface = nan1();
@@ -947,7 +950,7 @@ void computeNearFar(double &near_, double &far_, double altitude,
     double major = body.majorRadius;
     double flat = major / body.minorRadius;
     cameraPos[2] *= flat;
-    double ground = major + (altitude == altitude ? altitude : 0.0);
+    double ground = major + (std::isnan(altitude) ? 0.0 : altitude);
     double l = projected ? cameraPos[2] + major : length(cameraPos);
     double a = std::max(1.0, l - ground);
 
@@ -971,7 +974,7 @@ void CameraImpl::suggestedNearFar(double &near_, double &far_)
 {
     vec3 navPos = map->convertor->physToNav(eye);
     double altitude;
-    if (!getSurfaceOverEllipsoid(altitude, navPos, 10))
+    if (!getSurfaceOverEllipsoid(altitude, navPos))
         altitude = nan1();
     bool projected = map->mapconfig->navigationSrsType()
         == vtslibs::registry::Srs::Type::projected;

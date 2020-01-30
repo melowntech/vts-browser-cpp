@@ -57,13 +57,10 @@ VTS_API bool vtsMapGetProjected(vtsHMap map);
 VTS_API void vtsMapGetDefaultPosition(vtsHMap map, vtsHPosition position);
 
 // data processing (may be run on a dedicated thread)
-VTS_API void vtsMapDataInitialize(vtsHMap map);
 VTS_API void vtsMapDataUpdate(vtsHMap map);
-VTS_API void vtsMapDataFinalize(vtsHMap map);
 VTS_API void vtsMapDataAllRun(vtsHMap map);
 
 // rendering
-VTS_API void vtsMapRenderInitialize(vtsHMap map);
 VTS_API void vtsMapRenderUpdate(vtsHMap map, double elapsedTime); // seconds since last call
 VTS_API void vtsMapRenderFinalize(vtsHMap map);
 

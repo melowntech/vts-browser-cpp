@@ -3,7 +3,7 @@ layout(std140) uniform uboTriangleData
 {
     vec4 uniColor;
     vec4 uniVisibilities;
-    int uniShading;
+    ivec4 uniFlags; // shading
 };
 
 layout(location = 0) out vec4 outColor;
@@ -17,7 +17,7 @@ void main()
     outColor.a *= varOpacity;
 
     // flat shading
-    if (uniShading == 2)
+    if (uniFlags[0] == 2)
     {
         vec3 viewDx = dFdx(varViewPosition);
         vec3 viewDy = dFdy(varViewPosition);

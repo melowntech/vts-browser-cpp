@@ -72,8 +72,6 @@ VTS_API void vtsDrawsTransparentGroup(vtsHCamera cam,
     void **group, uint32 *count);
 //VTS_API void vtsDrawsGeodataGroup(vtsHCamera cam,
 //    void **group, uint32 *count);
-VTS_API void vtsDrawsInfographicsGroup(vtsHCamera cam,
-    void **group, uint32 *count);
 VTS_API void vtsDrawsCollidersGroup(vtsHCamera cam,
     void **group, uint32 *count);
 
@@ -81,9 +79,9 @@ VTS_API void vtsDrawsCollidersGroup(vtsHCamera cam,
 VTS_API void vtsDrawsSurfaceTask(void *group, uint32 index,
     void **mesh, void **texColor, void **texMask,
     vtsCDrawSurfaceBase **baseStruct);
-VTS_API void vtsDrawsSimpleTask(void *group, uint32 index,
-    void **mesh, void **texColor,
-    vtsCDrawSimpleBase **baseStruct);
+VTS_API void vtsDrawsColliderTask(void *group, uint32 index,
+    void **mesh,
+    vtsCDrawColliderBase **baseStruct);
 
 VTS_API const vtsCCameraBase *vtsDrawsCamera(vtsHCamera cam);
 

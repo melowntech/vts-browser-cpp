@@ -24,9 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cstdio>
-#include <dbglog/dbglog.hpp>
 #include "image.hpp"
+
+#include <dbglog/dbglog.hpp>
+#include <cstdio>
 
 namespace vts
 {

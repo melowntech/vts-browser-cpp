@@ -1,0 +1,32 @@
+name: Build test
+on: [push, pull_request]
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build-config: [ debug, release ]
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Checkout submodules
+      run: |
+        git submodule update --init --recursive
+
+    - name: Install packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y nasm libssl-dev python-minimal libboost-all-dev libeigen3-dev libproj-dev libgeographic-dev libjsoncpp-dev libsdl2-dev libfreetype6-dev libharfbuzz-dev libcurl4-gnutls-dev qt5-default
+
+    - name: Configure
+      run: |
+        mkdir build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=${{ matrix.build-config }} ../browser
+
+    - name: Build
+      run: |
+        cd build
+        cmake --build . --config ${{ matrix.build-config }} -- -j3

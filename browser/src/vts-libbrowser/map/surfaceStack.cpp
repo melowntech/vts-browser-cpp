@@ -24,11 +24,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <boost/algorithm/string.hpp>
-
 #include "../mapLayer.hpp"
 #include "../map.hpp"
 #include "../mapConfig.hpp"
+
+#include <boost/algorithm/string.hpp>
 
 namespace vts
 {

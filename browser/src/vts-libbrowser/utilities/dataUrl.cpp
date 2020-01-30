@@ -24,12 +24,12 @@
 * POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <dbglog/dbglog.hpp>
-
 #include "dataUrl.hpp"
 
 #include "utility/base64.hpp"
 #include "utility/uri.hpp"
+
+#include <dbglog/dbglog.hpp>
 
 namespace vts
 {

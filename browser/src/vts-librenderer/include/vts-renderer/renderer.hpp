@@ -52,6 +52,11 @@ class RenderContext;
 class RenderViewImpl;
 class RenderContextImpl;
 
+struct VTSR_API ContextOptions : public vtsCContextOptionsBase
+{
+    ContextOptions();
+};
+
 struct VTSR_API RenderOptions : public vtsCRenderOptionsBase
 {
     RenderOptions();
@@ -94,6 +99,8 @@ public:
 
     // clear the loaded shaders etc.
     ~RenderContext();
+
+    ContextOptions &options();
 
     // can be directly bound to MapCallbacks
     void loadTexture(ResourceInfo &info, GpuTextureSpec &spec,

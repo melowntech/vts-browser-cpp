@@ -3,6 +3,7 @@ layout(std140) uniform uboInfographics
 {
     mat4 uniMvp;
     vec4 uniColor;
+    vec4 uniFlags; // type, useTexture, useDepth
     vec4 data;
     vec4 data2;
 };
@@ -15,14 +16,14 @@ out vec2 varUvs;
 
 void main()
 {
-    if (data[0] != 0.0)
+    if (uniFlags[0] > 0.5)
     {
         vec4 pos = uniMvp * vec4(vec3(0.0), 1.0);
 
         pos.xy += ((inPosition.xy  * vec2(data[0] * data[1],-data[0]))
                 + vec2(data2[2],-data2[3])) * (vec2(data[2], data[3]) * pos.w);
 
-        //round pos
+        // round position to pixels
         pos.xy /= pos.w;
         pos.xy /= vec2(data[2],data[3]);
         pos.xy = round(pos.xy);
@@ -42,6 +43,5 @@ void main()
         gl_Position = uniMvp * vec4(inPosition, 1.0);
         varUvs = inUvInternal;
     }
-
 }
 

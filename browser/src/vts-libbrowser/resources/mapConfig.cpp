@@ -24,13 +24,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vts-libs/vts/mapconfig-json.hpp>
-
 #include "../mapConfig.hpp"
 #include "../map.hpp"
 #include "../fetchTask.hpp"
 #include "../credits.hpp"
 #include "../renderInfos.hpp"
+
+#include <vts-libs/vts/mapconfig-json.hpp>
 
 namespace vts
 {
@@ -48,10 +48,10 @@ Mapconfig::Mapconfig(MapImpl *map, const std::string &name)
 Mapconfig::~Mapconfig()
 {}
 
-void Mapconfig::load()
+void Mapconfig::decode()
 {
     assert(map->layers.empty());
-    LOG(info2) << "Parsing mapconfig <" << name << ">";
+    LOG(info2) << "Decoding mapconfig <" << name << ">";
 
     // clear
     *(vtslibs::vts::MapConfig*)this = vtslibs::vts::MapConfig();

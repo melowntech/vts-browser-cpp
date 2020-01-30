@@ -168,12 +168,13 @@ CameraOptions::CameraOptions() :
     targetPixelRatioSurfaces(1.2),
     targetPixelRatioGeodata(1.2),
     cullingOffsetDistance(0.0),
+    lodBlendingDuration(0.5),
+    samplesForAltitudeLodSelection(8),
     fixedTraversalDistance(10000),
     fixedTraversalLod(15),
     balancedGridLodOffset(5),
     balancedGridNeighborsDistance(1),
     lodBlending(2),
-    lodBlendingDuration(30),
     traverseModeSurfaces(TraverseMode::Balanced),
     traverseModeGeodata(TraverseMode::Stable),
     lodBlendingTransparent(false),
@@ -209,12 +210,13 @@ void CameraOptions::applyJson(const std::string &json)
     AJ(targetPixelRatioSurfaces, asDouble);
     AJ(targetPixelRatioGeodata, asDouble);
     AJ(cullingOffsetDistance, asDouble);
+    AJ(lodBlendingDuration, asDouble);
+    AJ(samplesForAltitudeLodSelection, asDouble);
     AJ(fixedTraversalDistance, asDouble);
     AJ(fixedTraversalLod, asUInt);
     AJ(balancedGridLodOffset, asUInt);
     AJ(balancedGridNeighborsDistance, asUInt);
     AJ(lodBlending, asUInt);
-    AJ(lodBlendingDuration, asUInt);
     AJE(traverseModeSurfaces, TraverseMode);
     AJE(traverseModeGeodata, TraverseMode);
     AJ(lodBlendingTransparent, asBool);
@@ -243,12 +245,13 @@ std::string CameraOptions::toJson() const
     TJ(targetPixelRatioSurfaces, asDouble);
     TJ(targetPixelRatioGeodata, asDouble);
     TJ(cullingOffsetDistance, asDouble);
+    TJ(lodBlendingDuration, asDouble);
+    TJ(samplesForAltitudeLodSelection, asDouble);
     TJ(fixedTraversalDistance, asDouble);
     TJ(fixedTraversalLod, asUInt);
     TJ(balancedGridLodOffset, asUInt);
     TJ(balancedGridNeighborsDistance, asUInt);
     TJ(lodBlending, asUInt);
-    TJ(lodBlendingDuration, asUInt);
     TJE(traverseModeSurfaces, TraverseMode);
     TJE(traverseModeGeodata, TraverseMode);
     TJ(lodBlendingTransparent, asBool);
@@ -290,7 +293,6 @@ NavigationOptions::NavigationOptions() :
     flyOverSpikinessFactor(2.5),
     flyOverMotionChangeFraction(0.5),
     flyOverRotationChangeSpeed(0.5),
-    lodSelectionSamplesForAltitude(8),
     type(NavigationType::Quick),
     mode(NavigationMode::Seamless),
     enableNormalization(true),
@@ -298,7 +300,8 @@ NavigationOptions::NavigationOptions() :
     fpsCompensation(true),
     debugRenderObjectPosition(false),
     debugRenderTargetPosition(false),
-    debugRenderAltitudeSurrogates(false)
+    debugRenderAltitudeSurrogates(false),
+    debugRenderCameraObstructionSurrogates(false)
 {}
 
 NavigationOptions::NavigationOptions(const std::string &json)
@@ -328,7 +331,6 @@ void NavigationOptions::applyJson(const std::string &json)
     AJ(flyOverSpikinessFactor, asDouble);
     AJ(flyOverMotionChangeFraction, asDouble);
     AJ(flyOverRotationChangeSpeed, asDouble);
-    AJ(lodSelectionSamplesForAltitude, asUInt);
     AJE(type, NavigationType);
     AJE(mode, NavigationMode);
     AJ(enableNormalization, asBool);
@@ -337,6 +339,7 @@ void NavigationOptions::applyJson(const std::string &json)
     AJ(debugRenderObjectPosition, asBool);
     AJ(debugRenderTargetPosition, asBool);
     AJ(debugRenderAltitudeSurrogates, asBool);
+    AJ(debugRenderCameraObstructionSurrogates, asBool);
 }
 
 std::string NavigationOptions::toJson() const
@@ -359,7 +362,6 @@ std::string NavigationOptions::toJson() const
     TJ(flyOverSpikinessFactor, asDouble);
     TJ(flyOverMotionChangeFraction, asDouble);
     TJ(flyOverRotationChangeSpeed, asDouble);
-    TJ(lodSelectionSamplesForAltitude, asUInt);
     TJE(type, NavigationType);
     TJE(mode, NavigationMode);
     TJ(enableAltitudeCorrections, asBool);
@@ -368,6 +370,7 @@ std::string NavigationOptions::toJson() const
     TJ(debugRenderObjectPosition, asBool);
     TJ(debugRenderTargetPosition, asBool);
     TJ(debugRenderAltitudeSurrogates, asBool);
+    TJ(debugRenderCameraObstructionSurrogates, asBool);
     return jsonToString(v);
 }
 

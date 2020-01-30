@@ -57,11 +57,13 @@ class TraverseNode;
 class NavigationImpl;
 class RenderSurfaceTask;
 class RenderGeodataTask;
-class RenderSimpleTask;
+class RenderInfographicsTask;
+class RenderColliderTask;
 class GpuTexture;
 class DrawSurfaceTask;
 class DrawGeodataTask;
-class DrawSimpleTask;
+class DrawInfographicsTask;
+class DrawColliderTask;
 class MapLayer;
 class BoundParamInfo;
 
@@ -82,7 +84,7 @@ class OldDraw
 public:
     TileId trav;
     TileId orig;
-    uint32 age;
+    double age;
 
     OldDraw(const CurrentDraw &current);
     OldDraw(const TileId &id);
@@ -148,7 +150,8 @@ public:
     DrawSurfaceTask convert(const RenderSurfaceTask &task,
                             const vec4f &uvClip, float blendingCoverage);
     DrawGeodataTask convert(const RenderGeodataTask &task);
-    DrawSimpleTask convert(const RenderSimpleTask &task);
+    DrawInfographicsTask convert(const RenderInfographicsTask &task);
+    DrawColliderTask convert(const RenderColliderTask &task);
     bool generateMonolithicGeodataTrav(TraverseNode *trav);
     std::shared_ptr<GpuTexture> travInternalTexture(TraverseNode *trav,
                                                   uint32 subMeshIndex);
@@ -176,7 +179,8 @@ public:
     void renderUpdate();
     void suggestedNearFar(double &near_, double &far_);
     bool getSurfaceOverEllipsoid(double &result, const vec3 &navPos,
-        double sampleSize, bool renderDebug = false);
+        double sampleSize = -1, bool renderDebug = false);
+    double getSurfaceAltitudeSamples();
 };
 
 void updateNavigation(std::weak_ptr<NavigationImpl> &nav, double elapsedTime);

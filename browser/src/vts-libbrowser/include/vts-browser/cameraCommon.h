@@ -45,13 +45,19 @@ typedef struct vtsCDrawSurfaceBase
     bool flatShading;
 } vtsCDrawSurfaceBase;
 
-typedef struct vtsCDrawSimpleBase
+typedef struct vtsCDrawInfographicsBase
 {
     float mv[16];
     float color[4];
-    float data[4]; // useColorTexture, noTransparencyWithDepth, diagnosticsText
-    float data2[4]; // diagnosticsText
-} vtsCDrawSimpleBase;
+    float data[4];
+    float data2[4];
+    int type; // 0 = original infographics; 1 = tile diagnostics text
+} vtsCDrawInfographicsBase;
+
+typedef struct vtsCDrawColliderBase
+{
+    float mv[16];
+} vtsCDrawColliderBase;
 
 typedef struct vtsCCameraBase
 {

@@ -24,14 +24,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dbglog/dbglog.hpp>
-#include <vts-libs/vts/mesh.hpp>
-#include <vts-libs/vts/meshio.hpp>
-
 #include "../utilities/obj.hpp"
 #include "../gpuResource.hpp"
 #include "../fetchTask.hpp"
 #include "../map.hpp"
+
+#include <dbglog/dbglog.hpp>
+#include <vts-libs/vts/mesh.hpp>
+#include <vts-libs/vts/meshio.hpp>
 
 namespace vts
 {
@@ -71,19 +71,27 @@ GpuMesh::GpuMesh(MapImpl *map, const std::string &name) :
     Resource(map, name), faces(0)
 {}
 
-void GpuMesh::load()
+void GpuMesh::decode()
 {
-    LOG(info1) << "Loading (gpu) mesh '" << name << "'";
-    GpuMeshSpec spec(fetch->reply.content);
-    spec.attributes[0].enable = true;
-    spec.attributes[0].stride = sizeof(vec3f) + sizeof(vec2f);
-    spec.attributes[0].components = 3;
-    spec.attributes[1].enable = true;
-    spec.attributes[1].stride = spec.attributes[0].stride;
-    spec.attributes[1].components = 2;
-    spec.attributes[1].offset = sizeof(vec3f);
-    spec.attributes[2] = spec.attributes[1];
-    map->callbacks.loadMesh(info, spec, name);
+    LOG(info1) << "Decoding (gpu) mesh '" << name << "'";
+    std::shared_ptr<GpuMeshSpec> spec
+        = std::make_shared<GpuMeshSpec>(fetch->reply.content);
+    spec->attributes[0].enable = true;
+    spec->attributes[0].stride = sizeof(vec3f) + sizeof(vec2f);
+    spec->attributes[0].components = 3;
+    spec->attributes[1].enable = true;
+    spec->attributes[1].stride = spec->attributes[0].stride;
+    spec->attributes[1].components = 2;
+    spec->attributes[1].offset = sizeof(vec3f);
+    spec->attributes[2] = spec->attributes[1];
+    decodeData = std::static_pointer_cast<void>(spec);
+}
+
+void GpuMesh::upload()
+{
+    LOG(info1) << "Uploading (gpu) mesh '" << name << "'";
+    auto spec = std::static_pointer_cast<GpuMeshSpec>(decodeData);
+    map->callbacks.loadMesh(info, *spec, name);
     info.ramMemoryCost += sizeof(*this);
 }
 
@@ -117,9 +125,9 @@ MeshAggregate::MeshAggregate(MapImpl *map, const std::string &name) :
     Resource(map, name)
 {}
 
-void MeshAggregate::load()
+void MeshAggregate::decode()
 {
-    LOG(info2) << "Loading (aggregated) mesh <" << name << ">";
+    LOG(info2) << "Decoding (aggregated) mesh <" << name << ">";
 
     detail::BufferStream w(fetch->reply.content);
     vtslibs::vts::NormalizedSubMesh::list meshes = vtslibs::vts::
@@ -134,7 +142,8 @@ void MeshAggregate::load()
 
         std::stringstream ss;
         ss << name << "#" << mi;
-        std::shared_ptr<GpuMesh> gm = std::make_shared<GpuMesh>(map, ss.str());
+        std::shared_ptr<GpuMesh> gm
+            = std::make_shared<GpuMesh>(map, ss.str());
         gm->state = Resource::State::errorFatal;
         gm->faces = m.faces.size();
 
@@ -256,16 +265,22 @@ void MeshAggregate::load()
         }
 #endif
 
-        map->callbacks.loadMesh(gm->info, spec, gm->name);
-        gm->state = Resource::State::ready;
+        gm->decodeData = std::make_shared<GpuMeshSpec>(std::move(spec));
     }
+}
 
-    // memory consumption
+void MeshAggregate::upload()
+{
+    LOG(info2) << "Uploading (aggregated) mesh <" << name << ">";
+
     info.ramMemoryCost += sizeof(*this) + submeshes.size() * sizeof(MeshPart);
-    for (auto &it : submeshes)
+    for (const auto &it : submeshes)
     {
+        it.renderable->upload();
         info.gpuMemoryCost += it.renderable->info.gpuMemoryCost;
         info.ramMemoryCost += it.renderable->info.ramMemoryCost;
+        it.renderable->decodeData.reset();
+        it.renderable->state = Resource::State::ready;
     }
 }
 

@@ -129,16 +129,13 @@ public static extern void vtsDrawsOpaqueGroup(IntPtr cam, ref IntPtr group, ref 
 public static extern void vtsDrawsTransparentGroup(IntPtr cam, ref IntPtr group, ref uint count);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsDrawsInfographicsGroup(IntPtr cam, ref IntPtr group, ref uint count);
-
-[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsDrawsCollidersGroup(IntPtr cam, ref IntPtr group, ref uint count);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsDrawsSurfaceTask(IntPtr group, uint index, ref IntPtr mesh, ref IntPtr texColor, ref IntPtr texMask, ref IntPtr baseStruct);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsDrawsSimpleTask(IntPtr group, uint index, ref IntPtr mesh, ref IntPtr texColor, ref IntPtr baseStruct);
+public static extern void vtsDrawsColliderTask(IntPtr group, uint index, ref IntPtr mesh, ref IntPtr baseStruct);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern IntPtr vtsDrawsCamera(IntPtr cam);

@@ -24,10 +24,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../include/vts-browser/fetcher.hpp"
+
 #include <fstream>
 #include <http/http.hpp>
 #include <http/resourcefetcher.hpp>
-#include "../include/vts-browser/fetcher.hpp"
 
 namespace vts
 {

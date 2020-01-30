@@ -38,7 +38,7 @@ class AuthConfig : public Resource
 {
 public:
     AuthConfig(MapImpl *map, const std::string &name);
-    void load() override;
+    void decode() override;
     FetchTask::ResourceType resourceType() const override;
     void checkTime();
     void authorize(const std::shared_ptr<Resource> &);

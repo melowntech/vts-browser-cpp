@@ -36,7 +36,7 @@ class SearchTaskImpl : public Resource
 {
 public:
     SearchTaskImpl(MapImpl *map, const std::string &name);
-    void load() override;
+    void decode() override;
     FetchTask::ResourceType resourceType() const override;
 
     Buffer data;

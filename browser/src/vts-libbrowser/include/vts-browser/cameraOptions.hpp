@@ -52,6 +52,14 @@ public:
     // this is useful to include shadow casters outside camera frustum
     double cullingOffsetDistance;
 
+    // duration of lod blending in seconds
+    double lodBlendingDuration;
+
+    // number of virtual samples to fit the view-extent
+    // it is used to determine lod index at which to retrieve
+    //   the altitude used to correct camera position
+    double samplesForAltitudeLodSelection;
+
     // maximum distance of meshes emitted for fixed traversal mode
     // defined in physical length units (meters)
     double fixedTraversalDistance;
@@ -75,9 +83,6 @@ public:
     // 1: enable, simple
     // 2: enable, detect draws near edges
     uint32 lodBlending;
-
-    // duration of lod blending in frames
-    uint32 lodBlendingDuration;
 
     TraverseMode traverseModeSurfaces;
     TraverseMode traverseModeGeodata;

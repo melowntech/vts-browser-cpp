@@ -92,23 +92,16 @@ public:
 
     Position getMapDefaultPosition() const;
 
-    void dataInitialize();
-    // dataTick does at most MapOptions.maxResourceProcessesPerTick
+    // dataUpdate does at most MapOptions.maxResourceProcessesPerTick
     //   operations and returns
     // you should call it periodically
     void dataUpdate();
-    void dataFinalize();
 
-    // blocking alternative to:
-    //   { dataInitialize();
-    //     while (someCondition) dataTick();
-    //     dataFinalize(); }
     // dataAllRun will return after renderFinalize has been called
     // the dataAllRun must be called on a separate thread,
     //   but is more cpu efficient than dataUpdate
     void dataAllRun();
 
-    void renderInitialize();
     void renderUpdate(double elapsedTime); // seconds since last call
     void renderFinalize();
     double lastRenderUpdateElapsedTime() const;

@@ -24,10 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <optick.h>
-#include <utf8.h>
-#include <cstdlib>
-
 #include "../include/vts-browser/exceptions.hpp"
 #include "../include/vts-browser/log.hpp"
 
@@ -38,6 +34,10 @@
 #include "../renderTasks.hpp"
 #include "../mapConfig.hpp"
 #include "../map.hpp"
+
+#include <optick.h>
+#include <utf8.h>
+#include <cstdlib>
 
 namespace vts
 {
@@ -2131,7 +2131,7 @@ if (cond == #OP) \
     const GeodataStylesheet *const stylesheet;
     Value style;
     Value features;
-    Value browserOptions;
+    const Value &browserOptions;
     const vec3 aabbPhys[2];
     const TileId tileId;
     const bool compatibility;
@@ -2327,12 +2327,36 @@ if (cond == #OP) \
 
 } // namespace
 
-void GeodataTile::load()
+void GeodataTile::decode()
 {
-    LOG(info2) << "Loading (gpu) geodata <" << name << ">";
+    OPTICK_EVENT();
+    OPTICK_TAG("name", name.c_str());
+    LOG(info2) << "Decoding geodata tile <" << name << ">";
 
     // this resource is not meant to be downloaded
     assert(!fetch);
+
+    assert(state == Resource::State::downloaded);
+    map->statistics.resourcesDecoded++;
+
+    if (map->options.debugValidateGeodataStyles)
+    {
+        geoContext<true> ctx(this);
+        ctx.process();
+    }
+    else
+    {
+        geoContext<false> ctx(this);
+        ctx.process();
+    }
+}
+
+void GeodataTile::upload()
+{
+    LOG(info2) << "Uploading geodata tile <" << name << ">";
+
+    assert(state == Resource::State::decoded);
+    map->statistics.resourcesUploaded++;
 
     // upload
     renders.clear();
@@ -2359,47 +2383,29 @@ void GeodataTile::load()
     }
 }
 
-void GeodataTile::process()
-{
-    OPTICK_EVENT();
-    OPTICK_TAG("name", name.c_str());
-    LOG(info2) << "Processing geodata <" << name << ">";
-
-    if (map->options.debugValidateGeodataStyles)
-    {
-        geoContext<true> ctx(this);
-        ctx.process();
-    }
-    else
-    {
-        geoContext<false> ctx(this);
-        ctx.process();
-    }
-
-    state = Resource::State::downloaded;
-    map->resources.queUpload.push(shared_from_this());
-}
-
 void MapImpl::resourcesGeodataProcessorEntry()
+{
+    OPTICK_THREAD("geodata");
+    setLogThreadName("geodata");
+    while (!resources.queGeodata.stopped())
     {
-        OPTICK_THREAD("geodata");
-        setLogThreadName("geodata processor");
-        while (!resources.queGeodata.stopped())
+        std::weak_ptr<GeodataTile> w;
+        resources.queGeodata.waitPop(w);
+        std::shared_ptr<GeodataTile> r = w.lock();
+        if (!r)
+            continue;
+        try
         {
-            std::weak_ptr<GeodataTile> w;
-            resources.queGeodata.waitPop(w);
-            std::shared_ptr<GeodataTile> r = w.lock();
-            if (!r)
-                continue;
-            try
-            {
-                r->process();
-            }
-            catch (const std::exception &)
-            {
-                r->state = Resource::State::errorFatal;
-            }
+            r->decode();
+            r->state = Resource::State::decoded;
+            resources.queUpload.push(r);
+        }
+        catch (const std::exception &)
+        {
+            statistics.resourcesFailed++;
+            r->state = Resource::State::errorFatal;
         }
     }
+}
 
 } // namespace vts

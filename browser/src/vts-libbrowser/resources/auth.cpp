@@ -24,14 +24,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ctime>
-#include <jsoncpp/json.hpp>
-#include <dbglog/dbglog.hpp>
-
 #include "../include/vts-browser/exceptions.hpp"
 
 #include "../authConfig.hpp"
 #include "../fetchTask.hpp"
+
+#include <ctime>
+#include <jsoncpp/json.hpp>
+#include <dbglog/dbglog.hpp>
 
 namespace vts
 {
@@ -78,9 +78,9 @@ AuthConfig::AuthConfig(MapImpl *map, const std::string &name) :
     }
 }
 
-void AuthConfig::load()
+void AuthConfig::decode()
 {
-    LOG(info2) << "Parsing authentication json";
+    LOG(info2) << "Decoding authentication json";
     try
     {
         Json::Value root;
@@ -127,10 +127,7 @@ void AuthConfig::checkTime()
     {
         uint64 t = currentTime();
         if (t + 60 > timeParsed + timeValid)
-        {
-            // force redownload
-            state = Resource::State::initializing;
-        }
+            this->forceRedownload();
     }
 }
 

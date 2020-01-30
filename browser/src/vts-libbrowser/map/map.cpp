@@ -24,8 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <optick.h>
-
 #include "../include/vts-browser/exceptions.hpp"
 #include "../include/vts-browser/cameraDraws.hpp"
 #include "../include/vts-browser/cameraOptions.hpp"
@@ -41,17 +39,52 @@
 #include "../coordsManip.hpp"
 #include "../map.hpp"
 
+#include <optick.h>
+
 namespace vts
 {
 
-void MapImpl::renderInitialize()
+MapImpl::MapImpl(Map *map, const MapCreateOptions &options,
+    const std::shared_ptr<Fetcher> &fetcher) :
+    map(map), createOptions(options),
+    lastElapsedFrameTime(0),
+    renderTickIndex(0),
+    mapconfigAvailable(false), mapconfigReady(false)
 {
-    LOG(info2) << "Render initialize";
+    assert(fetcher);
+    resources.fetcher = fetcher;
+    resources.thrCacheReader = std::thread(&MapImpl::cacheReadEntry, this);
+    resources.thrCacheWriter = std::thread(&MapImpl::cacheWriteEntry, this);
+    resources.thrAtmosphereGenerator
+        = std::thread(&MapImpl::resourcesAtmosphereGeneratorEntry, this);
+    resources.thrGeodataProcessor
+        = std::thread(&MapImpl::resourcesGeodataProcessorEntry, this);
+    resources.thrDecoder
+        = std::thread(&MapImpl::resourcesDecodeProcessorEntry, this);
+    resources.fetching.thr
+        = std::thread(&MapImpl::resourcesDownloadsEntry, this);
+    cacheInit();
+    credits = std::make_shared<Credits>();
 }
 
-void MapImpl::renderFinalize()
+MapImpl::~MapImpl()
 {
-    LOG(info2) << "Render finalize";
+    resources.queCacheRead.terminate();
+    resources.queCacheWrite.terminate();
+    resources.queDecode.terminate();
+    resources.queUpload.terminate();
+    resources.queAtmosphere.terminate();
+    resources.queGeodata.terminate();
+
+    resources.thrCacheReader.join();
+    resources.thrCacheWriter.join();
+    resources.thrAtmosphereGenerator.join();
+    resources.thrGeodataProcessor.join();
+    resources.thrDecoder.join();
+
+    resources.fetching.stop = true;
+    resources.fetching.con.notify_all();
+    resources.fetching.thr.join();
 }
 
 void MapImpl::renderUpdate(double elapsedTime)
@@ -290,6 +323,7 @@ bool testAndThrow(Resource::State state, const std::string &message)
     case Resource::State::startDownload:
     case Resource::State::downloaded:
     case Resource::State::downloading:
+    case Resource::State::decoded:
     case Resource::State::errorRetry:
         return false;
     case Resource::State::ready:

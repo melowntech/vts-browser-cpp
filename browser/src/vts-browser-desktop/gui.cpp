@@ -623,9 +623,9 @@ public:
 
                     // navigation samples per view extent
                     nk_label(&ctx, "Nav. samples:", NK_TEXT_LEFT);
-                    n.lodSelectionSamplesForAltitude = nk_slide_int(&ctx,
-                            1, n.lodSelectionSamplesForAltitude, 16, 1);
-                    sprintf(buffer, "%3d", n.lodSelectionSamplesForAltitude);
+                    c.samplesForAltitudeLodSelection = nk_slide_float(&ctx,
+                            1, c.samplesForAltitudeLodSelection, 16, 1);
+                    sprintf(buffer, "%4.1f", c.samplesForAltitudeLodSelection);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                     // altitude fade out
@@ -761,9 +761,9 @@ public:
                     {
                         // lodBlendingDuration
                         nk_label(&ctx, "Blend duration:", NK_TEXT_LEFT);
-                        c.lodBlendingDuration = nk_slide_int(&ctx,
-                            0, c.lodBlendingDuration, 1000, 5);
-                        sprintf(buffer, "%4d", c.lodBlendingDuration);
+                        c.lodBlendingDuration = nk_slide_float(&ctx,
+                            0, c.lodBlendingDuration, 60, 0.05);
+                        sprintf(buffer, "%5.2f", c.lodBlendingDuration);
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                         // lodBlendingTransparent
@@ -851,6 +851,11 @@ public:
                 // altitude surrogates
                 n.debugRenderAltitudeSurrogates = nk_check_label(&ctx,
                     "Altitude surrogates", n.debugRenderAltitudeSurrogates);
+
+                // obstruction surrogates
+                n.debugRenderCameraObstructionSurrogates = nk_check_label(&ctx,
+                    "Obstruction surrogates",
+                    n.debugRenderCameraObstructionSurrogates);
 
                 // flat shading
                 c.debugFlatShading = nk_check_label(&ctx,
@@ -1230,10 +1235,11 @@ public:
                     float ratio2[] = { width * 0.45f, width * 0.45f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio2);
 
-                    S("Upload:", ms.resourcesQueueUpload, "");
-                    S("Geodata:", ms.resourcesQueueGeodata, "");
                     S("Cache read:", ms.resourcesQueueCacheRead, "");
                     S("Cache write:", ms.resourcesQueueCacheWrite, "");
+                    S("Decode:", ms.resourcesQueueDecode, "");
+                    S("Upload:", ms.resourcesQueueUpload, "");
+                    S("Geodata:", ms.resourcesQueueGeodata, "");
 
                     nk_tree_pop(&ctx);
                 }
@@ -1247,7 +1253,8 @@ public:
                     S("Active:", ms.resourcesActive, "");
                     S("Downloaded:", ms.resourcesDownloaded, "");
                     S("Disk loaded:", ms.resourcesDiskLoaded, "");
-                    S("Processed:", ms.resourcesProcessed, "");
+                    S("Decoded:", ms.resourcesDecoded, "");
+                    S("Uploaded:", ms.resourcesUploaded, "");
                     S("Created:", ms.resourcesCreated, "");
                     S("Released:", ms.resourcesReleased, "");
                     S("Failed:", ms.resourcesFailed, "");

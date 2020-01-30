@@ -168,27 +168,27 @@ TraverseNode *findTravSds(CameraImpl *camera, TraverseNode *where,
         const vec2 &pointSds, uint32 maxLod)
 {
     assert(where && where->meta);
-    TraverseNode *t = where;
-    while (t->id().lod < maxLod)
+    if (where->id().lod >= maxLod)
+        return where;
+
+    NodeInfo i = where->nodeInfo;
+    for (auto j : vtslibs::vts::children(i.nodeId()))
     {
-        auto p = t;
-        for (auto &it : t->childs)
-        {
-            if (!camera->travInit(it.get()))
-                continue;
-            if (!it->nodeInfo.inside(vecToUblas<math::Point2>(pointSds)))
-                continue;
-            t = it.get();
-            break;
-        }
-        if (t == p)
-            break;
+        NodeInfo k = i.child(j);
+        if (!k.inside(vecToUblas<math::Point2>(pointSds)))
+            continue;
+        auto idx = j.index;
+        if (idx >= where->childs.size())
+            return where;
+        TraverseNode *c = where->childs[idx].get();
+        if (!camera->travInit(c))
+            return where;
+        return findTravSds(camera, c, pointSds, maxLod);
     }
-    return t;
+    return where;
 }
 
 } // namespace
-
 
 bool CameraImpl::getSurfaceOverEllipsoid(
     double &result, const vec3 &navPos,
@@ -200,6 +200,9 @@ bool CameraImpl::getSurfaceOverEllipsoid(
     TraverseNode *root = map->layers[0]->traverseRoot.get();
     if (!root || !root->meta)
         return false;
+
+    if (sampleSize <= 0)
+        sampleSize = getSurfaceAltitudeSamples();
 
     // find surface division coordinates (and appropriate node info)
     vec2 sds;
@@ -287,22 +290,33 @@ bool CameraImpl::getSurfaceOverEllipsoid(
 
     // interpolate
     double res = altitudeInterpolation(sds, points, altitudes);
-    bool resValid = !std::isnan(res);
 
     // debug visualization
     if (renderDebug)
     {
-        for (int i = 0; i < 4; i++)
+        RenderInfographicsTask task;
+        task.mesh = map->getMesh("internal://data/meshes/sphere.obj");
+        task.mesh->priority = std::numeric_limits<float>::infinity();
+        if (*task.mesh)
         {
-            const TraverseNode *t = nodes[i];
-            RenderSimpleTask task;
-            task.mesh = map->getMesh("internal://data/meshes/sphere.obj");
-            task.mesh->priority = std::numeric_limits<float>::infinity();
-            if (*task.mesh)
+            float c = std::isnan(res) ? 0.0 : 1.0;
+            task.color = vec4f(c, c, c, 0.7f);
+            double scaleSum = 0;
+            for (int i = 0; i < 4; i++)
             {
+                const TraverseNode *t = nodes[i];
+                double scale = t->nodeInfo.extents().size() * 0.035;
                 task.model = translationMatrix(*t->surrogatePhys)
-                    * scaleMatrix(t->nodeInfo.extents().size() * 0.035);
-                float c = resValid ? 1.0 : 0.0;
+                        * scaleMatrix(scale);
+                draws.infographics.push_back(convert(task));
+                scaleSum += scale;
+            }
+            if (!std::isnan(res))
+            {
+                vec3 p = navPos;
+                p[2] = res;
+                p = map->convertor->convert(p, Srs::Navigation, Srs::Physical);
+                task.model = translationMatrix(p) * scaleMatrix(scaleSum / 4);
                 task.color = vec4f(c, c, c, 1.f);
                 draws.infographics.push_back(convert(task));
             }
@@ -310,10 +324,20 @@ bool CameraImpl::getSurfaceOverEllipsoid(
     }
 
     // output
-    if (!resValid)
+    if (std::isnan(res))
         return false;
     result = res;
     return true;
+}
+
+double CameraImpl::getSurfaceAltitudeSamples()
+{
+    double targetDistance = length(vec3(target - eye));
+    double viewExtent = targetDistance / (apiProj(1, 1) * 0.5);
+    double result = viewExtent / options.samplesForAltitudeLodSelection;
+    if (std::isnan(result))
+        return 10;
+    return result;
 }
 
 } // namespace vts

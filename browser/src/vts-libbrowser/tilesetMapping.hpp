@@ -38,7 +38,7 @@ class TilesetMapping : public Resource
 {
 public:
     TilesetMapping(MapImpl *map, const std::string &name);
-    void load() override;
+    void decode() override;
     FetchTask::ResourceType resourceType() const override;
 
     vtslibs::vts::TilesetReferencesList dataRaw;

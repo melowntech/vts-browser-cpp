@@ -139,6 +139,12 @@ body
     font-family: monospace;
 }
 
+.fullWidth
+{
+    box-sizing: border-box;
+    width: 100%;
+}
+
 .searchItem::after
 {
     content: "";

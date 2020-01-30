@@ -228,19 +228,13 @@ buildsys_ide_groups(vts-browser libs)
 if(BUILDSYS_EMBEDDED)
     target_compile_definitions(vts-browser PRIVATE VTS_EMBEDDED)
 endif()
-if(BUILDSYS_IOS)
-    #target_compile_definitions(vts-browser PRIVATE VTS_IOS)
-endif()
-if(BUILDSYS_WASM)
-    add_dependencies(vts-browser zlibstatic) # fix weird error that no rule exists for zlibstatic
-endif()
+
 if(BUILDSYS_UWP)
     foreach(conf IN ITEMS ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE})
         string(TOUPPER ${conf} conf_upper)
         set_target_properties(vts-browser PROPERTIES LINK_FLAGS_${conf_upper} "/NODEFAULTLIB:vccorlib /NODEFAULTLIB:msvcrt vccorlib.lib msvcrt.lib")
     endforeach(conf)
     set_target_properties(vts-browser PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB:vccorlibd /NODEFAULTLIB:msvcrtd vccorlibd.lib msvcrtd.lib")
-    #target_compile_definitions(vts-browser PRIVATE VTS_UWP)
 endif()
 
 

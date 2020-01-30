@@ -24,14 +24,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dbglog/dbglog.hpp>
-
 #include "../geodata.hpp"
 #include "../fetchTask.hpp"
 #include "../renderTasks.hpp"
 #include "../map.hpp"
 #include "../gpuResource.hpp"
 #include "../utilities/json.hpp"
+
+#include <dbglog/dbglog.hpp>
 
 namespace vts
 {
@@ -40,9 +40,9 @@ GeodataFeatures::GeodataFeatures(vts::MapImpl *map, const std::string &name) :
     Resource(map, name)
 {}
 
-void GeodataFeatures::load()
+void GeodataFeatures::decode()
 {
-    LOG(info2) << "Loading geodata features <" << name << ">";
+    LOG(info2) << "Decoding geodata features <" << name << ">";
     data = std::make_shared<const std::string>(fetch->reply.content.str());
 
 #ifndef __EMSCRIPTEN__
@@ -75,9 +75,9 @@ GeodataStylesheet::GeodataStylesheet(MapImpl *map, const std::string &name) :
     priority = std::numeric_limits<float>::infinity();
 }
 
-void GeodataStylesheet::load()
+void GeodataStylesheet::decode()
 {
-    LOG(info2) << "Loading geodata stylesheet <" << name << ">";
+    LOG(info2) << "Decoding geodata stylesheet <" << name << ">";
     data = fetch->reply.content.str();
     dependenciesLoaded = false;
 
@@ -234,8 +234,8 @@ GeodataTile::GeodataTile(MapImpl *map, const std::string &name)
 
     // initialize aabb to universe
     {
-        double di = std::numeric_limits<double>::infinity();
-        vec3 vi(di, di, di);
+        static const double di = std::numeric_limits<double>::infinity();
+        static const vec3 vi(di, di, di);
         aabbPhys[0] = -vi;
         aabbPhys[1] = vi;
     }
@@ -268,7 +268,7 @@ void GeodataTile::update(
             aabbPhys[0] = ab[0];
             aabbPhys[1] = ab[1];
             tileId = tid;
-            state = Resource::State::downloading;
+            state = Resource::State::downloaded;
             map->resources.queGeodata.push(
                 std::dynamic_pointer_cast<GeodataTile>(shared_from_this()));
             return;
@@ -280,7 +280,7 @@ void GeodataTile::update(
     }
 }
 
-GpuGeodataSpec::GpuGeodataSpec()
+GpuGeodataSpec::GpuGeodataSpec() : type(GpuGeodataSpec::Type::Invalid)
 {
     matToRaw(identityMatrix4(), model);
 }

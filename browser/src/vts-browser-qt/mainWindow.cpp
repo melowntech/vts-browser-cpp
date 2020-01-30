@@ -80,8 +80,6 @@ MainWindow::MainWindow()
     context->bindLoadFunctions(map.get());
     view = context->createView(camera.get());
 
-    map->renderInitialize();
-
     dataThread = std::thread(&MainWindow::dataEntry, this);
 
     lastTime = std::chrono::high_resolution_clock::now();
@@ -157,7 +155,7 @@ void MainWindow::tick()
 {
     auto currentTime = std::chrono::high_resolution_clock::now();
     double elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(
-                lastTime - currentTime).count() * 1e-6;
+                currentTime - lastTime).count() * 1e-6;
     lastTime = currentTime;
 
     requestUpdate();

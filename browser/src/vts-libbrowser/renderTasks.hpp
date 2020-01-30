@@ -62,7 +62,7 @@ public:
     bool ready() const;
 };
 
-class RenderSimpleTask
+class RenderInfographicsTask
 {
 public:
     std::shared_ptr<GpuMesh> mesh;
@@ -70,7 +70,17 @@ public:
     mat4 model;
     vec4f color;
 
-    RenderSimpleTask();
+    RenderInfographicsTask();
+    bool ready() const;
+};
+
+class RenderColliderTask
+{
+public:
+    std::shared_ptr<GpuMesh> mesh;
+    mat4 model;
+
+    RenderColliderTask();
     bool ready() const;
 };
 

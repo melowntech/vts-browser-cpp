@@ -27,9 +27,9 @@
 #ifndef OBJ_H_wrtzeubfnjk
 #define OBJ_H_wrtzeubfnjk
 
-#include <string>
-
 #include "../include/vts-browser/buffer.hpp"
+
+#include <string>
 
 namespace vts
 {

@@ -32,20 +32,22 @@ namespace vts
 {
 
 MapStatistics::MapStatistics() :
+    resourcesCreated(0),
     resourcesDownloaded(0),
     resourcesDiskLoaded(0),
-    resourcesProcessed(0),
-    resourcesCreated(0),
-    resourcesReleased(0),
+    resourcesDecoded(0),
+    resourcesUploaded(0),
     resourcesFailed(0),
+    resourcesReleased(0),
     resourcesActive(0),
     resourcesDownloading(0),
     resourcesPreparing(0),
-    resourcesQueueUpload(0),
     resourcesQueueCacheRead(0),
     resourcesQueueCacheWrite(0),
-    resourcesQueueAtmosphere(0),
+    resourcesQueueDecode(0),
+    resourcesQueueUpload(0),
     resourcesQueueGeodata(0),
+    resourcesQueueAtmosphere(0),
     currentGpuMemUseKB(0),
     currentRamMemUseKB(0),
     renderTicks(0)
@@ -54,20 +56,22 @@ MapStatistics::MapStatistics() :
 std::string MapStatistics::toJson() const
 {
     Json::Value v;
+    TJ(resourcesCreated, asUint);
     TJ(resourcesDownloaded, asUint);
     TJ(resourcesDiskLoaded, asUint);
-    TJ(resourcesProcessed, asUint);
-    TJ(resourcesCreated, asUint);
-    TJ(resourcesReleased, asUint);
+    TJ(resourcesDecoded, asUint);
+    TJ(resourcesUploaded, asUint);
     TJ(resourcesFailed, asUint);
+    TJ(resourcesReleased, asUint);
     TJ(resourcesActive, asUint);
     TJ(resourcesDownloading, asUint);
     TJ(resourcesPreparing, asUint);
-    TJ(resourcesQueueUpload, asUint);
     TJ(resourcesQueueCacheRead, asUint);
     TJ(resourcesQueueCacheWrite, asUint);
-    TJ(resourcesQueueAtmosphere, asUint);
+    TJ(resourcesQueueDecode, asUint);
+    TJ(resourcesQueueUpload, asUint);
     TJ(resourcesQueueGeodata, asUint);
+    TJ(resourcesQueueAtmosphere, asUint);
     TJ(currentGpuMemUseKB, asUint);
     TJ(currentRamMemUseKB, asUint);
     TJ(renderTicks, asUint);

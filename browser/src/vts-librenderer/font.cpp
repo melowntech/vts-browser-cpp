@@ -30,6 +30,8 @@
 
 #include <mutex>
 
+#include <optick.h>
+
 namespace bin = utility::binaryio;
 
 namespace
@@ -215,6 +217,8 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec,
 void RenderContext::loadFont(ResourceInfo &info, GpuFontSpec &spec,
     const std::string &debugId)
 {
+    OPTICK_EVENT();
+
     auto r = std::make_shared<Font>();
     r->load(info, spec, debugId);
     info.userData = r;

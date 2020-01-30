@@ -40,20 +40,23 @@ public:
     MapStatistics();
     std::string toJson() const;
 
+    uint32 resourcesCreated;
     uint32 resourcesDownloaded;
     uint32 resourcesDiskLoaded;
-    uint32 resourcesProcessed;
-    uint32 resourcesCreated;
-    uint32 resourcesReleased;
+    uint32 resourcesDecoded;
+    uint32 resourcesUploaded;
     uint32 resourcesFailed;
+    uint32 resourcesReleased;
+
     uint32 resourcesActive;
     uint32 resourcesDownloading;
     uint32 resourcesPreparing;
-    uint32 resourcesQueueUpload;
     uint32 resourcesQueueCacheRead;
     uint32 resourcesQueueCacheWrite;
-    uint32 resourcesQueueAtmosphere;
+    uint32 resourcesQueueDecode;
+    uint32 resourcesQueueUpload;
     uint32 resourcesQueueGeodata;
+    uint32 resourcesQueueAtmosphere;
 
     uint32 currentGpuMemUseKB;
     uint32 currentRamMemUseKB;

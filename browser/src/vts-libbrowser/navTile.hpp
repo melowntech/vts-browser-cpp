@@ -38,7 +38,7 @@ class NavTile : public Resource
 {
 public:
     NavTile(MapImpl *map, const std::string &name);
-    void load() override;
+    void decode() override;
     FetchTask::ResourceType resourceType() const override;
 
     std::vector<unsigned char> data;

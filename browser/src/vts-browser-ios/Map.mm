@@ -145,7 +145,6 @@ void mapInitialize()
         viewPtr = context->createView(camera);
         view = viewPtr.get();
         context->bindLoadFunctions(map);
-        map->renderInitialize();
 
         // load data for rendering scales
         {

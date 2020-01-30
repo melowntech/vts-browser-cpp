@@ -6,9 +6,8 @@ set(SRC_LIST
     main.cpp
 )
 
-# the "-Wl,--no-check-features is temporary workaround until https://github.com/emscripten-ports/HarfBuzz/issues/1 is fixed"
 # the current emscripten FETCH works with synchronous operations only and we workaround that with many threads
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2 -Wl,--no-check-features --emrun -s PTHREAD_POOL_SIZE=30 -s TOTAL_MEMORY=128MB -s ALLOW_MEMORY_GROWTH=1 -s WASM_MEM_MAX=512MB")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2 --emrun -s PTHREAD_POOL_SIZE=30 -s TOTAL_MEMORY=128MB -s ALLOW_MEMORY_GROWTH=1 -s WASM_MEM_MAX=512MB")
 
 add_executable(vts-browser-wasm-sdl ${SRC_LIST})
 target_link_libraries(vts-browser-wasm-sdl ${MODULE_LIBRARIES})

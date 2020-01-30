@@ -54,7 +54,7 @@ class GeodataFeatures : public Resource
 {
 public:
     GeodataFeatures(MapImpl *map, const std::string &name);
-    void load() override;
+    void decode() override;
     FetchTask::ResourceType resourceType() const override;
 
     std::shared_ptr<const std::string> data;
@@ -64,7 +64,7 @@ class GeodataStylesheet : public Resource
 {
 public:
     GeodataStylesheet(MapImpl *map, const std::string &name);
-    void load() override;
+    void decode() override;
     Validity dependencies();
     FetchTask::ResourceType resourceType() const override;
 
@@ -80,14 +80,14 @@ class GeodataTile : public Resource
 {
 public:
     GeodataTile(MapImpl *map, const std::string &name);
-    void load() override;
+    void decode() override;
+    void upload() override;
     FetchTask::ResourceType resourceType() const override;
     void update(
         const std::shared_ptr<GeodataStylesheet> &style,
         const std::shared_ptr<const std::string> &features,
         const std::shared_ptr<const Json::Value> &browserOptions,
         const vec3 aabbPhys[2], const TileId &tileId);
-    void process();
 
     std::vector<RenderGeodataTask> renders;
     std::vector<GpuGeodataSpec> specsToUpload;

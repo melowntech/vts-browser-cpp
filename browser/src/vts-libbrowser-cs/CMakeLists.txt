@@ -16,7 +16,7 @@ set(SRC_LIST
     Utilities.cs
 )
 
-add_library(vts-browser-cs ${SRC_LIST})
+add_library(vts-browser-cs SHARED ${SRC_LIST})
 add_dependencies(vts-browser-cs vts-browser)
 set_target_properties(vts-browser-cs PROPERTIES VS_GLOBAL_ROOTNAMESPACE "vts")
 set_target_properties(vts-browser-cs PROPERTIES VS_DOTNET_REFERENCES "System")

@@ -24,9 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vts-libs/registry/json.hpp>
-#include <vts-libs/registry/io.hpp>
-
 #include "../include/vts-browser/map.hpp"
 #include "../include/vts-browser/view.hpp"
 #include "../utilities/json.hpp"
@@ -38,6 +35,9 @@
 #include "../credits.hpp"
 #include "../geodata.hpp"
 #include "../position.hpp"
+
+#include <vts-libs/registry/json.hpp>
+#include <vts-libs/registry/io.hpp>
 
 namespace vts
 {
@@ -215,45 +215,26 @@ double Map::getMapRenderProgress() const
     return std::min(impl->getMapRenderProgress(), 0.999);
 }
 
-void Map::dataInitialize()
-{
-    impl->resourceDataInitialize();
-}
-
 void Map::dataUpdate()
 {
     impl->resourceDataUpdate();
 }
 
-void Map::dataFinalize()
-{
-    impl->resourceDataFinalize();
-}
-
 void Map::dataAllRun()
 {
-    impl->resourceDataInitialize();
     impl->resourceDataRun();
-    impl->resourceDataFinalize();
-}
-
-void Map::renderInitialize()
-{
-    impl->resourceRenderInitialize();
-    impl->renderInitialize();
 }
 
 void Map::renderUpdate(double elapsedTime)
 {
     impl->statistics.renderTicks = ++impl->renderTickIndex;
-    impl->resourceRenderUpdate();
+    impl->resourceUpdate();
     impl->renderUpdate(elapsedTime);
 }
 
 void Map::renderFinalize()
 {
-    impl->resourceRenderFinalize();
-    impl->renderFinalize();
+    impl->resourceFinalize();
 }
 
 double Map::lastRenderUpdateElapsedTime() const
@@ -577,43 +558,6 @@ std::shared_ptr<SearchTask> Map::search(const std::string &query,
                                 const std::array<double, 3> &point)
 {
     return search(query, point.data());
-}
-
-MapImpl::MapImpl(Map *map, const MapCreateOptions &options,
-                    const std::shared_ptr<Fetcher> &fetcher) :
-    map(map), createOptions(options),
-    lastElapsedFrameTime(0),
-    renderTickIndex(0),
-    mapconfigAvailable(false), mapconfigReady(false)
-{
-    assert(fetcher);
-    resources.fetcher = fetcher;
-    resources.thrCacheReader = std::thread(&MapImpl::cacheReadEntry, this);
-    resources.thrCacheWriter = std::thread(&MapImpl::cacheWriteEntry, this);
-    resources.thrAtmosphereGenerator
-            = std::thread(&MapImpl::resourcesAtmosphereGeneratorEntry, this);
-    resources.thrGeodataProcessor
-            = std::thread(&MapImpl::resourcesGeodataProcessorEntry, this);
-    resources.fetching.thr
-            = std::thread(&MapImpl::resourcesDownloadsEntry, this);
-    cacheInit();
-    credits = std::make_shared<Credits>();
-}
-
-MapImpl::~MapImpl()
-{
-    resources.queCacheRead.terminate();
-    resources.queCacheWrite.terminate();
-    resources.queUpload.terminate();
-    resources.queAtmosphere.terminate();
-    resources.queGeodata.terminate();
-    resources.thrCacheReader.join();
-    resources.thrCacheWriter.join();
-    resources.thrAtmosphereGenerator.join();
-    resources.thrGeodataProcessor.join();
-    resources.fetching.stop = true;
-    resources.fetching.con.notify_all();
-    resources.fetching.thr.join();
 }
 
 } // namespace vts

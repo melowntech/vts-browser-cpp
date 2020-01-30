@@ -289,7 +289,7 @@ void CameraImpl::travDetermineMetaImpl(TraverseNode *trav)
 
             TraverseNode::Obb obb;
             obb.rotInv = t.inverse();
-            double di = std::numeric_limits<double>::infinity();
+            static const double di = std::numeric_limits<double>::infinity();
             vec3 vi(di, di, di);
             obb.points[0] = vi;
             obb.points[1] = -vi;
@@ -559,7 +559,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
         {
             const MeshPart &part = meshAgg->submeshes[subMeshIndex];
             std::shared_ptr<GpuMesh> mesh = part.renderable;
-            RenderSimpleTask task;
+            RenderColliderTask task;
             task.mesh = mesh;
             task.model = part.normToPhys;
             trav->colliders.push_back(task);

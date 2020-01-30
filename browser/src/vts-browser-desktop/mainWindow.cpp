@@ -173,7 +173,7 @@ void MainWindow::prepareMarks()
                 * vts::translationMatrix(m.coord)
                 * vts::scaleMatrix(navigation->getViewExtent() * 0.005);
         vts::mat4f mvf = mv.cast<float>();
-        vts::DrawSimpleTask t;
+        vts::DrawInfographicsTask t;
         vts::vec4f c = vts::vec3to4(m.color, 1);
         for (int i = 0; i < 4; i++)
             t.color[i] = c(i);
@@ -328,7 +328,6 @@ void MainWindow::run()
     updateWindowSize();
 
     setMapConfigPath(appOptions.paths[0]);
-    map->renderInitialize();
     gui.initialize(this);
     if (appOptions.screenshotOnFullRender)
         gui.visible(false);

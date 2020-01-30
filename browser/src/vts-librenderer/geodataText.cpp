@@ -655,13 +655,13 @@ bool regenerateJobLabelFlat(const RenderViewImpl *rv, GeodataJob &j)
     bool allFit;
     float scale = labelFlatScale(rv, j, allFit);
     uint32 vi = 0;
-    float cs1 = t.size * std::abs(scale) / compensatePerspective(rv, j) / rv->draws->camera.viewExtent * rv->height;
+    float cs1 = t.size * std::abs(scale) / compensatePerspective(rv, j)
+            / rv->draws->camera.viewExtent * rv->height;
     vec2f cs = vec2f(cs1 / rv->width, cs1 / rv->height);
-    for (uint32 i = 0, e = t.lineGlyphPositions.size(); i != e; i++)
+    for (float lgp : t.lineGlyphPositions)
     {
-        float lp = t.lineGlyphPositions[i] * scale;
         float f;
-        arrayPosition(t.lineVertPositions, lp, vi, f);
+        arrayPosition(t.lineVertPositions, lgp * scale, vi, f);
         vec3f mpa = rawToVec3(mps[vi].data());
         vec3f mpb = rawToVec3(mps[vi + 1].data());
         vec3f mp = interpolate(mpa, mpb, f);
@@ -683,11 +683,10 @@ void preDrawJobLabelFlat(const RenderViewImpl *rv, const GeodataJob &j,
     bool dummyAllFit;
     scale = labelFlatScale(rv, j, dummyAllFit);
     uint32 vi = 0;
-    for (uint32 i = 0, e = t.lineGlyphPositions.size(); i != e; i++)
+    for (float lgp : t.lineGlyphPositions)
     {
-        float lp = t.lineGlyphPositions[i] * scale;
         float f;
-        arrayPosition(t.lineVertPositions, lp, vi, f);
+        arrayPosition(t.lineVertPositions, lgp * scale, vi, f);
         vec3f mpa = rawToVec3(mps[vi].data());
         vec3f mpb = rawToVec3(mps[vi + 1].data());
         vec3f mp = interpolate(mpa, mpb, f);
@@ -695,6 +694,21 @@ void preDrawJobLabelFlat(const RenderViewImpl *rv, const GeodataJob &j,
         worldPos.push_back(wp);
     }
     scale = std::abs(scale);
+}
+
+vec3 drawJobLabelFlatSingleDirection(const GeodataJob &j)
+{
+    const auto &g = j.g;
+    auto &t = g->texts[j.itemIndex];
+    const auto &mps = g->spec.positions[j.itemIndex];
+    uint32 vi = 0;
+    float f;
+    arrayPosition(t.lineVertPositions, 0.f, vi, f);
+    vec3f mpa = rawToVec3(mps[vi].data());
+    vec3f mpb = rawToVec3(mps[vi + 1].data());
+    vec3f md = mpb - mpa;
+    vec3 wd = vec4to3(vec4(g->model * (vec3to4(md, 0).cast<double>())));
+    return wd;
 }
 
 } } // namespace vts renderer

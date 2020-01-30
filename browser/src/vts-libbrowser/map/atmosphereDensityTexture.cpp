@@ -24,10 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dbglog/dbglog.hpp>
-#include <vts-libs/vts/atmospheredensitytexture.hpp>
-#include <optick.h>
-
 #include "../include/vts-browser/log.hpp"
 #include "../include/vts-browser/celestial.hpp"
 
@@ -36,6 +32,10 @@
 #include "../fetchTask.hpp"
 #include "../map.hpp"
 #include "../mapConfig.hpp"
+
+#include <dbglog/dbglog.hpp>
+#include <vts-libs/vts/atmospheredensitytexture.hpp>
+#include <optick.h>
 
 namespace vts
 {
@@ -72,7 +72,7 @@ void generateAtmosphereTexture(
     {
         tex->info.ramMemoryCost = tex->fetch->reply.content.size();
         tex->state = Resource::State::downloaded;
-        tex->map->resources.queUpload.push(tex);
+        tex->map->resources.queDecode.push(tex);
     }
 }
 
@@ -118,15 +118,17 @@ GpuAtmosphereDensityTexture::GpuAtmosphereDensityTexture(MapImpl *map,
     wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
 }
 
-void GpuAtmosphereDensityTexture::load()
+void GpuAtmosphereDensityTexture::decode()
 {
-    LOG(info2) << "Loading (gpu) texture <" << name << ">";
-    GpuTextureSpec spec(fetch->reply.content);
-    spec.filterMode = filterMode;
-    spec.wrapMode = wrapMode;
-    gray3ToRgb(spec);
-    map->callbacks.loadTexture(info, spec, name);
-    info.ramMemoryCost += sizeof(*this);
+    LOG(info1) << "Decoding atmosphere texture <" << name << ">";
+    std::shared_ptr<GpuTextureSpec> spec
+        = std::make_shared<GpuTextureSpec>(fetch->reply.content);
+    this->width = spec->width;
+    this->height = spec->height;
+    spec->filterMode = filterMode;
+    spec->wrapMode = wrapMode;
+    gray3ToRgb(*spec);
+    decodeData = std::static_pointer_cast<void>(spec);
 }
 
 void MapImpl::resourcesAtmosphereGeneratorEntry()

@@ -27,9 +27,9 @@
 #ifndef MATH_HPP_wegfzebvgfhjusd
 #define MATH_HPP_wegfzebvgfhjusd
 
-#include <Eigen/Dense>
-
 #include "foundation.hpp"
+
+#include <Eigen/Dense>
 
 namespace vts
 {
@@ -62,38 +62,19 @@ typedef Eigen::Matrix<uint32, 3, 1> vec3ui32;
 typedef Eigen::Matrix<sint32, 4, 1> vec4si32;
 typedef Eigen::Matrix<uint32, 4, 1> vec4ui32;
 
+VTS_API double modulo(double a, double m);
+VTS_API double smoothstep(double f);
+VTS_API double smootherstep(double f);
+VTS_API double degToRad(double angle);
+VTS_API double radToDeg(double angle);
+VTS_API void normalizeAngle(double &a);
+VTS_API double angularDiff(double a, double b);
+VTS_API vec3 angularDiff(const vec3 &a, const vec3 &b);
+
 VTS_API vec3 cross(const vec3 &a, const vec3 &b);
-VTS_API double dot(const vec3 &a, const vec3 &b);
-VTS_API double dot(const vec2 &a, const vec2 &b);
-VTS_API double length(const vec3 &a);
-VTS_API double length(const vec2 &a);
-VTS_API vec3 normalize(const vec3 &a);
 VTS_API vec3 anyPerpendicular(const vec3 &v);
-VTS_API vec3 min(const vec3 &a, const vec3 &b);
-VTS_API vec3 max(const vec3 &a, const vec3 &b);
-VTS_API vec3 interpolate(const vec3 &a, const vec3 &b, double f);
-
 VTS_API vec3f cross(const vec3f &a, const vec3f &b);
-VTS_API float dot(const vec3f &a, const vec3f &b);
-VTS_API float dot(const vec2f &a, const vec2f &b);
-VTS_API float length(const vec3f &a);
-VTS_API float length(const vec2f &a);
-VTS_API vec3f normalize(const vec3f &a);
 VTS_API vec3f anyPerpendicular(const vec3f &v);
-VTS_API vec3f min(const vec3f &a, const vec3f &b);
-VTS_API vec3f max(const vec3f &a, const vec3f &b);
-VTS_API vec3f interpolate(const vec3f &a, const vec3f &b, float f);
-
-VTS_API mat4 frustumMatrix(double left, double right,
-                           double bottom, double top,
-                           double near_, double far_);
-VTS_API mat4 perspectiveMatrix(double fovyDegs, double aspect,
-                               double near_, double far_);
-VTS_API mat4 orthographicMatrix(double left, double right,
-                                double bottom, double top,
-                                double near_, double far_);
-VTS_API mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up);
-VTS_API mat4 lookAt(const vec3 &eye, const vec3 &target);
 
 VTS_API mat3 identityMatrix3();
 VTS_API mat4 identityMatrix4();
@@ -103,71 +84,310 @@ VTS_API mat4 scaleMatrix(double sx, double sy, double sz);
 VTS_API mat4 scaleMatrix(const vec3 &vec);
 VTS_API mat4 translationMatrix(double tx, double ty, double tz);
 VTS_API mat4 translationMatrix(const vec3 &vec);
-
-VTS_API vec4 vec3to4(const vec3 &v, double w);
-VTS_API vec3 vec4to3(const vec4 &v, bool division = false);
-VTS_API vec3 vec2to3(const vec2 &v, double w);
-VTS_API vec2 vec3to2(const vec3 &v, bool division = false);
-VTS_API vec2 vec4to2(const vec4 &v, bool division = false);
-
-VTS_API vec4f vec3to4(const vec3f &v, float w);
-VTS_API vec3f vec4to3(const vec4f &v, bool division = false);
-VTS_API vec3f vec2to3(const vec2f &v, float w);
-VTS_API vec2f vec3to2(const vec3f &v, bool division = false);
-VTS_API vec2f vec4to2(const vec4f &v, bool division = false);
-
-VTS_API vec2ui16 vec2to2ui16(const vec2 &v, bool normalized = true);
-VTS_API vec2ui16 vec2to2ui16(const vec2f &v, bool normalized = true);
-
-VTS_API mat3 mat4to3(const mat4 &mat);
-VTS_API mat4 mat3to4(const mat3 &mat);
-
-VTS_API double modulo(double a, double m);
-VTS_API double clamp(double a, double min, double max);
-VTS_API double interpolate(double a, double b, double f);
-VTS_API double smoothstep(double f);
-VTS_API double smootherstep(double f);
-
-VTS_API double degToRad(double angle);
-VTS_API double radToDeg(double angle);
-
-VTS_API void normalizeAngle(double &a);
-VTS_API double angularDiff(double a, double b);
-VTS_API vec3 angularDiff(const vec3 &a, const vec3 &b);
+VTS_API mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &up);
+VTS_API mat4 lookAt(const vec3 &eye, const vec3 &target);
+VTS_API mat4 frustumMatrix(double left, double right,
+                           double bottom, double top,
+                           double near_, double far_);
+VTS_API mat4 perspectiveMatrix(double fovyDegs, double aspect,
+                               double near_, double far_);
+VTS_API mat4 orthographicMatrix(double left, double right,
+                                double bottom, double top,
+                                double near_, double far_);
 
 VTS_API double aabbPointDist(const vec3 &point,
                              const vec3 &min, const vec3 &max);
 VTS_API bool aabbTest(const vec3 aabb[2], const vec4 planes[6]);
 VTS_API void frustumPlanes(const mat4 &vp, vec4 planes[6]);
 
+VTS_API vec2ui16 vec2to2ui16(const vec2 &v, bool normalized = true);
+VTS_API vec2ui16 vec2to2ui16(const vec2f &v, bool normalized = true);
+VTS_API mat3 mat4to3(const mat4 &mat);
+VTS_API mat4 mat3to4(const mat3 &mat);
+VTS_API mat3 rawToMat3(const double v[9]);
+VTS_API mat4 rawToMat4(const double v[16]);
+VTS_API mat3f rawToMat3(const float v[9]);
+VTS_API mat4f rawToMat4(const float v[16]);
+VTS_API void matToRaw(const mat3 &a, double v[9]);
+VTS_API void matToRaw(const mat4 &a, double v[16]);
+VTS_API void matToRaw(const mat3f &a, float v[9]);
+VTS_API void matToRaw(const mat4f &a, float v[16]);
+
 VTS_API vec3f convertRgbToHsv(const vec3f &inColor);
 VTS_API vec3f convertHsvToRgb(const vec3f &inColor);
 VTS_API vec3f convertToRainbowColor(float inValue);
 
-VTS_API vec2 rawToVec2(const double v[2]);
-VTS_API vec3 rawToVec3(const double v[3]);
-VTS_API vec4 rawToVec4(const double v[4]);
-VTS_API mat3 rawToMat3(const double v[9]);
-VTS_API mat4 rawToMat4(const double v[16]);
-VTS_API vec2f rawToVec2(const float v[2]);
-VTS_API vec3f rawToVec3(const float v[3]);
-VTS_API vec4f rawToVec4(const float v[4]);
-VTS_API mat3f rawToMat3(const float v[9]);
-VTS_API mat4f rawToMat4(const float v[16]);
+inline double clamp(double a, double min, double max)
+{
+    assert(min <= max);
+    return std::max(std::min(a, max), min);
+}
 
-VTS_API void vecToRaw(const vec2 &a, double v[2]);
-VTS_API void vecToRaw(const vec3 &a, double v[3]);
-VTS_API void vecToRaw(const vec4 &a, double v[4]);
-VTS_API void matToRaw(const mat3 &a, double v[9]);
-VTS_API void matToRaw(const mat4 &a, double v[16]);
-VTS_API void vecToRaw(const vec2f &a, float v[2]);
-VTS_API void vecToRaw(const vec3f &a, float v[3]);
-VTS_API void vecToRaw(const vec4f &a, float v[4]);
-VTS_API void matToRaw(const mat3f &a, float v[9]);
-VTS_API void matToRaw(const mat4f &a, float v[16]);
+inline double interpolate(double a, double b, double f)
+{
+    return (b - a) * f + a;
+}
+
+inline double dot(const vec3 &a, const vec3 &b)
+{
+    return a(0) * b(0) + a(1) * b(1) + a(2) * b(2);
+}
+
+inline double dot(const vec2 &a, const vec2 &b)
+{
+    return a(0) * b(0) + a(1) * b(1);
+}
+
+inline double length(const vec3 &a)
+{
+    return std::sqrt(dot(a, a));
+}
+
+inline double length(const vec2 &a)
+{
+    return std::sqrt(dot(a, a));
+}
+
+inline vec3 normalize(const vec3 &a)
+{
+    return a / length(a);
+}
+
+inline vec3 min(const vec3 &a, const vec3 &b)
+{
+    return vec3(std::min(a(0), b(0)),
+                std::min(a(1), b(1)),
+                std::min(a(2), b(2)));
+}
+
+inline vec3 max(const vec3 &a, const vec3 &b)
+{
+    return vec3(std::max(a(0), b(0)),
+                std::max(a(1), b(1)),
+                std::max(a(2), b(2)));
+}
+
+inline vec3 interpolate(const vec3 &a, const vec3 &b, double f)
+{
+    return vec3(interpolate(a(0), b(0), f),
+                interpolate(a(1), b(1), f),
+                interpolate(a(2), b(2), f));
+}
+
+inline float dot(const vec3f &a, const vec3f &b)
+{
+    return a(0) * b(0) + a(1) * b(1) + a(2) * b(2);
+}
+
+inline float dot(const vec2f &a, const vec2f &b)
+{
+    return a(0) * b(0) + a(1) * b(1);
+}
+
+inline float length(const vec3f &a)
+{
+    return std::sqrt(dot(a, a));
+}
+
+inline float length(const vec2f &a)
+{
+    return std::sqrt(dot(a, a));
+}
+
+inline vec3f normalize(const vec3f &a)
+{
+    return a / length(a);
+}
+
+inline vec3f min(const vec3f &a, const vec3f &b)
+{
+    return vec3f(std::min(a(0), b(0)),
+        std::min(a(1), b(1)),
+        std::min(a(2), b(2)));
+}
+
+inline vec3f max(const vec3f &a, const vec3f &b)
+{
+    return vec3f(std::max(a(0), b(0)),
+        std::max(a(1), b(1)),
+        std::max(a(2), b(2)));
+}
+
+inline vec3f interpolate(const vec3f &a, const vec3f &b, float f)
+{
+    return vec3f(interpolate(a(0), b(0), f),
+        interpolate(a(1), b(1), f),
+        interpolate(a(2), b(2), f));
+}
+
+inline vec4 vec3to4(const vec3 &v, double w)
+{
+    vec4 res;
+    res[0] = v[0];
+    res[1] = v[1];
+    res[2] = v[2];
+    res[3] = w;
+    return res;
+}
+
+inline vec3 vec4to3(const vec4 &v, bool division = false)
+{
+    vec3 res;
+    res[0] = v[0];
+    res[1] = v[1];
+    res[2] = v[2];
+    if (division)
+        res /= v[3];
+    return res;
+}
+
+inline vec3 vec2to3(const vec2 &v, double w)
+{
+    vec3 res;
+    res[0] = v[0];
+    res[1] = v[1];
+    res[2] = w;
+    return res;
+}
+
+inline vec2 vec3to2(const vec3 &v, bool division = false)
+{
+    vec2 res;
+    res[0] = v[0];
+    res[1] = v[1];
+    if (division)
+        res /= v[2];
+    return res;
+}
+
+inline vec2 vec4to2(const vec4 &v, bool division = false)
+{
+    vec2 res;
+    res[0] = v[0];
+    res[1] = v[1];
+    if (division)
+        res /= v[3];
+    return res;
+}
+
+inline vec4f vec3to4(const vec3f &v, float w)
+{
+    vec4f res;
+    res[0] = v[0];
+    res[1] = v[1];
+    res[2] = v[2];
+    res[3] = w;
+    return res;
+}
+
+inline vec3f vec4to3(const vec4f &v, bool division = false)
+{
+    vec3f res;
+    res[0] = v[0];
+    res[1] = v[1];
+    res[2] = v[2];
+    if (division)
+        res /= v[3];
+    return res;
+}
+
+inline vec3f vec2to3(const vec2f &v, float w)
+{
+    vec3f res;
+    res[0] = v[0];
+    res[1] = v[1];
+    res[2] = w;
+    return res;
+}
+
+inline vec2f vec3to2(const vec3f &v, bool division = false)
+{
+    vec2f res;
+    res[0] = v[0];
+    res[1] = v[1];
+    if (division)
+        res /= v[2];
+    return res;
+}
+
+inline vec2f vec4to2(const vec4f &v, bool division = false)
+{
+    vec2f res;
+    res[0] = v[0];
+    res[1] = v[1];
+    if (division)
+        res /= v[3];
+    return res;
+}
+
+inline vec2 rawToVec2(const double v[2])
+{
+    return vec2(v[0], v[1]);
+}
+
+inline vec3 rawToVec3(const double v[3])
+{
+    return vec3(v[0], v[1], v[2]);
+}
+
+inline vec4 rawToVec4(const double v[4])
+{
+    return vec4(v[0], v[1], v[2], v[3]);
+}
+
+inline vec2f rawToVec2(const float v[2])
+{
+    return vec2f(v[0], v[1]);
+}
+
+inline vec3f rawToVec3(const float v[3])
+{
+    return vec3f(v[0], v[1], v[2]);
+}
+
+inline vec4f rawToVec4(const float v[4])
+{
+    return vec4f(v[0], v[1], v[2], v[3]);
+}
+
+inline void vecToRaw(const vec2 &a, double v[2])
+{
+    for (int i = 0; i < 2; i++)
+        v[i] = a[i];
+}
+
+inline void vecToRaw(const vec3 &a, double v[3])
+{
+    for (int i = 0; i < 3; i++)
+        v[i] = a[i];
+}
+
+inline void vecToRaw(const vec4 &a, double v[4])
+{
+    for (int i = 0; i < 4; i++)
+        v[i] = a[i];
+}
+
+inline void vecToRaw(const vec2f &a, float v[2])
+{
+    for (int i = 0; i < 2; i++)
+        v[i] = a[i];
+}
+
+inline void vecToRaw(const vec3f &a, float v[3])
+{
+    for (int i = 0; i < 3; i++)
+        v[i] = a[i];
+}
+
+inline void vecToRaw(const vec4f &a, float v[4])
+{
+    for (int i = 0; i < 4; i++)
+        v[i] = a[i];
+}
 
 template<class T, class U>
-T vecFromUblas(const U &u)
+inline T vecFromUblas(const U &u)
 {
     T res;
     for (unsigned i = 0; i < u.size(); i++)
@@ -176,7 +396,7 @@ T vecFromUblas(const U &u)
 }
 
 template<class U, class T>
-U vecToUblas(const T &t)
+inline U vecToUblas(const T &t)
 {
     U res;
     for (unsigned i = 0; i < res.size(); i++)

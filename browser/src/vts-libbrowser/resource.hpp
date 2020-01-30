@@ -85,37 +85,6 @@ public:
     float priority;
 };
 
-class CacheData // : private Immovable
-{
-public:
-    CacheData();
-    CacheData(FetchTaskImpl *task, bool availFailed = false);
-
-    //std::shared_ptr<void> availTest;
-    Buffer buffer;
-    std::string name;
-    sint64 expires;
-    bool availFailed;
-};
-
-class UploadData
-{
-public:
-    UploadData();
-    explicit UploadData(const std::shared_ptr<Resource> &resource); // upload
-    explicit UploadData(std::shared_ptr<void> &userData, int); // destroy
-    UploadData(const UploadData &) = delete;
-    UploadData(UploadData &&) = default;
-    UploadData &operator = (const UploadData &) = delete;
-    UploadData &operator = (UploadData &&) = default;
-
-    void process();
-
-protected:
-    std::weak_ptr<Resource> uploadData;
-    std::shared_ptr<void> destroyData;
-};
-
 std::ostream &operator << (std::ostream &stream, Resource::State state);
 bool testAndThrow(Resource::State state, const std::string &message);
 

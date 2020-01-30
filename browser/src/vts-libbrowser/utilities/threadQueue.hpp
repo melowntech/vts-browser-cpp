@@ -27,7 +27,7 @@
 #ifndef THREAD_QUEUE_gdf5g4d56f4ghd6h4
 #define THREAD_QUEUE_gdf5g4d56f4ghd6h4
 
-#include <list>
+#include <deque>
 #include <atomic>
 #include <thread>
 #include <mutex>
@@ -113,7 +113,7 @@ public:
 
 private:
     std::atomic<bool> stop;
-    std::list<T> q;
+    std::deque<T> q;
     mutable std::mutex mut;
     std::condition_variable con;
 };

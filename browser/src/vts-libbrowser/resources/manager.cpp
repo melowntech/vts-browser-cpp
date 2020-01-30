@@ -474,7 +474,7 @@ void MapImpl::resourcesDownloadsEntry()
     resources.fetcher->initialize();
     while (!resources.fetching.stop)
     {
-        std::vector<std::weak_ptr<Resource>> res1;
+        decltype(resources.fetching.resources) res1;
         {
             std::unique_lock<std::mutex> lock(resources.fetching.mut);
             resources.fetching.con.wait(lock);
@@ -685,7 +685,7 @@ void MapImpl::resourcesStartDownloads()
             resourceUpdateStatistics(it.second);
         return; // early exit
     }
-    std::vector<std::weak_ptr<Resource>> res;
+    decltype(resources.fetching.resources) res;
     for (const auto &it : resources.resources)
     {
         resourceUpdateStatistics(it.second);

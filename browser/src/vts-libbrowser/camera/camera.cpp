@@ -122,7 +122,7 @@ void touchDraws(MapImpl *map, const RenderSurfaceTask &task)
 }
 
 template<class T>
-void touchDraws(MapImpl *map, const std::vector<T> &renders)
+void touchDraws(MapImpl *map, const T &renders)
 {
     for (auto &it : renders)
         touchDraws(map, it);

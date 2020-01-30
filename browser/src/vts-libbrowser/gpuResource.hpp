@@ -30,6 +30,7 @@
 #include "include/vts-browser/math.hpp"
 #include "resource.hpp"
 
+#include <boost/container/small_vector.hpp>
 #include <vector>
 
 namespace vts
@@ -99,7 +100,7 @@ public:
     bool requiresUpload() override { return true; }
     FetchTask::ResourceType resourceType() const override;
 
-    std::vector<MeshPart> submeshes;
+    boost::container::small_vector<MeshPart, 1> submeshes;
 };
 
 } // namespace vts

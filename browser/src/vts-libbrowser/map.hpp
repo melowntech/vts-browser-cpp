@@ -46,6 +46,8 @@
 #include "utilities/threadQueue.hpp"
 #include "validity.hpp"
 
+#include <boost/container/small_vector.hpp>
+
 namespace vts
 {
 
@@ -112,7 +114,7 @@ public:
         class Fetching
         {
         public:
-            std::vector<std::weak_ptr<Resource>> resources;
+            std::deque<std::weak_ptr<Resource>> resources;
             std::thread thr;
             std::mutex mut;
             std::condition_variable con;
@@ -132,8 +134,8 @@ public:
     std::shared_ptr<Mapconfig> mapconfig;
     std::shared_ptr<CoordManip> convertor;
     std::shared_ptr<Credits> credits;
-    std::vector<std::shared_ptr<MapLayer>> layers;
-    std::vector<std::weak_ptr<CameraImpl>> cameras;
+    boost::container::small_vector<std::shared_ptr<MapLayer>, 4> layers;
+    boost::container::small_vector<std::weak_ptr<CameraImpl>, 1> cameras;
     std::string mapconfigPath;
     std::string mapconfigView;
     double lastElapsedFrameTime;

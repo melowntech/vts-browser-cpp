@@ -118,10 +118,10 @@ RenderViewImpl::RenderViewImpl(
     height(0),
     antialiasingPrev(0),
     frameIndex(0),
-    projected(false),
-    lodBlendingWithDithering(false),
     frameRender2BufferId(0),
-    colorRender2TexId(0)
+    colorRender2TexId(0),
+    projected(false),
+    lodBlendingWithDithering(false)
 {
     depthBuffer.meshQuad = context->meshQuad;
     depthBuffer.shaderCopyDepth = context->shaderCopyDepth;

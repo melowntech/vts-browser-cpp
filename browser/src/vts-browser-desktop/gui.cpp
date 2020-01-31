@@ -895,7 +895,7 @@ public:
                     }
                     nk_combo_end(&ctx);
                 }
-/*/
+
                 // ssao
                 nk_label(&ctx, "SSAO:", NK_TEXT_LEFT);
                 if (nk_combo_begin_label(&ctx,
@@ -913,7 +913,7 @@ public:
                     }
                     nk_combo_end(&ctx);
                 }
-*/
+
                 // dof
                 nk_label(&ctx, "DOF:", NK_TEXT_LEFT);
                 if (nk_combo_begin_label(&ctx,

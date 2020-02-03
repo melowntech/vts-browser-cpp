@@ -33,6 +33,10 @@
 #include <boost/container/small_vector.hpp>
 #include <vector>
 
+namespace vtslibs { namespace vts {
+class SubMesh;
+} }
+
 namespace vts
 {
 
@@ -40,6 +44,8 @@ class GpuMesh : public Resource
 {
 public:
     GpuMesh(MapImpl *map, const std::string &name);
+    GpuMesh(MapImpl *map, const std::string &name,
+            const vtslibs::vts::SubMesh &m);
     void decode() override;
     void upload() override;
     bool requiresUpload() override { return true; }

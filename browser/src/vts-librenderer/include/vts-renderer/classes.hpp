@@ -129,6 +129,7 @@ public:
     void bind();
     void dispatch();
     void dispatch(uint32 offset, uint32 count); // offset: number of indices/vertices to skip; count: number of indices/vertices to render
+    void dispatchWireframeSlow();
     void load(ResourceInfo &info, GpuMeshSpec &spec,
         const std::string &debugId);
     void load(uint32 vao, uint32 vbo, uint32 vio);

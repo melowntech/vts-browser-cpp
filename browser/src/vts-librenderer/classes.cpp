@@ -610,6 +610,26 @@ void Mesh::dispatch(uint32 offset, uint32 count)
     CHECK_GL("dispatch mesh");
 }
 
+void Mesh::dispatchWireframeSlow()
+{
+    assert((GLenum)spec.faceMode == GL_TRIANGLES);
+    if (spec.indicesCount > 0)
+    {
+        for (uint32 i = 0; i < spec.indicesCount; i += 3)
+        {
+            glDrawElements(GL_LINE_LOOP, 3, (GLenum)spec.indexMode,
+                (void*)(std::size_t)(gpuTypeSize(spec.indexMode) * i));
+        }
+    }
+    else
+    {
+        for (uint32 i = 0; i < spec.verticesCount; i += 3)
+        {
+            glDrawArrays(GL_LINE_LOOP, i, 3);
+        }
+    }
+}
+
 void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp,
     const std::string &debugId)
 {

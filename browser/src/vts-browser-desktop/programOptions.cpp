@@ -119,9 +119,6 @@ bool programOptions(vts::MapCreateOptions &createOptions,
     po::positional_options_description popts;
     popts.add("url", -1);
 
-
-    appOptions.initialPosition = "obj,14.4226190973,50.0789205948,fixed,258.6029099418,10.8500855745,-19.2000000000,0.0000000000,210.1804041292,45.0000000000";
-
     vts::optionsConfigLog(desc);
     vts::optionsConfigMapCreate(desc, &createOptions);
     vts::optionsConfigMapRuntime(desc, &mapOptions);
@@ -147,10 +144,6 @@ bool programOptions(vts::MapCreateOptions &createOptions,
         MapPaths p;
         p.mapConfig = "https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json";
-
-  //      p.mapConfig = "http://pomerol:8888/buffer/tilesets/vts/melown2015/vadstena-cyclomedia-haag/vadstena.cyclomedia.haag.11-21-22/mapConfig.json";
-
-        
         appOptions.paths.push_back(p);
     }
     else

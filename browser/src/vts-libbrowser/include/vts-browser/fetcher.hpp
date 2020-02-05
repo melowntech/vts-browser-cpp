@@ -93,12 +93,10 @@ public:
         // absolute time in seconds, comparable to std::time
         //   -1 = invalid value
         //   -2 = always revalidate
-        sint64 expires;
+        sint64 expires = -1;
 
         // http status code, or one of the ExtraCodes
-        uint32 code;
-
-        Reply();
+        uint32 code = 0;
     };
 
     Query query;
@@ -119,25 +117,25 @@ public:
     std::string toJson() const;
 
     // the curl options are applied to each thread individually
-    uint32 threads;
+    uint32 threads = 1;
 
     // timeout for each download, in milliseconds
-    sint32 timeout;
+    sint32 timeout = 30000;
 
     // create extra file with log entry for each download
     // the output is meant to be computer readable
-    bool extraFileLog;
+    bool extraFileLog = false;
 
     // curl options
-    uint32 maxHostConnections;
-    uint32 maxTotalConnections;
-    uint32 maxCacheConections;
+    uint32 maxHostConnections = 0;
+    uint32 maxTotalConnections = 0;
+    uint32 maxCacheConections = 0;
 
     // 0 = use http/1
     // 1 = use http/1.1
     // 2 = use http/2, fallback http/1
     // 3 = use http/2, fallback http/1.1
-    sint32 pipelining;
+    sint32 pipelining = 2;
 };
 
 class VTS_API Fetcher : private Immovable

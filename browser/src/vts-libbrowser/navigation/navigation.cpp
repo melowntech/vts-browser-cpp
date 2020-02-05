@@ -419,6 +419,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
         }
 
         // detect terrain obscurance
+        if (!suspendAltitudeChange)
         {
             OPTICK_EVENT("terrainObscurance");
             const bool debug = options.debugRenderCameraObstructionSurrogates;

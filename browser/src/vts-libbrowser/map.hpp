@@ -125,6 +125,7 @@ public:
         std::list<std::weak_ptr<SearchTask>> searchTasks;
         std::string authPath;
         std::atomic<uint32> downloads{0}; // number of active downloads
+        std::condition_variable downloadsCondition;
         uint32 progressEstimationMaxResources = 0;
 
         ThreadQueue<std::weak_ptr<Resource>> queDecode;

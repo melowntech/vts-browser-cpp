@@ -43,15 +43,10 @@ MapCreateOptions::MapCreateOptions() :
                        "&addressdetails=1&limit=20&q={value}"),
     searchSrsFallback("+proj=longlat +datum=WGS84 +nodefs"),
 #ifdef VTS_EMBEDDED
-    diskCache(false),
+    diskCache(false)
 #else
-    diskCache(true),
+    diskCache(true)
 #endif // VTS_EMBEDDED
-    hashCachePaths(true),
-    searchUrlFallbackOutsideEarth(false),
-    browserOptionsSearchUrls(true),
-    atmosphereDensityTexture(true),
-    debugUseExtraThreads(true)
 {}
 
 MapCreateOptions::MapCreateOptions(const std::string &json)
@@ -100,21 +95,7 @@ std::string MapCreateOptions::toJson() const
 
 MapRuntimeOptions::MapRuntimeOptions() :
     language(detectLanguage()),
-    pixelsPerInch(96),
-    renderTilesScale(1.001),
-    targetResourcesMemoryKB(0),
-    maxConcurrentDownloads(25),
-    maxResourceProcessesPerTick(10),
-    maxFetchRedirections(5),
-    maxFetchRetries(5),
-    fetchFirstRetryTimeOffset(1),
-    measurementUnitsSystem(detectMeasurementSystem()),
-    searchResultsFiltering(true),
-    debugVirtualSurfaces(true),
-    debugSaveCorruptedFiles(false),
-    debugValidateGeodataStyles(true),
-    debugCoarsenessDisks(true),
-    debugExtractRawResources(false)
+    measurementUnitsSystem(detectMeasurementSystem())
 {}
 
 MapRuntimeOptions::MapRuntimeOptions(const std::string &json)
@@ -132,6 +113,7 @@ void MapRuntimeOptions::applyJson(const std::string &json)
     AJ(renderTilesScale, asDouble);
     AJ(targetResourcesMemoryKB, asUInt);
     AJ(maxConcurrentDownloads, asUInt);
+    AJ(maxCacheWriteQueueLength, asUInt);
     AJ(maxResourceProcessesPerTick, asUInt);
     AJ(maxFetchRedirections, asUInt);
     AJ(maxFetchRetries, asUInt);
@@ -153,6 +135,7 @@ std::string MapRuntimeOptions::toJson() const
     TJ(renderTilesScale, asDouble);
     TJ(targetResourcesMemoryKB, asUInt);
     TJ(maxConcurrentDownloads, asUInt);
+    TJ(maxCacheWriteQueueLength, asUInt);
     TJ(maxResourceProcessesPerTick, asUInt);
     TJ(maxFetchRedirections, asUInt);
     TJ(maxFetchRetries, asUInt);
@@ -167,37 +150,7 @@ std::string MapRuntimeOptions::toJson() const
     return jsonToString(v);
 }
 
-CameraOptions::CameraOptions() :
-    targetPixelRatioSurfaces(1.2),
-    targetPixelRatioGeodata(1.2),
-    cullingOffsetDistance(0.0),
-    lodBlendingDuration(1.0),
-    samplesForAltitudeLodSelection(8),
-    fixedTraversalDistance(10000),
-    fixedTraversalLod(15),
-    balancedGridLodOffset(5),
-    balancedGridNeighborsDistance(1),
-    lodBlending(2),
-    traverseModeSurfaces(TraverseMode::Balanced),
-    traverseModeGeodata(TraverseMode::Stable),
-    lodBlendingTransparent(false),
-    debugDetachedCamera(false),
-    debugFlatShading(false),
-    debugRenderSurrogates(false),
-    debugRenderMeshBoxes(false),
-    debugRenderTileBoxes(false),
-    debugRenderSubtileBoxes(false),
-    debugRenderTileDiagnostics(false),
-    debugRenderTileGeodataOnly(false),
-    debugRenderTileBigText(false),
-    debugRenderTileLod(false),
-    debugRenderTileIndices(false),
-    debugRenderTileTexelSize(false),
-    debugRenderTileTextureSize(false),
-    debugRenderTileFaces(false),
-    debugRenderTileSurface(false),
-    debugRenderTileBoundLayer(false),
-    debugRenderTileCredits(false)
+CameraOptions::CameraOptions()
 {}
 
 CameraOptions::CameraOptions(const std::string &json)
@@ -279,32 +232,10 @@ std::string CameraOptions::toJson() const
 }
 
 NavigationOptions::NavigationOptions() :
-    sensitivityPan(1),
-    sensitivityZoom(1),
-    sensitivityRotate(1),
-    inertiaPan(0.9),
-    inertiaZoom(0.9),
-    inertiaRotate(0.9),
     viewExtentLimitScaleMin(0.00001175917), // 75 meters on earth
     viewExtentLimitScaleMax(2.35183443086), // 1.5e7 meters on earth
     viewExtentThresholdScaleLow(0.1097522734), // 700 000 meters on earth
-    viewExtentThresholdScaleHigh(0.20382565067), // 1 300 000 meters on earth
-    tiltLimitAngleLow(-90),
-    tiltLimitAngleHigh(-10),
-    altitudeFadeOutFactor(0.5),
-    azimuthalLatitudeThreshold(80),
-    flyOverSpikinessFactor(2.5),
-    flyOverMotionChangeFraction(0.5),
-    flyOverRotationChangeSpeed(0.5),
-    type(NavigationType::Quick),
-    mode(NavigationMode::Seamless),
-    enableNormalization(true),
-    enableAltitudeCorrections(true),
-    fpsCompensation(true),
-    debugRenderObjectPosition(false),
-    debugRenderTargetPosition(false),
-    debugRenderAltitudeSurrogates(false),
-    debugRenderCameraObstructionSurrogates(false)
+    viewExtentThresholdScaleHigh(0.20382565067) // 1 300 000 meters on earth
 {}
 
 NavigationOptions::NavigationOptions(const std::string &json)
@@ -377,14 +308,7 @@ std::string NavigationOptions::toJson() const
     return jsonToString(v);
 }
 
-FetcherOptions::FetcherOptions() :
-    threads(1),
-    timeout(30000),
-    extraFileLog(false),
-    maxHostConnections(0),
-    maxTotalConnections(0),
-    maxCacheConections(0),
-    pipelining(2)
+FetcherOptions::FetcherOptions()
 {}
 
 FetcherOptions::FetcherOptions(const std::string &json)

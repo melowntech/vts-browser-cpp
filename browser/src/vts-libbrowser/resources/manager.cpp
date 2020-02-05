@@ -142,6 +142,7 @@ void FetchTaskImpl::fetchDone()
         << ", expires: " << reply.expires;
     assert(map);
     map->resources.downloads--;
+    map->resources.downloadsCondition.notify_one();
     Resource::State state = Resource::State::downloading;
 
     // handle error or invalid codes
@@ -195,8 +196,10 @@ void FetchTaskImpl::fetchDone()
     }
 
     // write to cache
-    if (state == Resource::State::availFail
+    if ((state == Resource::State::availFail
         || state == Resource::State::downloading)
+        && map->resources.queCacheWrite.estimateSize()
+        < map->options.maxCacheWriteQueueLength)
     {
         // this makes copy of the content buffer
         map->resources.queCacheWrite.push(CacheData(this,
@@ -517,18 +520,20 @@ void MapImpl::resourcesDownloadsEntry()
     OPTICK_THREAD("fetcher");
     setLogThreadName("fetcher");
     resources.fetcher->initialize();
+    std::mutex dummyMutex;
     while (!resources.fetching.stop)
     {
         auto res1 = waitForResources(resources.fetching);
         OPTICK_EVENT("update");
         resources.fetcher->update();
-        if (resources.downloads >= options.maxConcurrentDownloads)
-            continue; // skip processing if no download slots are available
         auto res2 = filterSortResources(res1, Resource::State::startDownload);
         for (const auto &pr : res2)
         {
-            if (resources.downloads >= options.maxConcurrentDownloads)
-                break;
+            while (resources.downloads >= options.maxConcurrentDownloads)
+            {
+                std::unique_lock<std::mutex> lock(dummyMutex);
+                resources.downloadsCondition.wait(lock);
+            }
             const std::shared_ptr<Resource> &r = pr.second;
             r->state = Resource::State::downloading;
             resources.downloads++;
@@ -539,6 +544,8 @@ void MapImpl::resourcesDownloadsEntry()
                 resources.auth->authorize(r);
             resources.fetcher->fetch(r->fetch);
             statistics.resourcesDownloaded++;
+            if (!resources.fetching.resources.empty())
+                break; // refresh the priorities
         }
     }
     resources.fetcher->finalize();

@@ -48,9 +48,6 @@ FetchTask::Query::Query(const std::string &url,
     url(url), resourceType(resourceType)
 {}
 
-FetchTask::Reply::Reply() : expires(-1), code(0)
-{}
-
 FetchTask::FetchTask(const Query &query) : query(query)
 {}
 

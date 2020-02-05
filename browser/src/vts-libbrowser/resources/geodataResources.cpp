@@ -68,9 +68,7 @@ FetchTask::ResourceType GeodataFeatures::resourceType() const
 }
 
 GeodataStylesheet::GeodataStylesheet(MapImpl *map, const std::string &name) :
-    Resource(map, name),
-    dependenciesValidity(Validity::Indeterminate),
-    dependenciesLoaded(false)
+    Resource(map, name)
 {
     priority = std::numeric_limits<float>::infinity();
 }

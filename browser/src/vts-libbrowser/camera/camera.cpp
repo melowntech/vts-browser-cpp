@@ -49,11 +49,10 @@ CurrentDraw::CurrentDraw(TraverseNode *trav, TraverseNode *orig) :
 
 OldDraw::OldDraw(const CurrentDraw &current) :
     trav(current.trav->id()),
-    orig(current.orig->id()),
-    age(0)
+    orig(current.orig->id())
 {}
 
-OldDraw::OldDraw(const TileId &id) : trav(id), orig(id), age(0)
+OldDraw::OldDraw(const TileId &id) : trav(id), orig(id)
 {}
 
 CameraImpl::CameraImpl(MapImpl *map, Camera *cam) :
@@ -70,9 +69,7 @@ CameraImpl::CameraImpl(MapImpl *map, Camera *cam) :
     focusPosPhys(nan3()),
     eye(nan3()),
     target(nan3()),
-    up(nan3()),
-    diskNominalDistance(0),
-    windowWidth(0), windowHeight(0)
+    up(nan3())
 {}
 
 void CameraImpl::clear()

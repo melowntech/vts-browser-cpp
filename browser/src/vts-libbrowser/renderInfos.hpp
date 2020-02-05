@@ -83,14 +83,14 @@ public:
 
     std::shared_ptr<GpuTexture> textureColor;
     std::shared_ptr<GpuTexture> textureMask;
-    const BoundInfo *bound;
-    bool transparent;
+    const BoundInfo *bound = nullptr;
+    bool transparent = false;
 
 private:
     Validity prepareDepth(CameraImpl *impl, double priority);
 
-    UrlTemplate::Vars orig;
-    sint32 depth;
+    UrlTemplate::Vars orig {0};
+    sint32 depth = 0;
 };
 
 } // namespace vts

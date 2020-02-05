@@ -34,7 +34,7 @@
 #include <vector>
 
 namespace vtslibs { namespace vts {
-class SubMesh;
+struct SubMesh;
 } }
 
 namespace vts
@@ -50,7 +50,7 @@ public:
     void upload() override;
     bool requiresUpload() override { return true; }
     FetchTask::ResourceType resourceType() const override;
-    uint32 faces;
+    uint32 faces = 0;
 };
 
 class GpuTexture : public Resource
@@ -61,9 +61,11 @@ public:
     void upload() override;
     bool requiresUpload() override { return true; }
     FetchTask::ResourceType resourceType() const override;
-    GpuTextureSpec::FilterMode filterMode;
-    GpuTextureSpec::WrapMode wrapMode;
-    uint32 width, height;
+    GpuTextureSpec::FilterMode filterMode
+        = GpuTextureSpec::FilterMode::Linear;
+    GpuTextureSpec::WrapMode wrapMode
+        = GpuTextureSpec::WrapMode::ClampToEdge;
+    uint32 width = 0, height = 0;
 };
 
 class GpuAtmosphereDensityTexture : public GpuTexture
@@ -88,13 +90,12 @@ public:
 class MeshPart
 {
 public:
-    MeshPart();
     std::shared_ptr<GpuMesh> renderable;
     mat4 normToPhys;
-    uint32 textureLayer;
-    uint32 surfaceReference;
-    bool internalUv;
-    bool externalUv;
+    uint32 textureLayer = 0;
+    uint32 surfaceReference = 0;
+    bool internalUv = false;
+    bool externalUv = false;
 };
 
 class MeshAggregate : public Resource

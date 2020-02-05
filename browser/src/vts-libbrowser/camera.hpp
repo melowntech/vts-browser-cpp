@@ -72,8 +72,8 @@ using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
 class CurrentDraw
 {
 public:
-    TraverseNode *trav;
-    TraverseNode *orig;
+    TraverseNode *trav = nullptr;
+    TraverseNode *orig = nullptr;
 
     CurrentDraw(TraverseNode *trav, TraverseNode *orig);
 };
@@ -83,7 +83,7 @@ class OldDraw
 public:
     TileId trav;
     TileId orig;
-    double age;
+    double age = 0;
 
     OldDraw(const CurrentDraw &current);
     OldDraw(const TileId &id);
@@ -98,8 +98,8 @@ public:
 class CameraImpl : private Immovable
 {
 public:
-    MapImpl *const map;
-    Camera *const camera;
+    MapImpl *const map = nullptr;
+    Camera *const camera = nullptr;
     std::weak_ptr<NavigationImpl> navigation;
     CameraCredits credits;
     CameraDraws draws;
@@ -123,9 +123,9 @@ public:
     vec3 cameraPosPhys;
     vec3 focusPosPhys;
     vec3 eye, target, up;
-    double diskNominalDistance;
-    uint32 windowWidth;
-    uint32 windowHeight;
+    double diskNominalDistance = 0;
+    uint32 windowWidth = 0;
+    uint32 windowHeight = 0;
 
     CameraImpl(MapImpl *map, Camera *cam);
     void clear();

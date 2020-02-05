@@ -54,9 +54,7 @@ extern "C" {
 typedef struct vtsCMap
 {
     std::shared_ptr<vts::Map> p;
-    void *userData;
-
-    vtsCMap() : userData(nullptr) {}
+    void *userData = nullptr;
 } vtsCMap;
 
 typedef struct vtsCCamera

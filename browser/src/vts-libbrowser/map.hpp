@@ -85,14 +85,13 @@ using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
 class CacheData
 {
 public:
-    CacheData();
+    CacheData() = default;
     CacheData(FetchTaskImpl *task, bool availFailed = false);
 
-    //std::shared_ptr<void> availTest;
     Buffer buffer;
     std::string name;
-    sint64 expires;
-    bool availFailed;
+    sint64 expires = 0;
+    bool availFailed = false;
 };
 
 class UploadData
@@ -125,36 +124,31 @@ public:
         std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
         std::list<std::weak_ptr<SearchTask>> searchTasks;
         std::string authPath;
-        std::atomic<uint32> downloads; // number of active downloads
-        uint32 progressEstimationMaxResources;
+        std::atomic<uint32> downloads{0}; // number of active downloads
+        uint32 progressEstimationMaxResources = 0;
 
-        ThreadQueue<std::weak_ptr<Resource>> queCacheRead;
         ThreadQueue<std::weak_ptr<Resource>> queDecode;
         ThreadQueue<UploadData> queUpload;
         ThreadQueue<CacheData> queCacheWrite;
         ThreadQueue<std::weak_ptr<GpuAtmosphereDensityTexture>> queAtmosphere;
         ThreadQueue<std::weak_ptr<GeodataTile>> queGeodata;
-        std::thread thrCacheReader;
         std::thread thrCacheWriter;
         std::thread thrDecoder;
         std::thread thrAtmosphereGenerator;
         std::thread thrGeodataProcessor;
-
-        class Fetching
+        
+        class ThreadCustomQueue
         {
         public:
-            std::deque<std::weak_ptr<Resource>> resources;
+            std::vector<std::weak_ptr<Resource>> resources;
             std::thread thr;
             std::mutex mut;
             std::condition_variable con;
-            std::atomic<bool> stop;
-            Fetching();
-        } fetching;
-
-        Resources();
+            std::atomic<bool> stop{false};
+        } fetching, cacheReading;
     } resources;
 
-    Map *const map;
+    Map *const map = nullptr;
     const MapCreateOptions createOptions;
     MapCallbacks callbacks;
     MapStatistics statistics;
@@ -167,10 +161,10 @@ public:
     boost::container::small_vector<std::weak_ptr<CameraImpl>, 1> cameras;
     std::string mapconfigPath;
     std::string mapconfigView;
-    double lastElapsedFrameTime;
-    uint32 renderTickIndex;
-    bool mapconfigAvailable;
-    bool mapconfigReady;
+    double lastElapsedFrameTime = 0;
+    uint32 renderTickIndex = 0;
+    bool mapconfigAvailable = false;
+    bool mapconfigReady = false;
 
     MapImpl(Map *map,
             const MapCreateOptions &options,
@@ -216,7 +210,6 @@ public:
     bool resourcesAtmosphereProcessOne();
     bool resourcesGeodataProcessOne();
     bool resourcesDecodeProcessOne();
-    void resourceUpdateStatistics(const std::shared_ptr<Resource> &r);
     void resourceDecodeProcess(const std::shared_ptr<Resource> &r);
     void resourceUploadProcess(const std::shared_ptr<Resource> &r);
     void resourceSaveCorruptedFile(const std::shared_ptr<Resource> &r);

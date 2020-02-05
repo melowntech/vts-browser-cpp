@@ -41,20 +41,7 @@ namespace vts
 {
 
 NavigationImpl::NavigationImpl(CameraImpl *cam, Navigation *navigation) :
-    camera(cam),
-    navigation(navigation),
-    position(0, 0, 0),
-    targetPosition(0, 0, 0),
-    orientation(0, 0, 0),
-    targetOrientation(0, 0, 0),
-    verticalExtent(0),
-    targetVerticalExtent(0),
-    verticalFov(0),
-    autoRotation(0),
-    type(Type::objective),
-    heightMode(HeightMode::fixed),
-    mode(NavigationMode::Azimuthal),
-    suspendAltitudeChange(false)
+    camera(cam), navigation(navigation)
 {
     if (camera->map->mapconfig && *camera->map->mapconfig)
         initialize();

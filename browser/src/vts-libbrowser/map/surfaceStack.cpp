@@ -220,13 +220,8 @@ void SurfaceStack::generateFree(MapImpl *map,
     }
 }
 
-SurfaceInfo::SurfaceInfo()
-    : color(0,0,0), alien(false)
-{}
-
 SurfaceInfo::SurfaceInfo(const vtslibs::vts::SurfaceCommonConfig &surface,
                          const std::string &parentPath)
-    : color(0,0,0), alien(false)
 {
     urlMeta.parse(convertPath(surface.urls3d->meta, parentPath));
     urlMesh.parse(convertPath(surface.urls3d->mesh, parentPath));

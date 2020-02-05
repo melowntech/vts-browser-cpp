@@ -57,9 +57,7 @@ BoundInfo::BoundInfo(const vtslibs::registry::BoundLayer &bl,
 }
 
 BoundParamInfo::BoundParamInfo(const View::BoundLayerParams &params)
-    : View::BoundLayerParams(params),
-      bound(nullptr), transparent(false),
-      orig(0), depth(0)
+    : View::BoundLayerParams(params)
 {}
 
 mat3f BoundParamInfo::uvMatrix() const

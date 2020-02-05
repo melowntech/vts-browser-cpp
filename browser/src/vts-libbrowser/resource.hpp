@@ -74,14 +74,14 @@ public:
     std::shared_ptr<void> getUserData() const; // returns the user data from info but with replaced owner to prolonge the lifetime of the entire resource
 
     const std::string name;
-    MapImpl *const map;
-    std::atomic<State> state;
+    MapImpl *const map = nullptr;
+    std::atomic<State> state {State::initializing};
     ResourceInfo info;
     std::shared_ptr<void> decodeData;
     std::shared_ptr<FetchTaskImpl> fetch;
-    std::time_t retryTime;
-    uint32 retryNumber;
-    uint32 lastAccessTick;
+    std::time_t retryTime = -1;
+    uint32 retryNumber = 0;
+    uint32 lastAccessTick = 0;
     float priority;
 };
 

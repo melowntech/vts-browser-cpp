@@ -40,7 +40,7 @@ class TraverseNode;
 class SurfaceInfo
 {
 public:
-    SurfaceInfo();
+    SurfaceInfo() = default;
     SurfaceInfo(const vtslibs::vts::SurfaceCommonConfig &surface,
         const std::string &parentPath);
     SurfaceInfo(const vtslibs::registry::FreeLayer::MeshTiles &surface,
@@ -55,8 +55,8 @@ public:
     UrlTemplate urlIntTex;
     UrlTemplate urlGeodata;
     vtslibs::vts::TilesetIdList name;
-    vec3f color;
-    bool alien;
+    vec3f color {0,0,0};
+    bool alien = false;
 };
 
 class SurfaceStack
@@ -102,7 +102,7 @@ public:
 
     std::unique_ptr<TraverseNode> traverseRoot;
 
-    MapImpl *const map;
+    MapImpl *const map = nullptr;
     Credits::Scope creditScope;
 
 private:

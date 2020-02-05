@@ -63,8 +63,7 @@ uint64 currentTime()
 } // namespace
 
 AuthConfig::AuthConfig(MapImpl *map, const std::string &name) :
-    Resource(map, name),
-    timeValid(0), timeParsed(0)
+    Resource(map, name)
 {
     priority = std::numeric_limits<float>::infinity();
 

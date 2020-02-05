@@ -32,6 +32,7 @@
 #include "include/vts-browser/math.hpp"
 #include "include/vts-browser/geodata.hpp"
 #include "resource.hpp"
+#include "validity.hpp"
 
 namespace Json
 {
@@ -42,8 +43,6 @@ namespace vts
 {
 
 using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
-
-enum class Validity;
 
 class GpuFont;
 class GpuTexture;
@@ -71,8 +70,8 @@ public:
     std::shared_ptr<const Json::Value> json;
     std::map<std::string, std::shared_ptr<GpuFont>> fonts;
     std::map<std::string, std::shared_ptr<GpuTexture>> bitmaps;
-    Validity dependenciesValidity;
-    bool dependenciesLoaded;
+    Validity dependenciesValidity = Validity::Indeterminate;
+    bool dependenciesLoaded = false;
 };
 
 class GeodataTile : public Resource

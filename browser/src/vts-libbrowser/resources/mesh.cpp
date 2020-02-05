@@ -68,12 +68,12 @@ GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0),
 {}
 
 GpuMesh::GpuMesh(MapImpl *map, const std::string &name) :
-    Resource(map, name), faces(0)
+    Resource(map, name)
 {}
 
 GpuMesh::GpuMesh(MapImpl *map, const std::string &name,
                  const vtslibs::vts::SubMesh &m) :
-    Resource(map, name), faces(0)
+    Resource(map, name)
 {
     state = Resource::State::errorFatal;
 
@@ -314,11 +314,6 @@ FetchTask::ResourceType GpuMesh::resourceType() const
 {
     return FetchTask::ResourceType::Undefined;
 }
-
-MeshPart::MeshPart() :
-    textureLayer(0), surfaceReference(0),
-    internalUv(false), externalUv(false)
-{}
 
 namespace
 {

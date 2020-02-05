@@ -61,14 +61,6 @@ std::shared_ptr<T> getMapResource(MapImpl *map, const std::string &name)
 
 } // namespace
 
-MapImpl::Resources::Resources() :
-    downloads(0),  progressEstimationMaxResources(0)
-{}
-
-MapImpl::Resources::Fetching::Fetching() :
-    stop(false)
-{}
-
 void MapImpl::touchResource(const std::shared_ptr<Resource> &resource)
 {
     resource->lastAccessTick = renderTickIndex;

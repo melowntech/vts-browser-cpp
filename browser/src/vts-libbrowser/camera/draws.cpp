@@ -76,7 +76,7 @@ void CameraDraws::clear()
 
 RenderSurfaceTask::RenderSurfaceTask() : model(identityMatrix4()),
     uvm(identityMatrix3().cast<float>()),
-    color(1, 1, 1, 1), externalUv(false), flatShading(false)
+    color(1, 1, 1, 1)
 {}
 
 bool RenderSurfaceTask::ready() const

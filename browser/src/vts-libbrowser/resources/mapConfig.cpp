@@ -35,10 +35,6 @@
 namespace vts
 {
 
-Mapconfig::BrowserOptions::BrowserOptions() :
-    autorotate(0), searchFilter(true)
-{}
-
 Mapconfig::Mapconfig(MapImpl *map, const std::string &name)
     : Resource(map, name)
 {

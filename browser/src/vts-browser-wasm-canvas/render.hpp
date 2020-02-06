@@ -24,56 +24,23 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#include "common.hpp"
+#include "timer.hpp"
 
-#include <memory>
-#include <chrono>
-#include <thread>
-#include <QWindow>
+// this is internal header from the VTS browser implementation
+//   and should not be used in other applications
+#include "vts-libbrowser/utilities/threadQueue.hpp"
 
-namespace vts
-{
-    class Map;
-    class Camera;
-    class Navigation;
+#include <vts-renderer/renderDraws.hpp>
 
-    namespace renderer
-    {
-        class RenderContext;
-        class RenderView;
-    }
-}
 
-class Gl;
+void createRenderThread();
 
-class MainWindow : public QWindow
-{
-public:
-    MainWindow();
-    ~MainWindow();
+typedef vts::ThreadQueue<std::unique_ptr<vts::renderer::RenderDraws>>
+    DrawsQueue;
+extern DrawsQueue drawsQueue, drawsQueue2;
+extern DurationBuffer durationRenderFrame, durationRenderData,
+    durationRenderRender, durationRenderSwap;
 
-    bool event(QEvent *event);
-    void tick();
 
-    void mouseMove(class QMouseEvent *event);
-    void mousePress(class QMouseEvent *event);
-    void mouseRelease(class QMouseEvent *event);
-    void mouseWheel(class QWheelEvent *event);
 
-    void dataEntry();
-
-    std::shared_ptr<Gl> gl;
-    std::shared_ptr<Gl> gl2;
-    std::shared_ptr<vts::renderer::RenderContext> context;
-    std::shared_ptr<vts::Map> map;
-    std::shared_ptr<vts::Camera> camera;
-    std::shared_ptr<vts::Navigation> navigation;
-    std::shared_ptr<vts::renderer::RenderView> view;
-
-    QPoint lastMousePosition;
-    std::chrono::high_resolution_clock::time_point lastTime;
-    std::thread dataThread;
-};
-
-#endif

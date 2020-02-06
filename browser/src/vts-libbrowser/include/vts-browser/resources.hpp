@@ -58,7 +58,7 @@ public:
     ResourceInfo();
 
     // the userData is later on used to reference the corresponding resource
-    //   from inside the DrawTask
+    //   from inside a DrawTask
     std::shared_ptr<void> userData;
 
     // memory usage in bytes

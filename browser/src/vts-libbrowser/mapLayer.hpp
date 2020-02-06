@@ -76,7 +76,7 @@ public:
     std::vector<SurfaceInfo> surfaces;
 };
 
-class MapLayer
+class MapLayer : private Immovable
 {
 public:
     // main surface stack

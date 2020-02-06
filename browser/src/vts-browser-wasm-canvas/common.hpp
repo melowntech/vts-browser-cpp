@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017 Melown Technologies SE
+ * Copyright (c) 2020 Melown Technologies SE
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -24,56 +24,38 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#include <vts-browser/log.hpp>
+#include <vts-browser/math.hpp>
+#include <vts-browser/map.hpp>
+#include <vts-browser/camera.hpp>
+#include <vts-browser/navigation.hpp>
+#include <vts-browser/position.hpp>
+#include <vts-browser/search.hpp>
+#include <vts-renderer/renderer.hpp>
 
-#include <memory>
-#include <chrono>
-#include <thread>
-#include <QWindow>
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#include <emscripten/threading.h>
 
-namespace vts
-{
-    class Map;
-    class Camera;
-    class Navigation;
 
-    namespace renderer
-    {
-        class RenderContext;
-        class RenderView;
-    }
-}
+using vts::vec3;
 
-class Gl;
 
-class MainWindow : public QWindow
-{
-public:
-    MainWindow();
-    ~MainWindow();
+std::string jsonToHtml(const std::string &json);
+std::string positionToHtml(const vts::Position &pos);
 
-    bool event(QEvent *event);
-    void tick();
+void setHtml(const char *id, const std::string &value);
+void setInputValue(const char *id, const std::string &value);
 
-    void mouseMove(class QMouseEvent *event);
-    void mousePress(class QMouseEvent *event);
-    void mouseRelease(class QMouseEvent *event);
-    void mouseWheel(class QWheelEvent *event);
+EM_BOOL mouseEvent(int, const EmscriptenMouseEvent *e, void *);
+EM_BOOL wheelEvent(int, const EmscriptenWheelEvent *e, void *);
+EM_BOOL resizeEvent(int, const EmscriptenUiEvent *e, void *);
 
-    void dataEntry();
 
-    std::shared_ptr<Gl> gl;
-    std::shared_ptr<Gl> gl2;
-    std::shared_ptr<vts::renderer::RenderContext> context;
-    std::shared_ptr<vts::Map> map;
-    std::shared_ptr<vts::Camera> camera;
-    std::shared_ptr<vts::Navigation> navigation;
-    std::shared_ptr<vts::renderer::RenderView> view;
+extern std::shared_ptr<vts::Map> map;
+extern std::shared_ptr<vts::Camera> cam;
+extern std::shared_ptr<vts::Navigation> nav;
+extern std::shared_ptr<vts::SearchTask> srch;
 
-    QPoint lastMousePosition;
-    std::chrono::high_resolution_clock::time_point lastTime;
-    std::thread dataThread;
-};
+extern pthread_t main_thread_id;
 
-#endif

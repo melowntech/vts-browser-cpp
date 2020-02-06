@@ -18,6 +18,7 @@ set(PUB_HDR_LIST
     include/vts-renderer/rendererCommon.h
     include/vts-renderer/renderer.h
     include/vts-renderer/renderer.hpp
+    include/vts-renderer/renderDraws.hpp
     include/vts-renderer/classes.hpp
 )
 

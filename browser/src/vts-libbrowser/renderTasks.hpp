@@ -34,7 +34,6 @@ namespace vts
 
 class GpuMesh;
 class GpuTexture;
-class GpuGeodata;
 
 class RenderSurfaceTask
 {
@@ -50,15 +49,6 @@ public:
     bool flatShading;
 
     RenderSurfaceTask();
-    bool ready() const;
-};
-
-class RenderGeodataTask
-{
-public:
-    std::shared_ptr<GpuGeodata> geodata;
-
-    RenderGeodataTask();
     bool ready() const;
 };
 

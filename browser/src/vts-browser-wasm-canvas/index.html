@@ -9,7 +9,7 @@
 </head>
 
 <body>
-    <canvas id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+    <canvas id=display oncontextmenu=event.preventDefault() tabindex=-1></canvas>
     <div id=status-overlay>
         <div id=status>
             <h2>Requirements</h2>
@@ -96,6 +96,10 @@
                         <tr>
                             <td>Flat Shading
                             <td><input type=checkbox name=debugFlatShading class=options>
+                        </tr>
+                        <tr>
+                            <td>Wireframe
+                            <td><input type=checkbox name=renderPolygonEdges class=options>
                         </tr>
                     </table>
                 </div>

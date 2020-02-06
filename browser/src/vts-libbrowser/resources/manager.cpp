@@ -33,6 +33,9 @@
 
 #include <optick.h>
 
+#include <thread>
+#include <chrono>
+
 namespace vts
 {
 
@@ -54,6 +57,26 @@ void MapImpl::resourceSaveCorruptedFile(const std::shared_ptr<Resource> &r)
         LOG(warn1) << "Failed saving corrupted resource <" << r->name
             << "> for further inspection";
     }
+}
+
+UploadData::UploadData()
+{}
+
+UploadData::UploadData(const std::shared_ptr<Resource> &resource)
+    : uploadData(resource)
+{}
+
+UploadData::UploadData(std::shared_ptr<void> &userData, int)
+{
+    std::swap(userData, destroyData);
+}
+
+void UploadData::process()
+{
+    destroyData.reset();
+    auto r = uploadData.lock();
+    if (r)
+        r->map->resourceUploadProcess(r);
 }
 
 ////////////////////////////
@@ -182,8 +205,13 @@ void MapImpl::resourceDecodeProcess(const std::shared_ptr<Resource> &r)
     try
     {
         r->decode();
-        r->state = Resource::State::decoded;
-        resources.queUpload.push(r);
+        if (r->requiresUpload())
+        {
+            r->state = Resource::State::decoded;
+            resources.queUpload.push(UploadData(r));
+        }
+        else
+            r->state = Resource::State::ready;
     }
     catch (const std::exception &e)
     {
@@ -209,6 +237,18 @@ void MapImpl::resourcesDecodeProcessorEntry()
             continue;
         resourceDecodeProcess(r);
     }
+}
+
+bool MapImpl::resourcesDecodeProcessOne()
+{
+    std::weak_ptr<Resource> w;
+    if (!resources.queDecode.tryPop(w))
+        return false;
+    std::shared_ptr<Resource> r = w.lock();
+    if (!r)
+        return resourcesDecodeProcessOne();
+    resourceDecodeProcess(r);
+    return true;
 }
 
 ////////////////////////////
@@ -238,34 +278,80 @@ void MapImpl::resourceUploadProcess(const std::shared_ptr<Resource> &r)
     r->decodeData.reset();
 }
 
-void MapImpl::resourceDataUpdate()
+bool MapImpl::resourcesUploadProcessOne()
 {
-    OPTICK_EVENT();
-    for (uint32 proc = 0; proc
-        < options.maxResourceProcessesPerTick; proc++)
+    UploadData w;
+    if (!resources.queUpload.tryPop(w))
+        return false;
+    w.process();
+    return true;
+}
+
+void MapImpl::resourcesUploadProcessorEntry()
+{
+    OPTICK_THREAD("data");
+    if (createOptions.debugUseExtraThreads)
     {
-        std::weak_ptr<Resource> w;
-        if (!resources.queUpload.tryPop(w))
-            break;
-        std::shared_ptr<Resource> r = w.lock();
-        if (!r)
-            continue;
-        resourceUploadProcess(r);
+        while (!resources.queUpload.stopped())
+        {
+            UploadData w;
+            resources.queUpload.waitPop(w);
+            w.process();
+        }
+    }
+    else
+    {
+        while (!resources.queUpload.stopped())
+        {
+            while (resourcesDataUpdateOne());
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(0.01s);
+        }
     }
 }
 
-void MapImpl::resourceDataRun()
+void MapImpl::resourcesDataUpdate()
 {
-    OPTICK_THREAD("data");
-    while (!resources.queUpload.stopped())
+    OPTICK_EVENT();
+    if (createOptions.debugUseExtraThreads)
     {
-        std::weak_ptr<Resource> w;
-        resources.queUpload.waitPop(w);
-        std::shared_ptr<Resource> r = w.lock();
-        if (!r)
-            continue;
-        resourceUploadProcess(r);
+        for (uint32 proc = 0; proc
+            < options.maxResourceProcessesPerTick; proc++)
+        {
+            resourcesUploadProcessOne();
+        }
     }
+    else
+    {
+        uint32 processed = 0;
+        while (processed
+               < options.maxResourceProcessesPerTick)
+        {
+            uint32 p = resourcesDataUpdateOne();
+            if (p == 0)
+                break;
+            processed += p;
+        }
+    }
+}
+
+uint32 MapImpl::resourcesDataUpdateOne()
+{
+    uint32 processed = 0;
+    if (resourcesUploadProcessOne())
+        processed++;
+    if (resourcesAtmosphereProcessOne())
+        processed++;
+    if (resourcesGeodataProcessOne())
+        processed++;
+    if (resourcesDecodeProcessOne())
+        processed++;
+    return processed;
+}
+
+void MapImpl::resourcesDataFinalize()
+{
+    resources.queUpload.purge();
 }
 
 ////////////////////////////
@@ -388,7 +474,7 @@ void MapImpl::resourcesDownloadsEntry()
     resources.fetcher->initialize();
     while (!resources.fetching.stop)
     {
-        std::vector<std::weak_ptr<Resource>> res1;
+        decltype(resources.fetching.resources) res1;
         {
             std::unique_lock<std::mutex> lock(resources.fetching.mut);
             resources.fetching.con.wait(lock);
@@ -599,7 +685,7 @@ void MapImpl::resourcesStartDownloads()
             resourceUpdateStatistics(it.second);
         return; // early exit
     }
-    std::vector<std::weak_ptr<Resource>> res;
+    decltype(resources.fetching.resources) res;
     for (const auto &it : resources.resources)
     {
         resourceUpdateStatistics(it.second);
@@ -634,16 +720,19 @@ void MapImpl::resourceUpdateStatistics(const std::shared_ptr<Resource> &r)
     }
 }
 
-void MapImpl::resourceFinalize()
+void MapImpl::resourcesRenderFinalize()
 {
-    // allow the dataAllRun method to return to the caller
-    resources.queUpload.terminate();
+    // release resources hold by the map and all layers
+    purgeMapconfig();
 
     // clear the resources now while all the necessary things are still working
     resources.resources.clear();
+
+    // allow the dataAllRun method to return to the caller
+    resources.queUpload.terminate();
 }
 
-void MapImpl::resourceUpdate()
+void MapImpl::resourcesRenderUpdate()
 {
     OPTICK_EVENT();
     // resourcesPreparing is used to determine mapRenderComplete

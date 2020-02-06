@@ -155,7 +155,7 @@ bool MapLayer::prerequisitesCheckFreeLayer()
                     mapconfig->referenceFrame, TileId(), false, *mapconfig));
     traverseRoot->priority = std::numeric_limits<double>::infinity();
 
-    if (freeLayer->type != vtslibs::registry::FreeLayer::Type::meshTiles)
+    if (isGeodata())
         creditScope = Credits::Scope::Geodata;
 
     return true;

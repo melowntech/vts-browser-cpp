@@ -50,7 +50,8 @@ MapCreateOptions::MapCreateOptions() :
     hashCachePaths(true),
     searchUrlFallbackOutsideEarth(false),
     browserOptionsSearchUrls(true),
-    atmosphereDensityTexture(true)
+    atmosphereDensityTexture(true),
+    debugUseExtraThreads(true)
 {}
 
 MapCreateOptions::MapCreateOptions(const std::string &json)
@@ -75,6 +76,7 @@ void MapCreateOptions::applyJson(const std::string &json)
     AJ(searchUrlFallbackOutsideEarth, asBool);
     AJ(browserOptionsSearchUrls, asBool);
     AJ(atmosphereDensityTexture, asBool);
+    AJ(debugUseExtraThreads, asBool);
 }
 
 std::string MapCreateOptions::toJson() const
@@ -92,6 +94,7 @@ std::string MapCreateOptions::toJson() const
     TJ(searchUrlFallbackOutsideEarth, asBool);
     TJ(browserOptionsSearchUrls, asBool);
     TJ(atmosphereDensityTexture, asBool);
+    TJ(debugUseExtraThreads, asBool);
     return jsonToString(v);
 }
 
@@ -101,7 +104,7 @@ MapRuntimeOptions::MapRuntimeOptions() :
     renderTilesScale(1.001),
     targetResourcesMemoryKB(0),
     maxConcurrentDownloads(25),
-    maxResourceProcessesPerTick(3),
+    maxResourceProcessesPerTick(10),
     maxFetchRedirections(5),
     maxFetchRetries(5),
     fetchFirstRetryTimeOffset(1),
@@ -168,7 +171,7 @@ CameraOptions::CameraOptions() :
     targetPixelRatioSurfaces(1.2),
     targetPixelRatioGeodata(1.2),
     cullingOffsetDistance(0.0),
-    lodBlendingDuration(0.5),
+    lodBlendingDuration(1.0),
     samplesForAltitudeLodSelection(8),
     fixedTraversalDistance(10000),
     fixedTraversalLod(15),

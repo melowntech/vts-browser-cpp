@@ -24,260 +24,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vts-browser/log.hpp>
-#include <vts-browser/math.hpp>
-#include <vts-browser/map.hpp>
+#include "render.hpp"
+
 #include <vts-browser/mapOptions.hpp>
-#include <vts-browser/mapStatistics.hpp>
 #include <vts-browser/mapCallbacks.hpp>
-#include <vts-browser/camera.hpp>
-#include <vts-browser/cameraOptions.hpp>
+#include <vts-browser/mapStatistics.hpp>
 #include <vts-browser/cameraStatistics.hpp>
 #include <vts-browser/cameraCredits.hpp>
-#include <vts-browser/navigation.hpp>
-#include <vts-browser/navigationOptions.hpp>
-#include <vts-browser/position.hpp>
-#include <vts-browser/search.hpp>
-#include <vts-renderer/renderer.hpp>
 
-#include <sstream>
 #include <iomanip>
-#include <chrono>
-
-#include <emscripten.h>
-#include <emscripten/html5.h>
-
-using vts::vec3;
-using timerClock = std::chrono::high_resolution_clock;
-using timerPoint = std::chrono::time_point<timerClock>;
-
-std::string jsonToHtml(const std::string &json);
-std::string positionToHtml(const vts::Position &pos);
-void applyRenderOptions(const std::string &json,
-        vts::renderer::RenderOptions &opt);
-std::string getRenderOptions(const vts::renderer::RenderOptions &opt);
 
 std::shared_ptr<vts::Map> map;
 std::shared_ptr<vts::Camera> cam;
 std::shared_ptr<vts::Navigation> nav;
-std::shared_ptr<vts::renderer::RenderContext> context;
-std::shared_ptr<vts::renderer::RenderView> view;
 std::shared_ptr<vts::SearchTask> srch;
-vec3 prevMousePosition;
-timerPoint lastFrameTimestamp;
-EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx;
 
-EM_JS(void, setHtml, (const char *id, const char *value),
+pthread_t main_thread_id;
+
+DurationBuffer durationMainFrame, durationMainMap, durationMainCamera;
+
+namespace
 {
-    document.getElementById(UTF8ToString(id)).innerHTML = UTF8ToString(value)
-});
 
-EM_JS(void, setInputValue, (const char *id, const char *value),
-{
-    document.getElementById(UTF8ToString(id)).value = UTF8ToString(value)
-});
-
-extern "C" EMSCRIPTEN_KEEPALIVE void setMapconfig(const char *url)
-{
-    if(!map)
-        return;
-    map->setMapconfigPath(url);
-}
-
-extern "C" EMSCRIPTEN_KEEPALIVE void setViewPreset(const char *preset)
-{
-    if(!map || !map->getMapconfigAvailable())
-        return;
-    map->setViewCurrent(preset);
-}
-
-extern "C" EMSCRIPTEN_KEEPALIVE void setPosition(const char *pos)
-{
-    if(!nav || !map->getMapconfigAvailable())
-        return;
-    try
-    {
-        vts::Position p(pos);
-        nav->setPosition(p);
-    }
-    catch (...)
-    {
-        // do nothing
-    }
-}
-
-extern "C" EMSCRIPTEN_KEEPALIVE void search(const char *query)
-{
-    if(!map)
-        return;
-    if (!map->searchable())
-    {
-        setHtml("searchResults", "Search not available");
-        return;
-    }
-    srch = map->search(query);
-    setHtml("searchResults", "Searching...");
-}
-
-extern "C" EMSCRIPTEN_KEEPALIVE void gotoPosition(
-        double x, double y, double z, double ve)
-{
-    if(!map)
-        return;
-    nav->setViewExtent(std::max(ve * 2, 6667.0));
-    nav->setRotation({0,270,0});
-    nav->resetAltitude();
-    nav->resetNavigationMode();
-    nav->setPoint({x, y, z});
-    nav->options().type = vts::NavigationType::FlyOver;
-}
-
-extern "C" EMSCRIPTEN_KEEPALIVE void applyOptions(const char *json)
-{
-    if(!map)
-        return;
-    {
-        std::stringstream ss;
-        ss << "Changing options: " << json;
-        vts::log(vts::LogLevel::info3, ss.str());
-    }
-    map->options().applyJson(json);
-    cam->options().applyJson(json);
-    nav->options().applyJson(json);
-    applyRenderOptions(json, view->options());
-}
-
-extern "C" EMSCRIPTEN_KEEPALIVE const char *getOptions()
-{
-    if(!map)
-        return "";
-    static std::string result; // NOT REENTRANT!!, for JS interop (quick and dirty :D)
-    result = "";
-    result += map->options().toJson();
-    result += cam->options().toJson();
-    result += nav->options().toJson();
-    result += getRenderOptions(view->options());
-    return result.c_str();
-}
-
-EM_BOOL mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *)
-{
-    vec3 current = vec3(e->clientX, e->clientY, 0);
-    vec3 move = current - prevMousePosition;
-    prevMousePosition = current;
-    if (!map->getMapconfigAvailable())
-        return false;
-    switch (eventType)
-    {
-    case EMSCRIPTEN_EVENT_MOUSEMOVE:
-        switch (e->buttons)
-        {
-        case 1: // LMB
-            nav->pan(move.data());
-            nav->options().type = vts::NavigationType::Quick;
-            break;
-        case 2: // RMB
-            nav->rotate(move.data());
-            nav->options().type = vts::NavigationType::Quick;
-            break;
-        }
-        break;
-    case EMSCRIPTEN_EVENT_DBLCLICK:
-        if (e->button == 0) // LMB
-        {
-            vec3 wp;
-            view->getWorldPosition(current.data(), wp.data());
-            if (!std::isnan(wp[0]) && !std::isnan(wp[1]) && !std::isnan(wp[2]))
-            {
-                vec3 np;
-                map->convert(wp.data(), np.data(),
-                             vts::Srs::Physical, vts::Srs::Navigation);
-                nav->setPoint(np.data());
-                nav->options().type = vts::NavigationType::Quick;
-            }
-        }
-        break;
-    }
-    return true;
-}
-
-EM_BOOL wheelEvent(int, const EmscriptenWheelEvent *e, void *)
-{
-    if (!map || !map->getMapconfigAvailable())
-        return false;
-    double d = e->deltaY;
-    switch (e->deltaMode)
-    {
-    case DOM_DELTA_PIXEL:
-        d /= 30;
-        break;
-    case DOM_DELTA_LINE:
-        break;
-    case DOM_DELTA_PAGE:
-        d *= 80;
-        break;
-    }
-    nav->zoom(d * -0.21);
-    nav->options().type = vts::NavigationType::Quick;
-    return true;
-}
-
-void updateResolution()
-{
-    int w = 0, h = 0;
-    emscripten_webgl_get_drawing_buffer_size(ctx, &w, &h);
-    auto &ro = view->options();
-    ro.width = w;
-    ro.height = h;
-    cam->setViewportSize(ro.width, ro.height);
-}
-
-timerPoint now()
-{
-    return timerClock::now();
-}
-
-struct durationBuffer
-{
-    static const uint32 N = 60;
-    float buffer[N];
-
-    durationBuffer()
-    {
-        for (auto &i : buffer)
-            i = 0;
-    }
-
-    float avg() const
-    {
-        float sum = 0;
-        for (float i : buffer)
-            sum += i;
-        return sum / N;
-    }
-
-    float max() const
-    {
-        float m = 0;
-        for (float i : buffer)
-            m = std::max(m, i);
-        return m;
-    }
-
-    void update(float t)
-    {
-        buffer[map->statistics().renderTicks % N] = t;
-    }
-
-    void update(const timerPoint &a, const timerPoint &b)
-    {
-        update(std::chrono::duration_cast<
-               std::chrono::microseconds>(b - a).count() / 1000.0);
-    }
-};
-
-durationBuffer durationFrame, durationData,
-    durationMap, durationCamera, durationView;
+TimerPoint lastFrameTimestamp;
 
 void updateStatisticsHtml()
 {
@@ -286,33 +55,51 @@ void updateStatisticsHtml()
         std::stringstream ss;
         ss << std::fixed << std::setprecision(1);
         ss << "<table>";
-        ss << "<tr><td>frame<td class=number>" << durationFrame.avg()
-           << "<td class=number>" << durationFrame.max() << "</tr>";
-        ss << "<tr><td>data<td class=number>" << durationData.avg()
-           << "<td class=number>" << durationData.max() << "</tr>";
-        ss << "<tr><td>map<td class=number>" << durationMap.avg()
-           << "<td class=number>" << durationMap.max() << "</tr>";
-        ss << "<tr><td>camera<td class=number>" << durationCamera.avg()
-           << "<td class=number>" << durationCamera.max() << "</tr>";
-        ss << "<tr><td>view<td class=number>" << durationView.avg()
-           << "<td class=number>" << durationView.max() << "</tr>";
+        ss << "<tr><td>main frame<td class=number><b>"
+           << durationMainFrame.avg()
+           << "</b><td class=number>"
+           << durationMainFrame.max() << "</tr>";
+        ss << "<tr><td>main map<td class=number>"
+           << durationMainMap.avg()
+           << "<td class=number>"
+           << durationMainMap.max() << "</tr>";
+        ss << "<tr><td>main camera<td class=number>"
+           << durationMainCamera.avg()
+           << "<td class=number>"
+           << durationMainCamera.max() << "</tr>";
+        ss << "<tr><td>render frame<td class=number><b>"
+           << durationRenderFrame.avg()
+           << "</b><td class=number>"
+           << durationRenderFrame.max() << "</tr>";
+        ss << "<tr><td>render data<td class=number>"
+           << durationRenderData.avg()
+           << "<td class=number>"
+           << durationRenderData.max() << "</tr>";
+        ss << "<tr><td>render render<td class=number>"
+           << durationRenderRender.avg()
+           << "<td class=number>"
+           << durationRenderRender.max() << "</tr>";
+        ss << "<tr><td>render swap<td class=number>"
+           << durationRenderSwap.avg()
+           << "<td class=number>"
+           << durationRenderSwap.max() << "</tr>";
         ss << "</table>";
-        setHtml("statisticsTiming", ss.str().c_str());
+        setHtml("statisticsTiming", ss.str());
     }
 
     // statistics
     setHtml("statisticsMap",
-            jsonToHtml(map->statistics().toJson()).c_str());
+            jsonToHtml(map->statistics().toJson()));
     setHtml("statisticsCamera",
-            jsonToHtml(cam->statistics().toJson()).c_str());
+            jsonToHtml(cam->statistics().toJson()));
 
     // position
     vts::Position pos = nav->getPosition();
-    setInputValue("positionCurrent", pos.toUrl().c_str());
-    setHtml("positionTable", positionToHtml(pos).c_str());
+    setInputValue("positionCurrent", pos.toUrl());
+    setHtml("positionTable", positionToHtml(pos));
 
     // credits
-    setHtml("credits", cam->credits().textShort().c_str());
+    setHtml("credits", cam->credits().textShort());
 }
 
 void mapconfAvailable()
@@ -326,15 +113,11 @@ void mapconfAvailable()
             ss << " selected";
         ss << ">" << s << "</option>\n";
     }
-    setHtml("viewPreset", ss.str().c_str());
+    setHtml("viewPreset", ss.str());
 }
 
-void loopIteration()
+void updateSearch()
 {
-    timerPoint currentTimestamp = now();
-    updateResolution();
-
-    // search
     if (srch && srch->done)
     {
         std::stringstream ss;
@@ -350,71 +133,59 @@ void loopIteration()
                << it.radius << ")\">Go</button>";
             ss << "</div>";
         }
-        setHtml("searchResults", ss.str().c_str());
+        setHtml("searchResults", ss.str());
         srch.reset();
     }
+}
 
-    timerPoint a = now();
-    map->dataUpdate();
+void loopIteration()
+{
+    vts::log(vts::LogLevel::info2, "Main loop iteration");
 
-    timerPoint b = now();
+    updateSearch();
+
+    TimerPoint a = now();
     {
+        TimerPoint currentTimestamp = now();
+        durationMainFrame.update(lastFrameTimestamp, currentTimestamp);
         double elapsedTime = std::chrono::duration_cast<
                 std::chrono::microseconds>(
                 currentTimestamp - lastFrameTimestamp).count() / 1e6;
+        lastFrameTimestamp = currentTimestamp;
         map->renderUpdate(elapsedTime);
     }
 
-    timerPoint c = now();
+    TimerPoint b = now();
     cam->renderUpdate();
 
-    timerPoint d = now();
-    view->render();
+    TimerPoint c = now();
+    {
+        std::unique_ptr<vts::renderer::RenderDraws> rd;
+        drawsQueue2.waitPop(rd);
+        rd->swap(cam.get());
+        drawsQueue.push(std::move(rd));
+    }
 
-    timerPoint e = now();
-    durationFrame.update(lastFrameTimestamp, currentTimestamp);
-    durationData.update(a, b);
-    durationMap.update(b, c);
-    durationCamera.update(c, d);
-    durationView.update(d, e);
-    if ((map->statistics().renderTicks % durationBuffer::N) == 0)
+    durationMainMap.update(a, b);
+    durationMainCamera.update(b, c);
+    if ((map->statistics().renderTicks % DurationBuffer::N) == 0)
         updateStatisticsHtml();
-    lastFrameTimestamp = currentTimestamp;
 }
+
+} // namespace
 
 int main(int, char *[])
 {
-    // create OpenGL context
-    vts::log(vts::LogLevel::info3, "Creating OpenGL context");
-    {
-        EmscriptenWebGLContextAttributes attr;
-        emscripten_webgl_init_context_attributes(&attr);
-        attr.alpha = attr.depth = attr.stencil = attr.antialias = 0; // we have our own render target
-        attr.majorVersion = 2; // WebGL 2.0
-        attr.minorVersion = 0;
-        ctx = emscripten_webgl_create_context("#canvas", &attr);
-    }
-    emscripten_webgl_make_context_current(ctx);
-    vts::log(vts::LogLevel::info2, "Initializing OpenGL function pointers");
-    vts::renderer::loadGlFunctions(&emscripten_webgl_get_proc_address);
+    //vts::setLogMask(vts::LogLevel::verbose);
 
-    // initialize event callbacks
-    emscripten_set_mouseenter_callback("#canvas", nullptr, true, &mouseEvent);
-    emscripten_set_mousedown_callback("#canvas", nullptr, true, &mouseEvent);
-    emscripten_set_mousemove_callback("#canvas", nullptr, true, &mouseEvent);
-    emscripten_set_dblclick_callback("#canvas", nullptr, true, &mouseEvent);
-    emscripten_set_wheel_callback("#canvas", nullptr, true, &wheelEvent);
+    main_thread_id = pthread_self();
 
     // initialize browser and renderer
-    vts::log(vts::LogLevel::info3, "Creating browser map");
+    vts::log(vts::LogLevel::info3, "Creating vts browser");
     map = std::make_shared<vts::Map>();
-    map->callbacks().mapconfigAvailable = &mapconfAvailable;
-    context = std::make_shared<vts::renderer::RenderContext>();
-    context->bindLoadFunctions(map.get());
     cam = map->createCamera();
     nav = cam->createNavigation();
-    view = context->createView(cam.get());
-    updateResolution();
+    map->callbacks().mapconfigAvailable = &mapconfAvailable;
 
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
@@ -425,13 +196,28 @@ int main(int, char *[])
         auto &c = cam->options();
     }
 
+    // initialize event callbacks
+    emscripten_set_mouseenter_callback("#display", nullptr, true, &mouseEvent);
+    emscripten_set_mousedown_callback("#display", nullptr, true, &mouseEvent);
+    emscripten_set_mousemove_callback("#display", nullptr, true, &mouseEvent);
+    emscripten_set_dblclick_callback("#display", nullptr, true, &mouseEvent);
+    emscripten_set_wheel_callback("#display", nullptr, true, &wheelEvent);
+    emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW
+                                   , nullptr, true, &resizeEvent);
+    resizeEvent(0, nullptr, nullptr);
+
+    // start rendering thread
+    vts::log(vts::LogLevel::info3, "Create rendering thread");
+    createRenderThread();
+
     // callback into javascript
-    EM_ASM(
+    vts::log(vts::LogLevel::info3, "Notify JS that the map is ready");
+    MAIN_THREAD_ASYNC_EM_ASM(
         Module.onMapCreated()
     );
 
     // run the game loop
-    vts::log(vts::LogLevel::info3, "Starting the game loop");
+    vts::log(vts::LogLevel::info3, "Starting main loop");
     lastFrameTimestamp = now();
     emscripten_set_main_loop(&loopIteration, 0, true);
     return 0;

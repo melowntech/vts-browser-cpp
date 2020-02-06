@@ -1,26 +1,4 @@
 
-var canvas = document.getElementById("canvas")
-
-// canvas size
-function updateCanvasSize()
-{
-    let displayWidth  = canvas.clientWidth
-    let displayHeight = canvas.clientHeight
-    if (canvas.width  != displayWidth || canvas.height != displayHeight)
-    {
-        canvas.width  = displayWidth
-        canvas.height = displayHeight
-    }
-}
-updateCanvasSize()
-window.addEventListener("resize", updateCanvasSize)
-
-// lost opengl context
-canvas.addEventListener("webglcontextlost", function()
-{
-    alert('WebGL context lost. You will need to reload the page.')
-})
-
 // collapsible elements
 {
     let coll = document.getElementsByClassName("collapsible")

@@ -32,6 +32,9 @@
 
 #include "include/vts-browser/math.hpp"
 #include "utilities/array.hpp"
+#include "renderTasks.hpp"
+
+#include <boost/container/small_vector.hpp>
 
 namespace vts
 {
@@ -44,12 +47,11 @@ class MetaTile;
 class SurfaceInfo;
 class Resource;
 class RenderSurfaceTask;
-class RenderGeodataTask;
-//class RenderInfographicsTask;
 class RenderColliderTask;
 class MeshAggregate;
+class GeodataTile;
 
-class TraverseNode
+class TraverseNode : private Immovable
 {
 public:
     struct Obb
@@ -66,8 +68,8 @@ public:
     const uint32 hash;
 
     // metadata
-    std::vector<vtslibs::registry::CreditId> credits;
-    std::vector<std::shared_ptr<MetaTile>> metaTiles;
+    boost::container::small_vector<vtslibs::registry::CreditId, 8> credits;
+    boost::container::small_vector<std::shared_ptr<MetaTile>, 1> metaTiles;
     boost::optional<vtslibs::vts::MetaNode> meta;
     boost::optional<Obb> obb;
     vec3 cornersPhys[8];
@@ -87,11 +89,10 @@ public:
     // renders
     bool determined; // draws are fully loaded (draws may be empty)
     std::shared_ptr<MeshAggregate> meshAgg;
-    std::shared_ptr<Resource> touchResource;
-    std::vector<RenderSurfaceTask> opaque;
-    std::vector<RenderSurfaceTask> transparent;
-    std::vector<RenderGeodataTask> geodata;
-    std::vector<RenderColliderTask> colliders;
+    std::shared_ptr<GeodataTile> geodataAgg;
+    boost::container::small_vector<RenderSurfaceTask, 1> opaque;
+    boost::container::small_vector<RenderSurfaceTask, 1> transparent;
+    boost::container::small_vector<RenderColliderTask, 1> colliders;
 
     TraverseNode(MapLayer *layer, TraverseNode *parent,
         const NodeInfo &nodeInfo);

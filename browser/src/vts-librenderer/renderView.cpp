@@ -138,7 +138,7 @@ UniformBuffer *RenderViewImpl::useDisposableUbo(uint32 bindIndex,
     return ubo;
 }
 
-void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
+void RenderViewImpl::drawSurface(const DrawSurfaceTask &t, bool wireframeSlow)
 {
     Texture *tex = (Texture*)t.texColor.get();
     Mesh *m = (Mesh*)t.mesh.get();
@@ -204,7 +204,10 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t)
     tex->bind();
 
     m->bind();
-    m->dispatch();
+    if (wireframeSlow)
+        m->dispatchWireframeSlow();
+    else
+        m->dispatch();
 }
 
 void RenderViewImpl::drawInfographics(const DrawInfographicsTask &t)
@@ -559,11 +562,13 @@ void RenderViewImpl::renderValid()
     {
         OPTICK_EVENT("polygon_edges");
         glDisable(GL_BLEND);
+#ifndef __EMSCRIPTEN__
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glPolygonOffset(0, -1000);
 #ifndef VTSR_OPENGLES
         glEnable(GL_POLYGON_OFFSET_LINE);
 #endif
-        glPolygonOffset(0, -1000);
+#endif
         context->shaderSurface->bind();
         enableClipDistance(true);
         for (const DrawSurfaceTask &it : draws->opaque)
@@ -571,14 +576,20 @@ void RenderViewImpl::renderValid()
             DrawSurfaceTask t(it);
             t.flatShading = false;
             t.color[0] = t.color[1] = t.color[2] = t.color[3] = 0;
+#ifdef __EMSCRIPTEN__
+            drawSurface(t, true);
+#else
             drawSurface(t);
+#endif
         }
         enableClipDistance(false);
+#ifndef __EMSCRIPTEN__
 #ifndef VTSR_OPENGLES
         glDisable(GL_POLYGON_OFFSET_LINE);
 #endif
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glPolygonOffset(0, 0);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
         glEnable(GL_BLEND);
         CHECK_GL("rendered polygon edges");
     }

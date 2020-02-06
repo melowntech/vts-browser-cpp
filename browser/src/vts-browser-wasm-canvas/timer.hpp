@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017 Melown Technologies SE
+ * Copyright (c) 2020 Melown Technologies SE
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -24,49 +24,55 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vts-renderer/renderer.hpp>
-#include "vts-libbrowser/utilities/json.hpp"
+#include "common.hpp"
 
-using namespace vts;
+#include <chrono>
 
-void applyRenderOptions(const std::string &json,
-        vts::renderer::RenderOptions &opt)
+using TimerClock = std::chrono::high_resolution_clock;
+using TimerPoint = std::chrono::time_point<TimerClock>;
+
+inline TimerPoint now()
 {
-    struct T : public vtsCRenderOptionsBase
-    {
-        void apply(const std::string &json)
-        {
-            Json::Value v = stringToJson(json);
-            AJ(textScale, asFloat);
-            AJ(antialiasingSamples, asUInt);
-            AJ(renderGeodataDebug, asUInt);
-            AJ(renderAtmosphere, asBool);
-            AJ(geodataHysteresis, asBool);
-            AJ(debugDepthFeedback, asBool);
-        }
-    };
-    T t = (T&)opt;
-    t.apply(json);
-    opt = (vts::renderer::RenderOptions&)t;
+    return TimerClock::now();
 }
 
-std::string getRenderOptions(const vts::renderer::RenderOptions &opt)
+struct DurationBuffer
 {
-    struct T : public vtsCRenderOptionsBase
+    static const uint32 N = 60;
+    float buffer[N];
+    int index = 0;
+
+    DurationBuffer()
     {
-        std::string get() const
-        {
-            Json::Value v;
-            TJ(textScale, asFloat);
-            TJ(antialiasingSamples, asUInt);
-            TJ(renderGeodataDebug, asUInt);
-            TJ(renderAtmosphere, asBool);
-            TJ(geodataHysteresis, asBool);
-            TJ(debugDepthFeedback, asBool);
-            return jsonToString(v);
-        }
-    };
-    const T t = (const T&)opt;
-    return t.get();
-}
+        for (auto &i : buffer)
+            i = 0;
+    }
+
+    float avg() const
+    {
+        float sum = 0;
+        for (float i : buffer)
+            sum += i;
+        return sum / N;
+    }
+
+    float max() const
+    {
+        float m = 0;
+        for (float i : buffer)
+            m = std::max(m, i);
+        return m;
+    }
+
+    void update(float t)
+    {
+        buffer[index++ % N] = t;
+    }
+
+    void update(const TimerPoint &a, const TimerPoint &b)
+    {
+        update(std::chrono::duration_cast<
+               std::chrono::microseconds>(b - a).count() / 1000.0);
+    }
+};
 

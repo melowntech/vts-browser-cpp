@@ -179,7 +179,8 @@ public:
     {
         auto cs = convertor(f, t);
         vec3 res = vecFromUblas<vec3>(cs(vecFromUblas<math::Point3>(value)));
-        LOG(debug) << "Converted <" << value.transpose() << "><" << f << "> to <" << res.transpose() << "><" << t << ">";
+        //LOG(debug) << "Converted <" << value.transpose() << "><" << f
+        //           << "> to <" << res.transpose() << "><" << t << ">";
         return res;
     }
 

@@ -54,8 +54,6 @@ namespace vtsBrowserMinimalCs
             nav = new Navigation(cam);
             renderContext = new RenderContext();
             renderView = new RenderView(renderContext, cam);
-            map.DataInitialize();
-            map.RenderInitialize();
             map.SetMapconfigPath("https://cdn.melown.com/mario/store/melown2015/map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
             renderContext.BindLoadFunctions(map);
         }

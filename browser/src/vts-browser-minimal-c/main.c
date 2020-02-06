@@ -120,6 +120,10 @@ int main()
     map = vtsMapCreate("", NULL);
     check();
 
+    // set required callbacks for creating mesh and texture resources
+    vtsRenderContextBindLoadFunctions(context, map);
+    check();
+
     // acquire handles for camera and navigation
     cam = vtsCameraCreate(map);
     check();
@@ -130,10 +134,6 @@ int main()
     view = vtsRenderContextCreateView(context, cam);
     check();
     updateResolution();
-    check();
-
-    // set required callbacks for creating mesh and texture resources
-    vtsRenderContextBindLoadFunctions(context, map);
     check();
 
     // configure an url to the map that should be displayed
@@ -208,18 +208,16 @@ int main()
         SDL_GL_SwapWindow(window);
     }
 
-    // release all rendering related data
+    // destroy everything
     vtsRenderViewDestroy(view);
     check();
-    vtsRenderContextDestroy(context);
-    check();
-
-    // release the map
     vtsNavigationDestroy(nav);
     check();
     vtsCameraDestroy(cam);
     check();
     vtsMapDestroy(map);
+    check();
+    vtsRenderContextDestroy(context);
     check();
 
     // free the OpenGL context

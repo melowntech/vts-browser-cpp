@@ -8,7 +8,7 @@ body
     font-family: sans-serif;
 }
 
-#canvas
+#display
 {
     position: absolute;
     left: 0;

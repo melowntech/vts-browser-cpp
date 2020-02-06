@@ -43,7 +43,7 @@ namespace vts
 
 using Node = vtslibs::registry::ReferenceFrame::Division::Node;
 
-class CoordManip
+class CoordManip : private Immovable
 {
 public:
     static std::shared_ptr<CoordManip> create(

@@ -35,7 +35,7 @@
 namespace vts
 {
 
-class VTS_API CameraCredits
+class VTS_API CameraCredits : private Immovable
 {
 public:
     CameraCredits();

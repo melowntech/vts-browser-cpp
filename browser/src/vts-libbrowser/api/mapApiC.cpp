@@ -407,6 +407,13 @@ void vtsMapDataAllRun(vtsHMap map)
     C_END
 }
 
+void vtsMapDataFinalize(vtsHMap map)
+{
+    C_BEGIN
+    map->p->dataFinalize();
+    C_END
+}
+
 void vtsMapRenderUpdate(vtsHMap map, double elapsedTime)
 {
     C_BEGIN

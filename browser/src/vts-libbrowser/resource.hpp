@@ -41,7 +41,8 @@ namespace vts
 class MapImpl;
 class FetchTaskImpl;
 
-class Resource : public std::enable_shared_from_this<Resource>
+class Resource : public std::enable_shared_from_this<Resource>,
+        private Immovable
 {
 public:
     enum class State
@@ -58,12 +59,11 @@ public:
         availFail,
     };
 
-    Resource(MapImpl *map, const std::string &name);
-    Resource(const Resource &other) = delete;
-    Resource &operator = (const Resource &other) = delete;
+    explicit Resource(MapImpl *map, const std::string &name);
     virtual ~Resource();
     virtual void decode() = 0; // eg. decode an image
-    virtual void upload() {}; // call the resource callback
+    virtual void upload() {} // call the resource callback
+    virtual bool requiresUpload() { return false; }
     virtual FetchTask::ResourceType resourceType() const = 0;
     bool allowDiskCache() const;
     static bool allowDiskCache(FetchTask::ResourceType type);
@@ -71,6 +71,7 @@ public:
     void updateAvailability(const std::shared_ptr<void> &availTest);
     void forceRedownload();
     explicit operator bool() const; // return state == ready
+    std::shared_ptr<void> getUserData() const; // returns the user data from info but with replaced owner to prolonge the lifetime of the entire resource
 
     const std::string name;
     MapImpl *const map;

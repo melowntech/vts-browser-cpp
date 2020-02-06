@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017 Melown Technologies SE
+ * Copyright (c) 2020 Melown Technologies SE
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -24,56 +24,49 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef RENDERDRAWS_HPP_sdfgh46r5h4
+#define RENDERDRAWS_HPP_sdfgh46r5h4
 
 #include <memory>
-#include <chrono>
-#include <thread>
-#include <QWindow>
+
+#include "foundation.hpp"
+
+#include "vts-browser/celestial.hpp"
+#include "vts-browser/cameraDraws.hpp"
 
 namespace vts
 {
-    class Map;
-    class Camera;
-    class Navigation;
 
-    namespace renderer
-    {
-        class RenderContext;
-        class RenderView;
-    }
-}
+class Map;
+class Camera;
 
-class Gl;
+namespace renderer
+{
 
-class MainWindow : public QWindow
+class Texture;
+
+class VTSR_API RenderDraws : private Immovable
 {
 public:
-    MainWindow();
-    ~MainWindow();
+    RenderDraws();
+    explicit RenderDraws(Camera *cam);
 
-    bool event(QEvent *event);
-    void tick();
+    void swap(Camera *cam);
 
-    void mouseMove(class QMouseEvent *event);
-    void mousePress(class QMouseEvent *event);
-    void mouseRelease(class QMouseEvent *event);
-    void mouseWheel(class QWheelEvent *event);
+    CameraDraws draws;
+    MapCelestialBody body;
+    std::shared_ptr<Texture> atmosphereDensityTexture;
+    double elapsedTime;
+    bool projected;
+    bool lodBlendingWithDithering;
 
-    void dataEntry();
+private:
+    Map *map;
 
-    std::shared_ptr<Gl> gl;
-    std::shared_ptr<Gl> gl2;
-    std::shared_ptr<vts::renderer::RenderContext> context;
-    std::shared_ptr<vts::Map> map;
-    std::shared_ptr<vts::Camera> camera;
-    std::shared_ptr<vts::Navigation> navigation;
-    std::shared_ptr<vts::renderer::RenderView> view;
-
-    QPoint lastMousePosition;
-    std::chrono::high_resolution_clock::time_point lastTime;
-    std::thread dataThread;
+    friend class RenderView;
 };
+
+} // namespace renderer
+} // namespace vts
 
 #endif

@@ -217,24 +217,30 @@ double Map::getMapRenderProgress() const
 
 void Map::dataUpdate()
 {
-    impl->resourceDataUpdate();
+    impl->resourcesDataUpdate();
 }
 
 void Map::dataAllRun()
 {
-    impl->resourceDataRun();
+    impl->resourcesUploadProcessorEntry();
+    dataFinalize();
+}
+
+void Map::dataFinalize()
+{
+    impl->resourcesDataFinalize();
 }
 
 void Map::renderUpdate(double elapsedTime)
 {
     impl->statistics.renderTicks = ++impl->renderTickIndex;
-    impl->resourceUpdate();
+    impl->resourcesRenderUpdate();
     impl->renderUpdate(elapsedTime);
 }
 
 void Map::renderFinalize()
 {
-    impl->resourceFinalize();
+    impl->resourcesRenderFinalize();
 }
 
 double Map::lastRenderUpdateElapsedTime() const
@@ -266,8 +272,8 @@ std::shared_ptr<void> Map::atmosphereDensityTexture()
 {
     if (getMapconfigAvailable() && impl->mapconfig->atmosphereDensityTexture
         && *impl->mapconfig->atmosphereDensityTexture)
-        return impl->mapconfig->atmosphereDensityTexture->info.userData;
-    return nullptr;
+        return impl->mapconfig->atmosphereDensityTexture->getUserData();
+    return {};
 }
 
 void Map::convert(const double pointFrom[3], double pointTo[3],

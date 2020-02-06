@@ -241,6 +241,18 @@ GeodataTile::GeodataTile(MapImpl *map, const std::string &name)
     }
 }
 
+GeodataTile::~GeodataTile()
+{
+    for (auto &it : renders)
+    {
+        if (it.userData)
+        {
+            map->resources.queUpload.push(
+                UploadData(it.userData, 0));
+        }
+    }
+}
+
 FetchTask::ResourceType GeodataTile::resourceType() const
 {
     return FetchTask::ResourceType::Undefined;

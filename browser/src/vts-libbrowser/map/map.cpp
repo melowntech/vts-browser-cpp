@@ -55,12 +55,15 @@ MapImpl::MapImpl(Map *map, const MapCreateOptions &options,
     resources.fetcher = fetcher;
     resources.thrCacheReader = std::thread(&MapImpl::cacheReadEntry, this);
     resources.thrCacheWriter = std::thread(&MapImpl::cacheWriteEntry, this);
-    resources.thrAtmosphereGenerator
-        = std::thread(&MapImpl::resourcesAtmosphereGeneratorEntry, this);
-    resources.thrGeodataProcessor
-        = std::thread(&MapImpl::resourcesGeodataProcessorEntry, this);
-    resources.thrDecoder
-        = std::thread(&MapImpl::resourcesDecodeProcessorEntry, this);
+    if (createOptions.debugUseExtraThreads)
+    {
+        resources.thrAtmosphereGenerator
+            = std::thread(&MapImpl::resourcesAtmosphereGeneratorEntry, this);
+        resources.thrGeodataProcessor
+            = std::thread(&MapImpl::resourcesGeodataProcessorEntry, this);
+        resources.thrDecoder
+            = std::thread(&MapImpl::resourcesDecodeProcessorEntry, this);
+    }
     resources.fetching.thr
         = std::thread(&MapImpl::resourcesDownloadsEntry, this);
     cacheInit();
@@ -78,9 +81,13 @@ MapImpl::~MapImpl()
 
     resources.thrCacheReader.join();
     resources.thrCacheWriter.join();
-    resources.thrAtmosphereGenerator.join();
-    resources.thrGeodataProcessor.join();
-    resources.thrDecoder.join();
+
+    if (createOptions.debugUseExtraThreads)
+    {
+        resources.thrAtmosphereGenerator.join();
+        resources.thrGeodataProcessor.join();
+        resources.thrDecoder.join();
+    }
 
     resources.fetching.stop = true;
     resources.fetching.con.notify_all();
@@ -188,7 +195,7 @@ void MapImpl::purgeViewCache()
         {
             cam->statistics = CameraStatistics();
             cam->draws = CameraDraws();
-            cam->credits = CameraCredits();
+            cam->credits.clear();
         }
     }
 }

@@ -110,9 +110,10 @@ int main(int, char *[])
     vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
 
     map = std::make_shared<vts::Map>();
-    dataThread = std::thread(&dataEntry);
     context = std::make_shared<vts::renderer::RenderContext>();
     context->bindLoadFunctions(map.get());
+
+    dataThread = std::thread(&dataEntry);
 
     cam1 = map->createCamera();
     cam2 = map->createCamera();
@@ -192,7 +193,6 @@ int main(int, char *[])
 
     view1.reset();
     view2.reset();
-    context.reset();
     nav1.reset();
     nav2.reset();
     cam1.reset();
@@ -200,6 +200,7 @@ int main(int, char *[])
     map->renderFinalize();
     dataThread.join();
     map.reset();
+    context.reset();
     SDL_GL_DeleteContext(renderContext);
     renderContext = nullptr;
     SDL_DestroyWindow(window);

@@ -184,7 +184,7 @@ public:
     UniformBuffer *useDisposableUbo(uint32 bindIndex, const T &value)
     { return useDisposableUbo(bindIndex, (void*)&value, sizeof(value)); }
 
-    void drawSurface(const DrawSurfaceTask &t);
+    void drawSurface(const DrawSurfaceTask &t, bool wireframeSlow = false);
     void drawInfographics(const DrawInfographicsTask &t);
     void updateFramebuffers();
     void updateAtmosphereBuffer();

@@ -251,19 +251,13 @@ public static extern bool vtsMapGetProjected(IntPtr map);
 public static extern void vtsMapGetDefaultPosition(IntPtr map, IntPtr position);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsMapDataInitialize(IntPtr map);
-
-[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsMapDataUpdate(IntPtr map);
-
-[DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsMapDataFinalize(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsMapDataAllRun(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
-public static extern void vtsMapRenderInitialize(IntPtr map);
+public static extern void vtsMapDataFinalize(IntPtr map);
 
 [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
 public static extern void vtsMapRenderUpdate(IntPtr map, double elapsedTime);

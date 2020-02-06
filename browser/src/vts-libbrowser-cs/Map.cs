@@ -126,12 +126,6 @@ namespace vts
             return p;
         }
 
-        public void DataInitialize()
-        {
-            BrowserInterop.vtsMapDataInitialize(Handle);
-            Util.CheckInterop();
-        }
-
         public void DataUpdate()
         {
             BrowserInterop.vtsMapDataUpdate(Handle);
@@ -147,12 +141,6 @@ namespace vts
         public void DataAllRun()
         {
             BrowserInterop.vtsMapDataAllRun(Handle);
-            Util.CheckInterop();
-        }
-
-        public void RenderInitialize()
-        {
-            BrowserInterop.vtsMapRenderInitialize(Handle);
             Util.CheckInterop();
         }
 

@@ -37,7 +37,23 @@
 namespace vts { namespace renderer
 {
 
-class VTSR_API Shader
+namespace privat
+{
+
+class VTSR_API ResourceBase : private Immovable
+{
+#ifndef NDEBUG
+public:
+    ResourceBase();
+    ~ResourceBase();
+private:
+    uint64 thrId;
+#endif
+};
+
+} // namespace privat
+
+class VTSR_API Shader : private privat::ResourceBase
 {
     std::string debugId;
 
@@ -80,7 +96,7 @@ private:
     int loadShader(const std::string &source, int stage) const;
 };
 
-class VTSR_API Texture
+class VTSR_API Texture : private privat::ResourceBase
 {
     std::string debugId;
 
@@ -101,7 +117,7 @@ private:
     bool grayscale;
 };
 
-class VTSR_API Mesh
+class VTSR_API Mesh : private privat::ResourceBase
 {
     std::string debugId;
 
@@ -113,6 +129,7 @@ public:
     void bind();
     void dispatch();
     void dispatch(uint32 offset, uint32 count); // offset: number of indices/vertices to skip; count: number of indices/vertices to render
+    void dispatchWireframeSlow();
     void load(ResourceInfo &info, GpuMeshSpec &spec,
         const std::string &debugId);
     void load(uint32 vao, uint32 vbo, uint32 vio);
@@ -125,7 +142,7 @@ private:
     uint32 vao, vbo, vio;
 };
 
-class VTSR_API UniformBuffer
+class VTSR_API UniformBuffer : private privat::ResourceBase
 {
     std::string debugId;
 

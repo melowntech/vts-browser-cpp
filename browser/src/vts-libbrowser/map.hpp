@@ -46,6 +46,8 @@
 #include "utilities/threadQueue.hpp"
 #include "validity.hpp"
 
+#include <boost/container/small_vector.hpp>
+
 namespace vts
 {
 
@@ -85,6 +87,7 @@ class CacheData
 public:
     CacheData();
     CacheData(FetchTaskImpl *task, bool availFailed = false);
+
     //std::shared_ptr<void> availTest;
     Buffer buffer;
     std::string name;
@@ -92,33 +95,28 @@ public:
     bool availFailed;
 };
 
-class MapImpl
+class UploadData
 {
 public:
-    MapImpl(Map *map,
-            const MapCreateOptions &options,
-            const std::shared_ptr<Fetcher> &fetcher);
-    ~MapImpl();
+    UploadData();
+    explicit UploadData(const std::shared_ptr<Resource> &resource); // upload
+    explicit UploadData(std::shared_ptr<void> &userData, int); // destroy
+    UploadData(const UploadData &) = delete;
+    UploadData(UploadData &&) = default;
+    UploadData &operator = (const UploadData &) = delete;
+    UploadData &operator = (UploadData &&) = default;
 
-    Map *const map;
-    const MapCreateOptions createOptions;
-    MapCallbacks callbacks;
-    MapStatistics statistics;
-    MapRuntimeOptions options;
-    MapCelestialBody body;
-    std::shared_ptr<Mapconfig> mapconfig;
-    std::shared_ptr<CoordManip> convertor;
-    std::shared_ptr<Credits> credits;
-    std::vector<std::shared_ptr<MapLayer>> layers;
-    std::vector<std::weak_ptr<CameraImpl>> cameras;
-    std::string mapconfigPath;
-    std::string mapconfigView;
-    double lastElapsedFrameTime;
-    uint32 renderTickIndex;
-    bool mapconfigAvailable;
-    bool mapconfigReady;
+    void process();
 
-    class Resources
+protected:
+    std::weak_ptr<Resource> uploadData;
+    std::shared_ptr<void> destroyData;
+};
+
+class MapImpl : private Immovable
+{
+public:
+    class Resources : private Immovable
     {
     public:
         std::shared_ptr<Fetcher> fetcher;
@@ -132,7 +130,7 @@ public:
 
         ThreadQueue<std::weak_ptr<Resource>> queCacheRead;
         ThreadQueue<std::weak_ptr<Resource>> queDecode;
-        ThreadQueue<std::weak_ptr<Resource>> queUpload;
+        ThreadQueue<UploadData> queUpload;
         ThreadQueue<CacheData> queCacheWrite;
         ThreadQueue<std::weak_ptr<GpuAtmosphereDensityTexture>> queAtmosphere;
         ThreadQueue<std::weak_ptr<GeodataTile>> queGeodata;
@@ -145,7 +143,7 @@ public:
         class Fetching
         {
         public:
-            std::vector<std::weak_ptr<Resource>> resources;
+            std::deque<std::weak_ptr<Resource>> resources;
             std::thread thr;
             std::mutex mut;
             std::condition_variable con;
@@ -155,6 +153,29 @@ public:
 
         Resources();
     } resources;
+
+    Map *const map;
+    const MapCreateOptions createOptions;
+    MapCallbacks callbacks;
+    MapStatistics statistics;
+    MapRuntimeOptions options;
+    MapCelestialBody body;
+    std::shared_ptr<Mapconfig> mapconfig;
+    std::shared_ptr<CoordManip> convertor;
+    std::shared_ptr<Credits> credits;
+    boost::container::small_vector<std::shared_ptr<MapLayer>, 4> layers;
+    boost::container::small_vector<std::weak_ptr<CameraImpl>, 1> cameras;
+    std::string mapconfigPath;
+    std::string mapconfigView;
+    double lastElapsedFrameTime;
+    uint32 renderTickIndex;
+    bool mapconfigAvailable;
+    bool mapconfigReady;
+
+    MapImpl(Map *map,
+            const MapCreateOptions &options,
+            const std::shared_ptr<Fetcher> &fetcher);
+    ~MapImpl();
 
     // map api methods
     void setMapconfigPath(const std::string &mapconfigPath,
@@ -176,19 +197,25 @@ public:
     void traverseClearing(TraverseNode *trav);
 
     // resources methods
-    void resourceDataUpdate();
-    void resourceDataRun();
-    void resourceFinalize();
-    void resourceUpdate();
+    void resourcesDataFinalize();
+    void resourcesRenderFinalize();
+    void resourcesDataUpdate();
+    void resourcesRenderUpdate();
+    uint32 resourcesDataUpdateOne();
 
     bool resourcesTryRemove(std::shared_ptr<Resource> &r);
     void resourcesRemoveOld();
     void resourcesCheckInitialized();
     void resourcesStartDownloads();
     void resourcesDownloadsEntry();
+    void resourcesUploadProcessorEntry();
     void resourcesAtmosphereGeneratorEntry();
     void resourcesGeodataProcessorEntry();
     void resourcesDecodeProcessorEntry();
+    bool resourcesUploadProcessOne();
+    bool resourcesAtmosphereProcessOne();
+    bool resourcesGeodataProcessOne();
+    bool resourcesDecodeProcessOne();
     void resourceUpdateStatistics(const std::shared_ptr<Resource> &r);
     void resourceDecodeProcess(const std::shared_ptr<Resource> &r);
     void resourceUploadProcess(const std::shared_ptr<Resource> &r);

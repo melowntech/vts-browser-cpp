@@ -48,7 +48,6 @@ enum class Validity;
 class GpuFont;
 class GpuTexture;
 class GpuGeodataSpec;
-class RenderGeodataTask;
 
 class GeodataFeatures : public Resource
 {
@@ -80,8 +79,10 @@ class GeodataTile : public Resource
 {
 public:
     GeodataTile(MapImpl *map, const std::string &name);
+    ~GeodataTile();
     void decode() override;
     void upload() override;
+    bool requiresUpload() override { return true; }
     FetchTask::ResourceType resourceType() const override;
     void update(
         const std::shared_ptr<GeodataStylesheet> &style,
@@ -89,7 +90,7 @@ public:
         const std::shared_ptr<const Json::Value> &browserOptions,
         const vec3 aabbPhys[2], const TileId &tileId);
 
-    std::vector<RenderGeodataTask> renders;
+    std::vector<ResourceInfo> renders;
     std::vector<GpuGeodataSpec> specsToUpload;
     std::shared_ptr<GeodataStylesheet> style;
     std::shared_ptr<const std::string> features;

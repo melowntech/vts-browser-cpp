@@ -171,16 +171,13 @@ TraverseNode *findTravSds(CameraImpl *camera, TraverseNode *where,
     if (where->id().lod >= maxLod)
         return where;
 
+    math::Point2 ublasSds = vecToUblas<math::Point2>(pointSds);
     NodeInfo i = where->nodeInfo;
-    for (auto j : vtslibs::vts::children(i.nodeId()))
+    for (const auto &ci : where->childs)
     {
-        NodeInfo k = i.child(j);
-        if (!k.inside(vecToUblas<math::Point2>(pointSds)))
+        TraverseNode *c = ci.get();
+        if (!c->nodeInfo.inside(ublasSds))
             continue;
-        auto idx = j.index;
-        if (idx >= where->childs.size())
-            return where;
-        TraverseNode *c = where->childs[idx].get();
         if (!camera->travInit(c))
             return where;
         return findTravSds(camera, c, pointSds, maxLod);

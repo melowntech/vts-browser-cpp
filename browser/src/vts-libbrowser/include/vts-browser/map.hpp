@@ -50,7 +50,7 @@ class MapImpl;
 class Position;
 
 // fundamental class which orchestrates all the vts tasks
-class VTS_API Map
+class VTS_API Map : private Immovable
 {
 public:
     Map();
@@ -101,6 +101,9 @@ public:
     // the dataAllRun must be called on a separate thread,
     //   but is more cpu efficient than dataUpdate
     void dataAllRun();
+
+    // use dataFinalize to release all pending resources
+    void dataFinalize();
 
     void renderUpdate(double elapsedTime); // seconds since last call
     void renderFinalize();

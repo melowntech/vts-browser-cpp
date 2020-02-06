@@ -90,14 +90,6 @@ bool RenderSurfaceTask::ready() const
     return true;
 }
 
-RenderGeodataTask::RenderGeodataTask()
-{}
-
-bool RenderGeodataTask::ready() const
-{
-    return true;
-}
-
 RenderInfographicsTask::RenderInfographicsTask() : model(identityMatrix4()),
     color(1, 1, 1, 1)
 {}
@@ -130,9 +122,9 @@ D convert(CameraImpl *impl, const R &task)
     assert(task.ready());
     D result;
     if (task.mesh)
-        result.mesh = task.mesh->info.userData;
+        result.mesh = task.mesh->getUserData();
     if (task.textureColor)
-        result.texColor = task.textureColor->info.userData;
+        result.texColor = task.textureColor->getUserData();
     mat4f mv = mat4(impl->viewActual * task.model).cast<float>();
     matToRaw(mv, result.mv);
     vecToRaw(task.color, result.color);
@@ -146,7 +138,7 @@ DrawSurfaceTask CameraImpl::convert(const RenderSurfaceTask &task)
     DrawSurfaceTask result = vts::convert<DrawSurfaceTask,
         RenderSurfaceTask>(this, task);
     if (task.textureMask)
-        result.texMask = task.textureMask->info.userData;
+        result.texMask = task.textureMask->getUserData();
     matToRaw(task.uvm, result.uvm);
     vecToRaw(vec4f(0, 0, 1, 1), result.uvClip);
     vec3f c = vec4to3(vec4(task.model * vec4(0, 0, 0, 1))).cast<float>();
@@ -165,13 +157,6 @@ DrawSurfaceTask CameraImpl::convert(const RenderSurfaceTask &task,
     return result;
 }
 
-DrawGeodataTask CameraImpl::convert(const RenderGeodataTask &task)
-{
-    DrawGeodataTask result;
-    result.geodata = task.geodata->info.userData;
-    return result;
-}
-
 DrawInfographicsTask CameraImpl::convert(const RenderInfographicsTask &task)
 {
     return vts::convert<DrawInfographicsTask,
@@ -183,7 +168,7 @@ DrawColliderTask CameraImpl::convert(const RenderColliderTask &task)
     assert(task.ready());
     DrawColliderTask result;
     if (task.mesh)
-        result.mesh = task.mesh->info.userData;
+        result.mesh = task.mesh->getUserData();
     mat4f mv = mat4(viewActual * task.model).cast<float>();
     matToRaw(mv, result.mv);
     return result;

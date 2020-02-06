@@ -56,7 +56,6 @@ class Camera;
 class TraverseNode;
 class NavigationImpl;
 class RenderSurfaceTask;
-class RenderGeodataTask;
 class RenderInfographicsTask;
 class RenderColliderTask;
 class GpuTexture;
@@ -96,7 +95,7 @@ public:
     std::vector<OldDraw> blendDraws;
 };
 
-class CameraImpl
+class CameraImpl : private Immovable
 {
 public:
     MapImpl *const map;
@@ -131,7 +130,8 @@ public:
     CameraImpl(MapImpl *map, Camera *cam);
     void clear();
     Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
-        std::vector<BoundParamInfo> &boundList, double priority);
+        std::vector<BoundParamInfo> &boundList,
+        double priority);
     void touchDraws(TraverseNode *trav);
     bool visibilityTest(TraverseNode *trav);
     bool coarsenessTest(TraverseNode *trav);
@@ -149,7 +149,6 @@ public:
     DrawSurfaceTask convert(const RenderSurfaceTask &task);
     DrawSurfaceTask convert(const RenderSurfaceTask &task,
                             const vec4f &uvClip, float blendingCoverage);
-    DrawGeodataTask convert(const RenderGeodataTask &task);
     DrawInfographicsTask convert(const RenderInfographicsTask &task);
     DrawColliderTask convert(const RenderColliderTask &task);
     bool generateMonolithicGeodataTrav(TraverseNode *trav);

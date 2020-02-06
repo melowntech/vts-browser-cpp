@@ -57,7 +57,7 @@ public:
     double importance;
 };
 
-class VTS_API SearchTask
+class VTS_API SearchTask : private Immovable
 {
 public:
     explicit SearchTask(const std::string &query, const double point[3]);

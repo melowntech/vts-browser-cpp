@@ -3,8 +3,13 @@ define_module(BINARY vts-browser-wasm-canvas DEPENDS
     vts-browser vts-renderer jsoncpp)
 
 set(SRC_LIST
+    common.hpp
+    inputs.cpp
+    jsInterop.cpp
     main.cpp
-    renderOptions.cpp
+    render.cpp
+    render.hpp
+    timer.hpp
     toHtml.cpp
 )
 
@@ -16,7 +21,9 @@ set(WEBFILES_LIST
 
 # the current emscripten FETCH works with synchronous operations only and we workaround that with many threads
 # google chrome has an issue with growing memory, so we use large initial buffer to avoid the growth at all
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s PTHREAD_POOL_SIZE=30 -s TOTAL_MEMORY=512MB -s ALLOW_MEMORY_GROWTH=1 -s WASM_MEM_MAX=512MB -s EXTRA_EXPORTED_RUNTIME_METHODS='[cwrap]'")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s OFFSCREENCANVAS_SUPPORT=1 -s PROXY_TO_PTHREAD=1 -s OFFSCREENCANVASES_TO_PTHREAD='#display' -s PTHREAD_POOL_SIZE=30 -s TOTAL_MEMORY=512MB -s ALLOW_MEMORY_GROWTH=1 -s WASM_MEM_MAX=1024MB -s EXTRA_EXPORTED_RUNTIME_METHODS='[cwrap,printErr]'")
+
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --source-map-base http://localhost:6931")
 
 add_executable(vts-browser-wasm-canvas ${SRC_LIST} ${WEBFILES_LIST})
 target_link_libraries(vts-browser-wasm-canvas ${MODULE_LIBRARIES} "GL")

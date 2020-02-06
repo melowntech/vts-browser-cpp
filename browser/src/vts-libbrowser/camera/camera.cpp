@@ -35,6 +35,7 @@
 #include "../credits.hpp"
 #include "../coordsManip.hpp"
 #include "../hashTileId.hpp"
+#include "../geodata.hpp"
 
 #include <unordered_set>
 #include <optick.h>
@@ -57,6 +58,19 @@ OldDraw::OldDraw(const TileId &id) : trav(id), orig(id), age(0)
 
 CameraImpl::CameraImpl(MapImpl *map, Camera *cam) :
     map(map), camera(cam),
+    viewProjActual(identityMatrix4()),
+    viewProjRender(identityMatrix4()),
+    viewProjCulling(identityMatrix4()),
+    viewActual(identityMatrix4()),
+    apiProj(identityMatrix4()),
+    cullingPlanes { nan4(), nan4(), nan4(), nan4(), nan4(), nan4() },
+    perpendicularUnitVector(nan3()),
+    forwardUnitVector(nan3()),
+    cameraPosPhys(nan3()),
+    focusPosPhys(nan3()),
+    eye(nan3()),
+    target(nan3()),
+    up(nan3()),
     diskNominalDistance(0),
     windowWidth(0), windowHeight(0)
 {}
@@ -108,7 +122,7 @@ void touchDraws(MapImpl *map, const RenderSurfaceTask &task)
 }
 
 template<class T>
-void touchDraws(MapImpl *map, const std::vector<T> &renders)
+void touchDraws(MapImpl *map, const T &renders)
 {
     for (auto &it : renders)
         touchDraws(map, it);
@@ -120,8 +134,10 @@ void CameraImpl::touchDraws(TraverseNode *trav)
 {
     vts::touchDraws(map, trav->opaque);
     vts::touchDraws(map, trav->transparent);
-    if (trav->touchResource)
-        map->touchResource(trav->touchResource);
+    if (trav->meshAgg)
+        map->touchResource(trav->meshAgg);
+    if (trav->geodataAgg)
+        map->touchResource(trav->geodataAgg);
 }
 
 bool CameraImpl::visibilityTest(TraverseNode *trav)
@@ -390,8 +406,16 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     // geodata & colliders
     if (!isSubNode)
     {
-        for (const RenderGeodataTask &r : trav->geodata)
-            draws.geodata.emplace_back(convert(r));
+        if (trav->geodataAgg)
+        {
+            for (const ResourceInfo &r : trav->geodataAgg->renders)
+            {
+                DrawGeodataTask t;
+                t.geodata = std::shared_ptr<void>(
+                            trav->geodataAgg, r.userData.get());
+                draws.geodata.emplace_back(t);
+            }
+        }
         for (const RenderColliderTask &r : trav->colliders)
             draws.colliders.emplace_back(convert(r));
     }

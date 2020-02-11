@@ -90,10 +90,10 @@ Position::Position(const std::string &position)
             *this = p2p(vtslibs::registry::positionFromJson(val));
         }
     }
-    catch(...)
+    catch (...)
     {
         LOGTHROW(err2, std::runtime_error)
-            << "Failed parsing position from string.";
+            << "Failed parsing position from string <" << position << ">";
     }
 }
 

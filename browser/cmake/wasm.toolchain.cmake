@@ -1,10 +1,6 @@
 #
 # Set -DEMSCRIPTEN_PREFIX=<path> to the directory with emcc.
 #
-# Originally taken from:
-# https://github.com/mosra/toolchains/blob/master/generic/Emscripten-wasm.cmake
-# and modified
-#
 
 message(STATUS "****************************")
 message(STATUS "*** Using WASM toolchain ***")
@@ -56,9 +52,9 @@ set(CMAKE_SYSTEM_INCLUDE_PATH "${EMSCRIPTEN_ROOT_PATH}/system/include")
 # -s FETCH_DEBUG=1
 # -fsanitize=address -s ERROR_ON_UNDEFINED_SYMBOLS=0
 # -msimd128
-set(common_flags "-s WASM=1 -s USE_PTHREADS=1 -s FETCH=1 -s USE_ZLIB=1 -s USE_LIBPNG=1 -s USE_LIBJPEG=1 -s USE_FREETYPE=1 -s USE_HARFBUZZ=1 -s USE_WEBGL2=1 -s FULL_ES3=1 -s ERROR_ON_UNDEFINED_SYMBOLS=1 -s DISABLE_EXCEPTION_CATCHING=0 -s FILESYSTEM=0 -s STRICT=1")
-set(debug_flags "-s ASSERTIONS=2 -s SAFE_HEAP=1 -s STACK_OVERFLOW_CHECK=1 -s DEMANGLE_SUPPORT=1 -s GL_DEBUG=1 -s PTHREADS_DEBUG=1 -g4 -O0")
-set(release_flags "-O3 -DNDEBUG")
+set(common_flags "-s WASM=1 -s USE_PTHREADS=1 -s FETCH=1 -s USE_ZLIB=1 -s USE_LIBPNG=1 -s USE_LIBJPEG=1 -s USE_FREETYPE=1 -s USE_HARFBUZZ=1 -s USE_WEBGL2=1 -s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2 -s FULL_ES3=1 -s GL_POOL_TEMP_BUFFERS=0 -s ERROR_ON_UNDEFINED_SYMBOLS=1 -s DISABLE_EXCEPTION_CATCHING=0 -s FILESYSTEM=0 -s ALLOW_BLOCKING_ON_MAIN_THREAD=0 -s EVAL_CTORS=1 -s STRICT=1 -s STRICT_JS=1")
+set(debug_flags "-s ASSERTIONS=2 -s SAFE_HEAP=1 -s STACK_OVERFLOW_CHECK=2 -s DEMANGLE_SUPPORT=1 -s GL_DEBUG=1 -s GL_ASSERTIONS=1 -s PTHREADS_DEBUG=1 --profiling -g4 -O0")
+set(release_flags "-s GL_TRACK_ERRORS=0 -O3 -DNDEBUG")
 set(CMAKE_C_FLAGS_INIT "")
 set(CMAKE_CXX_FLAGS_INIT "")
 foreach(conf IN ITEMS ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE})

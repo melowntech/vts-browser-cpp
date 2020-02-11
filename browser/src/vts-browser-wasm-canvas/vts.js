@@ -135,6 +135,10 @@ function position()
     let pos = document.getElementById("positionInput")
     positionCpp(pos.value)
 }
+function delayedPosition()
+{
+    setTimeout(function(){position()});
+}
 function positionToClipboard()
 {
     let pos = document.getElementById("positionCurrent")

@@ -116,6 +116,7 @@ static const char *filterFXNames[] = {
     "none",
     "greyscale",
     "depth",
+    "normals",
 };
 
 static const char *geodataDebugNames[] = {
@@ -912,6 +913,40 @@ public:
                             r.filterSSAO = i;
                     }
                     nk_combo_end(&ctx);
+                }
+
+                // SSAO Options
+                if (r.filterSSAO > 0)
+                {
+                    {
+                        float ratio[] = { width * 0.2f, width * 0.65f,
+                                          width * 0.1f };
+
+                        nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
+
+                        nk_label(&ctx, "Radius:", NK_TEXT_LEFT);
+                        r.filterSSAORadius = nk_slide_float(&ctx,
+                            1, r.filterSSAORadius, 64, 0.1);
+                        sprintf(buffer, "%.1f", r.filterSSAORadius);
+                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                        nk_label(&ctx, "Min:", NK_TEXT_LEFT);
+                        r.filterSSAOMin = nk_slide_float(&ctx,
+                            0, r.filterSSAOMin, 0.001, 0.00001);
+                        sprintf(buffer, "%.5f", r.filterSSAOMin);
+                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                        nk_label(&ctx, "Max:", NK_TEXT_LEFT);
+                        r.filterSSAOMax = nk_slide_float(&ctx,
+                            0, r.filterSSAOMax, 0.001, 0.00001);
+                        sprintf(buffer, "%.5f", r.filterSSAOMax);
+                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                        nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
+
+                        r.filterSSAOOnly = nk_check_label(&ctx,
+                            "Only SSAO", r.filterSSAOOnly);
+                    }
                 }
 
                 // dof

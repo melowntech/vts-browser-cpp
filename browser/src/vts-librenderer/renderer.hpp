@@ -170,7 +170,8 @@ public:
     uint32 antialiasingPrev;
     uint32 frameIndex;
     uint32 frameRender2BufferId;
-    uint32 colorRender2TexId; 
+    uint32 colorRender2TexId;
+    uint32 normalRenderTexId;
 
     bool projected;
     bool lodBlendingWithDithering;
@@ -240,16 +241,19 @@ public:
     std::shared_ptr<Texture> texCompas;
     std::shared_ptr<Texture> texBlueNoise; // uses texture array!
     std::shared_ptr<ShaderAtm> shaderSurface;
+    std::shared_ptr<ShaderAtm> shaderSurfaceWithNormalTexure;
     std::shared_ptr<ShaderAtm> shaderBackground;
     std::shared_ptr<Shader> shaderInfographics;
     std::shared_ptr<Shader> shaderTexture;
     std::shared_ptr<Shader> shaderGreyscale;
     std::shared_ptr<Shader> shaderDepth;
+    std::shared_ptr<Shader> shaderNormal;
     std::shared_ptr<Shader> shaderDOF;
     std::shared_ptr<Shader> shaderDOF2;
     std::shared_ptr<Shader> shaderFXAA;
     std::shared_ptr<Shader> shaderFXAA2;
     std::shared_ptr<Shader> shaderSSAO;
+    std::shared_ptr<Shader> shaderSSAO2;
     std::shared_ptr<Shader> shaderCopyDepth;
     std::shared_ptr<Shader> shaderGeodataColor;
     std::shared_ptr<Shader> shaderGeodataPointFlat;

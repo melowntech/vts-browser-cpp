@@ -74,6 +74,10 @@ typedef struct vtsCRenderOptionsBase
     float filterDOFAperture;
     bool filterDOFFocus;
     uint32 filterSSAO; //0 = disabled
+    float filterSSAOMin;
+    float filterSSAOMax;
+    float filterSSAORadius;
+    bool filterSSAOOnly;
     uint32 filterFX;   //0 = disabled
     bool renderAtmosphere;
     bool renderPolygonEdges;

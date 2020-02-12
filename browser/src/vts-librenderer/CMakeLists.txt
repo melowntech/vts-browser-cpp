@@ -51,12 +51,18 @@ set(DATA_LIST
     data/shaders/copyDepth.vert.glsl
     data/shaders/filters/greyscale.frag.glsl
     data/shaders/filters/greyscale.vert.glsl
+    data/shaders/filters/ssao.frag.glsl
+    data/shaders/filters/ssao.vert.glsl
+    data/shaders/filters/ssao2.frag.glsl
+    data/shaders/filters/ssao2.vert.glsl
     data/shaders/filters/fxaa.frag.glsl
     data/shaders/filters/fxaa.vert.glsl
     data/shaders/filters/fxaa2.vert.glsl
     data/shaders/filters/fxaa2.frag.glsl
     data/shaders/filters/depth.vert.glsl
     data/shaders/filters/depth.frag.glsl
+    data/shaders/filters/normals.vert.glsl
+    data/shaders/filters/normals.frag.glsl
     data/shaders/filters/dof.vert.glsl
     data/shaders/filters/dof.frag.glsl
     data/shaders/filters/dof2.vert.glsl

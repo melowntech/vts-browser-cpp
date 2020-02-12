@@ -133,6 +133,27 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
         shaderSurface->initializeAtmosphere();
     }
 
+    //shaderSurfaceWithNormalTexure
+    {
+        shaderSurfaceWithNormalTexure = std::make_shared<ShaderAtm>();
+        shaderSurfaceWithNormalTexure->setDebugId(
+            "data/shaders/surface.*.glsl");
+        Buffer vert = readInternalMemoryBuffer(
+            "data/shaders/surface.vert.glsl");
+        Buffer frag = readInternalMemoryBuffer(
+            "data/shaders/surface.frag.glsl");
+        shaderSurfaceWithNormalTexure->load(atm + vert.str(), "#define NORMAL_TEXTURE;\n" + atm + frag.str());
+        shaderSurfaceWithNormalTexure->bindUniformBlockLocations({
+                 { "uboSurface", 1 }
+             });
+        shaderSurfaceWithNormalTexure->bindTextureLocations({
+                { "texColor", 0 },
+                { "texMask", 1 },
+                { "texBlueNoise", 9 }
+            });
+        shaderSurfaceWithNormalTexure->initializeAtmosphere();
+    }
+    
     // load shader infographic
     {
         shaderInfographics = std::make_shared<Shader>();
@@ -211,6 +232,19 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
             });
     }
 
+    // load shader normals
+    {
+        shaderNormal = std::make_shared<Shader>();
+        shaderNormal->setDebugId(
+            "data/shaders/filters/normals.*.glsl");
+        shaderNormal->loadInternal(
+            "data/shaders/filters/normals.vert.glsl",
+            "data/shaders/filters/normals.frag.glsl");
+        shaderNormal->bindTextureLocations({
+                { "texNormal", 10 }
+            });
+    }
+
     // load shader dof
     {
         shaderDOF = std::make_shared<Shader>();
@@ -239,8 +273,6 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
             });
     }
 
-
-
     // load shader fxaa
     {
         shaderFXAA = std::make_shared<Shader>();
@@ -267,6 +299,20 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
             });
     }
 
+    // load shader ssao
+    {
+        shaderSSAO = std::make_shared<Shader>();
+        shaderSSAO->setDebugId(
+            "data/shaders/filters/ssao.*.glsl");
+        shaderSSAO->loadInternal(
+            "data/shaders/filters/ssao.vert.glsl",
+            "data/shaders/filters/ssao.frag.glsl");
+        shaderSSAO->bindTextureLocations({
+                { "texColor", 9 },
+                { "texDepth", 5 },
+                { "texNormal", 10 }
+            });
+    }
 
     // load mesh quad
     {

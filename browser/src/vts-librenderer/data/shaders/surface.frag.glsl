@@ -24,6 +24,11 @@ in float varAtmDensity;
 
 layout(location = 0) out vec4 outColor;
 
+#ifdef NORMAL_TEXTURE
+    layout(location = 1) out vec4 outNormal;
+#endif
+
+
 bool getFlag(int i)
 {
     return (uniFlags[i / 8] & (1 << (i % 8))) != 0;
@@ -90,5 +95,12 @@ void main()
     float atmDensity = atmDensity(varViewPosition);
     outColor = atmColor(atmDensity, outColor);
 #endif
+
+#ifdef NORMAL_TEXTURE
+    outNormal.xyz = normalize(cross(viewDx, viewDy));;
+    outNormal.w = 1.0;
+//    outNormal = vec4(1.0,0.0,0.0,1.0);
+#endif
+
 }
 

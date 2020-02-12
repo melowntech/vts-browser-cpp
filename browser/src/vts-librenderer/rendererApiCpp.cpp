@@ -60,6 +60,10 @@ RenderOptions::RenderOptions()
     filterDOFAperture = 0.0;
     filterDOFFocus = true;
     filterSSAO = 0;
+    filterSSAOMin = 0.00001;
+    filterSSAOMax = 0.0001;
+    filterSSAORadius = 15;
+    filterSSAOOnly = true;
     filterFX = 0;
     renderAtmosphere = true;
     geodataHysteresis = true;

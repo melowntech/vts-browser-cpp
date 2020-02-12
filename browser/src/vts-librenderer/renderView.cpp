@@ -33,7 +33,8 @@
 
 #include "renderer.hpp"
 
-#define FXAA
+#define FILTERS
+#define SSAO
 
 namespace vts { namespace renderer
 {
@@ -120,6 +121,7 @@ RenderViewImpl::RenderViewImpl(
     frameIndex(0),
     frameRender2BufferId(0),
     colorRender2TexId(0),
+    normalRenderTexId(0),
     projected(false),
     lodBlendingWithDithering(false)
 {
@@ -252,7 +254,7 @@ void RenderViewImpl::updateFramebuffers()
 {
     OPTICK_EVENT();
 
-    #ifdef FXAA
+    #ifdef FILTERS
         bool filtersUsed = (options.filterAA || options.filterDOF || options.filterSSAO || options.filterFX);
 
         uint32 antialiasingCur = filtersUsed ? 1 : options.antialiasingSamples;
@@ -300,9 +302,15 @@ void RenderViewImpl::updateFramebuffers()
         vars.depthReadTexId = vars.depthRenderTexId = 0;
         vars.colorReadTexId = vars.colorRenderTexId = 0;
 
-        #ifdef FXAA
+        #ifdef FILTERS
             glDeleteTextures(1, &colorRender2TexId);
             colorRender2TexId = 0;
+
+            #ifdef SSAO
+                glDeleteTextures(1, &normalRenderTexId);
+                normalRenderTexId = 0;
+            #endif
+
         #endif
 
         // depth texture for rendering
@@ -410,7 +418,7 @@ void RenderViewImpl::updateFramebuffers()
             glBindTexture(GL_TEXTURE_2D, vars.colorReadTexId);
         }
 
-        #ifdef FXAA
+        #ifdef FILTERS
             // color texture for postprocessing
             if (filtersUsed)
             {
@@ -425,6 +433,23 @@ void RenderViewImpl::updateFramebuffers()
                     GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
                     GL_NEAREST);
+
+                #ifdef SSAO
+
+                    glActiveTexture(GL_TEXTURE0 + 10);
+
+                    glGenTextures(1, &normalRenderTexId);
+                    glBindTexture(GL_TEXTURE_2D, normalRenderTexId);
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8,
+                        options.width, options.height,
+                        0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                        GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                        GL_NEAREST);
+
+                #endif
+
             }
         #endif
 
@@ -447,6 +472,27 @@ void RenderViewImpl::updateFramebuffers()
             vars.textureTargetType, vars.depthRenderTexId, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
             vars.textureTargetType, vars.colorRenderTexId, 0);
+
+        #ifdef FILTERS
+
+            #ifdef SSAO
+
+                if (filtersUsed)
+                {
+                    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
+                        vars.textureTargetType, normalRenderTexId, 0);
+
+                    unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0,
+                        GL_COLOR_ATTACHMENT1 };
+
+                    glDrawBuffers(2, attachments);
+                }
+
+            #endif
+
+        #endif
+
+
         checkGlFramebuffer(GL_FRAMEBUFFER);
 
         // sample frame buffer
@@ -467,7 +513,7 @@ void RenderViewImpl::updateFramebuffers()
         glActiveTexture(GL_TEXTURE0);
         CHECK_GL("update frame buffer");
 
-        #ifdef FXAA
+        #ifdef FILTERS
             if (filtersUsed)
             {
                 // render frame buffer2
@@ -485,6 +531,54 @@ void RenderViewImpl::updateFramebuffers()
     }
 }
 
+void inverseMat4(float *a, float *b) {
+    float c = a[0],
+        d = a[1],
+        e = a[2],
+        g = a[3],
+        f = a[4],
+        h = a[5],
+        i = a[6],
+        j = a[7],
+        k = a[8],
+        l = a[9],
+        o = a[10],
+        m = a[11],
+        n = a[12],
+        p = a[13],
+        r = a[14],
+        s = a[15],
+        A = c * h - d * f,
+        B = c * i - e * f,
+        t = c * j - g * f,
+        u = d * i - e * h,
+        v = d * j - g * h,
+        w = e * j - g * i,
+        x = k * p - l * n,
+        y = k * r - o * n,
+        z = k * s - m * n,
+        C = l * r - o * p,
+        D = l * s - m * p,
+        E = o * s - m * r,
+        q = 1 / (A * E - B * D + t * C + u * z - v * y + w * x);
+    b[0] = (h * E - i * D + j * C) * q;
+    b[1] = (-d * E + e * D - g * C) * q;
+    b[2] = (p * w - r * v + s * u) * q;
+    b[3] = (-l * w + o * v - m * u) * q;
+    b[4] = (-f * E + i * z - j * y) * q;
+    b[5] = (c * E - e * z + g * y) * q;
+    b[6] = (-n * w + r * t - s * B) * q;
+    b[7] = (k * w - o * t + m * B) * q;
+    b[8] = (f * D - h * z + j * x) * q;
+    b[9] = (-c * D + d * z - g * x) * q;
+    b[10] = (n * v - p * t + s * A) * q;
+    b[11] = (-k * v + l * t - m * A) * q;
+    b[12] = (-f * C + h * y - i * x) * q;
+    b[13] = (c * C - d * y + e * x) * q;
+    b[14] = (-n * u + p * B - r * A) * q;
+    b[15] = (k * u - l * B + o * A) * q;
+}
+
 void RenderViewImpl::renderValid()
 {
     OPTICK_EVENT();
@@ -493,6 +587,15 @@ void RenderViewImpl::renderValid()
     projInv = proj.inverse();
     viewProj = proj * view;
     viewProjInv = viewProj.inverse();
+
+    auto shaderSurface = context->shaderSurface;
+
+    #ifdef FILTERS
+        #ifdef SSAO
+            if (options.filterFX == 3 || options.filterSSAO > 0)
+                shaderSurface = context->shaderSurfaceWithNormalTexure;
+        #endif
+    #endif
 
     // update atmosphere
     updateAtmosphereBuffer();
@@ -504,7 +607,7 @@ void RenderViewImpl::renderValid()
         glDisable(GL_BLEND);
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
-        context->shaderSurface->bind();
+        shaderSurface->bind();
         enableClipDistance(true);
         for (const DrawSurfaceTask &t : draws->opaque)
             drawSurface(t);
@@ -546,7 +649,7 @@ void RenderViewImpl::renderValid()
         glEnable(GL_POLYGON_OFFSET_FILL);
         glPolygonOffset(0, -10);
         glDepthMask(GL_FALSE);
-        context->shaderSurface->bind();
+        shaderSurface->bind();
         enableClipDistance(true);
         for (const DrawSurfaceTask &t : draws->transparent)
             drawSurface(t);
@@ -569,7 +672,7 @@ void RenderViewImpl::renderValid()
         glEnable(GL_POLYGON_OFFSET_LINE);
 #endif
 #endif
-        context->shaderSurface->bind();
+        shaderSurface->bind();
         enableClipDistance(true);
         for (const DrawSurfaceTask &it : draws->opaque)
         {
@@ -645,7 +748,7 @@ void RenderViewImpl::renderValid()
     }
 
     //render colorRender to colorRender2
-    #ifdef FXAA
+    #ifdef FILTERS
 
         if (options.filterAA || options.filterDOF || options.filterSSAO || options.filterFX)
         {
@@ -657,6 +760,125 @@ void RenderViewImpl::renderValid()
                 applyFilter(context->shaderFXAA); break;
             case 3: //fxaa2
                 applyFilter(context->shaderFXAA2); break;
+            }
+
+            switch (options.filterSSAO)
+            {
+            case 1: //ssao
+            case 2: //ssao2
+
+                std::shared_ptr<Shader> shader;
+
+                shader = context->shaderSSAO;
+
+                shader->bind();
+
+                uint32 id = shader->getId();
+
+                if (options.filterSSAO == 1)
+                {
+                    float kernel[] = {
+                        0.09639892989990391,0.011051308155595423,0.02418914843898985,
+                        0.020641662823344124,0.09764174613374559,0.014716143993480132,
+                        -0.024417282446416676,-0.059530372497734484,0.08108893689865168,
+                        0.03501696367305337,0.0681277531867567,0.07600673208830802,
+                        0.05785928290241025,-0.004971065806250804,0.09817253074571715,
+                        -0.11899107646112957,-0.023027855871862225,0.013717523437086777,
+                        0.08958635963846062,-0.050808186165088004,0.08198820973611252,
+                        -0.05504431938060061,0.12518255968880043,0.04204100677881524,
+                        0.024617957727216814,-0.019320092580691985,0.1530841359514906,
+                        -0.03173292804208657,0.15799677076037544,0.057762784567761793,
+                        0.023276690625676,-0.1140349424086619,0.14750293063617534,
+                        -0.09687533207852488,0.07930752058179572,0.16402695648493798,
+                        -0.17784943477890594,-0.12210813996924401,0.0692079988753119,
+                        -0.17953710796924113,-0.13804335463380663,0.10237276491185565,
+                        0.23076771277268954,0.03044736026771701,0.14123665087727738,
+                        0.06177982276926081,0.2771815862932807,0.08950424797557432,
+                        0.19034802067190856,0.15724000971117577,0.21134855185762697,
+                        0.20364023345091672,0.13416936856531791,0.2566086543729553,
+                        -0.29241340413908784,0.17923431367171486,0.174396238675209,
+                        -0.29483203678521763,-0.04079101062449529,0.2924672035697324,
+                        -0.05645094893468011,-0.23270143363795284,0.38284726008352926,
+                        -0.21316828596121803,0.38339094392331396,0.21288997242340915,
+                        0.37965641790621435,-0.3448870255262425,0.11379478373007058,
+                        0.49017945579170713,0.27892022692613,0.03296059202971882,
+                        -0.3028703551571703,0.0029488727492969456,0.5251665589281918,
+                        -0.2147694114876527,0.2059274427293489,0.5771306469471303,
+                        -0.19316143263158822,0.11757749302641028,0.6562738767867631,
+                        0.24244161434622347,0.22352314841582668,0.6632718290697481,
+                        -0.3672439272686124,-0.5787334049314298,0.39092092909826415,
+                        0.15918144017524632,-0.7700202942154998,0.29312076596094977,
+                        -0.574506758600714,0.3018269024473333,0.6105336594122308,
+                        0.1808196575338361,-0.7418764325734027,0.556100153537633
+                    };
+
+                    glUniform3fv(glGetUniformLocation(id, "kernel"), 32, kernel);
+
+                    float rotationNoiseTexture[] = {
+                        0.28821927309036255,
+                        -0.21094180643558502,
+                        -0.13540157675743103,
+                        -0.27949410676956177,
+                        -0.5253652334213257,
+                        0.34182244539260864,
+                        0.43322160840034485,
+                        -0.17836587131023407,
+                        0.0551881268620491,
+                        -0.6447020769119263,
+                        -0.4608458876609802,
+                        -0.16228044033050537,
+                        -0.33945947885513306,
+                        -0.17424403131008148,
+                        -0.5142955780029297,
+                        -0.5824607014656067
+                    };
+
+                    glUniform1fv(glGetUniformLocation(id, "tNoise"), 16, kernel);
+
+                    glUniform1f(glGetUniformLocation(id, "mixFactor"), options.filterSSAOOnly ? 1.0 : 0.0);
+                    glUniform1f(glGetUniformLocation(id, "kernelRadius"), options.filterSSAORadius);
+                    glUniform1f(glGetUniformLocation(id, "minDistance"), options.filterSSAOMin);
+                    glUniform1f(glGetUniformLocation(id, "maxDistance"), options.filterSSAOMax);
+                }
+
+                if (options.filterSSAO == 2)
+                {
+                    glUniform1f(glGetUniformLocation(id, "kernelRadius"), options.filterSSAORadius);
+
+                    /*float scale;
+                    float intensity;
+                    float bias;
+                    float minResolution;
+                    vec2 size;
+                    float randomSeed;*/
+                }
+
+                double cnear, cfar;
+                double eye[3], target[3], up[3];
+
+                camera->getView(eye, target, up);
+                camera->suggestedNearFar(cnear, cfar);
+
+                glUniform1f(glGetUniformLocation(id, "cameraNear"), cnear);
+                glUniform1f(glGetUniformLocation(id, "cameraFar"), cfar);
+
+                //uniform mat4 cameraProjectionMatrix;
+                //uniform mat4 cameraInverseProjectionMatrix;
+
+                mat4f cproj = proj.cast<float>();
+                //camera->getProj(proj);
+
+                float cinvProj[16];
+                inverseMat4(cproj.data(), cinvProj);
+
+                glUniformMatrix4fv(glGetUniformLocation(id, "cameraProjectionMatrix"), 1, GL_FALSE, cproj.data());
+                glUniformMatrix4fv(glGetUniformLocation(id, "cameraInverseProjectionMatrix"), 1, GL_FALSE, cinvProj);
+
+
+                if (options.filterSSAO == 1)
+                    applyFilter(context->shaderSSAO);
+                else 
+                    applyFilter(context->shaderSSAO2);
             }
 
             switch (options.filterDOF)
@@ -719,6 +941,8 @@ void RenderViewImpl::renderValid()
                 applyFilter(context->shaderGreyscale); break;
             case 2: //depth
                 applyFilter(context->shaderDepth); break;
+            case 3: //normals
+                applyFilter(context->shaderNormal); break;
             }
 
             CHECK_GL("rendered postprocessing");
@@ -880,7 +1104,7 @@ void RenderViewImpl::getWorldPosition(const double screenPos[2],
 
 void RenderViewImpl::applyFilter(const std::shared_ptr<Shader> &shader)
 {
-    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
@@ -900,11 +1124,14 @@ void RenderViewImpl::applyFilter(const std::shared_ptr<Shader> &shader)
     glActiveTexture(GL_TEXTURE0 + 9);
     glBindTexture(GL_TEXTURE_2D, colorRender2TexId);
 
+    glActiveTexture(GL_TEXTURE0 + 10);
+    glBindTexture(GL_TEXTURE_2D, normalRenderTexId);
+
     context->meshQuad->bind();
     context->meshQuad->dispatch();
 
     glDepthMask(GL_TRUE);
-    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
 }
 
 void RenderViewImpl::renderCompass(const double screenPosSize[3],

@@ -45,24 +45,24 @@ public:
     typedef vtslibs::registry::Position::Type Type;
     typedef vtslibs::registry::Position::HeightMode HeightMode;
 
-    CameraImpl *const camera;
-    Navigation *const navigation;
+    CameraImpl *const camera = nullptr;
+    Navigation *const navigation = nullptr;
     NavigationOptions options;
-    vec3 position;
-    vec3 targetPosition;
-    vec3 orientation;
-    vec3 targetOrientation;
-    double verticalExtent;
-    double targetVerticalExtent;
-    double verticalFov;
-    double autoRotation;
+    vec3 position {0,0,0};
+    vec3 targetPosition {0,0,0};
+    vec3 orientation {0,0,0};
+    vec3 targetOrientation {0,0,0};
+    double verticalExtent = 0;
+    double targetVerticalExtent = 0;
+    double verticalFov = 0;
+    double autoRotation = 0;
     boost::optional<double> lastPositionAltitude;
     boost::optional<double> positionAltitudeReset;
     std::shared_ptr<TemporalNavigationState> temporalNavigationState;
-    Type type;
-    HeightMode heightMode;
-    NavigationMode mode;
-    bool suspendAltitudeChange;
+    Type type = Type::objective;
+    HeightMode heightMode = HeightMode::fixed;
+    NavigationMode mode = NavigationMode::Azimuthal;
+    bool suspendAltitudeChange = false;
 
     NavigationImpl(CameraImpl *cam, Navigation *navigation);
     void initialize();

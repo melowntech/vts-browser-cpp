@@ -47,10 +47,10 @@ public:
     bool performAvailTest() const;
 
     const std::string name;
-    MapImpl *const map;
+    MapImpl *const map = nullptr;
     std::shared_ptr<void> availTest; // vtslibs::registry::BoundLayer::Availability
     std::weak_ptr<Resource> resource;
-    uint32 redirectionsCount;
+    uint32 redirectionsCount = 0;
 };
 
 } // namespace vts

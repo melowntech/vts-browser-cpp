@@ -43,16 +43,16 @@ public:
     std::string toJson() const;
 
     // multiplier applied to mouse input for the respective actions
-    double sensitivityPan;
-    double sensitivityZoom;
-    double sensitivityRotate;
+    double sensitivityPan = 1;
+    double sensitivityZoom = 1;
+    double sensitivityRotate = 1;
 
     // inertia coefficients [0 - 1) for smoothing the navigation changes
     // inertia of zero makes all changes to apply immediately
     // while inertia of almost one makes the moves very smooth and slow
-    double inertiaPan;
-    double inertiaZoom;
-    double inertiaRotate;
+    double inertiaPan = 0.9;
+    double inertiaZoom = 0.9;
+    double inertiaRotate = 0.9;
 
     // lower and upper limit for view-extent
     // expressed as multiplicative factor of planet major radius
@@ -65,45 +65,45 @@ public:
     double viewExtentThresholdScaleHigh;
 
     // camera tilt limits (eg. -90 - 0)
-    double tiltLimitAngleLow;
-    double tiltLimitAngleHigh;
+    double tiltLimitAngleLow = -90;
+    double tiltLimitAngleHigh = -10;
 
     // multiplicative factor at which camera altitude will converge to terrain
     //   when panning or zooming
     // range 0 (off) to 1 (fast)
-    double altitudeFadeOutFactor;
+    double altitudeFadeOutFactor = 0.5;
 
     // latitude threshold (0 - 90) used for azimuthal navigation
-    double azimuthalLatitudeThreshold;
+    double azimuthalLatitudeThreshold = 80;
 
     // fly over motion trajectory shape parameter
     // low -> flat trajectory
     // high -> spiky trajectory
-    double flyOverSpikinessFactor;
+    double flyOverSpikinessFactor = 2.5;
 
     // speed configuration for fly over navigation type
-    double flyOverMotionChangeFraction;
-    double flyOverRotationChangeSpeed;
+    double flyOverMotionChangeFraction = 0.5;
+    double flyOverRotationChangeSpeed = 0.5;
 
-    NavigationType type;
-    NavigationMode mode;
+    NavigationType type = NavigationType::Quick;
+    NavigationMode mode = NavigationMode::Seamless;
 
     // limits camera tilt and yaw
     // uses viewExtentThresholdScaleLow/High
     // applies tiltLimitAngleLow/High (and yaw limit)
-    bool enableNormalization;
+    bool enableNormalization = true;
 
     // vertically converges objective position towards ground
-    bool enableAltitudeCorrections;
+    bool enableAltitudeCorrections = true;
 
     // makes the navigation react to user inputs more predictively
     //   at varying frame rates
-    bool fpsCompensation;
+    bool fpsCompensation = true;
 
-    bool debugRenderObjectPosition;
-    bool debugRenderTargetPosition;
-    bool debugRenderAltitudeSurrogates;
-    bool debugRenderCameraObstructionSurrogates;
+    bool debugRenderObjectPosition = false;
+    bool debugRenderTargetPosition = false;
+    bool debugRenderAltitudeSurrogates = false;
+    bool debugRenderCameraObstructionSurrogates = false;
 };
 
 } // namespace vts

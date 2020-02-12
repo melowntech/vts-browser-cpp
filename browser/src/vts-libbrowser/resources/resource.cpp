@@ -33,7 +33,7 @@ namespace vts
 
 FetchTaskImpl::FetchTaskImpl(const std::shared_ptr<Resource> &resource) :
 	FetchTask(resource->name, resource->resourceType()),
-    name(resource->name), map(resource->map), resource(resource), redirectionsCount(0)
+    name(resource->name), map(resource->map), resource(resource)
 {
     reply.expires = -1;
 }
@@ -68,10 +68,7 @@ ResourceInfo::ResourceInfo() :
 
 Resource::Resource(vts::MapImpl *map, const std::string &name) :
     name(name), map(map),
-    state(State::initializing),
-    retryTime(-1), retryNumber(0),
-    lastAccessTick(0),
-    priority(std::numeric_limits<float>::quiet_NaN())
+    priority(nan1())
 {
     LOG(debug) << "Constructing resource <" << name
                << "> at <" << this << ">";

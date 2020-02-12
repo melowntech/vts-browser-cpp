@@ -45,8 +45,8 @@ public:
     mat4 model;
     mat3f uvm;
     vec4f color;
-    bool externalUv;
-    bool flatShading;
+    bool externalUv = false;
+    bool flatShading = false;
 
     RenderSurfaceTask();
     bool ready() const;

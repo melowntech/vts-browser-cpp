@@ -62,10 +62,10 @@ public:
 
     // traversal
     Array<std::unique_ptr<TraverseNode>, 4> childs;
-    MapLayer *const layer;
-    TraverseNode *const parent;
+    MapLayer *const layer = nullptr;
+    TraverseNode *const parent = nullptr;
     const NodeInfo nodeInfo;
-    const uint32 hash;
+    const uint32 hash = 0;
 
     // metadata
     boost::container::small_vector<vtslibs::registry::CreditId, 8> credits;
@@ -80,14 +80,14 @@ public:
     vec2 diskHeightsPhys;
     double diskHalfAngle;
     double texelSize;
-    const SurfaceInfo *surface;
+    const SurfaceInfo *surface = nullptr;
 
-    uint32 lastAccessTime;
-    uint32 lastRenderTime;
+    uint32 lastAccessTime = 0;
+    uint32 lastRenderTime = 0;
     float priority;
 
     // renders
-    bool determined; // draws are fully loaded (draws may be empty)
+    bool determined = false; // draws are fully loaded (draws may be empty)
     std::shared_ptr<MeshAggregate> meshAgg;
     std::shared_ptr<GeodataTile> geodataAgg;
     boost::container::small_vector<RenderSurfaceTask, 1> opaque;

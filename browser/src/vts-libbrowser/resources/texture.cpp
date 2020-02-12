@@ -78,10 +78,7 @@ Buffer GpuTextureSpec::encodePng() const
 }
 
 GpuTexture::GpuTexture(MapImpl *map, const std::string &name) :
-    Resource(map, name),
-    filterMode(GpuTextureSpec::FilterMode::Linear),
-    wrapMode(GpuTextureSpec::WrapMode::ClampToEdge),
-    width(0), height(0)
+    Resource(map, name)
 {}
 
 void GpuTexture::decode()

@@ -45,69 +45,69 @@ public:
     // maximum ratio of texture details to the viewport resolution
     // increasing this ratio yields less detailed map
     //   but reduces memory usage and network bandwidth
-    double targetPixelRatioSurfaces;
-    double targetPixelRatioGeodata;
+    double targetPixelRatioSurfaces = 1.2;
+    double targetPixelRatioGeodata = 1.2;
 
     // nodes this far from the camera frustum will still be included for render
     // this is useful to include shadow casters outside camera frustum
-    double cullingOffsetDistance;
+    double cullingOffsetDistance = 0;
 
     // duration of lod blending in seconds
-    double lodBlendingDuration;
+    double lodBlendingDuration = 1;
 
     // number of virtual samples to fit the view-extent
     // it is used to determine lod index at which to retrieve
     //   the altitude used to correct camera position
-    double samplesForAltitudeLodSelection;
+    double samplesForAltitudeLodSelection = 8;
 
     // maximum distance of meshes emitted for fixed traversal mode
     // defined in physical length units (meters)
-    double fixedTraversalDistance;
+    double fixedTraversalDistance = 10000;
 
     // desired lod used with fixed traversal mode
-    uint32 fixedTraversalLod;
+    uint32 fixedTraversalLod = 15;
 
     // coarser lod offset for grids for use with balanced traversal
     // -1 to disable grids entirely
-    uint32 balancedGridLodOffset;
+    uint32 balancedGridLodOffset = 5;
 
     // distance to neighbors for grids for use with balanced traversal
     // 0: no neighbors
     // 1: one ring of neighbors (8 total)
     // 2: two rings (24 total)
     // etc.
-    uint32 balancedGridNeighborsDistance;
+    uint32 balancedGridNeighborsDistance = 1;
 
     // enable blending lods to prevent lod popping
     // 0: disable
     // 1: enable, simple
     // 2: enable, detect draws near edges
-    uint32 lodBlending;
+    uint32 lodBlending = 2;
 
-    TraverseMode traverseModeSurfaces;
-    TraverseMode traverseModeGeodata;
+    TraverseMode traverseModeSurfaces = TraverseMode::Balanced;
+    TraverseMode traverseModeGeodata = TraverseMode::Stable;
 
     // move opaque blending draws into transparent group
-    bool lodBlendingTransparent;
+    bool lodBlendingTransparent = false;
 
-    bool debugDetachedCamera;
-    bool debugFlatShading;
-    bool debugRenderSurrogates;
-    bool debugRenderMeshBoxes;
-    bool debugRenderTileBoxes;
-    bool debugRenderSubtileBoxes;
+    bool debugDetachedCamera = false;
+    bool debugFlatShading = false;
+    bool debugRenderSurrogates = false;
+    bool debugRenderMeshBoxes = false;
+    bool debugRenderTileBoxes = false;
+    bool debugRenderSubtileBoxes = false;
 
-    bool debugRenderTileDiagnostics;
-    bool debugRenderTileGeodataOnly;
-    bool debugRenderTileBigText;
-    bool debugRenderTileLod;
-    bool debugRenderTileIndices;
-    bool debugRenderTileTexelSize;
-    bool debugRenderTileTextureSize;
-    bool debugRenderTileFaces;
-    bool debugRenderTileSurface;
-    bool debugRenderTileBoundLayer;
-    bool debugRenderTileCredits;
+    bool debugRenderTileDiagnostics = false;
+    bool debugRenderTileGeodataOnly = false;
+    bool debugRenderTileBigText = false;
+    bool debugRenderTileLod = false;
+    bool debugRenderTileIndices = false;
+    bool debugRenderTileTexelSize = false;
+    bool debugRenderTileTextureSize = false;
+    bool debugRenderTileFaces = false;
+    bool debugRenderTileSurface = false;
+    bool debugRenderTileBoundLayer = false;
+    bool debugRenderTileCredits = false;
 };
 
 } // namespace vts

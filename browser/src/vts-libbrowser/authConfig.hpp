@@ -46,8 +46,8 @@ public:
 private:
     std::string token;
     std::unordered_set<std::string> hostnames;
-    uint64 timeValid;
-    uint64 timeParsed;
+    uint64 timeValid = 0;
+    uint64 timeParsed = 0;
 };
 
 } // namespace vts

@@ -1272,8 +1272,9 @@ public:
 
                     S("Cache read:", ms.resourcesQueueCacheRead, "");
                     S("Cache write:", ms.resourcesQueueCacheWrite, "");
+                    S("Downloads:", ms.resourcesQueueDownload, "");
                     S("Decode:", ms.resourcesQueueDecode, "");
-                    S("Upload:", ms.resourcesQueueUpload, "");
+                    S("Gpu:", ms.resourcesQueueUpload, "");
                     S("Geodata:", ms.resourcesQueueGeodata, "");
 
                     nk_tree_pop(&ctx);

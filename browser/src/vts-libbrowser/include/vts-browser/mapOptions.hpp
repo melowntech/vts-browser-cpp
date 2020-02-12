@@ -72,20 +72,20 @@ public:
     //         in a hierarchy of directories in the cache
     // false -> use old scheme where the name of the downloaded resource
     //          is clearly reflected in the cached file name
-    bool hashCachePaths;
+    bool hashCachePaths = true;
 
     // use search url/srs fallbacks on any body (not just Earth)
-    bool searchUrlFallbackOutsideEarth;
+    bool searchUrlFallbackOutsideEarth = false;
 
     // use search url/srs from mapconfig
-    bool browserOptionsSearchUrls;
+    bool browserOptionsSearchUrls = true;
 
     // provide density texture for atmosphere rendering
-    bool atmosphereDensityTexture;
+    bool atmosphereDensityTexture = true;
 
     // true -> create and use separate threads for data processing
     // false -> serialize all tasks in the data thread
-    bool debugUseExtraThreads;
+    bool debugUseExtraThreads = true;
 };
 
 // options of the map which may be changed anytime
@@ -105,32 +105,35 @@ public:
     //   from the environment locale settings
     std::string language;
 
-    // default is 72
-    double pixelsPerInch;
+    double pixelsPerInch = 96;
 
     // relative scale of every tile.
     // small up-scale may reduce occasional holes on tile borders.
-    double renderTilesScale;
+    double renderTilesScale = 1.001;
 
     // memory threshold at which resources start to be released
-    uint32 targetResourcesMemoryKB;
+    uint32 targetResourcesMemoryKB = 0;
 
     // maximum size of the queue for the resources to be downloaded
-    uint32 maxConcurrentDownloads;
+    uint32 maxConcurrentDownloads = 25;
+
+    // maximum number of items waiting in queue to be written to disk cache
+    // new resources will be skipped when the queue is full
+    uint32 maxCacheWriteQueueLength = 500;
 
     // maximum number of resources processed per dataTick
-    uint32 maxResourceProcessesPerTick;
+    uint32 maxResourceProcessesPerTick = 10;
 
     // maximum number of redirections before the download fails
     // this is to prevent infinite loops
-    uint32 maxFetchRedirections;
+    uint32 maxFetchRedirections = 5;
 
     // maximum number of attempts to redownload a resource
-    uint32 maxFetchRetries;
+    uint32 maxFetchRetries = 5;
 
     // delay in seconds for first resource download retry
     // each subsequent retry is delayed twice as long as before
-    uint32 fetchFirstRetryTimeOffset;
+    uint32 fetchFirstRetryTimeOffset = 1;
 
     // 0 = US customary units
     // 1 = metric
@@ -141,13 +144,13 @@ public:
 
     // to improve search results relevance, the results are further
     //   filtered and reordered
-    bool searchResultsFiltering;
+    bool searchResultsFiltering = true;
 
-    bool debugVirtualSurfaces;
-    bool debugSaveCorruptedFiles;
-    bool debugValidateGeodataStyles;
-    bool debugCoarsenessDisks;
-    bool debugExtractRawResources;
+    bool debugVirtualSurfaces = true;
+    bool debugSaveCorruptedFiles = false;
+    bool debugValidateGeodataStyles = true;
+    bool debugCoarsenessDisks = true;
+    bool debugExtractRawResources = false;
 };
 
 } // namespace vts

@@ -149,8 +149,7 @@ void Credits::purge()
     std::swap(stor, e);
 }
 
-Credits::Hit::Hit(vtslibs::registry::CreditId id)
-    : id(id), hits(0), maxLod(0)
+Credits::Hit::Hit(vtslibs::registry::CreditId id) : id(id)
 {}
 
 CameraCredits::CameraCredits()

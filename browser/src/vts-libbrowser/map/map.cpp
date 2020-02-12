@@ -46,15 +46,15 @@ namespace vts
 
 MapImpl::MapImpl(Map *map, const MapCreateOptions &options,
     const std::shared_ptr<Fetcher> &fetcher) :
-    map(map), createOptions(options),
-    lastElapsedFrameTime(0),
-    renderTickIndex(0),
-    mapconfigAvailable(false), mapconfigReady(false)
+    map(map), createOptions(options)
 {
     assert(fetcher);
     resources.fetcher = fetcher;
-    resources.thrCacheReader = std::thread(&MapImpl::cacheReadEntry, this);
     resources.thrCacheWriter = std::thread(&MapImpl::cacheWriteEntry, this);
+    resources.fetching.thr
+        = std::thread(&MapImpl::resourcesDownloadsEntry, this);
+    resources.cacheReading.thr
+        = std::thread(&MapImpl::cacheReadEntry, this);
     if (createOptions.debugUseExtraThreads)
     {
         resources.thrAtmosphereGenerator
@@ -64,23 +64,25 @@ MapImpl::MapImpl(Map *map, const MapCreateOptions &options,
         resources.thrDecoder
             = std::thread(&MapImpl::resourcesDecodeProcessorEntry, this);
     }
-    resources.fetching.thr
-        = std::thread(&MapImpl::resourcesDownloadsEntry, this);
     cacheInit();
     credits = std::make_shared<Credits>();
 }
 
 MapImpl::~MapImpl()
 {
-    resources.queCacheRead.terminate();
     resources.queCacheWrite.terminate();
     resources.queDecode.terminate();
     resources.queUpload.terminate();
     resources.queAtmosphere.terminate();
     resources.queGeodata.terminate();
+    resources.cacheReading.stop = true;
+    resources.cacheReading.con.notify_all();
+    resources.fetching.stop = true;
+    resources.fetching.con.notify_all();
 
-    resources.thrCacheReader.join();
     resources.thrCacheWriter.join();
+    resources.cacheReading.thr.join();
+    resources.fetching.thr.join();
 
     if (createOptions.debugUseExtraThreads)
     {
@@ -88,10 +90,6 @@ MapImpl::~MapImpl()
         resources.thrGeodataProcessor.join();
         resources.thrDecoder.join();
     }
-
-    resources.fetching.stop = true;
-    resources.fetching.con.notify_all();
-    resources.fetching.thr.join();
 }
 
 void MapImpl::renderUpdate(double elapsedTime)

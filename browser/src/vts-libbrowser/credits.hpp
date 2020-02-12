@@ -62,8 +62,8 @@ private:
         Hit(vtslibs::registry::CreditId id);
 
         vtslibs::registry::CreditId id;
-        uint32 hits;
-        uint32 maxLod;
+        uint32 hits = 0;
+        uint32 maxLod = 0;
     };
     std::vector<Hit> hits[(int)Scope::Total_];
 };

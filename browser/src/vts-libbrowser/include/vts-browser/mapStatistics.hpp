@@ -53,6 +53,7 @@ public:
     uint32 resourcesPreparing;
     uint32 resourcesQueueCacheRead;
     uint32 resourcesQueueCacheWrite;
+    uint32 resourcesQueueDownload;
     uint32 resourcesQueueDecode;
     uint32 resourcesQueueUpload;
     uint32 resourcesQueueGeodata;

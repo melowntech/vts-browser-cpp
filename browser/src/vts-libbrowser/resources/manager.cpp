@@ -59,6 +59,49 @@ void MapImpl::resourceSaveCorruptedFile(const std::shared_ptr<Resource> &r)
     }
 }
 
+namespace
+{
+
+typedef std::pair<float, std::shared_ptr<Resource>> ResourceWithPriority;
+
+std::vector<std::weak_ptr<Resource>> waitForResources(
+    MapImpl::Resources::ThreadCustomQueue &queue)
+{
+    std::vector<std::weak_ptr<Resource>> res;
+    {
+        std::unique_lock<std::mutex> lock(queue.mut);
+        queue.con.wait(lock);
+        res.swap(queue.resources);
+    }
+    return res;
+}
+
+std::vector<ResourceWithPriority> filterSortResources(
+    const std::vector<std::weak_ptr<Resource>> &resources,
+    Resource::State requiredState)
+{
+    std::vector<ResourceWithPriority> res;
+    for (const auto &w : resources)
+    {
+        std::shared_ptr<Resource> r = w.lock();
+        if (r)
+        {
+            if (r->state != requiredState)
+                continue;
+            res.emplace_back(r->priority, r);
+            if (r->priority < std::numeric_limits<float>::infinity())
+                r->priority = 0;
+        }
+    }
+    std::sort(res.begin(), res.end(),
+        [](ResourceWithPriority &a, ResourceWithPriority &b) {
+            return a.first > b.first; // highest priority first
+        });
+    return res;
+}
+
+} // namespace
+
 UploadData::UploadData()
 {}
 
@@ -83,9 +126,6 @@ void UploadData::process()
 // A FETCH THREAD
 ////////////////////////////
 
-CacheData::CacheData() : expires(0), availFailed(false)
-{}
-
 CacheData::CacheData(FetchTaskImpl *task, bool availFailed) :
     //availTest(task->availTest),
     buffer(task->reply.content.copy()),
@@ -102,6 +142,7 @@ void FetchTaskImpl::fetchDone()
         << ", expires: " << reply.expires;
     assert(map);
     map->resources.downloads--;
+    map->resources.downloadsCondition.notify_one();
     Resource::State state = Resource::State::downloading;
 
     // handle error or invalid codes
@@ -155,8 +196,10 @@ void FetchTaskImpl::fetchDone()
     }
 
     // write to cache
-    if (state == Resource::State::availFail
+    if ((state == Resource::State::availFail
         || state == Resource::State::downloading)
+        && map->resources.queCacheWrite.estimateSize()
+        < map->options.maxCacheWriteQueueLength)
     {
         // this makes copy of the content buffer
         map->resources.queCacheWrite.push(CacheData(this,
@@ -379,23 +422,27 @@ void MapImpl::cacheReadEntry()
 {
     OPTICK_THREAD("cache reader");
     setLogThreadName("cache reader");
-    while (!resources.queCacheRead.stopped())
+    while (!resources.cacheReading.stop)
     {
-        std::weak_ptr<Resource> w;
-        resources.queCacheRead.waitPop(w);
-        std::shared_ptr<Resource> r = w.lock();
-        if (!r)
-            continue;
-        try
+        auto res1 = waitForResources(resources.cacheReading);
+        OPTICK_EVENT("update");
+        auto res2 = filterSortResources(res1, Resource::State::checkCache);
+        for (const auto &pr : res2)
         {
-            cacheReadProcess(r);
-        }
-        catch (const std::exception &e)
-        {
-            statistics.resourcesFailed++;
-            r->state = Resource::State::errorFatal;
-            LOG(err3) << "Failed preparing resource <" << r->name
-                << ">, exception <" << e.what() << ">";
+            const std::shared_ptr<Resource> &r = pr.second;
+            try
+            {
+                cacheReadProcess(r);
+            }
+            catch (const std::exception &e)
+            {
+                statistics.resourcesFailed++;
+                r->state = Resource::State::errorFatal;
+                LOG(err3) << "Failed preparing resource <" << r->name
+                    << ">, exception <" << e.what() << ">";
+            }
+            if (!resources.cacheReading.resources.empty())
+                break; // refresh the priorities
         }
     }
 }
@@ -471,38 +518,22 @@ void MapImpl::cacheReadProcess(const std::shared_ptr<Resource> &r)
 void MapImpl::resourcesDownloadsEntry()
 {
     OPTICK_THREAD("fetcher");
+    setLogThreadName("fetcher");
     resources.fetcher->initialize();
+    std::mutex dummyMutex;
     while (!resources.fetching.stop)
     {
-        decltype(resources.fetching.resources) res1;
-        {
-            std::unique_lock<std::mutex> lock(resources.fetching.mut);
-            resources.fetching.con.wait(lock);
-            res1.swap(resources.fetching.resources);
-        }
+        auto res1 = waitForResources(resources.fetching);
         OPTICK_EVENT("update");
         resources.fetcher->update();
-        if (resources.downloads >= options.maxConcurrentDownloads)
-            continue; // skip processing if no download slots are available
-        typedef std::pair<float, std::shared_ptr<Resource>> PR;
-        std::vector<PR> res;
-        for (const auto &w : res1)
+        auto res2 = filterSortResources(res1, Resource::State::startDownload);
+        for (const auto &pr : res2)
         {
-            std::shared_ptr<Resource> r = w.lock();
-            if (r)
+            while (resources.downloads >= options.maxConcurrentDownloads)
             {
-                res.emplace_back(r->priority, r);
-                if (r->priority < std::numeric_limits<float>::infinity())
-                    r->priority = 0;
+                std::unique_lock<std::mutex> lock(dummyMutex);
+                resources.downloadsCondition.wait(lock);
             }
-        }
-        std::sort(res.begin(), res.end(), [](PR &a, PR &b) {
-            return a.first > b.first; // highest priority first
-            });
-        for (const auto &pr : res)
-        {
-            if (resources.downloads >= options.maxConcurrentDownloads)
-                break;
             const std::shared_ptr<Resource> &r = pr.second;
             r->state = Resource::State::downloading;
             resources.downloads++;
@@ -513,6 +544,8 @@ void MapImpl::resourcesDownloadsEntry()
                 resources.auth->authorize(r);
             resources.fetcher->fetch(r->fetch);
             statistics.resourcesDownloaded++;
+            if (!resources.fetching.resources.empty())
+                break; // refresh the priorities
         }
     }
     resources.fetcher->finalize();
@@ -574,7 +607,6 @@ void MapImpl::resourcesRemoveOld()
     // find resource candidates for removal
     for (const auto &it : resources.resources)
     {
-        resourceUpdateStatistics(it.second);
         memRamUse += it.second->info.ramMemoryCost;
         memGpuUse += it.second->info.gpuMemoryCost;
         // skip recently used resources
@@ -631,9 +663,9 @@ void MapImpl::resourcesCheckInitialized()
 {
     OPTICK_EVENT();
     std::time_t current = std::time(nullptr);
+
     for (const auto &it : resources.resources)
     {
-        resourceUpdateStatistics(it.second);
         const std::shared_ptr<Resource> &r = it.second;
         if (r->lastAccessTick + 3 < renderTickIndex)
             continue; // skip resources that were not accessed last tick
@@ -668,7 +700,6 @@ void MapImpl::resourcesCheckInitialized()
             UTILITY_FALLTHROUGH;
         case Resource::State::initializing:
             r->state = Resource::State::checkCache;
-            resources.queCacheRead.push(r);
             break;
         default:
             break;
@@ -679,45 +710,40 @@ void MapImpl::resourcesCheckInitialized()
 void MapImpl::resourcesStartDownloads()
 {
     OPTICK_EVENT();
-    if (resources.downloads >= options.maxConcurrentDownloads)
-    {
-        for (const auto &it : resources.resources)
-            resourceUpdateStatistics(it.second);
-        return; // early exit
-    }
-    decltype(resources.fetching.resources) res;
+    std::vector<std::weak_ptr<Resource>> requestCacheRead;
+    std::vector<std::weak_ptr<Resource>> requestDownloads;
+
     for (const auto &it : resources.resources)
     {
-        resourceUpdateStatistics(it.second);
         const std::shared_ptr<Resource> &r = it.second;
-        if (r->state == Resource::State::startDownload)
-            res.push_back(r);
+        switch ((Resource::State)r->state)
+        {
+        case Resource::State::checkCache:
+            requestCacheRead.push_back(r);
+            break;
+        case Resource::State::startDownload:
+            requestDownloads.push_back(r);
+            break;
+        default:
+            break;
+        }
     }
+
+    statistics.resourcesQueueCacheRead = requestCacheRead.size();
+    {
+        std::lock_guard<std::mutex> lock(resources.cacheReading.mut);
+        requestCacheRead.swap(resources.cacheReading.resources);
+    }
+    if (statistics.resourcesQueueCacheRead)
+        resources.cacheReading.con.notify_one();
+
+    statistics.resourcesQueueDownload = requestDownloads.size();
     {
         std::lock_guard<std::mutex> lock(resources.fetching.mut);
-        res.swap(resources.fetching.resources);
+        requestDownloads.swap(resources.fetching.resources);
     }
-    resources.fetching.con.notify_one();
-}
-
-void MapImpl::resourceUpdateStatistics(const std::shared_ptr<Resource> &r)
-{
-    switch ((Resource::State)r->state)
-    {
-    case Resource::State::initializing:
-    case Resource::State::checkCache:
-    case Resource::State::startDownload:
-    case Resource::State::downloading:
-    case Resource::State::downloaded:
-    case Resource::State::decoded:
-        statistics.resourcesPreparing++;
-        break;
-    case Resource::State::ready:
-    case Resource::State::errorFatal:
-    case Resource::State::errorRetry:
-    case Resource::State::availFail:
-        break;
-    }
+    if (statistics.resourcesQueueDownload)
+        resources.fetching.con.notify_one();
 }
 
 void MapImpl::resourcesRenderFinalize()
@@ -738,12 +764,30 @@ void MapImpl::resourcesRenderUpdate()
     // resourcesPreparing is used to determine mapRenderComplete
     //   and must be updated every frame
     statistics.resourcesPreparing = 0;
+    for (const auto &it : resources.resources)
+    {
+        switch ((Resource::State)it.second->state)
+        {
+        case Resource::State::initializing:
+        case Resource::State::checkCache:
+        case Resource::State::startDownload:
+        case Resource::State::downloading:
+        case Resource::State::downloaded:
+        case Resource::State::decoded:
+            statistics.resourcesPreparing++;
+            break;
+        case Resource::State::ready:
+        case Resource::State::errorFatal:
+        case Resource::State::errorRetry:
+        case Resource::State::availFail:
+            break;
+        }
+    }
+
     statistics.resourcesActive
         = resources.resources.size();
     statistics.resourcesDownloading
         = resources.downloads;
-    statistics.resourcesQueueCacheRead
-        = resources.queCacheRead.estimateSize();
     statistics.resourcesQueueCacheWrite
         = resources.queCacheWrite.estimateSize();
     statistics.resourcesQueueDecode

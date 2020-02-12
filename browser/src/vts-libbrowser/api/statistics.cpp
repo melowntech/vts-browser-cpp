@@ -44,6 +44,7 @@ MapStatistics::MapStatistics() :
     resourcesPreparing(0),
     resourcesQueueCacheRead(0),
     resourcesQueueCacheWrite(0),
+    resourcesQueueDownload(0),
     resourcesQueueDecode(0),
     resourcesQueueUpload(0),
     resourcesQueueGeodata(0),
@@ -68,6 +69,7 @@ std::string MapStatistics::toJson() const
     TJ(resourcesPreparing, asUint);
     TJ(resourcesQueueCacheRead, asUint);
     TJ(resourcesQueueCacheWrite, asUint);
+    TJ(resourcesQueueDownload, asUint);
     TJ(resourcesQueueDecode, asUint);
     TJ(resourcesQueueUpload, asUint);
     TJ(resourcesQueueGeodata, asUint);

@@ -74,13 +74,11 @@ public:
     class BrowserOptions
     {
     public:
-        BrowserOptions();
-
         std::shared_ptr<Json::Value> value;
         std::string searchUrl;
         std::string searchSrs;
-        double autorotate;
-        bool searchFilter;
+        double autorotate = 0;
+        bool searchFilter = true;
     };
 
     Mapconfig(MapImpl *map, const std::string &name);

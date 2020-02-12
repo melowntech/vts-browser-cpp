@@ -352,16 +352,24 @@ TraverseNode *findTravById(TraverseNode *trav, const TileId &what)
 {
     if (!trav)
         return nullptr;
-    TileId id = trav->id();
-    if (id == what)
+    if (trav->id() == what)
         return trav;
-    if (what.lod <= id.lod)
-        return findTravById(trav->parent, what);
-    TileId t = vtslibs::vts::parent(what, what.lod - (id.lod + 1));
-    for (auto &it : trav->childs)
-        if (it->id() == t)
-            return findTravById(it.get(), what);
-    return nullptr;
+    while (what.lod <= trav->id().lod)
+        trav = trav->parent;
+    while (trav->id().lod != what.lod)
+    {
+        TileId t = vtslibs::vts::parent(what,
+            what.lod - (trav->id().lod + 1));
+        TraverseNode *c = nullptr;
+        for (auto &it : trav->childs)
+            if (it->id() == t)
+                c = it.get();
+        if (!c)
+            return nullptr;
+        trav = c;
+    }
+    assert(trav && trav->id() == what);
+    return trav;
 }
 
 } // namespace vts

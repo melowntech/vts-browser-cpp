@@ -934,25 +934,23 @@ void CameraImpl::renderUpdate()
     {
         if (it->surfaceStack.surfaces.empty())
             continue;
+        OPTICK_EVENT("layer");
+        if (!it->freeLayerName.empty())
+        {
+            OPTICK_TAG("freeLayerName", it->freeLayerName.c_str());
+        }
         {
             OPTICK_EVENT("traversal");
-            OPTICK_TAG("freeLayerName", it->freeLayerName.c_str());
             traverseRender(it->traverseRoot.get());
         }
-        // resolve blending
         resolveBlending(it->traverseRoot.get(), layers[it]);
-        // resolve subtile merging
         {
             OPTICK_EVENT("subtileMerging");
             for (auto &os : opaqueSubtiles)
                 os.second.resolve(os.first, this);
             opaqueSubtiles.clear();
         }
-        // resolve grid preload
-        {
-            OPTICK_EVENT("gridPreloadProcess");
-            gridPreloadProcess(it->traverseRoot.get());
-        }
+        gridPreloadProcess(it->traverseRoot.get());
     }
     sortOpaqueFrontToBack();
 

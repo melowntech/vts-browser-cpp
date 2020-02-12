@@ -563,6 +563,9 @@ bool MapImpl::resourcesTryRemove(std::shared_ptr<Resource> &r)
     {
         // release the pointer if we are the last one holding it
         std::weak_ptr<Resource> w = r;
+#ifdef NDEBUG
+        r.reset();
+#else
         try
         {
             r.reset();
@@ -572,6 +575,7 @@ bool MapImpl::resourcesTryRemove(std::shared_ptr<Resource> &r)
             LOGTHROW(fatal, std::logic_error)
                     << "Exception in destructor";
         }
+#endif // NDEBUG
         r = w.lock();
     }
     if (!r)
@@ -589,10 +593,10 @@ void MapImpl::resourcesRemoveOld()
     OPTICK_EVENT();
     struct Res
     {
-        std::string n; // name
+        const std::string *n; // name
         uint32 m; // memory used
         uint32 a; // lastAccessTick
-        Res(const std::string &n, uint32 m, uint32 a) : n(n), m(m), a(a)
+        Res(const std::string *n, uint32 m, uint32 a) : n(n), m(m), a(a)
         {}
     };
     // successfully loaded resources are removed
@@ -612,7 +616,7 @@ void MapImpl::resourcesRemoveOld()
         // skip recently used resources
         if (it.second->lastAccessTick + 5 < renderTickIndex)
         {
-            Res r(it.first,
+            Res r(&it.second->name,
                 it.second->info.ramMemoryCost + it.second->info.gpuMemoryCost,
                 it.second->lastAccessTick);
             switch ((vts::Resource::State)it.second->state)
@@ -636,7 +640,7 @@ void MapImpl::resourcesRemoveOld()
     // remove unconditionalToRemove
     for (const Res &res : unconditionalToRemove)
     {
-        if (resourcesTryRemove(resources.resources[res.n]))
+        if (resourcesTryRemove(resources.resources[*res.n]))
             memUse -= res.m;
     }
     // remove resourcesToRemove
@@ -649,7 +653,7 @@ void MapImpl::resourcesRemoveOld()
         });
         for (const Res &res : resourcesToRemove)
         {
-            if (resourcesTryRemove(resources.resources[res.n]))
+            if (resourcesTryRemove(resources.resources[*res.n]))
             {
                 memUse -= res.m;
                 if (memUse < trs)
@@ -748,6 +752,8 @@ void MapImpl::resourcesStartDownloads()
 
 void MapImpl::resourcesRenderFinalize()
 {
+    OPTICK_EVENT();
+
     // release resources hold by the map and all layers
     purgeMapconfig();
 
@@ -761,43 +767,48 @@ void MapImpl::resourcesRenderFinalize()
 void MapImpl::resourcesRenderUpdate()
 {
     OPTICK_EVENT();
-    // resourcesPreparing is used to determine mapRenderComplete
-    //   and must be updated every frame
-    statistics.resourcesPreparing = 0;
-    for (const auto &it : resources.resources)
-    {
-        switch ((Resource::State)it.second->state)
-        {
-        case Resource::State::initializing:
-        case Resource::State::checkCache:
-        case Resource::State::startDownload:
-        case Resource::State::downloading:
-        case Resource::State::downloaded:
-        case Resource::State::decoded:
-            statistics.resourcesPreparing++;
-            break;
-        case Resource::State::ready:
-        case Resource::State::errorFatal:
-        case Resource::State::errorRetry:
-        case Resource::State::availFail:
-            break;
-        }
-    }
 
-    statistics.resourcesActive
-        = resources.resources.size();
-    statistics.resourcesDownloading
-        = resources.downloads;
-    statistics.resourcesQueueCacheWrite
-        = resources.queCacheWrite.estimateSize();
-    statistics.resourcesQueueDecode
-        = resources.queDecode.estimateSize();
-    statistics.resourcesQueueUpload
-        = resources.queUpload.estimateSize();
-    statistics.resourcesQueueGeodata
-        = resources.queGeodata.estimateSize();
-    statistics.resourcesQueueAtmosphere
-        = resources.queAtmosphere.estimateSize();
+    {
+        OPTICK_EVENT("statistics");
+
+        // resourcesPreparing is used to determine mapRenderComplete
+        //   and must be updated every frame
+        statistics.resourcesPreparing = 0;
+        for (const auto &it : resources.resources)
+        {
+            switch ((Resource::State)it.second->state)
+            {
+            case Resource::State::initializing:
+            case Resource::State::checkCache:
+            case Resource::State::startDownload:
+            case Resource::State::downloading:
+            case Resource::State::downloaded:
+            case Resource::State::decoded:
+                statistics.resourcesPreparing++;
+                break;
+            case Resource::State::ready:
+            case Resource::State::errorFatal:
+            case Resource::State::errorRetry:
+            case Resource::State::availFail:
+                break;
+            }
+        }
+
+        statistics.resourcesActive
+            = resources.resources.size();
+        statistics.resourcesDownloading
+            = resources.downloads;
+        statistics.resourcesQueueCacheWrite
+            = resources.queCacheWrite.estimateSize();
+        statistics.resourcesQueueDecode
+            = resources.queDecode.estimateSize();
+        statistics.resourcesQueueUpload
+            = resources.queUpload.estimateSize();
+        statistics.resourcesQueueGeodata
+            = resources.queGeodata.estimateSize();
+        statistics.resourcesQueueAtmosphere
+            = resources.queAtmosphere.estimateSize();
+    }
 
     // split workload into multiple render frames
     switch (renderTickIndex % 3)

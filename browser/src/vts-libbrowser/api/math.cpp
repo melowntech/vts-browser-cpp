@@ -148,7 +148,7 @@ vec3 anyPerpendicular(const vec3 &v)
     vec3 b = normalize(v);
     vec3 a = std::abs(dot(b, vec3(0, 0, 1))) > 0.9
                             ? vec3(0,1,0) : vec3(0,0,1);
-    return cross(b, a);
+    return normalize(cross(b, a));
 }
 
 vec3f cross(const vec3f &a, const vec3f &b)
@@ -165,7 +165,7 @@ vec3f anyPerpendicular(const vec3f &v)
     vec3f b = normalize(v);
     vec3f a = std::abs(dot(b, vec3f(0, 0, 1))) > 0.9
         ? vec3f(0, 1, 0) : vec3f(0, 0, 1);
-    return cross(b, a);
+    return normalize(cross(b, a));
 }
 
 mat4 identityMatrix4()

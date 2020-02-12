@@ -28,6 +28,8 @@
 #include "../traverseNode.hpp"
 #include "../renderTasks.hpp"
 
+#include <optick.h>
+
 namespace vts
 {
 
@@ -117,9 +119,9 @@ void CameraImpl::gridPreloadRequest(TraverseNode *trav)
         trav = trav->parent;
     }
 
-    sint32 D = options.balancedGridNeighborsDistance;
-    TileId base = trav->id();
-    TileId::index_type m = 1 << base.lod;
+    const sint32 D = options.balancedGridNeighborsDistance;
+    const TileId &base = trav->id();
+    const TileId::index_type m = 1 << base.lod;
     for (sint32 y = -D; y <= D; y++)
     {
         for (sint32 x = -D; x <= D; x++)
@@ -134,6 +136,7 @@ void CameraImpl::gridPreloadRequest(TraverseNode *trav)
 
 void CameraImpl::gridPreloadProcess(TraverseNode *root)
 {
+    OPTICK_EVENT();
     auto &glr = gridLoadRequests;
     std::sort(glr.begin(), glr.end());
     glr.erase(std::unique(glr.begin(), glr.end()), glr.end());
@@ -150,7 +153,7 @@ void CameraImpl::gridPreloadProcess(TraverseNode *trav,
     if (!travInit(trav))
         return;
 
-    TileId myId = trav->id();
+    const TileId &myId = trav->id();
     std::vector<TileId> childRequests[4];
     for (auto &cr : childRequests)
         cr.reserve(requests.size());

@@ -97,23 +97,28 @@ enum class TraverseMode
     // disables traversal of the specific feature
     None,
 
-    // Flat mode requires least amount of memory and downloads
+    // flat mode requires least amount of memory and downloads
     Flat,
 
-    // Stable is like Flat mode with hysteresis
+    // stable is like Flat mode with hysteresis
     Stable,
 
-    // Balanced provides fast loading with filling empty space
-    //   with coarser tiles
+    // filled is like stable with additional coarser tiles to fill holes
+    // it requires stencil buffer
+    Filled,
+
+    // balanced provides fast loading with filling empty space
+    //   by adding cut parts of coarser tiles
+    // it requires special shaders for the cutting
     Balanced,
 
-    // Hierarchical mode downloads every lod from top to the required level,
-    //   this ensures that it has at least something to show at all times
+    // hierarchical mode downloads every lod from top to the required level,
+    //   this ensures that it has something to show at all times
     Hierarchical,
 
-    // Fixed mode completely changes how the traversal works
-    //   it will use fixed selected lod (and some coarser where unavailable)
-    //   and it will render everything up to some specified distance
+    // fixed mode completely changes how the traversal works:
+    //   it targets fixed selected lod (and some coarser where unavailable)
+    //   and will render everything up to specified distance
     // this mode is designed for use with collider probes
     Fixed,
 };
@@ -154,6 +159,7 @@ UTILITY_GENERATE_ENUM_IO(TraverseMode,
     ((None)("none"))
     ((Flat)("flat"))
     ((Stable)("stable"))
+    ((Filled)("filled"))
     ((Balanced)("balanced"))
     ((Hierarchical)("hierarchical"))
     ((Fixed)("fixed"))

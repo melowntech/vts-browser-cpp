@@ -435,7 +435,7 @@ void RenderViewImpl::bindUboView(const std::shared_ptr<GeodataTile> &g)
 
 void RenderViewImpl::renderGeodata()
 {
-    OPTICK_EVENT();
+    OPTICK_EVENT("geodata");
 
     glDepthMask(GL_FALSE);
     glStencilFunc(GL_EQUAL, 0, 0xFF);
@@ -458,6 +458,8 @@ void RenderViewImpl::renderGeodata()
     geodataJobs.clear();
 
     glDepthMask(GL_TRUE);
+
+    CHECK_GL("rendered geodata");
 }
 
 void RenderViewImpl::computeZBufferOffsetValues()

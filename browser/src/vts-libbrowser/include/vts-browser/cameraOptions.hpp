@@ -67,16 +67,16 @@ public:
     // desired lod used with fixed traversal mode
     uint32 fixedTraversalLod = 15;
 
-    // coarser lod offset for grids for use with balanced traversal
+    // coarser lod offset for grids
     // -1 to disable grids entirely
-    uint32 balancedGridLodOffset = 5;
+    uint32 gridLodOffset = 5;
 
-    // distance to neighbors for grids for use with balanced traversal
+    // distance to neighbors for grids
     // 0: no neighbors
     // 1: one ring of neighbors (8 total)
     // 2: two rings (24 total)
     // etc.
-    uint32 balancedGridNeighborsDistance = 1;
+    uint32 gridNeighborsDistance = 1;
 
     // enable blending lods to prevent lod popping
     // 0: disable
@@ -84,10 +84,12 @@ public:
     // 2: enable, detect draws near edges
     uint32 lodBlending = 2;
 
-    TraverseMode traverseModeSurfaces = TraverseMode::Balanced;
+    TraverseMode traverseModeSurfaces = TraverseMode::Filled;
     TraverseMode traverseModeGeodata = TraverseMode::Stable;
 
     // move opaque blending draws into transparent group
+    //   blending with translucency -> true
+    //   blending by dithering -> false
     bool lodBlendingTransparent = false;
 
     bool debugDetachedCamera = false;

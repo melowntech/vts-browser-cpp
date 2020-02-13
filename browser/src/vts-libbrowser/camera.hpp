@@ -167,13 +167,13 @@ public:
     bool travModeStable(TraverseNode *trav, int mode);
     bool travModeBalanced(TraverseNode *trav, bool renderOnly);
     void travModeFixed(TraverseNode *trav);
-    void traverseRender(TraverseNode *trav);
+    void traverseRender(TraverseNode *trav, TraverseMode mode);
     void gridPreloadRequest(TraverseNode *trav);
     void gridPreloadProcess(TraverseNode *root);
     void gridPreloadProcess(TraverseNode *trav,
                             const std::vector<TileId> &requests);
-    void resolveBlending(TraverseNode *root,
-                CameraMapLayer &layer);
+    void resolveBlending(TraverseNode *root, CameraMapLayer &layer);
+    void subtileMerging();
     void sortOpaqueFrontToBack();
     void renderUpdate();
     void suggestedNearFar(double &near_, double &far_);

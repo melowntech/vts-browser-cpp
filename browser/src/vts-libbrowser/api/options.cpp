@@ -170,8 +170,8 @@ void CameraOptions::applyJson(const std::string &json)
     AJ(samplesForAltitudeLodSelection, asDouble);
     AJ(fixedTraversalDistance, asDouble);
     AJ(fixedTraversalLod, asUInt);
-    AJ(balancedGridLodOffset, asUInt);
-    AJ(balancedGridNeighborsDistance, asUInt);
+    AJ(gridLodOffset, asUInt);
+    AJ(gridNeighborsDistance, asUInt);
     AJ(lodBlending, asUInt);
     AJE(traverseModeSurfaces, TraverseMode);
     AJE(traverseModeGeodata, TraverseMode);
@@ -205,8 +205,8 @@ std::string CameraOptions::toJson() const
     TJ(samplesForAltitudeLodSelection, asDouble);
     TJ(fixedTraversalDistance, asDouble);
     TJ(fixedTraversalLod, asUInt);
-    TJ(balancedGridLodOffset, asUInt);
-    TJ(balancedGridNeighborsDistance, asUInt);
+    TJ(gridLodOffset, asUInt);
+    TJ(gridNeighborsDistance, asUInt);
     TJ(lodBlending, asUInt);
     TJE(traverseModeSurfaces, TraverseMode);
     TJE(traverseModeGeodata, TraverseMode);

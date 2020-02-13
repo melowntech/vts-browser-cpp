@@ -123,6 +123,14 @@ void optionsConfigMapRuntime(
     sanitizeSection(section);
     desc.add_options()
 
+    ((section + "language").c_str(),
+        po::value<std::string>(&opts->language),
+        "Language code for geodata.")
+
+    ((section + "pixelsPerInch").c_str(),
+        po::value<double>(&opts->pixelsPerInch),
+        "DPI for use with geodata.")
+
     ((section + "renderTilesScale").c_str(),
         po::value<double>(&opts->renderTilesScale),
         "Scale of every tile. "
@@ -149,10 +157,19 @@ void optionsConfigMapRuntime(
         po::value<uint32>(&opts->fetchFirstRetryTimeOffset),
         "Delay in seconds for first resource download retry.")
 
+    ((section + "measurementUnitsSystem").c_str(),
+        po::value<uint32>(&opts->measurementUnitsSystem),
+        "0 for US customary units and 1 for metric system.")
+
     ((section + "debugSaveCorruptedFiles").c_str(),
         po::value<bool>(&opts->debugSaveCorruptedFiles)
         ->implicit_value(!opts->debugSaveCorruptedFiles),
         "debugSaveCorruptedFiles")
+
+    ((section + "debugValidateGeodataStyles").c_str(),
+        po::value<bool>(&opts->debugValidateGeodataStyles)
+        ->implicit_value(!opts->debugValidateGeodataStyles),
+        "debugValidateGeodataStyles")
 
     FILE_OPTIONS;
 }
@@ -179,27 +196,30 @@ void optionsConfigCamera(
         "none\n"
         "flat\n"
         "stable\n"
+        "filled\n"
         "balanced\n"
         "hierarchical\n"
         "fixed")
 
     ((section + "traverseModeGeodata").c_str(),
         po::value<TraverseMode>(&opts->traverseModeGeodata),
-        "Render traversal mode for geodata:\n"
-        "none\n"
-        "flat\n"
-        "stable\n"
-        "balanced\n"
-        "hierarchical\n"
-        "fixed")
+        "Render traversal mode for geodata - same modes as for surfaces")
 
-    ((section + "balancedGridLodOffset").c_str(),
-        po::value<uint32>(&opts->balancedGridLodOffset),
-        "Coarser lod offset for grids for use with balanced traversal.")
+    ((section + "fixedTraversalLod").c_str(),
+        po::value<uint32>(&opts->fixedTraversalLod),
+        "Lod to use for fixed traversal.")
 
-    ((section + "balancedGridNeighborsDistance").c_str(),
-        po::value<uint32>(&opts->balancedGridNeighborsDistance),
-        "Distance to neighbors for grids for use with balanced traversal.")
+    ((section + "fixedTraversalDistance").c_str(),
+        po::value<double>(&opts->fixedTraversalDistance),
+        "Distance to use for fixed traversal.")
+
+    ((section + "gridLodOffset").c_str(),
+        po::value<uint32>(&opts->gridLodOffset),
+        "Coarser lod offset for grids.")
+
+    ((section + "gridNeighborsDistance").c_str(),
+        po::value<uint32>(&opts->gridNeighborsDistance),
+        "Distance to neighbors for grids.")
 
     FILE_OPTIONS;
 }

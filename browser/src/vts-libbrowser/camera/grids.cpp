@@ -108,10 +108,10 @@ void SubtilesMerger::resolve(TraverseNode *trav, CameraImpl *impl)
 void CameraImpl::gridPreloadRequest(TraverseNode *trav)
 {
     assert(trav);
-    if (options.balancedGridLodOffset == (uint32)-1)
+    if (options.gridLodOffset == (uint32)-1)
         return;
 
-    for (uint32 lodOffset = 0; lodOffset < options.balancedGridLodOffset;
+    for (uint32 lodOffset = 0; lodOffset < options.gridLodOffset;
         lodOffset++)
     {
         if (!trav->parent || !trav->parent->surface)
@@ -119,7 +119,7 @@ void CameraImpl::gridPreloadRequest(TraverseNode *trav)
         trav = trav->parent;
     }
 
-    const sint32 D = options.balancedGridNeighborsDistance;
+    const sint32 D = options.gridNeighborsDistance;
     const TileId &base = trav->id();
     const TileId::index_type m = 1 << base.lod;
     for (sint32 y = -D; y <= D; y++)

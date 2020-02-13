@@ -93,6 +93,21 @@ BoundParamInfo::List MapLayer::boundList(const SurfaceInfo *surface,
     return bls;
 }
 
+namespace
+{
+
+std::unique_ptr<TraverseNode> makeTraverseRoot(MapLayer *layer)
+{
+    auto *mapconfig = layer->map->mapconfig.get();
+    std::unique_ptr<TraverseNode> root
+        = std::make_unique<TraverseNode>(layer, nullptr, NodeInfo(
+        mapconfig->referenceFrame, TileId(), false, *mapconfig));
+    root->priority = std::numeric_limits<double>::infinity();
+    return root;
+}
+
+} // namespace
+
 bool MapLayer::prerequisitesCheckMainSurfaces()
 {
     auto *mapconfig = map->mapconfig.get();
@@ -132,9 +147,8 @@ bool MapLayer::prerequisitesCheckMainSurfaces()
     if (surfaceStack.surfaces.empty())
         surfaceStack.generateReal(map);
 
-    traverseRoot = std::make_unique<TraverseNode>(this, nullptr, NodeInfo(
-                    mapconfig->referenceFrame, TileId(), false, *mapconfig));
-    traverseRoot->priority = std::numeric_limits<double>::infinity();
+    traverseRoot = makeTraverseRoot(this);
+    traverseRoot2 = makeTraverseRoot(this);
 
     return true;
 }
@@ -151,9 +165,8 @@ bool MapLayer::prerequisitesCheckFreeLayer()
     surfaceStack.generateFree(map, *freeLayer);
     assert(!surfaceStack.surfaces.empty());
 
-    traverseRoot = std::make_unique<TraverseNode>(this, nullptr, NodeInfo(
-                    mapconfig->referenceFrame, TileId(), false, *mapconfig));
-    traverseRoot->priority = std::numeric_limits<double>::infinity();
+    traverseRoot = makeTraverseRoot(this);
+    traverseRoot2 = makeTraverseRoot(this);
 
     if (isGeodata())
         creditScope = Credits::Scope::Geodata;

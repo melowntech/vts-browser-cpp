@@ -117,7 +117,10 @@ void MapImpl::renderUpdate(double elapsedTime)
     {
         OPTICK_EVENT("traverseClearing");
         for (auto &it : layers)
+        {
             traverseClearing(it->traverseRoot.get());
+            traverseClearing(it->traverseRoot2.get());
+        }
     }
 
     if (mapconfig->atmosphereDensityTexture)

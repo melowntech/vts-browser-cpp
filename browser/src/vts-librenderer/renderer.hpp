@@ -188,6 +188,11 @@ public:
     void getWorldPosition(const double screenPos[2], double worldPos[3]);
     void renderCompass(const double screenPosSize[3],
         const double mapRotation[3]);
+    void renderOpaque(const std::vector<DrawSurfaceTask> &surfaces);
+    void renderTransparent(const std::vector<DrawSurfaceTask> &surfaces);
+    void renderBackground();
+    void renderWireframe();
+    void renderInfographics();
     void renderValid();
     void renderEntry();
 

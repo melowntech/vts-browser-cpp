@@ -35,6 +35,8 @@
 #include "../mapConfig.hpp"
 #include "../map.hpp"
 
+#include <optick.h>
+
 namespace vts
 {
 
@@ -87,6 +89,8 @@ std::shared_ptr<GpuTexture> CameraImpl::travInternalTexture(
 
 bool CameraImpl::generateMonolithicGeodataTrav(TraverseNode *trav)
 {
+    OPTICK_EVENT();
+
     assert(!!trav->layer->freeLayer);
     assert(!!trav->layer->freeLayerParams);
 
@@ -133,6 +137,8 @@ bool CameraImpl::generateMonolithicGeodataTrav(TraverseNode *trav)
 
 bool CameraImpl::travDetermineMeta(TraverseNode *trav)
 {
+    OPTICK_EVENT();
+
     assert(trav->layer);
     assert(!trav->meta);
     assert(trav->childs.empty());
@@ -418,6 +424,8 @@ bool CameraImpl::travDetermineDraws(TraverseNode *trav)
 
 bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
 {
+    OPTICK_EVENT();
+
     const TileId nodeId = trav->id();
 
     // aggregate mesh
@@ -578,6 +586,8 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
 
 bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
 {
+    OPTICK_EVENT();
+
     const TileId nodeId = trav->id();
     std::string geoName = trav->surface->urlGeodata(
             UrlTemplate::Vars(nodeId, vtslibs::vts::local(trav->nodeInfo)));
@@ -849,10 +859,10 @@ void CameraImpl::travModeFixed(TraverseNode *trav)
         travModeFixed(t.get());
 }
 
-void CameraImpl::traverseRender(TraverseNode *trav)
+void CameraImpl::traverseRender(TraverseNode *trav, TraverseMode mode)
 {
-    switch (trav->layer->isGeodata() ? options.traverseModeGeodata
-                                     : options.traverseModeSurfaces)
+    OPTICK_EVENT();
+    switch (mode)
     {
     case TraverseMode::None:
         break;
@@ -860,6 +870,7 @@ void CameraImpl::traverseRender(TraverseNode *trav)
         travModeFlat(trav);
         break;
     case TraverseMode::Stable:
+    case TraverseMode::Filled:
         travModeStable(trav, 0);
         break;
     case TraverseMode::Balanced:

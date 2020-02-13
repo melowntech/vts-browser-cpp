@@ -101,6 +101,7 @@ public:
     boost::optional<SurfaceStack> tilesetStack;
 
     std::unique_ptr<TraverseNode> traverseRoot;
+    std::unique_ptr<TraverseNode> traverseRoot2;
 
     MapImpl *const map = nullptr;
     Credits::Scope creditScope;

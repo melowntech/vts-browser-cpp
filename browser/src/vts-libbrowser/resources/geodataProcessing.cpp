@@ -2303,7 +2303,8 @@ if (cond == #OP) \
             v.erase(std::remove_if(v.begin(), v.end(),
                 [&](const Point &pp) {
                     vec3 p = group->m2w(pp);
-                    if (length(vec3(l - p)) < 1e-5)
+                    vec3 d = l - p;
+                    if (dot(d, d) < 1e-10)
                         return true;
                     l = p;
                     return false;

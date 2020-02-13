@@ -416,6 +416,114 @@ void RenderViewImpl::updateFramebuffers()
     }
 }
 
+void RenderViewImpl::renderOpaque(
+    const std::vector<DrawSurfaceTask> &surfaces)
+{
+    if (surfaces.empty())
+        return;
+    OPTICK_EVENT("opaque");
+    glDisable(GL_BLEND);
+    context->shaderSurface->bind();
+    for (const DrawSurfaceTask &t : surfaces)
+        drawSurface(t);
+    CHECK_GL("rendered opaque");
+}
+
+void RenderViewImpl::renderTransparent(
+    const std::vector<DrawSurfaceTask> &surfaces)
+{
+    if (surfaces.empty())
+        return;
+    OPTICK_EVENT("transparent");
+    glEnable(GL_BLEND);
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(0, -10);
+    glDepthMask(GL_FALSE);
+    context->shaderSurface->bind();
+    for (const DrawSurfaceTask &t : surfaces)
+        drawSurface(t);
+    glDepthMask(GL_TRUE);
+    glPolygonOffset(0, 0);
+    glDisable(GL_POLYGON_OFFSET_FILL);
+    CHECK_GL("rendered transparent");
+}
+
+void RenderViewImpl::renderBackground()
+{
+    if (!options.renderAtmosphere)
+        return;
+    OPTICK_EVENT("background");
+
+    // corner directions
+    vec3 camPos = rawToVec3(draws->camera.eye) / body->majorRadius;
+    mat4 inv = (viewProj * scaleMatrix(body->majorRadius)).inverse();
+    vec4 cornerDirsD[4] = {
+        inv * vec4(-1, -1, 0, 1),
+        inv * vec4(+1, -1, 0, 1),
+        inv * vec4(-1, +1, 0, 1),
+        inv * vec4(+1, +1, 0, 1)
+    };
+    vec3f cornerDirs[4];
+    for (uint32 i = 0; i < 4; i++)
+        cornerDirs[i] = normalize(vec3(vec4to3(cornerDirsD[i], true)
+            - camPos)).cast<float>();
+
+    context->shaderBackground->bind();
+    for (uint32 i = 0; i < 4; i++)
+        context->shaderBackground->uniformVec3(i, cornerDirs[i].data());
+    context->meshQuad->bind();
+    context->meshQuad->dispatch();
+    CHECK_GL("rendered background");
+}
+
+void RenderViewImpl::renderWireframe()
+{
+    if (!options.renderWireframe)
+        return;
+    OPTICK_EVENT("wireframe");
+    glDisable(GL_BLEND);
+#ifndef __EMSCRIPTEN__
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonOffset(0, -1000);
+#ifndef VTSR_OPENGLES
+    glEnable(GL_POLYGON_OFFSET_LINE);
+#endif
+#endif
+    context->shaderSurface->bind();
+    for (const DrawSurfaceTask &it : draws->opaque)
+    {
+        DrawSurfaceTask t(it);
+        t.flatShading = false;
+        t.color[0] = t.color[1] = t.color[2] = t.color[3] = 0;
+#ifdef __EMSCRIPTEN__
+        drawSurface(t, true);
+#else
+        drawSurface(t);
+#endif
+    }
+#ifndef __EMSCRIPTEN__
+#ifndef VTSR_OPENGLES
+    glDisable(GL_POLYGON_OFFSET_LINE);
+#endif
+    glPolygonOffset(0, 0);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
+    glEnable(GL_BLEND);
+    CHECK_GL("rendered wireframe");
+}
+
+void RenderViewImpl::renderInfographics()
+{
+    if (draws->infographics.empty())
+        return;
+    OPTICK_EVENT("infographics");
+    glDisable(GL_DEPTH_TEST);
+    context->shaderInfographics->bind();
+    for (const DrawInfographicsTask &t : draws->infographics)
+        drawInfographics(t);
+    CHECK_GL("rendered infographics");
+}
+
 void RenderViewImpl::renderValid()
 {
     OPTICK_EVENT();
@@ -424,106 +532,34 @@ void RenderViewImpl::renderValid()
     projInv = proj.inverse();
     viewProj = proj * view;
     viewProjInv = viewProj.inverse();
-
-    // update atmosphere
     updateAtmosphereBuffer();
 
-    // render opaque
-    if (!draws->opaque.empty())
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    enableClipDistance(true);
+    if (draws->opaqueFill.empty())
     {
-        OPTICK_EVENT("opaque");
-        glDisable(GL_BLEND);
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LEQUAL);
-        context->shaderSurface->bind();
-        enableClipDistance(true);
-        for (const DrawSurfaceTask &t : draws->opaque)
-            drawSurface(t);
-        enableClipDistance(false);
-        CHECK_GL("rendered opaque");
+        renderOpaque(draws->opaque);
+        renderTransparent(draws->transparent);
     }
-
-    // render background (atmosphere)
-    if (options.renderAtmosphere)
+    else
     {
-        OPTICK_EVENT("background");
-        // corner directions
-        vec3 camPos = rawToVec3(draws->camera.eye) / body->majorRadius;
-        mat4 inv = (viewProj * scaleMatrix(body->majorRadius)).inverse();
-        vec4 cornerDirsD[4] = {
-            inv * vec4(-1, -1, 0, 1),
-            inv * vec4(+1, -1, 0, 1),
-            inv * vec4(-1, +1, 0, 1),
-            inv * vec4(+1, +1, 0, 1)
-        };
-        vec3f cornerDirs[4];
-        for (uint32 i = 0; i < 4; i++)
-            cornerDirs[i] = normalize(vec3(vec4to3(cornerDirsD[i], true)
-                - camPos)).cast<float>();
-
-        context->shaderBackground->bind();
-        for (uint32 i = 0; i < 4; i++)
-            context->shaderBackground->uniformVec3(i, cornerDirs[i].data());
-        context->meshQuad->bind();
-        context->meshQuad->dispatch();
-        CHECK_GL("rendered background");
+        glEnable(GL_STENCIL_TEST);
+        glStencilFunc(GL_ALWAYS, 0, 0xFF);
+        glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_KEEP);
+        glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR);
+        renderOpaque(draws->opaque);
+        renderTransparent(draws->transparent);
+        glStencilFunc(GL_EQUAL, 0, 0xFF);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+        renderOpaque(draws->opaqueFill);
+        renderTransparent(draws->transparentFill);
+        glClear(GL_STENCIL_BUFFER_BIT);
+        glDisable(GL_STENCIL_TEST);
     }
-
-    // render transparent
-    if (!draws->transparent.empty())
-    {
-        OPTICK_EVENT("transparent");
-        glEnable(GL_BLEND);
-        glEnable(GL_POLYGON_OFFSET_FILL);
-        glPolygonOffset(0, -10);
-        glDepthMask(GL_FALSE);
-        context->shaderSurface->bind();
-        enableClipDistance(true);
-        for (const DrawSurfaceTask &t : draws->transparent)
-            drawSurface(t);
-        enableClipDistance(false);
-        glDepthMask(GL_TRUE);
-        glDisable(GL_POLYGON_OFFSET_FILL);
-        glPolygonOffset(0, 0);
-        CHECK_GL("rendered transparent");
-    }
-
-    // render polygon edges
-    if (options.renderPolygonEdges)
-    {
-        OPTICK_EVENT("polygon_edges");
-        glDisable(GL_BLEND);
-#ifndef __EMSCRIPTEN__
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glPolygonOffset(0, -1000);
-#ifndef VTSR_OPENGLES
-        glEnable(GL_POLYGON_OFFSET_LINE);
-#endif
-#endif
-        context->shaderSurface->bind();
-        enableClipDistance(true);
-        for (const DrawSurfaceTask &it : draws->opaque)
-        {
-            DrawSurfaceTask t(it);
-            t.flatShading = false;
-            t.color[0] = t.color[1] = t.color[2] = t.color[3] = 0;
-#ifdef __EMSCRIPTEN__
-            drawSurface(t, true);
-#else
-            drawSurface(t);
-#endif
-        }
-        enableClipDistance(false);
-#ifndef __EMSCRIPTEN__
-#ifndef VTSR_OPENGLES
-        glDisable(GL_POLYGON_OFFSET_LINE);
-#endif
-        glPolygonOffset(0, 0);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-#endif
-        glEnable(GL_BLEND);
-        CHECK_GL("rendered polygon edges");
-    }
+    renderWireframe();
+    enableClipDistance(false);
+    renderBackground();
 
     // copy the depth (resolve multisampling)
     if (vars.depthReadTexId != vars.depthRenderTexId)
@@ -551,29 +587,17 @@ void RenderViewImpl::renderValid()
             if (!options.debugDepthFeedback)
                 dw = dh = 0;
             depthBuffer.performCopy(vars.depthReadTexId, dw, dh, viewProj);
+            glViewport(0, 0, options.width, options.height);
+            glScissor(0, 0, options.width, options.height);
         }
-        glViewport(0, 0, options.width, options.height);
-        glScissor(0, 0, options.width, options.height);
         glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
-        glEnable(GL_BLEND);
-        glEnable(GL_DEPTH_TEST);
         CHECK_GL("copy depth");
     }
 
-    // render geodata
+    glEnable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
     renderGeodata();
-    CHECK_GL("rendered geodata");
-
-    // render infographics
-    if (!draws->infographics.empty())
-    {
-        OPTICK_EVENT("infographics");
-        glDisable(GL_DEPTH_TEST);
-        context->shaderInfographics->bind();
-        for (const DrawInfographicsTask &t : draws->infographics)
-            drawInfographics(t);
-        CHECK_GL("rendered infographics");
-    }
+    renderInfographics();
 }
 
 void RenderViewImpl::renderEntry()

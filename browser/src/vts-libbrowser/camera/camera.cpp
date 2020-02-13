@@ -845,6 +845,14 @@ void CameraImpl::resolveBlending(TraverseNode *root,
     }
 }
 
+void CameraImpl::subtileMerging()
+{
+    OPTICK_EVENT();
+    for (auto &os : opaqueSubtiles)
+        os.second.resolve(os.first, this);
+    opaqueSubtiles.clear();
+}
+
 void CameraImpl::renderUpdate()
 {
     OPTICK_EVENT();
@@ -939,16 +947,27 @@ void CameraImpl::renderUpdate()
         {
             OPTICK_TAG("freeLayerName", it->freeLayerName.c_str());
         }
-        {
-            OPTICK_EVENT("traversal");
-            traverseRender(it->traverseRoot.get());
-        }
+        TraverseMode traverseMode = it->isGeodata()
+            ? options.traverseModeGeodata
+            : options.traverseModeSurfaces;
+        traverseRender(it->traverseRoot.get(), traverseMode);
         resolveBlending(it->traverseRoot.get(), layers[it]);
+        subtileMerging();
+        if (traverseMode == TraverseMode::Filled)
         {
-            OPTICK_EVENT("subtileMerging");
-            for (auto &os : opaqueSubtiles)
-                os.second.resolve(os.first, this);
-            opaqueSubtiles.clear();
+            OPTICK_EVENT("filling");
+            CameraDraws draws2;
+            draws2.camera = draws.camera;
+            std::swap(draws, draws2);
+            CameraOptions opts2 = options;
+            options.targetPixelRatioSurfaces *= 10;
+            options.targetPixelRatioGeodata *= 10;
+            options.lodBlending = 0;
+            traverseRender(it->traverseRoot2.get(), TraverseMode::Stable);
+            options = opts2;
+            std::swap(draws, draws2);
+            std::swap(draws.opaqueFill, draws2.opaque);
+            std::swap(draws.transparentFill, draws2.transparent);
         }
         gridPreloadProcess(it->traverseRoot.get());
     }
@@ -1004,8 +1023,14 @@ void CameraImpl::suggestedNearFar(double &near_, double &far_)
 void CameraImpl::sortOpaqueFrontToBack()
 {
     OPTICK_EVENT();
-    vec3 e = rawToVec3(draws.camera.eye);
+    const vec3 e = rawToVec3(draws.camera.eye);
     std::sort(draws.opaque.begin(), draws.opaque.end(), [e](
+        const DrawSurfaceTask &a, const DrawSurfaceTask &b) {
+        vec3 va = rawToVec3(a.center).cast<double>() - e;
+        vec3 vb = rawToVec3(b.center).cast<double>() - e;
+        return dot(va, va) < dot(vb, vb);
+    });
+    std::sort(draws.opaqueFill.begin(), draws.opaqueFill.end(), [e](
         const DrawSurfaceTask &a, const DrawSurfaceTask &b) {
         vec3 va = rawToVec3(a.center).cast<double>() - e;
         vec3 vb = rawToVec3(b.center).cast<double>() - e;

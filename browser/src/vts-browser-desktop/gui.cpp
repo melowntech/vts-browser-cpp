@@ -675,25 +675,6 @@ public:
                     sprintf(buffer, "%3.1f", c.targetPixelRatioGeodata);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
-                    // balanced grids
-                    if (c.traverseModeSurfaces == TraverseMode::Balanced
-                        || c.traverseModeGeodata == TraverseMode::Balanced)
-                    {
-                        // balancedGridLodOffset
-                        nk_label(&ctx, "Grid offset:", NK_TEXT_LEFT);
-                        c.balancedGridLodOffset = nk_slide_int(&ctx,
-                            -1, c.balancedGridLodOffset, 10, 1);
-                        sprintf(buffer, "%d", c.balancedGridLodOffset);
-                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-
-                        // balancedGridNeighborsDistance
-                        nk_label(&ctx, "Grid neighbors:", NK_TEXT_LEFT);
-                        c.balancedGridNeighborsDistance = nk_slide_int(&ctx,
-                            0, c.balancedGridNeighborsDistance, 3, 1);
-                        sprintf(buffer, "%d", c.balancedGridNeighborsDistance);
-                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                    }
-
                     // fixed traversal
                     if (c.traverseModeSurfaces == TraverseMode::Fixed
                         || c.traverseModeGeodata == TraverseMode::Fixed)
@@ -749,6 +730,20 @@ public:
                             c.lodBlendingTransparent);
                         nk_label(&ctx, "", NK_TEXT_RIGHT);
                     }
+
+                    // gridLodOffset
+                    nk_label(&ctx, "Grid offset:", NK_TEXT_LEFT);
+                    c.gridLodOffset = nk_slide_int(&ctx,
+                        -1, c.gridLodOffset, 10, 1);
+                    sprintf(buffer, "%d", c.gridLodOffset);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                    // gridNeighborsDistance
+                    nk_label(&ctx, "Grid neighbors:", NK_TEXT_LEFT);
+                    c.gridNeighborsDistance = nk_slide_int(&ctx,
+                        0, c.gridNeighborsDistance, 3, 1);
+                    sprintf(buffer, "%d", c.gridNeighborsDistance);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                     // cullingOffsetDistance
                     nk_label(&ctx, "Culling offset:", NK_TEXT_LEFT);
@@ -837,8 +832,8 @@ public:
                     "Flat shading", c.debugFlatShading);
 
                 // polygon edges
-                r.renderPolygonEdges = nk_check_label(&ctx,
-                    "Edges", r.renderPolygonEdges);
+                r.renderWireframe = nk_check_label(&ctx,
+                    "Edges", r.renderWireframe);
 
                 // render compas
                 nk_checkbox_label(&ctx,
@@ -1181,6 +1176,8 @@ public:
                 const CameraDraws &d = window->camera->draws();
                 S("Opaque: ", d.opaque.size(), "");
                 S("Transparent: ", d.transparent.size(), "");
+                S("Opaque Fill: ", d.opaqueFill.size(), "");
+                S("Transparent Fill: ", d.transparentFill.size(), "");
                 S("Geodata: ", d.geodata.size(), "");
                 S("Infographics: ", d.infographics.size(), "");
 

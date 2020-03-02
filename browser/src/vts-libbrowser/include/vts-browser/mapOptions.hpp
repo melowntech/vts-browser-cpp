@@ -148,7 +148,7 @@ public:
 
     bool debugVirtualSurfaces = true;
     bool debugSaveCorruptedFiles = false;
-    bool debugValidateGeodataStyles = true;
+    bool debugValidateGeodataStyles = false;
     bool debugCoarsenessDisks = true;
     bool debugExtractRawResources = false;
 };

@@ -63,7 +63,6 @@ class SearchTask;
 class GpuTexture;
 class GpuMesh;
 class MetaTile;
-class NavTile;
 class MeshAggregate;
 class ExternalBoundLayer;
 class ExternalFreeLayer;
@@ -234,7 +233,6 @@ public:
     std::shared_ptr<AuthConfig> getAuthConfig(const std::string &name);
     std::shared_ptr<Mapconfig> getMapconfig(const std::string &name);
     std::shared_ptr<MetaTile> getMetaTile(const std::string &name);
-    std::shared_ptr<NavTile> getNavTile(const std::string &name);
     std::shared_ptr<MeshAggregate> getMeshAggregate(const std::string &name);
     std::shared_ptr<ExternalBoundLayer> getExternalBoundLayer(
             const std::string &name);

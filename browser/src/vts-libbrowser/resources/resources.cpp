@@ -29,7 +29,6 @@
 #include "../authConfig.hpp"
 #include "../mapConfig.hpp"
 #include "../metaTile.hpp"
-#include "../navTile.hpp"
 #include "../searchTask.hpp"
 #include "../tilesetMapping.hpp"
 #include "../geodata.hpp"
@@ -119,12 +118,6 @@ std::shared_ptr<Mapconfig> MapImpl::getMapconfig(const std::string &name)
 std::shared_ptr<MetaTile> MapImpl::getMetaTile(const std::string &name)
 {
     return getMapResource<MetaTile>(this, name);
-}
-
-std::shared_ptr<NavTile> MapImpl::getNavTile(
-        const std::string &name)
-{
-    return getMapResource<NavTile>(this, name);
 }
 
 std::shared_ptr<MeshAggregate> MapImpl::getMeshAggregate(

@@ -24,28 +24,39 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef NAVTILE_HPP_wv1456rzti
-#define NAVTILE_HPP_wv1456rzti
+#include "../metaTile.hpp"
+#include "../fetchTask.hpp"
+#include "../mapConfig.hpp"
+//#include "../tilesetMapping.hpp"
 
-#include "include/vts-browser/math.hpp"
-
-#include "resource.hpp"
+#include <dbglog/dbglog.hpp>
 
 namespace vts
 {
 
-class NavTile : public Resource
+MetaTile::MetaTile(vts::MapImpl *map, const std::string &name) :
+    Resource(map, name),
+    vtslibs::vts::MetaTile(vtslibs::vts::TileId(), 0)
+{}
+
+void MetaTile::decode()
 {
-public:
-    NavTile(MapImpl *map, const std::string &name);
-    void decode() override;
-    FetchTask::ResourceType resourceType() const override;
+    detail::BufferStream w(fetch->reply.content);
+    *(vtslibs::vts::MetaTile*)this
+            = vtslibs::vts::loadMetaTile(w, 5, name);
+    vtslibs::vts::MetaTile::for_each([](vtslibs::vts::TileId,
+        vtslibs::vts::MetaNode &node) {
+            // override display size to 1024
+            node.displaySize = 1024;
+        });
+    info.ramMemoryCost += sizeof(*this);
+    uint32 side = 1 << 5;
+    info.ramMemoryCost += side * side * sizeof(vtslibs::vts::MetaNode);
+}
 
-    std::vector<unsigned char> data;
-
-    static vec2 sds2px(const vec2 &point, const math::Extents2 &extents);
-};
+FetchTask::ResourceType MetaTile::resourceType() const
+{
+    return FetchTask::ResourceType::MetaTile;
+}
 
 } // namespace vts
-
-#endif

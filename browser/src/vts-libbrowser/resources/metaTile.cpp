@@ -36,7 +36,8 @@
 namespace vts
 {
 
-MetaNode::MetaNode() :
+MetaNode::MetaNode(const NodeInfo &nodeInfo) :
+    nodeInfo(nodeInfo),
     diskNormalPhys(nan3()),
     diskHeightsPhys(nan2()),
     diskHalfAngle(nan1()),
@@ -83,7 +84,7 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
 {
     const auto &cnv = m->map->convertor;
     vtslibs::vts::NodeInfo nodeInfo(m->referenceFrame, id, false, *m);
-    MetaNode node;
+    MetaNode node(nodeInfo);
 
     // corners
     if (!vtslibs::vts::empty(meta.geomExtents)
@@ -265,7 +266,7 @@ FetchTask::ResourceType MetaTile::resourceType() const
 
 std::shared_ptr<const MetaNode> MetaTile::getNode(const TileId &tileId) const
 {
-    const MetaNode *n = &metas[index(tileId, false)];
+    const MetaNode *n = &*metas[index(tileId, false)];
     return std::shared_ptr<const MetaNode>(shared_from_this(), n);
 }
 

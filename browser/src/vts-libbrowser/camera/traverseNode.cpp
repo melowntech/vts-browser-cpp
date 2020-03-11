@@ -33,11 +33,14 @@
 namespace vts
 {
 
+TraverseNode::TraverseNode()
+{}
+
 TraverseNode::TraverseNode(MapLayer *layer, TraverseNode *parent,
-                           const NodeInfo &nodeInfo)
+                           const TileId &id)
     : layer(layer), parent(parent),
-      nodeInfo(nodeInfo),
-      hash(std::hash<TileId>()(id())),
+      id(id),
+      hash(std::hash<TileId>()(id)),
       priority(nan1())
 {}
 
@@ -46,7 +49,7 @@ TraverseNode::~TraverseNode()
 
 void TraverseNode::clearAll()
 {
-    childs.clear();
+    childs.ptr.reset();
     metaTiles.clear();
     meta.reset();
     surface = nullptr;

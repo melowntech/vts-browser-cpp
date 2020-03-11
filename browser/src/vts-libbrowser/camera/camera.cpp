@@ -48,8 +48,8 @@ CurrentDraw::CurrentDraw(TraverseNode *trav, TraverseNode *orig) :
 {}
 
 OldDraw::OldDraw(const CurrentDraw &current) :
-    trav(current.trav->id()),
-    orig(current.orig->id())
+    trav(current.trav->id),
+    orig(current.orig->id)
 {}
 
 OldDraw::OldDraw(const TileId &id) : trav(id), orig(id)
@@ -387,12 +387,12 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     // statistics
     statistics.nodesRenderedTotal++;
     statistics.nodesRenderedPerLod[std::min<uint32>(
-        trav->id().lod, CameraStatistics::MaxLods - 1)]++;
+        trav->id.lod, CameraStatistics::MaxLods - 1)]++;
 
     // credits
     for (auto &it : trav->credits)
         map->credits->hit(trav->layer->creditScope, it,
-            trav->nodeInfo.distanceFromRoot());
+            trav->meta->nodeInfo.distanceFromRoot());
 
     bool isSubNode = trav != orig;
 
@@ -426,7 +426,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
         task.mesh = map->getMesh("internal://data/meshes/sphere.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
         task.model = translationMatrix(*trav->meta->surrogatePhys)
-            * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
+            * scaleMatrix(trav->meta->nodeInfo.extents().size() * 0.03);
         task.color = vec3to4(trav->surface->color, task.color(3));
         if (task.ready())
             draws.infographics.emplace_back(convert(task));
@@ -488,7 +488,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
         renderNodeBox(trav, vec4f(0, 0, 1, 1));
 
         char stmp[1024];
-        auto id = trav->nodeInfo.nodeId();
+        auto id = trav->id;
         float size = options.debugRenderTileBigText ? 12 : 8;
 
         if (options.debugRenderTileLod)
@@ -681,15 +681,14 @@ void CameraImpl::renderNodeDraws(TraverseNode *trav,
         uvClip = vec4f(-1, -1, 2, 2);
     else
     {
-        assert(trav->id().lod < orig->id().lod);
+        assert(trav->id.lod < orig->id.lod);
         uvClip = vec4f(0, 0, 1, 1);
         TraverseNode *t = orig;
         while (t != trav)
         {
-            auto id = t->id();
             float *arr = uvClip.data();
-            updateRangeToHalf(arr[0], arr[2], id.x % 2);
-            updateRangeToHalf(arr[1], arr[3], 1 - (id.y % 2));
+            updateRangeToHalf(arr[0], arr[2], t->id.x % 2);
+            updateRangeToHalf(arr[1], arr[3], 1 - (t->id.y % 2));
             t = t->parent;
         }
     }

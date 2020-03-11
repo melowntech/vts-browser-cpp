@@ -56,6 +56,15 @@ public:
     bool empty() const { return s_ == 0; }
     T &operator [] (unsigned int i) { assert(i < s_); return a_[i]; }
     const T &operator [] (unsigned int i) const { assert(i < s_); return a_[i]; }
+    template<class... Ps>
+    void emplace_back(Ps&&... ps)
+    {
+        if (s_ >= N)
+            throw std::runtime_error("overflow error");
+        a_[s_].~T(); // delete previous
+        new (&a_[s_]) T(std::forward<Ps>(ps)...); // placement new
+        s_++;
+    }
 };
 
 } // namespace vts

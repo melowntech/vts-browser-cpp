@@ -27,7 +27,9 @@
 #ifndef METATILE_HPP_s4h4i476dw3
 #define METATILE_HPP_s4h4i476dw3
 
+#include <vts-libs/vts/nodeinfo.hpp>
 #include <vts-libs/vts/metatile.hpp>
+
 #include "include/vts-browser/math.hpp"
 #include "resource.hpp"
 
@@ -36,6 +38,7 @@ namespace vts
 
 class Mapconfig;
 using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
+using vtslibs::vts::NodeInfo;
 
 class BoundMetaTile : public Resource
 {
@@ -57,6 +60,7 @@ public:
         vec3 points[2];
     };
 
+    NodeInfo nodeInfo;
     vec3 cornersPhys[8];
     vec3 aabbPhys[2];
     boost::optional<Obb> obb;
@@ -67,7 +71,7 @@ public:
     double diskHalfAngle;
     double texelSize;
 
-    MetaNode();
+    MetaNode(const NodeInfo &nodeInfo);
 };
 
 MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
@@ -83,7 +87,7 @@ public:
 
 private:
     std::weak_ptr<Mapconfig> mapconfig;
-    std::vector<MetaNode> metas;
+    std::vector<boost::optional<MetaNode>> metas;
 };
 
 } // namespace vts

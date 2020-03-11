@@ -132,8 +132,7 @@ bool MapLayer::prerequisitesCheckMainSurfaces()
     if (surfaceStack.surfaces.empty())
         surfaceStack.generateReal(map);
 
-    traverseRoot = std::make_unique<TraverseNode>(this, nullptr, NodeInfo(
-                    mapconfig->referenceFrame, TileId(), false, *mapconfig));
+    traverseRoot = std::make_unique<TraverseNode>(this, nullptr, TileId());
     traverseRoot->priority = std::numeric_limits<double>::infinity();
 
     return true;
@@ -151,8 +150,7 @@ bool MapLayer::prerequisitesCheckFreeLayer()
     surfaceStack.generateFree(map, *freeLayer);
     assert(!surfaceStack.surfaces.empty());
 
-    traverseRoot = std::make_unique<TraverseNode>(this, nullptr, NodeInfo(
-                    mapconfig->referenceFrame, TileId(), false, *mapconfig));
+    traverseRoot = std::make_unique<TraverseNode>(this, nullptr, TileId());
     traverseRoot->priority = std::numeric_limits<double>::infinity();
 
     if (isGeodata())

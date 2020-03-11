@@ -130,15 +130,14 @@ public:
     CameraImpl(MapImpl *map, Camera *cam);
     void clear();
     Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
-        std::vector<BoundParamInfo> &boundList,
-        double priority);
+        std::vector<BoundParamInfo> &boundList, double priority);
     void touchDraws(TraverseNode *trav);
     bool visibilityTest(TraverseNode *trav);
     bool coarsenessTest(TraverseNode *trav);
     double coarsenessValue(TraverseNode *trav);
     float getTextSize(float size, const std::string &text);
     void renderText(TraverseNode *trav, float x, float y, const vec4f &color,
-                   float size, const std::string &text, bool centerText = true);
+                float size, const std::string &text, bool centerText = true);
     void renderNodeBox(TraverseNode *trav, const vec4f &color);
     void renderNode(TraverseNode *trav, TraverseNode *orig);
     void renderNode(TraverseNode *trav);
@@ -155,7 +154,6 @@ public:
     std::shared_ptr<GpuTexture> travInternalTexture(TraverseNode *trav,
                                                   uint32 subMeshIndex);
     bool travDetermineMeta(TraverseNode *trav);
-    void travDetermineMetaImpl(TraverseNode *trav);
     bool travDetermineDraws(TraverseNode *trav);
     bool travDetermineDrawsSurface(TraverseNode *trav);
     bool travDetermineDrawsGeodata(TraverseNode *trav);

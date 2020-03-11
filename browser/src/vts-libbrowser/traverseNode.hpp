@@ -28,11 +28,10 @@
 #define TRAVERSENODE_HPP_sgh44f
 
 #include <vts-libs/vts/nodeinfo.hpp>
-#include <vts-libs/vts/metatile.hpp>
 
-#include "include/vts-browser/math.hpp"
 #include "utilities/array.hpp"
 #include "renderTasks.hpp"
+#include "metaTile.hpp"
 
 #include <boost/container/small_vector.hpp>
 
@@ -40,10 +39,8 @@ namespace vts
 {
 
 using vtslibs::vts::NodeInfo;
-using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
 
 class MapLayer;
-class MetaTile;
 class SurfaceInfo;
 class Resource;
 class RenderSurfaceTask;
@@ -54,12 +51,6 @@ class GeodataTile;
 class TraverseNode : private Immovable
 {
 public:
-    struct Obb
-    {
-        mat4 rotInv;
-        vec3 points[2];
-    };
-
     // traversal
     Array<std::unique_ptr<TraverseNode>, 4> childs;
     MapLayer *const layer = nullptr;
@@ -70,16 +61,7 @@ public:
     // metadata
     boost::container::small_vector<vtslibs::registry::CreditId, 8> credits;
     boost::container::small_vector<std::shared_ptr<MetaTile>, 1> metaTiles;
-    boost::optional<vtslibs::vts::MetaNode> meta;
-    boost::optional<Obb> obb;
-    vec3 cornersPhys[8];
-    vec3 aabbPhys[2];
-    boost::optional<vec3> surrogatePhys;
-    boost::optional<float> surrogateNav;
-    vec3 diskNormalPhys;
-    vec2 diskHeightsPhys;
-    double diskHalfAngle;
-    double texelSize;
+    std::shared_ptr<const MetaNode> meta;
     const SurfaceInfo *surface = nullptr;
 
     uint32 lastAccessTime = 0;

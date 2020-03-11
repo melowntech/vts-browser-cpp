@@ -277,11 +277,11 @@ bool CameraImpl::getSurfaceOverEllipsoid(
         auto t = findTravSds(this, travRoot, points[i], desiredLod);
         if (!t)
             return false;
-        if (!t->surrogateNav)
+        if (!t->meta->surrogateNav)
             return false;
         math::Extents2 ext = t->nodeInfo.extents();
         points[i] = vecFromUblas<vec2>(ext.ll + ext.ur) * 0.5;
-        altitudes[i] = *t->surrogateNav;
+        altitudes[i] = *t->meta->surrogateNav;
         nodes[i] = t;
     }
 
@@ -303,7 +303,7 @@ bool CameraImpl::getSurfaceOverEllipsoid(
             {
                 const TraverseNode *t = nodes[i];
                 double scale = t->nodeInfo.extents().size() * 0.035;
-                task.model = translationMatrix(*t->surrogatePhys)
+                task.model = translationMatrix(*t->meta->surrogatePhys)
                         * scaleMatrix(scale);
                 draws.infographics.push_back(convert(task));
                 scaleSum += scale;

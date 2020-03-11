@@ -38,26 +38,8 @@ TraverseNode::TraverseNode(MapLayer *layer, TraverseNode *parent,
     : layer(layer), parent(parent),
       nodeInfo(nodeInfo),
       hash(std::hash<TileId>()(id())),
-      diskNormalPhys(nan3()),
-      diskHeightsPhys(nan2()),
-      diskHalfAngle(nan1()),
-      texelSize(nan1()),
       priority(nan1())
-{
-    // initialize corners to NAN
-    {
-        for (uint32 i = 0; i < 8; i++)
-            cornersPhys[i] = nan3();
-        surrogatePhys = nan3();
-    }
-    // initialize aabb to universe
-    {
-        double di = std::numeric_limits<double>::infinity();
-        vec3 vi(di, di, di);
-        aabbPhys[0] = -vi;
-        aabbPhys[1] = vi;
-    }
-}
+{}
 
 TraverseNode::~TraverseNode()
 {}
@@ -67,9 +49,6 @@ void TraverseNode::clearAll()
     childs.clear();
     metaTiles.clear();
     meta.reset();
-    obb.reset();
-    surrogatePhys.reset();
-    surrogateNav.reset();
     surface = nullptr;
     credits.clear();
     clearRenders();

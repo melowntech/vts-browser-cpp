@@ -141,12 +141,12 @@ bool CameraImpl::visibilityTest(TraverseNode *trav)
 {
     assert(trav->meta);
     // aabb test
-    if (!aabbTest(trav->aabbPhys, cullingPlanes))
+    if (!aabbTest(trav->meta->aabbPhys, cullingPlanes))
         return false;
     // additional obb test
-    if (trav->obb)
+    if (trav->meta->obb)
     {
-        TraverseNode::Obb &obb = *trav->obb;
+        const MetaNode::Obb &obb = *trav->meta->obb;
         vec4 planes[6];
         vts::frustumPlanes(viewProjCulling * obb.rotInv, planes);
         if (!aabbTest(obb.points, planes))
@@ -188,19 +188,21 @@ double distanceToDisk(const vec3 &diskNormal,
 double CameraImpl::coarsenessValue(TraverseNode *trav)
 {
     assert(trav->meta);
-    assert(!std::isnan(trav->texelSize));
+    assert(!std::isnan(trav->meta->texelSize));
 
-    if (trav->texelSize == std::numeric_limits<double>::infinity())
-        return trav->texelSize;
+    const auto &meta = trav->meta;
+
+    if (meta->texelSize == std::numeric_limits<double>::infinity())
+        return meta->texelSize;
 
     if (map->options.debugCoarsenessDisks
-        && !std::isnan(trav->diskHalfAngle))
+        && !std::isnan(meta->diskHalfAngle))
     {
         // test the value at point at the distance from the disk
-        double dist = distanceToDisk(trav->diskNormalPhys,
-            trav->diskHeightsPhys, trav->diskHalfAngle,
+        double dist = distanceToDisk(meta->diskNormalPhys,
+            meta->diskHeightsPhys, meta->diskHalfAngle,
             cameraPosPhys);
-        double v = trav->texelSize * diskNominalDistance / dist;
+        double v = meta->texelSize * diskNominalDistance / dist;
         assert(!std::isnan(v) && v > 0);
         return v;
     }
@@ -208,9 +210,9 @@ double CameraImpl::coarsenessValue(TraverseNode *trav)
     {
         // test the value on all corners of node bounding box
         double result = 0;
-        for (const vec3 &c : trav->cornersPhys)
+        for (const vec3 &c : meta->cornersPhys)
         {
-            vec3 up = perpendicularUnitVector * trav->texelSize;
+            vec3 up = perpendicularUnitVector * meta->texelSize;
             vec3 c1 = c - up * 0.5;
             vec3 c2 = c1 + up;
             c1 = vec4to3(vec4(viewProjRender * vec3to4(c1, 1)), true);
@@ -271,7 +273,7 @@ void CameraImpl::renderText(TraverseNode *trav, float x, float y,
         map->getTexture("internal://data/textures/debugFont2.png");
     task.textureColor->priority = std::numeric_limits<float>::infinity();
 
-    task.model = translationMatrix(*trav->surrogatePhys);
+    task.model = translationMatrix(*trav->meta->surrogatePhys);
     task.color = color;
 
     if (centerText)
@@ -362,8 +364,8 @@ void CameraImpl::renderNodeBox(TraverseNode *trav, const vec4f &color)
     };
     for (uint32 i = 0; i < 12; i++)
     {
-        vec3 a = trav->cornersPhys[cora[i]];
-        vec3 b = trav->cornersPhys[corb[i]];
+        vec3 a = trav->meta->cornersPhys[cora[i]];
+        vec3 b = trav->meta->cornersPhys[corb[i]];
         task.model = lookAt(a, b);
         draws.infographics.emplace_back(convert(task));
     }
@@ -418,12 +420,12 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     }
 
     // surrogate
-    if (options.debugRenderSurrogates && trav->surrogatePhys)
+    if (options.debugRenderSurrogates && trav->meta->surrogatePhys)
     {
         RenderInfographicsTask task;
         task.mesh = map->getMesh("internal://data/meshes/sphere.obj");
         task.mesh->priority = std::numeric_limits<float>::infinity();
-        task.model = translationMatrix(*trav->surrogatePhys)
+        task.model = translationMatrix(*trav->meta->surrogatePhys)
             * scaleMatrix(trav->nodeInfo.extents().size() * 0.03);
         task.color = vec3to4(trav->surface->color, task.color(3));
         if (task.ready())
@@ -504,7 +506,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
         if (options.debugRenderTileTexelSize)
         {
             sprintf(stmp, "%.2f %.2f",
-                trav->texelSize, coarsenessValue(trav));
+                trav->meta->texelSize, coarsenessValue(trav));
             renderText(trav, 0, (size + 2), vec4f(1, 0, 1, 1), size, stmp);
         }
 

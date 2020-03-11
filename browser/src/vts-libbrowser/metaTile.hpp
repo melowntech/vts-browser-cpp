@@ -28,11 +28,14 @@
 #define METATILE_HPP_s4h4i476dw3
 
 #include <vts-libs/vts/metatile.hpp>
-
+#include "include/vts-browser/math.hpp"
 #include "resource.hpp"
 
 namespace vts
 {
+
+class Mapconfig;
+using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
 
 class BoundMetaTile : public Resource
 {
@@ -45,12 +48,42 @@ public:
         * vtslibs::registry::BoundLayer::rasterMetatileHeight];
 };
 
+class MetaNode
+{
+public:
+    struct Obb
+    {
+        mat4 rotInv;
+        vec3 points[2];
+    };
+
+    vec3 cornersPhys[8];
+    vec3 aabbPhys[2];
+    boost::optional<Obb> obb;
+    boost::optional<vec3> surrogatePhys;
+    boost::optional<float> surrogateNav;
+    vec3 diskNormalPhys;
+    vec2 diskHeightsPhys;
+    double diskHalfAngle;
+    double texelSize;
+
+    MetaNode();
+};
+
+MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
+    const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta);
+
 class MetaTile : public Resource, public vtslibs::vts::MetaTile
 {
 public:
     MetaTile(MapImpl *map, const std::string &name);
     void decode() override;
     FetchTask::ResourceType resourceType() const override;
+    std::shared_ptr<const MetaNode> getNode(const TileId &tileId) const;
+
+private:
+    std::weak_ptr<Mapconfig> mapconfig;
+    std::vector<MetaNode> metas;
 };
 
 } // namespace vts

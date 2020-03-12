@@ -51,6 +51,8 @@ namespace
 
 const char *pjFind(const char *p)
 {
+    if (!p)
+        return nullptr; // nothing to look for? nothing to return.
     if (projFinderCallback())
         return projFinderCallback()(p);
     return nullptr;
@@ -73,7 +75,7 @@ long pjFTell(PAFile file)
 {
     return 0;
 }
-void pjFClose(PAFile)
+void pjFClose(PAFile file)
 {}
 
 struct projInitClass

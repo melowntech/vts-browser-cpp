@@ -77,13 +77,40 @@ vec3 lowerUpperCombine(uint32 i)
     return res;
 }
 
+NodeInfo makeNodeInfo(const std::shared_ptr<Mapconfig> &m, TileId id)
+{
+    std::vector<TileId> chain;
+    chain.reserve(id.lod + 1);
+    while (true)
+    {
+        for (const auto &d : m->referenceDivisionNodeInfos)
+        {
+            if (d.nodeId() == id)
+            {
+                NodeInfo inf = d;
+                while (!chain.empty())
+                {
+                    inf = inf.child(chain.back());
+                    chain.pop_back();
+                }
+                return inf;
+            }
+        }
+        if (id.lod == 0)
+            return NodeInfo(m->referenceFrame, id, true, *m);
+        chain.push_back(id);
+        id = vtslibs::vts::parent(id);
+    }
+}
+
 } // namespace
 
 MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
-    const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta)
+    const TileId &id, const vtslibs::vts::MetaNode &meta)
 {
     const auto &cnv = m->map->convertor;
-    vtslibs::vts::NodeInfo nodeInfo(m->referenceFrame, id, false, *m);
+    NodeInfo nodeInfo = makeNodeInfo(m, id);
+    assert(nodeInfo.nodeId() == id);
     MetaNode node(nodeInfo);
 
     // corners
@@ -99,8 +126,7 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
         for (uint32 i = 0; i < 8; i++)
         {
             vec3 f = lowerUpperCombine(i).cwiseProduct(ed) + el;
-            f = cnv->convert(f,
-                    nodeInfo.node(), Srs::Physical);
+            f = cnv->convert(f, nodeInfo.node(), Srs::Physical);
             corners[i] = f;
         }
 
@@ -138,17 +164,14 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
         {
             vec2 sds2 = vec2((fu + fl) * 0.5);
             vec3 sds = vec2to3(sds2, double(meta.geomExtents.z.min));
-            vec3 vn1 = cnv->convert(sds,
-                nodeInfo.node(), Srs::Physical);
+            vec3 vn1 = cnv->convert(sds, nodeInfo.node(), Srs::Physical);
             node.diskNormalPhys = vn1.normalized();
             node.diskHeightsPhys[0] = vn1.norm();
             sds = vec2to3(sds2, double(meta.geomExtents.z.max));
-            vec3 vn2 = cnv->convert(sds,
-                nodeInfo.node(), Srs::Physical);
+            vec3 vn2 = cnv->convert(sds, nodeInfo.node(), Srs::Physical);
             node.diskHeightsPhys[1] = vn2.norm();
             sds = vec2to3(fu, double(meta.geomExtents.z.min));
-            vec3 vc = cnv->convert(sds,
-                nodeInfo.node(), Srs::Physical);
+            vec3 vc = cnv->convert(sds, nodeInfo.node(), Srs::Physical);
             node.diskHalfAngle = std::acos(
                 dot(node.diskNormalPhys, vc.normalized()));
         }
@@ -232,8 +255,8 @@ void MetaTile::decode()
     std::shared_ptr<Mapconfig> m = mapconfig.lock();
     if (!m)
     {
-        throw std::runtime_error("Decoding metatile after the "
-            "corresponding mapconfig has expired");
+        LOGTHROW(err2, std::runtime_error) << "Decoding metatile after the "
+            "corresponding mapconfig has expired";
     }
 
     // decode the whole tile

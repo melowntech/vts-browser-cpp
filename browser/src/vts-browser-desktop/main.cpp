@@ -36,6 +36,8 @@
 #include "dataThread.hpp"
 #include "programOptions.hpp"
 
+#include <vts-renderer/highPerformanceGpuHint.h>
+
 void initializeSdl(struct SDL_Window *&window,
     void *&renderContext, void *&dataContext)
 {

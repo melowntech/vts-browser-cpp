@@ -30,6 +30,7 @@
 #include <vts-browser/camera.hpp>
 #include <vts-browser/navigation.hpp>
 #include <vts-renderer/renderer.hpp>
+#include <vts-renderer/highPerformanceGpuHint.h>
 
 #include <thread>
 

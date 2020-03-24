@@ -118,12 +118,8 @@ if(BUILDSYS_EMBEDDED)
     target_compile_definitions(vts-renderer PRIVATE VTSR_EMBEDDED)
     target_compile_definitions(vts-renderer PRIVATE VTSR_OPENGLES)
 endif()
-if(BUILDSYS_WASM)
-    target_compile_definitions(vts-renderer PRIVATE VTSR_NO_CLIP)
-endif()
 if(BUILDSYS_UWP)
     target_compile_definitions(vts-renderer PRIVATE VTSR_UWP)
-    target_compile_definitions(vts-renderer PRIVATE VTSR_NO_CLIP)
 endif()
 
 

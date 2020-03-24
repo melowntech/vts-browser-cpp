@@ -181,7 +181,6 @@ void CameraOptions::applyJson(const std::string &json)
     AJ(debugRenderSurrogates, asBool);
     AJ(debugRenderMeshBoxes, asBool);
     AJ(debugRenderTileBoxes, asBool);
-    AJ(debugRenderSubtileBoxes, asBool);
     AJ(debugRenderTileDiagnostics, asBool);
     AJ(debugRenderTileGeodataOnly, asBool);
     AJ(debugRenderTileBigText, asBool);
@@ -216,7 +215,6 @@ std::string CameraOptions::toJson() const
     TJ(debugRenderSurrogates, asBool);
     TJ(debugRenderMeshBoxes, asBool);
     TJ(debugRenderTileBoxes, asBool);
-    TJ(debugRenderSubtileBoxes, asBool);
     TJ(debugRenderTileDiagnostics, asBool);
     TJ(debugRenderTileGeodataOnly, asBool);
     TJ(debugRenderTileBigText, asBool);

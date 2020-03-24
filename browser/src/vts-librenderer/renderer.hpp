@@ -126,7 +126,6 @@ extern uint32 maxAntialiasingSamples;
 extern float maxAnisotropySamples;
 
 void clearGlState();
-void enableClipDistance(bool enable);
 
 struct UboCache
 {

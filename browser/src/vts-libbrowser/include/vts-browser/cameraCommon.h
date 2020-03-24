@@ -35,11 +35,10 @@ extern "C" {
 
 typedef struct vtsCDrawSurfaceBase
 {
-    float mv[16];
-    float uvm[9];
+    float mv[16]; // model-view matrix
+    float uvm[9]; // todo simplify (translation and scale are sufficient)
     float color[4]; // alpha is transparency
-    float uvClip[4];
-    float center[3];
+    float center[3]; // world-space center point (used for sorting)
     float blendingCoverage;
     bool externalUv;
     bool flatShading;

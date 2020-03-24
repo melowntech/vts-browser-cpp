@@ -54,22 +54,6 @@ void clearGlState()
     CHECK_GL("cleared gl state");
 }
 
-void enableClipDistance(bool enable)
-{
-#ifndef VTSR_NO_CLIP
-    if (enable)
-    {
-        for (int i = 0; i < 4; i++)
-            glEnable(GL_CLIP_DISTANCE0 + i);
-    }
-    else
-    {
-        for (int i = 0; i < 4; i++)
-            glDisable(GL_CLIP_DISTANCE0 + i);
-    }
-#endif
-}
-
 UboCache::UboCache() : current(0), last(0), prev(0)
 {
     // initialize the buffer
@@ -157,7 +141,6 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t, bool wireframeSlow)
         mat4f p;
         mat4f mv;
         mat3x4f uvMat; // + blendingCoverage
-        vec4f uvClip;
         vec4f color;
         vec4si32 flags; // mask, monochromatic, flat shading, uv source, lodBlendingWithDithering, ... frameIndex
     } data;
@@ -165,7 +148,6 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t, bool wireframeSlow)
     data.p = proj.cast<float>();
     data.mv = rawToMat4(t.mv);
     data.uvMat = mat3x4f(rawToMat3(t.uvm));
-    data.uvClip = rawToVec4(t.uvClip);
     data.color = rawToVec4(t.color);
     sint32 flags = 0;
     if (t.texMask)
@@ -536,7 +518,6 @@ void RenderViewImpl::renderValid()
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
-    enableClipDistance(true);
     if (draws->opaqueFill.empty())
     {
         renderOpaque(draws->opaque);
@@ -558,7 +539,6 @@ void RenderViewImpl::renderValid()
         glDisable(GL_STENCIL_TEST);
     }
     renderWireframe();
-    enableClipDistance(false);
     renderBackground();
 
     // copy the depth (resolve multisampling)

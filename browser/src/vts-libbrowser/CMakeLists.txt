@@ -173,7 +173,6 @@ set(SRC_LIST
     renderTasks.hpp
     resource.hpp
     searchTask.hpp
-    subtileMerger.hpp
     tilesetMapping.hpp
     traverseNode.hpp
     validity.hpp

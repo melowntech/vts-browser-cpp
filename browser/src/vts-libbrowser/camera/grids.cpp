@@ -66,45 +66,6 @@ bool leftNeighbor(const vec4f &a, const vec4f &b)
 
 } // namespace
 
-SubtilesMerger::Subtile::Subtile(TraverseNode *orig, const vec4f &uvClip)
-    : orig(orig), uvClip(uvClip)
-{}
-
-void SubtilesMerger::resolve(TraverseNode *trav, CameraImpl *impl)
-{
-    assert(!subtiles.empty());
-    std::sort(subtiles.begin(), subtiles.end(),
-        [](const Subtile &a, const Subtile &b) {
-        return a.orig->id() < b.orig->id();
-    });
-    // merge consecutive subtiles that form a line in the x direction
-    // better algorithm may exist, but this will work for now
-    auto prevIt = subtiles.begin();
-    for (auto it = subtiles.begin() + 1; it != subtiles.end(); it++)
-    {
-        Subtile &p = *prevIt;
-        Subtile &n = *it;
-        if (p.orig->id().lod == n.orig->id().lod
-            && p.orig->id().y == n.orig->id().y
-            && leftNeighbor(p.uvClip, n.uvClip))
-        {
-            p.uvClip[2] = n.uvClip[2];
-            n.orig = nullptr;
-        }
-        else
-            prevIt = it;
-    }
-    for (Subtile &it : subtiles)
-    {
-        if (it.orig)
-        {
-            for (auto &r : trav->opaque)
-                impl->draws.opaque.emplace_back(impl->convert(r,
-                        it.uvClip, nan1()));
-        }
-    }
-}
-
 void CameraImpl::gridPreloadRequest(TraverseNode *trav)
 {
     assert(trav);

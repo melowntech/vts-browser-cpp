@@ -48,7 +48,6 @@ namespace vts
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)] public float[] mv;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 9)] public float[] uvm;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)] public float[] color;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)] public float[] uvClip;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)] public float[] center;
         [MarshalAs(UnmanagedType.R4)] public float blendingCoverage;
         [MarshalAs(UnmanagedType.I1)] public bool externalUv;

@@ -97,7 +97,6 @@ public:
     bool debugRenderSurrogates = false;
     bool debugRenderMeshBoxes = false;
     bool debugRenderTileBoxes = false;
-    bool debugRenderSubtileBoxes = false;
 
     bool debugRenderTileDiagnostics = false;
     bool debugRenderTileGeodataOnly = false;

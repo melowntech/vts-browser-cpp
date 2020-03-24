@@ -107,11 +107,6 @@ enum class TraverseMode
     // it requires stencil buffer
     Filled,
 
-    // balanced provides fast loading with filling empty space
-    //   by adding cut parts of coarser tiles
-    // it requires special shaders for the cutting
-    Balanced,
-
     // hierarchical mode downloads every lod from top to the required level,
     //   this ensures that it has something to show at all times
     Hierarchical,
@@ -160,7 +155,6 @@ UTILITY_GENERATE_ENUM_IO(TraverseMode,
     ((Flat)("flat"))
     ((Stable)("stable"))
     ((Filled)("filled"))
-    ((Balanced)("balanced"))
     ((Hierarchical)("hierarchical"))
     ((Fixed)("fixed"))
 )

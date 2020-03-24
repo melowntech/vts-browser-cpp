@@ -802,10 +802,6 @@ public:
                 c.debugRenderTileBoxes = nk_check_label(&ctx,
                     "Tile boxes", c.debugRenderTileBoxes);
 
-                // render subtile boxes
-                c.debugRenderSubtileBoxes = nk_check_label(&ctx,
-                    "Subtile boxes", c.debugRenderSubtileBoxes);
-
                 // render surrogates
                 c.debugRenderSurrogates = nk_check_label(&ctx,
                     "Surrogates", c.debugRenderSurrogates);

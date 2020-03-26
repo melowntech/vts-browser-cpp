@@ -61,12 +61,6 @@ void loopIteration()
         {
             switch (event.type)
             {
-            // handle window close
-            case SDL_APP_TERMINATING:
-            case SDL_QUIT:
-                emscripten_cancel_main_loop();
-                return;
-            // handle mouse events
             case SDL_MOUSEMOTION:
             {
                 // relative mouse position
@@ -139,8 +133,9 @@ int main(int, char *[])
     view = context->createView(cam.get());
     updateResolution();
 
-    map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
-            "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
+    map->setMapconfigPath(
+        "https://cdn.melown.com/mario/store/melown2015/"
+        "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
 
     // run the game loop
     vts::log(vts::LogLevel::info3, "Starting the game loop");

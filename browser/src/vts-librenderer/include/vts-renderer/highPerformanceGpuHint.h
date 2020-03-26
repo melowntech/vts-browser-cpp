@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017 Melown Technologies SE
+ * Copyright (c) 2020 Melown Technologies SE
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -24,23 +24,34 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <clocale>
-#include <QGuiApplication>
-#include "mainWindow.hpp"
-#include <vts-renderer/highPerformanceGpuHint.h>
+#ifndef guard_highPerformanceGpuHint_h_56esr4hgrt6
+#define guard_highPerformanceGpuHint_h_56esr4hgrt6
 
-int main(int argc, char *argv[])
+#include <vts-browser/foundationCommon.h>
+
+#ifdef __cplusplus
+extern "C"
 {
-    // create the Qt application
-    QGuiApplication application(argc, argv);
+#endif // __cplusplus
 
-    // the QGuiApplication changed the locale based on environment
-    // we need to revert it back
-    std::setlocale(LC_ALL, "C");
+/*
+Defining these symbols gives a hint to the system that,
+when creating OpenGL context, it should choose high performance gpu,
+if multiple gpus were available.
+This is specifically useful for laptops with switchable gpus.
 
-    // create the window
-    MainWindow mainWindow;
+These symbols have to be defined in the actual application,
+not in a library,
+therefore we provide it in the form of an include header.
+Make sure that the header is included in exactly one translation unit
+(one c or cpp file), preferably the main file.
+*/
 
-    // run the main event loop
-    return application.exec();
+VTS_API_EXPORT int NvOptimusEnablement = 1;
+VTS_API_EXPORT int AmdPowerXpressRequestHighPerformance = 1;
+
+#ifdef __cplusplus
 }
+#endif // __cplusplus
+
+#endif // guard_highPerformanceGpuHint_h_56esr4hgrt6

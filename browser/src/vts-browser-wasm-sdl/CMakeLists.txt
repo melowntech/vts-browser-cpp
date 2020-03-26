@@ -1,4 +1,9 @@
 
+# the SDL app fails to link with latest emscripten with
+# undefined symbol: emscripten_sleep
+# so we skip the build
+return()
+
 define_module(BINARY vts-browser-wasm-sdl DEPENDS
     vts-browser vts-renderer)
 
@@ -7,7 +12,7 @@ set(SRC_LIST
 )
 
 # the current emscripten FETCH works with synchronous operations only and we workaround that with many threads
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2 --emrun -s PTHREAD_POOL_SIZE=30 -s TOTAL_MEMORY=128MB -s ALLOW_MEMORY_GROWTH=1 -s WASM_MEM_MAX=512MB")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2 --emrun -s PTHREAD_POOL_SIZE=30 -s ALLOW_MEMORY_GROWTH=0 -s INITIAL_MEMORY=512MB -s MAXIMUM_MEMORY=1024MB")
 
 add_executable(vts-browser-wasm-sdl ${SRC_LIST})
 target_link_libraries(vts-browser-wasm-sdl ${MODULE_LIBRARIES})

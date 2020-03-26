@@ -66,6 +66,9 @@ char *copyString(const std::string &str)
 
 // CPP -> JS
 
+namespace
+{
+
 void setHtmlImpl(const char *id, char *str)
 {
     FreeAtExit freeAtExit{str};
@@ -81,6 +84,8 @@ void setInputValueImpl(const char *id, char *str)
         document.getElementById(UTF8ToString($0)).value = UTF8ToString($1)
     }, id, str);
 }
+
+} // namespace
 
 void setHtml(const char *id, const std::string &value)
 {
@@ -123,6 +128,7 @@ void setPositionImpl(const char *pos)
     try
     {
         vts::Position p(pos);
+        nav->options().type = vts::NavigationType::FlyOver;
         nav->setPosition(p);
     }
     catch (...)

@@ -29,6 +29,7 @@
 #include <vts-browser/navigation.h>
 #include <vts-browser/log.h>
 #include <vts-renderer/renderer.h>
+#include <vts-renderer/highPerformanceGpuHint.h>
 
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>

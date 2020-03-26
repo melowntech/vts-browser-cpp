@@ -43,18 +43,29 @@ EM_BOOL mouseEvent(int eventType, const EmscriptenMouseEvent *e, void *)
     switch (eventType)
     {
     case EMSCRIPTEN_EVENT_MOUSEMOVE:
-        switch (e->buttons)
+    {
+        int mode = 0;
+        if (e->buttons == 1)
         {
-        case 1: // LMB
+            if (e->ctrlKey || e->shiftKey)
+                mode = 2;
+            else
+                mode = 1;
+        }
+        if (e->buttons == 2 || e->buttons == 4)
+            mode = 2;
+        switch (mode)
+        {
+        case 1:
             nav->pan(move.data());
             nav->options().type = vts::NavigationType::Quick;
             break;
-        case 2: // RMB
+        case 2:
             nav->rotate(move.data());
             nav->options().type = vts::NavigationType::Quick;
             break;
         }
-        break;
+    } break;
     case EMSCRIPTEN_EVENT_DBLCLICK:
         if (e->button == 0) // LMB
         {

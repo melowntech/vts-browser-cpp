@@ -26,69 +26,14 @@
 
 #include "../image/image.hpp"
 #include "../metaTile.hpp"
-#include "../navTile.hpp"
 #include "../fetchTask.hpp"
 #include "../mapConfig.hpp"
 #include "../tilesetMapping.hpp"
 
 #include <dbglog/dbglog.hpp>
-#include <vts-libs/vts/meshio.hpp>
 
 namespace vts
 {
-
-MetaTile::MetaTile(vts::MapImpl *map, const std::string &name) :
-    Resource(map, name),
-    vtslibs::vts::MetaTile(vtslibs::vts::TileId(), 0)
-{}
-
-void MetaTile::decode()
-{
-    detail::BufferStream w(fetch->reply.content);
-    *(vtslibs::vts::MetaTile*)this
-            = vtslibs::vts::loadMetaTile(w, 5, name);
-    vtslibs::vts::MetaTile::for_each([](vtslibs::vts::TileId,
-        vtslibs::vts::MetaNode &node) {
-            // override display size to 1024
-            node.displaySize = 1024;
-        });
-    info.ramMemoryCost += sizeof(*this);
-    uint32 side = 1 << 5;
-    info.ramMemoryCost += side * side * sizeof(vtslibs::vts::MetaNode);
-}
-
-FetchTask::ResourceType MetaTile::resourceType() const
-{
-    return FetchTask::ResourceType::MetaTile;
-}
-
-NavTile::NavTile(MapImpl *map, const std::string &name) :
-    Resource(map, name)
-{}
-
-void NavTile::decode()
-{
-    GpuTextureSpec spec;
-    decodeImage(fetch->reply.content, spec.buffer,
-                spec.width, spec.height, spec.components);
-    if (spec.width != 256 || spec.height != 256 || spec.components != 1)
-        LOGTHROW(err1, std::runtime_error) << "invalid navtile image";
-    data.resize(256 * 256);
-    memcpy(data.data(), spec.buffer.data(), 256 * 256);
-    info.ramMemoryCost += sizeof(*this);
-    info.ramMemoryCost += data.size();
-}
-
-FetchTask::ResourceType NavTile::resourceType() const
-{
-    return FetchTask::ResourceType::NavTile;
-}
-
-vec2 NavTile::sds2px(const vec2 &point, const math::Extents2 &extents)
-{
-    return vecFromUblas<vec2>(vtslibs::vts::NavTile::sds2px(
-                                  vecToUblas<math::Point2>(point), extents));
-}
 
 BoundMetaTile::BoundMetaTile(MapImpl *map, const std::string &name) :
     Resource(map, name)

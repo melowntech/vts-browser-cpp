@@ -20,6 +20,7 @@ set(PUB_HDR_LIST
     include/vts-renderer/renderer.hpp
     include/vts-renderer/renderDraws.hpp
     include/vts-renderer/classes.hpp
+    include/vts-renderer/highPerformanceGpuHint.h
 )
 
 set(SRC_LIST

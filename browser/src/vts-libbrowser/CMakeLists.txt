@@ -132,6 +132,7 @@ set(SRC_LIST
     resources/manager.cpp
     resources/mapConfig.cpp
     resources/mesh.cpp
+    resources/metaTile.cpp
     resources/other.cpp
     resources/resource.cpp
     resources/resources.cpp
@@ -167,7 +168,6 @@ set(SRC_LIST
     mapLayer.hpp
     metaTile.hpp
     navigation.hpp
-    navTile.hpp
     position.hpp
     renderInfos.hpp
     renderTasks.hpp

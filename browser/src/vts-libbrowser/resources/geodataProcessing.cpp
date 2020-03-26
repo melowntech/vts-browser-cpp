@@ -213,7 +213,7 @@ double str2num(const std::string &s)
     std::stringstream ss(s);
     double f = nan1();
     ss >> std::noskipws >> f;
-    if ((ss.rdstate() ^ std::ios_base::eofbit))
+    if (ss.rdstate() ^ std::ios_base::eofbit)
     {
         THROW << "Failed to convert string <"
             << s << "> to number";
@@ -364,7 +364,7 @@ struct geoContext
 
     static void validateArrayLength(const Value &value,
         uint32 minimum, uint32 maximum, // inclusive range
-        const std::string &message)
+        const char *message)
     {
         if (Validating)
         {
@@ -1252,7 +1252,7 @@ if (fnc == #NAME) \
                 THROW << "Filter must be array.";
         }
 
-        std::string cond = expression[0].asString();
+        const std::string &cond = expression[0].asString();
 
         if (cond == "skip")
         {
@@ -1262,30 +1262,35 @@ if (fnc == #NAME) \
         }
 
         // comparison filters
-        if (cond == "==" || cond == "!=")
         {
-            validateArrayLength(expression, 3, 3, std::string()
-                + "Invalid filter '" + cond + "' array length.");
-            Value a = evaluate(expression[1]);
-            Value b = evaluate(expression[2]);
-            bool op = cond == "==";
-            if ((a.isString() || a.isNull()) && (b.isString() || b.isNull()))
-                return (a.asString() == b.asString()) == op;
-            return (convertToDouble(a) == convertToDouble(b)) == op;
+            bool equal = cond == "==";
+            bool diff = cond == "!=";
+            if (equal || diff)
+            {
+                validateArrayLength(expression, 3, 3,
+                    equal ? "Invalid filter '==' array length."
+                          : "Invalid filter '!=' array length.");
+                Value a = evaluate(expression[1]);
+                Value b = evaluate(expression[2]);
+                if ((a.isString() || a.isNull())
+                    && (b.isString() || b.isNull()))
+                    return (a.asString() == b.asString()) == equal;
+                return (convertToDouble(a) == convertToDouble(b)) == equal;
+            }
         }
 #define COMP(OP) \
-if (cond == #OP) \
-{ \
-    validateArrayLength(expression, 3, 3, \
-            "Invalid filter '" #OP "' array length."); \
-    double a = convertToDouble(expression[1]); \
-    double b = convertToDouble(expression[2]); \
-    return a OP b; \
-}
-        COMP(>= );
-        COMP(<= );
-        COMP(> );
-        COMP(< );
+        if (cond == #OP) \
+        { \
+            validateArrayLength(expression, 3, 3, \
+                    "Invalid filter '" #OP "' array length."); \
+            double a = convertToDouble(expression[1]); \
+            double b = convertToDouble(expression[2]); \
+            return a OP b; \
+        }
+        COMP(>=);
+        COMP(<=);
+        COMP(>);
+        COMP(<);
 #undef COMP
 
         // negative filters
@@ -1781,7 +1786,8 @@ if (cond == #OP) \
 
         if (layer.isMember("point-radius-units"))
         {
-            std::string units = evaluate(layer["point-radius-units"]).asString();
+            std::string units = evaluate(
+                layer["point-radius-units"]).asString();
             if (units == "ratio")
                 spec.unionData.point.units = GpuGeodataSpec::Units::Ratio;
             else if (units == "pixels")
@@ -1840,7 +1846,8 @@ if (cond == #OP) \
 
         if (layer.isMember("line-width-units"))
         {
-            std::string units = evaluate(layer["line-width-units"]).asString();
+            std::string units = evaluate(
+                layer["line-width-units"]).asString();
             if (units == "ratio")
                 spec.unionData.line.units = GpuGeodataSpec::Units::Ratio;
             else if (units == "pixels")

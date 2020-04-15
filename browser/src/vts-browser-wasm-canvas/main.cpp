@@ -124,7 +124,7 @@ void updateSearch()
         for (const auto &it : srch->results)
         {
             ss << "<div class=searchItem><hr>";
-            ss << it.displayName;
+            ss << it.title;
             ss << "<button "
                << "onclick=\"gotoPosition("
                << it.position[0] << ", "

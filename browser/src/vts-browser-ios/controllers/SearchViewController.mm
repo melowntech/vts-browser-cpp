@@ -130,8 +130,8 @@
     assert(result && result->done);
     SearchCell *cell = [tableView dequeueReusableCellWithIdentifier:@"SearchCell" forIndexPath:indexPath];
     vts::SearchItem &item = result->results[indexPath.row];
-    cell.cellName1.text = [NSString stringWithUTF8String:item.title.c_str()];
-    cell.cellName2.text = [NSString stringWithUTF8String:item.displayName.c_str()];
+    cell.cellName1.text = [NSString stringWithUTF8String:item.region.c_str()];
+    cell.cellName2.text = [NSString stringWithUTF8String:item.title.c_str()];
     if (item.distance >= 1e3)
         cell.cellDistance.text = [NSString stringWithFormat:@"%.1f km", item.distance / 1e3];
     else

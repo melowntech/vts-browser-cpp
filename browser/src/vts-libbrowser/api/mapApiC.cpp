@@ -1335,7 +1335,7 @@ const char *vtsSearchGetResultData(vtsHSearch search, uint32 index)
 {
     assert((bool)search->p->done);
     C_BEGIN
-    return vts::retStr(search->p->results[index].toJson());
+    return vts::retStr(search->p->results[index].json);
     C_END
     return nullptr;
 }

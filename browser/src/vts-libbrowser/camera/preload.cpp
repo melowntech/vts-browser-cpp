@@ -50,29 +50,15 @@ uint32 childIndex(const TileId &me, const TileId &child)
     return vtslibs::vts::child(t);
 }
 
-// compare with epsilon
-bool aeq(float a, float b)
-{
-    return std::abs(a - b) < 1e-7;
-}
-
-// check if two subtiles that are in one line are direct neighbors
-bool leftNeighbor(const vec4f &a, const vec4f &b)
-{
-    assert(aeq(a[1], b[1]));
-    assert(aeq(a[3], b[3]));
-    return aeq(a[2], b[0]);
-}
-
 } // namespace
 
-void CameraImpl::gridPreloadRequest(TraverseNode *trav)
+void CameraImpl::preloadRequest(TraverseNode *trav)
 {
     assert(trav);
-    if (options.gridLodOffset == (uint32)-1)
+    if (options.preloadLodOffset == (uint32)-1)
         return;
 
-    for (uint32 lodOffset = 0; lodOffset < options.gridLodOffset;
+    for (uint32 lodOffset = 0; lodOffset < options.preloadLodOffset;
         lodOffset++)
     {
         if (!trav->parent || !trav->parent->surface)
@@ -80,7 +66,7 @@ void CameraImpl::gridPreloadRequest(TraverseNode *trav)
         trav = trav->parent;
     }
 
-    const sint32 D = options.gridNeighborsDistance;
+    const sint32 D = options.preloadNeighborsDistance;
     const TileId &base = trav->id();
     const TileId::index_type m = 1 << base.lod;
     for (sint32 y = -D; y <= D; y++)
@@ -90,23 +76,23 @@ void CameraImpl::gridPreloadRequest(TraverseNode *trav)
             TileId t = base;
             tileWrap(m, t.x, x);
             tileWrap(m, t.y, y);
-            gridLoadRequests.push_back(t);
+            preloadRequests.push_back(t);
         }
     }
 }
 
-void CameraImpl::gridPreloadProcess(TraverseNode *root)
+void CameraImpl::preloadProcess(TraverseNode *root)
 {
     OPTICK_EVENT();
-    auto &glr = gridLoadRequests;
+    auto &glr = preloadRequests;
     std::sort(glr.begin(), glr.end());
     glr.erase(std::unique(glr.begin(), glr.end()), glr.end());
-    statistics.currentGridNodes += glr.size();
-    gridPreloadProcess(root, glr);
+    statistics.currentPreloadNodes += glr.size();
+    preloadProcess(root, glr);
     glr.clear();
 }
 
-void CameraImpl::gridPreloadProcess(TraverseNode *trav,
+void CameraImpl::preloadProcess(TraverseNode *trav,
     const std::vector<TileId> &requests)
 {
     if (requests.empty())
@@ -132,7 +118,7 @@ void CameraImpl::gridPreloadProcess(TraverseNode *trav,
     }
 
     for (const auto &c : trav->childs)
-        gridPreloadProcess(c.get(), childRequests[
+        preloadProcess(c.get(), childRequests[
             childIndex(myId, c->id())]);
 }
 

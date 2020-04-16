@@ -213,12 +213,12 @@ void optionsConfigCamera(
         po::value<double>(&opts->fixedTraversalDistance),
         "Distance to use for fixed traversal.")
 
-    ((section + "gridLodOffset").c_str(),
-        po::value<uint32>(&opts->gridLodOffset),
+    ((section + "preloadLodOffset").c_str(),
+        po::value<uint32>(&opts->preloadLodOffset),
         "Coarser lod offset for grids.")
 
-    ((section + "gridNeighborsDistance").c_str(),
-        po::value<uint32>(&opts->gridNeighborsDistance),
+    ((section + "preloadNeighborsDistance").c_str(),
+        po::value<uint32>(&opts->preloadNeighborsDistance),
         "Distance to neighbors for grids.")
 
     FILE_OPTIONS;

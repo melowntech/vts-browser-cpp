@@ -102,7 +102,7 @@ set(SRC_LIST
     camera/camera.cpp
     camera/cameraApi.cpp
     camera/draws.cpp
-    camera/grids.cpp
+    camera/preload.cpp
     camera/traversal.cpp
     camera/traverseNode.cpp
     image/image.cpp

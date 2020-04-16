@@ -93,7 +93,7 @@ public:
     CameraDraws draws;
     CameraOptions options;
     CameraStatistics statistics;
-    std::vector<TileId> gridLoadRequests;
+    std::vector<TileId> preloadRequests;
     std::vector<TraverseNode*> currentDraws;
     std::map<std::weak_ptr<MapLayer>, CameraMapLayer,
             std::owner_less<std::weak_ptr<MapLayer>>> layers;
@@ -129,6 +129,7 @@ public:
     void renderNodeBox(TraverseNode *trav, const vec4f &color);
     void renderNode(TraverseNode *trav);
     void renderNodeBlended(TraverseNode *trav, float blendingCoverage);
+    void renderNodeFiller(TraverseNode *trav);
     DrawSurfaceTask convert(const RenderSurfaceTask &task,
                             float blendingCoverage = 1);
     DrawInfographicsTask convert(const RenderInfographicsTask &task);
@@ -147,12 +148,13 @@ public:
     void travModeHierarchical(TraverseNode *trav, bool loadOnly);
     void travModeFlat(TraverseNode *trav);
     bool travModeStable(TraverseNode *trav, int mode);
+    bool travModePrefill(TraverseNode *trav, bool renderOnly);
     void travModeFixed(TraverseNode *trav);
     void traverseRender(TraverseNode *trav, TraverseMode mode);
-    void gridPreloadRequest(TraverseNode *trav);
-    void gridPreloadProcess(TraverseNode *root);
-    void gridPreloadProcess(TraverseNode *trav,
-                            const std::vector<TileId> &requests);
+    void preloadRequest(TraverseNode *trav);
+    void preloadProcess(TraverseNode *root);
+    void preloadProcess(TraverseNode *trav,
+        const std::vector<TileId> &requests);
     void resolveBlending(TraverseNode *root, CameraMapLayer &layer);
     void sortOpaqueFrontToBack();
     void renderUpdate();

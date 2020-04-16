@@ -83,7 +83,7 @@ void CameraImpl::clear()
         statistics.nodesRenderedTotal = 0;
         statistics.currentNodeMetaUpdates = 0;
         statistics.currentNodeDrawsUpdates = 0;
-        statistics.currentGridNodes = 0;
+        statistics.currentPreloadNodes = 0;
     }
 
     // clear unused camera map layers
@@ -451,15 +451,12 @@ void CameraImpl::renderNode(TraverseNode *trav)
             case vtslibs::registry::FreeLayer::Type::geodata:
                 color = vec4f(0, 0, 1, 1);
                 break;
-            default:
-                color = vec4f(1, 1, 1, 1);
-                break;
             }
         }
         renderNodeBox(trav, color);
     }
 
-    // tile options
+    // tile diagnostics options
     if (options.debugRenderTileDiagnostics
         && !(options.debugRenderTileGeodataOnly
             && !trav->layer->isGeodata()))
@@ -630,6 +627,30 @@ void CameraImpl::renderNodeBlended(TraverseNode *trav,
     for (const RenderSurfaceTask &r : trav->transparent)
         draws.transparent.emplace_back(convert(r,
             blendingCoverage));
+}
+
+void CameraImpl::renderNodeFiller(TraverseNode *trav)
+{
+    assert(trav);
+    assert(trav->meta);
+    assert(trav->surface);
+    assert(trav->determined);
+    assert(trav->rendersReady());
+
+    trav->lastRenderTime = map->renderTickIndex;
+    if (trav->rendersEmpty())
+        return;
+
+    for (const RenderSurfaceTask &r : trav->opaque)
+        draws.opaqueFill.emplace_back(convert(r));
+
+    for (const RenderSurfaceTask &r : trav->transparent)
+        draws.transparentFill.emplace_back(convert(r));
+
+    // tile box
+    if (options.debugRenderFillerBoxes
+        && !options.debugRenderTileDiagnostics)
+        renderNodeBox(trav, vec4f(1, 0, 1, 1));
 }
 
 namespace
@@ -851,23 +872,7 @@ void CameraImpl::renderUpdate()
             : options.traverseModeSurfaces;
         traverseRender(it->traverseRoot.get(), traverseMode);
         resolveBlending(it->traverseRoot.get(), layers[it]);
-        if (traverseMode == TraverseMode::Filled)
-        {
-            OPTICK_EVENT("filling");
-            CameraDraws draws2;
-            draws2.camera = draws.camera;
-            std::swap(draws, draws2);
-            CameraOptions opts2 = options;
-            options.targetPixelRatioSurfaces *= 10;
-            options.targetPixelRatioGeodata *= 10;
-            options.lodBlending = 0;
-            traverseRender(it->traverseRoot2.get(), TraverseMode::Stable);
-            options = opts2;
-            std::swap(draws, draws2);
-            std::swap(draws.opaqueFill, draws2.opaque);
-            std::swap(draws.transparentFill, draws2.transparent);
-        }
-        gridPreloadProcess(it->traverseRoot.get());
+        preloadProcess(it->traverseRoot.get());
     }
     sortOpaqueFrontToBack();
 

@@ -67,16 +67,16 @@ public:
     // desired lod used with fixed traversal mode
     uint32 fixedTraversalLod = 15;
 
-    // coarser lod offset for grids
+    // coarser lod offset to preload
     // -1 to disable grids entirely
-    uint32 gridLodOffset = 5;
+    uint32 preloadLodOffset = 5;
 
-    // distance to neighbors for grids
+    // distance to neighbors to preload
     // 0: no neighbors
     // 1: one ring of neighbors (8 total)
     // 2: two rings (24 total)
     // etc.
-    uint32 gridNeighborsDistance = 1;
+    uint32 preloadNeighborsDistance = 1;
 
     // enable blending lods to prevent lod popping
     // 0: disable
@@ -84,7 +84,7 @@ public:
     // 2: enable, detect draws near edges
     uint32 lodBlending = 2;
 
-    TraverseMode traverseModeSurfaces = TraverseMode::Filled;
+    TraverseMode traverseModeSurfaces = TraverseMode::Prefill;
     TraverseMode traverseModeGeodata = TraverseMode::Stable;
 
     // move opaque blending draws into transparent group
@@ -97,6 +97,7 @@ public:
     bool debugRenderSurrogates = false;
     bool debugRenderMeshBoxes = false;
     bool debugRenderTileBoxes = false;
+    bool debugRenderFillerBoxes = false;
 
     bool debugRenderTileDiagnostics = false;
     bool debugRenderTileGeodataOnly = false;

@@ -781,6 +781,63 @@ bool CameraImpl::travModeStable(TraverseNode *trav, int mode)
     }
 }
 
+bool CameraImpl::travModePrefill(TraverseNode *trav, bool renderOnly)
+{
+    if (renderOnly)
+    {
+        if (!trav->meta)
+            return false;
+        trav->lastAccessTime = map->renderTickIndex;
+    }
+    else
+    {
+        if (!travInit(trav))
+            return false;
+    }
+
+    if (!visibilityTest(trav))
+        return true;
+
+    if (renderOnly)
+    {
+        if (trav->determined)
+        {
+            touchDraws(trav);
+            renderNode(trav);
+            return true;
+        }
+        bool ok = true;
+        for (auto &t : trav->childs)
+            ok = travModePrefill(t.get(), true) && ok;
+        return ok;
+    }
+
+    if (coarsenessTest(trav) || trav->childs.empty())
+    {
+        travDetermineDraws(trav);
+        if (trav->determined)
+        {
+            renderNode(trav);
+            preloadRequest(trav);
+            return true;
+        }
+        renderOnly = true;
+    }
+
+    bool ok = true;
+    for (auto &t : trav->childs)
+        ok = travModePrefill(t.get(), renderOnly) && ok;
+
+    if (!ok && trav->determined)
+    {
+        touchDraws(trav);
+        renderNodeFiller(trav);
+        return true;
+    }
+
+    return ok;
+}
+
 void CameraImpl::travModeFixed(TraverseNode *trav)
 {
     if (!travInit(trav))
@@ -812,8 +869,10 @@ void CameraImpl::traverseRender(TraverseNode *trav, TraverseMode mode)
         travModeFlat(trav);
         break;
     case TraverseMode::Stable:
-    case TraverseMode::Filled:
         travModeStable(trav, 0);
+        break;
+    case TraverseMode::Prefill:
+        travModePrefill(trav, false);
         break;
     case TraverseMode::Hierarchical:
         travModeHierarchical(trav, false);

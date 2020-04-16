@@ -694,6 +694,25 @@ public:
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                     }
 
+                    // prefill traversal
+                    if (c.traverseModeSurfaces == TraverseMode::Prefill
+                        || c.traverseModeGeodata == TraverseMode::Prefill)
+                    {
+                        // preloadLodOffset
+                        nk_label(&ctx, "Preload offset:", NK_TEXT_LEFT);
+                        c.preloadLodOffset = nk_slide_int(&ctx,
+                            -1, c.preloadLodOffset, 10, 1);
+                        sprintf(buffer, "%d", c.preloadLodOffset);
+                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+
+                        // preloadNeighborsDistance
+                        nk_label(&ctx, "Preload neighbors:", NK_TEXT_LEFT);
+                        c.preloadNeighborsDistance = nk_slide_int(&ctx,
+                            0, c.preloadNeighborsDistance, 3, 1);
+                        sprintf(buffer, "%d", c.preloadNeighborsDistance);
+                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                    }
+
                     // lodBlending
                     nk_label(&ctx, "Lod blending:", NK_TEXT_LEFT);
                     if (nk_combo_begin_label(&ctx,
@@ -730,20 +749,6 @@ public:
                             c.lodBlendingTransparent);
                         nk_label(&ctx, "", NK_TEXT_RIGHT);
                     }
-
-                    // gridLodOffset
-                    nk_label(&ctx, "Grid offset:", NK_TEXT_LEFT);
-                    c.gridLodOffset = nk_slide_int(&ctx,
-                        -1, c.gridLodOffset, 10, 1);
-                    sprintf(buffer, "%d", c.gridLodOffset);
-                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-
-                    // gridNeighborsDistance
-                    nk_label(&ctx, "Grid neighbors:", NK_TEXT_LEFT);
-                    c.gridNeighborsDistance = nk_slide_int(&ctx,
-                        0, c.gridNeighborsDistance, 3, 1);
-                    sprintf(buffer, "%d", c.gridNeighborsDistance);
-                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                     // cullingOffsetDistance
                     nk_label(&ctx, "Culling offset:", NK_TEXT_LEFT);
@@ -801,6 +806,10 @@ public:
                 // render tile boxes
                 c.debugRenderTileBoxes = nk_check_label(&ctx,
                     "Tile boxes", c.debugRenderTileBoxes);
+
+                // render filler boxes
+                c.debugRenderFillerBoxes = nk_check_label(&ctx,
+                    "Filler boxes", c.debugRenderFillerBoxes);
 
                 // render surrogates
                 c.debugRenderSurrogates = nk_check_label(&ctx,
@@ -1138,7 +1147,7 @@ public:
                 }
 
                 S("Total:", cs.metaNodesTraversedTotal, "");
-                S("Grid nodes:", cs.currentGridNodes, "");
+                S("Preload nodes:", cs.currentPreloadNodes, "");
 
                 nk_tree_pop(&ctx);
             }

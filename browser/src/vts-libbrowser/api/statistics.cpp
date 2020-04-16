@@ -85,7 +85,7 @@ CameraStatistics::CameraStatistics() :
     metaNodesTraversedTotal(0),
     currentNodeMetaUpdates(0),
     currentNodeDrawsUpdates(0),
-    currentGridNodes(0)
+    currentPreloadNodes(0)
 {
     for (uint32 i = 0; i < MaxLods; i++)
     {
@@ -105,7 +105,7 @@ std::string CameraStatistics::toJson() const
     TJ(metaNodesTraversedTotal, asUInt);
     TJ(currentNodeMetaUpdates, asUInt);
     TJ(currentNodeDrawsUpdates, asUInt);
-    TJ(currentGridNodes, asUInt);
+    TJ(currentPreloadNodes, asUInt);
     return jsonToString(v);
 }
 

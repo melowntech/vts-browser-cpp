@@ -42,7 +42,7 @@ enum class Srs
     // eg. geographic where altitude of zero is at ellipsoid
     Navigation,
 
-    // coordinate system for presentation to people
+    // coordinate system for presentation to humans
     // eg. geographic with altitude above sea level
     Public,
 
@@ -58,7 +58,7 @@ enum class Srs
 
 enum class NavigationType
 {
-    // navigation changes are applied fully in first Map::renderTickPrepare()
+    // navigation changes are applied fully in first Map::renderUpdate()
     Instant,
 
     // navigation changes progressively over time
@@ -83,12 +83,12 @@ enum class NavigationMode
     Free,
 
     // starts in the azimuthal mode and switches to the free mode
-    //   when the viewer gets too close to any pole
-    //   or when the viewer changes camera orientation
+    //   when the camera gets too close to any pole
+    //   or when the camera changes orientation
     // it can be reset back to azimuthal with Map::resetNavigationMode()
     Dynamic,
 
-    // actual navigation mode changes with zoom level and has smooth transition
+    // actual navigation mode changes with zoom and has smooth transition
     Seamless,
 };
 
@@ -103,9 +103,9 @@ enum class TraverseMode
     // stable is like Flat mode with hysteresis
     Stable,
 
-    // filled is like stable with additional coarser tiles to fill holes
+    // prefill is like stable with additional coarser tiles to fill holes
     // it requires stencil buffer
-    Filled,
+    Prefill,
 
     // hierarchical mode downloads every lod from top to the required level,
     //   this ensures that it has something to show at all times
@@ -154,7 +154,7 @@ UTILITY_GENERATE_ENUM_IO(TraverseMode,
     ((None)("none"))
     ((Flat)("flat"))
     ((Stable)("stable"))
-    ((Filled)("filled"))
+    ((Prefill)("prefill"))
     ((Hierarchical)("hierarchical"))
     ((Fixed)("fixed"))
 )

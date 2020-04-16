@@ -47,7 +47,7 @@ public:
     uint32 metaNodesTraversedPerLod[MaxLods];
     uint32 currentNodeMetaUpdates;
     uint32 currentNodeDrawsUpdates;
-    uint32 currentGridNodes;
+    uint32 currentPreloadNodes;
 };
 
 } // namespace vts

@@ -170,8 +170,8 @@ void CameraOptions::applyJson(const std::string &json)
     AJ(samplesForAltitudeLodSelection, asDouble);
     AJ(fixedTraversalDistance, asDouble);
     AJ(fixedTraversalLod, asUInt);
-    AJ(gridLodOffset, asUInt);
-    AJ(gridNeighborsDistance, asUInt);
+    AJ(preloadLodOffset, asUInt);
+    AJ(preloadNeighborsDistance, asUInt);
     AJ(lodBlending, asUInt);
     AJE(traverseModeSurfaces, TraverseMode);
     AJE(traverseModeGeodata, TraverseMode);
@@ -181,6 +181,7 @@ void CameraOptions::applyJson(const std::string &json)
     AJ(debugRenderSurrogates, asBool);
     AJ(debugRenderMeshBoxes, asBool);
     AJ(debugRenderTileBoxes, asBool);
+    AJ(debugRenderFillerBoxes, asBool);
     AJ(debugRenderTileDiagnostics, asBool);
     AJ(debugRenderTileGeodataOnly, asBool);
     AJ(debugRenderTileBigText, asBool);
@@ -204,8 +205,8 @@ std::string CameraOptions::toJson() const
     TJ(samplesForAltitudeLodSelection, asDouble);
     TJ(fixedTraversalDistance, asDouble);
     TJ(fixedTraversalLod, asUInt);
-    TJ(gridLodOffset, asUInt);
-    TJ(gridNeighborsDistance, asUInt);
+    TJ(preloadLodOffset, asUInt);
+    TJ(preloadNeighborsDistance, asUInt);
     TJ(lodBlending, asUInt);
     TJE(traverseModeSurfaces, TraverseMode);
     TJE(traverseModeGeodata, TraverseMode);
@@ -215,6 +216,7 @@ std::string CameraOptions::toJson() const
     TJ(debugRenderSurrogates, asBool);
     TJ(debugRenderMeshBoxes, asBool);
     TJ(debugRenderTileBoxes, asBool);
+    TJ(debugRenderFillerBoxes, asBool);
     TJ(debugRenderTileDiagnostics, asBool);
     TJ(debugRenderTileGeodataOnly, asBool);
     TJ(debugRenderTileBigText, asBool);

@@ -451,6 +451,8 @@ void CameraImpl::renderNode(TraverseNode *trav)
             case vtslibs::registry::FreeLayer::Type::geodata:
                 color = vec4f(0, 0, 1, 1);
                 break;
+            default:
+                break;
             }
         }
         renderNodeBox(trav, color);

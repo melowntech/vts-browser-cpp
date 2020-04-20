@@ -806,7 +806,7 @@ bool CameraImpl::travModePrefill(TraverseNode *trav, bool renderOnly)
             renderNode(trav);
             return true;
         }
-        bool ok = true;
+        bool ok = !trav->childs.empty();
         for (auto &t : trav->childs)
             ok = travModePrefill(t.get(), true) && ok;
         return ok;
@@ -824,7 +824,7 @@ bool CameraImpl::travModePrefill(TraverseNode *trav, bool renderOnly)
         renderOnly = true;
     }
 
-    bool ok = true;
+    bool ok = !trav->childs.empty();
     for (auto &t : trav->childs)
         ok = travModePrefill(t.get(), renderOnly) && ok;
 

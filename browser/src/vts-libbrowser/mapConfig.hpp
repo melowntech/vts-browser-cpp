@@ -78,7 +78,6 @@ public:
         std::string searchUrl;
         std::string searchSrs;
         double autorotate = 0;
-        bool searchFilter = true;
     };
 
     Mapconfig(MapImpl *map, const std::string &name);

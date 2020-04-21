@@ -20,7 +20,7 @@ if(BUILDSYS_IOS)
 elseif(BUILDSYS_UWP)
     # universal windows platform
     list(APPEND EXTRA_SRC_LIST fetcher/uwp.cpp)
-    set_source_files_properties(fetcher/uwp.cpp PROPERTIES COMPILE_FLAGS "/ZW")
+    set_source_files_properties(fetcher/uwp.cpp PROPERTIES COMPILE_FLAGS "/ZW /Zc:twoPhase-")
 elseif(BUILDSYS_WASM)
     # web assembly
     list(APPEND EXTRA_SRC_LIST fetcher/wasm.cpp)

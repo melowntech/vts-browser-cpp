@@ -67,7 +67,6 @@ void Mapconfig::decode()
     {
         browserOptions.searchUrl = map->createOptions.searchUrlFallback;
         browserOptions.searchSrs = map->createOptions.searchSrsFallback;
-        browserOptions.searchFilter = map->options.searchResultsFiltering;
     }
 
     // browser options
@@ -85,9 +84,6 @@ void Mapconfig::decode()
             if (bo.isMember("controlSearchSrs"))
                 browserOptions.searchSrs
                 = bo["controlSearchSrs"].asString();
-            if (bo.isMember("controlSearchFilter"))
-                browserOptions.searchFilter
-                = bo["controlSearchFilter"].asBool();
         }
     }
     else

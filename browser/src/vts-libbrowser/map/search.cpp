@@ -41,13 +41,28 @@ namespace vts
 namespace
 {
 
-std::string generateSearchUrl(MapImpl *impl, const std::string &query)
+std::string generateSearchUrl(MapImpl *impl, const std::string &query,
+    const double center[])
 {
     std::string url = impl->mapconfig->browserOptions.searchUrl;
-    static const std::string rep = "{value}";
-    auto s = url.find(rep);
-    if (s != std::string::npos)
-        url.replace(s, rep.length(), utility::urlEncode(query));
+    const auto &replace = [&](const std::string &what,
+        const std::string with)
+    {
+        auto s = url.find(what);
+        if (s != std::string::npos)
+            url.replace(s, what.length(), with);
+    };
+    {
+        std::stringstream ss;
+        ss << center[1];
+        replace("{lat}", ss.str());
+    }
+    {
+        std::stringstream ss;
+        ss << center[0];
+        replace("{long}", ss.str());
+    }
+    replace("{value}", utility::urlEncode(query));
     return url;
 }
 
@@ -59,14 +74,14 @@ void searchToNav(MapImpl *map, double point[3])
 }
 
 // both points are in navigation srs
-double distance(MapImpl *map, const double a[], const double b[],
-                double def = std::numeric_limits<double>::quiet_NaN())
+double distance(MapImpl *map, const double a[3], const double b[3],
+                double def = nan1())
 {
     for (int i = 0; i < 3; i++)
-        if (a[i] != a[i] || b[i] != b[i])
+        if (std::isnan(a[i]) || std::isnan(b[i]))
             return def;
-    vec3 va(a[0], a[1], a[2]);
-    vec3 vb(b[0], b[1], b[2]);
+    vec3 va = rawToVec3(a);
+    vec3 vb = rawToVec3(b);
     switch (map->mapconfig->srs.get(
                 map->mapconfig->referenceFrame.model.navigationSrs).type)
     {
@@ -79,89 +94,28 @@ double distance(MapImpl *map, const double a[], const double b[],
     return def;
 }
 
-bool populated(const SearchItem &a)
+double radius(MapImpl *map, const double center[3], const Json::Value &bj)
 {
-    return a.type == "hamlet"
-        || a.type == "village"
-        || a.type == "town"
-        || a.type == "city";
-}
-
-void filterSearchResults(MapImpl *map, const std::shared_ptr<SearchTask> &task)
-{
-    // dedupe
-    if (task->results.size() > 1)
-    {
-        std::stable_sort(task->results.begin(), task->results.end(),
-            [](const SearchItem &a, const SearchItem &b){
-            if (a.displayName == b.displayName)
-                return populated(a) > populated(b);
-            return false;
-        });
-        task->results.erase(
-                    std::unique(task->results.begin(), task->results.end(),
-                                [](const SearchItem &a, const SearchItem &b){
-            return a.displayName == b.displayName;
-        }), task->results.end());
-    }
-
-    // filter results, that are close to each other
-    if (task->results.size() > 1)
-    {
-        task->results.erase(
-                    std::unique(task->results.begin(), task->results.end(),
-                                [map](SearchItem &a, SearchItem &b){
-            return distance(map, a.position, b.position) < 1e4;
-        }), task->results.end());
-    }
-
-    // update some fields
-    for (SearchItem &it : task->results)
-    {
-        // title
-        {
-            auto s = it.displayName.find(",");
-            if (s != std::string::npos)
-                it.title = it.displayName.substr(0, s);
-            else
-                it.title = it.displayName;
-        }
-        // region
-        {
-            if (!it.county.empty())
-                it.region = it.county;
-            else if (!it.stateDistrict.empty())
-                it.region = it.stateDistrict;
-            else
-                it.region = it.state;
-            auto s = it.region.find(" - ");
-            if (s != std::string::npos)
-                it.region = it.region.substr(0, s);
-        }
-        // street name queries
-        if (it.title == it.houseNumber && !it.road.empty())
-            it.title = it.road;
-    }
-
-    // reshake hits by distance
-    std::stable_sort(task->results.begin(), task->results.end(),
-                     [](const SearchItem &a, const SearchItem &b){
-        return a.importance < 0.4 && b.importance < 0.4
-                && std::abs(a.importance - b.importance) < 0.06
-                && a.distance < b.distance;
-    });
-}
-
-double vtod(Json::Value &v)
-{
-    if (v.type() == Json::ValueType::realValue)
-        return v.asDouble();
-    std::stringstream ss(v.asString());
-    double f = nan1();
-    ss >> std::noskipws >> f;
-    if ((ss.rdstate() ^ std::ios_base::eofbit))
+    std::string s = bj.asString();
+    if (s.empty())
         return nan1();
-    return f;
+    std::stringstream ss(s);
+    char c = 0;
+    double r[4] = { nan1(), nan1(), nan1(), nan1() };
+    ss >> r[0] >> c >> r[1] >> c >> r[2] >> c >> r[3];
+    double bbs[4][3] = {
+        { r[1], r[0], 0 },
+        { r[1], r[2], 0 },
+        { r[3], r[0], 0 },
+        { r[3], r[2], 0 }
+    };
+    double radius = 0;
+    for (int i = 0; i < 4; i++)
+    {
+        searchToNav(map, bbs[i]);
+        radius = std::max(radius, distance(map, center, bbs[i]));
+    }
+    return radius;
 }
 
 } // namespace
@@ -183,54 +137,14 @@ void MapImpl::parseSearchResults(const std::shared_ptr<SearchTask> &task)
                     << task->impl->name << ">, error: <"
                     << e.what() << ">";
         }
-        for (Json::Value &it : root)
+        for (const Json::Value &it : root["data"])
         {
-            SearchItem t;
-            t.displayName = it["display_name"].asString();
-            t.type = it["type"].asString();
-            Json::Value addr = it["address"];
-            if (!addr.empty())
-            {
-                t.houseNumber = addr["house_number"].asString();
-                t.road = addr["road"].asString();
-                t.city = addr["city"].asString();
-                t.county = addr["county"].asString();
-                t.state = addr["state"].asString();
-                t.stateDistrict = addr["state_district"].asString();
-                t.country = addr["country"].asString();
-                t.countryCode = addr["country_code"].asString();
-            }
-            t.position[0] = vtod(it["lon"]);
-            t.position[1] = vtod(it["lat"]);
-            t.position[2] = 0;
+            SearchItem t(jsonToString(it));
             searchToNav(this, t.position);
             t.distance = distance(this, task->position, t.position);
-            Json::Value bj = it["boundingbox"];
-            if (bj.size() == 4)
-            {
-                double r[4];
-                int i = 0;
-                for (auto it : bj)
-                    r[i++] = vtod(it);
-                double bbs[4][3] = {
-                    { r[2], r[0], 0 },
-                    { r[2], r[1], 0 },
-                    { r[3], r[0], 0 },
-                    { r[3], r[1], 0 }
-                };
-                t.radius = 0;
-                for (int i = 0; i < 4; i++)
-                {
-                    searchToNav(this, bbs[i]);
-                    t.radius = std::max(t.radius,
-                                        distance(this, t.position, bbs[i]));
-                }
-            }
-            t.importance = vtod(it["importance"]);
-            task->results.push_back(t);
+            t.radius = radius(this, t.position, it["bounds"]);
+            task->results.push_back(std::move(t));
         }
-        if (options.searchResultsFiltering)
-            filterSearchResults(this, task);
     }
     catch (const std::exception &e)
     {
@@ -258,79 +172,34 @@ FetchTask::ResourceType SearchTaskImpl::resourceType() const
 }
 
 SearchItem::SearchItem() :
-    position{
-        std::numeric_limits<double>::quiet_NaN(),
-        std::numeric_limits<double>::quiet_NaN(),
-        std::numeric_limits<double>::quiet_NaN()
-    },
-    radius(std::numeric_limits<double>::quiet_NaN()),
-    distance(std::numeric_limits<double>::quiet_NaN()),
-    importance(-1)
+    position{nan1(), nan1(), nan1()},
+    distance(nan1()), radius(nan1())
 {}
 
 SearchItem::SearchItem(const std::string &json) :
     SearchItem()
 {
+    this->json = json;
     Json::Value v = stringToJson(json);
-    AJ(displayName, asString);
+    AJ(id, asString);
     AJ(title, asString);
     AJ(type, asString);
     AJ(region, asString);
-    AJ(road, asString);
-    AJ(city, asString);
-    AJ(county, asString);
-    AJ(state, asString);
-    AJ(houseNumber, asString);
-    AJ(stateDistrict, asString);
-    AJ(country, asString);
-    AJ(countryCode, asString);
-    AJ(radius, asDouble);
-    AJ(distance, asDouble);
-    AJ(importance, asDouble);
-    Json::Value p = v["position"];
-    position[0] = p["x"].asDouble();
-    position[1] = p["y"].asDouble();
-    position[2] = p["z"].asDouble();
-}
-
-std::string SearchItem::toJson() const
-{
-    Json::Value p;
-    p["x"] = position[0];
-    p["y"] = position[1];
-    p["z"] = position[2];
-    Json::Value v;
-    TJ(displayName, asString);
-    TJ(title, asString);
-    TJ(type, asString);
-    TJ(region, asString);
-    TJ(road, asString);
-    TJ(city, asString);
-    TJ(county, asString);
-    TJ(state, asString);
-    TJ(houseNumber, asString);
-    TJ(stateDistrict, asString);
-    TJ(country, asString);
-    TJ(countryCode, asString);
-    TJ(radius, asDouble);
-    TJ(distance, asDouble);
-    TJ(importance, asDouble);
-    v["position"] = p;
-    return jsonToString(v);
+    position[0] = v["lon"].asDouble();
+    position[1] = v["lat"].asDouble();
+    position[2] = 0;
 }
 
 SearchTask::SearchTask(const std::string &query, const double point[3]) :
     query(query), position{point[0], point[1], point[2]}, done(false)
 {}
 
-SearchTask::~SearchTask()
-{}
-
 void SearchTask::updateDistances(const double point[3])
 {
+    OPTICK_EVENT();
     if (!impl || !impl->map->mapconfig || !impl->map->mapconfigReady
-        || impl->map->mapconfig->browserOptions.searchUrl != impl->validityUrl
-        || impl->map->mapconfig->browserOptions.searchSrs != impl->validitySrs)
+        || impl->map->mapconfig->browserOptions.searchUrl!=impl->validityUrl
+        || impl->map->mapconfig->browserOptions.searchSrs!=impl->validitySrs)
     {
         LOGTHROW(err1, std::runtime_error) << "Search is no longer valid";
     }
@@ -343,8 +212,9 @@ void SearchTask::updateDistances(const double point[3])
 std::shared_ptr<SearchTask> MapImpl::search(const std::string &query,
                                             const double point[3])
 {
+    OPTICK_EVENT();
     auto t = std::make_shared<SearchTask>(query, point);
-    t->impl = getSearchTask(generateSearchUrl(this, query));
+    t->impl = getSearchTask(generateSearchUrl(this, query, point));
     t->impl->priority = std::numeric_limits<float>::infinity();
     if (!t->impl->fetch)
         t->impl->fetch = std::make_shared<FetchTaskImpl>(t->impl);

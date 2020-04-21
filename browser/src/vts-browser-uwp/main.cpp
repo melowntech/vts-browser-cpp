@@ -194,8 +194,6 @@ void SingleWindowAppView::InitializeVts()
     camera = map->createCamera();
     navigation = camera->createNavigation();
     renderView = renderContext->createView(&*camera);
-    map->dataInitialize();
-    map->renderInitialize();
     map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
     {
         auto &op = camera->options();

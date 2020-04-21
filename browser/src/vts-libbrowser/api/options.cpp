@@ -36,11 +36,11 @@ namespace vts
 {
 
 MapCreateOptions::MapCreateOptions() :
-    clientId("undefined-vts-browser-cpp"),
+    clientId("vts-browser-cpp-undefined"),
     geodataFontFallback(
         "//cdn.melown.com/libs/vtsjs/fonts/noto-basic/1.0.0/noto.fnt"),
-    searchUrlFallback("https://eu-n1.windyty.com/search.php?format=json"
-                       "&addressdetails=1&limit=20&q={value}"),
+    searchUrlFallback("https://cdn.melown.com/vtsapi/geocode"
+                      "/v3.0/{lat}/{long}/{value}"),
     searchSrsFallback("+proj=longlat +datum=WGS84 +nodefs"),
 #ifdef VTS_EMBEDDED
     diskCache(false)
@@ -119,7 +119,6 @@ void MapRuntimeOptions::applyJson(const std::string &json)
     AJ(maxFetchRetries, asUInt);
     AJ(fetchFirstRetryTimeOffset, asUInt);
     AJ(measurementUnitsSystem, asUInt);
-    AJ(searchResultsFiltering, asBool);
     AJ(debugVirtualSurfaces, asBool);
     AJ(debugSaveCorruptedFiles, asBool);
     AJ(debugValidateGeodataStyles, asBool);
@@ -141,7 +140,6 @@ std::string MapRuntimeOptions::toJson() const
     TJ(maxFetchRetries, asUInt);
     TJ(fetchFirstRetryTimeOffset, asUInt);
     TJ(measurementUnitsSystem, asUInt);
-    TJ(searchResultsFiltering, asBool);
     TJ(debugVirtualSurfaces, asBool);
     TJ(debugSaveCorruptedFiles, asBool);
     TJ(debugValidateGeodataStyles, asBool);

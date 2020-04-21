@@ -2,10 +2,11 @@ name: Build test
 on: [push, pull_request]
 jobs:
   Test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-${{ matrix.os-version }}
     strategy:
       fail-fast: false
       matrix:
+        os-version: [ 16.04, latest ]
         build-config: [ debug, release ]
 
     steps:

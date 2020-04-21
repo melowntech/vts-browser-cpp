@@ -45,30 +45,27 @@ class VTS_API SearchItem
 public:
     SearchItem();
     explicit SearchItem(const std::string &json);
-    std::string toJson() const;
 
-    std::string displayName, title, type, region;
-    std::string road, city, county, state, houseNumber,
-                stateDistrict, country, countryCode;
+    std::string json;
+    std::string id, type;
+    std::string title, region;
 
     double position[3]; // navigation srs
-    double radius; // physical srs length
-    double distance; // physical srs length
-    double importance;
+    double distance; // physical srs
+    double radius; // physical srs
 };
 
 class VTS_API SearchTask : private Immovable
 {
 public:
     explicit SearchTask(const std::string &query, const double point[3]);
-    virtual ~SearchTask();
 
     void updateDistances(const double point[3]); // navigation srs
 
     const std::string query;
     const double position[3];
     std::vector<SearchItem> results;
-    std::atomic<bool> done;
+    std::atomic<bool> done; // do not access the results until this is true
 
 private:
     std::shared_ptr<SearchTaskImpl> impl;

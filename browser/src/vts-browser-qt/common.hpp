@@ -29,8 +29,10 @@
 
 #include <memory>
 #include <chrono>
-#include <thread>
 #include <QWindow>
+#include <QThread>
+#include <QOpenGLContext>
+#include <QSurface>
 
 namespace vts
 {
@@ -45,7 +47,25 @@ namespace vts
     }
 }
 
-class Gl;
+class Gl : public QOpenGLContext
+{
+public:
+    explicit Gl(QSurface *surface);
+
+    void initialize();
+    void current(bool bind = true);
+
+    QSurface *surface;
+};
+
+class DataThread : public QThread
+{
+public:
+    std::shared_ptr<Gl> gl;
+    std::shared_ptr<vts::Map> map;
+
+    void run() override;
+};
 
 class MainWindow : public QWindow
 {
@@ -61,10 +81,7 @@ public:
     void mouseRelease(class QMouseEvent *event);
     void mouseWheel(class QWheelEvent *event);
 
-    void dataEntry();
-
     std::shared_ptr<Gl> gl;
-    std::shared_ptr<Gl> gl2;
     std::shared_ptr<vts::renderer::RenderContext> context;
     std::shared_ptr<vts::Map> map;
     std::shared_ptr<vts::Camera> camera;
@@ -73,7 +90,8 @@ public:
 
     QPoint lastMousePosition;
     std::chrono::high_resolution_clock::time_point lastTime;
-    std::thread dataThread;
+
+    DataThread dataThread;
 };
 
 #endif

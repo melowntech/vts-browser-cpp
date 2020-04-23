@@ -52,6 +52,84 @@ vec3 lowerUpperCombine(uint32 i)
     return res;
 }
 
+/*
+void triStateUpdate(int &a, int &b, int r)
+{
+    switch (r)
+    {
+    case 1: a += 1; b += 1; break;
+    case -1: a += 1; b += 2; break;
+    case 0: a += 0; b += 1; break;
+    default:
+        assert(false);
+        break;
+    }
+}
+
+int triStateResult(int a, int b)
+{
+    assert(b > 0);
+    return a == 0 ? 0 : a == b ? 1 : -1;
+}
+*/
+
+const uint32 PreloadEmptyBit = 1 << 0;
+const uint32 PreloadDoneBit = 1 << 1;
+const uint32 PreloadUnreachableBit = 1 << 2;
+const uint32 PreloadPartialBits = PreloadEmptyBit | PreloadDoneBit;
+
+uint32 travLoadOnly(CameraImpl *impl,
+    TraverseNode *trav, uint32 maxLods)
+{
+    if (maxLods == 0)
+        return PreloadUnreachableBit;
+
+    if (!impl->travInit(trav))
+        return PreloadEmptyBit;
+
+    if (!impl->visibilityTest(trav))
+        return PreloadDoneBit;
+
+    if (trav->determined)
+        return PreloadDoneBit;
+
+    if (impl->coarsenessTest(trav) || trav->childs.empty())
+    {
+        impl->travDetermineDraws(trav);
+        return trav->determined ? PreloadDoneBit : PreloadEmptyBit;
+    }
+
+    uint32 r = 0;
+    for (auto &t : trav->childs)
+        r |= travLoadOnly(impl, t.get(), maxLods - 1);
+    assert(r != 0);
+    return r;
+}
+
+void travRenderOnly(CameraImpl *impl,
+    TraverseNode *trav, uint32 maxLods)
+{
+    if (maxLods == 0)
+        return;
+
+    if (!trav->meta)
+        return;
+
+    trav->lastAccessTime = impl->map->renderTickIndex;
+
+    if (!impl->visibilityTest(trav))
+        return;
+
+    if (trav->determined)
+    {
+        impl->renderNode(trav);
+        return;
+    }
+
+    for (auto &t : trav->childs)
+        travRenderOnly(impl, t.get(), maxLods - 1);
+}
+
 } // namespace
 
 double CameraImpl::travDistance(TraverseNode *trav, const vec3 pointPhys)
@@ -713,129 +791,75 @@ void CameraImpl::travModeFlat(TraverseNode *trav)
         travModeFlat(t.get());
 }
 
-// mode == 0 -> default
-// mode == 1 -> load only -> returns true if loaded
-// mode == 2 -> render only
-bool CameraImpl::travModeStable(TraverseNode *trav, int mode)
+void CameraImpl::travModeStable(TraverseNode *trav)
 {
-    if (mode == 2)
-    {
-        if (!trav->meta)
-            return false;
-        trav->lastAccessTime = map->renderTickIndex;
-    }
-    else
-    {
-        if (!travInit(trav))
-            return false;
-    }
+    if (!travInit(trav))
+        return;
 
     if (!visibilityTest(trav))
-        return true;
-
-    if (mode == 2)
-    {
-        if (trav->determined)
-        {
-            touchDraws(trav);
-            renderNode(trav);
-        }
-        else for (auto &t : trav->childs)
-            travModeStable(t.get(), 2);
-        return true;
-    }
+        return;
 
     if (coarsenessTest(trav) || trav->childs.empty())
     {
         travDetermineDraws(trav);
-        if (mode == 1)
-        {
-            trav->lastRenderTime = map->renderTickIndex;
-            return trav->determined;
-        }
         if (trav->determined)
             renderNode(trav);
         else for (auto &t : trav->childs)
-            travModeStable(t.get(), 2);
-        return true;
+            travRenderOnly(this, t.get(), options.maxHysteresisLods);
+        return;
     }
 
-    if (mode == 0 && trav->determined)
+    if (trav->determined)
     {
-        bool ok = true;
+        uint32 r = 0;
         for (auto &t : trav->childs)
-            ok = travModeStable(t.get(), 1) && ok;
-        if (!ok)
+            r |= travLoadOnly(this, t.get(), options.maxHysteresisLods);
+        if (r == PreloadEmptyBit || r == PreloadPartialBits)
         {
-            touchDraws(trav);
             renderNode(trav);
-            return true;
+            return;
         }
     }
 
-    {
-        bool ok = true;
-        for (auto &t : trav->childs)
-            ok = travModeStable(t.get(), mode) && ok;
-        return ok;
-    }
+    for (auto &t : trav->childs)
+        travModeStable(t.get());
 }
 
-bool CameraImpl::travModePrefill(TraverseNode *trav, bool renderOnly)
+void CameraImpl::travModePrefill(TraverseNode *trav)
 {
-    if (renderOnly)
-    {
-        if (!trav->meta)
-            return false;
-        trav->lastAccessTime = map->renderTickIndex;
-    }
-    else
-    {
-        if (!travInit(trav))
-            return false;
-    }
+    if (!travInit(trav))
+        return;
 
     if (!visibilityTest(trav))
-        return true;
-
-    if (renderOnly)
-    {
-        if (trav->determined)
-        {
-            touchDraws(trav);
-            renderNode(trav);
-            return true;
-        }
-        bool ok = !trav->childs.empty();
-        for (auto &t : trav->childs)
-            ok = travModePrefill(t.get(), true) && ok;
-        return ok;
-    }
+        return;
 
     if (coarsenessTest(trav) || trav->childs.empty())
     {
+        preloadRequest(trav);
         travDetermineDraws(trav);
         if (trav->determined)
+            renderNode(trav);
+        else for (auto &t : trav->childs)
+            travRenderOnly(this, t.get(), options.maxHysteresisLods);
+        return;
+    }
+
+    if (trav->determined)
+    {
+        uint32 r = 0;
+        for (auto &t : trav->childs)
+            r |= travLoadOnly(this, t.get(), options.maxHysteresisLods);
+        if (r == PreloadEmptyBit || r == PreloadPartialBits)
         {
             renderNode(trav);
-            preloadRequest(trav);
-            return true;
+            return;
         }
-        renderOnly = true;
+        if ((r & PreloadEmptyBit) || (r & PreloadUnreachableBit))
+            renderNodePrefill(trav);
     }
 
-    bool ok = !trav->childs.empty();
     for (auto &t : trav->childs)
-        ok = travModePrefill(t.get(), renderOnly) && ok;
-
-    if (!ok && trav->determined)
-    {
-        touchDraws(trav);
-        renderNodeFiller(trav);
-        return true;
-    }
-
-    return ok;
+        travModePrefill(t.get());
 }
 
 void CameraImpl::travModeFixed(TraverseNode *trav)
@@ -869,10 +893,10 @@ void CameraImpl::traverseRender(TraverseNode *trav, TraverseMode mode)
         travModeFlat(trav);
         break;
     case TraverseMode::Stable:
-        travModeStable(trav, 0);
+        travModeStable(trav);
         break;
     case TraverseMode::Prefill:
-        travModePrefill(trav, false);
+        travModePrefill(trav);
         break;
     case TraverseMode::Hierarchical:
         travModeHierarchical(trav, false);

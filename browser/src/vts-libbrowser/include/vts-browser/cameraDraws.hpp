@@ -72,12 +72,12 @@ public:
     // tasks that may be rendered in optimized way without any transparency
     // (may be rendered in any order)
     std::vector<DrawSurfaceTask> opaque;
-    std::vector<DrawSurfaceTask> opaqueFill;
+    std::vector<DrawSurfaceTask> opaquePrefill;
 
     // tasks that need blending enabled for correct rendering
     // (must be rendered in given order)
     std::vector<DrawSurfaceTask> transparent;
-    std::vector<DrawSurfaceTask> transparentFill;
+    std::vector<DrawSurfaceTask> transparentPrefill;
 
     // geodata
     std::vector<DrawGeodataTask> geodata;

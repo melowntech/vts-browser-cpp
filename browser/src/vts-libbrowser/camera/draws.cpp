@@ -67,9 +67,9 @@ void CameraDraws::clear()
 {
     camera = Camera();
     opaque.clear();
-    opaqueFill.clear();
+    opaquePrefill.clear();
     transparent.clear();
-    transparentFill.clear();
+    transparentPrefill.clear();
     geodata.clear();
     infographics.clear();
     colliders.clear();

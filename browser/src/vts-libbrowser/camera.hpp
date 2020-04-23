@@ -129,7 +129,7 @@ public:
     void renderNodeBox(TraverseNode *trav, const vec4f &color);
     void renderNode(TraverseNode *trav);
     void renderNodeBlended(TraverseNode *trav, float blendingCoverage);
-    void renderNodeFiller(TraverseNode *trav);
+    void renderNodePrefill(TraverseNode *trav);
     DrawSurfaceTask convert(const RenderSurfaceTask &task,
                             float blendingCoverage = 1);
     DrawInfographicsTask convert(const RenderInfographicsTask &task);
@@ -147,8 +147,8 @@ public:
     bool travInit(TraverseNode *trav);
     void travModeHierarchical(TraverseNode *trav, bool loadOnly);
     void travModeFlat(TraverseNode *trav);
-    bool travModeStable(TraverseNode *trav, int mode);
-    bool travModePrefill(TraverseNode *trav, bool renderOnly);
+    void travModeStable(TraverseNode *trav);
+    void travModePrefill(TraverseNode *trav);
     void travModeFixed(TraverseNode *trav);
     void traverseRender(TraverseNode *trav, TraverseMode mode);
     void preloadRequest(TraverseNode *trav);

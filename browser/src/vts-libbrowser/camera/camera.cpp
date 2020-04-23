@@ -374,6 +374,7 @@ void CameraImpl::renderNode(TraverseNode *trav)
     trav->lastRenderTime = map->renderTickIndex;
     if (trav->rendersEmpty())
         return;
+    touchDraws(trav);
 
     // statistics
     statistics.nodesRenderedTotal++;
@@ -631,7 +632,7 @@ void CameraImpl::renderNodeBlended(TraverseNode *trav,
             blendingCoverage));
 }
 
-void CameraImpl::renderNodeFiller(TraverseNode *trav)
+void CameraImpl::renderNodePrefill(TraverseNode *trav)
 {
     assert(trav);
     assert(trav->meta);
@@ -642,12 +643,13 @@ void CameraImpl::renderNodeFiller(TraverseNode *trav)
     trav->lastRenderTime = map->renderTickIndex;
     if (trav->rendersEmpty())
         return;
+    touchDraws(trav);
 
     for (const RenderSurfaceTask &r : trav->opaque)
-        draws.opaqueFill.emplace_back(convert(r));
+        draws.opaquePrefill.emplace_back(convert(r));
 
     for (const RenderSurfaceTask &r : trav->transparent)
-        draws.transparentFill.emplace_back(convert(r));
+        draws.transparentPrefill.emplace_back(convert(r));
 
     // tile box
     if (options.debugRenderFillerBoxes
@@ -935,7 +937,7 @@ void CameraImpl::sortOpaqueFrontToBack()
         vec3 vb = rawToVec3(b.center).cast<double>() - e;
         return dot(va, va) < dot(vb, vb);
     });
-    std::sort(draws.opaqueFill.begin(), draws.opaqueFill.end(), [e](
+    std::sort(draws.opaquePrefill.begin(), draws.opaquePrefill.end(), [e](
         const DrawSurfaceTask &a, const DrawSurfaceTask &b) {
         vec3 va = rawToVec3(a.center).cast<double>() - e;
         vec3 vb = rawToVec3(b.center).cast<double>() - e;

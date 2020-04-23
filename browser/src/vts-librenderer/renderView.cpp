@@ -40,6 +40,9 @@ void clearGlState()
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_SCISSOR_TEST);
+    glDisable(GL_STENCIL_TEST);
+    glStencilFunc(GL_ALWAYS, 0, 0xFF);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
     glDisable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glUseProgram(0);
@@ -518,7 +521,7 @@ void RenderViewImpl::renderValid()
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
-    if (draws->opaqueFill.empty())
+    if (draws->opaquePrefill.empty() && draws->transparentPrefill.empty())
     {
         renderOpaque(draws->opaque);
         renderTransparent(draws->transparent);
@@ -526,15 +529,15 @@ void RenderViewImpl::renderValid()
     else
     {
         glEnable(GL_STENCIL_TEST);
-        glStencilFunc(GL_ALWAYS, 0, 0xFF);
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
         glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_KEEP);
-        glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR);
+        glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_REPLACE);
         renderOpaque(draws->opaque);
         renderTransparent(draws->transparent);
         glStencilFunc(GL_EQUAL, 0, 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-        renderOpaque(draws->opaqueFill);
-        renderTransparent(draws->transparentFill);
+        renderOpaque(draws->opaquePrefill);
+        renderTransparent(draws->transparentPrefill);
         glClear(GL_STENCIL_BUFFER_BIT);
         glDisable(GL_STENCIL_TEST);
     }

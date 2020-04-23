@@ -1181,8 +1181,8 @@ public:
                 const CameraDraws &d = window->camera->draws();
                 S("Opaque: ", d.opaque.size(), "");
                 S("Transparent: ", d.transparent.size(), "");
-                S("Opaque Fill: ", d.opaqueFill.size(), "");
-                S("Transparent Fill: ", d.transparentFill.size(), "");
+                S("Opaque Prefill: ", d.opaquePrefill.size(), "");
+                S("Transparent Prefill: ", d.transparentPrefill.size(), "");
                 S("Geodata: ", d.geodata.size(), "");
                 S("Infographics: ", d.infographics.size(), "");
 

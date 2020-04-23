@@ -78,6 +78,10 @@ public:
     // etc.
     uint32 preloadNeighborsDistance = 1;
 
+    // maximum number of lods to search for already loaded tiles
+    // to use as a temporary replacement for tiles that are still loading
+    uint32 maxHysteresisLods = 2;
+
     // enable blending lods to prevent lod popping
     // 0: disable
     // 1: enable, simple

@@ -107,6 +107,10 @@ else()
         message(STATUS "including vts-browser-qt")
         add_subdirectory(src/vts-browser-qt)
     endif()
+
+    # extractor
+    message(STATUS "including extractor")
+    add_subdirectory(src/vts-extractor)
 endif()
 
 # vts csharp libraries

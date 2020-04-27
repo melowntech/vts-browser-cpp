@@ -373,21 +373,39 @@ void MeshAggregate::decode()
             static const std::string prefix = "extracted/";
             std::string b, c;
             std::string path = convertNameToFolderAndFile(this->name, b, c);
-            std::stringstream ss;
-            ss << prefix << path << "_" << mi << ".obj";
-            path = ss.str();
+            path = [&]() {
+                std::stringstream ss;
+                ss << prefix << path << "_" << mi << ".obj";
+                return ss.str();
+            }();
             if (!boost::filesystem::exists(path))
             {
                 boost::filesystem::create_directories(prefix + b);
                 vtslibs::vts::SubMesh msh(m);
 
-                // denormalize vertex positions
-                for (auto &v : msh.vertices)
+                if (1)
                 {
-                    v = vecToUblas<math::Point3>(
-                        vec4to3(vec4(part.normToPhys
-                            * vec3to4(vecFromUblas<vec3>(v), 1))));
+                    // save the matrix in separate file
+                    std::ofstream f;
+                    f.exceptions(std::ios::badbit | std::ios::failbit);
+                    f.precision(20);
+                    std::string p = path;
+                    f.open(p.replace(p.length() - 4, 4, ".mat4"),
+                        std::ios_base::out | std::ios_base::trunc);
+                    f << part.normToPhys << "\n";
                 }
+                else
+                {
+                    // denormalize vertex positions
+                    for (auto &v : msh.vertices)
+                    {
+                        v = vecToUblas<math::Point3>(
+                            vec4to3(vec4(part.normToPhys
+                                * vec3to4(vecFromUblas<vec3>(v), 1))));
+                    }
+                }
+
+                bool createMaterial = !msh.facesTc.empty();
 
                 // copy external uv if there are no internal uv
                 if (msh.facesTc.empty() && !msh.etc.empty())
@@ -397,11 +415,41 @@ void MeshAggregate::decode()
                 }
 
                 // save to stream (with increased precision)
-                std::ofstream f;
-                f.exceptions(std::ios::badbit | std::ios::failbit);
-                f.open(path, std::ios_base::out | std::ios_base::trunc);
-                f.precision(20);
-                vtslibs::vts::saveSubMeshAsObj(f, msh, mi);
+                {
+                    std::ofstream f;
+                    f.exceptions(std::ios::badbit | std::ios::failbit);
+                    f.open(path, std::ios_base::out | std::ios_base::trunc);
+                    f.precision(20);
+                    if (createMaterial)
+                    {
+                        std::string mtllib = [&]() {
+                            std::stringstream ss;
+                            ss << c << "_" << mi << ".mtl";
+                            return ss.str();
+                        }();
+                        vtslibs::vts::saveSubMeshAsObj(
+                            f, msh, mi, nullptr, mtllib);
+                    }
+                    else
+                        vtslibs::vts::saveSubMeshAsObj(f, msh, mi);
+                }
+
+                if (createMaterial)
+                {
+                    // the texture name derived here is
+                    //   not technically correct - that would require
+                    //   access to the url template
+                    std::ofstream f;
+                    f.exceptions(std::ios::badbit | std::ios::failbit);
+                    std::string p = path;
+                    f.open(p.replace(p.length() - 4, 4, ".mtl"),
+                        std::ios_base::out | std::ios_base::trunc);
+                    f << "newmtl " << mi << "\n";
+                    auto bin = c.find(".bin");
+                    f << "map_Kd " << c.substr(0, bin) << "-" << mi
+                        << ".jpg" << c.substr(bin + 4, std::string::npos)
+                        << ".png" << "\n";
+                }
             }
         }
 #endif // emscripten

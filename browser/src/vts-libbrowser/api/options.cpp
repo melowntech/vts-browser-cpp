@@ -31,6 +31,7 @@
 #include "../include/vts-browser/navigationOptions.hpp"
 #include "../include/vts-browser/fetcher.hpp"
 #include "../utilities/detectLanguage.hpp"
+#include "../include/vts-browser/math.hpp"
 
 namespace vts
 {
@@ -42,6 +43,7 @@ MapCreateOptions::MapCreateOptions() :
     searchUrlFallback("https://cdn.melown.com/vtsapi/geocode"
                       "/v3.0/{lat}/{long}/{value}"),
     searchSrsFallback("+proj=longlat +datum=WGS84 +nodefs"),
+    debugExtractRawOrigin{nan1(), nan1(), nan1()},
 #ifdef VTS_EMBEDDED
     diskCache(false)
 #else

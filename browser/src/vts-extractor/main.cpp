@@ -34,6 +34,7 @@
 #include <vts-browser/cameraOptions.hpp>
 #include <vts-browser/navigation.hpp>
 #include <vts-browser/position.hpp>
+#include <vts-browser/math.hpp>
 
 int main(int argc, char *argv[])
 {
@@ -47,6 +48,8 @@ int main(int argc, char *argv[])
     vts::log(vts::LogLevel::info4, "initializing");
     vts::MapCreateOptions createOptions;
     createOptions.clientId = "vts-extractor";
+    vts::vecToRaw(vts::rawToVec3(vts::Position(argv[2]).point),
+        createOptions.debugExtractRawOrigin);
     vts::Map map(createOptions);
     map.callbacks().loadMesh = [](vts::ResourceInfo &,
         vts::GpuMeshSpec &, const std::string &id) -> void {};

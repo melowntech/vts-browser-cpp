@@ -28,6 +28,7 @@
 #include "../gpuResource.hpp"
 #include "../fetchTask.hpp"
 #include "../map.hpp"
+#include "../coordsManip.hpp"
 
 #include <dbglog/dbglog.hpp>
 #include <vts-libs/vts/mesh.hpp>
@@ -383,7 +384,7 @@ void MeshAggregate::decode()
                 boost::filesystem::create_directories(prefix + b);
                 vtslibs::vts::SubMesh msh(m);
 
-                if (1)
+                if (std::isnan(map->createOptions.debugExtractRawOrigin[0]))
                 {
                     // save the matrix in separate file
                     std::ofstream f;
@@ -396,12 +397,16 @@ void MeshAggregate::decode()
                 }
                 else
                 {
-                    // denormalize vertex positions
+                    // convert vertex positions
+                    vec3 p = map->convertor->navToPhys(rawToVec3(
+                        map->createOptions.debugExtractRawOrigin));
+                    mat4 m = mat3to4(mat3(Eigen::Quaterniond::FromTwoVectors(
+                        normalize(p), vec3(0, 1, 0))))
+                        * translationMatrix(-p) * part.normToPhys;
                     for (auto &v : msh.vertices)
                     {
-                        v = vecToUblas<math::Point3>(
-                            vec4to3(vec4(part.normToPhys
-                                * vec3to4(vecFromUblas<vec3>(v), 1))));
+                        v = vecToUblas<math::Point3>(vec4to3(vec4(
+                            m * vec3to4(vecFromUblas<vec3>(v), 1))));
                     }
                 }
 

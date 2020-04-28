@@ -65,6 +65,9 @@ public:
     std::string customSrs1;
     std::string customSrs2;
 
+    // navigation srs
+    double debugExtractRawOrigin[3];
+
     // use hard drive cache for downloads
     bool diskCache;
 

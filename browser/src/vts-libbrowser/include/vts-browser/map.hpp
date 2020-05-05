@@ -40,6 +40,7 @@ namespace vts
 class MapCreateOptions;
 class Fetcher;
 class Camera;
+class EplicitTraversal;
 class MapCallbacks;
 class MapStatistics;
 class MapRuntimeOptions;
@@ -112,6 +113,7 @@ public:
     // create new camera
     // you may have multiple cameras in single map
     std::shared_ptr<Camera> createCamera();
+    std::shared_ptr<EplicitTraversal> createExplicitTraversal();
 
     MapCallbacks &callbacks();
     MapStatistics &statistics();

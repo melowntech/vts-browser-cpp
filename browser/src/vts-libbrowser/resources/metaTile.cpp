@@ -51,7 +51,7 @@ MetaNode::MetaNode(const NodeInfo &nodeInfo) :
     }
     // initialize aabb to universe
     {
-        double di = std::numeric_limits<double>::infinity();
+        constexpr double di = std::numeric_limits<double>::infinity();
         vec3 vi(di, di, di);
         aabbPhys[0] = -vi;
         aabbPhys[1] = vi;
@@ -271,10 +271,12 @@ void MetaTile::decode()
     vtslibs::vts::MetaTile::for_each([&](const vtslibs::vts::TileId &id,
         vtslibs::vts::MetaNode &node) {
             node.displaySize = 1024; // forced override
+            /*
             if (node.flags() == 0)
                 return;
             metas[(id.y - origin_.y) * size_ + id.x - origin_.x]
                 = generateMetaNode(m, id, node);
+            */
         });
 
     info.ramMemoryCost += sizeof(*this);
@@ -287,10 +289,17 @@ FetchTask::ResourceType MetaTile::resourceType() const
     return FetchTask::ResourceType::MetaTile;
 }
 
-std::shared_ptr<const MetaNode> MetaTile::getNode(const TileId &tileId) const
+std::shared_ptr<const MetaNode> MetaTile::getNode(const TileId &tileId)
 {
-    const MetaNode *n = &*metas[index(tileId, false)];
-    return std::shared_ptr<const MetaNode>(shared_from_this(), n);
+    const auto idx = index(tileId, false);
+    boost::optional<MetaNode> &mn = metas[idx];
+    if (!mn)
+    {
+        assert(this->grid_[idx].flags() != 0);
+        mn.emplace(generateMetaNode(
+            map->mapconfig, tileId, this->grid_[idx]));
+    }
+    return std::shared_ptr<const MetaNode>(shared_from_this(), mn.get_ptr());
 }
 
 } // namespace vts

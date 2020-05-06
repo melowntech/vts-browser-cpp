@@ -83,7 +83,7 @@ public:
     MetaTile(MapImpl *map, const std::string &name);
     void decode() override;
     FetchTask::ResourceType resourceType() const override;
-    std::shared_ptr<const MetaNode> getNode(const TileId &tileId) const;
+    std::shared_ptr<const MetaNode> getNode(const TileId &tileId);
 
 private:
     std::weak_ptr<Mapconfig> mapconfig;

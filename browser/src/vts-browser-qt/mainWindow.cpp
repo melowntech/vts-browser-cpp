@@ -24,7 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <thread>
+#include "common.hpp"
 #include <QGuiApplication>
 #include <QMouseEvent>
 #include <QWheelEvent>
@@ -34,14 +34,40 @@
 #include <vts-browser/camera.hpp>
 #include <vts-browser/navigation.hpp>
 #include <vts-renderer/renderer.hpp>
-#include "mainWindow.hpp"
-#include "gpuContext.hpp"
+#include <stdexcept>
 
 static Gl *openglFunctionPointerInstance;
 
 void *openglFunctionPointerProc(const char *name)
 {
     return (void*)openglFunctionPointerInstance->getProcAddress(name);
+}
+
+Gl::Gl(QSurface *surface) : surface(surface)
+{}
+
+void Gl::current(bool bind)
+{
+    if (bind)
+        makeCurrent(surface);
+    else
+        doneCurrent();
+}
+
+void Gl::initialize()
+{
+    setFormat(surface->format());
+    create();
+    if (!isValid())
+        throw std::runtime_error("unable to create opengl context");
+}
+
+void DataThread::run()
+{
+    vts::setLogThreadName("data");
+    gl->current();
+    vts::renderer::installGlDebugCallback();
+    map->dataAllRun();
 }
 
 MainWindow::MainWindow()
@@ -60,15 +86,21 @@ MainWindow::MainWindow()
     resize(QSize(800, 600));
     show();
 
+    dataThread.gl = std::make_shared<Gl>(this);
+    dataThread.gl->initialize();
+    dataThread.gl->current(false);
+
     gl = std::make_shared<Gl>(this);
+    gl->setShareContext(dataThread.gl.get());
     gl->initialize();
+    gl->current();
 
     openglFunctionPointerInstance = gl.get();
     vts::renderer::loadGlFunctions(&openglFunctionPointerProc);
 
     vts::MapCreateOptions mapopts;
     mapopts.clientId = "vts-browser-qt";
-    map = std::make_shared<vts::Map>(mapopts);
+    map = dataThread.map = std::make_shared<vts::Map>(mapopts);
     map->setMapconfigPath(
             "https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json",
@@ -80,7 +112,8 @@ MainWindow::MainWindow()
     context->bindLoadFunctions(map.get());
     view = context->createView(camera.get());
 
-    dataThread = std::thread(&MainWindow::dataEntry, this);
+    dataThread.gl->moveToThread(&dataThread);
+    dataThread.start();
 
     lastTime = std::chrono::high_resolution_clock::now();
     requestUpdate();
@@ -93,18 +126,7 @@ MainWindow::~MainWindow()
     camera.reset();
     if (map)
         map->renderFinalize();
-    if (dataThread.joinable())
-        dataThread.join();
-}
-
-void MainWindow::dataEntry()
-{
-    vts::setLogThreadName("data");
-    gl2 = std::make_shared<Gl>(this);
-    gl2->setShareContext(gl.get());
-    gl2->initialize();
-    vts::renderer::installGlDebugCallback();
-    map->dataAllRun();
+    dataThread.wait();
 }
 
 void MainWindow::mouseMove(QMouseEvent *event)

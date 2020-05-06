@@ -26,11 +26,14 @@
 
 #include <clocale>
 #include <QGuiApplication>
-#include "mainWindow.hpp"
+#include "common.hpp"
 #include <vts-renderer/highPerformanceGpuHint.h>
 
 int main(int argc, char *argv[])
 {
+    // force Qt to use actual OpenGL, no ANGLE nor software simulation
+    QGuiApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+
     // create the Qt application
     QGuiApplication application(argc, argv);
 

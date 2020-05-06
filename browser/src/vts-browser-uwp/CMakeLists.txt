@@ -9,6 +9,7 @@ add_executable(vts-browser-uwp ${SRC_LIST})
 target_link_libraries(vts-browser-uwp ${MODULE_LIBRARIES})
 target_compile_definitions(vts-browser-uwp PRIVATE ${MODULE_DEFINITIONS})
 target_compile_options(vts-browser-uwp PRIVATE "/ZW") # enable microsoft extensions
+target_compile_options(vts-browser-uwp PRIVATE "/Zc:twoPhase-") # disable two-phase lookup
 buildsys_binary(vts-browser-uwp)
 buildsys_ide_groups(vts-browser-uwp apps)
 

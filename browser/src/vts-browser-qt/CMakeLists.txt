@@ -3,9 +3,7 @@ define_module(BINARY vts-browser-qt DEPENDS
     vts-browser vts-renderer THREADS)
 
 set(SRC_LIST
-    gpuContext.hpp
-    mainWindow.hpp
-    gpuContext.cpp
+    common.hpp
     main.cpp
     mainWindow.cpp
 )

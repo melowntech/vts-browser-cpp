@@ -1954,34 +1954,15 @@ public:
                 if (nk_tree_push_id(&ctx, NK_TREE_NODE, r.region.c_str(),
                         NK_MINIMIZED, index))
                 {
-                    float ratio[] = { width * 0.2f, width * 0.8f };
-                    nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
-                    nk_label(&ctx, "Name:", NK_TEXT_LEFT);
-                    nk_label(&ctx, r.displayName.c_str(), NK_TEXT_LEFT);
-                    nk_label(&ctx, "Type:", NK_TEXT_LEFT);
-                    nk_label(&ctx, r.type.c_str(), NK_TEXT_LEFT);
-                    nk_label(&ctx, "Road:", NK_TEXT_LEFT);
-                    nk_label(&ctx, r.road.c_str(), NK_TEXT_LEFT);
-                    nk_label(&ctx, "City:", NK_TEXT_LEFT);
-                    nk_label(&ctx, r.city.c_str(), NK_TEXT_LEFT);
-                    nk_label(&ctx, "County:", NK_TEXT_LEFT);
-                    nk_label(&ctx, r.county.c_str(), NK_TEXT_LEFT);
-                    nk_label(&ctx, "State:", NK_TEXT_LEFT);
-                    nk_label(&ctx, r.state.c_str(), NK_TEXT_LEFT);
-                    nk_label(&ctx, "Number:", NK_TEXT_LEFT);
-                    nk_label(&ctx, r.houseNumber.c_str(), NK_TEXT_LEFT);
-                    nk_label(&ctx, "District:", NK_TEXT_LEFT);
-                    nk_label(&ctx, r.stateDistrict.c_str(), NK_TEXT_LEFT);
-                    nk_label(&ctx, "Country:", NK_TEXT_LEFT);
-                    nk_label(&ctx, r.country.c_str(), NK_TEXT_LEFT);
-                    nk_label(&ctx, "Code:", NK_TEXT_LEFT);
-                    nk_label(&ctx, r.countryCode.c_str(), NK_TEXT_LEFT);
-                    nk_label(&ctx, "Importance:", NK_TEXT_LEFT);
-                    sprintf(buffer, "%lf", r.importance);
-                    nk_label(&ctx, buffer, NK_TEXT_LEFT);
-                    nk_label(&ctx, "Radius:", NK_TEXT_LEFT);
-                    sprintf(buffer, "%lf", r.radius);
-                    nk_label(&ctx, buffer, NK_TEXT_LEFT);
+                    float ratio[] = { width };
+                    int len = r.json.length();
+                    nk_layout_row(&ctx, NK_STATIC, 300, 1, ratio);
+                    nk_edit_string(&ctx, NK_EDIT_DEFAULT //NK_EDIT_READ_ONLY
+                        | NK_EDIT_MULTILINE | NK_EDIT_SELECTABLE
+                        | NK_EDIT_CLIPBOARD | NK_EDIT_AUTO_SELECT,
+                        (char*)r.json.c_str(), &len, len, 0);
+                    //sprintf(buffer, "%.1lf m", r.radius);
+                    //nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                     nk_tree_pop(&ctx);
                 }
                 index++;

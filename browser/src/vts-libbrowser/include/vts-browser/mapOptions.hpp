@@ -142,10 +142,6 @@ public:
     //   from the environment locale settings
     uint32 measurementUnitsSystem;
 
-    // to improve search results relevance, the results are further
-    //   filtered and reordered
-    bool searchResultsFiltering = true;
-
     bool debugVirtualSurfaces = true;
     bool debugSaveCorruptedFiles = false;
     bool debugValidateGeodataStyles = false;

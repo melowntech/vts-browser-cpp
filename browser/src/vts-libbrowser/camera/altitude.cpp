@@ -172,12 +172,24 @@ TraverseNode *findTravSds(CameraImpl *camera, TraverseNode *where,
         return where;
 
     math::Point2 ublasSds = vecToUblas<math::Point2>(pointSds);
+    const NodeInfo &wi = where->meta->nodeInfo;
     for (auto &ci : where->childs)
     {
-        if (ci.meta && !ci.meta->nodeInfo.inside(ublasSds))
-            continue;
+        // we have to test the _inside_ before initializing a whole new traversal node
+        //   but constructing a child of NodeInfo is expensive
+        //   therefore we use the existing NodeInfo if available and fall back to creating a temporary one otherwise
+        if (ci.meta)
+        {
+            if (!ci.meta->nodeInfo.inside(ublasSds))
+                continue;
+        }
+        else
+        {
+            if (!wi.child(ci.id).inside(ublasSds))
+                continue;
+        }
         if (!camera->travInit(&ci))
-            return where;
+            continue;
         return findTravSds(camera, &ci, pointSds, maxLod);
     }
     return where;
@@ -189,6 +201,7 @@ bool CameraImpl::getSurfaceOverEllipsoid(
     double &result, const vec3 &navPos,
     double sampleSize, bool renderDebug)
 {
+    OPTICK_EVENT();
     assert(map->convertor);
     assert(!map->layers.empty());
 

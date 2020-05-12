@@ -38,7 +38,7 @@ namespace vts
 Mapconfig::Mapconfig(MapImpl *map, const std::string &name)
     : Resource(map, name)
 {
-    priority = std::numeric_limits<float>::infinity();
+    priority = inf1();
 }
 
 Mapconfig::~Mapconfig()

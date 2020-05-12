@@ -192,7 +192,7 @@ double CameraImpl::coarsenessValue(TraverseNode *trav)
 
     const auto &meta = trav->meta;
 
-    if (meta->texelSize == std::numeric_limits<double>::infinity())
+    if (meta->texelSize == inf1())
         return meta->texelSize;
 
     if (map->options.debugCoarsenessDisks
@@ -210,8 +210,9 @@ double CameraImpl::coarsenessValue(TraverseNode *trav)
     {
         // test the value on all corners of node bounding box
         double result = 0;
-        for (const vec3 &c : meta->cornersPhys)
+        for (uint32 i = 0; i < 8; i++)
         {
+            vec3 c = meta->cornersPhys(i);
             vec3 up = perpendicularUnitVector * meta->texelSize;
             vec3 c1 = c - up * 0.5;
             vec3 c2 = c1 + up;
@@ -220,7 +221,8 @@ double CameraImpl::coarsenessValue(TraverseNode *trav)
             double len = std::abs(c2[1] - c1[1]);
             result = std::max(result, len);
         }
-        return result * windowHeight * 0.5;
+        result *= windowHeight * 0.5;
+        return result;
     }
 }
 
@@ -267,11 +269,11 @@ void CameraImpl::renderText(TraverseNode *trav, float x, float y,
 
     RenderInfographicsTask task;
     task.mesh = map->getMesh("internal://data/meshes/rect.obj");
-    task.mesh->priority = std::numeric_limits<float>::infinity();
+    task.mesh->priority = inf1();
 
     task.textureColor =
         map->getTexture("internal://data/textures/debugFont2.png");
-    task.textureColor->priority = std::numeric_limits<float>::infinity();
+    task.textureColor->priority = inf1();
 
     task.model = translationMatrix(*trav->meta->surrogatePhys);
     task.color = color;
@@ -350,25 +352,28 @@ void CameraImpl::renderNodeBox(TraverseNode *trav, const vec4f &color)
     assert(trav->meta);
 
     RenderInfographicsTask task;
-    task.mesh = map->getMesh("internal://data/meshes/line.obj");
-    task.mesh->priority = std::numeric_limits<float>::infinity();
+    task.mesh = map->getMesh("internal://data/meshes/aabb.obj");
+    task.mesh->priority = inf1();
     if (!task.ready())
         return;
 
-    task.color = color;
-    static const uint32 cora[] = {
-        0, 0, 1, 2, 4, 4, 5, 6, 0, 1, 2, 3
-    };
-    static const uint32 corb[] = {
-        1, 2, 3, 3, 5, 6, 7, 7, 4, 5, 6, 7
-    };
-    for (uint32 i = 0; i < 12; i++)
+    const auto &aabbMatrix = [](const vec3 box[2]) -> mat4
     {
-        vec3 a = trav->meta->cornersPhys[cora[i]];
-        vec3 b = trav->meta->cornersPhys[corb[i]];
-        task.model = lookAt(a, b);
-        draws.infographics.emplace_back(convert(task));
+        return translationMatrix((box[0] + box[1]) * 0.5)
+            * scaleMatrix((box[1] - box[0]) * 0.5);
+    };
+    if (trav->meta->obb)
+    {
+        task.model = trav->meta->obb->rotInv
+            * aabbMatrix(trav->meta->obb->points);
     }
+    else
+    {
+        task.model = aabbMatrix(trav->meta->aabbPhys);
+    }
+
+    task.color = color;
+    draws.infographics.emplace_back(convert(task));
 }
 
 void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
@@ -424,26 +429,30 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     {
         RenderInfographicsTask task;
         task.mesh = map->getMesh("internal://data/meshes/sphere.obj");
-        task.mesh->priority = std::numeric_limits<float>::infinity();
-        task.model = translationMatrix(*trav->meta->surrogatePhys)
-            * scaleMatrix(trav->meta->nodeInfo.extents().size() * 0.03);
-        task.color = vec3to4(trav->surface->color, task.color(3));
+        task.mesh->priority = inf1();
         if (task.ready())
+        {
+            task.model = translationMatrix(*trav->meta->surrogatePhys)
+                * scaleMatrix(trav->meta->nodeInfo.extents().size() * 0.03);
+            task.color = vec3to4(trav->surface->color, task.color(3));
             draws.infographics.emplace_back(convert(task));
+        }
     }
 
     // mesh box
     if (options.debugRenderMeshBoxes)
     {
-        for (RenderSurfaceTask &r : trav->opaque)
+        RenderInfographicsTask task;
+        task.mesh = map->getMesh("internal://data/meshes/aabb.obj");
+        task.mesh->priority = inf1();
+        if (task.ready())
         {
-            RenderInfographicsTask task;
-            task.model = r.model;
-            task.mesh = map->getMesh("internal://data/meshes/aabb.obj");
-            task.mesh->priority = std::numeric_limits<float>::infinity();
-            task.color = vec3to4(trav->surface->color, task.color(3));
-            if (task.ready())
+            for (RenderSurfaceTask &r : trav->opaque)
+            {
+                task.model = r.model;
+                task.color = vec3to4(trav->surface->color, task.color(3));
                 draws.infographics.emplace_back(convert(task));
+            }
         }
     }
 
@@ -475,10 +484,12 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
         if (options.debugRenderTileBoxes && !isSubNode)
             renderNodeBox(trav, color);
 
-        for (int i = 0; i < 3; i++)
-            color[i] *= 0.5;
-        if (options.debugRenderSubtileBoxes && isSubNode)
+        if (options.debugRenderSubtileBoxes && isSubNode && orig->meta)
+        {
+            for (int i = 0; i < 3; i++)
+                color[i] *= 0.5;
             renderNodeBox(orig, color);
+        }
     }
 
     // tile options
@@ -881,7 +892,7 @@ void CameraImpl::renderUpdate()
         // render original camera
         RenderInfographicsTask task;
         task.mesh = map->getMesh("internal://data/meshes/line.obj");
-        task.mesh->priority = std::numeric_limits<float>::infinity();
+        task.mesh->priority = inf1();
         task.color = vec4f(0, 1, 0, 1);
         if (task.ready())
         {

@@ -304,7 +304,7 @@ bool CameraImpl::getSurfaceOverEllipsoid(
     {
         RenderInfographicsTask task;
         task.mesh = map->getMesh("internal://data/meshes/sphere.obj");
-        task.mesh->priority = std::numeric_limits<float>::infinity();
+        task.mesh->priority = inf1();
         if (*task.mesh)
         {
             float c = std::isnan(res) ? 0.0 : 1.0;

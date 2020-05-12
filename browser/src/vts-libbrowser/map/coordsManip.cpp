@@ -100,8 +100,8 @@ class CoordManipImpl : public CoordManip
 {
     vtslibs::vts::MapConfig &mapconfig;
 
-    std::unordered_map<std::string, std::shared_ptr<vtslibs::vts::CsConvertor>>
-        convertors;
+    std::unordered_map<std::string,
+        std::unique_ptr<vtslibs::vts::CsConvertor>> convertors;
 
     boost::optional<GeographicLib::Geodesic> geodesic_;
 
@@ -169,17 +169,17 @@ public:
         auto it = convertors.find(key);
         if (it == convertors.end())
         {
-            auto c = std::make_shared<vtslibs::vts::CsConvertor>(
+            convertors[key] = std::make_unique<vtslibs::vts::CsConvertor>(
                 a, b, mapconfig);
-            convertors[key] = c;
-            return *c;
+            it = convertors.find(key);
         }
         return *it->second;
     }
 
-    vec3 convert(const vec3 &value, const std::string &f, const std::string &t)
+    vec3 convert(const vec3 &value,
+        const std::string &f, const std::string &t)
     {
-        auto cs = convertor(f, t);
+        const auto &cs = convertor(f, t);
         vec3 res = vecFromUblas<vec3>(cs(vecFromUblas<math::Point3>(value)));
         //LOG(debug) << "Converted <" << value.transpose() << "><" << f
         //           << "> to <" << res.transpose() << "><" << t << ">";
@@ -202,7 +202,7 @@ public:
     }
 
     vec3 geoDirect(const vec3 &position, double distance,
-                                 double azimuthIn, double &azimuthOut) override
+                   double azimuthIn, double &azimuthOut) override
     {
         vec3 res;
         geodesic_->Direct(position(1), position(0), azimuthIn,

@@ -133,7 +133,7 @@ bool MapLayer::prerequisitesCheckMainSurfaces()
         surfaceStack.generateReal(map);
 
     traverseRoot = std::make_unique<TraverseNode>(this, nullptr, TileId());
-    traverseRoot->priority = std::numeric_limits<double>::infinity();
+    traverseRoot->priority = inf1();
 
     return true;
 }
@@ -151,7 +151,7 @@ bool MapLayer::prerequisitesCheckFreeLayer()
     assert(!surfaceStack.surfaces.empty());
 
     traverseRoot = std::make_unique<TraverseNode>(this, nullptr, TileId());
-    traverseRoot->priority = std::numeric_limits<double>::infinity();
+    traverseRoot->priority = inf1();
 
     if (isGeodata())
         creditScope = Credits::Scope::Geodata;
@@ -256,8 +256,7 @@ std::pair<Validity, std::shared_ptr<const std::string>>
     NodeInfo node(mapconfig->referenceFrame, *mapconfig);
     std::string geoName = layer->surfaceStack.surfaces[0].urlGeodata(
             UrlTemplate::Vars(node.nodeId(), vtslibs::vts::local(node)));
-    return getActualGeoFeatures(name, geoName,
-                                std::numeric_limits<float>::infinity());
+    return getActualGeoFeatures(name, geoName, inf1());
 }
 
 } // namespace vts

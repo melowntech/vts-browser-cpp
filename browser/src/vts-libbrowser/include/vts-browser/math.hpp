@@ -404,10 +404,15 @@ inline U vecToUblas(const T &t)
     return res;
 }
 
-inline double nan1() { return std::numeric_limits<double>::quiet_NaN(); }
+inline constexpr double nan1() { return std::numeric_limits<double>::quiet_NaN(); }
 inline vec2 nan2() { return vec2(nan1(), nan1()); }
 inline vec3 nan3() { return vec3(nan1(), nan1(), nan1()); }
 inline vec4 nan4() { return vec4(nan1(), nan1(), nan1(), nan1()); }
+
+inline constexpr double inf1() { return std::numeric_limits<double>::infinity(); }
+inline vec2 inf2() { return vec2(inf1(), inf1()); }
+inline vec3 inf3() { return vec3(inf1(), inf1(), inf1()); }
+inline vec4 inf4() { return vec4(inf1(), inf1(), inf1(), inf1()); }
 
 } // namespace vts
 

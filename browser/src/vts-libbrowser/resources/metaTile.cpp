@@ -36,35 +36,6 @@
 namespace vts
 {
 
-MetaNode::MetaNode(const NodeInfo &nodeInfo) :
-    nodeInfo(nodeInfo),
-    diskNormalPhys(nan3()),
-    diskHeightsPhys(nan2()),
-    diskHalfAngle(nan1()),
-    texelSize(nan1())
-{
-    // initialize corners to NAN
-    {
-        for (uint32 i = 0; i < 8; i++)
-            cornersPhys[i] = nan3();
-        surrogatePhys = nan3();
-    }
-    // initialize aabb to universe
-    {
-        constexpr double di = std::numeric_limits<double>::infinity();
-        vec3 vi(di, di, di);
-        aabbPhys[0] = -vi;
-        aabbPhys[1] = vi;
-    }
-}
-
-MetaTile::MetaTile(vts::MapImpl *map, const std::string &name) :
-    Resource(map, name),
-    vtslibs::vts::MetaTile(vtslibs::vts::TileId(), 0)
-{
-    mapconfig = map->mapconfig;
-}
-
 namespace
 {
 
@@ -105,6 +76,32 @@ NodeInfo makeNodeInfo(const std::shared_ptr<Mapconfig> &m, TileId id)
 
 } // namespace
 
+MetaNode::MetaNode(const NodeInfo &nodeInfo) :
+    nodeInfo(nodeInfo),
+    diskNormalPhys(nan3()),
+    diskHeightsPhys(nan2()),
+    diskHalfAngle(nan1()),
+    texelSize(inf1())
+{
+    // initialize aabb to universe
+    aabbPhys[0] = -inf3();
+    aabbPhys[1] = inf3();
+}
+
+vec3 MetaNode::cornersPhys(uint32 index) const
+{
+    assert(index < 8);
+    return lowerUpperCombine(index).cwiseProduct(
+        aabbPhys[1] - aabbPhys[0]) + aabbPhys[0];
+}
+
+MetaTile::MetaTile(vts::MapImpl *map, const std::string &name) :
+    Resource(map, name),
+    vtslibs::vts::MetaTile(vtslibs::vts::TileId(), 0)
+{
+    mapconfig = map->mapconfig;
+}
+
 MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
     const TileId &id, const vtslibs::vts::MetaNode &meta)
 {
@@ -114,6 +111,7 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
     MetaNode node(nodeInfo);
 
     // corners
+    vec3 cornersPhys[8]; // oriented trapezoid bounding box corners
     if (!vtslibs::vts::empty(meta.geomExtents)
             && !nodeInfo.srs().empty())
     {
@@ -122,41 +120,11 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
         vec3 el = vec2to3(fl, double(meta.geomExtents.z.min));
         vec3 eu = vec2to3(fu, double(meta.geomExtents.z.max));
         vec3 ed = eu - el;
-        vec3 *corners = node.cornersPhys;
         for (uint32 i = 0; i < 8; i++)
         {
             vec3 f = lowerUpperCombine(i).cwiseProduct(ed) + el;
             f = cnv->convert(f, nodeInfo.node(), Srs::Physical);
-            corners[i] = f;
-        }
-
-        // obb
-        if (id.lod > 4)
-        {
-            vec3 center = vec3(0,0,0);
-            for (uint32 i = 0; i < 8; i++)
-                center += corners[i];
-            center /= 8;
-
-            vec3 f = corners[4] - corners[0];
-            vec3 u = corners[2] - corners[0];
-            mat4 t = lookAt(center, center + f, u);
-
-            MetaNode::Obb obb;
-            obb.rotInv = t.inverse();
-            static const double di = std::numeric_limits<double>::infinity();
-            vec3 vi(di, di, di);
-            obb.points[0] = vi;
-            obb.points[1] = -vi;
-
-            for (uint32 i = 0; i < 8; i++)
-            {
-                vec3 p = vec4to3(vec4(t * vec3to4(corners[i], 1)), false);
-                obb.points[0] = min(obb.points[0], p);
-                obb.points[1] = max(obb.points[1], p);
-            }
-
-            node.obb = obb;
+            cornersPhys[i] = f;
         }
 
         // disks
@@ -189,20 +157,49 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
         for (uint32 i = 0; i < 8; i++)
         {
             vec3 f = lowerUpperCombine(i).cwiseProduct(fd) + fl;
-            node.cornersPhys[i] = f.cwiseProduct(ed) + el;
+            cornersPhys[i] = f.cwiseProduct(ed) + el;
         }
     }
     else
     {
+        for (vec3 &c : cornersPhys)
+            c = nan3();
         LOG(warn2) << "Tile <" << id
             << "> does not have neither extents nor geomExtents";
     }
 
-    // aabb
-    if (id.lod > 2)
+    // obb
+    if (!std::isnan(cornersPhys[0][0]) && id.lod > 4)
     {
-        node.aabbPhys[0] = node.aabbPhys[1] = node.cornersPhys[0];
-        for (const vec3 &it : node.cornersPhys)
+        vec3 center = vec3(0,0,0);
+        for (uint32 i = 0; i < 8; i++)
+            center += cornersPhys[i];
+        center /= 8;
+
+        vec3 f = cornersPhys[4] - cornersPhys[0];
+        vec3 u = cornersPhys[2] - cornersPhys[0];
+        mat4 t = lookAt(center, center + f, u);
+
+        MetaNode::Obb obb;
+        obb.rotInv = t.inverse();
+        obb.points[0] = inf3();
+        obb.points[1] = -inf3();
+
+        for (uint32 i = 0; i < 8; i++)
+        {
+            vec3 p = vec4to3(vec4(t * vec3to4(cornersPhys[i], 1)), false);
+            obb.points[0] = min(obb.points[0], p);
+            obb.points[1] = max(obb.points[1], p);
+        }
+
+        node.obb = obb;
+    }
+
+    // aabb
+    if (!std::isnan(cornersPhys[0][0]) && id.lod > 2)
+    {
+        node.aabbPhys[0] = node.aabbPhys[1] = cornersPhys[0];
+        for (const vec3 &it : cornersPhys)
         {
             node.aabbPhys[0] = min(node.aabbPhys[0], it);
             node.aabbPhys[1] = max(node.aabbPhys[1], it);
@@ -224,26 +221,19 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
     }
 
     // texelSize
+    if (node.aabbPhys[1][0] != inf1())
     {
-        bool applyTexelSize = meta.flags()
-            & vtslibs::vts::MetaNode::Flag::applyTexelSize;
-        bool applyDisplaySize = meta.flags()
-            & vtslibs::vts::MetaNode::Flag::applyDisplaySize;
-
-        if (applyTexelSize)
+        if (meta.flags()
+            & vtslibs::vts::MetaNode::Flag::applyTexelSize)
         {
             node.texelSize = meta.texelSize;
         }
-        else if (applyDisplaySize)
+        else if (meta.flags()
+            & vtslibs::vts::MetaNode::Flag::applyDisplaySize)
         {
             vec3 s = node.aabbPhys[1] - node.aabbPhys[0];
             double m = std::max(s[0], std::max(s[1], s[2]));
             node.texelSize = m / meta.displaySize;
-        }
-        else
-        {
-            // the test fails by default
-            node.texelSize = std::numeric_limits<double>::infinity();
         }
     }
 

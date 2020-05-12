@@ -61,7 +61,6 @@ public:
     };
 
     NodeInfo nodeInfo;
-    vec3 cornersPhys[8];
     vec3 aabbPhys[2];
     boost::optional<Obb> obb;
     boost::optional<vec3> surrogatePhys;
@@ -72,6 +71,7 @@ public:
     double texelSize;
 
     MetaNode(const NodeInfo &nodeInfo);
+    vec3 cornersPhys(uint32 index) const;
 };
 
 MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,

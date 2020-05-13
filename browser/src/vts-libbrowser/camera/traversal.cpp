@@ -62,8 +62,7 @@ void CameraImpl::updateNodePriority(TraverseNode *trav)
 std::shared_ptr<GpuTexture> CameraImpl::travInternalTexture(
     TraverseNode *trav, uint32 subMeshIndex)
 {
-    UrlTemplate::Vars vars(trav->id,
-            vtslibs::vts::local(trav->meta->nodeInfo), subMeshIndex);
+    UrlTemplate::Vars vars(trav->id, trav->meta->localId, subMeshIndex);
     std::shared_ptr<GpuTexture> res = map->getTexture(
                 trav->surface->urlIntTex(vars));
     map->touchResource(res);
@@ -259,9 +258,8 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
     // aggregate mesh
     if (!trav->meshAgg)
     {
-        std::string name = trav->surface->urlMesh(
-            UrlTemplate::Vars(nodeId,
-                vtslibs::vts::local(trav->meta->nodeInfo)));
+        const std::string name = trav->surface->urlMesh(
+            UrlTemplate::Vars(nodeId, trav->meta->localId));
         trav->meshAgg = map->getMeshAggregate(name);
 
         // prefetch internal textures
@@ -312,8 +310,8 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
                     vtslibs::registry::View::BoundLayerParams(
                     map->mapconfig->boundLayers.get(part.textureLayer).id)));
             }
-            switch (reorderBoundLayers(trav->meta->nodeInfo, subMeshIndex,
-                                       bls, trav->priority))
+            switch (reorderBoundLayers(trav->id, trav->meta->localId,
+                subMeshIndex, bls, trav->priority))
             {
             case Validity::Indeterminate:
                 determined = false;
@@ -418,9 +416,8 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
 bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
 {
     const TileId nodeId = trav->id;
-    std::string geoName = trav->surface->urlGeodata(
-            UrlTemplate::Vars(nodeId,
-                vtslibs::vts::local(trav->meta->nodeInfo)));
+    const std::string geoName = trav->surface->urlGeodata(
+            UrlTemplate::Vars(nodeId, trav->meta->localId));
 
     auto style = map->getActualGeoStyle(trav->layer->freeLayerName);
     auto features = map->getActualGeoFeatures(

@@ -30,7 +30,7 @@
 #include "../map.hpp"
 #include "../coordsManip.hpp"
 
-#include <vts-libs/vts/nodeinfo.hpp>
+//#include <vts-libs/vts/nodeinfo.hpp>
 #include <dbglog/dbglog.hpp>
 
 namespace vts
@@ -78,6 +78,9 @@ NodeInfo makeNodeInfo(const std::shared_ptr<Mapconfig> &m, TileId id)
 
 MetaNode::MetaNode(const NodeInfo &nodeInfo) :
     nodeInfo(nodeInfo),
+    tileId(nodeInfo.nodeId()),
+    localId(vtslibs::vts::local(nodeInfo)),
+    extents(nodeInfo.extents()),
     diskNormalPhys(nan3()),
     diskHeightsPhys(nan2()),
     diskHalfAngle(nan1()),

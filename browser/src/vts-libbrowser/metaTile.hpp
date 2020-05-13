@@ -38,6 +38,7 @@ namespace vts
 
 class Mapconfig;
 using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
+using Extents2 = math::Extents2;
 using vtslibs::vts::NodeInfo;
 
 class BoundMetaTile : public Resource
@@ -61,6 +62,10 @@ public:
     };
 
     NodeInfo nodeInfo;
+    TileId tileId;
+    TileId localId;
+    Extents2 extents;
+
     vec3 aabbPhys[2];
     boost::optional<Obb> obb;
     boost::optional<vec3> surrogatePhys;

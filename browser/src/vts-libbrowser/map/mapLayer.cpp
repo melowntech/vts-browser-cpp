@@ -253,10 +253,8 @@ std::pair<Validity, std::shared_ptr<const std::string>>
     MapLayer *layer = getLayer(this, name);
     assert(layer->freeLayer->type
            == vtslibs::registry::FreeLayer::Type::geodata);
-    NodeInfo node(mapconfig->referenceFrame, *mapconfig);
-    std::string geoName = layer->surfaceStack.surfaces[0].urlGeodata(
-            UrlTemplate::Vars(node.nodeId(), vtslibs::vts::local(node)));
-    return getActualGeoFeatures(name, geoName, inf1());
+    return getActualGeoFeatures(name,
+        layer->surfaceStack.surfaces[0].urlGeodata({}), inf1());
 }
 
 } // namespace vts

@@ -36,7 +36,7 @@
 namespace vts
 {
 
-using vtslibs::vts::NodeInfo;
+using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
 using vtslibs::vts::UrlTemplate;
 
 enum class Validity;
@@ -78,7 +78,7 @@ public:
 
     BoundParamInfo(const vtslibs::registry::View::BoundLayerParams &params);
     mat3f uvMatrix() const;
-    Validity prepare(const NodeInfo &nodeInfo, CameraImpl *impl,
+    Validity prepare(CameraImpl *impl, TileId tileId, TileId localId,
         uint32 subMeshIndex, double priority);
 
     std::shared_ptr<GpuTexture> textureColor;

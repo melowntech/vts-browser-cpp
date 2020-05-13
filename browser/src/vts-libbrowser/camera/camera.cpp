@@ -397,7 +397,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     // credits
     for (auto &it : trav->credits)
         map->credits->hit(trav->layer->creditScope, it,
-            trav->meta->nodeInfo.distanceFromRoot());
+            trav->meta->localId.lod);
 
     bool isSubNode = trav != orig;
 
@@ -433,7 +433,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
         if (task.ready())
         {
             task.model = translationMatrix(*trav->meta->surrogatePhys)
-                * scaleMatrix(trav->meta->nodeInfo.extents().size() * 0.03);
+                * scaleMatrix(trav->meta->extents.size() * 0.03);
             task.color = vec3to4(trav->surface->color, task.color(3));
             draws.infographics.emplace_back(convert(task));
         }

@@ -172,20 +172,19 @@ TraverseNode *findTravSds(CameraImpl *camera, TraverseNode *where,
         return where;
 
     math::Point2 ublasSds = vecToUblas<math::Point2>(pointSds);
-    const NodeInfo &wi = where->meta->nodeInfo;
     for (auto &ci : where->childs)
     {
-        // we have to test the _inside_ before initializing a whole new traversal node
-        //   but constructing a child of NodeInfo is expensive
-        //   therefore we use the existing NodeInfo if available and fall back to creating a temporary one otherwise
+        // avoid computing new extents if we already have them
         if (ci.meta)
         {
-            if (!ci.meta->nodeInfo.inside(ublasSds))
+            if (!math::inside(ci.meta->extents, ublasSds))
                 continue;
         }
         else
         {
-            if (!wi.child(ci.id).inside(ublasSds))
+            const Extents2 ce = subExtents(
+                where->meta->extents, where->id, ci.id);
+            if (!math::inside(ce, ublasSds))
                 continue;
         }
         if (!camera->travInit(&ci))
@@ -216,7 +215,7 @@ bool CameraImpl::getSurfaceOverEllipsoid(
     vec2 sds;
     boost::optional<NodeInfo> info;
     uint32 index = 0;
-    for (auto &it : map->mapconfig->referenceFrame.division.nodes)
+    for (const auto &it : map->mapconfig->referenceFrame.division.nodes)
     {
         struct I {
             uint32 &i; I(uint32 &i) : i(i) {} ~I() { ++i; }
@@ -290,7 +289,7 @@ bool CameraImpl::getSurfaceOverEllipsoid(
             return false;
         if (!t->meta->surrogateNav)
             return false;
-        math::Extents2 ext = t->meta->nodeInfo.extents();
+        const math::Extents2 &ext = t->meta->extents;
         points[i] = vecFromUblas<vec2>(ext.ll + ext.ur) * 0.5;
         altitudes[i] = *t->meta->surrogateNav;
         nodes[i] = t;
@@ -313,7 +312,7 @@ bool CameraImpl::getSurfaceOverEllipsoid(
             for (int i = 0; i < 4; i++)
             {
                 const TraverseNode *t = nodes[i];
-                double scale = t->meta->nodeInfo.extents().size() * 0.035;
+                double scale = t->meta->extents.size() * 0.035;
                 task.model = translationMatrix(*t->meta->surrogatePhys)
                         * scaleMatrix(scale);
                 draws.infographics.push_back(convert(task));
@@ -323,8 +322,10 @@ bool CameraImpl::getSurfaceOverEllipsoid(
             {
                 vec3 p = navPos;
                 p[2] = res;
-                p = map->convertor->convert(p, Srs::Navigation, Srs::Physical);
-                task.model = translationMatrix(p) * scaleMatrix(scaleSum / 4);
+                p = map->convertor->convert(p,
+                    Srs::Navigation, Srs::Physical);
+                task.model = translationMatrix(p)
+                    * scaleMatrix(scaleSum / 4);
                 task.color = vec4f(c, c, c, 1.f);
                 draws.infographics.push_back(convert(task));
             }

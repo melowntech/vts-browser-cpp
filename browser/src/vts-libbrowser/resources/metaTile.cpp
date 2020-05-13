@@ -105,6 +105,20 @@ MetaTile::MetaTile(vts::MapImpl *map, const std::string &name) :
     mapconfig = map->mapconfig;
 }
 
+Extents2 subExtents(const Extents2 &parentExtents,
+    const TileId& parentId, const TileId &targetId)
+{
+    const TileId lid(vtslibs::vts::local(parentId.lod, targetId));
+    const std::size_t tc(vtslibs::vts::tileCount(lid.lod));
+    const math::Size2f rs(math::size(parentExtents));
+    const math::Size2f ts(rs.width / tc, rs.height / tc);
+    return  math::Extents2(
+        parentExtents.ll(0) + lid.x * ts.width,
+        parentExtents.ur(1) - (lid.y + 1) * ts.height,
+        parentExtents.ll(0) + (lid.x + 1) * ts.width,
+        parentExtents.ur(1) - lid.y * ts.height);
+}
+
 MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
     const TileId &id, const vtslibs::vts::MetaNode &meta)
 {

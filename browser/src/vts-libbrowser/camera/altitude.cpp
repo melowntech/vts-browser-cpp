@@ -39,6 +39,8 @@
 namespace vts
 {
 
+using vtslibs::vts::NodeInfo;
+
 namespace
 {
 
@@ -228,7 +230,7 @@ bool CameraImpl::getSurfaceOverEllipsoid(
         try
         {
             sds = vec3to2(map->convertor->convert(navPos,
-                Srs::Navigation, it.second));
+                Srs::Navigation, it.second.srs));
             if (!ni.inside(vecToUblas<math::Point2>(sds)))
                 continue;
             info = ni;

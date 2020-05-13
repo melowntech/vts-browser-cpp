@@ -191,14 +191,14 @@ public:
         return convert(value, srsToProj(from), srsToProj(to));
     }
 
-    vec3 convert(const vec3 &value, const Node &from, Srs to) override
+    vec3 convert(const vec3 &value, const std::string &from, Srs to) override
     {
-        return convert(value, from.srs, srsToProj(to));
+        return convert(value, from, srsToProj(to));
     }
 
-    vec3 convert(const vec3 &value, Srs from, const Node &to) override
+    vec3 convert(const vec3 &value, Srs from, const std::string &to) override
     {
-        return convert(value, srsToProj(from), to.srs);
+        return convert(value, srsToProj(from), to);
     }
 
     vec3 geoDirect(const vec3 &position, double distance,

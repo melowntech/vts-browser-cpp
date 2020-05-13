@@ -30,8 +30,6 @@
 #include <string>
 #include <memory>
 
-#include <vts-libs/registry/referenceframe.hpp>
-
 #include "include/vts-browser/math.hpp"
 
 namespace vtslibs { namespace vts {
@@ -40,8 +38,6 @@ namespace vtslibs { namespace vts {
 
 namespace vts
 {
-
-using Node = vtslibs::registry::ReferenceFrame::Division::Node;
 
 class CoordManip : private Immovable
 {
@@ -58,9 +54,12 @@ public:
     vec3 physToNav(const vec3 &value);
     vec3 searchToNav(const vec3 &value);
 
-    virtual vec3 convert(const vec3 &value, Srs from, Srs to) = 0;
-    virtual vec3 convert(const vec3 &value, const Node &from, Srs to) = 0;
-    virtual vec3 convert(const vec3 &value, Srs from, const Node &to) = 0;
+    virtual vec3 convert(const vec3 &value,
+        Srs from, Srs to) = 0;
+    virtual vec3 convert(const vec3 &value,
+        const std::string &from, Srs to) = 0;
+    virtual vec3 convert(const vec3 &value,
+        Srs from, const std::string &to) = 0;
 
     virtual vec3 geoDirect(const vec3 &position, double distance,
                               double azimuthIn, double &azimuthOut) = 0;

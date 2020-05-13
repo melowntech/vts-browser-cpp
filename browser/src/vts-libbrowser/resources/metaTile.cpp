@@ -30,11 +30,12 @@
 #include "../map.hpp"
 #include "../coordsManip.hpp"
 
-//#include <vts-libs/vts/nodeinfo.hpp>
 #include <dbglog/dbglog.hpp>
 
 namespace vts
 {
+
+using vtslibs::vts::NodeInfo;
 
 namespace
 {
@@ -48,39 +49,9 @@ vec3 lowerUpperCombine(uint32 i)
     return res;
 }
 
-NodeInfo makeNodeInfo(const std::shared_ptr<Mapconfig> &m, TileId id)
-{
-    std::vector<TileId> chain;
-    chain.reserve(id.lod + 1);
-    while (true)
-    {
-        for (const auto &d : m->referenceDivisionNodeInfos)
-        {
-            if (d.nodeId() == id)
-            {
-                NodeInfo inf = d;
-                while (!chain.empty())
-                {
-                    inf = inf.child(chain.back());
-                    chain.pop_back();
-                }
-                return inf;
-            }
-        }
-        if (id.lod == 0)
-            return NodeInfo(m->referenceFrame, id, true, *m);
-        chain.push_back(id);
-        id = vtslibs::vts::parent(id);
-    }
-}
-
 } // namespace
 
-MetaNode::MetaNode(const NodeInfo &nodeInfo) :
-    nodeInfo(nodeInfo),
-    tileId(nodeInfo.nodeId()),
-    localId(vtslibs::vts::local(nodeInfo)),
-    extents(nodeInfo.extents()),
+MetaNode::MetaNode() :
     diskNormalPhys(nan3()),
     diskHeightsPhys(nan2()),
     diskHalfAngle(nan1()),
@@ -123,24 +94,46 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
     const TileId &id, const vtslibs::vts::MetaNode &meta)
 {
     const auto &cnv = m->map->convertor;
-    NodeInfo nodeInfo = makeNodeInfo(m, id);
-    assert(nodeInfo.nodeId() == id);
-    MetaNode node(nodeInfo);
+
+    MetaNode node;
+    std::string srs;
+    {
+        TileId t = id;
+        while (true)
+        {
+            bool found = false;
+            for (const auto &d : m->referenceDivisionNodeInfos)
+            {
+                if (d.nodeId() != t)
+                    continue;
+                node.tileId = id;
+                node.localId = vtslibs::vts::local(d.nodeId().lod, id);
+                node.extents = subExtents(d.extents(), d.nodeId(), id);
+                srs = d.node().srs;
+                found = true;
+            }
+            if (found)
+                break;
+            assert(t.lod > 0);
+            t = vtslibs::vts::parent(t);
+        }
+        assert(node.tileId == id);
+    }
 
     // corners
     vec3 cornersPhys[8]; // oriented trapezoid bounding box corners
     if (!vtslibs::vts::empty(meta.geomExtents)
-            && !nodeInfo.srs().empty())
+            && !srs.empty())
     {
-        vec2 fl = vecFromUblas<vec2>(nodeInfo.extents().ll);
-        vec2 fu = vecFromUblas<vec2>(nodeInfo.extents().ur);
+        vec2 fl = vecFromUblas<vec2>(node.extents.ll);
+        vec2 fu = vecFromUblas<vec2>(node.extents.ur);
         vec3 el = vec2to3(fl, double(meta.geomExtents.z.min));
         vec3 eu = vec2to3(fu, double(meta.geomExtents.z.max));
         vec3 ed = eu - el;
         for (uint32 i = 0; i < 8; i++)
         {
             vec3 f = lowerUpperCombine(i).cwiseProduct(ed) + el;
-            f = cnv->convert(f, nodeInfo.node(), Srs::Physical);
+            f = cnv->convert(f, srs, Srs::Physical);
             cornersPhys[i] = f;
         }
 
@@ -149,14 +142,14 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
         {
             vec2 sds2 = vec2((fu + fl) * 0.5);
             vec3 sds = vec2to3(sds2, double(meta.geomExtents.z.min));
-            vec3 vn1 = cnv->convert(sds, nodeInfo.node(), Srs::Physical);
+            vec3 vn1 = cnv->convert(sds, srs, Srs::Physical);
             node.diskNormalPhys = vn1.normalized();
             node.diskHeightsPhys[0] = vn1.norm();
             sds = vec2to3(sds2, double(meta.geomExtents.z.max));
-            vec3 vn2 = cnv->convert(sds, nodeInfo.node(), Srs::Physical);
+            vec3 vn2 = cnv->convert(sds, srs, Srs::Physical);
             node.diskHeightsPhys[1] = vn2.norm();
             sds = vec2to3(fu, double(meta.geomExtents.z.min));
-            vec3 vc = cnv->convert(sds, nodeInfo.node(), Srs::Physical);
+            vec3 vc = cnv->convert(sds, srs, Srs::Physical);
             node.diskHalfAngle = std::acos(
                 dot(node.diskNormalPhys, vc.normalized()));
         }
@@ -227,14 +220,12 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
     if (vtslibs::vts::GeomExtents::validSurrogate(
                 meta.geomExtents.surrogate))
     {
-        vec2 fl = vecFromUblas<vec2>(nodeInfo.extents().ll);
-        vec2 fu = vecFromUblas<vec2>(nodeInfo.extents().ur);
+        vec2 fl = vecFromUblas<vec2>(node.extents.ll);
+        vec2 fu = vecFromUblas<vec2>(node.extents.ur);
         vec3 sds = vec2to3(vec2((fl + fu) * 0.5),
                            double(meta.geomExtents.surrogate));
-        node.surrogatePhys = cnv->convert(sds,
-                            nodeInfo.node(), Srs::Physical);
-        node.surrogateNav = cnv->convert(sds,
-                            nodeInfo.node(), Srs::Navigation)[2];
+        node.surrogatePhys = cnv->convert(sds, srs, Srs::Physical);
+        node.surrogateNav = cnv->convert(sds, srs, Srs::Navigation)[2];
     }
 
     // texelSize

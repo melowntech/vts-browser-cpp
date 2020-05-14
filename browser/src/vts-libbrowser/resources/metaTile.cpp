@@ -93,8 +93,13 @@ Extents2 subExtents(const Extents2 &parentExtents,
 MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
     const TileId &id, const vtslibs::vts::MetaNode &meta)
 {
-    const auto &cnv = m->map->convertor;
+    return generateMetaNode(m, m->map->convertor, id, meta);
+}
 
+MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
+    std::shared_ptr<CoordManip> cnv,
+    const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta)
+{
     MetaNode node;
     std::string srs;
     {
@@ -268,13 +273,11 @@ void MetaTile::decode()
     metas.resize(size_ * size_);
     vtslibs::vts::MetaTile::for_each([&](const vtslibs::vts::TileId &id,
         vtslibs::vts::MetaNode &node) {
-            node.displaySize = 1024; // forced override
-            /*
             if (node.flags() == 0)
                 return;
+            node.displaySize = 1024; // forced override
             metas[(id.y - origin_.y) * size_ + id.x - origin_.x]
-                = generateMetaNode(m, id, node);
-            */
+                = generateMetaNode(m, m->map->convertorData, id, node);
         });
 
     info.ramMemoryCost += sizeof(*this);
@@ -290,13 +293,8 @@ FetchTask::ResourceType MetaTile::resourceType() const
 std::shared_ptr<const MetaNode> MetaTile::getNode(const TileId &tileId)
 {
     const auto idx = index(tileId, false);
-    boost::optional<MetaNode> &mn = metas[idx];
-    if (!mn)
-    {
-        assert(this->grid_[idx].flags() != 0);
-        mn.emplace(generateMetaNode(
-            map->mapconfig, tileId, this->grid_[idx]));
-    }
+    const boost::optional<MetaNode> &mn = metas[idx];
+    assert(mn);
     return std::shared_ptr<const MetaNode>(shared_from_this(), mn.get_ptr());
 }
 

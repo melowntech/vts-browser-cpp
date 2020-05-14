@@ -89,9 +89,6 @@ struct projInitClass
         pjFileApi.FSeek = &pjFSeek;
         pjFileApi.FTell = &pjFTell;
         pjFileApi.FClose = &pjFClose;
-#ifdef __EMSCRIPTEN__
-        pj_ctx_set_fileapi(pj_get_default_ctx(), &pjFileApi);
-#endif
         pj_set_finder(&pjFind);
     }
 } projInitInstance;
@@ -105,15 +102,23 @@ class CoordManipImpl : public CoordManip
 
     boost::optional<GeographicLib::Geodesic> geodesic_;
 
+    projCtx ctx = nullptr;
+
 public:
     CoordManipImpl(
             vtslibs::vts::MapConfig &mapconfig,
             const std::string &searchSrs,
             const std::string &customSrs1,
             const std::string &customSrs2) :
-        mapconfig(mapconfig)
+        mapconfig(mapconfig),
+        ctx(pj_ctx_alloc())
     {
         LOG(info1) << "Creating coordinate systems manipulator";
+
+#ifdef __EMSCRIPTEN__
+        pj_ctx_set_fileapi(ctx, &projInitInstance.pjFileApi);
+#endif
+
         // create geodesic
         {
             auto r = geo::ellipsoid(mapconfig.srs(mapconfig
@@ -124,9 +129,15 @@ public:
                        << a << ">, b=<" << b << ">";
             geodesic_ = boost::in_place(a, (a - b) / a);
         }
+
         addSrsDef("$search$", searchSrs);
         addSrsDef("$custom1$", customSrs1);
         addSrsDef("$custom2$", customSrs2);
+    }
+
+    ~CoordManipImpl()
+    {
+        pj_ctx_free(ctx);
     }
 
     void addSrsDef(const std::string &name, const std::string &def)
@@ -165,12 +176,12 @@ public:
     vtslibs::vts::CsConvertor &convertor(const std::string &a,
                                          const std::string &b)
     {
-        std::string key = a + " >>> " + b;
+        const std::string key = a + " >>> " + b;
         auto it = convertors.find(key);
         if (it == convertors.end())
         {
             convertors[key] = std::make_unique<vtslibs::vts::CsConvertor>(
-                a, b, mapconfig);
+                a, b, mapconfig, ctx);
             it = convertors.find(key);
         }
         return *it->second;

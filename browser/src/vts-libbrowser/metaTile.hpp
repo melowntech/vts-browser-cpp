@@ -36,6 +36,7 @@ namespace vts
 {
 
 class Mapconfig;
+class CoordManip;
 using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
 using Extents2 = math::Extents2;
 
@@ -79,6 +80,9 @@ Extents2 subExtents(const Extents2 &parentExtents,
     const TileId &parentId, const TileId &targetId);
 
 MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
+    const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta);
+MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
+    std::shared_ptr<CoordManip> cnv,
     const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta);
 
 class MetaTile : public Resource, public vtslibs::vts::MetaTile

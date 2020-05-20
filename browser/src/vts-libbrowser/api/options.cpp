@@ -149,7 +149,13 @@ std::string MapRuntimeOptions::toJson() const
 }
 
 CameraOptions::CameraOptions()
-{}
+{
+#ifdef __EMSCRIPTEN__
+    // temporary workaround
+    // disabling geodata reduces chances of the app crashing
+    traverseModeGeodata = TraverseMode::None;
+#endif
+}
 
 CameraOptions::CameraOptions(const std::string &json)
     : CameraOptions()

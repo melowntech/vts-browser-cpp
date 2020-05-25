@@ -155,6 +155,7 @@ void MapImpl::purgeMapconfig()
     credits->purge();
     resources.searchTasks.clear();
     convertor.reset();
+    convertorData.reset();
     body = MapCelestialBody();
     purgeViewCache();
 
@@ -240,6 +241,11 @@ bool MapImpl::prerequisitesCheck()
             mapconfig->browserOptions.searchSrs,
             createOptions.customSrs1,
             createOptions.customSrs2);
+        convertorData = CoordManip::create(
+            *mapconfig,
+            mapconfig->browserOptions.searchSrs,
+            createOptions.customSrs1,
+            createOptions.customSrs2);
 
         credits->merge(mapconfig.get());
         initializeNavigation();
@@ -308,7 +314,7 @@ void MapImpl::traverseClearing(TraverseNode *trav)
     }
 
     for (auto &it : trav->childs)
-        traverseClearing(it.get());
+        traverseClearing(&it);
 }
 
 TileId MapImpl::roundId(TileId nodeId)
@@ -352,23 +358,23 @@ TraverseNode *findTravById(TraverseNode *trav, const TileId &what)
 {
     if (!trav)
         return nullptr;
-    if (trav->id() == what)
+    if (trav->id == what)
         return trav;
-    while (what.lod <= trav->id().lod)
+    while (what.lod <= trav->id.lod)
         trav = trav->parent;
-    while (trav->id().lod != what.lod)
+    while (trav->id.lod != what.lod)
     {
         TileId t = vtslibs::vts::parent(what,
-            what.lod - (trav->id().lod + 1));
+            what.lod - (trav->id.lod + 1));
         TraverseNode *c = nullptr;
         for (auto &it : trav->childs)
-            if (it->id() == t)
-                c = it.get();
+            if (it.id == t)
+                c = &it;
         if (!c)
             return nullptr;
         trav = c;
     }
-    assert(trav && trav->id() == what);
+    assert(trav && trav->id == what);
     return trav;
 }
 

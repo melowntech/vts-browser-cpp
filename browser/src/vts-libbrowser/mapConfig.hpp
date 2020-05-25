@@ -29,6 +29,7 @@
 
 #include <unordered_map>
 
+#include <vts-libs/vts/nodeinfo.hpp>
 #include <vts-libs/vts/mapconfig.hpp>
 
 #include "resource.hpp"
@@ -37,11 +38,6 @@ namespace Json
 {
     class Value;
 }
-
-namespace vtslibs { namespace vts
-{
-    class NodeInfo;
-}} // namespace vtslibs::vts
 
 namespace vts
 {

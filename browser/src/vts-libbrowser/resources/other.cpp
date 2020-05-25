@@ -61,7 +61,7 @@ FetchTask::ResourceType BoundMetaTile::resourceType() const
 ExternalBoundLayer::ExternalBoundLayer(MapImpl *map, const std::string &name)
     : Resource(map, name)
 {
-    priority = std::numeric_limits<float>::infinity();
+    priority = inf1();
 }
 
 void ExternalBoundLayer::decode()
@@ -79,7 +79,7 @@ FetchTask::ResourceType ExternalBoundLayer::resourceType() const
 ExternalFreeLayer::ExternalFreeLayer(MapImpl *map, const std::string &name)
     : Resource(map, name)
 {
-    priority = std::numeric_limits<float>::infinity();
+    priority = inf1();
 }
 
 void ExternalFreeLayer::decode()
@@ -97,7 +97,7 @@ FetchTask::ResourceType ExternalFreeLayer::resourceType() const
 TilesetMapping::TilesetMapping(MapImpl *map, const std::string &name) :
     Resource(map, name)
 {
-    priority = std::numeric_limits<float>::infinity();
+    priority = inf1();
 }
 
 void TilesetMapping::decode()

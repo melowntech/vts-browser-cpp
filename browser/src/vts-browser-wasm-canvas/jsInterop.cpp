@@ -168,25 +168,25 @@ void gotoPositionImpl(double values[4])
 
 extern "C" EMSCRIPTEN_KEEPALIVE void setMapconfig(const char *url)
 {
-    emscripten_async_queue_on_thread(main_thread_id, EM_FUNC_SIG_VI,
+    emscripten_dispatch_to_thread_async(main_thread_id, EM_FUNC_SIG_VI,
         &setMapconfigImpl, nullptr, copyString(url));
 }
 
 extern "C" EMSCRIPTEN_KEEPALIVE void setViewPreset(const char *preset)
 {
-    emscripten_async_queue_on_thread(main_thread_id, EM_FUNC_SIG_VI,
+    emscripten_dispatch_to_thread_async(main_thread_id, EM_FUNC_SIG_VI,
         &setViewPresetImpl, nullptr, copyString(preset));
 }
 
 extern "C" EMSCRIPTEN_KEEPALIVE void setPosition(const char *pos)
 {
-    emscripten_async_queue_on_thread(main_thread_id, EM_FUNC_SIG_VI,
+    emscripten_dispatch_to_thread_async(main_thread_id, EM_FUNC_SIG_VI,
         &setPositionImpl, nullptr, copyString(pos));
 }
 
 extern "C" EMSCRIPTEN_KEEPALIVE void search(const char *query)
 {
-    emscripten_async_queue_on_thread(main_thread_id, EM_FUNC_SIG_VI,
+    emscripten_dispatch_to_thread_async(main_thread_id, EM_FUNC_SIG_VI,
         &searchImpl, nullptr, copyString(query));
 }
 
@@ -198,7 +198,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void gotoPosition(
     arr[1] = y;
     arr[2] = z;
     arr[3] = ve;
-    emscripten_async_queue_on_thread(main_thread_id, EM_FUNC_SIG_VI,
+    emscripten_dispatch_to_thread_async(main_thread_id, EM_FUNC_SIG_VI,
         &gotoPositionImpl, nullptr, arr);
 }
 

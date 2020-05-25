@@ -119,9 +119,13 @@ if(BUILDSYS_EMBEDDED)
     target_compile_definitions(vts-renderer PRIVATE VTSR_EMBEDDED)
     target_compile_definitions(vts-renderer PRIVATE VTSR_OPENGLES)
 endif()
+
 if(BUILDSYS_WASM)
+    target_compile_options(vts-renderer PUBLIC "SHELL:-s USE_WEBGL2=1 -s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2 -s FULL_ES3=1 -s GL_POOL_TEMP_BUFFERS=0")
+    target_link_options(vts-renderer PUBLIC "SHELL:-s USE_WEBGL2=1 -s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2 -s FULL_ES3=1 -s GL_POOL_TEMP_BUFFERS=0")
     target_compile_definitions(vts-renderer PRIVATE VTSR_NO_CLIP)
 endif()
+
 if(BUILDSYS_UWP)
     target_compile_definitions(vts-renderer PRIVATE VTSR_UWP)
     target_compile_definitions(vts-renderer PRIVATE VTSR_NO_CLIP)

@@ -155,7 +155,8 @@ public:
     MapRuntimeOptions options;
     MapCelestialBody body;
     std::shared_ptr<Mapconfig> mapconfig;
-    std::shared_ptr<CoordManip> convertor;
+    std::shared_ptr<CoordManip> convertor; // used in main/render thread
+    std::shared_ptr<CoordManip> convertorData; // used in data/decoder thread
     std::shared_ptr<Credits> credits;
     boost::container::small_vector<std::shared_ptr<MapLayer>, 4> layers;
     boost::container::small_vector<std::weak_ptr<CameraImpl>, 1> cameras;

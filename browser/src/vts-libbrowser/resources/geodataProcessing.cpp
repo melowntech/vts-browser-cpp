@@ -1390,8 +1390,8 @@ if (fnc == #NAME) \
     void processFeatureName(const std::string &layerName)
     {
         std::array<float, 2> tv;
-        tv[0] = -std::numeric_limits<float>::infinity();
-        tv[1] = +std::numeric_limits<float>::infinity();
+        tv[0] = -inf1();
+        tv[1] = +inf1();
         const Value &layer = style["layers"][layerName];
         if (Validating)
         {
@@ -1469,7 +1469,7 @@ if (fnc == #NAME) \
         {
             validateArrayLength(layer["visibility-switch"], 1, -1,
                 "Visibility-switch must be an array.");
-            float ve = -std::numeric_limits<float>::infinity();
+            float ve = -inf1();
             for (const Value &vs : layer["visibility-switch"])
             {
                 validateArrayLength(vs, 2, 2, "All visibility-switch "
@@ -2310,7 +2310,8 @@ if (fnc == #NAME) \
             v.erase(std::remove_if(v.begin(), v.end(),
                 [&](const Point &pp) {
                     vec3 p = group->m2w(pp);
-                    if (length(vec3(l - p)) < 1e-5)
+                    vec3 d = l - p;
+                    if (dot(d, d) < 1e-5)
                         return true;
                     l = p;
                     return false;

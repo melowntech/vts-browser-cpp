@@ -38,7 +38,7 @@ namespace vts
 Mapconfig::Mapconfig(MapImpl *map, const std::string &name)
     : Resource(map, name)
 {
-    priority = std::numeric_limits<float>::infinity();
+    priority = inf1();
 }
 
 Mapconfig::~Mapconfig()
@@ -110,10 +110,11 @@ void Mapconfig::decode()
 
     // referenceDivisionNodeInfos
     referenceDivisionNodeInfos.clear();
-    for (auto &it : referenceFrame.division.nodes)
+    referenceDivisionNodeInfos.reserve(referenceFrame.division.nodes.size());
+    for (const auto &it : referenceFrame.division.nodes)
     {
         referenceDivisionNodeInfos.emplace_back(
-            referenceFrame, it.first, false, *this);
+            referenceFrame, it.first, true, *this);
     }
 
     // memory use

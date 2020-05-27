@@ -33,6 +33,7 @@
 #include <vts-renderer/highPerformanceGpuHint.h>
 
 #include <thread>
+#include <stdexcept>
 
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>

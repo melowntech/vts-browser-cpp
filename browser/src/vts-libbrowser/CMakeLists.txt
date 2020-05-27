@@ -1,6 +1,6 @@
 
 include_directories(SYSTEM externals)
-add_subdirectory(externals)
+add_subdirectory(externals EXCLUDE_FROM_ALL)
 
 find_package(ZLIB REQUIRED)
 include_directories(SYSTEM ${ZLIB_INCLUDE_DIRS})
@@ -36,7 +36,7 @@ else()
     list(APPEND EXTRA_SRC_LIST fetcher/curl.cpp)
 endif()
 
-define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus
+define_module(LIBRARY vts-browser DEPENDS vts-libs-core
     jsoncpp ZLIB PNG JPEG utf8cpp ${EXTRA_LIB_MODULES})
 
 set(PUB_HDR_LIST

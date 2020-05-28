@@ -60,21 +60,17 @@ BoundParamInfo::BoundParamInfo(const View::BoundLayerParams &params)
     : View::BoundLayerParams(params)
 {}
 
-mat3f BoundParamInfo::uvMatrix() const
+vec4f BoundParamInfo::uvTrans() const
 {
     if (depth == 0)
-        return identityMatrix3().cast<float>();
+        return vec4f(1, 1, 0, 0);
     double scale = 1.0 / (1 << depth);
     double tx = scale * (orig.localId.x
                          - ((orig.localId.x >> depth) << depth));
     double ty = scale * (orig.localId.y
                          - ((orig.localId.y >> depth) << depth));
     ty = 1 - scale - ty;
-    mat3f m;
-    m << scale, 0, tx,
-            0, scale, ty,
-            0, 0, 1;
-    return m;
+    return vec4f(scale, scale, tx, ty);
 }
 
 Validity BoundParamInfo::prepare(CameraImpl *impl,

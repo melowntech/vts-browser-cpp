@@ -75,8 +75,7 @@ void CameraDraws::clear()
 }
 
 RenderSurfaceTask::RenderSurfaceTask() : model(identityMatrix4()),
-    uvm(identityMatrix3().cast<float>()),
-    color(1, 1, 1, 1)
+    uvTrans(1, 1, 0, 0), color(1, 1, 1, 1)
 {}
 
 bool RenderSurfaceTask::ready() const
@@ -139,11 +138,10 @@ DrawSurfaceTask CameraImpl::convert(const RenderSurfaceTask &task)
         RenderSurfaceTask>(this, task);
     if (task.textureMask)
         result.texMask = task.textureMask->getUserData();
-    matToRaw(task.uvm, result.uvm);
+    vecToRaw(task.uvTrans, result.uvTrans);
     vecToRaw(vec4f(0, 0, 1, 1), result.uvClip);
     vec3f c = vec4to3(vec4(task.model * vec4(0, 0, 0, 1))).cast<float>();
     vecToRaw(c, result.center);
-    result.flatShading = task.flatShading || options.debugFlatShading;
     result.externalUv = task.externalUv;
     return result;
 }

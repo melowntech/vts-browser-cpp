@@ -77,7 +77,7 @@ public:
     typedef std::vector<BoundParamInfo> List;
 
     BoundParamInfo(const vtslibs::registry::View::BoundLayerParams &params);
-    mat3f uvMatrix() const;
+    vec4f uvTrans() const;
     Validity prepare(CameraImpl *impl, TileId tileId, TileId localId,
         uint32 subMeshIndex, double priority);
 

@@ -833,8 +833,8 @@ public:
                     n.debugRenderCameraObstructionSurrogates);
 
                 // flat shading
-                c.debugFlatShading = nk_check_label(&ctx,
-                    "Flat shading", c.debugFlatShading);
+                r.flatShading = nk_check_label(&ctx,
+                    "Flat shading", r.flatShading);
 
                 // polygon edges
                 r.renderPolygonEdges = nk_check_label(&ctx,

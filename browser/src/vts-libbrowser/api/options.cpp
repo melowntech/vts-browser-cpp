@@ -181,7 +181,6 @@ void CameraOptions::applyJson(const std::string &json)
     AJE(traverseModeGeodata, TraverseMode);
     AJ(lodBlendingTransparent, asBool);
     AJ(debugDetachedCamera, asBool);
-    AJ(debugFlatShading, asBool);
     AJ(debugRenderSurrogates, asBool);
     AJ(debugRenderMeshBoxes, asBool);
     AJ(debugRenderTileBoxes, asBool);
@@ -216,7 +215,6 @@ std::string CameraOptions::toJson() const
     TJE(traverseModeGeodata, TraverseMode);
     TJ(lodBlendingTransparent, asBool);
     TJ(debugDetachedCamera, asBool);
-    TJ(debugFlatShading, asBool);
     TJ(debugRenderSurrogates, asBool);
     TJ(debugRenderMeshBoxes, asBool);
     TJ(debugRenderTileBoxes, asBool);

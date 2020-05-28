@@ -343,7 +343,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
                 task.color(3) = b.alpha ? *b.alpha : 1;
                 task.mesh = mesh;
                 task.model = part.normToPhys;
-                task.uvm = b.uvMatrix();
+                task.uvTrans = b.uvTrans();
                 task.externalUv = true;
                 task.boundLayerId = b.id;
 
@@ -374,7 +374,6 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
             }
             task.mesh = mesh;
             task.model = part.normToPhys;
-            task.uvm = identityMatrix3().cast<float>();
             task.externalUv = false;
             newOpaque.insert(newOpaque.begin(), task);
         }

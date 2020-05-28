@@ -70,6 +70,7 @@ typedef struct vtsCRenderOptionsBase
     uint32 renderGeodataDebug; // 0 = disabled
     bool renderAtmosphere;
     bool renderPolygonEdges;
+    bool flatShading;
     bool geodataHysteresis;
     bool debugDepthFeedback;
 

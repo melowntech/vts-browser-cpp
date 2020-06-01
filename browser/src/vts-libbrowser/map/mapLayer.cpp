@@ -100,8 +100,7 @@ std::unique_ptr<TraverseNode> makeTraverseRoot(MapLayer *layer)
 {
     auto *mapconfig = layer->map->mapconfig.get();
     std::unique_ptr<TraverseNode> root
-        = std::make_unique<TraverseNode>(layer, nullptr, NodeInfo(
-        mapconfig->referenceFrame, TileId(), false, *mapconfig));
+        = std::make_unique<TraverseNode>(layer, nullptr, TileId());
     root->priority = std::numeric_limits<double>::infinity();
     return root;
 }

@@ -101,7 +101,7 @@ uint32 travLoadOnly(CameraImpl *impl,
 
     uint32 r = 0;
     for (auto &t : trav->childs)
-        r |= travLoadOnly(impl, t.get(), maxLods - 1);
+        r |= travLoadOnly(impl, &t, maxLods - 1);
     assert(r != 0);
     return r;
 }
@@ -127,7 +127,7 @@ void travRenderOnly(CameraImpl *impl,
     }
 
     for (auto &t : trav->childs)
-        travRenderOnly(impl, t.get(), maxLods - 1);
+        travRenderOnly(impl, &t, maxLods - 1);
 }
 
 } // namespace
@@ -136,8 +136,8 @@ double CameraImpl::travDistance(TraverseNode *trav, const vec3 pointPhys)
 {
     // checking the distance in node srs may be more accurate,
     //   but the resulting distance is in different units
-    return aabbPointDist(pointPhys, trav->aabbPhys[0],
-            trav->aabbPhys[1]);
+    return aabbPointDist(pointPhys, trav->meta->aabbPhys[0],
+            trav->meta->aabbPhys[1]);
 }
 
 void CameraImpl::updateNodePriority(TraverseNode *trav)
@@ -156,8 +156,8 @@ void CameraImpl::updateNodePriority(TraverseNode *trav)
 std::shared_ptr<GpuTexture> CameraImpl::travInternalTexture(
     TraverseNode *trav, uint32 subMeshIndex)
 {
-    UrlTemplate::Vars vars(trav->id(),
-            vtslibs::vts::local(trav->nodeInfo), subMeshIndex);
+    UrlTemplate::Vars vars(trav->id,
+            vtslibs::vts::local(trav->meta->nodeInfo), subMeshIndex);
     std::shared_ptr<GpuTexture> res = map->getTexture(
                 trav->surface->urlIntTex(vars));
     map->touchResource(res);
@@ -176,38 +176,29 @@ bool CameraImpl::generateMonolithicGeodataTrav(TraverseNode *trav)
         = boost::get<vtslibs::registry::FreeLayer::Geodata>(
             trav->layer->freeLayer->definition);
 
-    trav->meta.emplace();
-
-    // extents
+    vtslibs::vts::MetaNode node;
+    if (g.extents.ll != g.extents.ur)
     {
-        if (g.extents.ll != g.extents.ur)
-        {
-            vec3 el = vecFromUblas<vec3>
-                (map->mapconfig->referenceFrame.division.extents.ll);
-            vec3 eu = vecFromUblas<vec3>
-                (map->mapconfig->referenceFrame.division.extents.ur);
-            vec3 ed = eu - el;
-            ed = vec3(1 / ed[0], 1 / ed[1], 1 / ed[2]);
-            trav->meta->extents.ll = vecToUblas<math::Point3>(
-                (vecFromUblas<vec3>(g.extents.ll) - el).cwiseProduct(ed));
-            trav->meta->extents.ur = vecToUblas<math::Point3>(
-                (vecFromUblas<vec3>(g.extents.ur) - el).cwiseProduct(ed));
-            trav->aabbPhys[0] = vecFromUblas<vec3>(g.extents.ll);
-            trav->aabbPhys[1] = vecFromUblas<vec3>(g.extents.ur);
-        }
-        else
-        {
-            const auto &e = map->mapconfig->referenceFrame.division.extents;
-            trav->meta->extents = e;
-            trav->aabbPhys[0] = vecFromUblas<vec3>(e.ll);
-            trav->aabbPhys[1] = vecFromUblas<vec3>(e.ur);
-        }
+        vec3 el = vecFromUblas<vec3>
+            (map->mapconfig->referenceFrame.division.extents.ll);
+        vec3 eu = vecFromUblas<vec3>
+            (map->mapconfig->referenceFrame.division.extents.ur);
+        vec3 ed = eu - el;
+        ed = vec3(1 / ed[0], 1 / ed[1], 1 / ed[2]);
+        node.extents.ll = vecToUblas<math::Point3>(
+            (vecFromUblas<vec3>(g.extents.ll) - el).cwiseProduct(ed));
+        node.extents.ur = vecToUblas<math::Point3>(
+            (vecFromUblas<vec3>(g.extents.ur) - el).cwiseProduct(ed));
     }
+    else
+    {
+        node.extents = map->mapconfig->referenceFrame.division.extents;
+    }
+    node.displaySize = g.displaySize;
+    node.update(vtslibs::vts::MetaNode::Flag::applyDisplaySize);
 
-    // other
-    trav->meta->displaySize = g.displaySize;
-    trav->meta->update(vtslibs::vts::MetaNode::Flag::applyDisplaySize);
-    travDetermineMetaImpl(trav); // update physical corners
+    trav->meta = std::make_shared<const MetaNode>(
+        generateMetaNode(map->mapconfig, trav->id, node));
     trav->surface = &trav->layer->surfaceStack.surfaces[0];
     updateNodePriority(trav);
     return true;
@@ -233,7 +224,7 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
                 == vtslibs::registry::FreeLayer::Type::geodata)
         return generateMonolithicGeodataTrav(trav);
 
-    const TileId nodeId = trav->id();
+    const TileId nodeId = trav->id;
 
     // find all metatiles
     decltype(trav->metaTiles) metaTiles;
@@ -276,7 +267,7 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
 
     // find topmost nonempty surface
     SurfaceInfo *topmost = nullptr;
-    const vtslibs::vts::MetaNode *node = nullptr;
+    uint32 chosen = (uint32)-1;
     bool childsAvailable[4] = {false, false, false, false};
     for (uint32 i = 0, e = metaTiles.size(); i != e; i++)
     {
@@ -292,7 +283,7 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
             continue;
         if (n.geometry())
         {
-            node = &n;
+            chosen = i;
             if (trav->layer->tilesetStack)
             {
                 assert(n.sourceReference > 0 && n.sourceReference
@@ -303,181 +294,40 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
             else
                 topmost = &trav->layer->surfaceStack.surfaces[i];
         }
-        if (!node)
-            node = &n;
+        if (chosen == (uint32)-1)
+            chosen = i;
     }
-    if (!node)
+    if (chosen == (uint32)-1)
         return false; // all surfaces failed to download, what can i do?
-
-    trav->meta = *node;
-    trav->metaTiles.swap(metaTiles);
-    travDetermineMetaImpl(trav);
-
+    
     // surface
     if (topmost)
     {
         trav->surface = topmost;
         // credits
-        for (auto it : node->credits())
+        for (auto it : metaTiles[chosen]->get(nodeId).credits())
             trav->credits.push_back(it);
     }
 
+    trav->meta = metaTiles[chosen]->getNode(nodeId);
+    trav->metaTiles.swap(metaTiles);
+
     // prepare children
-    vtslibs::vts::Children childs = vtslibs::vts::children(nodeId);
-    for (uint32 i = 0; i < 4; i++)
+    if (childsAvailable[0] || childsAvailable[1]
+        || childsAvailable[2] || childsAvailable[3])
     {
-        if (childsAvailable[i])
-            trav->childs.push_back(std::make_unique<TraverseNode>(
-                    trav->layer, trav, trav->nodeInfo.child(childs[i])));
+        vtslibs::vts::Children childs = vtslibs::vts::children(nodeId);
+        trav->childs.ptr = std::make_unique<TraverseChildsArray>();
+        for (uint32 i = 0; i < 4; i++)
+            if (childsAvailable[i])
+                trav->childs.ptr->arr.emplace_back(
+                    trav->layer, trav, childs[i]);
     }
 
     // update priority
     updateNodePriority(trav);
 
     return true;
-}
-
-void CameraImpl::travDetermineMetaImpl(TraverseNode *trav)
-{
-    assert(trav->meta);
-
-    // corners
-    if (!vtslibs::vts::empty(trav->meta->geomExtents)
-            && !trav->nodeInfo.srs().empty())
-    {
-        vec2 fl = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
-        vec2 fu = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
-        vec3 el = vec2to3(fl, double(trav->meta->geomExtents.z.min));
-        vec3 eu = vec2to3(fu, double(trav->meta->geomExtents.z.max));
-        vec3 ed = eu - el;
-        vec3 *corners = trav->cornersPhys;
-        for (uint32 i = 0; i < 8; i++)
-        {
-            vec3 f = lowerUpperCombine(i).cwiseProduct(ed) + el;
-            f = map->convertor->convert(f,
-                    trav->nodeInfo.node(), Srs::Physical);
-            corners[i] = f;
-        }
-
-        // obb
-        if (trav->id().lod > 4)
-        {
-            vec3 center = vec3(0,0,0);
-            for (uint32 i = 0; i < 8; i++)
-                center += corners[i];
-            center /= 8;
-
-            vec3 f = corners[4] - corners[0];
-            vec3 u = corners[2] - corners[0];
-            mat4 t = lookAt(center, center + f, u);
-
-            TraverseNode::Obb obb;
-            obb.rotInv = t.inverse();
-            static const double di = std::numeric_limits<double>::infinity();
-            vec3 vi(di, di, di);
-            obb.points[0] = vi;
-            obb.points[1] = -vi;
-
-            for (uint32 i = 0; i < 8; i++)
-            {
-                vec3 p = vec4to3(vec4(t * vec3to4(corners[i], 1)), false);
-                obb.points[0] = min(obb.points[0], p);
-                obb.points[1] = max(obb.points[1], p);
-            }
-
-            trav->obb = obb;
-        }
-
-        // disks
-        if (trav->id().lod > 4)
-        {
-            vec2 sds2 = vec2((fu + fl) * 0.5);
-            vec3 sds = vec2to3(sds2, double(trav->meta->geomExtents.z.min));
-            vec3 vn1 = map->convertor->convert(sds,
-                trav->nodeInfo.node(), Srs::Physical);
-            trav->diskNormalPhys = vn1.normalized();
-            trav->diskHeightsPhys[0] = vn1.norm();
-            sds = vec2to3(sds2, double(trav->meta->geomExtents.z.max));
-            vec3 vn2 = map->convertor->convert(sds,
-                trav->nodeInfo.node(), Srs::Physical);
-            trav->diskHeightsPhys[1] = vn2.norm();
-            sds = vec2to3(fu, double(trav->meta->geomExtents.z.min));
-            vec3 vc = map->convertor->convert(sds,
-                trav->nodeInfo.node(), Srs::Physical);
-            trav->diskHalfAngle = std::acos(dot(trav->diskNormalPhys,
-                                                vc.normalized()));
-        }
-    }
-    else if (trav->meta->extents.ll != trav->meta->extents.ur)
-    {
-        vec3 fl = vecFromUblas<vec3>(trav->meta->extents.ll);
-        vec3 fu = vecFromUblas<vec3>(trav->meta->extents.ur);
-        vec3 fd = fu - fl;
-        vec3 el = vecFromUblas<vec3>
-                (map->mapconfig->referenceFrame.division.extents.ll);
-        vec3 eu = vecFromUblas<vec3>
-                (map->mapconfig->referenceFrame.division.extents.ur);
-        vec3 ed = eu - el;
-        for (uint32 i = 0; i < 8; i++)
-        {
-            vec3 f = lowerUpperCombine(i).cwiseProduct(fd) + fl;
-            trav->cornersPhys[i] = f.cwiseProduct(ed) + el;
-        }
-    }
-    else
-    {
-        LOG(warn3) << "Tile <" << trav->nodeInfo.nodeId()
-            << "> is missing both extents and geomExtents";
-    }
-
-    // aabb
-    if (trav->id().lod > 2)
-    {
-        trav->aabbPhys[0] = trav->aabbPhys[1] = trav->cornersPhys[0];
-        for (const vec3 &it : trav->cornersPhys)
-        {
-            trav->aabbPhys[0] = min(trav->aabbPhys[0], it);
-            trav->aabbPhys[1] = max(trav->aabbPhys[1], it);
-        }
-    }
-
-    // surrogate
-    if (vtslibs::vts::GeomExtents::validSurrogate(
-                trav->meta->geomExtents.surrogate))
-    {
-        vec2 fl = vecFromUblas<vec2>(trav->nodeInfo.extents().ll);
-        vec2 fu = vecFromUblas<vec2>(trav->nodeInfo.extents().ur);
-        vec3 sds = vec2to3(vec2((fl + fu) * 0.5),
-                           double(trav->meta->geomExtents.surrogate));
-        trav->surrogatePhys = map->convertor->convert(sds,
-                            trav->nodeInfo.node(), Srs::Physical);
-        trav->surrogateNav = map->convertor->convert(sds,
-                            trav->nodeInfo.node(), Srs::Navigation)[2];
-    }
-
-    // texelSize
-    {
-        bool applyTexelSize = trav->meta->flags()
-            & vtslibs::vts::MetaNode::Flag::applyTexelSize;
-        bool applyDisplaySize = trav->meta->flags()
-            & vtslibs::vts::MetaNode::Flag::applyDisplaySize;
-
-        if (applyTexelSize)
-        {
-            trav->texelSize = trav->meta->texelSize;
-        }
-        else if (applyDisplaySize)
-        {
-            vec3 s = trav->aabbPhys[1] - trav->aabbPhys[0];
-            double m = std::max(s[0], std::max(s[1], s[2]));
-            trav->texelSize = m / trav->meta->displaySize;
-        }
-        else
-        {
-            // the test fails by default
-            trav->texelSize = std::numeric_limits<double>::infinity();
-        }
-    }
 }
 
 bool CameraImpl::travDetermineDraws(TraverseNode *trav)
@@ -502,24 +352,25 @@ bool CameraImpl::travDetermineDraws(TraverseNode *trav)
 
 bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
 {
-    OPTICK_EVENT();
-
-    const TileId nodeId = trav->id();
+    const TileId nodeId = trav->id;
 
     // aggregate mesh
     if (!trav->meshAgg)
     {
         std::string name = trav->surface->urlMesh(
-            UrlTemplate::Vars(nodeId, vtslibs::vts::local(trav->nodeInfo)));
+            UrlTemplate::Vars(nodeId,
+                vtslibs::vts::local(trav->meta->nodeInfo)));
         trav->meshAgg = map->getMeshAggregate(name);
 
         // prefetch internal textures
+        /*
         if (trav->meta->geometry())
         {
             auto cnt = trav->meta->internalTextureCount();
             for (uint32 i = 0; i < cnt; i++)
                 travInternalTexture(trav, i);
         }
+        */
     }
     auto &meshAgg = trav->meshAgg;
     meshAgg->updatePriority(trav->priority);
@@ -559,7 +410,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
                     vtslibs::registry::View::BoundLayerParams(
                     map->mapconfig->boundLayers.get(part.textureLayer).id)));
             }
-            switch (reorderBoundLayers(trav->nodeInfo, subMeshIndex,
+            switch (reorderBoundLayers(trav->meta->nodeInfo, subMeshIndex,
                                        bls, trav->priority))
             {
             case Validity::Indeterminate:
@@ -664,11 +515,10 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
 
 bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
 {
-    OPTICK_EVENT();
-
-    const TileId nodeId = trav->id();
+    const TileId nodeId = trav->id;
     std::string geoName = trav->surface->urlGeodata(
-            UrlTemplate::Vars(nodeId, vtslibs::vts::local(trav->nodeInfo)));
+            UrlTemplate::Vars(nodeId,
+                vtslibs::vts::local(trav->meta->nodeInfo)));
 
     auto style = map->getActualGeoStyle(trav->layer->freeLayerName);
     auto features = map->getActualGeoFeatures(
@@ -687,7 +537,7 @@ bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
     geo->updatePriority(trav->priority);
     geo->update(style.second, features.second,
         map->mapconfig->browserOptions.value,
-        trav->aabbPhys, trav->id());
+        trav->meta->aabbPhys, trav->id);
     switch (map->getResourceValidity(geo))
     {
     case Validity::Invalid:
@@ -715,7 +565,7 @@ bool CameraImpl::travInit(TraverseNode *trav)
     {
         statistics.metaNodesTraversedTotal++;
         statistics.metaNodesTraversedPerLod[
-                std::min<uint32>(trav->id().lod,
+                std::min<uint32>(trav->id.lod,
                                  CameraStatistics::MaxLods-1)]++;
     }
 
@@ -756,17 +606,17 @@ void CameraImpl::travModeHierarchical(TraverseNode *trav, bool loadOnly)
     bool ok = true;
     for (auto &t : trav->childs)
     {
-        if (!t->meta)
+        if (!t.meta)
         {
             ok = false;
             continue;
         }
-        if (t->surface && !t->determined)
+        if (t.surface && !t.determined)
             ok = false;
     }
 
     for (auto &t : trav->childs)
-        travModeHierarchical(t.get(), !ok);
+        travModeHierarchical(&t, !ok);
 
     if (!ok && trav->determined)
         renderNode(trav);
@@ -788,7 +638,7 @@ void CameraImpl::travModeFlat(TraverseNode *trav)
     }
 
     for (auto &t : trav->childs)
-        travModeFlat(t.get());
+        travModeFlat(&t);
 }
 
 void CameraImpl::travModeStable(TraverseNode *trav)
@@ -805,7 +655,7 @@ void CameraImpl::travModeStable(TraverseNode *trav)
         if (trav->determined)
             renderNode(trav);
         else for (auto &t : trav->childs)
-            travRenderOnly(this, t.get(), options.maxHysteresisLods);
+            travRenderOnly(this, &t, options.maxHysteresisLods);
         return;
     }
 
@@ -813,7 +663,7 @@ void CameraImpl::travModeStable(TraverseNode *trav)
     {
         uint32 r = 0;
         for (auto &t : trav->childs)
-            r |= travLoadOnly(this, t.get(), options.maxHysteresisLods);
+            r |= travLoadOnly(this, &t, options.maxHysteresisLods);
         if (r == PreloadEmptyBit || r == PreloadPartialBits)
         {
             renderNode(trav);
@@ -822,7 +672,7 @@ void CameraImpl::travModeStable(TraverseNode *trav)
     }
 
     for (auto &t : trav->childs)
-        travModeStable(t.get());
+        travModeStable(&t);
 }
 
 void CameraImpl::travModePrefill(TraverseNode *trav)
@@ -840,7 +690,7 @@ void CameraImpl::travModePrefill(TraverseNode *trav)
         if (trav->determined)
             renderNode(trav);
         else for (auto &t : trav->childs)
-            travRenderOnly(this, t.get(), options.maxHysteresisLods);
+            travRenderOnly(this, &t, options.maxHysteresisLods);
         return;
     }
 
@@ -848,7 +698,7 @@ void CameraImpl::travModePrefill(TraverseNode *trav)
     {
         uint32 r = 0;
         for (auto &t : trav->childs)
-            r |= travLoadOnly(this, t.get(), options.maxHysteresisLods);
+            r |= travLoadOnly(this, &t, options.maxHysteresisLods);
         if (r == PreloadEmptyBit || r == PreloadPartialBits)
         {
             renderNode(trav);
@@ -859,7 +709,7 @@ void CameraImpl::travModePrefill(TraverseNode *trav)
     }
 
     for (auto &t : trav->childs)
-        travModePrefill(t.get());
+        travModePrefill(&t);
 }
 
 void CameraImpl::travModeFixed(TraverseNode *trav)
@@ -870,7 +720,7 @@ void CameraImpl::travModeFixed(TraverseNode *trav)
     if (travDistance(trav, focusPosPhys) > options.fixedTraversalDistance)
         return;
 
-    if (trav->id().lod >= options.fixedTraversalLod
+    if (trav->id.lod >= options.fixedTraversalLod
         || trav->childs.empty())
     {
         if (travDetermineDraws(trav))
@@ -879,7 +729,7 @@ void CameraImpl::travModeFixed(TraverseNode *trav)
     }
 
     for (auto &t : trav->childs)
-        travModeFixed(t.get());
+        travModeFixed(&t);
 }
 
 void CameraImpl::traverseRender(TraverseNode *trav, TraverseMode mode)

@@ -110,10 +110,11 @@ void Mapconfig::decode()
 
     // referenceDivisionNodeInfos
     referenceDivisionNodeInfos.clear();
+    referenceDivisionNodeInfos.reserve(referenceFrame.division.nodes.size());
     for (auto &it : referenceFrame.division.nodes)
     {
         referenceDivisionNodeInfos.emplace_back(
-            referenceFrame, it.first, false, *this);
+            referenceFrame, it.first, true, *this);
     }
 
     // memory use

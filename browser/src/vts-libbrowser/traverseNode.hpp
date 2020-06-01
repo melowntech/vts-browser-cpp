@@ -27,23 +27,16 @@
 #ifndef TRAVERSENODE_HPP_sgh44f
 #define TRAVERSENODE_HPP_sgh44f
 
-#include <vts-libs/vts/nodeinfo.hpp>
-#include <vts-libs/vts/metatile.hpp>
-
-#include "include/vts-browser/math.hpp"
 #include "utilities/array.hpp"
 #include "renderTasks.hpp"
+#include "metaTile.hpp"
 
 #include <boost/container/small_vector.hpp>
 
 namespace vts
 {
 
-using vtslibs::vts::NodeInfo;
-using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
-
 class MapLayer;
-class MetaTile;
 class SurfaceInfo;
 class Resource;
 class RenderSurfaceTask;
@@ -51,40 +44,35 @@ class RenderColliderTask;
 class MeshAggregate;
 class GeodataTile;
 
+struct TraverseChildsContainer
+{
+    std::unique_ptr<struct TraverseChildsArray> ptr;
+
+    TraverseNode *begin();
+    TraverseNode *end();
+    bool empty() const;
+    uint32 size() const;
+};
+
 class TraverseNode : private Immovable
 {
 public:
-    struct Obb
-    {
-        mat4 rotInv;
-        vec3 points[2];
-    };
-
     // traversal
-    Array<std::unique_ptr<TraverseNode>, 4> childs;
+    TraverseChildsContainer childs;
     MapLayer *const layer = nullptr;
     TraverseNode *const parent = nullptr;
-    const NodeInfo nodeInfo;
+    const TileId id;
     const uint32 hash = 0;
 
     // metadata
     boost::container::small_vector<vtslibs::registry::CreditId, 8> credits;
     boost::container::small_vector<std::shared_ptr<MetaTile>, 1> metaTiles;
-    boost::optional<vtslibs::vts::MetaNode> meta;
-    boost::optional<Obb> obb;
-    vec3 cornersPhys[8];
-    vec3 aabbPhys[2];
-    boost::optional<vec3> surrogatePhys;
-    boost::optional<float> surrogateNav;
-    vec3 diskNormalPhys;
-    vec2 diskHeightsPhys;
-    double diskHalfAngle;
-    double texelSize;
+    std::shared_ptr<const MetaNode> meta;
     const SurfaceInfo *surface = nullptr;
 
     uint32 lastAccessTime = 0;
     uint32 lastRenderTime = 0;
-    float priority;
+    float priority = nan1();
 
     // renders
     bool determined = false; // draws are fully loaded (draws may be empty)
@@ -94,15 +82,47 @@ public:
     boost::container::small_vector<RenderSurfaceTask, 1> transparent;
     boost::container::small_vector<RenderColliderTask, 1> colliders;
 
-    TraverseNode(MapLayer *layer, TraverseNode *parent,
-        const NodeInfo &nodeInfo);
+    TraverseNode();
+    TraverseNode(MapLayer *layer, TraverseNode *parent, const TileId &id);
     ~TraverseNode();
     void clearAll();
     void clearRenders();
     bool rendersReady() const;
     bool rendersEmpty() const;
-    TileId id() const { return nodeInfo.nodeId(); }
 };
+
+struct TraverseChildsArray
+{
+    Array<TraverseNode, 4> arr;
+};
+
+inline TraverseNode *TraverseChildsContainer::begin()
+{
+    if (ptr)
+        return &ptr->arr[0];
+    return nullptr;
+}
+
+inline TraverseNode *TraverseChildsContainer::end()
+{
+    if (ptr)
+        return &ptr->arr[0] + ptr->arr.size();
+    return nullptr;
+}
+
+inline bool TraverseChildsContainer::empty() const
+{
+    if (ptr)
+        return ptr->arr.empty();
+    return true;
+}
+
+inline uint32 TraverseChildsContainer::size() const
+{
+    if (ptr)
+        return ptr->arr.size();
+    return 0;
+}
 
 TraverseNode *findTravById(TraverseNode *trav, const TileId &what);
 

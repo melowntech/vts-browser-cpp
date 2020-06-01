@@ -67,7 +67,7 @@ void CameraImpl::preloadRequest(TraverseNode *trav)
     }
 
     const sint32 D = options.preloadNeighborsDistance;
-    const TileId &base = trav->id();
+    const TileId &base = trav->id;
     const TileId::index_type m = 1 << base.lod;
     for (sint32 y = -D; y <= D; y++)
     {
@@ -100,7 +100,7 @@ void CameraImpl::preloadProcess(TraverseNode *trav,
     if (!travInit(trav))
         return;
 
-    const TileId &myId = trav->id();
+    const TileId &myId = trav->id;
     std::vector<TileId> childRequests[4];
     for (auto &cr : childRequests)
         cr.reserve(requests.size());
@@ -117,9 +117,9 @@ void CameraImpl::preloadProcess(TraverseNode *trav,
             childRequests[childIndex(myId, t)].push_back(t);
     }
 
-    for (const auto &c : trav->childs)
-        preloadProcess(c.get(), childRequests[
-            childIndex(myId, c->id())]);
+    for (auto &c : trav->childs)
+        preloadProcess(&c, childRequests[
+            childIndex(myId, c.id)]);
 }
 
 } // namespace vts

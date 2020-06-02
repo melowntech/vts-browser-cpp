@@ -27,7 +27,6 @@
 #ifndef METATILE_HPP_s4h4i476dw3
 #define METATILE_HPP_s4h4i476dw3
 
-#include <vts-libs/vts/nodeinfo.hpp>
 #include <vts-libs/vts/metatile.hpp>
 
 #include "include/vts-browser/math.hpp"
@@ -37,8 +36,9 @@ namespace vts
 {
 
 class Mapconfig;
+class CoordManip;
 using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
-using vtslibs::vts::NodeInfo;
+using Extents2 = math::Extents2;
 
 class BoundMetaTile : public Resource
 {
@@ -60,8 +60,9 @@ public:
         vec3 points[2];
     };
 
-    NodeInfo nodeInfo;
-    vec3 cornersPhys[8];
+    TileId tileId;
+    TileId localId;
+    Extents2 extents;
     vec3 aabbPhys[2];
     boost::optional<Obb> obb;
     boost::optional<vec3> surrogatePhys;
@@ -71,10 +72,17 @@ public:
     double diskHalfAngle;
     double texelSize;
 
-    MetaNode(const NodeInfo &nodeInfo);
+    MetaNode();
+    vec3 cornersPhys(uint32 index) const;
 };
 
+Extents2 subExtents(const Extents2 &parentExtents,
+    const TileId &parentId, const TileId &targetId);
+
 MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
+    const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta);
+MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
+    std::shared_ptr<CoordManip> cnv,
     const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta);
 
 class MetaTile : public Resource, public vtslibs::vts::MetaTile
@@ -83,7 +91,7 @@ public:
     MetaTile(MapImpl *map, const std::string &name);
     void decode() override;
     FetchTask::ResourceType resourceType() const override;
-    std::shared_ptr<const MetaNode> getNode(const TileId &tileId) const;
+    std::shared_ptr<const MetaNode> getNode(const TileId &tileId);
 
 private:
     std::weak_ptr<Mapconfig> mapconfig;

@@ -64,7 +64,6 @@ class DrawColliderTask;
 class MapLayer;
 class BoundParamInfo;
 
-using vtslibs::vts::NodeInfo;
 using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
 
 class BlendDraw
@@ -116,8 +115,9 @@ public:
 
     CameraImpl(MapImpl *map, Camera *cam);
     void clear();
-    Validity reorderBoundLayers(const NodeInfo &nodeInfo, uint32 subMeshIndex,
-        std::vector<BoundParamInfo> &boundList, double priority);
+    Validity reorderBoundLayers(TileId tileId, TileId localId,
+        uint32 subMeshIndex, std::vector<BoundParamInfo> &boundList,
+        double priority);
     void touchDraws(TraverseNode *trav);
     bool visibilityTest(TraverseNode *trav);
     bool coarsenessTest(TraverseNode *trav);

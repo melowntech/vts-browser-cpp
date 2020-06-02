@@ -39,6 +39,8 @@
 namespace vts
 {
 
+using vtslibs::vts::NodeInfo;
+
 namespace
 {
 
@@ -174,10 +176,21 @@ TraverseNode *findTravSds(CameraImpl *camera, TraverseNode *where,
     math::Point2 ublasSds = vecToUblas<math::Point2>(pointSds);
     for (auto &ci : where->childs)
     {
-        if (ci.meta && !ci.meta->nodeInfo.inside(ublasSds))
-            continue;
+        // avoid computing new extents if we already have them
+        if (ci.meta)
+        {
+            if (!math::inside(ci.meta->extents, ublasSds))
+                continue;
+        }
+        else
+        {
+            const Extents2 ce = subExtents(
+                where->meta->extents, where->id, ci.id);
+            if (!math::inside(ce, ublasSds))
+                continue;
+        }
         if (!camera->travInit(&ci))
-            return where;
+            continue;
         return findTravSds(camera, &ci, pointSds, maxLod);
     }
     return where;
@@ -189,6 +202,7 @@ bool CameraImpl::getSurfaceOverEllipsoid(
     double &result, const vec3 &navPos,
     double sampleSize, bool renderDebug)
 {
+    OPTICK_EVENT();
     assert(map->convertor);
     assert(!map->layers.empty());
 
@@ -203,7 +217,7 @@ bool CameraImpl::getSurfaceOverEllipsoid(
     vec2 sds;
     boost::optional<NodeInfo> info;
     uint32 index = 0;
-    for (auto &it : map->mapconfig->referenceFrame.division.nodes)
+    for (const auto &it : map->mapconfig->referenceFrame.division.nodes)
     {
         struct I {
             uint32 &i; I(uint32 &i) : i(i) {} ~I() { ++i; }
@@ -216,7 +230,7 @@ bool CameraImpl::getSurfaceOverEllipsoid(
         try
         {
             sds = vec3to2(map->convertor->convert(navPos,
-                Srs::Navigation, it.second));
+                Srs::Navigation, it.second.srs));
             if (!ni.inside(vecToUblas<math::Point2>(sds)))
                 continue;
             info = ni;
@@ -277,7 +291,7 @@ bool CameraImpl::getSurfaceOverEllipsoid(
             return false;
         if (!t->meta->surrogateNav)
             return false;
-        math::Extents2 ext = t->meta->nodeInfo.extents();
+        const math::Extents2 &ext = t->meta->extents;
         points[i] = vecFromUblas<vec2>(ext.ll + ext.ur) * 0.5;
         altitudes[i] = *t->meta->surrogateNav;
         nodes[i] = t;
@@ -291,7 +305,7 @@ bool CameraImpl::getSurfaceOverEllipsoid(
     {
         RenderInfographicsTask task;
         task.mesh = map->getMesh("internal://data/meshes/sphere.obj");
-        task.mesh->priority = std::numeric_limits<float>::infinity();
+        task.mesh->priority = inf1();
         if (*task.mesh)
         {
             float c = std::isnan(res) ? 0.0 : 1.0;
@@ -300,7 +314,7 @@ bool CameraImpl::getSurfaceOverEllipsoid(
             for (int i = 0; i < 4; i++)
             {
                 const TraverseNode *t = nodes[i];
-                double scale = t->meta->nodeInfo.extents().size() * 0.035;
+                double scale = t->meta->extents.size() * 0.035;
                 task.model = translationMatrix(*t->meta->surrogatePhys)
                         * scaleMatrix(scale);
                 draws.infographics.push_back(convert(task));
@@ -310,8 +324,10 @@ bool CameraImpl::getSurfaceOverEllipsoid(
             {
                 vec3 p = navPos;
                 p[2] = res;
-                p = map->convertor->convert(p, Srs::Navigation, Srs::Physical);
-                task.model = translationMatrix(p) * scaleMatrix(scaleSum / 4);
+                p = map->convertor->convert(p,
+                    Srs::Navigation, Srs::Physical);
+                task.model = translationMatrix(p)
+                    * scaleMatrix(scaleSum / 4);
                 task.color = vec4f(c, c, c, 1.f);
                 draws.infographics.push_back(convert(task));
             }

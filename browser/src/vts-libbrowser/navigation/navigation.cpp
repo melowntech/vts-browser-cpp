@@ -661,10 +661,10 @@ void NavigationImpl::updateNavigation(double elapsedTime)
         vec3 phys = map->convertor->navToPhys(p);
         RenderInfographicsTask r;
         r.mesh = map->getMesh("internal://data/meshes/cube.obj");
-        r.mesh->priority = std::numeric_limits<float>::infinity();
+        r.mesh->priority = inf1();
         r.textureColor = map->getTexture(
             "internal://data/textures/helper.jpg");
-        r.textureColor->priority = std::numeric_limits<float>::infinity();
+        r.textureColor->priority = inf1();
         r.model = translationMatrix(phys)
             * scaleMatrix(verticalExtent * 0.015);
         if (r.ready())
@@ -677,10 +677,10 @@ void NavigationImpl::updateNavigation(double elapsedTime)
         vec3 phys = map->convertor->navToPhys(tp);
         RenderInfographicsTask r;
         r.mesh = map->getMesh("internal://data/meshes/cube.obj");
-        r.mesh->priority = std::numeric_limits<float>::infinity();
+        r.mesh->priority = inf1();
         r.textureColor = map->getTexture(
             "internal://data/textures/helper.jpg");
-        r.textureColor->priority = std::numeric_limits<float>::infinity();
+        r.textureColor->priority = inf1();
         r.model = translationMatrix(phys)
             * scaleMatrix(targetVerticalExtent * 0.015);
         if (r.ready())

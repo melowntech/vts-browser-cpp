@@ -25,13 +25,19 @@ sudo apt install \
 ```
 
 Clone the git repository with all submodules.
-The library build system is cmake based.
-However, for convenience, a make shortcut exists.
 
 ```bash
 git clone --recursive https://github.com/melowntech/vts-browser-cpp.git
+```
+
+The library build system is cmake based.
+
+```bash
 cd vts-browser-cpp/browser
-make
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=RELEASE ..
+cmake --build . -- -j5 # use 5 processes
 ```
 
 And run the example application.

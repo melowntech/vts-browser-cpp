@@ -89,9 +89,6 @@ struct projInitClass
         pjFileApi.FSeek = &pjFSeek;
         pjFileApi.FTell = &pjFTell;
         pjFileApi.FClose = &pjFClose;
-#ifdef __EMSCRIPTEN__
-        pj_ctx_set_fileapi(pj_get_default_ctx(), &pjFileApi);
-#endif
         pj_set_finder(&pjFind);
     }
 } projInitInstance;
@@ -100,10 +97,12 @@ class CoordManipImpl : public CoordManip
 {
     vtslibs::vts::MapConfig &mapconfig;
 
-    std::unordered_map<std::string, std::shared_ptr<vtslibs::vts::CsConvertor>>
-        convertors;
+    std::unordered_map<std::string,
+        std::unique_ptr<vtslibs::vts::CsConvertor>> convertors;
 
     boost::optional<GeographicLib::Geodesic> geodesic_;
+
+    projCtx ctx = nullptr;
 
 public:
     CoordManipImpl(
@@ -111,9 +110,15 @@ public:
             const std::string &searchSrs,
             const std::string &customSrs1,
             const std::string &customSrs2) :
-        mapconfig(mapconfig)
+        mapconfig(mapconfig),
+        ctx(pj_ctx_alloc())
     {
         LOG(info1) << "Creating coordinate systems manipulator";
+
+#ifdef __EMSCRIPTEN__
+        pj_ctx_set_fileapi(ctx, &projInitInstance.pjFileApi);
+#endif
+
         // create geodesic
         {
             auto r = geo::ellipsoid(mapconfig.srs(mapconfig
@@ -124,9 +129,15 @@ public:
                        << a << ">, b=<" << b << ">";
             geodesic_ = boost::in_place(a, (a - b) / a);
         }
+
         addSrsDef("$search$", searchSrs);
         addSrsDef("$custom1$", customSrs1);
         addSrsDef("$custom2$", customSrs2);
+    }
+
+    ~CoordManipImpl()
+    {
+        pj_ctx_free(ctx);
     }
 
     void addSrsDef(const std::string &name, const std::string &def)
@@ -165,21 +176,21 @@ public:
     vtslibs::vts::CsConvertor &convertor(const std::string &a,
                                          const std::string &b)
     {
-        std::string key = a + " >>> " + b;
+        const std::string key = a + " >>> " + b;
         auto it = convertors.find(key);
         if (it == convertors.end())
         {
-            auto c = std::make_shared<vtslibs::vts::CsConvertor>(
-                a, b, mapconfig);
-            convertors[key] = c;
-            return *c;
+            convertors[key] = std::make_unique<vtslibs::vts::CsConvertor>(
+                a, b, mapconfig, ctx);
+            it = convertors.find(key);
         }
         return *it->second;
     }
 
-    vec3 convert(const vec3 &value, const std::string &f, const std::string &t)
+    vec3 convert(const vec3 &value,
+        const std::string &f, const std::string &t)
     {
-        auto cs = convertor(f, t);
+        const auto &cs = convertor(f, t);
         vec3 res = vecFromUblas<vec3>(cs(vecFromUblas<math::Point3>(value)));
         //LOG(debug) << "Converted <" << value.transpose() << "><" << f
         //           << "> to <" << res.transpose() << "><" << t << ">";
@@ -191,18 +202,18 @@ public:
         return convert(value, srsToProj(from), srsToProj(to));
     }
 
-    vec3 convert(const vec3 &value, const Node &from, Srs to) override
+    vec3 convert(const vec3 &value, const std::string &from, Srs to) override
     {
-        return convert(value, from.srs, srsToProj(to));
+        return convert(value, from, srsToProj(to));
     }
 
-    vec3 convert(const vec3 &value, Srs from, const Node &to) override
+    vec3 convert(const vec3 &value, Srs from, const std::string &to) override
     {
-        return convert(value, srsToProj(from), to.srs);
+        return convert(value, srsToProj(from), to);
     }
 
     vec3 geoDirect(const vec3 &position, double distance,
-                                 double azimuthIn, double &azimuthOut) override
+                   double azimuthIn, double &azimuthOut) override
     {
         vec3 res;
         geodesic_->Direct(position(1), position(0), azimuthIn,

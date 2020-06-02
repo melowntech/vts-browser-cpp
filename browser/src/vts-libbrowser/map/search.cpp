@@ -215,7 +215,7 @@ std::shared_ptr<SearchTask> MapImpl::search(const std::string &query,
     OPTICK_EVENT();
     auto t = std::make_shared<SearchTask>(query, point);
     t->impl = getSearchTask(generateSearchUrl(this, query, point));
-    t->impl->priority = std::numeric_limits<float>::infinity();
+    t->impl->priority = inf1();
     if (!t->impl->fetch)
         t->impl->fetch = std::make_shared<FetchTaskImpl>(t->impl);
     t->impl->fetch->query.headers["Accept-Language"] = "en-US,en";

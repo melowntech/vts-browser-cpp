@@ -56,13 +56,13 @@ public:
 
     // lower and upper limit for view-extent
     // expressed as multiplicative factor of planet major radius
-    double viewExtentLimitScaleMin;
-    double viewExtentLimitScaleMax;
+    double viewExtentLimitScaleMin = 0.00001175917; // 75 meters on earth
+    double viewExtentLimitScaleMax = 2.35183443086; // 1.5e7 meters on earth
 
     // view-extent thresholds at which the camera normalization takes effect
     // expressed as multiplicative factor of planet major radius
-    double viewExtentThresholdScaleLow;
-    double viewExtentThresholdScaleHigh;
+    double viewExtentThresholdScaleLow = 0.1097522734; // 700 000 meters on earth
+    double viewExtentThresholdScaleHigh = 0.20382565067; // 1 300 000 meters on earth
 
     // camera tilt limits (eg. -90 - 0)
     double tiltLimitAngleLow = -90;
@@ -85,6 +85,9 @@ public:
     double flyOverMotionChangeFraction = 0.5;
     double flyOverRotationChangeSpeed = 0.5;
 
+    // duration for smoothing the obstruction prevention in seconds
+    double obstructionPreventionSmoothingDuration = 1;
+
     NavigationType type = NavigationType::Quick;
     NavigationMode mode = NavigationMode::Seamless;
 
@@ -93,10 +96,14 @@ public:
     // applies tiltLimitAngleLow/High (and yaw limit)
     bool enableNormalization = true;
 
+    // reorients (tilts) the camera to prevent the view from clipping through terrain
+    // requires enableNormalization too
+    bool enableObstructionPrevention = true;
+
     // vertically converges objective position towards ground
     bool enableAltitudeCorrections = true;
 
-    // makes the navigation react to user inputs more predictively
+    // makes the navigation react to user inputs more predictably
     //   at varying frame rates
     bool fpsCompensation = true;
 

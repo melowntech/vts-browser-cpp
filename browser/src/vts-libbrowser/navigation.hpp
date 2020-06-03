@@ -59,6 +59,7 @@ public:
     boost::optional<double> lastPositionAltitude;
     boost::optional<double> positionAltitudeReset;
     std::shared_ptr<TemporalNavigationState> temporalNavigationState;
+    std::vector<std::pair<double, double>> normalizationSmoothing; // elapsedTime, tilt
     Type type = Type::objective;
     HeightMode heightMode = HeightMode::fixed;
     NavigationMode mode = NavigationMode::Azimuthal;

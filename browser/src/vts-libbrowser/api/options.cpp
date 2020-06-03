@@ -233,11 +233,7 @@ std::string CameraOptions::toJson() const
     return jsonToString(v);
 }
 
-NavigationOptions::NavigationOptions() :
-    viewExtentLimitScaleMin(0.00001175917), // 75 meters on earth
-    viewExtentLimitScaleMax(2.35183443086), // 1.5e7 meters on earth
-    viewExtentThresholdScaleLow(0.1097522734), // 700 000 meters on earth
-    viewExtentThresholdScaleHigh(0.20382565067) // 1 300 000 meters on earth
+NavigationOptions::NavigationOptions()
 {}
 
 NavigationOptions::NavigationOptions(const std::string &json)
@@ -267,9 +263,11 @@ void NavigationOptions::applyJson(const std::string &json)
     AJ(flyOverSpikinessFactor, asDouble);
     AJ(flyOverMotionChangeFraction, asDouble);
     AJ(flyOverRotationChangeSpeed, asDouble);
+    AJ(obstructionPreventionSmoothingDuration, asDouble);
     AJE(type, NavigationType);
     AJE(mode, NavigationMode);
     AJ(enableNormalization, asBool);
+    AJ(enableObstructionPrevention, asBool);
     AJ(enableAltitudeCorrections, asBool);
     AJ(fpsCompensation, asBool);
     AJ(debugRenderObjectPosition, asBool);
@@ -298,10 +296,12 @@ std::string NavigationOptions::toJson() const
     TJ(flyOverSpikinessFactor, asDouble);
     TJ(flyOverMotionChangeFraction, asDouble);
     TJ(flyOverRotationChangeSpeed, asDouble);
+    TJ(obstructionPreventionSmoothingDuration, asDouble);
     TJE(type, NavigationType);
     TJE(mode, NavigationMode);
     TJ(enableAltitudeCorrections, asBool);
     TJ(enableNormalization, asBool);
+    TJ(enableObstructionPrevention, asBool);
     TJ(fpsCompensation, asBool);
     TJ(debugRenderObjectPosition, asBool);
     TJ(debugRenderTargetPosition, asBool);

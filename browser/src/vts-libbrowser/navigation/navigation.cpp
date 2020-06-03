@@ -277,6 +277,7 @@ void NavigationImpl::setPosition(const vtslibs::registry::Position &position)
     targetPosition = vecFromUblas<vec3>(position.position);
     resetNavigationMode();
     temporalNavigationState.reset();
+    normalizationSmoothing.clear();
 }
 
 vtslibs::registry::Position NavigationImpl::getPosition() const
@@ -290,6 +291,33 @@ vtslibs::registry::Position NavigationImpl::getPosition() const
     res.verticalFov = verticalFov;
     return res;
 }
+
+namespace
+{
+
+void obstructionPreventionSmoothing(std::vector<std::pair<double, double>> &vec,
+    double &current, double elapsedTime, double maxDuration)
+{
+    vec.insert(vec.begin(), { elapsedTime, current });
+    if (vec.size() > 1000)
+        vec.pop_back(); // limit number of elements irrespective of time
+    {
+        std::vector<double> tmp;
+        tmp.reserve(vec.size());
+        for (const auto &it : vec)
+            tmp.push_back(it.second);
+        std::sort(tmp.begin(), tmp.end());
+        current = tmp[tmp.size() / 2]; // take the median
+    }
+    double sum = 0;
+    vec.erase(std::remove_if(vec.begin(), vec.end(),
+        [&](const std::pair<double, double> &it){
+            sum += it.first;
+            return sum > maxDuration;
+        }), vec.end());
+}
+
+} // namespace
 
 void NavigationImpl::updateNavigation(double elapsedTime)
 {
@@ -419,7 +447,7 @@ void NavigationImpl::updateNavigation(double elapsedTime)
         }
 
         // detect terrain obscurance
-        if (!suspendAltitudeChange)
+        if (options.enableObstructionPrevention && !suspendAltitudeChange)
         {
             OPTICK_EVENT("terrainObscurance");
             const bool debug = options.debugRenderCameraObstructionSurrogates;
@@ -448,6 +476,8 @@ void NavigationImpl::updateNavigation(double elapsedTime)
                 if (!std::isnan(a))
                     alpha = std::max(alpha, a);
             }
+            obstructionPreventionSmoothing(normalizationSmoothing, alpha,
+                elapsedTime, options.obstructionPreventionSmoothingDuration);
             tilt = std::min(tilt, -alpha);
         }
 

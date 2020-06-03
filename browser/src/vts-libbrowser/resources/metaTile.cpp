@@ -97,7 +97,7 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
 }
 
 MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
-    std::shared_ptr<CoordManip> cnv,
+    const std::shared_ptr<CoordManip> &cnv,
     const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta)
 {
     MetaNode node;
@@ -277,7 +277,7 @@ void MetaTile::decode()
                 return;
             node.displaySize = 1024; // forced override
             metas[(id.y - origin_.y) * size_ + id.x - origin_.x]
-                = generateMetaNode(m, m->map->convertorData, id, node);
+                = generateMetaNode(m, m->convertorData, id, node);
         });
 
     info.ramMemoryCost += sizeof(*this);

@@ -95,6 +95,7 @@ struct projInitClass
 
 class CoordManipImpl : public CoordManip
 {
+public:
     vtslibs::vts::MapConfig &mapconfig;
 
     std::unordered_map<std::string,
@@ -104,7 +105,6 @@ class CoordManipImpl : public CoordManip
 
     projCtx ctx = nullptr;
 
-public:
     CoordManipImpl(
             vtslibs::vts::MapConfig &mapconfig,
             const std::string &searchSrs,
@@ -196,47 +196,19 @@ public:
         //           << "> to <" << res.transpose() << "><" << t << ">";
         return res;
     }
-
-    vec3 convert(const vec3 &value, Srs from, Srs to) override
-    {
-        return convert(value, srsToProj(from), srsToProj(to));
-    }
-
-    vec3 convert(const vec3 &value, const std::string &from, Srs to) override
-    {
-        return convert(value, from, srsToProj(to));
-    }
-
-    vec3 convert(const vec3 &value, Srs from, const std::string &to) override
-    {
-        return convert(value, srsToProj(from), to);
-    }
-
-    vec3 geoDirect(const vec3 &position, double distance,
-                   double azimuthIn, double &azimuthOut) override
-    {
-        vec3 res;
-        geodesic_->Direct(position(1), position(0), azimuthIn,
-                          distance, res(1), res(0), azimuthOut);
-        res(2) = position(2);
-        return res;
-    }
-
-    void geoInverse(const vec3 &a, const vec3 &b,
-            double &distance, double &azimuthA, double &azimuthB) override
-    {
-        geodesic_->Inverse(a(1), a(0), b(1), b(0),
-                           distance, azimuthA, azimuthB);
-    }
-
-    double geoArcDist(const vec3 &a, const vec3 &b) override
-    {
-        double dummy;
-        return geodesic_->Inverse(a(1), a(0), b(1), b(0), dummy);
-    }
 };
 
 } // namespace
+
+std::shared_ptr<CoordManip> CoordManip::create(
+    vtslibs::vts::MapConfig &mapconfig,
+    const std::string &searchSrs,
+    const std::string &customSrs1,
+    const std::string &customSrs2)
+{
+    return std::make_shared<CoordManipImpl>(
+        mapconfig, searchSrs, customSrs1, customSrs2);
+}
 
 vec3 CoordManip::navToPhys(const vec3 &value)
 {
@@ -253,11 +225,48 @@ vec3 CoordManip::searchToNav(const vec3 &value)
     return convert(value, Srs::Search, Srs::Navigation);
 }
 
+vec3 CoordManip::convert(const vec3 &value, Srs from, Srs to)
+{
+    CoordManipImpl *impl = (CoordManipImpl *)this;
+    return impl->convert(value, impl->srsToProj(from), impl->srsToProj(to));
+}
+
+vec3 CoordManip::convert(const vec3 &value, const std::string &from, Srs to)
+{
+    CoordManipImpl *impl = (CoordManipImpl *)this;
+    return impl->convert(value, from, impl->srsToProj(to));
+}
+
+vec3 CoordManip::convert(const vec3 &value, Srs from, const std::string &to)
+{
+    CoordManipImpl *impl = (CoordManipImpl *)this;
+    return impl->convert(value, impl->srsToProj(from), to);
+}
+
+vec3 CoordManip::geoDirect(const vec3 &position, double distance,
+    double azimuthIn, double &azimuthOut)
+{
+    CoordManipImpl *impl = (CoordManipImpl *)this;
+    vec3 res;
+    impl->geodesic_->Direct(position(1), position(0), azimuthIn,
+        distance, res(1), res(0), azimuthOut);
+    res(2) = position(2);
+    return res;
+}
+
 vec3 CoordManip::geoDirect(const vec3 &position, double distance,
                              double azimuthIn)
 {
     double a;
     return geoDirect(position, distance, azimuthIn, a);
+}
+
+void CoordManip::geoInverse(const vec3 &a, const vec3 &b,
+    double &distance, double &azimuthA, double &azimuthB)
+{
+    CoordManipImpl *impl = (CoordManipImpl *)this;
+    impl->geodesic_->Inverse(a(1), a(0), b(1), b(0),
+        distance, azimuthA, azimuthB);
 }
 
 double CoordManip::geoAzimuth(const vec3 &a, const vec3 &b)
@@ -274,17 +283,11 @@ double CoordManip::geoDistance(const vec3 &a, const vec3 &b)
     return d;
 }
 
-std::shared_ptr<CoordManip> CoordManip::create(
-        vtslibs::vts::MapConfig &mapconfig,
-        const std::string &searchSrs,
-        const std::string &customSrs1,
-        const std::string &customSrs2)
+double CoordManip::geoArcDist(const vec3 &a, const vec3 &b)
 {
-    return std::make_shared<CoordManipImpl>(
-                mapconfig, searchSrs, customSrs1, customSrs2);
+    CoordManipImpl *impl = (CoordManipImpl *)this;
+    double dummy;
+    return impl->geodesic_->Inverse(a(1), a(0), b(1), b(0), dummy);
 }
-
-CoordManip::~CoordManip()
-{}
 
 } // namespace vts

@@ -29,6 +29,7 @@
 #include "../fetchTask.hpp"
 #include "../credits.hpp"
 #include "../renderInfos.hpp"
+#include "../coordsManip.hpp"
 
 #include <vts-libs/vts/mapconfig-json.hpp>
 
@@ -53,6 +54,7 @@ void Mapconfig::decode()
     *(vtslibs::vts::MapConfig*)this = vtslibs::vts::MapConfig();
     browserOptions = BrowserOptions();
     atmosphereDensityTexture.reset();
+    convertorData.reset();
     boundInfos.clear();
     freeInfos.clear();
 
@@ -116,6 +118,12 @@ void Mapconfig::decode()
         referenceDivisionNodeInfos.emplace_back(
             referenceFrame, it.first, true, *this);
     }
+
+    // convertor for use in decode thread
+    convertorData = CoordManip::create(
+        *this, browserOptions.searchSrs,
+        map->createOptions.customSrs1,
+        map->createOptions.customSrs2);
 
     // memory use
     info.ramMemoryCost += sizeof(*this);

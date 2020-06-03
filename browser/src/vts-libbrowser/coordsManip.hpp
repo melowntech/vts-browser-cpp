@@ -41,6 +41,9 @@ namespace vts
 
 class CoordManip : private Immovable
 {
+    // this class is just an interface
+    //  - do not instantiate it directly - use the create method instead
+    //  - do not inherit from it
 public:
     static std::shared_ptr<CoordManip> create(
             vtslibs::vts::MapConfig &mapconfig,
@@ -48,28 +51,22 @@ public:
             const std::string &customSrs1,
             const std::string &customSrs2);
 
-    virtual ~CoordManip();
-
     vec3 navToPhys(const vec3 &value);
     vec3 physToNav(const vec3 &value);
     vec3 searchToNav(const vec3 &value);
 
-    virtual vec3 convert(const vec3 &value,
-        Srs from, Srs to) = 0;
-    virtual vec3 convert(const vec3 &value,
-        const std::string &from, Srs to) = 0;
-    virtual vec3 convert(const vec3 &value,
-        Srs from, const std::string &to) = 0;
+    vec3 convert(const vec3 &value, Srs from, Srs to);
+    vec3 convert(const vec3 &value, const std::string &from, Srs to);
+    vec3 convert(const vec3 &value, Srs from, const std::string &to);
 
-    virtual vec3 geoDirect(const vec3 &position, double distance,
-                              double azimuthIn, double &azimuthOut) = 0;
     vec3 geoDirect(const vec3 &position, double distance,
-                                    double azimuthIn);
-    virtual void geoInverse(const vec3 &posA, const vec3 &posB,
-                    double &distance, double &azimuthA, double &azimuthB) = 0;
+                              double azimuthIn, double &azimuthOut);
+    vec3 geoDirect(const vec3 &position, double distance, double azimuthIn);
+    void geoInverse(const vec3 &posA, const vec3 &posB,
+                    double &distance, double &azimuthA, double &azimuthB);
     double geoAzimuth(const vec3 &a, const vec3 &b);
     double geoDistance(const vec3 &a, const vec3 &b);
-    virtual double geoArcDist(const vec3 &a, const vec3 &b) = 0;
+    double geoArcDist(const vec3 &a, const vec3 &b);
 };
 
 } // namespace vts

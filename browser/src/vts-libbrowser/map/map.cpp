@@ -155,7 +155,6 @@ void MapImpl::purgeMapconfig()
     credits->purge();
     resources.searchTasks.clear();
     convertor.reset();
-    convertorData.reset();
     body = MapCelestialBody();
     purgeViewCache();
 
@@ -237,11 +236,6 @@ bool MapImpl::prerequisitesCheck()
     if (!mapconfigAvailable)
     {
         convertor = CoordManip::create(
-            *mapconfig,
-            mapconfig->browserOptions.searchSrs,
-            createOptions.customSrs1,
-            createOptions.customSrs2);
-        convertorData = CoordManip::create(
             *mapconfig,
             mapconfig->browserOptions.searchSrs,
             createOptions.customSrs1,

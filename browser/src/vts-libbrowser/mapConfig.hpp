@@ -29,6 +29,7 @@
 
 #include <unordered_map>
 
+#include <vts-libs/vts/nodeinfo.hpp>
 #include <vts-libs/vts/mapconfig.hpp>
 
 #include "resource.hpp"
@@ -38,17 +39,13 @@ namespace Json
     class Value;
 }
 
-namespace vtslibs { namespace vts
-{
-    class NodeInfo;
-}} // namespace vtslibs::vts
-
 namespace vts
 {
 
 class GpuAtmosphereDensityTexture;
 class BoundInfo;
 class FreeInfo;
+class CoordManip;
 
 class ExternalBoundLayer : public Resource,
     public vtslibs::registry::BoundLayer
@@ -100,6 +97,7 @@ public:
     BrowserOptions browserOptions;
     std::shared_ptr<GpuAtmosphereDensityTexture> atmosphereDensityTexture;
     std::vector<vtslibs::vts::NodeInfo> referenceDivisionNodeInfos;
+    std::shared_ptr<CoordManip> convertorData; // used in data/decoder thread
 
 private:
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;

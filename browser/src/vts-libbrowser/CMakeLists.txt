@@ -1,6 +1,6 @@
 
 include_directories(SYSTEM externals)
-add_subdirectory(externals)
+add_subdirectory(externals EXCLUDE_FROM_ALL)
 
 find_package(ZLIB REQUIRED)
 include_directories(SYSTEM ${ZLIB_INCLUDE_DIRS})
@@ -36,7 +36,7 @@ else()
     list(APPEND EXTRA_SRC_LIST fetcher/curl.cpp)
 endif()
 
-define_module(LIBRARY vts-browser DEPENDS vts-libs-nucleus
+define_module(LIBRARY vts-browser DEPENDS vts-libs-core
     jsoncpp ZLIB PNG JPEG utf8cpp ${EXTRA_LIB_MODULES})
 
 set(PUB_HDR_LIST
@@ -200,26 +200,31 @@ endif()
 
 buildsys_pack_data(initializeBrowserData)
 add_library(vts-browser ${VTS_BROWSER_BUILD_LIBRARY} ${SRC_LIST} ${PUB_HDR_LIST} ${DATA_LIST})
+
 target_compile_definitions(vts-browser ${VTS_BROWSER_BUILD_VISIBILITY} VTS_BUILD_${VTS_BROWSER_BUILD_MACRO})
 target_compile_definitions(vts-browser PRIVATE ${MODULE_DEFINITIONS})
 if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(WARNING "Building for 32 bit platform: disabling explicit vectorization EIGEN_DONT_VECTORIZE")
     target_compile_definitions(vts-browser PUBLIC EIGEN_DONT_VECTORIZE=1)
 endif()
+
 target_link_libraries(vts-browser ${VTS_BROWSER_BUILD_VISIBILITY} initializeBrowserData ${MODULE_LIBRARIES} ${EXTRA_LIB_DEPS})
 target_link_libraries(vts-browser PRIVATE Optick)
+
 set_target_properties(vts-browser PROPERTIES
     MACOSX_FRAMEWORK_IDENTIFIER com.melown.vts-browser
     MACOSX_BUNDLE_BUNDLE_NAME vts-browser
     MACOSX_BUNDLE_BUNDLE_VERSION ${vts-browser_SO_VERSION}
     PUBLIC_HEADER "${PUB_HDR_LIST}"
 )
+
 if(VTS_BROWSER_TYPE STREQUAL "FRAMEWORK")
     set_target_properties(vts-browser PROPERTIES FRAMEWORK TRUE)
 endif()
 if(VTS_BROWSER_TYPE STREQUAL "MODULE")
     set_target_properties(vts-browser PROPERTIES BUNDLE TRUE)
 endif()
+
 buildsys_library(vts-browser)
 buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})
 buildsys_position_independent(${MODULE_LIBRARIES})
@@ -237,57 +242,62 @@ if(BUILDSYS_UWP)
     set_target_properties(vts-browser PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB:vccorlibd /NODEFAULTLIB:msvcrtd vccorlibd.lib msvcrtd.lib")
 endif()
 
+if(BUILDSYS_WASM)
+    # the current emscripten FETCH works with synchronous operations only and we workaround that with many threads
+    target_compile_options(vts-browser PUBLIC "SHELL:-s FETCH=1")
+    target_link_options(vts-browser PUBLIC "SHELL:-s FETCH=1 -s PTHREAD_POOL_SIZE=30")
+endif()
+
+
 
 
 #######################################################################
 # Install
 
 if(NOT BUILDSYS_EMBEDDED)
+    include(GNUInstallDirs)
 
-include(GNUInstallDirs)
+    set(VTSBROWSER_LIBRARIES vts-browser)
 
-set(VTSBROWSER_LIBRARIES vts-browser)
+    # library and binaries
+    install(TARGETS vts-browser
+        COMPONENT browser
+        EXPORT vts-browser
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/vts-browser
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
 
-# library and binaries
-install(TARGETS vts-browser
-    COMPONENT browser
-    EXPORT vts-browser
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/vts-browser
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
+    install(EXPORT vts-browser
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/VtsBrowser
+        COMPONENT browser-dev
+    )
 
-install(EXPORT vts-browser
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/VtsBrowser
-    COMPONENT browser-dev
-)
+    # VtsBrowserConfig.cmake and VtsBrowserVersion.cmake
+    include(CMakePackageConfigHelpers)
 
-# VtsBrowserConfig.cmake and VtsBrowserVersion.cmake
-include(CMakePackageConfigHelpers)
+    set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
 
-set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
+    configure_package_config_file(
+        VtsBrowserConfig.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfig.cmake
+        INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/VtsBrowser
+        PATH_VARS INCLUDE_INSTALL_DIR
+    )
 
-configure_package_config_file(
-    VtsBrowserConfig.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfig.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/VtsBrowser
-    PATH_VARS INCLUDE_INSTALL_DIR
-)
+    write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfigVersion.cmake
+        VERSION ${vts-browser_SO_VERSION}
+        COMPATIBILITY SameMajorVersion
+    )
 
-write_basic_package_version_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfigVersion.cmake
-    VERSION ${vts-browser_SO_VERSION}
-    COMPATIBILITY SameMajorVersion
-)
-
-install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfig.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfigVersion.cmake
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/VtsBrowser
-    COMPONENT browser-dev
-)
-
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/VtsBrowserConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/VtsBrowser
+        COMPONENT browser-dev
+    )
 endif()
 

@@ -43,10 +43,9 @@ public:
     std::shared_ptr<GpuTexture> textureMask;
     std::string boundLayerId;
     mat4 model;
-    mat3f uvm;
+    vec4f uvTrans;
     vec4f color;
     bool externalUv = false;
-    bool flatShading = false;
 
     RenderSurfaceTask();
     bool ready() const;

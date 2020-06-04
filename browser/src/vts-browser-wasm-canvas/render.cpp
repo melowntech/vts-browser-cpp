@@ -29,14 +29,11 @@
 #include <future> // our life is pointless without it
 #include <mutex>
 
-//#define RENDER_EXPLICIT_SWAP
-
 std::shared_ptr<vts::renderer::RenderContext> context;
 std::shared_ptr<vts::renderer::RenderView> view;
 std::mutex mutex;
 DrawsQueue drawsQueue, drawsQueue2;
-DurationBuffer durationRenderFrame, durationRenderData,
-    durationRenderRender, durationRenderSwap;
+DurationBuffer durationRenderFrame, durationRenderData, durationRenderRender;
 
 namespace
 {
@@ -74,15 +71,9 @@ void loopIteration()
     drawsQueue2.push(std::move(rd));
 
     TimerPoint d = now();
-#ifdef RENDER_EXPLICIT_SWAP
-    emscripten_webgl_commit_frame();
-#endif
-
-    TimerPoint e = now();
-    durationRenderFrame.update(a, e);
+    durationRenderFrame.update(a, d);
     durationRenderData.update(a, b);
     durationRenderRender.update(c, d);
-    durationRenderSwap.update(d, e);
 }
 
 void *renderThreadEntry(void*)
@@ -97,9 +88,6 @@ void *renderThreadEntry(void*)
         attr.alpha = attr.depth = attr.stencil = attr.antialias = 0; // we have our own render target
         attr.majorVersion = 2; // WebGL 2.0
         attr.minorVersion = 0;
-#ifdef RENDER_EXPLICIT_SWAP
-        attr.explicitSwapControl = true;
-#endif
         ctx = emscripten_webgl_create_context("#display", &attr);
         if (!ctx)
         {
@@ -130,12 +118,7 @@ void *renderThreadEntry(void*)
 
     // run rendering loop
     vts::log(vts::LogLevel::info3, "Starting rendering loop");
-#ifdef RENDER_EXPLICIT_SWAP
-    while (true)
-        loopIteration();
-#else
     emscripten_set_main_loop(&loopIteration, 0, true);
-#endif
 
     return nullptr;
 }

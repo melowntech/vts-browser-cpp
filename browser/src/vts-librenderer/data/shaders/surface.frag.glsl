@@ -7,10 +7,10 @@ layout(std140) uniform uboSurface
 {
     mat4 uniP;
     mat4 uniMv;
-    mat3x4 uniUvMat; // + blendingCoverage
+    vec4 uniUvTrans; // scale-x, scale-y, offset-x, offset-y
     vec4 uniUvClip;
     vec4 uniColor;
-    ivec4 uniFlags; // mask, monochromatic, flat shading, uv source, lodBlendingWithDithering, ... frameIndex
+    ivec4 uniFlags; // mask, monochromatic, flat shading, uv source, lodBlendingWithDithering, ..., blendingCoverage, frameIndex
 };
 
 in vec2 varUvTex;
@@ -62,7 +62,7 @@ void main()
     {
         float smpl = texelFetch(texBlueNoise, ivec3(
             ivec2(gl_FragCoord.xy) % 64, uniFlags.w % 16), 0).x;
-        if (uniUvMat[0][3] < smpl)
+        if (float(uniFlags[2]) < smpl * 1000.0f)
             discard;
     }
 

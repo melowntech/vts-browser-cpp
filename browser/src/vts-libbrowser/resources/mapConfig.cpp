@@ -29,6 +29,7 @@
 #include "../fetchTask.hpp"
 #include "../credits.hpp"
 #include "../renderInfos.hpp"
+#include "../coordsManip.hpp"
 
 #include <vts-libs/vts/mapconfig-json.hpp>
 
@@ -38,7 +39,7 @@ namespace vts
 Mapconfig::Mapconfig(MapImpl *map, const std::string &name)
     : Resource(map, name)
 {
-    priority = std::numeric_limits<float>::infinity();
+    priority = inf1();
 }
 
 Mapconfig::~Mapconfig()
@@ -53,6 +54,7 @@ void Mapconfig::decode()
     *(vtslibs::vts::MapConfig*)this = vtslibs::vts::MapConfig();
     browserOptions = BrowserOptions();
     atmosphereDensityTexture.reset();
+    convertorData.reset();
     boundInfos.clear();
     freeInfos.clear();
 
@@ -110,11 +112,18 @@ void Mapconfig::decode()
 
     // referenceDivisionNodeInfos
     referenceDivisionNodeInfos.clear();
-    for (auto &it : referenceFrame.division.nodes)
+    referenceDivisionNodeInfos.reserve(referenceFrame.division.nodes.size());
+    for (const auto &it : referenceFrame.division.nodes)
     {
         referenceDivisionNodeInfos.emplace_back(
-            referenceFrame, it.first, false, *this);
+            referenceFrame, it.first, true, *this);
     }
+
+    // convertor for use in decode thread
+    convertorData = CoordManip::create(
+        *this, browserOptions.searchSrs,
+        map->createOptions.customSrs1,
+        map->createOptions.customSrs2);
 
     // memory use
     info.ramMemoryCost += sizeof(*this);

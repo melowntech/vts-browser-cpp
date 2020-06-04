@@ -91,7 +91,6 @@ public:
     bool lodBlendingTransparent = false;
 
     bool debugDetachedCamera = false;
-    bool debugFlatShading = false;
     bool debugRenderSurrogates = false;
     bool debugRenderMeshBoxes = false;
     bool debugRenderTileBoxes = false;

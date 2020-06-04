@@ -602,11 +602,49 @@ public:
                             1, c.samplesForAltitudeLodSelection, 16, 1);
                     sprintf(buffer, "%4.1f", c.samplesForAltitudeLodSelection);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
+                }
+
+                {
+                    nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
+
+                    // fps compensation
+                    n.fpsCompensation = nk_check_label(&ctx,
+                        "FPS compensation", n.fpsCompensation);
+
+                    // enable camera normalization
+                    n.enableNormalization = nk_check_label(&ctx,
+                        "Camera normalization",
+                        n.enableNormalization);
+
+                    // obstruction prevention
+                    n.enableObstructionPrevention = nk_check_label(&ctx,
+                        "Obstruction prevention",
+                        n.enableObstructionPrevention);
+
+                    // altitude corrections
+                    n.enableAltitudeCorrections = nk_check_label(&ctx,
+                        "Altitude corrections", n.enableAltitudeCorrections);
+                }
+
+                {
+                    float ratio[] = { width * 0.4f, width * 0.45f,
+                        width * 0.15f };
+                    nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
+
+                    // obstructionPreventionSmoothingDuration
+                    nk_label(&ctx, "Smooth duration:", NK_TEXT_LEFT);
+                    n.obstructionPreventionSmoothingDuration
+                        = nk_slide_float(&ctx, 0,
+                            n.obstructionPreventionSmoothingDuration,
+                            30, 0.05);
+                    sprintf(buffer, "%5.2f",
+                        n.obstructionPreventionSmoothingDuration);
+                    nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                     // altitude fade out
                     nk_label(&ctx, "Altitude fade:", NK_TEXT_LEFT);
                     n.altitudeFadeOutFactor = nk_slide_float(&ctx,
-                            0, n.altitudeFadeOutFactor, 1, 0.01);
+                        0, n.altitudeFadeOutFactor, 1, 0.01);
                     sprintf(buffer, "%4.2f", n.altitudeFadeOutFactor);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                 }
@@ -737,7 +775,7 @@ public:
                         // lodBlendingDuration
                         nk_label(&ctx, "Blend duration:", NK_TEXT_LEFT);
                         c.lodBlendingDuration = nk_slide_float(&ctx,
-                            0, c.lodBlendingDuration, 60, 0.05);
+                            0, c.lodBlendingDuration, 30, 0.05);
                         sprintf(buffer, "%5.2f", c.lodBlendingDuration);
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
@@ -833,8 +871,8 @@ public:
                     n.debugRenderCameraObstructionSurrogates);
 
                 // flat shading
-                c.debugFlatShading = nk_check_label(&ctx,
-                    "Flat shading", c.debugFlatShading);
+                r.flatShading = nk_check_label(&ctx,
+                    "Flat shading", r.flatShading);
 
                 // polygon edges
                 r.renderPolygonEdges = nk_check_label(&ctx,
@@ -954,31 +992,18 @@ public:
                 r.geodataHysteresis = nk_check_label(&ctx,
                     "Geodata hysteresis", r.geodataHysteresis);
 
-                // fps compensation
-                n.fpsCompensation = nk_check_label(&ctx, "FPS compensation",
-                    n.fpsCompensation);
-
-                // altitude corrections
-                n.enableAltitudeCorrections = nk_check_label(&ctx,
-                    "Altitude corrections", n.enableAltitudeCorrections);
-
-                // enable camera normalization
-                n.enableNormalization = nk_check_label(&ctx,
-                                "Camera normalization",
-                                n.enableNormalization);
-
                 // camera zoom limit
                 {
                     int e = viewExtentLimitScaleMax
-                            == std::numeric_limits<double>::infinity();
+                        == std::numeric_limits<double>::infinity();
                     int ePrev = e;
                     nk_checkbox_label(&ctx, "Zoom limit", &e);
                     if (e != ePrev)
                     {
                         std::swap(viewExtentLimitScaleMin,
-                                  n.viewExtentLimitScaleMin);
+                            n.viewExtentLimitScaleMin);
                         std::swap(viewExtentLimitScaleMax,
-                                  n.viewExtentLimitScaleMax);
+                            n.viewExtentLimitScaleMax);
                     }
                 }
 
@@ -1926,19 +1951,19 @@ public:
 
                 // distance
                 if (r.distance >= 1e3)
-                    sprintf(buffer, "%.1lf km", r.distance / 1e3);
+                    sprintf(buffer, "%.1lf km", r.distance * 1e-3);
                 else
                     sprintf(buffer, "%.1lf m", r.distance);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                 // go button
-                if (r.position[0] == r.position[0])
+                if (!std::isnan(r.position[0]))
                 {
                     if (nk_button_label(&ctx, "Go"))
                     {
                         window->navigation->setSubjective(false, false);
                         window->navigation->setViewExtent(std::max(
-                                            6667.0, r.radius * 2));
+                            6667.0, std::isnan(r.radius) ? 0 : r.radius * 2));
                         window->navigation->setRotation({0,270,0});
                         window->navigation->resetAltitude();
                         window->navigation->resetNavigationMode();

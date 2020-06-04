@@ -70,7 +70,7 @@ FetchTask::ResourceType GeodataFeatures::resourceType() const
 GeodataStylesheet::GeodataStylesheet(MapImpl *map, const std::string &name) :
     Resource(map, name)
 {
-    priority = std::numeric_limits<float>::infinity();
+    priority = inf1();
 }
 
 void GeodataStylesheet::decode()
@@ -231,12 +231,8 @@ GeodataTile::GeodataTile(MapImpl *map, const std::string &name)
     state = Resource::State::ready;
 
     // initialize aabb to universe
-    {
-        static const double di = std::numeric_limits<double>::infinity();
-        static const vec3 vi(di, di, di);
-        aabbPhys[0] = -vi;
-        aabbPhys[1] = vi;
-    }
+    aabbPhys[0] = -inf3();
+    aabbPhys[1] = inf3();
 }
 
 GeodataTile::~GeodataTile()

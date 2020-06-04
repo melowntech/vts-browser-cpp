@@ -3,10 +3,10 @@ layout(std140) uniform uboSurface
 {
     mat4 uniP;
     mat4 uniMv;
-    mat3x4 uniUvMat; // + blendingCoverage
+    vec4 uniUvTrans; // scale-x, scale-y, offset-x, offset-y
     vec4 uniUvClip;
     vec4 uniColor;
-    ivec4 uniFlags; // mask, monochromatic, flat shading, uv source, lodBlendingWithDithering, ... frameIndex
+    ivec4 uniFlags; // mask, monochromatic, flat shading, uv source, lodBlendingWithDithering, ..., blendingCoverage, frameIndex
 };
 
 layout(location = 0) in vec3 inPosition;
@@ -44,8 +44,10 @@ void main()
 
     vec4 vp = uniMv * vec4(inPosition, 1.0);
     gl_Position = uniP * vp;
-    varUvTex = vec2(mat3(uniUvMat) * vec3(getFlag(3)
-            ? inUvExternal : inUvInternal, 1.0));
+    if (getFlag(3))
+        varUvTex = inUvExternal * uniUvTrans.xy + uniUvTrans.zw;
+    else
+        varUvTex = inUvInternal;
     varViewPosition = vp.xyz;
 #ifdef VTS_ATM_PER_VERTEX
     varAtmDensity = atmDensity(varViewPosition);

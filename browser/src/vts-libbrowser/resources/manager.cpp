@@ -89,7 +89,7 @@ std::vector<ResourceWithPriority> filterSortResources(
             if (r->state != requiredState)
                 continue;
             res.emplace_back(r->priority, r);
-            if (r->priority < std::numeric_limits<float>::infinity())
+            if (r->priority < inf1())
                 r->priority = 0;
         }
     }

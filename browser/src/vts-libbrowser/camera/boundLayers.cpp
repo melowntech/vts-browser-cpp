@@ -60,25 +60,22 @@ BoundParamInfo::BoundParamInfo(const View::BoundLayerParams &params)
     : View::BoundLayerParams(params)
 {}
 
-mat3f BoundParamInfo::uvMatrix() const
+vec4f BoundParamInfo::uvTrans() const
 {
     if (depth == 0)
-        return identityMatrix3().cast<float>();
+        return vec4f(1, 1, 0, 0);
     double scale = 1.0 / (1 << depth);
     double tx = scale * (orig.localId.x
                          - ((orig.localId.x >> depth) << depth));
     double ty = scale * (orig.localId.y
                          - ((orig.localId.y >> depth) << depth));
     ty = 1 - scale - ty;
-    mat3f m;
-    m << scale, 0, tx,
-            0, scale, ty,
-            0, 0, 1;
-    return m;
+    return vec4f(scale, scale, tx, ty);
 }
 
-Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, CameraImpl *impl,
-                uint32 subMeshIndex, double priority)
+Validity BoundParamInfo::prepare(CameraImpl *impl,
+    TileId tileId, TileId localId,
+    uint32 subMeshIndex, double priority)
 {
     bound = impl->map->mapconfig->getBoundInfo(id);
     if (!bound)
@@ -86,7 +83,7 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, CameraImpl *impl,
 
     // check lodRange and tileRange
     {
-        TileId t = nodeInfo.nodeId();
+        TileId t = tileId;
         int m = bound->lodRange.min;
         if (t.lod < m)
             return Validity::Invalid;
@@ -98,15 +95,14 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, CameraImpl *impl,
             return Validity::Invalid;
     }
 
-    orig = UrlTemplate::Vars(nodeInfo.nodeId(),
-                                local(nodeInfo), subMeshIndex);
+    orig = UrlTemplate::Vars(tileId, localId, subMeshIndex);
 
-    depth = std::max(nodeInfo.nodeId().lod - bound->lodRange.max, 0);
+    depth = std::max(tileId.lod - bound->lodRange.max, 0);
 
     while (true)
     {
-        assert(nodeInfo.nodeId().lod - depth >= bound->lodRange.min
-            && nodeInfo.nodeId().lod - depth <= bound->lodRange.max);
+        assert(tileId.lod - depth >= bound->lodRange.min
+            && tileId.lod - depth <= bound->lodRange.max);
         switch (prepareDepth(impl, priority))
         {
         case Validity::Indeterminate:
@@ -116,7 +112,7 @@ Validity BoundParamInfo::prepare(const NodeInfo &nodeInfo, CameraImpl *impl,
         case Validity::Valid:
             return Validity::Valid;
         }
-        if (nodeInfo.nodeId().lod - depth == bound->lodRange.min)
+        if (tileId.lod - depth == bound->lodRange.min)
             return Validity::Invalid;
         depth++;
     }
@@ -201,15 +197,16 @@ Validity BoundParamInfo::prepareDepth(CameraImpl *impl, double priority)
     return Validity::Valid;
 }
 
-Validity CameraImpl::reorderBoundLayers(const NodeInfo &nodeInfo,
-        uint32 subMeshIndex, BoundParamInfo::List &boundList, double priority)
+Validity CameraImpl::reorderBoundLayers(TileId tileId, TileId localId,
+    uint32 subMeshIndex, std::vector<BoundParamInfo> &boundList,
+    double priority)
 {
     std::reverse(boundList.begin(), boundList.end());
     auto it = boundList.begin();
     while (it != boundList.end())
     {
         bool transparent = true;
-        switch (it->prepare(nodeInfo, this, subMeshIndex, priority))
+        switch (it->prepare(this, tileId, localId, subMeshIndex, priority))
         {
         case Validity::Invalid:
             it = boundList.erase(it);

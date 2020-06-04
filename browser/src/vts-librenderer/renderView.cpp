@@ -140,31 +140,19 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t, bool wireframeSlow)
     if (!m || !tex)
         return;
 
-    struct mat3x4f
-    {
-        vec4f data[3];
-        mat3x4f(){}
-        mat3x4f(const mat3f &m)
-        {
-            for (int y = 0; y < 3; y++)
-                for (int x = 0; x < 3; x++)
-                    data[y][x] = m(x, y);
-        }
-    };
-
     struct UboSurface
     {
         mat4f p;
         mat4f mv;
-        mat3x4f uvMat; // + blendingCoverage
+        vec4f uvTrans; // scale-x, scale-y, offset-x, offset-y
         vec4f uvClip;
         vec4f color;
-        vec4si32 flags; // mask, monochromatic, flat shading, uv source, lodBlendingWithDithering, ... frameIndex
+        vec4si32 flags; // mask, monochromatic, flat shading, uv source, lodBlendingWithDithering, ..., blendingCoverage, frameIndex
     } data;
 
     data.p = proj.cast<float>();
     data.mv = rawToMat4(t.mv);
-    data.uvMat = mat3x4f(rawToMat3(t.uvm));
+    data.uvTrans = rawToVec4(t.uvTrans);
     data.uvClip = rawToVec4(t.uvClip);
     data.color = rawToVec4(t.color);
     sint32 flags = 0;
@@ -172,7 +160,7 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t, bool wireframeSlow)
         flags |= 1 << 0;
     if (tex->getGrayscale())
         flags |= 1 << 1;
-    if (t.flatShading)
+    if (options.flatShading)
         flags |= 1 << 2;
     if (t.externalUv)
         flags |= 1 << 3;
@@ -180,7 +168,7 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t, bool wireframeSlow)
     {
         if (lodBlendingWithDithering)
         {
-            data.uvMat.data[0][3] = t.blendingCoverage;
+            data.flags[2] = t.blendingCoverage * 1000;
             flags |= 1 << 4;
         }
         else
@@ -505,7 +493,6 @@ void RenderViewImpl::renderValid()
         for (const DrawSurfaceTask &it : draws->opaque)
         {
             DrawSurfaceTask t(it);
-            t.flatShading = false;
             t.color[0] = t.color[1] = t.color[2] = t.color[3] = 0;
 #ifdef __EMSCRIPTEN__
             drawSurface(t, true);

@@ -1951,19 +1951,19 @@ public:
 
                 // distance
                 if (r.distance >= 1e3)
-                    sprintf(buffer, "%.1lf km", r.distance / 1e3);
+                    sprintf(buffer, "%.1lf km", r.distance * 1e-3);
                 else
                     sprintf(buffer, "%.1lf m", r.distance);
                 nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
                 // go button
-                if (r.position[0] == r.position[0])
+                if (!std::isnan(r.position[0]))
                 {
                     if (nk_button_label(&ctx, "Go"))
                     {
                         window->navigation->setSubjective(false, false);
                         window->navigation->setViewExtent(std::max(
-                                            6667.0, r.radius * 2));
+                            6667.0, std::isnan(r.radius) ? 0 : r.radius * 2));
                         window->navigation->setRotation({0,270,0});
                         window->navigation->resetAltitude();
                         window->navigation->resetNavigationMode();

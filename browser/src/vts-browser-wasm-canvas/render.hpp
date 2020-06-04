@@ -40,7 +40,7 @@ typedef vts::ThreadQueue<std::unique_ptr<vts::renderer::RenderDraws>>
     DrawsQueue;
 extern DrawsQueue drawsQueue, drawsQueue2;
 extern DurationBuffer durationRenderFrame, durationRenderData,
-    durationRenderRender, durationRenderSwap;
+    durationRenderRender;
 
 
 

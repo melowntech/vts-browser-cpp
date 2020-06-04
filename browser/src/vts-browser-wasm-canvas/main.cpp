@@ -79,10 +79,6 @@ void updateStatisticsHtml()
            << durationRenderRender.avg()
            << "<td class=number>"
            << durationRenderRender.max() << "</tr>";
-        ss << "<tr><td>render swap<td class=number>"
-           << durationRenderSwap.avg()
-           << "<td class=number>"
-           << durationRenderSwap.max() << "</tr>";
         ss << "</table>";
         setHtml("statisticsTiming", ss.str());
     }
@@ -130,7 +126,8 @@ void updateSearch()
                << it.position[0] << ", "
                << it.position[1] << ", "
                << it.position[2] << ", "
-               << it.radius << ")\">Go</button>";
+               << std::max(std::isnan(it.radius) ? 0 : it.radius * 2, 6667.0)
+               << ")\">Go</button>";
             ss << "</div>";
         }
         setHtml("searchResults", ss.str());

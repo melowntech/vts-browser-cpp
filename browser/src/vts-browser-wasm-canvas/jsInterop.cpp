@@ -156,7 +156,13 @@ void gotoPositionImpl(double values[4])
     FreeAtExit freeAtExit{(char*)values};
     if (!nav)
         return;
-    nav->setViewExtent(std::max(values[3] * 2, 6667.0));
+    {
+        std::stringstream ss;
+        ss << "Go to position: " << values[0] << ", "
+           << values[1] << ", " << values[2] << ", " << values[3];
+        vts::log(vts::LogLevel::info2, ss.str());
+    }
+    nav->setViewExtent(values[3]);
     nav->setRotation({ 0, 270, 0 });
     nav->resetAltitude();
     nav->resetNavigationMode();
@@ -222,6 +228,7 @@ void applyRenderOptions(const std::string &json, renderer::RenderOptions &opt)
             AJ(renderGeodataDebug, asUInt);
             AJ(renderAtmosphere, asBool);
             AJ(renderPolygonEdges, asBool);
+            AJ(flatShading, asBool);
             AJ(geodataHysteresis, asBool);
             AJ(debugDepthFeedback, asBool);
         }
@@ -243,6 +250,7 @@ std::string getRenderOptions(const renderer::RenderOptions &opt)
             TJ(renderGeodataDebug, asUInt);
             TJ(renderAtmosphere, asBool);
             TJ(renderPolygonEdges, asBool);
+            TJ(flatShading, asBool);
             TJ(geodataHysteresis, asBool);
             TJ(debugDepthFeedback, asBool);
             return jsonToString(v);

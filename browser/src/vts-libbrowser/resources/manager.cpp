@@ -282,18 +282,6 @@ void MapImpl::resourcesDecodeProcessorEntry()
     }
 }
 
-bool MapImpl::resourcesDecodeProcessOne()
-{
-    std::weak_ptr<Resource> w;
-    if (!resources.queDecode.tryPop(w))
-        return false;
-    std::shared_ptr<Resource> r = w.lock();
-    if (!r)
-        return resourcesDecodeProcessOne();
-    resourceDecodeProcess(r);
-    return true;
-}
-
 ////////////////////////////
 // DATA THREAD
 ////////////////////////////
@@ -321,75 +309,29 @@ void MapImpl::resourceUploadProcess(const std::shared_ptr<Resource> &r)
     r->decodeData.reset();
 }
 
-bool MapImpl::resourcesUploadProcessOne()
-{
-    UploadData w;
-    if (!resources.queUpload.tryPop(w))
-        return false;
-    w.process();
-    return true;
-}
-
 void MapImpl::resourcesUploadProcessorEntry()
 {
     OPTICK_THREAD("data");
-    if (createOptions.debugUseExtraThreads)
+    while (!resources.queUpload.stopped())
     {
-        while (!resources.queUpload.stopped())
-        {
-            UploadData w;
-            resources.queUpload.waitPop(w);
-            w.process();
-        }
-    }
-    else
-    {
-        while (!resources.queUpload.stopped())
-        {
-            while (resourcesDataUpdateOne());
-            using namespace std::chrono_literals;
-            std::this_thread::sleep_for(0.01s);
-        }
+        UploadData w;
+        resources.queUpload.waitPop(w);
+        w.process();
     }
 }
 
 void MapImpl::resourcesDataUpdate()
 {
     OPTICK_EVENT();
-    if (createOptions.debugUseExtraThreads)
+    for (uint32 proc = 0; proc
+        < options.maxResourceProcessesPerTick; proc++)
     {
-        for (uint32 proc = 0; proc
-            < options.maxResourceProcessesPerTick; proc++)
-        {
-            resourcesUploadProcessOne();
-        }
+        UploadData w;
+        if (resources.queUpload.tryPop(w))
+            w.process();
+        else
+            break;
     }
-    else
-    {
-        uint32 processed = 0;
-        while (processed
-               < options.maxResourceProcessesPerTick)
-        {
-            uint32 p = resourcesDataUpdateOne();
-            if (p == 0)
-                break;
-            processed += p;
-        }
-    }
-}
-
-uint32 MapImpl::resourcesDataUpdateOne()
-{
-    uint32 processed = 0;
-    if (resourcesUploadProcessOne())
-        processed++;
-    if (resourcesAtmosphereProcessOne())
-        processed++;
-    if (resourcesGeodataProcessOne())
-        processed++;
-    if (resourcesDecodeProcessOne())
-        processed++;
-    return processed;
 }
 
 void MapImpl::resourcesDataFinalize()
@@ -754,7 +696,7 @@ void MapImpl::resourcesRenderFinalize()
 {
     OPTICK_EVENT();
 
-    // release resources hold by the map and all layers
+    // release resources held by the map and all layers
     purgeMapconfig();
 
     // clear the resources now while all the necessary things are still working

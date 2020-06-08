@@ -55,15 +55,12 @@ MapImpl::MapImpl(Map *map, const MapCreateOptions &options,
         = std::thread(&MapImpl::resourcesDownloadsEntry, this);
     resources.cacheReading.thr
         = std::thread(&MapImpl::cacheReadEntry, this);
-    if (createOptions.debugUseExtraThreads)
-    {
-        resources.thrAtmosphereGenerator
-            = std::thread(&MapImpl::resourcesAtmosphereGeneratorEntry, this);
-        resources.thrGeodataProcessor
-            = std::thread(&MapImpl::resourcesGeodataProcessorEntry, this);
-        resources.thrDecoder
-            = std::thread(&MapImpl::resourcesDecodeProcessorEntry, this);
-    }
+    resources.thrAtmosphereGenerator
+        = std::thread(&MapImpl::resourcesAtmosphereGeneratorEntry, this);
+    resources.thrGeodataProcessor
+        = std::thread(&MapImpl::resourcesGeodataProcessorEntry, this);
+    resources.thrDecoder
+        = std::thread(&MapImpl::resourcesDecodeProcessorEntry, this);
     cacheInit();
     credits = std::make_shared<Credits>();
 }
@@ -83,13 +80,9 @@ MapImpl::~MapImpl()
     resources.thrCacheWriter.join();
     resources.cacheReading.thr.join();
     resources.fetching.thr.join();
-
-    if (createOptions.debugUseExtraThreads)
-    {
-        resources.thrAtmosphereGenerator.join();
-        resources.thrGeodataProcessor.join();
-        resources.thrDecoder.join();
-    }
+    resources.thrAtmosphereGenerator.join();
+    resources.thrGeodataProcessor.join();
+    resources.thrDecoder.join();
 }
 
 void MapImpl::renderUpdate(double elapsedTime)

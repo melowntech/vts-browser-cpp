@@ -155,7 +155,8 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t, bool wireframeSlow)
     data.uvTrans = rawToVec4(t.uvTrans);
     data.uvClip = rawToVec4(t.uvClip);
     data.color = rawToVec4(t.color);
-    sint32 flags = 0;
+    data.flags = vec4si32(0, 0, 0, frameIndex);
+    sint32 &flags = data.flags[0];
     if (t.texMask)
         flags |= 1 << 0;
     if (tex->getGrayscale())
@@ -174,7 +175,6 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t, bool wireframeSlow)
         else
             data.color[3] *= t.blendingCoverage;
     }
-    data.flags = vec4si32(flags, 0, 0, frameIndex);
 
     useDisposableUbo(1, data)->setDebugId("UboSurface");
 

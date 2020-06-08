@@ -153,25 +153,6 @@ void MapImpl::resourcesAtmosphereGeneratorEntry()
     }
 }
 
-bool MapImpl::resourcesAtmosphereProcessOne()
-{
-    std::weak_ptr<GpuAtmosphereDensityTexture> w;
-    if (!resources.queAtmosphere.tryPop(w))
-        return false;
-    std::shared_ptr<GpuAtmosphereDensityTexture> r = w.lock();
-    if (!r)
-        return resourcesAtmosphereProcessOne();
-    try
-    {
-        generateAtmosphereTexture(r, body);
-    }
-    catch (const std::exception &)
-    {
-        r->state = Resource::State::errorFatal;
-    }
-    return true;
-}
-
 void MapImpl::updateAtmosphereDensity()
 {
     const std::shared_ptr<GpuAtmosphereDensityTexture> &tex

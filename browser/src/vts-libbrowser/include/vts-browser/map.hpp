@@ -97,13 +97,19 @@ public:
     // you should call it periodically
     void dataUpdate();
 
+    // use dataFinalize to release all pending resources
+    void dataFinalize();
+
     // dataAllRun will return after renderFinalize has been called
     // the dataAllRun must be called on a separate thread,
     //   but is more cpu efficient than dataUpdate
+    // dataAllRun() is equivalent to
+    // {
+    //     while (!renderFinalizeCalled)
+    //         dataUpdate();
+    //     dataFinalize();
+    // }
     void dataAllRun();
-
-    // use dataFinalize to release all pending resources
-    void dataFinalize();
 
     void renderUpdate(double elapsedTime); // seconds since last call
     void renderFinalize();

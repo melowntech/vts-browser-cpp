@@ -216,6 +216,10 @@ int main()
     check();
     vtsCameraDestroy(cam);
     check();
+    vtsMapRenderFinalize(map);
+    check();
+    vtsMapDataFinalize(map);
+    check();
     vtsMapDestroy(map);
     check();
     vtsRenderContextDestroy(context);

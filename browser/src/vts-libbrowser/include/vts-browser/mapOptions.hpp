@@ -82,10 +82,6 @@ public:
 
     // provide density texture for atmosphere rendering
     bool atmosphereDensityTexture = true;
-
-    // true -> create and use separate threads for data processing
-    // false -> serialize all tasks in the data thread
-    bool debugUseExtraThreads = true;
 };
 
 // options of the map which may be changed anytime

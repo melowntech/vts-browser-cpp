@@ -195,7 +195,6 @@ public:
     void resourcesRenderFinalize();
     void resourcesDataUpdate();
     void resourcesRenderUpdate();
-    uint32 resourcesDataUpdateOne();
 
     bool resourcesTryRemove(std::shared_ptr<Resource> &r);
     void resourcesRemoveOld();
@@ -206,10 +205,6 @@ public:
     void resourcesAtmosphereGeneratorEntry();
     void resourcesGeodataProcessorEntry();
     void resourcesDecodeProcessorEntry();
-    bool resourcesUploadProcessOne();
-    bool resourcesAtmosphereProcessOne();
-    bool resourcesGeodataProcessOne();
-    bool resourcesDecodeProcessOne();
     void resourceDecodeProcess(const std::shared_ptr<Resource> &r);
     void resourceUploadProcess(const std::shared_ptr<Resource> &r);
     void resourceSaveCorruptedFile(const std::shared_ptr<Resource> &r);

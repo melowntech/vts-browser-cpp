@@ -176,6 +176,11 @@ void MapImpl::purgeViewCache()
             cam->statistics = CameraStatistics();
             cam->draws = CameraDraws();
             cam->credits.clear();
+            auto nav = cam->navigation.lock();
+            if (nav)
+            {
+                nav->suspendAltitudeChange = true;
+            }
         }
     }
 }

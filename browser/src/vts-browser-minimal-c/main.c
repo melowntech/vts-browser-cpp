@@ -72,6 +72,8 @@ int dataEntry(void *ptr)
     check();
 
     SDL_GL_DeleteContext(dataContext);
+
+    return 0;
 }
 
 void updateResolution()

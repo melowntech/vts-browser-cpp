@@ -30,9 +30,8 @@
 #include <vts-browser/foundationCommon.h>
 
 #ifdef __cplusplus
-extern "C"
-{
-#endif // __cplusplus
+extern "C" {
+#endif
 
 /*
 Defining these symbols gives a hint to the system that,
@@ -51,7 +50,7 @@ VTS_API_EXPORT int NvOptimusEnablement = 1;
 VTS_API_EXPORT int AmdPowerXpressRequestHighPerformance = 1;
 
 #ifdef __cplusplus
-}
-#endif // __cplusplus
+} // extern C
+#endif
 
 #endif // guard_highPerformanceGpuHint_h_56esr4hgrt6

@@ -57,6 +57,7 @@ void check()
 
 int dataEntry(void *ptr)
 {
+    (void)ptr;
     vtsLogSetThreadName("data");
     check();
 

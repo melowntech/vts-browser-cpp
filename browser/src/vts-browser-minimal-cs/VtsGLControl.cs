@@ -38,8 +38,7 @@ namespace vtsBrowserMinimalCs
             InitializeComponent();
 
             // override draw styles
-            SetStyle(ControlStyles.AllPaintingInWmPaint, true);
-            SetStyle(ControlStyles.UserPaint, true);
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
             SetStyle(ControlStyles.OptimizedDoubleBuffer, false);
         }
 
@@ -51,6 +50,9 @@ namespace vtsBrowserMinimalCs
         protected override void OnPaint(PaintEventArgs e)
         {
             VtsGL.wglMakeCurrent(hDC, hRC);
+            //VtsGL.glViewport(0, 0, Width, Height);
+            //VtsGL.glClearColor(1, 0, 0, 0);
+            //VtsGL.glClear(0x4000); // GL_COLOR_BUFFER_BIT
             Draw?.Invoke(this, e);
             VtsGL.SwapBuffers(hDC);
         }
@@ -75,7 +77,7 @@ namespace vtsBrowserMinimalCs
             pfd.nVersion = 1;
             pfd.dwFlags = 4 | 32 | 1;
             pfd.iPixelType = 0;
-            pfd.cColorBits = (byte)32;
+            pfd.cColorBits = (byte)24;
             pfd.cDepthBits = 0;
             pfd.cStencilBits = 0;
             pfd.iLayerType = 0;

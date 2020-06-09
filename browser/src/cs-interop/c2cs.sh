@@ -16,6 +16,9 @@ grep -v '^#' | \
 grep -v '^extern "C" {' | \
 grep -v '^} // extern C' | \
 
+# remove VTS_API_EXPORT
+grep -v '^VTS_API_EXPORT' | \
+
 # callback types
 sed 's/typedef \(.*\)(\*\([[:alnum:]]\+\))(\(.*\))/\[UnmanagedFunctionPointer(CallingConvention.Cdecl)]\npublic delegate \1 \2(\3)/' - | \
 

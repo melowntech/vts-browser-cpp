@@ -132,7 +132,7 @@ namespace vts
             Util.CheckInterop();
         }
 
-        public void DataDeinitialize()
+        public void DataFinalize()
         {
             BrowserInterop.vtsMapDataFinalize(Handle);
             Util.CheckInterop();
@@ -150,7 +150,7 @@ namespace vts
             Util.CheckInterop();
         }
 
-        public void RenderDeinitialize()
+        public void RenderFinalize()
         {
             BrowserInterop.vtsMapRenderFinalize(Handle);
             Util.CheckInterop();

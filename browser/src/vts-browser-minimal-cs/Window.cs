@@ -60,13 +60,13 @@ namespace vtsBrowserMinimalCs
 
         public void Fin(object sender, EventArgs args)
         {
-            map.RenderDeinitialize();
-            map.DataDeinitialize();
-            renderContext = null;
-            renderView = null;
+            map.RenderFinalize();
+            map.DataFinalize();
             nav = null;
             cam = null;
             map = null;
+            renderView = null;
+            renderContext = null;
         }
 
         public void Draw(object sender, EventArgs args)

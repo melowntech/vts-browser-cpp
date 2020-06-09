@@ -26,7 +26,6 @@
 
 #include <vts-browser/log.hpp>
 #include <vts-browser/map.hpp>
-#include <vts-browser/mapOptions.hpp>
 #include <vts-browser/camera.hpp>
 #include <vts-browser/navigation.hpp>
 #include <vts-renderer/renderer.hpp>
@@ -71,7 +70,7 @@ void updateResolution()
 {
     int w = 0, h = 0;
     SDL_GL_GetDrawableSize(window, &w, &h);
-    auto &ro = view->options();
+    vts::renderer::RenderOptions &ro = view->options();
     ro.width = w;
     ro.height = h;
     cam->setViewportSize(ro.width, ro.height);

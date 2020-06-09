@@ -24,10 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <vts-browser/log.h>
 #include <vts-browser/map.h>
 #include <vts-browser/camera.h>
 #include <vts-browser/navigation.h>
-#include <vts-browser/log.h>
 #include <vts-renderer/renderer.h>
 #include <vts-renderer/highPerformanceGpuHint.h>
 
@@ -36,11 +36,13 @@
 
 SDL_Window *window;
 SDL_GLContext renderContext;
-vtsHRenderContext context;
-vtsHRenderView view;
+SDL_GLContext dataContext;
 vtsHMap map;
 vtsHCamera cam;
 vtsHNavigation nav;
+vtsHRenderContext context;
+vtsHRenderView view;
+SDL_Thread *dataThread;
 bool shouldClose = false;
 
 void check()
@@ -51,6 +53,24 @@ void check()
     vtsLog(vtsLogLevelErr4, vtsErrMsg());
     vtsLog(vtsLogLevelErr4, vtsErrCodeToName(c));
     exit(-1);
+}
+
+int dataEntry(void *ptr)
+{
+    vtsLogSetThreadName("data");
+    check();
+
+    // the browser uses separate thread for uploading resources to gpu memory
+    //   this thread must have access to an OpenGL context
+    //   and the context must be shared with the one used for rendering
+    SDL_GL_MakeCurrent(window, dataContext);
+
+    // this will block until vtsMapRenderFinalize
+    //   is called in the rendering thread
+    vtsMapDataAllRun(map);
+    check();
+
+    SDL_GL_DeleteContext(dataContext);
 }
 
 void updateResolution()
@@ -85,6 +105,8 @@ int main()
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                         SDL_GL_CONTEXT_PROFILE_CORE);
+    // enable sharing resources between multiple OpenGL contexts
+    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
 
     // create window
     vtsLog(vtsLogLevelInfo3, "Creating window");
@@ -103,17 +125,16 @@ int main()
 
     // create OpenGL context
     vtsLog(vtsLogLevelInfo3, "Creating OpenGL context");
+    dataContext = SDL_GL_CreateContext(window);
     renderContext = SDL_GL_CreateContext(window);
-    // bind the OpenGL context to current thread
-    SDL_GL_MakeCurrent(window, renderContext);
     SDL_GL_SetSwapInterval(1); // enable v-sync
 
-    // notify the vts renderer library on how to load OpenGL function pointers
+    // make vts renderer library load OpenGL function pointers
+    // this calls installGlDebugCallback for the current context too
     vtsLoadGlFunctions(&SDL_GL_GetProcAddress);
     check();
 
-    // and initialize the renderer library
-    // this will load required shaders and other local files
+    // create the renderer library context
     context = vtsRenderContextCreate();
     check();
 
@@ -125,31 +146,34 @@ int main()
     vtsRenderContextBindLoadFunctions(context, map);
     check();
 
-    // acquire handles for camera and navigation
+    // launch the data thread
+    dataThread = SDL_CreateThread(&dataEntry, "data", NULL);
+
+    // create a camera and acquire its navigation handle
     cam = vtsCameraCreate(map);
     check();
     nav = vtsNavigationCreate(cam);
     check();
 
-    // acquire render view for the camera
+    // create renderer view
     view = vtsRenderContextCreateView(context, cam);
     check();
     updateResolution();
-    check();
 
-    // configure an url to the map that should be displayed
+    // pass a mapconfig url to the map
     vtsMapSetConfigPaths(map,
             "https://cdn.melown.com/mario/store/melown2015/"
             "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json",
             "");
     check();
 
-    // acquire current time to measure how long each frame takes
+    // acquire current time (for measuring how long each frame takes)
     uint32 lastRenderTime = SDL_GetTicks();
 
-    // keep processing window events
+    // main event loop
     while (!shouldClose)
     {
+        // process events
         {
             SDL_Event event;
             while (SDL_PollEvent(&event))
@@ -186,14 +210,8 @@ int main()
             }
         }
 
-        // update downloads
-        vtsMapDataUpdate(map);
-        check();
-
-        // check if the window has been resized
-        updateResolution();
-
         // update navigation etc.
+        updateResolution();
         uint32 currentRenderTime = SDL_GetTicks();
         vtsMapRenderUpdate(map, (currentRenderTime - lastRenderTime) * 1e-3);
         check();
@@ -204,40 +222,31 @@ int main()
         // actually render the map
         vtsRenderViewRender(view);
         check();
-
-        // present the rendered image to the screen
         SDL_GL_SwapWindow(window);
     }
 
-    // destroy everything
-    vtsRenderViewDestroy(view);
-    check();
+    // release all
     vtsNavigationDestroy(nav);
     check();
     vtsCameraDestroy(cam);
     check();
-    vtsMapRenderFinalize(map);
+    vtsRenderViewDestroy(view);
     check();
-    vtsMapDataFinalize(map);
+    vtsMapRenderFinalize(map); // this allows the dataThread to finish
     check();
+    {
+        int ret;
+        SDL_WaitThread(dataThread, &ret);
+    }
     vtsMapDestroy(map);
     check();
     vtsRenderContextDestroy(context);
     check();
 
-    // free the OpenGL context
-    if (renderContext)
-    {
-        SDL_GL_DeleteContext(renderContext);
-        renderContext = NULL;
-    }
-
-    // release the window
-    if (window)
-    {
-        SDL_DestroyWindow(window);
-        window = NULL;
-    }
+    SDL_GL_DeleteContext(renderContext);
+    renderContext = NULL;
+    SDL_DestroyWindow(window);
+    window = NULL;
 
     return 0;
 }

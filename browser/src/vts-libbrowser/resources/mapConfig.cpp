@@ -53,7 +53,7 @@ void Mapconfig::decode()
     // clear
     *(vtslibs::vts::MapConfig*)this = vtslibs::vts::MapConfig();
     browserOptions = BrowserOptions();
-    atmosphereDensityTexture.reset();
+    atmosphereDensityTextureName = "";
     convertorData.reset();
     boundInfos.clear();
     freeInfos.clear();

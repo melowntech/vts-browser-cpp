@@ -37,17 +37,6 @@ namespace vts
 
 using UrlTemplate = vtslibs::vts::UrlTemplate;
 
-MapCelestialBody::MapCelestialBody() :
-    majorRadius(0), minorRadius(0)
-{}
-
-MapCelestialBody::Atmosphere::Atmosphere() :
-    colorHorizon{ 0,0,0,0 }, colorZenith{ 0,0,0,0 },
-    colorGradientExponent(0.3),
-    thickness(0), thicknessQuantile(1e-6),
-    visibility(0), visibilityQuantile(1e-2)
-{}
-
 bool Mapconfig::isEarth() const
 {
     double a = geo::ellipsoid(srs(referenceFrame.model.physicalSrs).srsDef)[0];
@@ -67,10 +56,9 @@ void Mapconfig::initializeCelestialBody()
     MapCelestialBody::Atmosphere &a = map->body.atmosphere;
 
     // load body from mapconfig
-    if (map->mapconfig->referenceFrame.body)
+    if (referenceFrame.body)
     {
-        const auto &b = map->mapconfig->bodies.get(
-            *map->mapconfig->referenceFrame.body);
+        const auto &b = bodies.get(*referenceFrame.body);
         Json::Value j = boost::any_cast<Json::Value>(b.json);
         map->body.name = j["name"].asString();
         if (j.isMember("atmosphere"))
@@ -126,8 +114,7 @@ void Mapconfig::initializeCelestialBody()
     }
 
     // atmosphere density texture
-    if (map->createOptions.atmosphereDensityTexture
-        && navigationSrsType() != vtslibs::registry::Srs::Type::projected
+    if (navigationSrsType() != vtslibs::registry::Srs::Type::projected
         && map->body.majorRadius > 0
         && a.thickness > 0)
     {
@@ -147,7 +134,7 @@ void Mapconfig::initializeCelestialBody()
         }
         else
             name = "generate://atmdensity-" + name;
-        atmosphereDensityTexture = map->getAtmosphereDensityTexture(name);
+        atmosphereDensityTextureName = name;
     }
 }
 

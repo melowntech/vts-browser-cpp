@@ -95,9 +95,9 @@ public:
         const std::string &id);
 
     BrowserOptions browserOptions;
-    std::shared_ptr<GpuAtmosphereDensityTexture> atmosphereDensityTexture;
     std::vector<vtslibs::vts::NodeInfo> referenceDivisionNodeInfos;
     std::shared_ptr<CoordManip> convertorData; // used in data/decoder thread
+    std::string atmosphereDensityTextureName;
 
 private:
     std::unordered_map<std::string, std::shared_ptr<BoundInfo>> boundInfos;

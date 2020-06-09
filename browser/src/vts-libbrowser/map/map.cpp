@@ -50,39 +50,31 @@ MapImpl::MapImpl(Map *map, const MapCreateOptions &options,
 {
     assert(fetcher);
     resources.fetcher = fetcher;
-    resources.thrCacheWriter = std::thread(&MapImpl::cacheWriteEntry, this);
-    resources.fetching.thr
+    resources.thrFetcher
         = std::thread(&MapImpl::resourcesDownloadsEntry, this);
-    resources.cacheReading.thr
+    resources.thrCacheReader
         = std::thread(&MapImpl::cacheReadEntry, this);
-    resources.thrAtmosphereGenerator
-        = std::thread(&MapImpl::resourcesAtmosphereGeneratorEntry, this);
-    resources.thrGeodataProcessor
-        = std::thread(&MapImpl::resourcesGeodataProcessorEntry, this);
+    resources.thrCacheWriter
+        = std::thread(&MapImpl::cacheWriteEntry, this);
     resources.thrDecoder
         = std::thread(&MapImpl::resourcesDecodeProcessorEntry, this);
+    resources.thrGeodataProcessor
+        = std::thread(&MapImpl::resourcesGeodataProcessorEntry, this);
+    resources.thrAtmosphereGenerator
+        = std::thread(&MapImpl::resourcesAtmosphereGeneratorEntry, this);
     cacheInit();
     credits = std::make_shared<Credits>();
 }
 
 MapImpl::~MapImpl()
 {
-    resources.queCacheWrite.terminate();
-    resources.queDecode.terminate();
-    resources.queUpload.terminate();
-    resources.queAtmosphere.terminate();
-    resources.queGeodata.terminate();
-    resources.cacheReading.stop = true;
-    resources.cacheReading.con.notify_all();
-    resources.fetching.stop = true;
-    resources.fetching.con.notify_all();
-
+    resourcesTerminateAllQueues();
+    resources.thrFetcher.join();
+    resources.thrCacheReader.join();
     resources.thrCacheWriter.join();
-    resources.cacheReading.thr.join();
-    resources.fetching.thr.join();
+    resources.thrDecoder.join();
     resources.thrAtmosphereGenerator.join();
     resources.thrGeodataProcessor.join();
-    resources.thrDecoder.join();
 }
 
 void MapImpl::renderUpdate(double elapsedTime)
@@ -112,9 +104,6 @@ void MapImpl::renderUpdate(double elapsedTime)
         for (auto &it : layers)
             traverseClearing(it->traverseRoot.get());
     }
-
-    if (mapconfig->atmosphereDensityTexture)
-        updateAtmosphereDensity();
 }
 
 void MapImpl::initializeNavigation()

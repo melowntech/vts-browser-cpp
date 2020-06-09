@@ -79,9 +79,6 @@ public:
 
     // use search url/srs from mapconfig
     bool browserOptionsSearchUrls = true;
-
-    // provide density texture for atmosphere rendering
-    bool atmosphereDensityTexture = true;
 };
 
 // options of the map which may be changed anytime

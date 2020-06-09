@@ -127,25 +127,19 @@ public:
         std::condition_variable downloadsCondition;
         uint32 progressEstimationMaxResources = 0;
 
-        ThreadQueue<std::weak_ptr<Resource>> queDecode;
-        ThreadQueue<UploadData> queUpload;
+        ThreadQueue<std::weak_ptr<Resource>> queFetching;
+        ThreadQueue<std::weak_ptr<Resource>> queCacheRead;
         ThreadQueue<CacheData> queCacheWrite;
-        ThreadQueue<std::weak_ptr<GpuAtmosphereDensityTexture>> queAtmosphere;
+        ThreadQueue<std::weak_ptr<Resource>> queDecode;
         ThreadQueue<std::weak_ptr<GeodataTile>> queGeodata;
+        ThreadQueue<std::weak_ptr<GpuAtmosphereDensityTexture>> queAtmosphere;
+        ThreadQueue<UploadData> queUpload;
+        std::thread thrFetcher;
+        std::thread thrCacheReader;
         std::thread thrCacheWriter;
         std::thread thrDecoder;
-        std::thread thrAtmosphereGenerator;
         std::thread thrGeodataProcessor;
-        
-        class ThreadCustomQueue
-        {
-        public:
-            std::vector<std::weak_ptr<Resource>> resources;
-            std::thread thr;
-            std::mutex mut;
-            std::condition_variable con;
-            std::atomic<bool> stop{false};
-        } fetching, cacheReading;
+        std::thread thrAtmosphereGenerator;
     } resources;
 
     Map *const map = nullptr;
@@ -208,6 +202,7 @@ public:
     void resourceDecodeProcess(const std::shared_ptr<Resource> &r);
     void resourceUploadProcess(const std::shared_ptr<Resource> &r);
     void resourceSaveCorruptedFile(const std::shared_ptr<Resource> &r);
+    void resourcesTerminateAllQueues();
 
     void cacheInit();
     void cacheWriteEntry();
@@ -248,7 +243,6 @@ public:
     void parseSearchResults(const std::shared_ptr<SearchTask> &task);
 
     void updateSearch();
-    void updateAtmosphereDensity();
     double getMapRenderProgress();
     bool getMapRenderComplete();
     TileId roundId(TileId nodeId);

@@ -36,10 +36,6 @@
 namespace vts
 {
 
-GpuMeshSpec::GpuMeshSpec() : verticesCount(0), indicesCount(0),
-    faceMode(FaceMode::Triangles), indexMode(GpuTypeEnum::UnsignedShort)
-{}
-
 GpuMeshSpec::GpuMeshSpec(const Buffer &buffer) :
     verticesCount(0), indicesCount(0),
     faceMode(FaceMode::Triangles), indexMode(GpuTypeEnum::UnsignedShort)
@@ -62,10 +58,6 @@ GpuMeshSpec::GpuMeshSpec(const Buffer &buffer) :
         LOGTHROW(err2, std::invalid_argument) << "Invalid face mode";
     }
 }
-
-GpuMeshSpec::VertexAttribute::VertexAttribute() : offset(0), stride(0),
-    components(0), type(GpuTypeEnum::Float), enable(false), normalized(false)
-{}
 
 GpuMesh::GpuMesh(MapImpl *map, const std::string &name) :
     Resource(map, name)

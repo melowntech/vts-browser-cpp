@@ -270,10 +270,11 @@ const MapCelestialBody &Map::celestialBody()
 
 std::shared_ptr<void> Map::atmosphereDensityTexture()
 {
-    if (getMapconfigAvailable() && impl->mapconfig->atmosphereDensityTexture
-        && *impl->mapconfig->atmosphereDensityTexture)
-        return impl->mapconfig->atmosphereDensityTexture->getUserData();
-    return {};
+    if (!impl->mapconfigReady
+        || impl->mapconfig->atmosphereDensityTextureName.empty())
+        return {};
+    return impl->getAtmosphereDensityTexture(
+        impl->mapconfig->atmosphereDensityTextureName)->getUserData();
 }
 
 void Map::convert(const double pointFrom[3], double pointTo[3],

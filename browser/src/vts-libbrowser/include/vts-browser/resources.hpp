@@ -55,15 +55,13 @@ VTS_API uint32 gpuTypeSize(GpuTypeEnum type);
 class VTS_API ResourceInfo
 {
 public:
-    ResourceInfo();
-
     // the userData is later on used to reference the corresponding resource
     //   from inside a DrawTask
     std::shared_ptr<void> userData;
 
     // memory usage in bytes
-    uint32 ramMemoryCost;
-    uint32 gpuMemoryCost;
+    uint32 ramMemoryCost = 0;
+    uint32 gpuMemoryCost = 0;
 };
 
 // information about texture passed to loadTexture callback
@@ -71,23 +69,23 @@ public:
 class VTS_API GpuTextureSpec
 {
 public:
-    GpuTextureSpec();
+    GpuTextureSpec() = default;
     explicit GpuTextureSpec(const Buffer &buffer); // decode jpg or png file
     void verticalFlip();
 
     // image resolution
-    uint32 width, height;
+    uint32 width = 0, height = 0;
 
     // number of color channels per pixel
-    uint32 components; // 1, 2, 3 or 4
+    uint32 components = 0; // 1, 2, 3 or 4
 
     // type of each channel per pixel
-    GpuTypeEnum type;
+    GpuTypeEnum type = GpuTypeEnum::UnsignedByte;
 
     // enforce texture internal format
     //   leave zero to deduce the format from type and components
     // the type must still be set appropriately since it defines buffer size
-    uint32 internalFormat;
+    uint32 internalFormat = 0;
 
     // raw texture data
     // it has (width * height * components * gpuTypeSize(type)) bytes
@@ -110,7 +108,7 @@ public:
         LinearMipmapNearest = 0x2701,
         NearestMipmapLinear = 0x2702,
         LinearMipmapLinear = 0x2703,
-    } filterMode;
+    } filterMode = FilterMode::NearestMipmapLinear;
 
     enum class WrapMode
     {
@@ -120,7 +118,7 @@ public:
         ClampToBorder = 0x812D,
         MirroredRepeat = 0x8370,
         MirrorClampToEdge = 0x8743,
-    } wrapMode;
+    } wrapMode = WrapMode::Repeat;
 };
 
 // information about mesh passed to loadMesh callback
@@ -141,16 +139,15 @@ public:
 
     struct VTS_API VertexAttribute
     {
-        VertexAttribute();
-        uint32 offset; // in bytes
-        uint32 stride; // in bytes
-        uint32 components; // 1, 2, 3 or 4
-        GpuTypeEnum type;
-        bool enable;
-        bool normalized;
+        uint32 offset = 0; // in bytes
+        uint32 stride = 0; // in bytes
+        uint32 components = 0; // 1, 2, 3 or 4
+        GpuTypeEnum type = GpuTypeEnum::Float;
+        bool enable = false;
+        bool normalized = false;
     };
 
-    GpuMeshSpec();
+    GpuMeshSpec() = default;
     explicit GpuMeshSpec(const Buffer &buffer); // decode obj file
 
     // an array of vertex data
@@ -163,10 +160,10 @@ public:
     // description of memory layout in the vertices buffer
     std::array<VertexAttribute, 4> attributes;
 
-    uint32 verticesCount;
-    uint32 indicesCount;
-    FaceMode faceMode;
-    GpuTypeEnum indexMode;
+    uint32 verticesCount = 0;
+    uint32 indicesCount = 0;
+    FaceMode faceMode = FaceMode::Triangles;
+    GpuTypeEnum indexMode = GpuTypeEnum::UnsignedShort;
 };
 
 // handle that provides the application with access

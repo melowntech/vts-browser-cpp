@@ -27,7 +27,7 @@
 #ifndef THREAD_QUEUE_gdf5g4d56f4ghd6h4
 #define THREAD_QUEUE_gdf5g4d56f4ghd6h4
 
-#include <list>
+#include <vector>
 #include <atomic>
 #include <thread>
 #include <mutex>
@@ -40,13 +40,12 @@ template<class T>
 class ThreadQueue
 {
 public:
-    ThreadQueue() : stop(false)
-    {}
-
     void push(const T &v)
     {
         {
             std::lock_guard<std::mutex> lock(mut);
+            if (stop)
+                return;
             q.push_back(v);
         }
         con.notify_one();
@@ -56,6 +55,8 @@ public:
     {
         {
             std::lock_guard<std::mutex> lock(mut);
+            if (stop)
+                return;
             q.push_back(std::move(v));
         }
         con.notify_one();
@@ -67,7 +68,7 @@ public:
         if (q.empty() || stop)
             return false;
         v = std::move(q.front());
-        q.pop_front();
+        q.erase(q.begin());
         return true;
     }
 
@@ -76,11 +77,35 @@ public:
         std::unique_lock<std::mutex> lock(mut);
         while (q.empty() && !stop)
             con.wait(lock);
-        if (q.empty())
+        if (q.empty() || stop)
             return false;
         v = std::move(q.front());
-        q.pop_front();
+        q.erase(q.begin());
         return true;
+    }
+
+    std::vector<T> readAllWait()
+    {
+        std::unique_lock<std::mutex> lock(mut);
+        if (stop)
+            return {};
+        con.wait(lock);
+        if (stop)
+            return {};
+        std::vector<T> res;
+        res.swap(q);
+        return res;
+    }
+
+    void writeAll(std::vector<T> &writing)
+    {
+        {
+            std::unique_lock<std::mutex> lock(mut);
+            if (stop)
+                return;
+            writing.swap(q);
+        }
+        con.notify_one();
     }
 
     void terminate()
@@ -96,6 +121,7 @@ public:
     {
         {
             std::lock_guard<std::mutex> lock(mut);
+            stop = true;
             q.clear();
         }
         con.notify_all();
@@ -112,8 +138,8 @@ public:
     }
 
 private:
-    std::atomic<bool> stop;
-    std::list<T> q;
+    std::atomic<bool> stop {false};
+    std::vector<T> q;
     mutable std::mutex mut;
     std::condition_variable con;
 };

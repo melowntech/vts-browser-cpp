@@ -62,10 +62,6 @@ bool FetchTaskImpl::performAvailTest() const
     return true;
 }
 
-ResourceInfo::ResourceInfo() :
-    ramMemoryCost(0), gpuMemoryCost(0)
-{}
-
 Resource::Resource(vts::MapImpl *map, const std::string &name) :
     name(name), map(map),
     priority(nan1())
@@ -80,6 +76,7 @@ Resource::~Resource()
                << "> at <" << this << ">";
     if (info.userData)
     {
+        //assert(!map->resources.queUpload.stopped());
         map->resources.queUpload.push(
             UploadData(info.userData, 0));
     }

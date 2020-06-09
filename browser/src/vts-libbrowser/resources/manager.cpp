@@ -64,18 +64,6 @@ namespace
 
 typedef std::pair<float, std::shared_ptr<Resource>> ResourceWithPriority;
 
-std::vector<std::weak_ptr<Resource>> waitForResources(
-    MapImpl::Resources::ThreadCustomQueue &queue)
-{
-    std::vector<std::weak_ptr<Resource>> res;
-    {
-        std::unique_lock<std::mutex> lock(queue.mut);
-        queue.con.wait(lock);
-        res.swap(queue.resources);
-    }
-    return res;
-}
-
 std::vector<ResourceWithPriority> filterSortResources(
     const std::vector<std::weak_ptr<Resource>> &resources,
     Resource::State requiredState)
@@ -336,6 +324,7 @@ void MapImpl::resourcesDataUpdate()
 
 void MapImpl::resourcesDataFinalize()
 {
+    assert(resources.queUpload.stopped());
     resources.queUpload.purge();
 }
 
@@ -364,9 +353,9 @@ void MapImpl::cacheReadEntry()
 {
     OPTICK_THREAD("cache reader");
     setLogThreadName("cache reader");
-    while (!resources.cacheReading.stop)
+    while (!resources.queCacheRead.stopped())
     {
-        auto res1 = waitForResources(resources.cacheReading);
+        auto res1 = resources.queCacheRead.readAllWait();
         OPTICK_EVENT("update");
         auto res2 = filterSortResources(res1, Resource::State::checkCache);
         for (const auto &pr : res2)
@@ -383,7 +372,7 @@ void MapImpl::cacheReadEntry()
                 LOG(err3) << "Failed preparing resource <" << r->name
                     << ">, exception <" << e.what() << ">";
             }
-            if (!resources.cacheReading.resources.empty())
+            if (resources.queCacheRead.estimateSize() > 0)
                 break; // refresh the priorities
         }
     }
@@ -463,9 +452,9 @@ void MapImpl::resourcesDownloadsEntry()
     setLogThreadName("fetcher");
     resources.fetcher->initialize();
     std::mutex dummyMutex;
-    while (!resources.fetching.stop)
+    while (!resources.queFetching.stopped())
     {
-        auto res1 = waitForResources(resources.fetching);
+        auto res1 = resources.queFetching.readAllWait();
         OPTICK_EVENT("update");
         resources.fetcher->update();
         auto res2 = filterSortResources(res1, Resource::State::startDownload);
@@ -486,7 +475,7 @@ void MapImpl::resourcesDownloadsEntry()
                 resources.auth->authorize(r);
             resources.fetcher->fetch(r->fetch);
             statistics.resourcesDownloaded++;
-            if (!resources.fetching.resources.empty())
+            if (resources.queFetching.estimateSize() > 0)
                 break; // refresh the priorities
         }
     }
@@ -676,20 +665,20 @@ void MapImpl::resourcesStartDownloads()
     }
 
     statistics.resourcesQueueCacheRead = requestCacheRead.size();
-    {
-        std::lock_guard<std::mutex> lock(resources.cacheReading.mut);
-        requestCacheRead.swap(resources.cacheReading.resources);
-    }
-    if (statistics.resourcesQueueCacheRead)
-        resources.cacheReading.con.notify_one();
-
+    resources.queCacheRead.writeAll(requestCacheRead);
     statistics.resourcesQueueDownload = requestDownloads.size();
-    {
-        std::lock_guard<std::mutex> lock(resources.fetching.mut);
-        requestDownloads.swap(resources.fetching.resources);
-    }
-    if (statistics.resourcesQueueDownload)
-        resources.fetching.con.notify_one();
+    resources.queFetching.writeAll(requestDownloads);
+}
+
+void MapImpl::resourcesTerminateAllQueues()
+{
+    resources.queCacheWrite.terminate();
+    resources.queDecode.terminate();
+    resources.queUpload.terminate();
+    resources.queAtmosphere.terminate();
+    resources.queGeodata.terminate();
+    resources.queCacheRead.terminate();
+    resources.queFetching.terminate();
 }
 
 void MapImpl::resourcesRenderFinalize()
@@ -703,7 +692,7 @@ void MapImpl::resourcesRenderFinalize()
     resources.resources.clear();
 
     // allow the dataAllRun method to return to the caller
-    resources.queUpload.terminate();
+    resourcesTerminateAllQueues();
 }
 
 void MapImpl::resourcesRenderUpdate()

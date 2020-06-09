@@ -153,23 +153,4 @@ void MapImpl::resourcesAtmosphereGeneratorEntry()
     }
 }
 
-void MapImpl::updateAtmosphereDensity()
-{
-    const std::shared_ptr<GpuAtmosphereDensityTexture> &tex
-        = mapconfig->atmosphereDensityTexture;
-    assert(tex);
-    touchResource(tex);
-    switch ((Resource::State)tex->state)
-    {
-    case Resource::State::errorRetry:
-    case Resource::State::availFail:
-        break;
-    default:
-        return;
-    }
-
-    tex->state = Resource::State::downloading;
-    resources.queAtmosphere.push(tex);
-}
-
 }

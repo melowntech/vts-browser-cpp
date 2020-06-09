@@ -34,13 +34,7 @@
 namespace vts
 {
 
-GpuTextureSpec::GpuTextureSpec()
-    : width(0), height(0), components(0),
-    type(GpuTypeEnum::UnsignedByte), internalFormat(0),
-    filterMode(FilterMode::NearestMipmapLinear), wrapMode(WrapMode::Repeat)
-{}
-
-GpuTextureSpec::GpuTextureSpec(const Buffer &buffer) : GpuTextureSpec()
+GpuTextureSpec::GpuTextureSpec(const Buffer &buffer)
 {
     decodeImage(buffer, this->buffer, width, height, components);
 }

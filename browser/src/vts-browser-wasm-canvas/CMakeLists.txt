@@ -23,14 +23,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s ALLOW_BLOCKING_ON_MAIN_THREAD=0 -s OF
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --source-map-base http://localhost:6931")
 
 add_executable(vts-browser-wasm-canvas ${SRC_LIST} ${WEBFILES_LIST})
-target_link_libraries(vts-browser-wasm-canvas ${MODULE_LIBRARIES} "GL")
+target_link_libraries(vts-browser-wasm-canvas ${MODULE_LIBRARIES})
 target_compile_definitions(vts-browser-wasm-canvas PRIVATE ${MODULE_DEFINITIONS})
 buildsys_binary(vts-browser-wasm-canvas)
 buildsys_ide_groups(vts-browser-wasm-canvas apps)
 
 foreach(conf IN ITEMS ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE})
     string(TOUPPER ${conf} conf_upper)
-    #set_target_properties(vts-browser-wasm-canvas PROPERTIES ${conf_upper}_POSTFIX .js)
     foreach(file IN ITEMS ${WEBFILES_LIST})
         configure_file("${file}" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY_${conf_upper}}/${file}" COPYONLY)
     endforeach()

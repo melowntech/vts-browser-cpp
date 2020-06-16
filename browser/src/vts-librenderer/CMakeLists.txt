@@ -114,6 +114,7 @@ buildsys_library(vts-renderer)
 buildsys_soversion(vts-renderer ${vts-browser_SO_VERSION})
 buildsys_position_independent(${MODULE_LIBRARIES})
 buildsys_ide_groups(vts-renderer libs)
+buildsys_xcode_codesign(vts-renderer)
 
 if(BUILDSYS_EMBEDDED)
     target_compile_definitions(vts-renderer PRIVATE VTSR_EMBEDDED)

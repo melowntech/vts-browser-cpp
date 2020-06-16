@@ -26,6 +26,8 @@
 
 #include "../coordsManip.hpp"
 
+#include "../include/vts-browser/mapCallbacks.hpp" // ensure that projFinderCallback is visible
+
 #include <boost/utility/in_place_factory.hpp>
 #include <GeographicLib/Geodesic.hpp>
 #include <proj_api.h>

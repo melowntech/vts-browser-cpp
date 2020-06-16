@@ -229,6 +229,7 @@ buildsys_library(vts-browser)
 buildsys_soversion(vts-browser ${vts-browser_SO_VERSION})
 buildsys_position_independent(${MODULE_LIBRARIES})
 buildsys_ide_groups(vts-browser libs)
+buildsys_xcode_codesign(vts-browser)
 
 if(BUILDSYS_EMBEDDED)
     target_compile_definitions(vts-browser PRIVATE VTS_EMBEDDED)

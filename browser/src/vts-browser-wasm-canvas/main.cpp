@@ -110,6 +110,16 @@ void mapconfAvailable()
         ss << ">" << s << "</option>\n";
     }
     setHtml("viewPreset", ss.str());
+    MAIN_THREAD_ASYNC_EM_ASM(
+        Module.onMapconfigAvailable()
+    );
+}
+
+void mapconfReady()
+{
+    MAIN_THREAD_ASYNC_EM_ASM(
+        Module.onMapconfigReady()
+    );
 }
 
 void updateSearch()
@@ -183,9 +193,7 @@ int main(int, char *[])
     cam = map->createCamera();
     nav = cam->createNavigation();
     map->callbacks().mapconfigAvailable = &mapconfAvailable;
-
-    map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
-            "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
+    map->callbacks().mapconfigReady = &mapconfReady;
 
     {
         auto &m = map->options();

@@ -114,26 +114,26 @@ function tileDiagnosticsClick(button)
 }
 
 // mapconfig
-var mapconfigCpp
-var viewPresetCpp
+var setMapconfigCpp
+var setViewPresetCpp
 function mapconfig()
 {
     let url = document.getElementById("mapconfig").value
-    mapconfigCpp(url)
+    setMapconfigCpp(url)
 }
 function viewPreset()
 {
     let select = document.getElementById("viewPreset")
     let preset = select.options[select.selectedIndex].innerHTML
-    viewPresetCpp(preset)
+    setViewPresetCpp(preset)
 }
 
 // position
-var positionCpp
+var setPositionCpp
 function position()
 {
     let pos = document.getElementById("positionInput")
-    positionCpp(pos.value)
+    setPositionCpp(pos.value, 1)
 }
 function delayedPosition()
 {
@@ -146,18 +146,35 @@ function positionToClipboard()
     document.execCommand("copy")
 }
 
+// parse url parameters
+var queryString = {}
+{
+    let parser = document.createElement("a")
+    parser["href"] = window.location.href
+    let query = parser["search"].substring(1)
+    let vars = query.split('&')
+    if (!(vars.length == 1 && vars[0] == ""))
+    {
+        for (let i = 0; i < vars.length; i++)
+        {
+            var pair = vars[i].split("=")
+            queryString[pair[0]] = decodeURIComponent(pair[1])
+        }
+    }
+}
+
 // initialize
 var Module =
 {
     onRuntimeInitialized: function()
     {
+        setMapconfigCpp = Module.cwrap("setMapconfig", null, ["string"])
+        setViewPresetCpp = Module.cwrap("setViewPreset", null, ["string"])
+        setPositionCpp = Module.cwrap("setPosition", null, ["string", "number"])
         searchCpp = Module.cwrap("search", null, ["string"])
         gotoPositionCpp = Module.cwrap("gotoPosition", null, ["number", "number", "number", "number"])
         applyOptionsCpp = Module.cwrap("applyOptions", null, ["string"])
         getOptionsCpp = Module.cwrap("getOptions", "string", null)
-        mapconfigCpp = Module.cwrap("setMapconfig", null, ["string"])
-        viewPresetCpp = Module.cwrap("setViewPreset", null, ["string"])
-        positionCpp = Module.cwrap("setPosition", null, ["string"])
     },
     onMapCreated: function()
     {
@@ -188,6 +205,25 @@ var Module =
         {
             document.getElementById("status").innerHTML = ""
         }
+        // set mapconfig
+        {
+            if (typeof queryString['mapconfig'] === "string")
+                setMapconfigCpp(queryString['mapconfig'])
+            else
+                setMapconfigCpp("https://cdn.melown.com/mario/store/melown2015/map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json")
+        }
+    },
+    onMapconfigAvailable: function()
+    {
+        if (typeof queryString['position'] === "string")
+        {
+            setPositionCpp(queryString['position'], 0)
+            delete queryString['position']
+        }
+    },
+    onMapconfigReady: function()
+    {
+        // nothing for now
     }
 }
 

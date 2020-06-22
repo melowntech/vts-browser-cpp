@@ -116,15 +116,23 @@ void setViewPresetImpl(const char *preset)
     map->setViewCurrent(preset);
 }
 
-void setPositionImpl(const char *pos)
+void setPositionImpl(const char *pos, int flyOver)
 {
     FreeAtExit freeAtExit{pos};
     if (!nav || !map->getMapconfigAvailable())
         return;
+    {
+        std::stringstream ss;
+        ss << "Set position: " << pos << ", flyover: " << flyOver;
+        vts::log(vts::LogLevel::info2, ss.str());
+    }
     try
     {
         vts::Position p(pos);
-        nav->options().type = vts::NavigationType::FlyOver;
+        if (flyOver)
+            nav->options().type = vts::NavigationType::FlyOver;
+        else
+            nav->options().type = vts::NavigationType::Instant;
         nav->setPosition(p);
     }
     catch (...)
@@ -180,10 +188,10 @@ extern "C" EMSCRIPTEN_KEEPALIVE void setViewPreset(const char *preset)
         &setViewPresetImpl, nullptr, copyString(preset));
 }
 
-extern "C" EMSCRIPTEN_KEEPALIVE void setPosition(const char *pos)
+extern "C" EMSCRIPTEN_KEEPALIVE void setPosition(const char *pos, int flyOver)
 {
-    emscripten_dispatch_to_thread_async(main_thread_id, EM_FUNC_SIG_VI,
-        &setPositionImpl, nullptr, copyString(pos));
+    emscripten_dispatch_to_thread_async(main_thread_id, EM_FUNC_SIG_VII,
+        &setPositionImpl, nullptr, copyString(pos), flyOver);
 }
 
 extern "C" EMSCRIPTEN_KEEPALIVE void search(const char *query)
@@ -215,7 +223,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void applyOptions(const char *json)
         return;
     {
         std::stringstream ss;
-        ss << "Changing options: " << json;
+        ss << "Apply options: " << json;
         vts::log(vts::LogLevel::info2, ss.str());
     }
     map->options().applyJson(json);

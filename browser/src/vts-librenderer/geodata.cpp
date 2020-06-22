@@ -445,15 +445,15 @@ void RenderViewImpl::renderGeodata()
     bindUboCamera();
     generateJobs();
     sortJobsByZIndexAndImportance();
-    if (options.renderGeodataDebug == 1)
+    if (options.debugGeodataMode == 1)
         renderJobsDebugImportance();
     filterJobsByResolvingCollisions();
     processJobsHysteresis();
     sortJobsByZIndexAndDepth();
     renderJobs();
-    if (options.renderGeodataDebug == 2)
+    if (options.debugGeodataMode == 2)
         renderJobsDebugRects();
-    if (options.renderGeodataDebug == 3)
+    if (options.debugGeodataMode == 3)
         renderJobsDebugGlyphs();
     geodataJobs.clear();
 

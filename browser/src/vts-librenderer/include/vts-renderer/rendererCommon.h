@@ -49,7 +49,7 @@ typedef struct vtsCContextOptionsBase
 // options provided from the application (you set these)
 typedef struct vtsCRenderOptionsBase
 {
-    // additional scaling of text rendering
+    // additional scaling of geodata text rendering
     float textScale;
 
     // render resolution in pixels
@@ -62,16 +62,17 @@ typedef struct vtsCRenderOptionsBase
     uint32 targetFrameBuffer;
     uint32 targetViewportX;
     uint32 targetViewportY;
-    uint32 targetViewportW; // zero will use the default width
-    uint32 targetViewportH; // zero will use the default height
+    uint32 targetViewportW; // zero will use the render width
+    uint32 targetViewportH; // zero will use the render height
 
     // other options
     uint32 antialiasingSamples; // two or more to enable multisampling
-    uint32 renderGeodataDebug; // 0 = disabled
+    uint32 debugGeodataMode; // 0 = disabled
     bool renderAtmosphere;
-    bool renderPolygonEdges;
-    bool flatShading;
     bool geodataHysteresis;
+    bool colorRenderWithAlpha;
+    bool debugFlatShading;
+    bool debugWireframe;
     bool debugDepthFeedback;
 
     // where to copy the result (and resolve multisampling)

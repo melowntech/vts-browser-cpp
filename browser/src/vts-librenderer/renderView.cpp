@@ -113,10 +113,11 @@ RenderViewImpl::RenderViewImpl(
     elapsedTime(0),
     width(0),
     height(0),
-    antialiasingPrev(0),
+    antialiasingSamplesPrev(0),
     frameIndex(0),
     projected(false),
-    lodBlendingWithDithering(false)
+    lodBlendingWithDithering(false),
+    colorRenderWithAlphaPrev(false)
 {
     depthBuffer.meshQuad = context->meshQuad;
     depthBuffer.shaderCopyDepth = context->shaderCopyDepth;
@@ -161,7 +162,7 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t, bool wireframeSlow)
         flags |= 1 << 0;
     if (tex->getGrayscale())
         flags |= 1 << 1;
-    if (options.flatShading)
+    if (options.debugFlatShading)
         flags |= 1 << 2;
     if (t.externalUv)
         flags |= 1 << 3;
@@ -236,16 +237,18 @@ void RenderViewImpl::updateFramebuffers()
     OPTICK_EVENT();
 
     if (options.width != width || options.height != height
-        || options.antialiasingSamples != antialiasingPrev)
+        || options.antialiasingSamples != antialiasingSamplesPrev
+        || options.colorRenderWithAlpha != colorRenderWithAlphaPrev)
     {
         width = options.width;
         height = options.height;
-        antialiasingPrev = std::max(std::min(options.antialiasingSamples,
+        antialiasingSamplesPrev = std::max(std::min(options.antialiasingSamples,
             maxAntialiasingSamples), 1u);
+        colorRenderWithAlphaPrev = options.colorRenderWithAlpha;
 
         vars.textureTargetType
-            = antialiasingPrev > 1 ? GL_TEXTURE_2D_MULTISAMPLE
-            : GL_TEXTURE_2D;
+            = antialiasingSamplesPrev > 1
+                ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
 
 #ifdef __EMSCRIPTEN__
         static const bool forceSeparateSampleTextures = true;
@@ -272,10 +275,10 @@ void RenderViewImpl::updateFramebuffers()
             glObjectLabel(GL_TEXTURE, vars.depthRenderTexId,
                 -1, "depthRenderTexId");
         }
-        if (antialiasingPrev > 1)
+        if (antialiasingSamplesPrev > 1)
         {
             glTexImage2DMultisample(vars.textureTargetType,
-                antialiasingPrev, GL_DEPTH24_STENCIL8,
+                antialiasingSamplesPrev, GL_DEPTH24_STENCIL8,
                 options.width, options.height, GL_TRUE);
         }
         else
@@ -292,7 +295,7 @@ void RenderViewImpl::updateFramebuffers()
 
         // depth texture for sampling
         glActiveTexture(GL_TEXTURE0 + 6);
-        if (antialiasingPrev > 1 || forceSeparateSampleTextures)
+        if (antialiasingSamplesPrev > 1 || forceSeparateSampleTextures)
         {
             glGenTextures(1, &vars.depthReadTexId);
             glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
@@ -317,6 +320,10 @@ void RenderViewImpl::updateFramebuffers()
         CHECK_GL("update depth texture for sampling");
 
         // color texture for rendering
+        const auto colorInternalFormat
+                = colorRenderWithAlphaPrev ? GL_RGBA8 : GL_RGB8;
+        const auto colorTransferFormat
+                = colorRenderWithAlphaPrev ? GL_RGBA : GL_RGB;
         glActiveTexture(GL_TEXTURE0 + 7);
         glGenTextures(1, &vars.colorRenderTexId);
         glBindTexture(vars.textureTargetType, vars.colorRenderTexId);
@@ -325,17 +332,17 @@ void RenderViewImpl::updateFramebuffers()
             glObjectLabel(GL_TEXTURE, vars.colorRenderTexId,
                 -1, "colorRenderTexId");
         }
-        if (antialiasingPrev > 1)
+        if (antialiasingSamplesPrev > 1)
         {
             glTexImage2DMultisample(
-                vars.textureTargetType, antialiasingPrev, GL_RGB8,
-                options.width, options.height, GL_TRUE);
+                vars.textureTargetType, antialiasingSamplesPrev,
+                colorInternalFormat, options.width, options.height, GL_TRUE);
         }
         else
         {
-            glTexImage2D(vars.textureTargetType, 0, GL_RGB8,
+            glTexImage2D(vars.textureTargetType, 0, colorInternalFormat,
                 options.width, options.height,
-                0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+                0, colorTransferFormat, GL_UNSIGNED_BYTE, nullptr);
             glTexParameteri(vars.textureTargetType,
                 GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(vars.textureTargetType,
@@ -345,7 +352,7 @@ void RenderViewImpl::updateFramebuffers()
 
         // color texture for sampling
         glActiveTexture(GL_TEXTURE0 + 8);
-        if (antialiasingPrev > 1 || forceSeparateSampleTextures)
+        if (antialiasingSamplesPrev > 1 || forceSeparateSampleTextures)
         {
             glGenTextures(1, &vars.colorReadTexId);
             glBindTexture(GL_TEXTURE_2D, vars.colorReadTexId);
@@ -354,9 +361,9 @@ void RenderViewImpl::updateFramebuffers()
                 glObjectLabel(GL_TEXTURE, vars.colorReadTexId,
                     -1, "colorReadTexId");
             }
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8,
+            glTexImage2D(GL_TEXTURE_2D, 0, colorInternalFormat,
                 options.width, options.height,
-                0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+                0, colorTransferFormat, GL_UNSIGNED_BYTE, nullptr);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
                 GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
@@ -404,9 +411,41 @@ void RenderViewImpl::updateFramebuffers()
     }
 }
 
-void RenderViewImpl::renderValid()
+void RenderViewImpl::entryInitialize()
 {
+    assert(context->shaderSurface);
     OPTICK_EVENT();
+
+    uboCacheLarge.frame();
+    uboCacheSmall.frame();
+    clearGlState();
+    frameIndex++;
+
+    if (options.width <= 0 || options.height <= 0)
+    {
+        view = proj = mat4(scaleMatrix(0));
+        return;
+    }
+
+    view = rawToMat4(draws->camera.view);
+    proj = rawToMat4(draws->camera.proj);
+
+    updateFramebuffers();
+
+    // initialize opengl
+    glViewport(0, 0, options.width, options.height);
+    glScissor(0, 0, options.width, options.height);
+    glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
+    CHECK_GL_FRAMEBUFFER(GL_FRAMEBUFFER);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_CULL_FACE);
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
+        | GL_STENCIL_BUFFER_BIT);
+    CHECK_GL("initialized opengl state");
+
+    if (proj(0, 0) == 0)
+        return;
 
     viewInv = view.inverse();
     projInv = proj.inverse();
@@ -415,6 +454,13 @@ void RenderViewImpl::renderValid()
 
     // update atmosphere
     updateAtmosphereBuffer();
+}
+
+void RenderViewImpl::entrySurfaces()
+{
+    if (proj(0, 0) == 0)
+        return;
+    OPTICK_EVENT();
 
     // render opaque
     if (!draws->opaque.empty())
@@ -432,7 +478,9 @@ void RenderViewImpl::renderValid()
     }
 
     // render background (atmosphere)
-    if (options.renderAtmosphere)
+    if (options.renderAtmosphere
+        && !projected
+        && atmosphereDensityTexture)
     {
         OPTICK_EVENT("background");
         // corner directions
@@ -477,7 +525,7 @@ void RenderViewImpl::renderValid()
     }
 
     // render polygon edges
-    if (options.renderPolygonEdges)
+    if (options.debugWireframe)
     {
         OPTICK_EVENT("polygon_edges");
         glDisable(GL_BLEND);
@@ -546,6 +594,16 @@ void RenderViewImpl::renderValid()
         glEnable(GL_DEPTH_TEST);
         CHECK_GL("copy depth");
     }
+}
+
+void RenderViewImpl::entryGeodata()
+{
+    if (proj(0, 0) == 0)
+    {
+        hysteresisJobs.clear();
+        return;
+    }
+    OPTICK_EVENT();
 
     // render geodata
     renderGeodata();
@@ -563,40 +621,11 @@ void RenderViewImpl::renderValid()
     }
 }
 
-void RenderViewImpl::renderEntry()
+void RenderViewImpl::entryFinalize()
 {
-    CHECK_GL("pre-frame check");
-    uboCacheLarge.frame();
-    uboCacheSmall.frame();
-    clearGlState();
-    frameIndex++;
-
-    assert(context->shaderSurface);
-    view = rawToMat4(draws->camera.view);
-    proj = rawToMat4(draws->camera.proj);
-
     if (options.width <= 0 || options.height <= 0)
         return;
-
-    updateFramebuffers();
-
-    // initialize opengl
-    glViewport(0, 0, options.width, options.height);
-    glScissor(0, 0, options.width, options.height);
-    glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
-    CHECK_GL_FRAMEBUFFER(GL_FRAMEBUFFER);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_CULL_FACE);
-    glClearColor(0, 0, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
-        | GL_STENCIL_BUFFER_BIT);
-    CHECK_GL("initialized opengl state");
-
-    // render
-    if (proj(0, 0) != 0)
-        renderValid();
-    else
-        hysteresisJobs.clear();
+    OPTICK_EVENT();
 
     // copy the color to output texture
     if (options.colorToTexture
@@ -636,8 +665,6 @@ void RenderViewImpl::renderEntry()
 
     // clear the state
     clearGlState();
-
-    checkGlImpl("frame end (unconditional check)");
 }
 
 void RenderViewImpl::updateAtmosphereBuffer()

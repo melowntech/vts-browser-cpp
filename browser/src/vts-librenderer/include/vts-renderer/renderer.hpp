@@ -76,8 +76,13 @@ public:
     Camera *camera();
     RenderOptions &options();
     const RenderVariables &variables() const;
-    void render();
-    void render(RenderDraws *draws);
+
+    void render(RenderDraws *draws = nullptr);
+
+    void renderInitialize(RenderDraws *draws = nullptr);
+    void renderSurfaces();
+    void renderGeodata();
+    void renderFinalize();
 
     // reconstruct world position for mouse picking
     // uses data from last call to render

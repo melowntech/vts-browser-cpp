@@ -871,12 +871,12 @@ public:
                     n.debugRenderCameraObstructionSurrogates);
 
                 // flat shading
-                r.flatShading = nk_check_label(&ctx,
-                    "Flat shading", r.flatShading);
+                r.debugFlatShading = nk_check_label(&ctx,
+                    "Flat shading", r.debugFlatShading);
 
                 // polygon edges
-                r.renderPolygonEdges = nk_check_label(&ctx,
-                    "Edges", r.renderPolygonEdges);
+                r.debugWireframe = nk_check_label(&ctx,
+                    "Wireframe", r.debugWireframe);
 
                 // render compas
                 nk_checkbox_label(&ctx,
@@ -971,7 +971,7 @@ public:
 
                     nk_label(&ctx, "Geodata:", NK_TEXT_LEFT);
                     if (nk_combo_begin_label(&ctx,
-                        geodataDebugNames[(int)r.renderGeodataDebug],
+                        geodataDebugNames[(int)r.debugGeodataMode],
                         nk_vec2(nk_widget_width(&ctx), 200)))
                     {
                         nk_layout_row_dynamic(&ctx, 16, 1);
@@ -980,7 +980,7 @@ public:
                         {
                             if (nk_combo_item_label(&ctx,
                                 geodataDebugNames[i], NK_TEXT_LEFT))
-                                r.renderGeodataDebug = i;
+                                r.debugGeodataMode = i;
                         }
                         nk_combo_end(&ctx);
                     }

@@ -167,10 +167,11 @@ public:
     double elapsedTime;
     uint32 width;
     uint32 height;
-    uint32 antialiasingPrev;
+    uint32 antialiasingSamplesPrev;
     uint32 frameIndex;
     bool projected;
     bool lodBlendingWithDithering;
+    bool colorRenderWithAlphaPrev;
 
     RenderViewImpl(Camera *camera, RenderView *api,
         RenderContextImpl *context);
@@ -188,8 +189,11 @@ public:
     void getWorldPosition(const double screenPos[2], double worldPos[3]);
     void renderCompass(const double screenPosSize[3],
         const double mapRotation[3]);
-    void renderValid();
-    void renderEntry();
+
+    void entryInitialize();
+    void entrySurfaces();
+    void entryGeodata();
+    void entryFinalize();
 
     bool collides(const GeodataJob &a, const GeodataJob &b);
     bool geodataTestVisibility(

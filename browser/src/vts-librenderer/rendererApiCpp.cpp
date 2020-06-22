@@ -146,36 +146,60 @@ const RenderVariables &RenderView::variables() const
     return impl->vars;
 }
 
-void RenderView::render()
-{
-    OPTICK_EVENT();
-    impl->draws = &impl->camera->draws();
-    impl->body = &impl->camera->map()->celestialBody();
-    impl->projected = impl->camera->map()->getMapProjected();
-    impl->lodBlendingWithDithering
-        = !impl->camera->options().lodBlendingTransparent;
-    impl->atmosphereDensityTexture
-        = (Texture*)impl->camera->map()->atmosphereDensityTexture().get();
-    impl->elapsedTime = impl->camera->map()->lastRenderUpdateElapsedTime();
-    impl->renderEntry();
-    impl->draws = nullptr;
-    impl->body = nullptr;
-    impl->atmosphereDensityTexture = nullptr;
-}
-
 void RenderView::render(RenderDraws *draws)
 {
     OPTICK_EVENT();
-    assert(impl->camera->map() == draws->map);
-    impl->draws = &draws->draws;
-    impl->body = &draws->body;
-    impl->projected = draws->projected;
-    impl->lodBlendingWithDithering
-            = draws->lodBlendingWithDithering;
-    impl->atmosphereDensityTexture
-            = draws->atmosphereDensityTexture.get();
-    impl->elapsedTime = draws->elapsedTime;
-    impl->renderEntry();
+    CHECK_GL("pre-frame check");
+    renderInitialize(draws);
+    renderSurfaces();
+    renderGeodata();
+    renderFinalize();
+    checkGlImpl("post-frame check (unconditional check)");
+}
+
+void RenderView::renderInitialize(RenderDraws *draws)
+{
+    if (draws)
+    {
+        assert(impl->camera->map() == draws->map);
+        impl->draws = &draws->draws;
+        impl->body = &draws->body;
+        impl->projected = draws->projected;
+        impl->lodBlendingWithDithering
+                = draws->lodBlendingWithDithering;
+        impl->atmosphereDensityTexture
+                = draws->atmosphereDensityTexture.get();
+        impl->elapsedTime = draws->elapsedTime;
+    }
+    else
+    {
+        impl->draws = &impl->camera->draws();
+        impl->body = &impl->camera->map()->celestialBody();
+        impl->projected = impl->camera->map()->getMapProjected();
+        impl->lodBlendingWithDithering
+            = !impl->camera->options().lodBlendingTransparent;
+        impl->atmosphereDensityTexture
+            = (Texture*)impl->camera->map()->atmosphereDensityTexture().get();
+        impl->elapsedTime = impl->camera->map()->lastRenderUpdateElapsedTime();
+    }
+
+    impl->entryInitialize();
+}
+
+void RenderView::renderSurfaces()
+{
+    impl->entrySurfaces();
+}
+
+void RenderView::renderGeodata()
+{
+    impl->entryGeodata();
+}
+
+void RenderView::renderFinalize()
+{
+    impl->entryFinalize();
+
     impl->draws = nullptr;
     impl->body = nullptr;
     impl->atmosphereDensityTexture = nullptr;

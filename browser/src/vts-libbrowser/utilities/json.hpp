@@ -27,14 +27,16 @@
 #ifndef JSON_HPP_sgf56489dh4d69
 #define JSON_HPP_sgf56489dh4d69
 
+#include "vts-libbrowser/include/vts-browser/foundationCommon.h" // VTS_API
 #include <json/json.h>
 #include <sstream>
 
 namespace vts
 {
 
-Json::Value stringToJson(const std::string &s);
-std::string jsonToString(const Json::Value &value);
+// make these functions accessible from vts renderer
+VTS_API Json::Value stringToJson(const std::string &s);
+VTS_API std::string jsonToString(const Json::Value &value);
 
 // json to enum
 template<class T>

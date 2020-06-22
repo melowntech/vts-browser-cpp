@@ -28,6 +28,7 @@
 #include <vts-browser/mapCallbacks.hpp>
 #include <vts-browser/camera.hpp>
 #include <vts-browser/cameraOptions.hpp>
+#include "vts-libbrowser/utilities/json.hpp"
 
 #include <optick.h>
 
@@ -45,6 +46,25 @@ ContextOptions::ContextOptions()
 #endif // !__EMSCRIPTEN__
 }
 
+ContextOptions::ContextOptions(const std::string &json)
+    : ContextOptions()
+{
+    applyJson(json);
+}
+
+void ContextOptions::applyJson(const std::string &json)
+{
+    Json::Value v = stringToJson(json);
+    AJ(callGlFinishAfterUploadingData, asBool);
+}
+
+std::string ContextOptions::toJson() const
+{
+    Json::Value v;
+    TJ(callGlFinishAfterUploadingData, asBool);
+    return jsonToString(v);
+}
+
 RenderOptions::RenderOptions()
 {
     memset(this, 0, sizeof(*this));
@@ -58,6 +78,41 @@ RenderOptions::RenderOptions()
     geodataHysteresis = true;
     debugDepthFeedback = true;
     colorToTargetFrameBuffer = true;
+}
+
+RenderOptions::RenderOptions(const std::string &json)
+    : RenderOptions()
+{
+    applyJson(json);
+}
+
+void RenderOptions::applyJson(const std::string &json)
+{
+    Json::Value v = stringToJson(json);
+    AJ(textScale, asFloat);
+    AJ(antialiasingSamples, asUInt);
+    AJ(debugGeodataMode, asUInt);
+    AJ(renderAtmosphere, asBool);
+    AJ(geodataHysteresis, asBool);
+    AJ(colorRenderWithAlpha, asBool);
+    AJ(debugFlatShading, asBool);
+    AJ(debugWireframe, asBool);
+    AJ(debugDepthFeedback, asBool);
+}
+
+std::string RenderOptions::toJson() const
+{
+    Json::Value v;
+    TJ(textScale, asFloat);
+    TJ(antialiasingSamples, asUInt);
+    TJ(debugGeodataMode, asUInt);
+    TJ(renderAtmosphere, asBool);
+    TJ(geodataHysteresis, asBool);
+    TJ(colorRenderWithAlpha, asBool);
+    TJ(debugFlatShading, asBool);
+    TJ(debugWireframe, asBool);
+    TJ(debugDepthFeedback, asBool);
+    return jsonToString(v);
 }
 
 RenderVariables::RenderVariables()

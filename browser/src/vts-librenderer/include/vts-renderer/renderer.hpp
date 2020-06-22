@@ -56,11 +56,17 @@ class RenderDraws;
 struct VTSR_API ContextOptions : public vtsCContextOptionsBase
 {
     ContextOptions();
+    explicit ContextOptions(const std::string &json);
+    void applyJson(const std::string &json);
+    std::string toJson() const;
 };
 
 struct VTSR_API RenderOptions : public vtsCRenderOptionsBase
 {
     RenderOptions();
+    explicit RenderOptions(const std::string &json);
+    void applyJson(const std::string &json);
+    std::string toJson() const;
 };
 
 struct VTSR_API RenderVariables : public vtsCRenderVariablesBase

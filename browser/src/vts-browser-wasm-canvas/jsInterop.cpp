@@ -30,10 +30,6 @@
 #include <vts-browser/cameraOptions.hpp>
 #include <vts-browser/navigationOptions.hpp>
 
-// this is internal header from the VTS browser implementation
-//   and should not be used in other applications
-#include "vts-libbrowser/utilities/json.hpp"
-
 #include <cstdlib> // std::malloc
 #include <cstring> // std::strcpy
 
@@ -211,57 +207,6 @@ extern "C" EMSCRIPTEN_KEEPALIVE void gotoPosition(
 // options are not proxied to the main/renderer threads
 //   they are mostly safe to modify from any thread
 
-namespace
-{
-
-using namespace vts;
-
-void applyRenderOptions(const std::string &json, renderer::RenderOptions &opt)
-{
-    struct T : public vtsCRenderOptionsBase
-    {
-        void apply(const std::string &json)
-        {
-            Json::Value v = stringToJson(json);
-            AJ(textScale, asFloat);
-            AJ(antialiasingSamples, asUInt);
-            AJ(renderGeodataDebug, asUInt);
-            AJ(renderAtmosphere, asBool);
-            AJ(renderPolygonEdges, asBool);
-            AJ(flatShading, asBool);
-            AJ(geodataHysteresis, asBool);
-            AJ(debugDepthFeedback, asBool);
-        }
-    };
-    T t = (T&)opt;
-    t.apply(json);
-    opt = (renderer::RenderOptions&)t;
-}
-
-std::string getRenderOptions(const renderer::RenderOptions &opt)
-{
-    struct T : public vtsCRenderOptionsBase
-    {
-        std::string get() const
-        {
-            Json::Value v;
-            TJ(textScale, asFloat);
-            TJ(antialiasingSamples, asUInt);
-            TJ(renderGeodataDebug, asUInt);
-            TJ(renderAtmosphere, asBool);
-            TJ(renderPolygonEdges, asBool);
-            TJ(flatShading, asBool);
-            TJ(geodataHysteresis, asBool);
-            TJ(debugDepthFeedback, asBool);
-            return jsonToString(v);
-        }
-    };
-    const T t = (const T&)opt;
-    return t.get();
-}
-
-} // namespace
-
 extern std::shared_ptr<vts::renderer::RenderView> view; // only for the options
 
 extern "C" EMSCRIPTEN_KEEPALIVE void applyOptions(const char *json)
@@ -276,7 +221,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void applyOptions(const char *json)
     map->options().applyJson(json);
     cam->options().applyJson(json);
     nav->options().applyJson(json);
-    applyRenderOptions(json, view->options());
+    view->options().applyJson(json);
 }
 
 extern "C" EMSCRIPTEN_KEEPALIVE const char *getOptions()
@@ -289,7 +234,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE const char *getOptions()
     result += map->options().toJson();
     result += cam->options().toJson();
     result += nav->options().toJson();
-    result += getRenderOptions(view->options());
+    result += view->options().toJson();
     return result.c_str();
 }
 

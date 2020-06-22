@@ -9,7 +9,8 @@ include_directories(externals/utility)
 buildsys_fix_symlinks(${CMAKE_CURRENT_SOURCE_DIR}/externals)
 add_subdirectory(externals/sheenbidi)
 
-define_module(LIBRARY vts-renderer DEPENDS vts-browser utility glad FREETYPE HarfBuzz SheenBidi utf8cpp)
+define_module(LIBRARY vts-renderer DEPENDS
+    vts-browser utility glad FREETYPE HarfBuzz SheenBidi utf8cpp jsoncpp)
 
 set(PUB_HDR_LIST
     include/vts-renderer/foundationCommon.h

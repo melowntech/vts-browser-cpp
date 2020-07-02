@@ -1,5 +1,5 @@
 # bootstrap build system
-cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 project(vts-browser)
 include(cmake/buildsys_initial_validation.cmake)
 include(cmake/buildsys_xcode_codesign.cmake)

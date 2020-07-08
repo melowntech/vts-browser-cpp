@@ -29,6 +29,7 @@
 #include "../renderTasks.hpp"
 #include "../map.hpp"
 #include "../gpuResource.hpp"
+#include "../resources.hpp"
 #include "../utilities/json.hpp"
 
 #include <dbglog/dbglog.hpp>
@@ -241,7 +242,7 @@ GeodataTile::~GeodataTile()
     {
         if (it.userData)
         {
-            map->resources.queUpload.push(
+            map->resources->queUpload.push(
                 UploadData(it.userData, 0));
         }
     }
@@ -275,7 +276,7 @@ void GeodataTile::update(
             aabbPhys[1] = ab[1];
             tileId = tid;
             state = Resource::State::downloaded;
-            map->resources.queGeodata.push(
+            map->resources->queGeodata.push(
                 std::dynamic_pointer_cast<GeodataTile>(shared_from_this()));
             return;
         }

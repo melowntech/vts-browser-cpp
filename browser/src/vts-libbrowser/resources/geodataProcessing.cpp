@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "../include/vts-browser/exceptions.hpp"
 #include "../include/vts-browser/log.hpp"
+#include "../include/vts-browser/exceptions.hpp"
 
 #include "../utilities/json.hpp"
 #include "../utilities/case.hpp"
@@ -33,6 +33,7 @@
 #include "../geodata.hpp"
 #include "../renderTasks.hpp"
 #include "../mapConfig.hpp"
+#include "../resources.hpp"
 #include "../map.hpp"
 
 #include <optick.h>
@@ -2390,14 +2391,14 @@ void GeodataTile::upload()
     }
 }
 
-void MapImpl::resourcesGeodataProcessorEntry()
+void Resources::resourcesGeodataProcessorEntry()
 {
     OPTICK_THREAD("geodata");
     setLogThreadName("geodata");
-    while (!resources.queGeodata.stopped())
+    while (!queGeodata.stopped())
     {
         std::weak_ptr<GeodataTile> w;
-        resources.queGeodata.waitPop(w);
+        queGeodata.waitPop(w);
         std::shared_ptr<GeodataTile> r = w.lock();
         if (!r)
             continue;
@@ -2405,11 +2406,11 @@ void MapImpl::resourcesGeodataProcessorEntry()
         {
             r->decode();
             r->state = Resource::State::decoded;
-            resources.queUpload.push(UploadData(r));
+            queUpload.push(UploadData(r));
         }
         catch (const std::exception &)
         {
-            statistics.resourcesFailed++;
+            map->statistics.resourcesFailed++;
             r->state = Resource::State::errorFatal;
         }
     }

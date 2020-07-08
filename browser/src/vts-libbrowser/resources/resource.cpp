@@ -24,6 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../resources.hpp"
 #include "../resource.hpp"
 #include "../fetchTask.hpp"
 #include "../map.hpp"
@@ -77,7 +78,7 @@ Resource::~Resource()
     if (info.userData)
     {
         //assert(!map->resources.queUpload.stopped());
-        map->resources.queUpload.push(
+        map->resources->queUpload.push(
             UploadData(info.userData, 0));
     }
 }
@@ -121,7 +122,7 @@ void Resource::updateAvailability(const std::shared_ptr<void> &availTest)
     else
     {
         f = std::make_shared<FetchTaskImpl>(
-            map->resources.resources[name]);
+            map->resources->resources[name]);
         f->availTest = availTest;
         fetch = f;
     }

@@ -37,6 +37,7 @@
 #include "../authConfig.hpp"
 #include "../credits.hpp"
 #include "../coordsManip.hpp"
+#include "../resources.hpp"
 #include "../map.hpp"
 
 #include <optick.h>
@@ -49,33 +50,13 @@ MapImpl::MapImpl(Map *map, const MapCreateOptions &options,
     map(map), createOptions(options)
 {
     assert(fetcher);
-    resources.fetcher = fetcher;
-    resources.thrFetcher
-        = std::thread(&MapImpl::resourcesDownloadsEntry, this);
-    resources.thrCacheReader
-        = std::thread(&MapImpl::cacheReadEntry, this);
-    resources.thrCacheWriter
-        = std::thread(&MapImpl::cacheWriteEntry, this);
-    resources.thrDecoder
-        = std::thread(&MapImpl::resourcesDecodeProcessorEntry, this);
-    resources.thrGeodataProcessor
-        = std::thread(&MapImpl::resourcesGeodataProcessorEntry, this);
-    resources.thrAtmosphereGenerator
-        = std::thread(&MapImpl::resourcesAtmosphereGeneratorEntry, this);
-    cacheInit();
+    this->fetcher = fetcher;
+    resources = std::make_shared<Resources>(this);
     credits = std::make_shared<Credits>();
 }
 
 MapImpl::~MapImpl()
-{
-    resourcesTerminateAllQueues();
-    resources.thrFetcher.join();
-    resources.thrCacheReader.join();
-    resources.thrCacheWriter.join();
-    resources.thrDecoder.join();
-    resources.thrAtmosphereGenerator.join();
-    resources.thrGeodataProcessor.join();
-}
+{}
 
 void MapImpl::renderUpdate(double elapsedTime)
 {
@@ -86,7 +67,7 @@ void MapImpl::renderUpdate(double elapsedTime)
     if (!prerequisitesCheck())
         return;
 
-    assert(!resources.auth || *resources.auth);
+    assert(!auth || *auth);
     assert(mapconfig && *mapconfig);
     assert(convertor);
     assert(!layers.empty());
@@ -126,16 +107,16 @@ void MapImpl::purgeMapconfig()
     OPTICK_EVENT();
     LOG(info2) << "Purge mapconfig";
 
-    if (resources.auth)
-        resources.auth->forceRedownload();
-    resources.auth.reset();
+    if (auth)
+        auth->forceRedownload();
+    auth.reset();
     if (mapconfig)
         mapconfig->forceRedownload();
     mapconfig.reset();
     mapconfigAvailable = false;
 
     credits->purge();
-    resources.searchTasks.clear();
+    searchTasks.clear();
     convertor.reset();
     body = MapCelestialBody();
     purgeViewCache();
@@ -192,7 +173,7 @@ void MapImpl::setMapconfigPath(const std::string &mapconfigPath,
         << (!authPath.empty() ? "using" : "without")
         << " authentication";
     this->mapconfigPath = mapconfigPath;
-    resources.authPath = authPath;
+    this->authPath = authPath;
     purgeMapconfig();
 }
 
@@ -200,8 +181,8 @@ bool MapImpl::prerequisitesCheck()
 {
     OPTICK_EVENT();
 
-    if (resources.auth)
-        resources.auth->checkTime();
+    if (auth)
+        auth->checkTime();
 
     if (mapconfigReady)
         return true;
@@ -209,10 +190,10 @@ bool MapImpl::prerequisitesCheck()
     if (mapconfigPath.empty())
         return false;
 
-    if (!resources.authPath.empty())
+    if (!authPath.empty())
     {
-        resources.auth = getAuthConfig(resources.authPath);
-        if (!testAndThrow(resources.auth->state, "Authentication failure."))
+        auth = getAuthConfig(authPath);
+        if (!testAndThrow(auth->state, "Authentication failure."))
             return false;
     }
 

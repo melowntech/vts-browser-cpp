@@ -35,6 +35,7 @@
 #include "../credits.hpp"
 #include "../geodata.hpp"
 #include "../position.hpp"
+#include "../resources.hpp"
 
 #include <vts-libs/registry/json.hpp>
 #include <vts-libs/registry/io.hpp>
@@ -156,7 +157,7 @@ std::string Map::getMapconfigPath() const
 
 void Map::purgeDiskCache()
 {
-    impl->cachePurge();
+    impl->resources->purgeResourcesCache();
 }
 
 void Map::purgeViewCache()
@@ -217,30 +218,29 @@ double Map::getMapRenderProgress() const
 
 void Map::dataUpdate()
 {
-    impl->resourcesDataUpdate();
+    impl->resources->resourcesDataUpdate();
 }
 
 void Map::dataAllRun()
 {
-    impl->resourcesUploadProcessorEntry();
-    dataFinalize();
+    impl->resources->resourcesDataAllRun();
 }
 
 void Map::dataFinalize()
 {
-    impl->resourcesDataFinalize();
+    impl->resources->resourcesDataFinalize();
 }
 
 void Map::renderUpdate(double elapsedTime)
 {
     impl->statistics.renderTicks = ++impl->renderTickIndex;
-    impl->resourcesRenderUpdate();
+    impl->resources->resourcesRenderUpdate();
     impl->renderUpdate(elapsedTime);
 }
 
 void Map::renderFinalize()
 {
-    impl->resourcesRenderFinalize();
+    impl->resources->resourcesRenderFinalize();
 }
 
 double Map::lastRenderUpdateElapsedTime() const

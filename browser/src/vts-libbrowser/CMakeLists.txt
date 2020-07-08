@@ -129,7 +129,7 @@ set(SRC_LIST
     resources/font.cpp
     resources/geodataProcessing.cpp
     resources/geodataResources.cpp
-    resources/manager.cpp
+    resources/map.cpp
     resources/mapConfig.cpp
     resources/mesh.cpp
     resources/metaTile.cpp
@@ -172,6 +172,7 @@ set(SRC_LIST
     renderInfos.hpp
     renderTasks.hpp
     resource.hpp
+    resources.hpp
     searchTask.hpp
     subtileMerger.hpp
     tilesetMapping.hpp

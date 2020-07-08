@@ -31,6 +31,7 @@
 #include "../gpuResource.hpp"
 #include "../fetchTask.hpp"
 #include "../map.hpp"
+#include "../resources.hpp"
 #include "../mapConfig.hpp"
 
 #include <dbglog/dbglog.hpp>
@@ -66,13 +67,13 @@ void generateAtmosphereTexture(
         res.size.width, res.size.height, res.components);
 
     // write to cache
-    tex->map->resources.queCacheWrite.push(tex->fetch.get());
+    tex->map->resources->queCacheWrite.push(tex->fetch.get());
 
     // mark the texture ready
     {
         tex->info.ramMemoryCost = tex->fetch->reply.content.size();
         tex->state = Resource::State::downloaded;
-        tex->map->resources.queDecode.push(tex);
+        tex->map->resources->queDecode.push(tex);
     }
 }
 
@@ -131,20 +132,20 @@ void GpuAtmosphereDensityTexture::decode()
     decodeData = std::static_pointer_cast<void>(spec);
 }
 
-void MapImpl::resourcesAtmosphereGeneratorEntry()
+void Resources::resourcesAtmosphereGeneratorEntry()
 {
     OPTICK_THREAD("atmosphereGenerator");
     setLogThreadName("atmosphere generator");
-    while (!resources.queAtmosphere.stopped())
+    while (!queAtmosphere.stopped())
     {
         std::weak_ptr<GpuAtmosphereDensityTexture> w;
-        resources.queAtmosphere.waitPop(w);
+        queAtmosphere.waitPop(w);
         std::shared_ptr<GpuAtmosphereDensityTexture> r = w.lock();
         if (!r)
             continue;
         try
         {
-            generateAtmosphereTexture(r, body);
+            generateAtmosphereTexture(r, map->body);
         }
         catch (const std::exception &)
         {
@@ -153,4 +154,4 @@ void MapImpl::resourcesAtmosphereGeneratorEntry()
     }
 }
 
-}
+} // namespace vts

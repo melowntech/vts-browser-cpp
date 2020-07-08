@@ -219,15 +219,15 @@ std::shared_ptr<SearchTask> MapImpl::search(const std::string &query,
     if (!t->impl->fetch)
         t->impl->fetch = std::make_shared<FetchTaskImpl>(t->impl);
     t->impl->fetch->query.headers["Accept-Language"] = "en-US,en";
-    resources.searchTasks.push_back(t);
+    searchTasks.push_back(t);
     return t;
 }
 
 void MapImpl::updateSearch()
 {
     OPTICK_EVENT();
-    auto it = resources.searchTasks.begin();
-    while (it != resources.searchTasks.end())
+    auto it = searchTasks.begin();
+    while (it != searchTasks.end())
     {
         std::shared_ptr<SearchTask> t = it->lock();
         if (t)
@@ -246,7 +246,7 @@ void MapImpl::updateSearch()
             }
             t->done = true;
         }
-        it = resources.searchTasks.erase(it);
+        it = searchTasks.erase(it);
     }
 }
 

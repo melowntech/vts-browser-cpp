@@ -27,12 +27,7 @@
 #ifndef MAP_HPP_cvukikljqwdf
 #define MAP_HPP_cvukikljqwdf
 
-#include <unordered_map>
-#include <queue>
 #include <vector>
-#include <atomic>
-#include <thread>
-#include <memory>
 
 #include <vts-libs/registry/referenceframe.hpp>
 
@@ -43,24 +38,27 @@
 #include "include/vts-browser/math.hpp"
 #include "include/vts-browser/buffer.hpp"
 
-#include "utilities/threadQueue.hpp"
 #include "validity.hpp"
-
-#include <boost/container/small_vector.hpp>
 
 namespace vts
 {
 
 class Map;
+class Resources;
+class Cache;
 class Fetcher;
+class AuthConfig;
 class Mapconfig;
 class CoordManip;
+class Credits;
 class MapLayer;
 class CameraImpl;
-class GpuAtmosphereDensityTexture;
-class AuthConfig;
 class SearchTask;
+class TraverseNode;
+
+class Resource;
 class GpuTexture;
+class GpuAtmosphereDensityTexture;
 class GpuMesh;
 class MetaTile;
 class MeshAggregate;
@@ -71,91 +69,36 @@ class SearchTaskImpl;
 class TilesetMapping;
 class GeodataFeatures;
 class GeodataStylesheet;
+class GeodataStylesheet;
 class GeodataTile;
-class Resource;
-class TraverseNode;
-class Credits;
-class FetchTaskImpl;
 class GpuFont;
-class Cache;
 
 using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
-
-class CacheData
-{
-public:
-    CacheData() = default;
-    CacheData(FetchTaskImpl *task, bool availFailed = false);
-
-    Buffer buffer;
-    std::string name;
-    sint64 expires = 0;
-    bool availFailed = false;
-};
-
-class UploadData
-{
-public:
-    UploadData();
-    explicit UploadData(const std::shared_ptr<Resource> &resource); // upload
-    explicit UploadData(std::shared_ptr<void> &userData, int); // destroy
-    UploadData(const UploadData &) = delete;
-    UploadData(UploadData &&) = default;
-    UploadData &operator = (const UploadData &) = delete;
-    UploadData &operator = (UploadData &&) = default;
-
-    void process();
-
-protected:
-    std::weak_ptr<Resource> uploadData;
-    std::shared_ptr<void> destroyData;
-};
 
 class MapImpl : private Immovable
 {
 public:
-    class Resources : private Immovable
-    {
-    public:
-        std::shared_ptr<Fetcher> fetcher;
-        std::shared_ptr<Cache> cache;
-        std::shared_ptr<AuthConfig> auth;
-        std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
-        std::list<std::weak_ptr<SearchTask>> searchTasks;
-        std::string authPath;
-        std::atomic<uint32> downloads{0}; // number of active downloads
-        std::condition_variable downloadsCondition;
-        uint32 progressEstimationMaxResources = 0;
-
-        ThreadQueue<std::weak_ptr<Resource>> queFetching;
-        ThreadQueue<std::weak_ptr<Resource>> queCacheRead;
-        ThreadQueue<CacheData> queCacheWrite;
-        ThreadQueue<std::weak_ptr<Resource>> queDecode;
-        ThreadQueue<std::weak_ptr<GeodataTile>> queGeodata;
-        ThreadQueue<std::weak_ptr<GpuAtmosphereDensityTexture>> queAtmosphere;
-        ThreadQueue<UploadData> queUpload;
-        std::thread thrFetcher;
-        std::thread thrCacheReader;
-        std::thread thrCacheWriter;
-        std::thread thrDecoder;
-        std::thread thrGeodataProcessor;
-        std::thread thrAtmosphereGenerator;
-    } resources;
-
     Map *const map = nullptr;
     const MapCreateOptions createOptions;
     MapCallbacks callbacks;
     MapStatistics statistics;
     MapRuntimeOptions options;
     MapCelestialBody body;
+    std::shared_ptr<Resources> resources;
+    std::shared_ptr<Cache> cache;
+    std::shared_ptr<Fetcher> fetcher;
+    std::shared_ptr<AuthConfig> auth;
     std::shared_ptr<Mapconfig> mapconfig;
     std::shared_ptr<CoordManip> convertor;
     std::shared_ptr<Credits> credits;
-    boost::container::small_vector<std::shared_ptr<MapLayer>, 4> layers;
-    boost::container::small_vector<std::weak_ptr<CameraImpl>, 1> cameras;
+    std::vector<std::shared_ptr<MapLayer>> layers;
+    std::vector<std::weak_ptr<CameraImpl>> cameras;
+    std::vector<std::weak_ptr<SearchTask>> searchTasks;
+    std::string authPath;
     std::string mapconfigPath;
     std::string mapconfigView;
     double lastElapsedFrameTime = 0;
+    uint32 progressEstimationMaxResources = 0;
     uint32 renderTickIndex = 0;
     bool mapconfigAvailable = false;
     bool mapconfigReady = false;
@@ -185,33 +128,6 @@ public:
     void traverseClearing(TraverseNode *trav);
 
     // resources methods
-    void resourcesDataFinalize();
-    void resourcesRenderFinalize();
-    void resourcesDataUpdate();
-    void resourcesRenderUpdate();
-
-    bool resourcesTryRemove(std::shared_ptr<Resource> &r);
-    void resourcesRemoveOld();
-    void resourcesCheckInitialized();
-    void resourcesStartDownloads();
-    void resourcesDownloadsEntry();
-    void resourcesUploadProcessorEntry();
-    void resourcesAtmosphereGeneratorEntry();
-    void resourcesGeodataProcessorEntry();
-    void resourcesDecodeProcessorEntry();
-    void resourceDecodeProcess(const std::shared_ptr<Resource> &r);
-    void resourceUploadProcess(const std::shared_ptr<Resource> &r);
-    void resourceSaveCorruptedFile(const std::shared_ptr<Resource> &r);
-    void resourcesTerminateAllQueues();
-
-    void cacheInit();
-    void cacheWriteEntry();
-    void cacheWrite(CacheData &&data);
-    void cacheReadEntry();
-    void cacheReadProcess(const std::shared_ptr<Resource> &r);
-    CacheData cacheRead(const std::string &name);
-    void cachePurge();
-
     void touchResource(const std::shared_ptr<Resource> &resource);
     Validity getResourceValidity(const std::string &name);
     Validity getResourceValidity(const std::shared_ptr<Resource> &resource);

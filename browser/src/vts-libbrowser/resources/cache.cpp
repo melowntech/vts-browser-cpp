@@ -25,6 +25,7 @@
  */
 
 #include "../include/vts-browser/mapOptions.hpp"
+#include "../resources.hpp"
 #include "../map.hpp"
 
 #include <boost/filesystem.hpp>
@@ -247,24 +248,24 @@ public:
     bool hashes;
 };
 
-void MapImpl::cacheInit()
+void Resources::cacheInit()
 {
-    resources.cache = std::make_shared<Cache>(createOptions);
+    map->cache = std::make_shared<Cache>(map->createOptions);
 }
 
-void MapImpl::cacheWrite(CacheData &&data)
+void Resources::cacheWrite(CacheData &&data)
 {
-    resources.cache->write(std::move(data));
+    map->cache->write(std::move(data));
 }
 
-CacheData MapImpl::cacheRead(const std::string &name)
+CacheData Resources::cacheRead(const std::string &name)
 {
-    return resources.cache->read(name);
+    return map->cache->read(name);
 }
 
-void MapImpl::cachePurge()
+void Resources::purgeResourcesCache()
 {
-    resources.cache->purge();
+    map->cache->purge();
 }
 
 std::string convertNameToPath(const std::string &pathParam, bool preserveSlashes)

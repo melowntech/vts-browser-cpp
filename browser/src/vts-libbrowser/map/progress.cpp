@@ -60,13 +60,13 @@ double MapImpl::getMapRenderProgress()
     uint32 active = getActive(this);
     if (active == 0)
     {
-        resources.progressEstimationMaxResources = 0;
+        progressEstimationMaxResources = 0;
         return 0;
     }
-    resources.progressEstimationMaxResources
-            = std::max(resources.progressEstimationMaxResources, active);
-    return double(resources.progressEstimationMaxResources - active)
-            / resources.progressEstimationMaxResources;
+    progressEstimationMaxResources
+            = std::max(progressEstimationMaxResources, active);
+    return double(progressEstimationMaxResources - active)
+            / progressEstimationMaxResources;
 }
 
 } // namespace vts

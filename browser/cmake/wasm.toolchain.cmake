@@ -28,6 +28,9 @@ message(STATUS "EMSCRIPTEN_ROOT: ${EMSCRIPTEN_ROOT}")
 
 # include emscripten toolchain
 include(${EMSCRIPTEN_ROOT}/cmake/Modules/Platform/Emscripten.cmake)
+if(NOT CMAKE_SYSTEM_NAME)
+    message(FATAL_ERROR "CMAKE_SYSTEM_NAME NOT SET IN THE EMSCRIPTEN TOOLCHAIN")
+endif()
 
 # configure compile and link flags
 # -s FETCH_DEBUG=1

@@ -3,7 +3,7 @@ message(STATUS "***************************")
 message(STATUS "*** Using IOS toolchain ***")
 message(STATUS "***************************")
 
-# standard settings
+set(CMAKE_SYSTEM_NAME iOS)
 set(CMAKE_CROSSCOMPILING TRUE)
 set(BUILDSYS_IOS TRUE)
 set(BUILDSYS_EMBEDDED TRUE)

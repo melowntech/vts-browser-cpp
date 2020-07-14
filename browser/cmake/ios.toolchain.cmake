@@ -3,7 +3,7 @@ message(STATUS "***************************")
 message(STATUS "*** Using IOS toolchain ***")
 message(STATUS "***************************")
 
-# standard settings
+set(CMAKE_SYSTEM_NAME iOS)
 set(CMAKE_CROSSCOMPILING TRUE)
 set(BUILDSYS_IOS TRUE)
 set(BUILDSYS_EMBEDDED TRUE)
@@ -35,9 +35,9 @@ execute_process(COMMAND xcrun -sdk ${IOS_PLATFORM} --show-sdk-path OUTPUT_VARIAB
 set(CMAKE_XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "10.0")
 set(CMAKE_XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2")
 
-set(common_flags "-fvisibility=hidden -fembed-bitcode")
+set(common_flags "-fembed-bitcode")
 set(CMAKE_C_FLAGS_INIT "${common_flags}")
-set(CMAKE_CXX_FLAGS_INIT "${common_flags} -fvisibility-inlines-hidden")
+set(CMAKE_CXX_FLAGS_INIT "${common_flags}")
 set(CMAKE_EXECUTABLE_RUNTIME_CXX_FLAG -Wl,-rpath,)
 set(CMAKE_EXECUTABLE_RUNTIME_C_FLAG -Wl,-rpath,)
 set(CMAKE_SHARED_LIBRARY_RUNTIME_CXX_FLAG -Wl,-rpath,)
@@ -64,8 +64,4 @@ set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 set(CMAKE_FIND_FRAMEWORK FIRST)
-
-# rpath options
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-
 

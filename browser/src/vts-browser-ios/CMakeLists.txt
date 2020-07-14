@@ -47,6 +47,7 @@ set_target_properties(vts-browser-ios PROPERTIES
     XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME AppIcon
     RESOURCE "${RES_LIST}"
     INSTALL_RPATH "@executable_path;@executable_path/Frameworks"
+    BUILD_WITH_INSTALL_RPATH TRUE
 )
 buildsys_binary(vts-browser-ios)
 buildsys_ide_groups(vts-browser-ios apps)

@@ -42,12 +42,11 @@ public:
     std::shared_ptr<GpuTexture> textureColor;
     std::shared_ptr<GpuTexture> textureMask;
     std::string boundLayerId;
-    mat4 model;
-    vec4f uvTrans;
-    vec4f color;
+    mat4 model = identityMatrix4();
+    vec4f uvTrans = vec4f(1, 1, 0, 0);
+    vec4f color = vec4f(1, 1, 1, 1);
     bool externalUv = false;
 
-    RenderSurfaceTask();
     bool ready() const;
 };
 
@@ -56,10 +55,9 @@ class RenderInfographicsTask
 public:
     std::shared_ptr<GpuMesh> mesh;
     std::shared_ptr<GpuTexture> textureColor;
-    mat4 model;
-    vec4f color;
+    mat4 model = identityMatrix4();
+    vec4f color = vec4f(1, 1, 1, 1);
 
-    RenderInfographicsTask();
     bool ready() const;
 };
 
@@ -67,9 +65,8 @@ class RenderColliderTask
 {
 public:
     std::shared_ptr<GpuMesh> mesh;
-    mat4 model;
+    mat4 model = identityMatrix4();
 
-    RenderColliderTask();
     bool ready() const;
 };
 

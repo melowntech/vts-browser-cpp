@@ -74,10 +74,6 @@ void CameraDraws::clear()
     colliders.clear();
 }
 
-RenderSurfaceTask::RenderSurfaceTask() : model(identityMatrix4()),
-    uvTrans(1, 1, 0, 0), color(1, 1, 1, 1)
-{}
-
 bool RenderSurfaceTask::ready() const
 {
     if (mesh && !*mesh)
@@ -89,10 +85,6 @@ bool RenderSurfaceTask::ready() const
     return true;
 }
 
-RenderInfographicsTask::RenderInfographicsTask() : model(identityMatrix4()),
-    color(1, 1, 1, 1)
-{}
-
 bool RenderInfographicsTask::ready() const
 {
     if (mesh && !*mesh)
@@ -101,9 +93,6 @@ bool RenderInfographicsTask::ready() const
         return false;
     return true;
 }
-
-RenderColliderTask::RenderColliderTask() : model(identityMatrix4())
-{}
 
 bool RenderColliderTask::ready() const
 {

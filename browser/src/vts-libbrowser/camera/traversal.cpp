@@ -173,7 +173,7 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
         return false;
 
     // find topmost nonempty surface
-    SurfaceInfo *topmost = nullptr;
+    const SurfaceInfo *topmost = nullptr;
     std::shared_ptr<MetaTile> chosen;
     bool childsAvailable[4] = {false, false, false, false};
     for (uint32 i = 0, e = trav->metaTiles.size(); i != e; i++)
@@ -265,46 +265,47 @@ bool CameraImpl::travDetermineDraws(TraverseNode *trav)
 
 bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
 {
+    assert(!trav->determined);
+    assert(trav->rendersEmpty());
+
     const TileId nodeId = trav->id;
 
+    // wait for resources to download
+    for (const auto &it : trav->resources)
+        map->touchResource(it);
+    for (const auto &it : trav->resources)
+    {
+        if (map->getResourceValidity(it) == Validity::Indeterminate)
+            return false;
+    }
+    trav->resources.clear();
+
     // aggregate mesh
-    if (!trav->meshAgg)
+    std::shared_ptr<MeshAggregate> meshAgg;
     {
         const std::string name = trav->surface->urlMesh(
             UrlTemplate::Vars(nodeId, trav->meta->localId));
-        trav->meshAgg = map->getMeshAggregate(name);
-
-        // prefetch internal textures
-        /*
-        if (trav->meta->geometry())
-        {
-            auto cnt = trav->meta->internalTextureCount();
-            for (uint32 i = 0; i < cnt; i++)
-                travInternalTexture(trav, i);
-        }
-        */
+        meshAgg = map->getMeshAggregate(name);
+        trav->resources.push_back(meshAgg);
     }
-    auto &meshAgg = trav->meshAgg;
     meshAgg->updatePriority(trav->priority);
     switch (map->getResourceValidity(meshAgg))
     {
     case Validity::Invalid:
         trav->surface = nullptr;
-        trav->meshAgg = nullptr;
-        trav->geodataAgg = nullptr;
+        trav->resources.clear();
         return false;
     case Validity::Indeterminate:
         return false;
     case Validity::Valid:
-        trav->meshAgg = meshAgg;
         break;
     }
 
+    // individual meshes
     bool determined = true;
     decltype(trav->opaque) newOpaque;
     decltype(trav->transparent) newTransparent;
     decltype(trav->credits) newCredits;
-
     for (uint32 subMeshIndex = 0, e = meshAgg->submeshes.size();
          subMeshIndex != e; subMeshIndex++)
     {
@@ -322,8 +323,18 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
                     vtslibs::registry::View::BoundLayerParams(
                     map->mapconfig->boundLayers.get(part.textureLayer).id)));
             }
-            switch (reorderBoundLayers(trav->id, trav->meta->localId,
-                subMeshIndex, bls, trav->priority))
+            Validity validity = reorderBoundLayers(trav->id,
+                trav->meta->localId, subMeshIndex, bls, trav->priority);
+            for (const BoundParamInfo &it : bls)
+            {
+                if (it.boundMetaTile)
+                    trav->resources.push_back(it.boundMetaTile);
+                if (it.textureColor)
+                    trav->resources.push_back(it.textureColor);
+                if (it.textureMask)
+                    trav->resources.push_back(it.textureMask);
+            }
+            switch (validity)
             {
             case Validity::Indeterminate:
                 determined = false;
@@ -374,6 +385,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
         {
             RenderSurfaceTask task;
             task.textureColor = travInternalTexture(trav, subMeshIndex);
+            trav->resources.push_back(task.textureColor);
             switch (map->getResourceValidity(task.textureColor))
             {
             case Validity::Indeterminate:
@@ -390,10 +402,6 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
             newOpaque.insert(newOpaque.begin(), task);
         }
     }
-
-    assert(!trav->determined);
-    assert(trav->rendersEmpty());
-    assert(trav->colliders.empty());
 
     if (determined)
     {
@@ -418,7 +426,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
                              newCredits.begin(), newCredits.end());
 
         // discard temporary
-        trav->meshAgg = nullptr;
+        trav->resources.shrink_to_fit();
     }
 
     return determined;
@@ -426,6 +434,10 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
 
 bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
 {
+    assert(!trav->determined);
+    assert(trav->rendersEmpty());
+    assert(trav->resources.empty());
+
     const TileId nodeId = trav->id;
     const std::string geoName = trav->surface->urlGeodata(
             UrlTemplate::Vars(nodeId, trav->meta->localId));
@@ -452,8 +464,6 @@ bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
     {
     case Validity::Invalid:
         trav->surface = nullptr;
-        trav->meshAgg = nullptr;
-        trav->geodataAgg= nullptr;
         return false;
     case Validity::Indeterminate:
         return false;
@@ -464,7 +474,14 @@ bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
     // determined
     assert(!trav->determined);
     assert(trav->rendersEmpty());
-    trav->geodataAgg = geo;
+
+    // copy draws
+    for (const ResourceInfo &r : geo->renders)
+    {
+        DrawGeodataTask t;
+        t.geodata = std::shared_ptr<void>(geo, r.userData.get());
+        trav->geodata.emplace_back(t);
+    }
 
     return true;
 }

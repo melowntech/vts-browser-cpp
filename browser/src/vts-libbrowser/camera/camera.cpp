@@ -131,10 +131,8 @@ void CameraImpl::touchDraws(TraverseNode *trav)
 {
     vts::touchDraws(map, trav->opaque);
     vts::touchDraws(map, trav->transparent);
-    if (trav->meshAgg)
-        map->touchResource(trav->meshAgg);
-    if (trav->geodataAgg)
-        map->touchResource(trav->geodataAgg);
+    for (const auto &it : trav->resources)
+        map->touchResource(it);
 }
 
 bool CameraImpl::visibilityTest(TraverseNode *trav)
@@ -410,16 +408,8 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     // geodata & colliders
     if (!isSubNode)
     {
-        if (trav->geodataAgg)
-        {
-            for (const ResourceInfo &r : trav->geodataAgg->renders)
-            {
-                DrawGeodataTask t;
-                t.geodata = std::shared_ptr<void>(
-                            trav->geodataAgg, r.userData.get());
-                draws.geodata.emplace_back(t);
-            }
-        }
+        for (const auto &it : trav->geodata)
+            draws.geodata.emplace_back(it);
         for (const RenderColliderTask &r : trav->colliders)
             draws.colliders.emplace_back(convert(r));
     }
@@ -638,8 +628,11 @@ bool findNodeCoarser(TraverseNode *&trav, TraverseNode *orig)
     if (!trav->parent)
         return false;
     trav = trav->parent;
-    if (trav->determined && trav->rendersReady())
+    if (trav->determined)
+    {
+        assert(trav->rendersReady());
         return true;
+    }
     else
         return findNodeCoarser(trav, orig);
 }

@@ -45,6 +45,7 @@ class GeodataStylesheet;
 class CameraImpl;
 class GpuTexture;
 class MapImpl;
+class BoundMetaTile;
 
 class BoundInfo : public vtslibs::registry::BoundLayer
 {
@@ -83,6 +84,7 @@ public:
 
     std::shared_ptr<GpuTexture> textureColor;
     std::shared_ptr<GpuTexture> textureMask;
+    std::shared_ptr<BoundMetaTile> boundMetaTile;
     const BoundInfo *bound = nullptr;
     bool transparent = false;
 

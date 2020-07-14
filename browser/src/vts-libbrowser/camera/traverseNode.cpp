@@ -59,19 +59,17 @@ void TraverseNode::clearAll()
 
 void TraverseNode::clearRenders()
 {
+    resources.clear();
     opaque.clear();
     transparent.clear();
+    geodata.clear();
     colliders.clear();
-    meshAgg.reset();
-    geodataAgg.reset();
     determined = false;
 }
 
 bool TraverseNode::rendersReady() const
 {
     assert(determined);
-    if (geodataAgg && !*geodataAgg)
-        return false;
     for (auto &it : opaque)
         if (!it.ready())
             return false;
@@ -86,8 +84,8 @@ bool TraverseNode::rendersReady() const
 
 bool TraverseNode::rendersEmpty() const
 {
-    return opaque.empty() && transparent.empty() && colliders.empty()
-            && (!geodataAgg || geodataAgg->renders.empty());
+    return opaque.empty() && transparent.empty()
+        && geodata.empty() && colliders.empty();
 }
 
 } // namespace vts

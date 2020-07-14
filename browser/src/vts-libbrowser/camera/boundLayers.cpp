@@ -142,10 +142,9 @@ Validity BoundParamInfo::prepareDepth(CameraImpl *impl, double priority)
         v.localId.x &= ~255;
         v.localId.y &= ~255;
         std::string boundName = bound->urlMeta(v);
-        std::shared_ptr<BoundMetaTile> bmt
-                = impl->map->getBoundMetaTile(boundName);
-        bmt->updatePriority(priority);
-        switch (impl->map->getResourceValidity(bmt))
+        boundMetaTile = impl->map->getBoundMetaTile(boundName);
+        boundMetaTile->updatePriority(priority);
+        switch (impl->map->getResourceValidity(boundMetaTile))
         {
         case Validity::Indeterminate:
             return Validity::Indeterminate;
@@ -154,7 +153,7 @@ Validity BoundParamInfo::prepareDepth(CameraImpl *impl, double priority)
         case Validity::Valid:
             break;
         }
-        uint8 f = bmt->flags[(vars.tileId.y & 255) * 256
+        uint8 f = boundMetaTile->flags[(vars.tileId.y & 255) * 256
                 + (vars.tileId.x & 255)];
         if ((f & BoundLayer::MetaFlags::available)
                 != BoundLayer::MetaFlags::available)

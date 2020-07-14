@@ -27,6 +27,7 @@
 #ifndef TRAVERSENODE_HPP_sgh44f
 #define TRAVERSENODE_HPP_sgh44f
 
+#include "../include/vts-browser/cameraDraws.hpp"
 #include "utilities/array.hpp"
 #include "renderTasks.hpp"
 #include "metaTile.hpp"
@@ -39,8 +40,6 @@ namespace vts
 class MapLayer;
 class SurfaceInfo;
 class Resource;
-class RenderSurfaceTask;
-class RenderColliderTask;
 class MeshAggregate;
 class GeodataTile;
 
@@ -75,11 +74,11 @@ public:
     float priority = nan1();
 
     // renders
-    bool determined = false; // draws are fully loaded (draws may be empty)
-    std::shared_ptr<MeshAggregate> meshAgg;
-    std::shared_ptr<GeodataTile> geodataAgg;
+    bool determined = false; // draws are fully loaded (may be empty)
+    std::vector<std::shared_ptr<Resource>> resources;
     boost::container::small_vector<RenderSurfaceTask, 1> opaque;
     boost::container::small_vector<RenderSurfaceTask, 1> transparent;
+    boost::container::small_vector<DrawGeodataTask, 1> geodata;
     boost::container::small_vector<RenderColliderTask, 1> colliders;
 
     TraverseNode();

@@ -125,31 +125,38 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
                 == vtslibs::registry::FreeLayer::Type::geodata)
         return generateMonolithicGeodataTrav(trav);
 
+    // retrieve metatile resource handles
     const TileId nodeId = trav->id;
-
-    // find all metatiles
-    decltype(trav->metaTiles) metaTiles;
-    metaTiles.resize(trav->layer->surfaceStack.surfaces.size());
-    const UrlTemplate::Vars tileIdVars(map->roundId(nodeId));
-    bool determined = true;
-    for (uint32 i = 0, e = metaTiles.size(); i != e; i++)
+    if (trav->metaTiles.empty())
     {
-        if (trav->parent)
+        trav->metaTiles.resize(trav->layer->surfaceStack.surfaces.size());
+        const UrlTemplate::Vars tileIdVars(map->roundId(nodeId));
+        for (uint32 i = 0, e = trav->metaTiles.size(); i != e; i++)
         {
-            const std::shared_ptr<MetaTile> &p
+            if (trav->parent)
+            {
+                const std::shared_ptr<MetaTile> &p
                     = trav->parent->metaTiles[i];
-            if (!p)
-                continue;
-            TileId pid = vtslibs::vts::parent(nodeId);
-            uint32 idx = (nodeId.x % 2) + (nodeId.y % 2) * 2;
-            const vtslibs::vts::MetaNode &node = p->get(pid);
-            if ((node.flags()
-                 & (vtslibs::vts::MetaNode::Flag::ulChild << idx)) == 0)
-                continue;
+                if (!p)
+                    continue;
+                TileId pid = vtslibs::vts::parent(nodeId);
+                uint32 idx = (nodeId.x % 2) + (nodeId.y % 2) * 2;
+                const vtslibs::vts::MetaNode &node = p->get(pid);
+                if ((node.flags()
+                    & (vtslibs::vts::MetaNode::Flag::ulChild << idx)) == 0)
+                    continue;
+            }
+            trav->metaTiles[i] = map->getMetaTile(
+                trav->layer->surfaceStack.surfaces[i].urlMeta(tileIdVars));
         }
-        auto m = map->getMetaTile(trav->layer->surfaceStack.surfaces[i]
-                             .urlMeta(tileIdVars));
-        // metatiles have higher priority than other resources
+    }
+
+    // check metatiles download status
+    bool determined = true;
+    for (const auto &m : trav->metaTiles)
+    {
+        if (!m)
+            continue;
         m->updatePriority(trav->priority * 2);
         switch (map->getResourceValidity(m))
         {
@@ -161,30 +168,31 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
         case Validity::Valid:
             break;
         }
-        metaTiles[i] = m;
     }
     if (!determined)
         return false;
 
     // find topmost nonempty surface
     SurfaceInfo *topmost = nullptr;
-    uint32 chosen = (uint32)-1;
+    std::shared_ptr<MetaTile> chosen;
     bool childsAvailable[4] = {false, false, false, false};
-    for (uint32 i = 0, e = metaTiles.size(); i != e; i++)
+    for (uint32 i = 0, e = trav->metaTiles.size(); i != e; i++)
     {
-        if (!metaTiles[i])
+        const auto &m = trav->metaTiles[i];
+        if (!m)
             continue;
-        const vtslibs::vts::MetaNode &n = metaTiles[i]->get(nodeId);
-        for (uint32 i = 0; i < 4; i++)
-            childsAvailable[i] = childsAvailable[i]
-                    || (n.childFlags()
-                        & (vtslibs::vts::MetaNode::Flag::ulChild << i));
+        const vtslibs::vts::MetaNode &n = m->get(nodeId);
+        for (uint32 j = 0; j < 4; j++)
+        {
+            childsAvailable[j] = childsAvailable[j] || (n.childFlags()
+                        & (vtslibs::vts::MetaNode::Flag::ulChild << j));
+        }
         if (topmost || n.alien()
                 != trav->layer->surfaceStack.surfaces[i].alien)
             continue;
         if (n.geometry())
         {
-            chosen = i;
+            chosen = m;
             if (trav->layer->tilesetStack)
             {
                 assert(n.sourceReference > 0 && n.sourceReference
@@ -195,23 +203,23 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
             else
                 topmost = &trav->layer->surfaceStack.surfaces[i];
         }
-        if (chosen == (uint32)-1)
-            chosen = i;
+        if (!chosen)
+            chosen = m;
     }
-    if (chosen == (uint32)-1)
+    if (!chosen)
         return false; // all surfaces failed to download, what can i do?
-    
+
     // surface
     if (topmost)
     {
         trav->surface = topmost;
         // credits
-        for (auto it : metaTiles[chosen]->get(nodeId).credits())
+        for (auto it : chosen->get(nodeId).credits())
             trav->credits.push_back(it);
     }
 
-    trav->meta = metaTiles[chosen]->getNode(nodeId);
-    trav->metaTiles.swap(metaTiles);
+    // meta node
+    trav->meta = chosen->getNode(nodeId);
 
     // prepare children
     if (childsAvailable[0] || childsAvailable[1]
@@ -220,9 +228,13 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
         vtslibs::vts::Children childs = vtslibs::vts::children(nodeId);
         trav->childs.ptr = std::make_unique<TraverseChildsArray>();
         for (uint32 i = 0; i < 4; i++)
+        {
             if (childsAvailable[i])
+            {
                 trav->childs.ptr->arr.emplace_back(
                     trav->layer, trav, childs[i]);
+            }
+        }
     }
 
     // update priority
@@ -462,14 +474,18 @@ bool CameraImpl::travInit(TraverseNode *trav)
     // statistics
     {
         statistics.metaNodesTraversedTotal++;
-        statistics.metaNodesTraversedPerLod[
-                std::min<uint32>(trav->id.lod,
-                                 CameraStatistics::MaxLods-1)]++;
+        statistics.metaNodesTraversedPerLod[std::min<uint32>(
+            trav->id.lod, CameraStatistics::MaxLods-1)]++;
     }
 
     // update trav
     trav->lastAccessTime = map->renderTickIndex;
     updateNodePriority(trav);
+    for (const auto &it : trav->metaTiles)
+    {
+        if (it)
+            map->touchResource(it);
+    }
 
     // prepare meta data
     if (!trav->meta)

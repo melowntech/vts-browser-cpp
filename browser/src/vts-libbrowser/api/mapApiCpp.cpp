@@ -234,6 +234,7 @@ void Map::dataFinalize()
 void Map::renderUpdate(double elapsedTime)
 {
     impl->statistics.renderTicks = ++impl->renderTickIndex;
+    impl->statistics.resourcesAcessed = 0;
     impl->resources->resourcesRenderUpdate();
     impl->renderUpdate(elapsedTime);
 }

@@ -49,6 +49,7 @@ MapStatistics::MapStatistics() :
     resourcesQueueUpload(0),
     resourcesQueueGeodata(0),
     resourcesQueueAtmosphere(0),
+    resourcesAcessed(0),
     currentGpuMemUseKB(0),
     currentRamMemUseKB(0),
     renderTicks(0)
@@ -74,6 +75,7 @@ std::string MapStatistics::toJson() const
     TJ(resourcesQueueUpload, asUint);
     TJ(resourcesQueueGeodata, asUint);
     TJ(resourcesQueueAtmosphere, asUint);
+    TJ(resourcesAcessed, asUint);
     TJ(currentGpuMemUseKB, asUint);
     TJ(currentRamMemUseKB, asUint);
     TJ(renderTicks, asUint);

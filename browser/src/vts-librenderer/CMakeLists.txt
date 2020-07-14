@@ -104,6 +104,7 @@ set_target_properties(vts-renderer PROPERTIES
     MACOSX_BUNDLE_BUNDLE_NAME vts-renderer
     MACOSX_BUNDLE_BUNDLE_VERSION ${vts-browser_SO_VERSION}
     PUBLIC_HEADER "${PUB_HDR_LIST}"
+    XCODE_ATTRIBUTE_INSTALL_PATH "@rpath"
 )
 if(VTS_BROWSER_TYPE STREQUAL "FRAMEWORK")
     set_target_properties(vts-renderer PROPERTIES FRAMEWORK TRUE)

@@ -35,25 +35,6 @@
 namespace vts { namespace renderer
 {
 
-void clearGlState()
-{
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_SCISSOR_TEST);
-    glDisable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glUseProgram(0);
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glPolygonOffset(0, 0);
-    CHECK_GL("cleared gl state");
-}
-
 void enableClipDistance(bool enable)
 {
 #ifndef VTSR_NO_CLIP
@@ -105,22 +86,29 @@ RenderViewImpl::RenderViewImpl(
     RenderContextImpl *context) :
     camera(camera),
     api(api),
-    context(context),
-    draws(nullptr),
-    body(nullptr),
-    atmosphereDensityTexture(nullptr),
-    lastUboViewPointer(nullptr),
-    elapsedTime(0),
-    width(0),
-    height(0),
-    antialiasingSamplesPrev(0),
-    frameIndex(0),
-    projected(false),
-    lodBlendingWithDithering(false),
-    colorRenderWithAlphaPrev(false)
+    context(context)
 {
     depthBuffer.meshQuad = context->meshQuad;
     depthBuffer.shaderCopyDepth = context->shaderCopyDepth;
+}
+
+void RenderViewImpl::clearGlState()
+{
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_SCISSOR_TEST);
+    glDisable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glUseProgram(0);
+    glBindVertexArray(context->globalVao);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glPolygonOffset(0, 0);
+    CHECK_GL("cleared gl state");
 }
 
 UniformBuffer *RenderViewImpl::useDisposableUbo(uint32 bindIndex,

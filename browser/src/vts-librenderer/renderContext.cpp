@@ -48,6 +48,12 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
     std::string geo = readInternalMemoryBuffer(
         "data/shaders/geodata.inc.glsl").str();
 
+    // global VAO
+    {
+        glGenVertexArrays(1, &globalVao);
+        glBindVertexArray(globalVao);
+    }
+
     // load texture compas
     {
         texCompas = std::make_shared<Texture>();
@@ -428,7 +434,9 @@ RenderContextImpl::RenderContextImpl(RenderContext *api) : api(api)
 }
 
 RenderContextImpl::~RenderContextImpl()
-{}
+{
+    glDeleteVertexArrays(1, &globalVao);
+}
 
 } } // namespace vts renderer
 

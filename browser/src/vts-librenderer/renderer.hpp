@@ -125,7 +125,6 @@ struct GeodataJob
 extern uint32 maxAntialiasingSamples;
 extern float maxAnisotropySamples;
 
-void clearGlState();
 void enableClipDistance(bool enable);
 
 struct UboCache
@@ -151,10 +150,10 @@ public:
     UboCache uboCacheLarge;
     std::vector<GeodataJob> geodataJobs;
     std::unordered_map<std::string, GeodataJob> hysteresisJobs;
-    CameraDraws *draws;
-    const MapCelestialBody *body;
-    Texture *atmosphereDensityTexture;
-    GeodataTile *lastUboViewPointer;
+    CameraDraws *draws = nullptr;
+    const MapCelestialBody *body = nullptr;
+    Texture *atmosphereDensityTexture = nullptr;
+    GeodataTile *lastUboViewPointer = nullptr;
     mat4 view;
     mat4 viewInv;
     mat4 proj;
@@ -164,17 +163,19 @@ public:
     mat4 davidProj;
     mat4 davidProjInv;
     vec3 zBufferOffsetValues;
-    double elapsedTime;
-    uint32 width;
-    uint32 height;
-    uint32 antialiasingSamplesPrev;
-    uint32 frameIndex;
-    bool projected;
-    bool lodBlendingWithDithering;
-    bool colorRenderWithAlphaPrev;
+    double elapsedTime = 0;
+    uint32 width = 0;
+    uint32 height = 0;
+    uint32 antialiasingSamplesPrev = 0;
+    uint32 frameIndex = 0;
+    bool projected = false;
+    bool lodBlendingWithDithering = false;
+    bool colorRenderWithAlphaPrev = false;
 
     RenderViewImpl(Camera *camera, RenderView *api,
         RenderContextImpl *context);
+
+    void clearGlState();
 
     UniformBuffer *useDisposableUbo(uint32 bindIndex,
         void *data, uint32 size);
@@ -233,7 +234,7 @@ public:
 class RenderContextImpl
 {
 public:
-    RenderContext *const api;
+    RenderContext *const api = nullptr;
 
     ContextOptions options;
 
@@ -257,6 +258,7 @@ public:
     std::shared_ptr<Mesh> meshRect; // positions: 0 .. 1
     std::shared_ptr<Mesh> meshLine;
     std::shared_ptr<Mesh> meshEmpty;
+    uint32 globalVao = 0;
 
     RenderContextImpl(RenderContext *api);
     ~RenderContextImpl();

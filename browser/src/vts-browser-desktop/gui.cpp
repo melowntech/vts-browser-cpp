@@ -27,7 +27,7 @@
 #include <boost/preprocessor/seq.hpp>
 #define GUI_ENUM_IT(R, DATA, ELEM) BOOST_PP_SEQ_ELEM(1, ELEM) ,
 #define UTILITY_GENERATE_ENUM_IO(NAME, PAIRS) \
-static const char *BOOST_PP_CAT(NAME, Names)[] = { \
+static constexpr const char *BOOST_PP_CAT(NAME, Names)[] = { \
     BOOST_PP_SEQ_FOR_EACH(GUI_ENUM_IT, _, PAIRS) \
 };
 
@@ -60,7 +60,7 @@ std::string controlOptionsPath()
     return "vts-browser-desktop.control-options.json";
 }
 
-const nk_rune FontUnicodeRanges[] = {
+constexpr const nk_rune FontUnicodeRanges[] = {
     // 0x0020, 0x007F, // Basic Latin
     // 0x00A0, 0x00FF, // Latin-1 Supplement
     // 0x0100, 0x017F, // Latin Extended-A
@@ -87,20 +87,20 @@ void clipBoardCopy(nk_handle, const char *text, int len)
     SDL_SetClipboardText(buffer);
 }
 
-static const char *lodBlendingModeNames[] = {
+constexpr const char *lodBlendingModeNames[] = {
     "off",
     "basic",
     "precise",
 };
 
-static const char *geodataDebugNames[] = {
+constexpr const char *geodataDebugNames[] = {
     "off",
     "importance",
     "rects",
     "glyphs",
 };
 
-static const char *fpsSlowdownNames[] = {
+constexpr const char *fpsSlowdownNames[] = {
     "off",
     "on",
     "periodic",
@@ -208,28 +208,34 @@ public:
 
         // prepare mesh buffers
         {
-            GLuint vao = 0, vbo = 0, vio = 0;
-            glGenVertexArrays(1, &vao);
-            glGenBuffers(1, &vbo);
-            glGenBuffers(1, &vio);
-            glBindVertexArray(vao);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vio);
-            glBufferData(GL_ARRAY_BUFFER, MaxVertexMemory,
-                         NULL, GL_STREAM_DRAW);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, MaxElementMemory,
-                         NULL, GL_STREAM_DRAW);
-            glEnableVertexAttribArray(0);
-            glEnableVertexAttribArray(1);
-            glEnableVertexAttribArray(2);
-            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
-                sizeof(vertex), (void*)0);
-            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 
-                sizeof(vertex), (void*)8);
-            glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
-                sizeof(vertex), (void*)16);
+            vts::GpuMeshSpec spec;
+            spec.attributes[0].enable = true;
+            spec.attributes[0].components = 2;
+            spec.attributes[0].type = vts::GpuTypeEnum::Float;
+            spec.attributes[0].normalized = false;
+            spec.attributes[0].stride = sizeof(vertex);
+            spec.attributes[0].offset = 0;
+            spec.attributes[1].enable = true;
+            spec.attributes[1].components = 2;
+            spec.attributes[1].type = vts::GpuTypeEnum::Float;
+            spec.attributes[1].normalized = false;
+            spec.attributes[1].stride = sizeof(vertex);
+            spec.attributes[1].offset = 8;
+            spec.attributes[2].enable = true;
+            spec.attributes[2].components = 4;
+            spec.attributes[2].type = vts::GpuTypeEnum::UnsignedByte;
+            spec.attributes[2].normalized = true;
+            spec.attributes[2].stride = sizeof(vertex);
+            spec.attributes[2].offset = 16;
+            spec.verticesCount = 1;
+            spec.indicesCount = 1;
+            vts::ResourceInfo info;
             mesh = std::make_shared<Mesh>();
-            mesh->load(vao, vbo, vio);
+            mesh->load(info, spec, "guiMesh");
+            glBufferData(GL_ARRAY_BUFFER, MaxVertexMemory,
+                NULL, GL_STREAM_DRAW);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, MaxElementMemory,
+                NULL, GL_STREAM_DRAW);
             mesh->setDebugId("guiMesh");
         }
 
@@ -260,9 +266,7 @@ public:
         glDisable(GL_DEPTH_TEST);
         glEnable(GL_SCISSOR_TEST);
         glActiveTexture(GL_TEXTURE0);
-        glBindVertexArray(mesh->getVao());
-        glBindBuffer(GL_ARRAY_BUFFER, mesh->getVbo());
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->getVio());
+        mesh->bind();
         shader->bind();
 
         // proj matrix
@@ -295,22 +299,18 @@ public:
 
         // draw commands
         {
-            struct nk_vec2 scale;
-            scale.x = 1;
-            scale.y = 1;
-            const nk_draw_command *cmd;
-            const nk_draw_index *offset = NULL;
+            const nk_draw_command *cmd = nullptr;
+            const nk_draw_index *offset = nullptr;
             nk_draw_foreach(cmd, &ctx, &cmds)
             {
                 if (!cmd->elem_count)
                     continue;
                 glBindTexture(GL_TEXTURE_2D, cmd->texture.id);
                 glScissor(
-                    (GLint)(cmd->clip_rect.x * scale.x),
-                    (GLint)((height - (GLint)(cmd->clip_rect.y
-                                              + cmd->clip_rect.h)) * scale.y),
-                    (GLint)(cmd->clip_rect.w * scale.x),
-                    (GLint)(cmd->clip_rect.h * scale.y));
+                    (GLint)(cmd->clip_rect.x),
+                    (GLint)((height - cmd->clip_rect.y - cmd->clip_rect.h)),
+                    (GLint)(cmd->clip_rect.w),
+                    (GLint)(cmd->clip_rect.h));
                 glDrawElements(GL_TRIANGLES, (GLsizei)cmd->elem_count,
                                GL_UNSIGNED_SHORT, offset);
                 offset += cmd->elem_count;
@@ -2014,7 +2014,7 @@ public:
             dispatch(width, height);
     }
 
-    static const int MaxSearchTextLength = 200;
+    static constexpr int MaxSearchTextLength = 200;
     char searchText[MaxSearchTextLength];
     char searchTextPrev[MaxSearchTextLength];
     char positionInputText[MaxSearchTextLength];
@@ -2044,8 +2044,8 @@ public:
     bool prepareFirst;
     bool hideTheGui;
 
-    static const int MaxVertexMemory = 4 * 1024 * 1024;
-    static const int MaxElementMemory = 4 * 1024 * 1024;
+    static constexpr int MaxVertexMemory = 4 * 1024 * 1024;
+    static constexpr int MaxElementMemory = 4 * 1024 * 1024;
 };
 
 void MainWindow::Gui::initialize(MainWindow *window)

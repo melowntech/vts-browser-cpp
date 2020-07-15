@@ -85,7 +85,7 @@ void setDebugLabel(GLenum type, GLuint id, std::string name)
 
 } // namespace
 
-Shader::Shader() : id(0)
+Shader::Shader()
 {
     uniformLocations.reserve(20);
 }
@@ -298,8 +298,7 @@ void Shader::bindUniformBlockLocations(
             glGetUniformBlockIndex(id, it.first), it.second);
 }
 
-Texture::Texture() :
-    id(0), grayscale(false)
+Texture::Texture()
 {}
 
 void Texture::clear()
@@ -524,19 +523,16 @@ void RenderContext::loadTexture(ResourceInfo &info, GpuTextureSpec &spec,
     }
 }
 
-Mesh::Mesh() :
-    vao(0), vbo(0), vio(0)
+Mesh::Mesh()
 {}
 
 void Mesh::clear()
 {
-    if (vao)
-        glDeleteVertexArrays(1, &vao);
     if (vbo)
         glDeleteBuffers(1, &vbo);
     if (vio)
         glDeleteBuffers(1, &vio);
-    vao = vbo = vio = 0;
+    vbo = vio = 0;
 }
 
 Mesh::~Mesh()
@@ -547,46 +543,44 @@ Mesh::~Mesh()
 void Mesh::setDebugId(const std::string &id)
 {
     this->debugId = id;
-    setDebugLabel(GL_VERTEX_ARRAY, vao, debugId);
+    setDebugLabel(GL_BUFFER, vbo, debugId);
+    setDebugLabel(GL_BUFFER, vio, debugId);
 }
 
 void Mesh::bind()
 {
-    if (vao)
-        glBindVertexArray(vao);
-    else
+    if (vbo)
     {
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
-        setDebugLabel(GL_VERTEX_ARRAY, vao, debugId);
-
-        if (vbo)
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        uint32 i = 0;
+        for (const GpuMeshSpec::VertexAttribute &a : spec.attributes)
         {
-            glBindBuffer(GL_ARRAY_BUFFER, vbo);
-            for (unsigned i = 0; i < spec.attributes.size(); i++)
+            if (a.enable)
             {
-                GpuMeshSpec::VertexAttribute &a = spec.attributes[i];
-                if (a.enable)
+                glEnableVertexAttribArray(i);
+                if (gpuTypeInteger(a.type) && !a.normalized)
                 {
-                    glEnableVertexAttribArray(i);
-                    if (gpuTypeInteger(a.type) && !a.normalized)
-                        glVertexAttribIPointer(i,
-                            a.components, (GLenum)a.type,
-                            a.stride, (void*)(intptr_t)a.offset);
-                    else
-                        glVertexAttribPointer(i,
-                            a.components, (GLenum)a.type,
-                            a.normalized ? GL_TRUE : GL_FALSE,
-                            a.stride, (void*)(intptr_t)a.offset);
+                    glVertexAttribIPointer(i,
+                        a.components, (GLenum)a.type,
+                        a.stride, (void*)(intptr_t)a.offset);
                 }
                 else
-                    glDisableVertexAttribArray(i);
+                {
+                    glVertexAttribPointer(i,
+                        a.components, (GLenum)a.type,
+                        a.normalized ? GL_TRUE : GL_FALSE,
+                        a.stride, (void*)(intptr_t)a.offset);
+                }
             }
+            else
+                glDisableVertexAttribArray(i);
+            i++;
         }
-
-        if (vio)
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vio);
     }
+
+    if (vio)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vio);
+
     CHECK_GL("bind mesh");
 }
 
@@ -635,14 +629,10 @@ void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp,
 {
     clear();
     spec = std::move(specp);
-    GLuint vao = 0;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
     if (spec.verticesCount)
     {
         glGenBuffers(1, &vbo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        setDebugLabel(GL_BUFFER, vbo, debugId);
         glBufferData(GL_ARRAY_BUFFER,
                  spec.vertices.size(), spec.vertices.data(), GL_STATIC_DRAW);
     }
@@ -650,35 +640,15 @@ void Mesh::load(ResourceInfo &info, GpuMeshSpec &specp,
     {
         glGenBuffers(1, &vio);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vio);
-        setDebugLabel(GL_BUFFER, vio, debugId);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                  spec.indices.size(), spec.indices.data(), GL_STATIC_DRAW);
     }
-    glBindVertexArray(0);
-    glDeleteVertexArrays(1, &vao);
     setDebugId(debugId);
     CHECK_GL("load mesh");
     info.ramMemoryCost += sizeof(*this);
     info.gpuMemoryCost += spec.vertices.size() + spec.indices.size();
     spec.vertices.free();
     spec.indices.free();
-}
-
-void Mesh::load(uint32 vao, uint32 vbo, uint32 vio)
-{
-    clear();
-    {
-        GpuMeshSpec tmp;
-        std::swap(spec, tmp);
-    }
-    this->vao = vao;
-    this->vbo = vbo;
-    this->vio = vio;
-}
-
-uint32 Mesh::getVao() const
-{
-    return vao;
 }
 
 uint32 Mesh::getVbo() const
@@ -707,8 +677,7 @@ void RenderContext::loadMesh(ResourceInfo &info, GpuMeshSpec &spec,
     }
 }
 
-UniformBuffer::UniformBuffer() :
-    capacity(0), ubo(0), lastUsage(0)
+UniformBuffer::UniformBuffer()
 {}
 
 UniformBuffer::~UniformBuffer()
@@ -716,8 +685,7 @@ UniformBuffer::~UniformBuffer()
     clear();
 }
 
-UniformBuffer::UniformBuffer(UniformBuffer &&other) :
-    capacity(0), ubo(0), lastUsage(0)
+UniformBuffer::UniformBuffer(UniformBuffer &&other) noexcept
 {
     std::swap(debugId, other.debugId);
     std::swap(ubo, other.ubo);
@@ -725,7 +693,7 @@ UniformBuffer::UniformBuffer(UniformBuffer &&other) :
     std::swap(capacity, other.capacity);
 }
 
-UniformBuffer &UniformBuffer::operator = (UniformBuffer &&other)
+UniformBuffer &UniformBuffer::operator = (UniformBuffer &&other) noexcept
 {
     std::swap(debugId, other.debugId);
     std::swap(ubo, other.ubo);

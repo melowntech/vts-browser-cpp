@@ -47,7 +47,7 @@ public:
     ResourceBase();
     ~ResourceBase();
 private:
-    uint64 thrId;
+    uint64 thrId = 0;
 #endif
 };
 
@@ -91,7 +91,7 @@ public:
     static std::string preamble;
 
 private:
-    uint32 id;
+    uint32 id = 0;
 
     int loadShader(const std::string &source, int stage) const;
 };
@@ -107,14 +107,14 @@ public:
     void clear();
     void bind();
     void load(ResourceInfo &info, GpuTextureSpec &spec,
-            const std::string &debugId);
+        const std::string &debugId);
     void setId(uint32 id);
     uint32 getId() const;
     bool getGrayscale() const;
 
 private:
-    uint32 id;
-    bool grayscale;
+    uint32 id = 0;
+    bool grayscale = false;
 };
 
 class VTSR_API Mesh : private privat::ResourceBase
@@ -132,14 +132,12 @@ public:
     void dispatchWireframeSlow();
     void load(ResourceInfo &info, GpuMeshSpec &spec,
         const std::string &debugId);
-    void load(uint32 vao, uint32 vbo, uint32 vio);
-    uint32 getVao() const;
     uint32 getVbo() const;
     uint32 getVio() const;
 
 private:
     GpuMeshSpec spec;
-    uint32 vao, vbo, vio;
+    uint32 vbo = 0, vio = 0;
 };
 
 class VTSR_API UniformBuffer : private privat::ResourceBase
@@ -149,8 +147,8 @@ class VTSR_API UniformBuffer : private privat::ResourceBase
 public:
     UniformBuffer();
     ~UniformBuffer();
-    UniformBuffer(UniformBuffer &&other);
-    UniformBuffer &operator = (UniformBuffer &&other);
+    UniformBuffer(UniformBuffer &&other) noexcept;
+    UniformBuffer &operator = (UniformBuffer &&other) noexcept;
     void setDebugId(const std::string &id);
     void clear();
     void bind(); // used for uploading the data
@@ -167,9 +165,9 @@ public:
     uint32 getUbo() const;
 
 private:
-    std::size_t capacity;
-    uint32 ubo;
-    uint32 lastUsage;
+    std::size_t capacity = 0;
+    uint32 ubo = 0;
+    uint32 lastUsage = 0;
 
     void bindInit();
 };

@@ -498,15 +498,17 @@ bool CameraImpl::travInit(TraverseNode *trav)
     // update trav
     trav->lastAccessTime = map->renderTickIndex;
     updateNodePriority(trav);
-    for (const auto &it : trav->metaTiles)
-    {
-        if (it)
-            map->touchResource(it);
-    }
 
     // prepare meta data
     if (!trav->meta)
+    {
+        for (const auto &it : trav->metaTiles)
+        {
+            if (it)
+                map->touchResource(it);
+        }
         return travDetermineMeta(trav);
+    }
 
     return true;
 }

@@ -58,7 +58,7 @@ public:
     uint32 resourcesQueueUpload;
     uint32 resourcesQueueGeodata;
     uint32 resourcesQueueAtmosphere;
-    uint32 resourcesAcessed;
+    uint32 resourcesAccessed;
 
     uint32 currentGpuMemUseKB;
     uint32 currentRamMemUseKB;

@@ -58,10 +58,9 @@ class TraverseNode : private Immovable
 public:
     // traversal
     TraverseChildsContainer childs;
-    MapLayer *const layer = nullptr;
+    const MapLayer *const layer = nullptr;
     TraverseNode *const parent = nullptr;
     const TileId id;
-    const uint32 hash = 0;
 
     // metadata
     boost::container::small_vector<vtslibs::registry::CreditId, 8> credits;
@@ -82,7 +81,8 @@ public:
     boost::container::small_vector<RenderColliderTask, 1> colliders;
 
     TraverseNode();
-    TraverseNode(MapLayer *layer, TraverseNode *parent, const TileId &id);
+    TraverseNode(const MapLayer *layer,
+        TraverseNode *parent, const TileId &id);
     ~TraverseNode();
     void clearAll();
     void clearRenders();

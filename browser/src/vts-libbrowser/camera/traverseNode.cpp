@@ -36,12 +36,8 @@ namespace vts
 TraverseNode::TraverseNode()
 {}
 
-TraverseNode::TraverseNode(MapLayer *layer, TraverseNode *parent,
-                           const TileId &id)
-    : layer(layer), parent(parent),
-      id(id),
-      hash(std::hash<TileId>()(id)),
-      priority(nan1())
+TraverseNode::TraverseNode(const MapLayer *layer, TraverseNode *parent,
+    const TileId &id) : layer(layer), parent(parent), id(id)
 {}
 
 TraverseNode::~TraverseNode()

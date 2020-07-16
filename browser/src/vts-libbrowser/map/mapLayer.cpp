@@ -62,7 +62,7 @@ bool MapLayer::prerequisitesCheck()
     return prerequisitesCheckMainSurfaces();
 }
 
-bool MapLayer::isGeodata()
+bool MapLayer::isGeodata() const
 {
     if (freeLayer)
     {
@@ -79,7 +79,7 @@ bool MapLayer::isGeodata()
 }
 
 BoundParamInfo::List MapLayer::boundList(const SurfaceInfo *surface,
-                                         sint32 surfaceReference)
+    sint32 surfaceReference) const
 {
     const auto &n = surface->name;
     std::string surfaceName;
@@ -87,8 +87,7 @@ BoundParamInfo::List MapLayer::boundList(const SurfaceInfo *surface,
         surfaceName = n[surfaceReference - 1];
     else if (!n.empty())
         surfaceName = n.back();
-    const vtslibs::registry::View::BoundLayerParams::list &boundList
-            = boundLayerParams[surfaceName];
+    const auto &boundList = boundLayerParams.at(surfaceName);
     BoundParamInfo::List bls(boundList.begin(), boundList.end());
     return bls;
 }

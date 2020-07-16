@@ -1118,7 +1118,7 @@ public:
                 S("Node draw updates:", cs.currentNodeDrawsUpdates, "");
                 S("Preparing:", ms.resourcesPreparing, "");
                 S("Downloading:", ms.resourcesDownloading, "");
-                S("Acessing:", ms.resourcesAcessed, "");
+                S("Accessing:", ms.resourcesAccessed, "");
 
                 if (nk_tree_push(&ctx, NK_TREE_TAB, "Queues",
                     NK_MINIMIZED))

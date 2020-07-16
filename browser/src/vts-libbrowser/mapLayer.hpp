@@ -86,10 +86,10 @@ public:
         const vtslibs::registry::View::FreeLayerParams &params);
 
     bool prerequisitesCheck();
-    bool isGeodata();
+    bool isGeodata() const;
 
     BoundParamInfo::List boundList(
-        const SurfaceInfo *surface, sint32 surfaceReference);
+        const SurfaceInfo *surface, sint32 surfaceReference) const;
 
     vtslibs::registry::View::Surfaces boundLayerParams;
 

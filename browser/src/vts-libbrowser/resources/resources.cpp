@@ -40,62 +40,33 @@
 namespace vts
 {
 
-void Resources::resourceSaveCorruptedFile(const std::shared_ptr<Resource> &r)
+namespace
+{
+
+bool startsWith(const std::string &text, const std::string &start)
+{
+    return text.substr(0, start.length()) == start;
+}
+
+} // namespace
+
+void Resources::saveCorruptedFile(const std::shared_ptr<Resource> &r)
 {
     if (!map->options.debugSaveCorruptedFiles)
         return;
     try
     {
-        std::string path = std::string() + "corrupted/"
-            + convertNameToPath(r->name, false);
+        std::string path = std::string() + "corrupted/" + convertNameToPath(r->name, false);
         writeLocalFileBuffer(path, r->fetch->reply.content);
-        LOG(info1) << "Resource <" << r->name
-            << "> saved into file <"
-            << path << "> for further inspection";
+        LOG(info1) << "Resource <" << r->name << "> saved into file <" << path << "> for further inspection";
     }
     catch (...)
     {
-        LOG(warn1) << "Failed saving corrupted resource <" << r->name
-            << "> for further inspection";
+        LOG(warn1) << "Failed saving corrupted resource <" << r->name << "> for further inspection";
     }
 }
 
-namespace
-{
-
-typedef std::pair<float, std::shared_ptr<Resource>> ResourceWithPriority;
-
-std::vector<ResourceWithPriority> filterSortResources(
-    const std::vector<std::weak_ptr<Resource>> &resources,
-    Resource::State requiredState)
-{
-    std::vector<ResourceWithPriority> res;
-    for (const auto &w : resources)
-    {
-        std::shared_ptr<Resource> r = w.lock();
-        if (r)
-        {
-            if (r->state != requiredState)
-                continue;
-            res.emplace_back(r->priority, r);
-            if (r->priority < inf1())
-                r->priority = 0;
-        }
-    }
-    std::sort(res.begin(), res.end(),
-        [](ResourceWithPriority &a, ResourceWithPriority &b) {
-            return a.first > b.first; // highest priority first
-        });
-    return res;
-}
-
-} // namespace
-
-UploadData::UploadData()
-{}
-
-UploadData::UploadData(const std::shared_ptr<Resource> &resource)
-    : uploadData(resource)
+UploadData::UploadData(const std::shared_ptr<Resource> &resource) : uploadData(resource)
 {}
 
 UploadData::UploadData(std::shared_ptr<void> &userData, int)
@@ -108,31 +79,24 @@ void UploadData::process()
     destroyData.reset();
     auto r = uploadData.lock();
     if (r)
-        r->map->resources->resourceUploadProcess(r);
+        r->map->resources->uploadProcess(r);
 }
 
 ////////////////////////////
 // A FETCH THREAD
 ////////////////////////////
 
-CacheData::CacheData(FetchTaskImpl *task, bool availFailed) :
-    //availTest(task->availTest),
-    buffer(task->reply.content.copy()),
-    name(task->name), expires(task->reply.expires),
-    availFailed(availFailed)
+CacheData::CacheData(FetchTaskImpl *task, bool availFailed) : buffer(task->reply.content.copy()), name(task->name), expires(task->reply.expires), availFailed(availFailed)
 {}
 
 void FetchTaskImpl::fetchDone()
 {
     OPTICK_EVENT();
-    LOG(debug) << "Resource <" << name << "> finished downloading, "
-        << "http code: " << reply.code << ", content type: <"
-        << reply.contentType << ">, size: " << reply.content.size()
-        << ", expires: " << reply.expires;
+    LOG(debug) << "Resource <" << name << "> finished downloading, " << "http code: " << reply.code << ", content type: <" << reply.contentType << ">, size: " << reply.content.size() << ", expires: " << reply.expires;
     assert(map);
     map->resources->downloads--;
-    map->resources->downloadsCondition.notify_one();
-    Resource::State state = Resource::State::downloading;
+    map->resources->queFetching.con.notify_one();
+    Resource::State state = Resource::State::fetching;
 
     // handle error or invalid codes
     if (reply.code >= 400 || reply.code < 200)
@@ -142,9 +106,7 @@ void FetchTaskImpl::fetchDone()
         else
         {
             const auto r = resource.lock();
-            LOGR(r && r->retryNumber < 2 ? dbglog::err1 : dbglog::err2)
-                << "Error downloading <" << name
-                << ">, http code " << reply.code;
+            LOGR(r && r->retryNumber < 2 ? dbglog::err1 : dbglog::err2) << "Error downloading <" << name << ">, http code " << reply.code;
             state = Resource::State::errorRetry;
         }
     }
@@ -154,41 +116,31 @@ void FetchTaskImpl::fetchDone()
         reply.expires = -2;
 
     // availability tests
-    if (state == Resource::State::downloading
-        && !performAvailTest())
+    if (state == Resource::State::fetching && !performAvailTest())
     {
-        LOG(info1) << "Resource <" << name
-            << "> failed availability test";
+        LOG(info1) << "Resource <" << name << "> failed availability test";
         state = Resource::State::availFail;
     }
 
     // handle redirections
-    if (state == Resource::State::downloading
-        && reply.code >= 300 && reply.code < 400)
+    if (state == Resource::State::fetching && reply.code >= 300 && reply.code < 400)
     {
         if (redirectionsCount++ > map->options.maxFetchRedirections)
         {
-            LOG(err2) << "Too many redirections in <"
-                << name << ">, last url <"
-                << query.url << ">, http code " << reply.code;
+            LOG(err2) << "Too many redirections in <" << name << ">, last url <" << query.url << ">, http code " << reply.code;
             state = Resource::State::errorRetry;
         }
         else
         {
             query.url.swap(reply.redirectUrl);
-            LOG(info1) << "Download of <"
-                << name << "> redirected to <"
-                << query.url << ">, http code " << reply.code;
+            LOG(info1) << "Download of <" << name << "> redirected to <" << query.url << ">, http code " << reply.code;
             reply = Reply();
             state = Resource::State::initializing;
         }
     }
 
     // write to cache
-    if ((state == Resource::State::availFail
-        || state == Resource::State::downloading)
-        && map->resources->queCacheWrite.estimateSize()
-        < map->options.maxCacheWriteQueueLength)
+    if ((state == Resource::State::availFail || state == Resource::State::fetching) && map->resources->queCacheWrite.estimateSize() < map->options.maxCacheWriteQueueLength)
     {
         // this makes copy of the content buffer
         map->resources->queCacheWrite.push(CacheData(this,
@@ -196,8 +148,8 @@ void FetchTaskImpl::fetchDone()
     }
 
     // update the actual resource
-    if (state == Resource::State::downloading)
-        state = Resource::State::downloaded;
+    if (state == Resource::State::fetching)
+        state = Resource::State::decodeQueue;
     else
     {
         reply.content.free();
@@ -208,15 +160,16 @@ void FetchTaskImpl::fetchDone()
         if (rs)
         {
             assert(&*rs->fetch == this);
-            assert(rs->state == Resource::State::downloading);
+            assert(rs->state == Resource::State::fetching);
             rs->info.ramMemoryCost = reply.content.size();
             rs->state = state;
-            if (state == Resource::State::downloaded)
+
+            if (state == Resource::State::decodeQueue)
             {
                 // this allows another thread to immediately start
                 //   processing the content, including its modification,
                 //   and must therefore be the last action in this thread
-                map->resources->queDecode.push(rs);
+                rs->map->resources->queDecode.push(rs);
             }
         }
     }
@@ -226,12 +179,12 @@ void FetchTaskImpl::fetchDone()
 // DECODE THREAD
 ////////////////////////////
 
-void Resources::resourceDecodeProcess(const std::shared_ptr<Resource> &r)
+void Resources::decodeProcess(const std::shared_ptr<Resource> &r)
 {
     OPTICK_EVENT();
     OPTICK_TAG("name", r->name.c_str());
 
-    assert(r->state == Resource::State::downloaded);
+    assert(r->state == Resource::State::decodeQueue);
     map->statistics.resourcesDecoded++;
     r->info.gpuMemoryCost = r->info.ramMemoryCost = 0;
     try
@@ -239,7 +192,7 @@ void Resources::resourceDecodeProcess(const std::shared_ptr<Resource> &r)
         r->decode();
         if (r->requiresUpload())
         {
-            r->state = Resource::State::decoded;
+            r->state = Resource::State::uploadQueue;
             queUpload.push(UploadData(r));
         }
         else
@@ -247,40 +200,45 @@ void Resources::resourceDecodeProcess(const std::shared_ptr<Resource> &r)
     }
     catch (const std::exception &e)
     {
-        LOG(err3) << "Failed decoding resource <" << r->name
-            << ">, exception <" << e.what() << ">";
-        resourceSaveCorruptedFile(r);
+        LOG(err3) << "Failed decoding resource <" << r->name << ">, exception <" << e.what() << ">";
+        saveCorruptedFile(r);
         map->statistics.resourcesFailed++;
         r->state = Resource::State::errorFatal;
     }
     r->fetch.reset();
 }
 
-void Resources::resourcesDecodeProcessorEntry()
+void Resources::oneDecode(std::weak_ptr<Resource> w)
 {
-    OPTICK_THREAD("decode");
-    setLogThreadName("decode");
-    while (!queDecode.stopped())
-    {
-        std::weak_ptr<Resource> w;
-        queDecode.waitPop(w);
-        std::shared_ptr<Resource> r = w.lock();
-        if (!r)
-            continue;
-        resourceDecodeProcess(r);
-    }
+    std::shared_ptr<Resource> r = w.lock();
+    if (!r)
+        return;
+    r->map->resources->decodeProcess(r);
+}
+
+float Resources::priority(const std::weak_ptr<Resource> &w)
+{
+    std::shared_ptr<Resource> r = w.lock();
+    if (r)
+        return r->priority;
+    return inf1();
 }
 
 ////////////////////////////
 // DATA THREAD
 ////////////////////////////
 
-void Resources::resourceUploadProcess(const std::shared_ptr<Resource> &r)
+void Resources::oneUpload(UploadData r)
+{
+    r.process();
+}
+
+void Resources::uploadProcess(const std::shared_ptr<Resource> &r)
 {
     OPTICK_EVENT();
     OPTICK_TAG("name", r->name.c_str());
 
-    assert(r->state == Resource::State::decoded);
+    assert(r->state == Resource::State::uploadQueue);
     map->statistics.resourcesUploaded++;
     try
     {
@@ -289,122 +247,78 @@ void Resources::resourceUploadProcess(const std::shared_ptr<Resource> &r)
     }
     catch (const std::exception &e)
     {
-        LOG(err3) << "Failed uploading resource <" << r->name
-            << ">, exception <" << e.what() << ">";
-        resourceSaveCorruptedFile(r);
+        LOG(err3) << "Failed uploading resource <" << r->name << ">, exception <" << e.what() << ">";
+        saveCorruptedFile(r);
         map->statistics.resourcesFailed++;
         r->state = Resource::State::errorFatal;
     }
     r->decodeData.reset();
 }
 
-void Resources::resourcesUploadProcessorEntry()
-{
-    OPTICK_THREAD("data");
-    while (!queUpload.stopped())
-    {
-        UploadData w;
-        queUpload.waitPop(w);
-        w.process();
-    }
-}
-
-void Resources::resourcesDataUpdate()
+void Resources::dataUpdate()
 {
     OPTICK_EVENT();
-    for (uint32 proc = 0; proc < map->options
-        .maxResourceProcessesPerTick; proc++)
+    for (uint32 proc = 0; proc < map->options.maxResourceProcessesPerTick; proc++)
     {
-        UploadData w;
-        if (queUpload.tryPop(w))
-            w.process();
-        else
-            break;
+        if (!queUpload.runOne())
+            return;
     }
 }
 
-void Resources::resourcesDataFinalize()
+void Resources::dataFinalize()
 {
-    assert(queUpload.stopped());
-    queUpload.purge();
+    //assert(queUpload.stopped());
+    //queUpload.purge();
 }
 
-void Resources::resourcesDataAllRun()
+void Resources::dataAllRun()
 {
-    resourcesUploadProcessorEntry();
-    resourcesDataFinalize();
+    setThreadName("data");
+    OPTICK_THREAD("data");
+    queUpload.runAll();
+    dataFinalize();
 }
 
 ////////////////////////////
 // CACHE WRITE THREAD
 ////////////////////////////
 
-void Resources::cacheWriteEntry()
+void Resources::oneCacheWrite(CacheData r)
 {
-    OPTICK_THREAD("cache writer");
-    setLogThreadName("cache writer");
-    while (!queCacheWrite.stopped())
-    {
-        CacheData cwd;
-        queCacheWrite.waitPop(cwd);
-        if (!cwd.name.empty())
-            cacheWrite(std::move(cwd));
-    }
+    if (!r.name.empty())
+        cacheWrite(std::move(r));
 }
 
 ////////////////////////////
 // CACHE READ THREAD
 ////////////////////////////
 
-void Resources::cacheReadEntry()
+void Resources::oneCacheRead(std::weak_ptr<Resource> w)
 {
-    OPTICK_THREAD("cache reader");
-    setLogThreadName("cache reader");
-    while (!queCacheRead.stopped())
+    std::shared_ptr<Resource> r = w.lock();
+    if (!r)
+        return;
+    try
     {
-        auto res1 = queCacheRead.readAllWait();
-        OPTICK_EVENT("update");
-        auto res2 = filterSortResources(res1, Resource::State::checkCache);
-        for (const auto &pr : res2)
-        {
-            const std::shared_ptr<Resource> &r = pr.second;
-            try
-            {
-                cacheReadProcess(r);
-            }
-            catch (const std::exception &e)
-            {
-                map->statistics.resourcesFailed++;
-                r->state = Resource::State::errorFatal;
-                LOG(err3) << "Failed preparing resource <" << r->name
-                    << ">, exception <" << e.what() << ">";
-            }
-            if (queCacheRead.estimateSize() > 0)
-                break; // refresh the priorities
-        }
+        r->map->resources->cacheReadProcess(r);
+    }
+    catch (const std::exception &)
+    {
+        LOG(debug) << "Reading <" << r->name << "> from cache has failed, initializing fetch instead";
+        r->state = Resource::State::fetchQueue;
+        r->map->resources->queFetching.push(r);
     }
 }
-
-namespace
-{
-
-bool startsWith(const std::string &text, const std::string &start)
-{
-    return text.substr(0, start.length()) == start;
-}
-
-} // namespace
 
 void Resources::cacheReadProcess(const std::shared_ptr<Resource> &r)
 {
     OPTICK_EVENT();
-    assert(r->state == Resource::State::checkCache);
+    assert(r->state == Resource::State::cacheReadQueue);
     if (!r->fetch)
         r->fetch = std::make_shared<FetchTaskImpl>(r);
     r->info.gpuMemoryCost = r->info.ramMemoryCost = 0;
     CacheData cd;
-    if (r->allowDiskCache() && (cd = cacheRead(
-        r->name)).name == r->name)
+    if (r->allowDiskCache() && (cd = cacheRead(r->name)).name == r->name)
     {
         r->fetch->reply.expires = cd.expires;
         r->fetch->reply.content = std::move(cd.buffer);
@@ -412,7 +326,10 @@ void Resources::cacheReadProcess(const std::shared_ptr<Resource> &r)
         if (cd.availFailed)
             r->state = Resource::State::availFail;
         else
-            r->state = Resource::State::downloaded;
+        {
+            r->state = Resource::State::decodeQueue;
+            queDecode.push(r);
+        }
         map->statistics.resourcesDiskLoaded++;
     }
     else if (startsWith(r->name, "data:"))
@@ -420,109 +337,94 @@ void Resources::cacheReadProcess(const std::shared_ptr<Resource> &r)
         readDataUrl(r->name, r->fetch->reply.content,
             r->fetch->reply.contentType);
         r->fetch->reply.code = 200;
-        r->state = Resource::State::downloaded;
+        r->state = Resource::State::decodeQueue;
+        queDecode.push(r);
     }
     else if (startsWith(r->name, "file://"))
     {
         r->fetch->reply.content = readLocalFileBuffer(r->name.substr(7));
         r->fetch->reply.code = 200;
-        r->state = Resource::State::downloaded;
+        r->state = Resource::State::decodeQueue;
+        queDecode.push(r);
     }
     else if (startsWith(r->name, "internal://"))
     {
         r->fetch->reply.content = readInternalMemoryBuffer(r->name.substr(11));
         r->fetch->reply.code = 200;
-        r->state = Resource::State::downloaded;
+        r->state = Resource::State::decodeQueue;
+        queDecode.push(r);
     }
     else if (startsWith(r->name, "generate://"))
     {
-        r->state = Resource::State::errorRetry;
         // will be handled elsewhere
+        r->state = Resource::State::errorRetry;
     }
     else
     {
-        r->state = Resource::State::startDownload;
-        // will be handled in main thread
+        r->state = Resource::State::fetchQueue;
+        queFetching.push(r);
     }
-
-    if (r->state == Resource::State::downloaded)
-        queDecode.push(r);
 }
 
 ////////////////////////////
 // FETCHER THREAD
 ////////////////////////////
 
-void Resources::resourcesDownloadsEntry()
+void Resources::oneFetch(std::weak_ptr<Resource> w)
+{
+    std::shared_ptr<Resource> r = w.lock();
+    if (!r)
+        return;
+    r->state = Resource::State::fetching;
+    r->map->resources->downloads++;
+    LOG(debug) << "Initializing fetch of <" << r->name << ">";
+    r->fetch->query.headers["X-Vts-Client-Id"] = r->map->createOptions.clientId;
+    if (r->map->auth)
+        r->map->auth->authorize(r);
+    r->map->fetcher->fetch(r->fetch);
+    r->map->statistics.resourcesDownloaded++;
+}
+
+void Resources::fetcherProcessorEntry()
 {
     OPTICK_THREAD("fetcher");
     setLogThreadName("fetcher");
     map->fetcher->initialize();
-    std::mutex dummyMutex;
-    while (!queFetching.stopped())
+
+    while (!queFetching.stop)
     {
-        auto res1 = queFetching.readAllWait();
-        OPTICK_EVENT("update");
-        map->fetcher->update();
-        auto res2 = filterSortResources(res1, Resource::State::startDownload);
-        for (const auto &pr : res2)
         {
-            while (downloads >= map->options.maxConcurrentDownloads)
-            {
-                std::unique_lock<std::mutex> lock(dummyMutex);
-                downloadsCondition.wait(lock);
-            }
-            const std::shared_ptr<Resource> &r = pr.second;
-            r->state = Resource::State::downloading;
-            downloads++;
-            LOG(debug) << "Initializing fetch of <" << r->name << ">";
-            r->fetch->query.headers["X-Vts-Client-Id"]
-                = map->createOptions.clientId;
-            if (map->auth)
-                map->auth->authorize(r);
-            map->fetcher->fetch(r->fetch);
-            map->statistics.resourcesDownloaded++;
-            if (queFetching.estimateSize() > 0)
-                break; // refresh the priorities
+            OPTICK_EVENT("update");
+            map->fetcher->update();
+        }
+
+        if (!(downloads < map->options.maxConcurrentDownloads && queFetching.runOne()))
+        {
+            using namespace std::chrono_literals;
+            std::unique_lock<std::mutex> lock(queFetching.mut);
+            queFetching.con.wait_for(lock, 10ms);
         }
     }
+
     map->fetcher->finalize();
-    map->fetcher.reset();
 }
 
 ////////////////////////////
 // MAIN THREAD
 ////////////////////////////
 
-Resources::Resources(MapImpl *map) : map(map)
+Resources::Resources(MapImpl *map) : map(map), queFetching(this), queCacheRead(this), queCacheWrite(this), queDecode(this), queGeodata(this), queAtmosphere(this), queUpload(this)
 {
-    thrFetcher
-        = std::thread(&Resources::resourcesDownloadsEntry, this);
-    thrCacheReader
-        = std::thread(&Resources::cacheReadEntry, this);
-    thrCacheWriter
-        = std::thread(&Resources::cacheWriteEntry, this);
-    thrDecoder
-        = std::thread(&Resources::resourcesDecodeProcessorEntry, this);
-    thrGeodataProcessor
-        = std::thread(&Resources::resourcesGeodataProcessorEntry, this);
-    thrAtmosphereGenerator
-        = std::thread(&Resources::resourcesAtmosphereGeneratorEntry, this);
     cacheInit();
+    queFetching.thr = std::thread(&Resources::fetcherProcessorEntry, this);
 }
 
 Resources::~Resources()
 {
-    resourcesTerminateAllQueues();
-    thrFetcher.join();
-    thrCacheReader.join();
-    thrCacheWriter.join();
-    thrDecoder.join();
-    thrAtmosphereGenerator.join();
-    thrGeodataProcessor.join();
+    terminateAllQueues();
 }
 
-bool Resources::resourcesTryRemove(std::shared_ptr<Resource> &r)
+bool Resources::tryRemove(std::shared_ptr<Resource> &r)
 {
     std::string name = r->name;
     assert(resources.count(name) == 1);
@@ -554,7 +456,7 @@ bool Resources::resourcesTryRemove(std::shared_ptr<Resource> &r)
     return false;
 }
 
-void Resources::resourcesRemoveOld()
+void Resources::removeOld()
 {
     OPTICK_EVENT();
     struct Res
@@ -588,7 +490,6 @@ void Resources::resourcesRemoveOld()
             switch ((vts::Resource::State)it.second->state)
             {
             case Resource::State::initializing:
-            case Resource::State::startDownload:
             case Resource::State::errorFatal:
             case Resource::State::errorRetry:
             case Resource::State::availFail:
@@ -606,7 +507,7 @@ void Resources::resourcesRemoveOld()
     // remove unconditionalToRemove
     for (const Res &res : unconditionalToRemove)
     {
-        if (resourcesTryRemove(resources[*res.n]))
+        if (tryRemove(resources[*res.n]))
             memUse -= res.m;
     }
     // remove resourcesToRemove
@@ -619,7 +520,7 @@ void Resources::resourcesRemoveOld()
             });
         for (const Res &res : resourcesToRemove)
         {
-            if (resourcesTryRemove(resources[*res.n]))
+            if (tryRemove(resources[*res.n]))
             {
                 memUse -= res.m;
                 if (memUse < trs)
@@ -629,7 +530,7 @@ void Resources::resourcesRemoveOld()
     }
 }
 
-void Resources::resourcesCheckInitialized()
+void Resources::checkInitialized()
 {
     OPTICK_EVENT();
     std::time_t current = std::time(nullptr);
@@ -644,8 +545,7 @@ void Resources::resourcesCheckInitialized()
         case Resource::State::errorRetry:
             if (r->retryNumber >= map->options.maxFetchRetries)
             {
-                LOG(err3) << "All retries for resource <"
-                    << r->name << "> has failed";
+                LOG(err3) << "All retries for resource <" << r->name << "> has failed";
                 r->state = Resource::State::errorFatal;
                 map->statistics.resourcesFailed++;
                 break;
@@ -654,22 +554,18 @@ void Resources::resourcesCheckInitialized()
             {
                 r->retryTime = (1 << r->retryNumber)
                     * map->options.fetchFirstRetryTimeOffset + current;
-                LOGR(r->retryNumber < 2 ? dbglog::warn1 : dbglog::warn2)
-                    << "Resource <" << r->name
-                    << "> may retry in "
-                    << (r->retryTime - current) << " seconds";
+                LOGR(r->retryNumber < 2 ? dbglog::warn1 : dbglog::warn2) << "Resource <" << r->name << "> may retry in " << (r->retryTime - current) << " seconds";
                 break;
             }
             if (r->retryTime > current)
                 break;
             r->retryNumber++;
-            LOG(info2) << "Trying again to download resource <"
-                << r->name << "> (attempt "
-                << r->retryNumber << ")";
+            LOG(info2) << "Trying again to download resource <" << r->name << "> (attempt " << r->retryNumber << ")";
             r->retryTime = -1;
             UTILITY_FALLTHROUGH;
         case Resource::State::initializing:
-            r->state = Resource::State::checkCache;
+            r->state = Resource::State::cacheReadQueue;
+            queCacheRead.push(r);
             break;
         default:
             break;
@@ -677,35 +573,7 @@ void Resources::resourcesCheckInitialized()
     }
 }
 
-void Resources::resourcesStartDownloads()
-{
-    OPTICK_EVENT();
-    std::vector<std::weak_ptr<Resource>> requestCacheRead;
-    std::vector<std::weak_ptr<Resource>> requestDownloads;
-
-    for (const auto &it : resources)
-    {
-        const std::shared_ptr<Resource> &r = it.second;
-        switch ((Resource::State)r->state)
-        {
-        case Resource::State::checkCache:
-            requestCacheRead.push_back(r);
-            break;
-        case Resource::State::startDownload:
-            requestDownloads.push_back(r);
-            break;
-        default:
-            break;
-        }
-    }
-
-    map->statistics.resourcesQueueCacheRead = requestCacheRead.size();
-    queCacheRead.writeAll(requestCacheRead);
-    map->statistics.resourcesQueueDownload = requestDownloads.size();
-    queFetching.writeAll(requestDownloads);
-}
-
-void Resources::resourcesTerminateAllQueues()
+void Resources::terminateAllQueues()
 {
     queCacheWrite.terminate();
     queDecode.terminate();
@@ -716,7 +584,7 @@ void Resources::resourcesTerminateAllQueues()
     queFetching.terminate();
 }
 
-void Resources::resourcesRenderFinalize()
+void Resources::renderFinalize()
 {
     OPTICK_EVENT();
 
@@ -727,10 +595,10 @@ void Resources::resourcesRenderFinalize()
     resources.clear();
 
     // allow the dataAllRun method to return to the caller
-    resourcesTerminateAllQueues();
+    terminateAllQueues();
 }
 
-void Resources::resourcesRenderUpdate()
+void Resources::renderUpdate()
 {
     OPTICK_EVENT();
 
@@ -745,11 +613,11 @@ void Resources::resourcesRenderUpdate()
             switch ((Resource::State)it.second->state)
             {
             case Resource::State::initializing:
-            case Resource::State::checkCache:
-            case Resource::State::startDownload:
-            case Resource::State::downloading:
-            case Resource::State::downloaded:
-            case Resource::State::decoded:
+            case Resource::State::cacheReadQueue:
+            case Resource::State::fetchQueue:
+            case Resource::State::fetching:
+            case Resource::State::decodeQueue:
+            case Resource::State::uploadQueue:
                 map->statistics.resourcesPreparing++;
                 break;
             case Resource::State::ready:
@@ -760,28 +628,22 @@ void Resources::resourcesRenderUpdate()
             }
         }
 
-        map->statistics.resourcesActive
-            = resources.size();
-        map->statistics.resourcesDownloading
-            = downloads;
-        map->statistics.resourcesQueueCacheWrite
-            = queCacheWrite.estimateSize();
-        map->statistics.resourcesQueueDecode
-            = queDecode.estimateSize();
-        map->statistics.resourcesQueueUpload
-            = queUpload.estimateSize();
-        map->statistics.resourcesQueueGeodata
-            = queGeodata.estimateSize();
-        map->statistics.resourcesQueueAtmosphere
-            = queAtmosphere.estimateSize();
+        map->statistics.resourcesActive = resources.size();
+        map->statistics.resourcesDownloading = downloads;
+        map->statistics.resourcesQueueDownload = queFetching.estimateSize();
+        map->statistics.resourcesQueueCacheRead = queCacheRead.estimateSize();
+        map->statistics.resourcesQueueCacheWrite = queCacheWrite.estimateSize();
+        map->statistics.resourcesQueueDecode = queDecode.estimateSize();
+        map->statistics.resourcesQueueGeodata = queGeodata.estimateSize();
+        map->statistics.resourcesQueueAtmosphere = queAtmosphere.estimateSize();
+        map->statistics.resourcesQueueUpload = queUpload.estimateSize();
     }
 
     // split workload into multiple render frames
-    switch (map->renderTickIndex % 3)
+    switch (map->renderTickIndex % 4)
     {
-    case 0: return resourcesRemoveOld();
-    case 1: return resourcesCheckInitialized();
-    case 2: return resourcesStartDownloads();
+    case 1: return checkInitialized();
+    case 3: return removeOld();
     }
 }
 

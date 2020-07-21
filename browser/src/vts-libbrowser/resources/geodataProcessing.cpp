@@ -1878,8 +1878,7 @@ if (fnc == #NAME) \
         else
             spec.unionData.line.units = GpuGeodataSpec::Units::Pixels;
 
-        spec.unionData.line.width
-            = convertToDouble(layer["line-width"]);
+        spec.unionData.line.width = convertToDouble(layer["line-width"]);
         if (compatibility && spec.type == GpuGeodataSpec::Type::LineScreen)
             spec.unionData.line.width *= 0.5;
 
@@ -1900,8 +1899,7 @@ if (fnc == #NAME) \
 
         std::string hysteresisId = getHysteresisIdSpec(layer, spec);
 
-        float importance = getImportanceSpec(layer, spec,
-            spec.commonData.icon.margin);
+        float importance = getImportanceSpec(layer, spec, spec.commonData.icon.margin);
 
         GpuGeodataSpec &data = findSpecData(spec);
         const auto arr = getFeaturePositions();
@@ -1918,55 +1916,25 @@ if (fnc == #NAME) \
 
         spec.type = GpuGeodataSpec::Type::LabelFlat;
 
-        vecToRaw(layer.isMember("line-label-color")
-            ? convertColor(layer["line-label-color"])
-            : vec4f(1, 1, 1, 1),
-            spec.unionData.labelFlat.color);
-        vecToRaw(layer.isMember("line-label-color2")
-            ? convertColor(layer["line-label-color2"])
-            : vec4f(0, 0, 0, 1),
-            spec.unionData.labelFlat.color2);
+        vecToRaw(layer.isMember("line-label-color") ? convertColor(layer["line-label-color"]) : vec4f(1, 1, 1, 1), spec.unionData.labelFlat.color);
+        vecToRaw(layer.isMember("line-label-color2") ? convertColor(layer["line-label-color2"]) : vec4f(0, 0, 0, 1), spec.unionData.labelFlat.color2);
+        vecToRaw(layer.isMember("line-label-outline") ? convertVector4(layer["line-label-outline"]) : vec4f(0.27, 0.75, 2.2, 2.2), spec.unionData.labelFlat.outline);
 
-        vecToRaw(layer.isMember("line-label-outline")
-            ? convertVector4(layer["line-label-outline"])
-            : vec4f(0.27, 0.75, 2.2, 2.2),
-            spec.unionData.labelFlat.outline);
-
-        spec.unionData.labelFlat.offset
-            = layer.isMember("line-label-offset")
-            ? convertToDouble(layer["line-label-offset"])
-            : 0;
-
-        spec.commonData.preventOverlap
-            = layer.isMember("line-label-no-overlap-margin");
-
-        spec.unionData.labelFlat.marginMult
-            = layer.isMember("line-label-no-overlap-margin")
-            ? convertToDouble(layer["line-label-no-overlap-margin"])
-            : 1.1;
-
-        spec.unionData.labelFlat.size
-            = layer.isMember("line-label-size")
-            ? convertToDouble(layer["line-label-size"])
-            : 1;
-
-        spec.unionData.labelFlat.units
-            = (layer.isMember("line-label-type")
-            && layer["line-label-type"] == "screen-flat")
-            ? GpuGeodataSpec::Units::Pixels
-            : GpuGeodataSpec::Units::Meters;
+        spec.commonData.preventOverlap = layer.isMember("line-label-no-overlap-margin");
+        spec.unionData.labelFlat.offset = layer.isMember("line-label-offset") ? convertToDouble(layer["line-label-offset"]) : 0;
+        spec.unionData.labelFlat.marginMult = layer.isMember("line-label-no-overlap-margin") ? convertToDouble(layer["line-label-no-overlap-margin"]) : 1.1;
+        spec.unionData.labelFlat.size = layer.isMember("line-label-size") ? convertToDouble(layer["line-label-size"]) : 1;
+        spec.unionData.labelFlat.units = (layer.isMember("line-label-type") && layer["line-label-type"] == "screen-flat") ? GpuGeodataSpec::Units::Pixels : GpuGeodataSpec::Units::Meters;
 
         if (compatibility)
         {
-            if (spec.unionData.labelFlat.units
-                == GpuGeodataSpec::Units::Meters)
+            if (spec.unionData.labelFlat.units == GpuGeodataSpec::Units::Meters)
                 spec.unionData.labelFlat.size *= 1.6;
             else
                 spec.unionData.labelFlat.size *= 0.85;
         }
 
-        std::string text = evaluate(layer.isMember("line-label-source")
-            ? layer["line-label-source"] : "$name").asString();
+        std::string text = evaluate(layer.isMember("line-label-source") ? layer["line-label-source"] : "$name").asString();
         if (text.empty())
             return;
 
@@ -1995,28 +1963,13 @@ if (fnc == #NAME) \
 
         spec.type = GpuGeodataSpec::Type::LabelScreen;
 
-        if (evaluate(layer["icon"]).asBool()
-            && evaluate(layer["pack"]).asBool())
+        if (evaluate(layer["icon"]).asBool() && evaluate(layer["pack"]).asBool())
             addIconSpec(layer, spec);
 
-        vecToRaw(layer.isMember("label-color")
-            ? convertColor(layer["label-color"])
-            : vec4f(1, 1, 1, 1),
-            spec.unionData.labelScreen.color);
-        vecToRaw(layer.isMember("label-color2")
-            ? convertColor(layer["label-color2"])
-            : vec4f(0, 0, 0, 1),
-            spec.unionData.labelScreen.color2);
-
-        vecToRaw(layer.isMember("label-outline")
-            ? convertVector4(layer["label-outline"])
-            : vec4f(0.27, 0.75, 2.2, 2.2),
-            spec.unionData.labelScreen.outline);
-
-        vecToRaw(layer.isMember("label-offset")
-            ? convertVector2(layer["label-offset"])
-            : vec2f(0, 0),
-            spec.unionData.labelScreen.offset);
+        vecToRaw(layer.isMember("label-color") ? convertColor(layer["label-color"]) : vec4f(1, 1, 1, 1), spec.unionData.labelScreen.color);
+        vecToRaw(layer.isMember("label-color2") ? convertColor(layer["label-color2"]) : vec4f(0, 0, 0, 1), spec.unionData.labelScreen.color2);
+        vecToRaw(layer.isMember("label-outline") ? convertVector4(layer["label-outline"]) : vec4f(0.27, 0.75, 2.2, 2.2), spec.unionData.labelScreen.outline);
+        vecToRaw(layer.isMember("label-offset") ? convertVector2(layer["label-offset"]) : vec2f(0, 0), spec.unionData.labelScreen.offset);
         spec.unionData.labelScreen.offset[1] *= -1;
         if (compatibility)
         {
@@ -2025,50 +1978,30 @@ if (fnc == #NAME) \
         }
 
         if (layer.isMember("label-no-overlap"))
-            spec.commonData.preventOverlap
-                = spec.commonData.preventOverlap
-                    && evaluate(layer["label-no-overlap"]).asBool();
+            spec.commonData.preventOverlap = spec.commonData.preventOverlap && evaluate(layer["label-no-overlap"]).asBool();
 
         vecToRaw(vec2f(5, 5), spec.unionData.labelScreen.margin);
         if (layer.isMember("label-no-overlap-margin"))
-            vecToRaw(convertNoOverlapMargin(layer["label-no-overlap-margin"]),
-                spec.unionData.labelScreen.margin);
+            vecToRaw(convertNoOverlapMargin(layer["label-no-overlap-margin"]), spec.unionData.labelScreen.margin);
 
-        spec.unionData.labelScreen.size
-            = layer.isMember("label-size")
-            ? convertToDouble(layer["label-size"])
-            : 20;
+        spec.unionData.labelScreen.size = layer.isMember("label-size") ? convertToDouble(layer["label-size"]) : 20;
         if (compatibility)
             spec.unionData.labelScreen.size *= 1.5 * 1.52 / 3.0;
 
-        spec.unionData.labelScreen.width
-            = layer.isMember("label-width")
-            ? convertToDouble(layer["label-width"])
-            : 200;
-
-        spec.unionData.labelScreen.origin
-            = layer.isMember("label-origin")
-            ? convertOrigin(layer["label-origin"])
-            : GpuGeodataSpec::Origin::BottomCenter;
-
-        spec.unionData.labelScreen.textAlign
-            = layer.isMember("label-align")
-            ? convertTextAlign(layer["label-align"])
-            : GpuGeodataSpec::TextAlign::Center;
+        spec.unionData.labelScreen.width = layer.isMember("label-width") ? convertToDouble(layer["label-width"]) : 200;
+        spec.unionData.labelScreen.origin = layer.isMember("label-origin") ? convertOrigin(layer["label-origin"]) : GpuGeodataSpec::Origin::BottomCenter;
+        spec.unionData.labelScreen.textAlign = layer.isMember("label-align") ? convertTextAlign(layer["label-align"]) : GpuGeodataSpec::TextAlign::Center;
 
         if (layer.isMember("label-stick"))
-            spec.commonData.stick
-            = convertStick(layer["label-stick"]);
+            spec.commonData.stick = convertStick(layer["label-stick"]);
 
-        std::string text = evaluate(layer.isMember("label-source")
-            ? layer["label-source"] : "$name").asString();
+        std::string text = evaluate(layer.isMember("label-source") ? layer["label-source"] : "$name").asString();
         if (text.empty())
             return;
 
         std::string hysteresisId = getHysteresisIdSpec(layer, spec);
 
-        float importance = getImportanceSpec(layer, spec,
-            spec.unionData.labelScreen.margin);
+        float importance = getImportanceSpec(layer, spec, spec.unionData.labelScreen.margin);
 
         GpuGeodataSpec &data = findSpecData(spec);
         auto arr = getFeaturePositions();
@@ -2087,22 +2020,19 @@ if (fnc == #NAME) \
     {
         spec.type = GpuGeodataSpec::Type::Triangles;
 
-        vecToRaw(layer.isMember("polygon-color")
-            ? convertColor(layer["polygon-color"])
-            : vec4f(1, 1, 1, 1),
-            spec.unionData.triangles.color);
+        vecToRaw(layer.isMember("polygon-color") ? convertColor(layer["polygon-color"]) : vec4f(1, 1, 1, 1), spec.unionData.triangles.color);
 
         if (layer.isMember("polygon-style"))
         {
             Value v = evaluate(layer["polygon-style"]);
             if (v.asString() == "solid")
-                spec.unionData.triangles.style
-                    = GpuGeodataSpec::PolygonStyle::Solid;
+                spec.unionData.triangles.style = GpuGeodataSpec::PolygonStyle::Solid;
             else if (v.asString() == "flatshade")
-                spec.unionData.triangles.style
-                    = GpuGeodataSpec::PolygonStyle::FlatShade;
+                spec.unionData.triangles.style = GpuGeodataSpec::PolygonStyle::FlatShade;
             else if (Validating)
+            {
                 THROW << "Invalid polygon style";
+            }
         }
         else
         {
@@ -2174,9 +2104,7 @@ if (fnc == #NAME) \
             validateArrayLength(v, 3, 3, "Point must have 3 coordinates");
             vec3 p = vec3(v[0].asDouble(), v[1].asDouble(), v[2].asDouble());
             vec3f f = vec3(orthonormalize * p).cast<float>();
-            assert(!std::isnan(f[0])
-                && !std::isnan(f[1])
-                && !std::isnan(f[2]));
+            assert(!std::isnan(f[0]) && !std::isnan(f[1]) && !std::isnan(f[2]));
             return { f[0], f[1], f[2] };
         }
 
@@ -2192,8 +2120,7 @@ if (fnc == #NAME) \
 
         vec3 m2w(const Point &p) const
         {
-            return vec4to3(vec4(model
-                * vec3to4(rawToVec3(p.data()).cast<double>(), 1.0)));
+            return vec4to3(vec4(model * vec3to4(rawToVec3(p.data()).cast<double>(), 1.0)));
         }
 
         mat4 model;
@@ -2214,8 +2141,7 @@ if (fnc == #NAME) \
         case Type::Point:
         {
             const Value &array1 = (*feature)["points"];
-            result.push_back(
-                group->convertArray(array1, false));
+            result.push_back(group->convertArray(array1, false));
             // todo d-points
         } break;
         case Type::Line:
@@ -2223,10 +2149,7 @@ if (fnc == #NAME) \
             const Value &array1 = (*feature)["lines"];
             result.reserve(array1.size());
             for (const Value &array2 : array1)
-            {
-                result.push_back(
-                    group->convertArray(array2, false));
-            }
+                result.push_back(group->convertArray(array2, false));
             // todo d-lines
         } break;
         case Type::Polygon:
@@ -2247,8 +2170,9 @@ if (fnc == #NAME) \
         if (Validating)
         {
             if (!array1.isArray() || (array1.size() % 3) != 0)
-                THROW << "Polygon vertices must be an array "
-                "with size divisible by 3";
+            {
+                THROW << "Polygon vertices must be an array with size divisible by 3";
+            }
         }
         std::vector<Point> vertices;
         vertices.reserve(array1.size());
@@ -2264,8 +2188,9 @@ if (fnc == #NAME) \
         if (Validating)
         {
             if (!surface.isArray() || (surface.size() % 3) != 0)
-                THROW << "Polygon surface must be an array "
-                         "with size divisible by 3";
+            {
+                THROW << "Polygon surface must be an array with size divisible by 3";
+            }
         }
         auto verticesCount = vertices.size();
         for (const Value &vi : surface)
@@ -2282,8 +2207,7 @@ if (fnc == #NAME) \
     {
         for (auto &v : fps)
         {
-            v.erase(std::remove_if(v.begin(), v.end(),
-                [&](const Point &p) {
+            v.erase(std::remove_if(v.begin(), v.end(), [&](const Point &p) {
                 vec3 a = group->m2w(p);
                 for (int i = 0; i < 3; i++)
                 {
@@ -2295,8 +2219,7 @@ if (fnc == #NAME) \
                 return false;
             }), v.end());
         }
-        fps.erase(std::remove_if(fps.begin(), fps.end(),
-            [](const std::vector<Point> &v) {
+        fps.erase(std::remove_if(fps.begin(), fps.end(), [](const std::vector<Point> &v) {
             return v.empty();
         }), fps.end());
     }
@@ -2308,14 +2231,13 @@ if (fnc == #NAME) \
         for (auto &v : data.positions)
         {
             vec3 l = nan3();
-            v.erase(std::remove_if(v.begin(), v.end(),
-                [&](const Point &pp) {
-                    vec3 p = group->m2w(pp);
-                    vec3 d = l - p;
-                    if (dot(d, d) < 1e-5)
-                        return true;
-                    l = p;
-                    return false;
+            v.erase(std::remove_if(v.begin(), v.end(), [&](const Point &pp) {
+                vec3 p = group->m2w(pp);
+                vec3 d = l - p;
+                if (dot(d, d) < 1e-5)
+                    return true;
+                l = p;
+                return false;
             }), v.end());
             removes.push_back(v.size() <= 1);
         }
@@ -2345,7 +2267,7 @@ void GeodataTile::decode()
     // this resource is not meant to be downloaded
     assert(!fetch);
 
-    assert(state == Resource::State::downloaded);
+    assert(state == Resource::State::decodeQueue);
     map->statistics.resourcesDecoded++;
 
     if (map->options.debugValidateGeodataStyles)
@@ -2364,7 +2286,7 @@ void GeodataTile::upload()
 {
     LOG(info2) << "Uploading geodata tile <" << name << ">";
 
-    assert(state == Resource::State::decoded);
+    assert(state == Resource::State::uploadQueue);
     map->statistics.resourcesUploaded++;
 
     // upload
@@ -2391,29 +2313,20 @@ void GeodataTile::upload()
     }
 }
 
-void Resources::resourcesGeodataProcessorEntry()
+void Resources::oneGeodata(std::weak_ptr<GeodataTile> w)
 {
-    OPTICK_THREAD("geodata");
-    setLogThreadName("geodata");
-    while (!queGeodata.stopped())
-    {
-        std::weak_ptr<GeodataTile> w;
-        queGeodata.waitPop(w);
-        std::shared_ptr<GeodataTile> r = w.lock();
-        if (!r)
-            continue;
-        try
-        {
-            r->decode();
-            r->state = Resource::State::decoded;
-            queUpload.push(UploadData(r));
-        }
-        catch (const std::exception &)
-        {
-            map->statistics.resourcesFailed++;
-            r->state = Resource::State::errorFatal;
-        }
-    }
+    std::shared_ptr<GeodataTile> r = w.lock();
+    if (!r)
+        return;
+    r->map->resources->decodeProcess(r);
+}
+
+float Resources::priority(const std::weak_ptr<GeodataTile> &w)
+{
+    std::shared_ptr<GeodataTile> r = w.lock();
+    if (r)
+        return r->priority;
+    return inf1();
 }
 
 } // namespace vts

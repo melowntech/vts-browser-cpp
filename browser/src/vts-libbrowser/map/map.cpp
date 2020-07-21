@@ -292,19 +292,20 @@ bool testAndThrow(Resource::State state, const std::string &message)
     switch (state)
     {
     case Resource::State::initializing:
-    case Resource::State::checkCache:
-    case Resource::State::startDownload:
-    case Resource::State::downloaded:
-    case Resource::State::downloading:
-    case Resource::State::decoded:
+    case Resource::State::cacheReadQueue:
+    case Resource::State::fetchQueue:
+    case Resource::State::fetching:
+    case Resource::State::decodeQueue:
+    case Resource::State::uploadQueue:
     case Resource::State::errorRetry:
         return false;
     case Resource::State::ready:
         return true;
-    default:
+    case Resource::State::errorFatal:
+    case Resource::State::availFail:
         LOGTHROW(err4, MapconfigException) << message;
-        throw;
     }
+    throw;
 }
 
 std::string convertPath(const std::string &path,
@@ -326,8 +327,7 @@ TraverseNode *findTravById(TraverseNode *trav, const TileId &what)
         trav = trav->parent;
     while (trav->id.lod != what.lod)
     {
-        TileId t = vtslibs::vts::parent(what,
-            what.lod - (trav->id.lod + 1));
+        TileId t = vtslibs::vts::parent(what, what.lod - (trav->id.lod + 1));
         TraverseNode *c = nullptr;
         for (auto &it : trav->childs)
             if (it.id == t)

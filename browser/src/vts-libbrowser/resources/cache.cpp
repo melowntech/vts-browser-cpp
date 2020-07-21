@@ -99,7 +99,7 @@ public:
         }
     }
 
-    void write(CacheData &&cd)
+    void write(const CacheData &cd)
     {
 #ifndef __EMSCRIPTEN__
         if (disabled)
@@ -253,9 +253,9 @@ void Resources::cacheInit()
     map->cache = std::make_shared<Cache>(map->createOptions);
 }
 
-void Resources::cacheWrite(CacheData &&data)
+void Resources::cacheWrite(const CacheData &data)
 {
-    map->cache->write(std::move(data));
+    map->cache->write(data);
 }
 
 CacheData Resources::cacheRead(const std::string &name)

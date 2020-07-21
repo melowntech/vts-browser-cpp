@@ -32,9 +32,7 @@
 namespace vts
 {
 
-FetchTaskImpl::FetchTaskImpl(const std::shared_ptr<Resource> &resource) :
-	FetchTask(resource->name, resource->resourceType()),
-    name(resource->name), map(resource->map), resource(resource)
+FetchTaskImpl::FetchTaskImpl(const std::shared_ptr<Resource> &resource) : FetchTask(resource->name, resource->resourceType()), name(resource->name), map(resource->map), resource(resource)
 {
     reply.expires = -1;
 }
@@ -43,8 +41,7 @@ bool FetchTaskImpl::performAvailTest() const
 {
     if (!availTest)
         return true;
-    auto at = std::static_pointer_cast<vtslibs::registry
-        ::BoundLayer::Availability>(availTest);
+    auto at = std::static_pointer_cast<vtslibs::registry::BoundLayer::Availability>(availTest);
     switch (at->type)
     {
     case vtslibs::registry::BoundLayer::Availability::Type::negativeCode:
@@ -63,23 +60,18 @@ bool FetchTaskImpl::performAvailTest() const
     return true;
 }
 
-Resource::Resource(vts::MapImpl *map, const std::string &name) :
-    name(name), map(map),
-    priority(nan1())
+Resource::Resource(vts::MapImpl *map, const std::string &name) : name(name), map(map), priority(nan1())
 {
-    LOG(debug) << "Constructing resource <" << name
-               << "> at <" << this << ">";
+    LOG(debug) << "Constructing resource <" << name << "> at <" << this << ">";
 }
 
 Resource::~Resource()
 {
-    LOG(debug) << "Destroying resource <" << name
-               << "> at <" << this << ">";
+    LOG(debug) << "Destroying resource <" << name << "> at <" << this << ">";
     if (info.userData)
     {
-        //assert(!map->resources.queUpload.stopped());
-        map->resources->queUpload.push(
-            UploadData(info.userData, 0));
+        assert(!map->resources->queUpload.stop);
+        map->resources->queUpload.push(UploadData(info.userData, 0));
     }
 }
 
@@ -121,8 +113,7 @@ void Resource::updateAvailability(const std::shared_ptr<void> &availTest)
     }
     else
     {
-        f = std::make_shared<FetchTaskImpl>(
-            map->resources->resources[name]);
+        f = std::make_shared<FetchTaskImpl>(map->resources->resources[name]);
         f->availTest = availTest;
         fetch = f;
     }
@@ -151,20 +142,20 @@ std::ostream &operator << (std::ostream &stream, Resource::State state)
         case Resource::State::initializing:
             stream << "initializing";
             break;
-        case Resource::State::checkCache:
-            stream << "readCache";
+        case Resource::State::cacheReadQueue:
+            stream << "cacheReadQueue";
             break;
-        case Resource::State::startDownload:
-            stream << "startDownload";
+        case Resource::State::fetchQueue:
+            stream << "fetchQueue";
             break;
-        case Resource::State::downloading:
-            stream << "downloading";
+        case Resource::State::fetching:
+            stream << "fetching";
             break;
-        case Resource::State::downloaded:
-            stream << "downloaded";
+        case Resource::State::decodeQueue:
+            stream << "decodeQueue";
             break;
-        case Resource::State::decoded:
-            stream << "decoded";
+        case Resource::State::uploadQueue:
+            stream << "uploadQueue";
             break;
         case Resource::State::ready:
             stream << "ready";
@@ -179,8 +170,7 @@ std::ostream &operator << (std::ostream &stream, Resource::State state)
             stream << "availFail";
             break;
         default:
-            LOGTHROW(fatal, std::invalid_argument)
-                << "invalid resource state enum";
+            LOGTHROW(fatal, std::invalid_argument) << "invalid resource state enum";
             throw;
     }
     return stream;
@@ -202,8 +192,7 @@ uint32 gpuTypeSize(GpuTypeEnum type)
     case GpuTypeEnum::Float:
         return 4;
     default:
-        LOGTHROW(fatal, std::invalid_argument)
-            << "invalid gpu type enum";
+        LOGTHROW(fatal, std::invalid_argument) << "invalid gpu type enum";
         throw;
     }
 }

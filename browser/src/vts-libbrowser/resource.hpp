@@ -41,18 +41,17 @@ namespace vts
 class MapImpl;
 class FetchTaskImpl;
 
-class Resource : public std::enable_shared_from_this<Resource>,
-        private Immovable
+class Resource : public std::enable_shared_from_this<Resource>, private Immovable
 {
 public:
     enum class State
     {
         initializing,
-        checkCache,
-        startDownload,
-        downloading,
-        downloaded,
-        decoded,
+        cacheReadQueue,
+        fetchQueue,
+        fetching,
+        decodeQueue,
+        uploadQueue,
         ready,
         errorFatal,
         errorRetry,
@@ -71,7 +70,7 @@ public:
     void updateAvailability(const std::shared_ptr<void> &availTest);
     void forceRedownload();
     explicit operator bool() const; // return state == ready
-    std::shared_ptr<void> getUserData() const; // returns the user data from info but with replaced owner to prolonge the lifetime of the entire resource
+    std::shared_ptr<void> getUserData() const; // returns the user data from info but with replaced owner to prolong the lifetime of the entire resource
 
     const std::string name;
     MapImpl *const map = nullptr;
@@ -82,7 +81,7 @@ public:
     std::time_t retryTime = -1;
     uint32 retryNumber = 0;
     uint32 lastAccessTick = 0;
-    float priority;
+    float priority = 0;
 };
 
 std::ostream &operator << (std::ostream &stream, Resource::State state);

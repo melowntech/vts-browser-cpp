@@ -37,8 +37,7 @@
 namespace vts
 {
 
-GeodataFeatures::GeodataFeatures(vts::MapImpl *map, const std::string &name) :
-    Resource(map, name)
+GeodataFeatures::GeodataFeatures(vts::MapImpl *map, const std::string &name) : Resource(map, name)
 {}
 
 void GeodataFeatures::decode()
@@ -51,9 +50,7 @@ void GeodataFeatures::decode()
     {
         static const std::string prefix = "extracted/";
         std::string b, c;
-        std::string path = prefix
-            + convertNameToFolderAndFile(this->name, b, c)
-            + ".json";
+        std::string path = prefix + convertNameToFolderAndFile(this->name, b, c) + ".json";
         if (!boost::filesystem::exists(path))
         {
             boost::filesystem::create_directories(prefix + b);
@@ -68,8 +65,7 @@ FetchTask::ResourceType GeodataFeatures::resourceType() const
     return FetchTask::ResourceType::GeodataFeatures;
 }
 
-GeodataStylesheet::GeodataStylesheet(MapImpl *map, const std::string &name) :
-    Resource(map, name)
+GeodataStylesheet::GeodataStylesheet(MapImpl *map, const std::string &name) : Resource(map, name)
 {
     priority = inf1();
 }
@@ -85,9 +81,7 @@ void GeodataStylesheet::decode()
     {
         static const std::string prefix = "extracted/";
         std::string b, c;
-        std::string path = prefix
-            + convertNameToFolderAndFile(this->name, b, c)
-            + ".json";
+        std::string path = prefix + convertNameToFolderAndFile(this->name, b, c) + ".json";
         if (!boost::filesystem::exists(path))
         {
             boost::filesystem::create_directories(prefix + b);
@@ -133,10 +127,8 @@ std::shared_ptr<GpuTexture> bitmapTexture(MapImpl *map, const Json::Value &v)
     if (v.isObject())
     {
         std::string url = v["url"].asString();
-        std::string filter = v.isMember("filter")
-            ? v["filter"].asString() : "linear";
-        bool tiled = v.isMember("tiled")
-            ? v["tiled"].asBool() : false;
+        std::string filter = v.isMember("filter") ? v["filter"].asString() : "linear";
+        bool tiled = v.isMember("tiled") ? v["tiled"].asBool() : false;
         std::shared_ptr<GpuTexture> tex = bitmapTexture(map, url);
         if (filter == "nearest")
             tex->filterMode = GpuTextureSpec::FilterMode::Nearest;
@@ -145,11 +137,8 @@ std::shared_ptr<GpuTexture> bitmapTexture(MapImpl *map, const Json::Value &v)
         else if (filter == "trilinear")
             tex->filterMode = GpuTextureSpec::FilterMode::LinearMipmapLinear;
         else
-            LOGTHROW(err2, std::runtime_error)
-            << "Invalid style bitmap filter definition <"
-            << filter << ">";
-        tex->wrapMode = tiled ? GpuTextureSpec::WrapMode::Repeat
-            : GpuTextureSpec::WrapMode::ClampToEdge;
+            LOGTHROW(err2, std::runtime_error) << "Invalid style bitmap filter definition <" << filter << ">";
+        tex->wrapMode = tiled ? GpuTextureSpec::WrapMode::Repeat : GpuTextureSpec::WrapMode::ClampToEdge;
         return tex;
     }
     else if (v.isString())
@@ -158,9 +147,7 @@ std::shared_ptr<GpuTexture> bitmapTexture(MapImpl *map, const Json::Value &v)
     }
     else
     {
-        LOGTHROW(err2, std::runtime_error)
-            << "Invalid style bitmap definition <"
-            << v.toStyledString() << ">";
+        LOGTHROW(err2, std::runtime_error) << "Invalid style bitmap definition <" << v.toStyledString() << ">";
         throw;
     }
 }
@@ -196,9 +183,7 @@ Validity GeodataStylesheet::dependencies()
         }
         catch (std::exception &e)
         {
-            LOG(err3) << "Failed parsing dependencies from stylesheet <"
-                << name << ">, with error <"
-                << e.what() << ">";
+            LOG(err3) << "Failed parsing dependencies from stylesheet <" << name << ">, with error <" << e.what() << ">";
             dependenciesValidity = Validity::Invalid;
             return Validity::Invalid;
         }
@@ -226,8 +211,7 @@ FetchTask::ResourceType GeodataStylesheet::resourceType() const
     return FetchTask::ResourceType::GeodataStylesheet;
 }
 
-GeodataTile::GeodataTile(MapImpl *map, const std::string &name)
-    : Resource(map, name)
+GeodataTile::GeodataTile(MapImpl *map, const std::string &name) : Resource(map, name)
 {
     state = Resource::State::ready;
 
@@ -242,8 +226,7 @@ GeodataTile::~GeodataTile()
     {
         if (it.userData)
         {
-            map->resources->queUpload.push(
-                UploadData(it.userData, 0));
+            map->resources->queUpload.push(UploadData(it.userData, 0));
         }
     }
 }
@@ -253,11 +236,7 @@ FetchTask::ResourceType GeodataTile::resourceType() const
     return FetchTask::ResourceType::Undefined;
 }
 
-void GeodataTile::update(
-    const std::shared_ptr<GeodataStylesheet> &s,
-    const std::shared_ptr<const std::string> &f,
-    const std::shared_ptr<const Json::Value> &b,
-    const vec3 ab[2], const TileId &tid)
+void GeodataTile::update(const std::shared_ptr<GeodataStylesheet> &s, const std::shared_ptr<const std::string> &f, const std::shared_ptr<const Json::Value> &b, const vec3 ab[2], const TileId &tid)
 {
     switch ((Resource::State)state)
     {
@@ -266,8 +245,7 @@ void GeodataTile::update(
         UTILITY_FALLTHROUGH;
     case Resource::State::errorFatal: // allow reloading when sources change, even if it failed before
     case Resource::State::ready:
-        if (style != s || features != f || browserOptions != b
-            || tileId != tid || ab[0] != aabbPhys[0] || ab[1] != aabbPhys[1])
+        if (style != s || features != f || browserOptions != b || tileId != tid || ab[0] != aabbPhys[0] || ab[1] != aabbPhys[1])
         {
             style = s;
             features = f;
@@ -275,9 +253,8 @@ void GeodataTile::update(
             aabbPhys[0] = ab[0];
             aabbPhys[1] = ab[1];
             tileId = tid;
-            state = Resource::State::downloaded;
-            map->resources->queGeodata.push(
-                std::dynamic_pointer_cast<GeodataTile>(shared_from_this()));
+            state = Resource::State::decodeQueue;
+            map->resources->queDecode.push(shared_from_this());
             return;
         }
         break;

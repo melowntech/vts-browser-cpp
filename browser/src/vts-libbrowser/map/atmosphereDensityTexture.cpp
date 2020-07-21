@@ -44,37 +44,30 @@ namespace vts
 namespace
 {
 
-void generateAtmosphereTexture(
-    const std::shared_ptr<GpuAtmosphereDensityTexture> &tex,
-    const MapCelestialBody &body)
+void generateAtmosphereTexture(const std::shared_ptr<GpuAtmosphereDensityTexture> &tex)
 {
     OPTICK_EVENT();
     double boundaryThickness, horizontalExponent, verticalExponent;
-    atmosphereDerivedAttributes(body, boundaryThickness,
-        horizontalExponent, verticalExponent);
+    atmosphereDerivedAttributes(tex->map->body, boundaryThickness, horizontalExponent, verticalExponent);
 
     // generate the texture anew
     vtslibs::vts::AtmosphereTextureSpec gats;
-    gats.thickness = boundaryThickness / body.majorRadius;
+    gats.thickness = boundaryThickness / tex->map->body.majorRadius;
     gats.verticalCoefficient = verticalExponent;
-    auto res = vtslibs::vts::generateAtmosphereTexture(gats,
-            vtslibs::vts::AtmosphereTexture::Format::gray3);
+    auto res = vtslibs::vts::generateAtmosphereTexture(gats, vtslibs::vts::AtmosphereTexture::Format::gray3);
 
     // store the result
     Buffer tmp(res.data.size());
     memcpy(tmp.data(), res.data.data(), res.data.size());
-    encodePng(tmp, tex->fetch->reply.content,
-        res.size.width, res.size.height, res.components);
+    encodePng(tmp, tex->fetch->reply.content, res.size.width, res.size.height, res.components);
+    tex->info.ramMemoryCost = tex->fetch->reply.content.size();
 
     // write to cache
     tex->map->resources->queCacheWrite.push(tex->fetch.get());
 
     // mark the texture ready
-    {
-        tex->info.ramMemoryCost = tex->fetch->reply.content.size();
-        tex->state = Resource::State::downloaded;
-        tex->map->resources->queDecode.push(tex);
-    }
+    tex->state = Resource::State::decodeQueue;
+    tex->map->resources->queDecode.push(tex);
 }
 
 void gray3ToRgb(GpuTextureSpec &spec)
@@ -100,20 +93,16 @@ void gray3ToRgb(GpuTextureSpec &spec)
     {
         for (uint32 x = 0; x < spec.width; x++)
         {
-            res[(y * spec.width + x) * spec.components + 0]
-                = r[y * spec.width + x];
-            res[(y * spec.width + x) * spec.components + 1]
-                = g[y * spec.width + x];
-            res[(y * spec.width + x) * spec.components + 2]
-                = b[y * spec.width + x];
+            res[(y * spec.width + x) * spec.components + 0] = r[y * spec.width + x];
+            res[(y * spec.width + x) * spec.components + 1] = g[y * spec.width + x];
+            res[(y * spec.width + x) * spec.components + 2] = b[y * spec.width + x];
         }
     }
 }
 
 } // namespace
 
-GpuAtmosphereDensityTexture::GpuAtmosphereDensityTexture(MapImpl *map,
-    const std::string &name) : GpuTexture(map, name)
+GpuAtmosphereDensityTexture::GpuAtmosphereDensityTexture(MapImpl *map, const std::string &name) : GpuTexture(map, name)
 {
     filterMode = GpuTextureSpec::FilterMode::Nearest;
     wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
@@ -122,8 +111,7 @@ GpuAtmosphereDensityTexture::GpuAtmosphereDensityTexture(MapImpl *map,
 void GpuAtmosphereDensityTexture::decode()
 {
     LOG(info1) << "Decoding atmosphere texture <" << name << ">";
-    std::shared_ptr<GpuTextureSpec> spec
-        = std::make_shared<GpuTextureSpec>(fetch->reply.content);
+    std::shared_ptr<GpuTextureSpec> spec = std::make_shared<GpuTextureSpec>(fetch->reply.content);
     this->width = spec->width;
     this->height = spec->height;
     spec->filterMode = filterMode;
@@ -132,26 +120,28 @@ void GpuAtmosphereDensityTexture::decode()
     decodeData = std::static_pointer_cast<void>(spec);
 }
 
-void Resources::resourcesAtmosphereGeneratorEntry()
+void Resources::oneAtmosphere(std::weak_ptr<GpuAtmosphereDensityTexture> w)
 {
-    OPTICK_THREAD("atmosphereGenerator");
-    setLogThreadName("atmosphere generator");
-    while (!queAtmosphere.stopped())
+    std::shared_ptr<GpuAtmosphereDensityTexture> r = w.lock();
+    if (!r)
+        return;
+    try
     {
-        std::weak_ptr<GpuAtmosphereDensityTexture> w;
-        queAtmosphere.waitPop(w);
-        std::shared_ptr<GpuAtmosphereDensityTexture> r = w.lock();
-        if (!r)
-            continue;
-        try
-        {
-            generateAtmosphereTexture(r, map->body);
-        }
-        catch (const std::exception &)
-        {
-            r->state = Resource::State::errorFatal;
-        }
+        generateAtmosphereTexture(r);
     }
+    catch (const std::exception &)
+    {
+        r->map->statistics.resourcesFailed++;
+        r->state = Resource::State::errorFatal;
+    }
+}
+
+float Resources::priority(const std::weak_ptr<GpuAtmosphereDensityTexture> &w)
+{
+    std::shared_ptr<GpuAtmosphereDensityTexture> r = w.lock();
+    if (r)
+        return r->priority;
+    return inf1();
 }
 
 } // namespace vts

@@ -101,6 +101,8 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
     const std::shared_ptr<CoordManip> &cnv,
     const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta)
 {
+    const bool projected = m->navigationSrsType() == vtslibs::registry::Srs::Type::projected;
+
     MetaNode node;
     std::string srs;
     {
@@ -133,26 +135,30 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
         vec2 fl = vecFromUblas<vec2>(node.extents.ll);
         vec2 fu = vecFromUblas<vec2>(node.extents.ur);
         vec3 el = vec2to3(fl, double(meta.geomExtents.z.min));
-        vec3 eu = vec2to3(fu, double(meta.geomExtents.z.max));
+        vec3 eu = vec2to3(fu, double(meta.geomExtents.z.min));
         vec3 ed = eu - el;
-        for (uint32 i = 0; i < 8; i++)
+        for (uint32 i = 0; i < 4; i++)
         {
             vec3 f = lowerUpperCombine(i).cwiseProduct(ed) + el;
             f = cnv->convert(f, srs, Srs::Physical);
             cornersPhys[i] = f;
         }
+        for (uint32 i = 4; i < 8; i++)
+        {
+            vec3 bottom = cornersPhys[i - 4];
+            vec3 up = projected ? vec3(0, 0, 1) : bottom.normalized();
+            cornersPhys[i] = bottom + up * (double(meta.geomExtents.z.max) - double(meta.geomExtents.z.min));
+        }
 
         // disks
-        if (id.lod > 4)
+        if (id.lod > 4 && !projected)
         {
             vec2 sds2 = vec2((fu + fl) * 0.5);
             vec3 sds = vec2to3(sds2, double(meta.geomExtents.z.min));
             vec3 vn1 = cnv->convert(sds, srs, Srs::Physical);
             node.diskNormalPhys = vn1.normalized();
             node.diskHeightsPhys[0] = vn1.norm();
-            sds = vec2to3(sds2, double(meta.geomExtents.z.max));
-            vec3 vn2 = cnv->convert(sds, srs, Srs::Physical);
-            node.diskHeightsPhys[1] = vn2.norm();
+            node.diskHeightsPhys[1] = node.diskHeightsPhys[0] + double(meta.geomExtents.z.max) - double(meta.geomExtents.z.min);
             sds = vec2to3(fu, double(meta.geomExtents.z.min));
             vec3 vc = cnv->convert(sds, srs, Srs::Physical);
             node.diskHalfAngle = std::acos(dot(node.diskNormalPhys, vc.normalized()));
@@ -187,8 +193,9 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
             center += cornersPhys[i];
         center /= 8;
 
-        vec3 f = cornersPhys[4] - cornersPhys[0];
-        vec3 u = cornersPhys[2] - cornersPhys[0];
+        const auto &cp = cornersPhys;
+        vec3 f = cp[2] + cp[3] + cp[6] + cp[7] - cp[0] - cp[1] - cp[5] - cp[4];
+        vec3 u = cp[4] + cp[5] + cp[6] + cp[7] - cp[0] - cp[1] - cp[2] - cp[3];
         mat4 t = lookAt(center, center + f, u);
 
         MetaNode::Obb obb;

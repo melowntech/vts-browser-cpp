@@ -89,14 +89,12 @@ VTS_API mat4 lookAt(const vec3 &eye, const vec3 &target);
 VTS_API mat4 frustumMatrix(double left, double right,
                            double bottom, double top,
                            double near_, double far_);
-VTS_API mat4 perspectiveMatrix(double fovyDegs, double aspect,
-                               double near_, double far_);
+VTS_API mat4 perspectiveMatrix(double fovyDegs, double aspect, double near_, double far_);
 VTS_API mat4 orthographicMatrix(double left, double right,
                                 double bottom, double top,
                                 double near_, double far_);
 
-VTS_API double aabbPointDist(const vec3 &point,
-                             const vec3 &min, const vec3 &max);
+VTS_API double aabbPointDist(const vec3 &point, const vec3 &min, const vec3 &max);
 VTS_API bool aabbTest(const vec3 aabb[2], const vec4 planes[6]);
 VTS_API void frustumPlanes(const mat4 &vp, vec4 planes[6]);
 

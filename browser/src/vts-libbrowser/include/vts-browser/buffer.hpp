@@ -82,8 +82,7 @@ private:
     uint32 size_;
 };
 
-VTS_API void writeLocalFileBuffer(const std::string &path,
-                                  const Buffer &buffer);
+VTS_API void writeLocalFileBuffer(const std::string &path, const Buffer &buffer);
 VTS_API Buffer readLocalFileBuffer(const std::string &path);
 
 // this will copy the data and return it in a buffer
@@ -105,14 +104,12 @@ public:
 // this will store the pointer directly!
 // the data it points to must never be freed!
 // the data may reside in text/code segment
-VTS_API void addInternalMemoryData(const std::string &name,
-    const unsigned char *data, uint32 size);
+VTS_API void addInternalMemoryData(const std::string &name, const unsigned char *data, uint32 size);
 
 VTS_API bool existsInternalMemoryData(const std::string &name);
 
 // the data pointer may point to text/code mapped memory and may not be modified nor freed
-VTS_API void readInternalMemoryData(const std::string &name,
-    const unsigned char *&data, uint32 &size);
+VTS_API void readInternalMemoryData(const std::string &name, const unsigned char *&data, uint32 &size);
 
 } // detail
 

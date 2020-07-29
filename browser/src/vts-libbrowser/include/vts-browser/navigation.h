@@ -45,18 +45,13 @@ VTS_API void vtsNavigationResetAltitude(vtsHNavigation nav);
 VTS_API void vtsNavigationResetNavigationMode(vtsHNavigation nav);
 
 // setters
-VTS_API void vtsNavigationSetSubjective(vtsHNavigation nav,
-    bool subjective, bool convert);
-VTS_API void vtsNavigationSetPoint(vtsHNavigation nav,
-    const double point[3]);
-VTS_API void vtsNavigationSetRotation(vtsHNavigation nav,
-    const double point[3]);
-VTS_API void vtsNavigationSetViewExtent(vtsHNavigation nav,
-    double viewExtent);
+VTS_API void vtsNavigationSetSubjective(vtsHNavigation nav, bool subjective, bool convert);
+VTS_API void vtsNavigationSetPoint(vtsHNavigation nav, const double point[3]);
+VTS_API void vtsNavigationSetRotation(vtsHNavigation nav, const double point[3]);
+VTS_API void vtsNavigationSetViewExtent(vtsHNavigation nav, double viewExtent);
 VTS_API void vtsNavigationSetFov(vtsHNavigation nav, double fov);
 VTS_API void vtsNavigationSetAutoRotation(vtsHNavigation nav, double value);
-VTS_API void vtsNavigationSetPosition(vtsHNavigation nav,
-    vtsHPosition position);
+VTS_API void vtsNavigationSetPosition(vtsHNavigation nav, vtsHPosition position);
 
 // getters
 VTS_API bool vtsNavigationGetSubjective(vtsHNavigation nav);
@@ -65,8 +60,7 @@ VTS_API void vtsNavigationGetRotation(vtsHNavigation nav, double rot[3]);
 VTS_API double vtsNavigationGetViewExtent(vtsHNavigation nav);
 VTS_API double vtsNavigationGetFov(vtsHNavigation nav);
 VTS_API double vtsNavigationGetAutoRotation(vtsHNavigation nav);
-VTS_API void vtsNavigationGetPosition(vtsHNavigation nav,
-    vtsHPosition position);
+VTS_API void vtsNavigationGetPosition(vtsHNavigation nav, vtsHPosition position);
 
 // options
 VTS_API const char *vtsNavigationGetOptions(vtsHNavigation nav);

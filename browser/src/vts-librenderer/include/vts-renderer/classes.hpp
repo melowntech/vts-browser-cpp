@@ -63,10 +63,8 @@ public:
     void setDebugId(const std::string &id);
     void clear();
     void bind();
-    void load(const std::string &vertexShader,
-              const std::string &fragmentShader);
-    void loadInternal(const std::string &vertexName,
-                      const std::string &fragmentName);
+    void load(const std::string &vertexShader, const std::string &fragmentShader);
+    void loadInternal(const std::string &vertexName, const std::string &fragmentName);
     void uniformMat4(uint32 location, const float *value, uint32 count = 1);
     void uniformMat3(uint32 location, const float *value, uint32 count = 1);
     void uniformVec4(uint32 location, const float *value, uint32 count = 1);
@@ -83,10 +81,8 @@ public:
 
     std::vector<uint32> uniformLocations;
     uint32 loadUniformLocations(const std::vector<const char *> &names);
-    void bindTextureLocations(
-        const std::vector<std::pair<const char *, uint32>> &binds);
-    void bindUniformBlockLocations(
-        const std::vector<std::pair<const char *, uint32>> &binds);
+    void bindTextureLocations(const std::vector<std::pair<const char *, uint32>> &binds);
+    void bindUniformBlockLocations(const std::vector<std::pair<const char *, uint32>> &binds);
 
     static std::string preamble;
 
@@ -106,8 +102,7 @@ public:
     void setDebugId(const std::string &id);
     void clear();
     void bind();
-    void load(ResourceInfo &info, GpuTextureSpec &spec,
-        const std::string &debugId);
+    void load(ResourceInfo &info, GpuTextureSpec &spec, const std::string &debugId);
     void setId(uint32 id);
     uint32 getId() const;
     bool getGrayscale() const;
@@ -130,8 +125,7 @@ public:
     void dispatch();
     void dispatch(uint32 offset, uint32 count); // offset: number of indices/vertices to skip; count: number of indices/vertices to render
     void dispatchWireframeSlow();
-    void load(ResourceInfo &info, GpuMeshSpec &spec,
-        const std::string &debugId);
+    void load(ResourceInfo &info, GpuMeshSpec &spec, const std::string &debugId);
     uint32 getVbo() const;
     uint32 getVio() const;
 

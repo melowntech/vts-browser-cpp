@@ -55,34 +55,27 @@ class VTS_API Map : private Immovable
 public:
     Map();
     explicit Map(const MapCreateOptions &options);
-    explicit Map(const MapCreateOptions &options,
-        const std::shared_ptr<Fetcher> &fetcher);
+    explicit Map(const MapCreateOptions &options, const std::shared_ptr<Fetcher> &fetcher);
     ~Map();
 
     // mapconfigPath: url to mapconfig
     // authPath: url to authentication server,
-    //    alternatively, it may contain special value 'token:???'
-    //    which is taken directly as authentication token instead of url
-    void setMapconfigPath(const std::string &mapconfigPath,
-                          const std::string &authPath = "");
+    //    alternatively, it may contain special value 'token:???' which is taken directly as authentication token instead of url
+    void setMapconfigPath(const std::string &mapconfigPath, const std::string &authPath = "");
     std::string getMapconfigPath() const;
 
     void purgeViewCache();
     void purgeDiskCache();
 
-    // returns whether the mapconfig has been downloaded
-    //   and parsed successfully
+    // returns whether the mapconfig has been downloaded and parsed successfully
     // most other functions will not work until this returns true
     bool getMapconfigAvailable() const;
 
-    // returns whether the mapconfig and all other required
-    //   external definitions has been downloaded
-    //   and parsed successfully
+    // returns whether the mapconfig and all other required external definitions has been downloaded and parsed successfully
     // some other functions will not work until this returns true
     bool getMapconfigReady() const;
 
-    // returns whether the map has all resources needed for complete
-    //   render
+    // returns whether the map has all resources needed for complete render
     bool getMapRenderComplete() const;
 
     // returns estimation of progress till complete render
@@ -92,8 +85,7 @@ public:
 
     Position getMapDefaultPosition() const;
 
-    // dataUpdate does at most MapOptions.maxResourceProcessesPerTick
-    //   operations and returns
+    // dataUpdate does at most MapOptions.maxResourceProcessesPerTick operations and returns
     // you should call it periodically
     void dataUpdate();
 
@@ -101,8 +93,7 @@ public:
     void dataFinalize();
 
     // dataAllRun will return after renderFinalize has been called
-    // the dataAllRun must be called on a separate thread,
-    //   but is more cpu efficient than dataUpdate
+    // the dataAllRun must be called on a separate thread, but is more cpu efficient than dataUpdate
     // dataAllRun() is equivalent to
     // {
     //     while (!renderFinalizeCalled)
@@ -126,10 +117,8 @@ public:
     std::shared_ptr<void> atmosphereDensityTexture();
 
     // srs conversion
-    void convert(const double pointFrom[3], double pointTo[3],
-                Srs srsFrom, Srs srsTo) const;
-    void convert(const std::array<double, 3> &pointFrom, double pointTo[3],
-                Srs srsFrom, Srs srsTo) const;
+    void convert(const double pointFrom[3], double pointTo[3], Srs srsFrom, Srs srsTo) const;
+    void convert(const std::array<double, 3> &pointFrom, double pointTo[3], Srs srsFrom, Srs srsTo) const;
 
     // surfaces and layers resources
     std::vector<std::string> getResourceSurfaces() const;
@@ -140,13 +129,11 @@ public:
     // monolithic geodata free layer accessors
     void fabricateResourceFreeLayerGeodata(const std::string &name);
     std::string getResourceFreeLayerGeodata(const std::string &name) const;
-    void setResourceFreeLayerGeodata(const std::string &name,
-                                     const std::string &value);
+    void setResourceFreeLayerGeodata(const std::string &name, const std::string &value);
 
     // any geodata free layer accessors
     std::string getResourceFreeLayerStyle(const std::string &name) const;
-    void setResourceFreeLayerStyle(const std::string &name,
-                                   const std::string &value);
+    void setResourceFreeLayerStyle(const std::string &name, const std::string &value);
 
     // view manipulation
     std::vector<std::string> getViewNames() const;
@@ -161,10 +148,8 @@ public:
     // searching
     bool searchable() const;
     std::shared_ptr<SearchTask> search(const std::string &query);
-    std::shared_ptr<SearchTask> search(const std::string &query,
-                                const double point[3]); // navigation srs
-    std::shared_ptr<SearchTask> search(const std::string &query,
-                     const std::array<double, 3> &lst); // navigation srs
+    std::shared_ptr<SearchTask> search(const std::string &query, const double point[3]); // navigation srs
+    std::shared_ptr<SearchTask> search(const std::string &query, const std::array<double, 3> &point); // navigation srs
 
 private:
     std::shared_ptr<MapImpl> impl;

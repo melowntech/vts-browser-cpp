@@ -37,22 +37,16 @@ VTS_API vtsHCamera vtsCameraCreate(vtsHMap map);
 VTS_API void vtsCameraDestroy(vtsHCamera cam);
 
 // camera
-VTS_API void vtsCameraSetViewportSize(vtsHCamera cam,
-                    uint32 width, uint32 height);
-VTS_API void vtsCameraSetView(vtsHCamera cam, const double eye[3],
-                    const double target[3], const double up[3]);
+VTS_API void vtsCameraSetViewportSize(vtsHCamera cam, uint32 width, uint32 height);
+VTS_API void vtsCameraSetView(vtsHCamera cam, const double eye[3], const double target[3], const double up[3]);
 VTS_API void vtsCameraSetViewMatrix(vtsHCamera cam, const double view[16]);
-VTS_API void vtsCameraSetProj(vtsHCamera cam, double fovyDegs,
-                    double near_, double far_);
+VTS_API void vtsCameraSetProj(vtsHCamera cam, double fovyDegs, double near_, double far_);
 VTS_API void vtsCameraSetProjMatrix(vtsHCamera cam, const double proj[16]);
-VTS_API void vtsCameraGetViewportSize(vtsHCamera cam,
-                    uint32 *width, uint32 *height);
-VTS_API void vtsCameraGetView(vtsHCamera cam, double eye[3],
-                    double target[3], double up[3]);
+VTS_API void vtsCameraGetViewportSize(vtsHCamera cam, uint32 *width, uint32 *height);
+VTS_API void vtsCameraGetView(vtsHCamera cam, double eye[3], double target[3], double up[3]);
 VTS_API void vtsCameraGetViewMatrix(vtsHCamera cam, double view[16]);
 VTS_API void vtsCameraGetProjMatrix(vtsHCamera cam, double proj[16]);
-VTS_API void vtsCameraSuggestedNearFar(vtsHCamera cam,
-                    double *near_, double *far_);
+VTS_API void vtsCameraSuggestedNearFar(vtsHCamera cam, double *near_, double *far_);
 VTS_API void vtsCameraRenderUpdate(vtsHCamera cam);
 
 // credits
@@ -66,22 +60,14 @@ VTS_API const char *vtsCameraGetStatistics(vtsHCamera cam);
 VTS_API void vtsCameraSetOptions(vtsHCamera cam, const char *options);
 
 // acquire group base for the draw tasks
-VTS_API void vtsDrawsOpaqueGroup(vtsHCamera cam,
-    void **group, uint32 *count);
-VTS_API void vtsDrawsTransparentGroup(vtsHCamera cam,
-    void **group, uint32 *count);
-//VTS_API void vtsDrawsGeodataGroup(vtsHCamera cam,
-//    void **group, uint32 *count);
-VTS_API void vtsDrawsCollidersGroup(vtsHCamera cam,
-    void **group, uint32 *count);
+VTS_API void vtsDrawsOpaqueGroup(vtsHCamera cam, void **group, uint32 *count);
+VTS_API void vtsDrawsTransparentGroup(vtsHCamera cam, void **group, uint32 *count);
+//VTS_API void vtsDrawsGeodataGroup(vtsHCamera cam, void **group, uint32 *count);
+VTS_API void vtsDrawsCollidersGroup(vtsHCamera cam, void **group, uint32 *count);
 
 // acquire individual draw tasks data
-VTS_API void vtsDrawsSurfaceTask(void *group, uint32 index,
-    void **mesh, void **texColor, void **texMask,
-    vtsCDrawSurfaceBase **baseStruct);
-VTS_API void vtsDrawsColliderTask(void *group, uint32 index,
-    void **mesh,
-    vtsCDrawColliderBase **baseStruct);
+VTS_API void vtsDrawsSurfaceTask(void *group, uint32 index, void **mesh, void **texColor, void **texMask, vtsCDrawSurfaceBase **baseStruct);
+VTS_API void vtsDrawsColliderTask(void *group, uint32 index, void **mesh, vtsCDrawColliderBase **baseStruct);
 
 VTS_API const vtsCCameraBase *vtsDrawsCamera(vtsHCamera cam);
 

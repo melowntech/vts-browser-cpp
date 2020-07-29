@@ -41,31 +41,23 @@ VTS_API uint32 vtsGpuTypeSize(uint32 type);
 typedef void (*vtsResourceDeleterCallbackType)(void *ptr);
 
 // resource
-VTS_API void vtsResourceSetUserData(vtsHResource resource, void *data,
-                                    vtsResourceDeleterCallbackType deleter);
-VTS_API void vtsResourceSetMemoryCost(vtsHResource resource,
-                                      uint32 ramMem, uint32 gpuMem);
+VTS_API void vtsResourceSetUserData(vtsHResource resource, void *data, vtsResourceDeleterCallbackType deleter);
+VTS_API void vtsResourceSetMemoryCost(vtsHResource resource, uint32 ramMem, uint32 gpuMem);
 VTS_API const char *vtsResourceGetId(vtsHResource resource);
 
 // texture
-VTS_API void vtsTextureGetResolution(vtsHResource resource,
-                uint32 *width, uint32 *height, uint32 *components);
+VTS_API void vtsTextureGetResolution(vtsHResource resource, uint32 *width, uint32 *height, uint32 *components);
 VTS_API uint32 vtsTextureGetType(vtsHResource resource);
 VTS_API uint32 vtsTextureGetInternalFormat(vtsHResource resource);
 VTS_API uint32 vtsTextureGetFilterMode(vtsHResource resource);
 VTS_API uint32 vtsTextureGetWrapMode(vtsHResource resource);
-VTS_API void vtsTextureGetBuffer(vtsHResource resource,
-                void **data, uint32 *size);
+VTS_API void vtsTextureGetBuffer(vtsHResource resource, void **data, uint32 *size);
 
 // mesh
 VTS_API uint32 vtsMeshGetFaceMode(vtsHResource resource);
-VTS_API void vtsMeshGetVertices(vtsHResource resource,
-                void **data, uint32 *size, uint32 *count); // size is total size of the buffer in bytes
-VTS_API void vtsMeshGetIndices(vtsHResource resource,
-                void **data, uint32 *size, uint32 *count);
-VTS_API void vtsMeshGetAttribute(vtsHResource resource, uint32 index,
-                uint32 *offset, uint32 *stride, uint32 *components,
-                uint32 *type, bool *enable, bool *normalized);
+VTS_API void vtsMeshGetVertices(vtsHResource resource, void **data, uint32 *size, uint32 *count); // size is total size of the buffer in bytes
+VTS_API void vtsMeshGetIndices(vtsHResource resource, void **data, uint32 *size, uint32 *count);
+VTS_API void vtsMeshGetAttribute(vtsHResource resource, uint32 index, uint32 *offset, uint32 *stride, uint32 *components, uint32 *type, bool *enable, bool *normalized);
 
 #ifdef __cplusplus
 } // extern C

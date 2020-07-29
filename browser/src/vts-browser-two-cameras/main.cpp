@@ -87,17 +87,14 @@ int main(int, char *[])
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
-                        SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
 
     vts::log(vts::LogLevel::info3, "Creating window");
     {
         window = SDL_CreateWindow("test-two-cameras",
-            SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-            800, 600,
-            SDL_WINDOW_MAXIMIZED | SDL_WINDOW_OPENGL
-            | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+            SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600,
+            SDL_WINDOW_MAXIMIZED | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
     }
     if (!window)
     {
@@ -124,8 +121,7 @@ int main(int, char *[])
     view1 = context->createView(cam1.get());
     view2 = context->createView(cam2.get());
 
-    map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/"
-            "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
+    map->setMapconfigPath("https://cdn.melown.com/mario/store/melown2015/map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json");
 
     uint32 lastRenderTime = SDL_GetTicks();
     while (!shouldClose)
@@ -142,10 +138,8 @@ int main(int, char *[])
                     break;
                 case SDL_MOUSEMOTION:
                 {
-                    navLast = event.motion.x < (sint32)view1->options().width
-                        ? nav1 : nav2;
-                    double p[3] = { (double)event.motion.xrel,
-                                (double)event.motion.yrel, 0 };
+                    navLast = event.motion.x < (sint32)view1->options().width ? nav1 : nav2;
+                    double p[3] = { (double)event.motion.xrel, (double)event.motion.yrel, 0 };
                     if (event.motion.state & SDL_BUTTON(SDL_BUTTON_LEFT))
                         navLast->pan(p);
                     if (event.motion.state & SDL_BUTTON(SDL_BUTTON_RIGHT))

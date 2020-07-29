@@ -39,21 +39,15 @@ typedef struct vtsCRenderView *vtsHRenderView;
 
 VTSR_API vtsHRenderContext vtsRenderContextCreate();
 VTSR_API void vtsRenderContextDestroy(vtsHRenderContext context);
-VTSR_API void vtsRenderContextBindLoadFunctions(vtsHRenderContext context,
-    vtsHMap map);
-VTSR_API vtsHRenderView vtsRenderContextCreateView(vtsHRenderContext context,
-    vtsHCamera camera);
+VTSR_API void vtsRenderContextBindLoadFunctions(vtsHRenderContext context, vtsHMap map);
+VTSR_API vtsHRenderView vtsRenderContextCreateView(vtsHRenderContext context, vtsHCamera camera);
 
 VTSR_API void vtsRenderViewDestroy(vtsHRenderView view);
-VTSR_API vtsCRenderOptionsBase *vtsRenderViewOptions(
-    vtsHRenderView view);
-VTSR_API const vtsCRenderVariablesBase *vtsRenderViewVariables(
-    vtsHRenderView view);
+VTSR_API vtsCRenderOptionsBase *vtsRenderViewOptions(vtsHRenderView view);
+VTSR_API const vtsCRenderVariablesBase *vtsRenderViewVariables(vtsHRenderView view);
 VTSR_API void vtsRenderViewRender(vtsHRenderView view);
-VTSR_API void vtsRenderViewRenderCompas(vtsHRenderView view,
-    const double screenPosSize[3], const double mapRotation[3]);
-VTSR_API void vtsRenderViewGetWorldPosition(vtsHRenderView view,
-    const double screenPosIn[2], double worldPosOut[3]);
+VTSR_API void vtsRenderViewRenderCompas(vtsHRenderView view, const double screenPosSize[3], const double mapRotation[3]);
+VTSR_API void vtsRenderViewGetWorldPosition(vtsHRenderView view, const double screenPosIn[2], double worldPosOut[3]);
 
 #ifdef __cplusplus
 } // extern C

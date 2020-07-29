@@ -63,8 +63,7 @@ VTS_API void setLogMask(LogLevel mask);
 VTS_API void setLogConsole(bool enable);
 VTS_API void setLogFile(const std::string &filename);
 VTS_API void setLogThreadName(const std::string &name);
-VTS_API void addLogSink(LogLevel mask,
-                        std::function<void(const std::string&)> callback);
+VTS_API void addLogSink(LogLevel mask, std::function<void(const std::string&)> callback);
 VTS_API void clearLogSinks();
 VTS_API void log(LogLevel level, const std::string &message);
 

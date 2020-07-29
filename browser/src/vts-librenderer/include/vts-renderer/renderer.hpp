@@ -93,11 +93,9 @@ public:
     // reconstruct world position for mouse picking
     // uses data from last call to render
     // returns NaN if the position cannot be obtained
-    void getWorldPosition(const double screenPosIn[2],
-        double worldPosOut[3]);
+    void getWorldPosition(const double screenPosIn[2], double worldPosOut[3]);
 
-    void renderCompass(const double screenPosSize[3],
-        const double mapRotation[3]);
+    void renderCompass(const double screenPosSize[3], const double mapRotation[3]);
 
 private:
     std::shared_ptr<RenderViewImpl> impl;
@@ -116,14 +114,10 @@ public:
     ContextOptions &options();
 
     // can be directly bound to MapCallbacks
-    void loadTexture(ResourceInfo &info, GpuTextureSpec &spec,
-        const std::string &debugId);
-    void loadMesh(ResourceInfo &info, GpuMeshSpec &spec,
-        const std::string &debugId);
-    void loadFont(ResourceInfo &info, GpuFontSpec &spec,
-        const std::string &debugId);
-    void loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec,
-        const std::string &debugId);
+    void loadTexture(ResourceInfo &info, GpuTextureSpec &spec, const std::string &debugId);
+    void loadMesh(ResourceInfo &info, GpuMeshSpec &spec, const std::string &debugId);
+    void loadFont(ResourceInfo &info, GpuFontSpec &spec, const std::string &debugId);
+    void loadGeodata(ResourceInfo &info, GpuGeodataSpec &spec, const std::string &debugId);
     void bindLoadFunctions(Map *map);
 
     // create new render view

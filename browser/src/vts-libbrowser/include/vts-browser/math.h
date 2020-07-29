@@ -33,14 +33,11 @@
 extern "C" {
 #endif
 
-VTS_API void vtsMathMul44x44(double result[16], const double l[16],
-                                                const double r[16]);
+VTS_API void vtsMathMul44x44(double result[16], const double l[16], const double r[16]);
 
-VTS_API void vtsMathMul33x33(double result[9], const double l[9],
-                                               const double r[9]);
+VTS_API void vtsMathMul33x33(double result[9], const double l[9], const double r[9]);
 
-VTS_API void vtsMathMul44x4(double result[4], const double l[16],
-                                              const double r[4]);
+VTS_API void vtsMathMul44x4(double result[4], const double l[16], const double r[4]);
 
 VTS_API void vtsMathInverse44(double result[16], const double r[16]);
 

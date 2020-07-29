@@ -36,8 +36,7 @@ extern "C" {
 VTS_API bool vtsInternalMemoryExists(const char *name);
 
 // the data pointer may point to text/code mapped memory and may not be modified nor freed!
-VTS_API void vtsInternalMemoryRead(const char *name,
-    void **data, uint32 *size);
+VTS_API void vtsInternalMemoryRead(const char *name, void **data, uint32 *size);
 
 #ifdef __cplusplus
 } // extern C

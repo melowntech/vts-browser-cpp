@@ -37,15 +37,11 @@ typedef void(*vtsResourceCallbackType)(vtsHMap map, vtsHResource resource);
 typedef void(*vtsMapCallbackType)(vtsHMap map);
 typedef const char *(*vtsProjFinderCallbackType)(const char *name);
 
-VTS_API void vtsCallbacksLoadTexture(vtsHMap map,
-    vtsResourceCallbackType callback);
-VTS_API void vtsCallbacksLoadMesh(vtsHMap map,
-    vtsResourceCallbackType callback);
+VTS_API void vtsCallbacksLoadTexture(vtsHMap map, vtsResourceCallbackType callback);
+VTS_API void vtsCallbacksLoadMesh(vtsHMap map, vtsResourceCallbackType callback);
 
-VTS_API void vtsCallbacksMapconfigAvailable(vtsHMap map,
-    vtsMapCallbackType callback);
-VTS_API void vtsCallbacksMapconfigReady(vtsHMap map,
-    vtsMapCallbackType callback);
+VTS_API void vtsCallbacksMapconfigAvailable(vtsHMap map, vtsMapCallbackType callback);
+VTS_API void vtsCallbacksMapconfigReady(vtsHMap map, vtsMapCallbackType callback);
 
 VTS_API void vtsCallbacksProjFinder(vtsProjFinderCallbackType callback);
 

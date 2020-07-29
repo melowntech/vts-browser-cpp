@@ -34,16 +34,13 @@ extern "C" {
 #endif
 
 /*
-Defining these symbols gives a hint to the system that,
-when creating OpenGL context, it should choose high performance gpu,
-if multiple gpus were available.
+Defining these symbols gives a hint to the system that, when creating OpenGL context,
+it should choose high performance gpu, if multiple gpus were available.
 This is specifically useful for laptops with switchable gpus.
 
-These symbols have to be defined in the actual application,
-not in a library,
+These symbols have to be defined in the actual application, not in a library,
 therefore we provide it in the form of an include header.
-Make sure that the header is included in exactly one translation unit
-(one c or cpp file), preferably the main file.
+Make sure that the header is included in exactly one translation unit (one c or cpp file), preferably the main file.
 */
 
 VTS_API_EXPORT int NvOptimusEnablement = 1;

@@ -39,23 +39,19 @@ class VTS_API MapCallbacks
 public:
     // function callback to upload a texture to gpu
     // invoked from Map::dataTick()
-    std::function<void(class ResourceInfo &, class GpuTextureSpec &,
-        const std::string &id)> loadTexture;
+    std::function<void(class ResourceInfo &, class GpuTextureSpec &, const std::string &id)> loadTexture;
 
     // function callback to upload a mesh to gpu
     // invoked from Map::dataTick()
-    std::function<void(class ResourceInfo &, class GpuMeshSpec &,
-        const std::string &id)> loadMesh;
+    std::function<void(class ResourceInfo &, class GpuMeshSpec &, const std::string &id)> loadMesh;
 
     // function callback to upload font to gpu
     // invoked from Map::dataTick()
-    std::function<void(class ResourceInfo &, class GpuFontSpec &,
-        const std::string &id)> loadFont;
+    std::function<void(class ResourceInfo &, class GpuFontSpec &, const std::string &id)> loadFont;
 
     // function callback to upload geodata to gpu
     // invoked from Map::dataTick()
-    std::function<void(class ResourceInfo &, class GpuGeodataSpec &,
-        const std::string &id)> loadGeodata;
+    std::function<void(class ResourceInfo &, class GpuGeodataSpec &, const std::string &id)> loadGeodata;
 
     // function callback when the mapconfig is downloaded
     // invoked from Map::renderTick()

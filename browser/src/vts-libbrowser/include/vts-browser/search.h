@@ -35,16 +35,13 @@ extern "C" {
 
 VTS_API bool vtsMapGetSearchable(vtsHMap map);
 VTS_API vtsHSearch vtsMapSearch(vtsHMap map, const char *query);
-VTS_API vtsHSearch vtsMapSearchAt(vtsHMap map, const char *query,
-                                  const double point[3]);
+VTS_API vtsHSearch vtsMapSearchAt(vtsHMap map, const char *query, const double point[3]);
 VTS_API void vtsSearchDestroy(vtsHSearch search);
 
 VTS_API bool vtsSearchGetDone(vtsHSearch search);
 VTS_API uint32 vtsSearchGetResultsCount(vtsHSearch search);
-VTS_API const char *vtsSearchGetResultData(vtsHSearch search,
-                                        uint32 index);
-VTS_API void vtsSearchUpdateDistances(vtsHSearch search,
-                        const double point[3]);
+VTS_API const char *vtsSearchGetResultData(vtsHSearch search, uint32 index);
+VTS_API void vtsSearchUpdateDistances(vtsHSearch search, const double point[3]);
 
 #ifdef __cplusplus
 } // extern C

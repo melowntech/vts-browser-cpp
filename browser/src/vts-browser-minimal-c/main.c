@@ -106,8 +106,7 @@ int main()
     // use OpenGL version 3.3 core profile
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
-                        SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     // enable sharing resources between multiple OpenGL contexts
     SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
 
@@ -115,10 +114,8 @@ int main()
     vtsLog(vtsLogLevelInfo3, "Creating window");
     {
         window = SDL_CreateWindow("vts-browser-minimal-c",
-            SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-            800, 600,
-            SDL_WINDOW_MAXIMIZED | SDL_WINDOW_OPENGL
-            | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+            SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600,
+            SDL_WINDOW_MAXIMIZED | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
     }
     if (!window)
     {
@@ -164,10 +161,7 @@ int main()
     updateResolution();
 
     // pass a mapconfig url to the map
-    vtsMapSetConfigPaths(map,
-            "https://cdn.melown.com/mario/store/melown2015/"
-            "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json",
-            "");
+    vtsMapSetConfigPaths(map, "https://cdn.melown.com/mario/store/melown2015/map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json", "");
     check();
 
     // acquire current time (for measuring how long each frame takes)
@@ -192,8 +186,7 @@ int main()
                 case SDL_MOUSEMOTION:
                 {
                     // relative mouse position
-                    double p[3] = { (double)event.motion.xrel,
-                                (double)event.motion.yrel, 0 };
+                    double p[3] = { (double)event.motion.xrel, (double)event.motion.yrel, 0 };
                     if (event.motion.state & SDL_BUTTON(SDL_BUTTON_LEFT))
                     {
                         vtsNavigationPan(nav, p);

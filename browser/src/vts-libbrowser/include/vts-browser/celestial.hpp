@@ -77,9 +77,7 @@ public:
     } atmosphere;
 };
 
-VTS_API void atmosphereDerivedAttributes(const MapCelestialBody &body,
-    double &boundaryThickness,
-    double &horizontalExponent, double &verticalExponent);
+VTS_API void atmosphereDerivedAttributes(const MapCelestialBody &body, double &boundaryThickness, double &horizontalExponent, double &verticalExponent);
 
 } // namespace vts
 

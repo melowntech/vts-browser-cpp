@@ -50,11 +50,8 @@ public:
     explicit Camera(MapImpl *map);
 
     void setViewportSize(uint32 width, uint32 height);
-    void setView(const double eye[3], const double target[3],
-                const double up[3]);
-    void setView(const std::array<double, 3> &eye,
-                const std::array<double, 3> &target,
-                const std::array<double, 3> &up);
+    void setView(const double eye[3], const double target[3], const double up[3]);
+    void setView(const std::array<double, 3> &eye, const std::array<double, 3> &target, const std::array<double, 3> &up);
     void setView(const double view[16]);
     void setView(const std::array<double, 16> &view);
     void setProj(double fovyDegs, double near_, double far_);

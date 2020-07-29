@@ -37,6 +37,8 @@
 #include "../utilities/threadQueue.hpp"
 #include "../validity.hpp"
 
+#include <optick.h>
+
 namespace vts
 {
 
@@ -142,17 +144,16 @@ public:
     static constexpr const char *ThreadNames[] =
     {
         "",
-        "fetching",
         "cacheRead",
         "cacheWrite",
         "decode",
-        "geodata",
         "atmosphere",
     };
 
     void entry()
     {
         setThreadName(ThreadNames[ThreadName]);
+        OPTICK_THREAD(ThreadNames[ThreadName]);
         runAll();
     }
 
@@ -194,7 +195,6 @@ public:
     void oneCacheRead(std::weak_ptr<Resource> r);
     void oneFetch(std::weak_ptr<Resource> r);
     void oneDecode(std::weak_ptr<Resource> r);
-    void oneGeodata(std::weak_ptr<GeodataTile> r);
     void oneAtmosphere(std::weak_ptr<GpuAtmosphereDensityTexture> r);
     void oneCacheWrite(CacheData r);
     void oneUpload(UploadData r);
@@ -205,11 +205,10 @@ public:
     float priority(const UploadData &) { return 0; };
 
     ResourceProcessor<std::weak_ptr<Resource>, &Resources::oneFetch, &Resources::priority, 0> queFetching;
-    ResourceProcessor<std::weak_ptr<Resource>, &Resources::oneCacheRead, &Resources::priority, 2> queCacheRead;
-    ResourceProcessor<CacheData, &Resources::oneCacheWrite, &Resources::priority, 3> queCacheWrite;
-    ResourceProcessor<std::weak_ptr<Resource>, &Resources::oneDecode, &Resources::priority, 4> queDecode;
-    ResourceProcessor<std::weak_ptr<GeodataTile>, &Resources::oneGeodata, &Resources::priority, 5> queGeodata;
-    ResourceProcessor<std::weak_ptr<GpuAtmosphereDensityTexture>, &Resources::oneAtmosphere, &Resources::priority, 6> queAtmosphere;
+    ResourceProcessor<std::weak_ptr<Resource>, &Resources::oneCacheRead, &Resources::priority, 1> queCacheRead;
+    ResourceProcessor<CacheData, &Resources::oneCacheWrite, &Resources::priority, 2> queCacheWrite;
+    ResourceProcessor<std::weak_ptr<Resource>, &Resources::oneDecode, &Resources::priority, 3> queDecode;
+    ResourceProcessor<std::weak_ptr<GpuAtmosphereDensityTexture>, &Resources::oneAtmosphere, &Resources::priority, 4> queAtmosphere;
     ResourceProcessor<UploadData, &Resources::oneUpload, &Resources::priority, 0> queUpload;
 
     std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
@@ -220,6 +219,7 @@ public:
 template<class Item, void (Resources::*Process)(Item), float (Resources::*Priority)(const Item &), int ThreadName>
 inline bool ResourceProcessor<Item, Process, Priority, ThreadName>::runOne()
 {
+    OPTICK_EVENT("runOne");
     Item item;
     {
         std::unique_lock<std::mutex> lock(mut);
@@ -227,7 +227,10 @@ inline bool ResourceProcessor<Item, Process, Priority, ThreadName>::runOne()
             return false;
         item = getBest();
     }
-    (resources->*Process)(std::move(item));
+    {
+        OPTICK_EVENT("process");
+        (resources->*Process)(std::move(item));
+    }
     return true;
 }
 
@@ -245,13 +248,17 @@ inline void ResourceProcessor<Item, Process, Priority, ThreadName>::runAll()
                 return;
             item = getBest();
         }
-        (resources->*Process)(std::move(item));
+        {
+            OPTICK_EVENT("process");
+            (resources->*Process)(std::move(item));
+        }
     }
 }
 
 template<class Item, void (Resources::*Process)(Item), float (Resources::*Priority)(const Item &), int ThreadName>
 inline Item ResourceProcessor<Item, Process, Priority, ThreadName>::getBest()
 {
+    OPTICK_EVENT("getBest");
     auto it = q.begin();
     auto et = q.end();
     auto b = it;

@@ -31,30 +31,6 @@
 namespace vts
 {
 
-MapStatistics::MapStatistics() :
-    resourcesCreated(0),
-    resourcesDownloaded(0),
-    resourcesDiskLoaded(0),
-    resourcesDecoded(0),
-    resourcesUploaded(0),
-    resourcesFailed(0),
-    resourcesReleased(0),
-    resourcesActive(0),
-    resourcesDownloading(0),
-    resourcesPreparing(0),
-    resourcesQueueCacheRead(0),
-    resourcesQueueCacheWrite(0),
-    resourcesQueueDownload(0),
-    resourcesQueueDecode(0),
-    resourcesQueueUpload(0),
-    resourcesQueueGeodata(0),
-    resourcesQueueAtmosphere(0),
-    resourcesAccessed(0),
-    currentGpuMemUseKB(0),
-    currentRamMemUseKB(0),
-    renderTicks(0)
-{}
-
 std::string MapStatistics::toJson() const
 {
     Json::Value v;
@@ -73,27 +49,12 @@ std::string MapStatistics::toJson() const
     TJ(resourcesQueueDownload, asUint);
     TJ(resourcesQueueDecode, asUint);
     TJ(resourcesQueueUpload, asUint);
-    TJ(resourcesQueueGeodata, asUint);
     TJ(resourcesQueueAtmosphere, asUint);
     TJ(resourcesAccessed, asUint);
     TJ(currentGpuMemUseKB, asUint);
     TJ(currentRamMemUseKB, asUint);
     TJ(renderTicks, asUint);
     return jsonToString(v);
-}
-
-CameraStatistics::CameraStatistics() :
-    nodesRenderedTotal(0),
-    metaNodesTraversedTotal(0),
-    currentNodeMetaUpdates(0),
-    currentNodeDrawsUpdates(0),
-    currentGridNodes(0)
-{
-    for (uint32 i = 0; i < MaxLods; i++)
-    {
-        nodesRenderedPerLod[i] = 0;
-        metaNodesTraversedPerLod[i] = 0;
-    }
 }
 
 std::string CameraStatistics::toJson() const

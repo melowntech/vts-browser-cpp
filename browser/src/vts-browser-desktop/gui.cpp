@@ -1131,7 +1131,6 @@ public:
                     S("Downloads:", ms.resourcesQueueDownload, "");
                     S("Decode:", ms.resourcesQueueDecode, "");
                     S("Gpu:", ms.resourcesQueueUpload, "");
-                    S("Geodata:", ms.resourcesQueueGeodata, "");
 
                     nk_tree_pop(&ctx);
                 }

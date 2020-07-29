@@ -33,6 +33,8 @@
 #include <vts-libs/vts/mesh.hpp>
 #include <vts-libs/vts/meshio.hpp>
 
+#include <optick.h>
+
 namespace vts
 {
 
@@ -40,6 +42,8 @@ GpuMeshSpec::GpuMeshSpec(const Buffer &buffer) :
     verticesCount(0), indicesCount(0),
     faceMode(FaceMode::Triangles), indexMode(GpuTypeEnum::UnsignedShort)
 {
+    OPTICK_EVENT("decode obj");
+
     uint32 dummy;
     uint32 fm;
     decodeObj(buffer, fm, vertices, indices, verticesCount, dummy);
@@ -67,6 +71,10 @@ GpuMesh::GpuMesh(MapImpl *map, const std::string &name,
                  const vtslibs::vts::SubMesh &m) :
     Resource(map, name)
 {
+    OPTICK_EVENT("decode submesh");
+
+    // this type of mesh is never managed by the resource manager
+    // instead it is always owned by an aggregate mesh
     state = Resource::State::errorFatal;
 
     assert(m.facesTc.size() == m.faces.size() || m.facesTc.empty());
@@ -281,6 +289,7 @@ GpuMesh::GpuMesh(MapImpl *map, const std::string &name,
 void GpuMesh::decode()
 {
     LOG(info1) << "Decoding (gpu) mesh '" << name << "'";
+    OPTICK_EVENT("decode gpu mesh");
     std::shared_ptr<GpuMeshSpec> spec
         = std::make_shared<GpuMeshSpec>(fetch->reply.content);
     spec->attributes[0].enable = true;
@@ -330,6 +339,7 @@ MeshAggregate::MeshAggregate(MapImpl *map, const std::string &name) :
 void MeshAggregate::decode()
 {
     LOG(info2) << "Decoding (aggregated) mesh <" << name << ">";
+    OPTICK_EVENT("decode aggregated mesh");
 
     detail::BufferStream w(fetch->reply.content);
     vtslibs::vts::NormalizedSubMesh::list meshes = vtslibs::vts::

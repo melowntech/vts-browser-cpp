@@ -32,6 +32,8 @@
 
 #include <dbglog/dbglog.hpp>
 
+#include <optick.h>
+
 namespace vts
 {
 
@@ -65,8 +67,7 @@ MetaNode::MetaNode() :
 vec3 MetaNode::cornersPhys(uint32 index) const
 {
     assert(index < 8);
-    return lowerUpperCombine(index).cwiseProduct(
-        aabbPhys[1] - aabbPhys[0]) + aabbPhys[0];
+    return lowerUpperCombine(index).cwiseProduct(aabbPhys[1] - aabbPhys[0]) + aabbPhys[0];
 }
 
 MetaTile::MetaTile(vts::MapImpl *map, const std::string &name) :
@@ -127,8 +128,7 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
 
     // corners
     vec3 cornersPhys[8]; // oriented trapezoid bounding box corners
-    if (!vtslibs::vts::empty(meta.geomExtents)
-            && !srs.empty())
+    if (!vtslibs::vts::empty(meta.geomExtents) && !srs.empty())
     {
         vec2 fl = vecFromUblas<vec2>(node.extents.ll);
         vec2 fu = vecFromUblas<vec2>(node.extents.ur);
@@ -155,8 +155,7 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
             node.diskHeightsPhys[1] = vn2.norm();
             sds = vec2to3(fu, double(meta.geomExtents.z.min));
             vec3 vc = cnv->convert(sds, srs, Srs::Physical);
-            node.diskHalfAngle = std::acos(
-                dot(node.diskNormalPhys, vc.normalized()));
+            node.diskHalfAngle = std::acos(dot(node.diskNormalPhys, vc.normalized()));
         }
     }
     else if (meta.extents.ll != meta.extents.ur)
@@ -164,10 +163,8 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
         vec3 fl = vecFromUblas<vec3>(meta.extents.ll);
         vec3 fu = vecFromUblas<vec3>(meta.extents.ur);
         vec3 fd = fu - fl;
-        vec3 el = vecFromUblas<vec3>
-                (m->referenceFrame.division.extents.ll);
-        vec3 eu = vecFromUblas<vec3>
-                (m->referenceFrame.division.extents.ur);
+        vec3 el = vecFromUblas<vec3>(m->referenceFrame.division.extents.ll);
+        vec3 eu = vecFromUblas<vec3>(m->referenceFrame.division.extents.ur);
         vec3 ed = eu - el;
         for (uint32 i = 0; i < 8; i++)
         {
@@ -179,8 +176,7 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
     {
         for (vec3 &c : cornersPhys)
             c = nan3();
-        LOG(warn2) << "Tile <" << id
-            << "> does not have neither extents nor geomExtents";
+        LOG(warn2) << "Tile <" << id << "> does not have neither extents nor geomExtents";
     }
 
     // obb
@@ -222,13 +218,11 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
     }
 
     // surrogate
-    if (vtslibs::vts::GeomExtents::validSurrogate(
-                meta.geomExtents.surrogate))
+    if (vtslibs::vts::GeomExtents::validSurrogate(meta.geomExtents.surrogate))
     {
         vec2 fl = vecFromUblas<vec2>(node.extents.ll);
         vec2 fu = vecFromUblas<vec2>(node.extents.ur);
-        vec3 sds = vec2to3(vec2((fl + fu) * 0.5),
-                           double(meta.geomExtents.surrogate));
+        vec3 sds = vec2to3(vec2((fl + fu) * 0.5), double(meta.geomExtents.surrogate));
         node.surrogatePhys = cnv->convert(sds, srs, Srs::Physical);
         node.surrogateNav = cnv->convert(sds, srs, Srs::Navigation)[2];
     }
@@ -236,13 +230,11 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
     // texelSize
     if (node.aabbPhys[1][0] != inf1())
     {
-        if (meta.flags()
-            & vtslibs::vts::MetaNode::Flag::applyTexelSize)
+        if (meta.flags() & vtslibs::vts::MetaNode::Flag::applyTexelSize)
         {
             node.texelSize = meta.texelSize;
         }
-        else if (meta.flags()
-            & vtslibs::vts::MetaNode::Flag::applyDisplaySize)
+        else if (meta.flags() & vtslibs::vts::MetaNode::Flag::applyDisplaySize)
         {
             vec3 s = node.aabbPhys[1] - node.aabbPhys[0];
             double m = std::max(s[0], std::max(s[1], s[2]));
@@ -255,34 +247,32 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
 
 void MetaTile::decode()
 {
+    OPTICK_EVENT("decode meta tile");
+
     std::shared_ptr<Mapconfig> m = mapconfig.lock();
     if (!m)
     {
-        LOGTHROW(err2, std::runtime_error) << "Decoding metatile after the "
-            "corresponding mapconfig has expired";
+        LOGTHROW(err2, std::runtime_error) << "Decoding metatile after the corresponding mapconfig has expired";
     }
 
     // decode the whole tile
     {
         detail::BufferStream w(fetch->reply.content);
-        *(vtslibs::vts::MetaTile*)this = vtslibs::vts::loadMetaTile(w,
-                m->referenceFrame.metaBinaryOrder, name);
+        *(vtslibs::vts::MetaTile*)this = vtslibs::vts::loadMetaTile(w, m->referenceFrame.metaBinaryOrder, name);
     }
 
     // precompute metanodes
     metas.resize(size_ * size_);
-    vtslibs::vts::MetaTile::for_each([&](const vtslibs::vts::TileId &id,
-        vtslibs::vts::MetaNode &node) {
+    vtslibs::vts::MetaTile::for_each([&](const vtslibs::vts::TileId &id, vtslibs::vts::MetaNode &node)
+        {
             if (node.flags() == 0)
                 return;
             node.displaySize = 1024; // forced override
-            metas[(id.y - origin_.y) * size_ + id.x - origin_.x]
-                = generateMetaNode(m, m->convertorData, id, node);
+            metas[(id.y - origin_.y) * size_ + id.x - origin_.x] = generateMetaNode(m, m->convertorData, id, node);
         });
 
     info.ramMemoryCost += sizeof(*this);
-    info.ramMemoryCost += size_ * size_
-        * (sizeof(vtslibs::vts::MetaNode) + sizeof(MetaNode));
+    info.ramMemoryCost += size_ * size_ * (sizeof(vtslibs::vts::MetaNode) + sizeof(MetaNode));
 }
 
 FetchTask::ResourceType MetaTile::resourceType() const

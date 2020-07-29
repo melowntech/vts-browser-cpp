@@ -37,17 +37,16 @@ namespace vts
 class VTS_API CameraStatistics
 {
 public:
-    CameraStatistics();
     std::string toJson() const;
 
-    static const uint32 MaxLods = 25;
-    uint32 nodesRenderedTotal;
-    uint32 nodesRenderedPerLod[MaxLods];
-    uint32 metaNodesTraversedTotal;
-    uint32 metaNodesTraversedPerLod[MaxLods];
-    uint32 currentNodeMetaUpdates;
-    uint32 currentNodeDrawsUpdates;
-    uint32 currentGridNodes;
+    static constexpr uint32 MaxLods = 25;
+    uint32 nodesRenderedTotal = 0;
+    uint32 nodesRenderedPerLod[MaxLods] = {};
+    uint32 metaNodesTraversedTotal = 0;
+    uint32 metaNodesTraversedPerLod[MaxLods] = {};
+    uint32 currentNodeMetaUpdates = 0;
+    uint32 currentNodeDrawsUpdates = 0;
+    uint32 currentGridNodes = 0;
 };
 
 } // namespace vts

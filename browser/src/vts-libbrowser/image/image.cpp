@@ -29,6 +29,8 @@
 #include <dbglog/dbglog.hpp>
 #include <cstdio>
 
+#include <optick.h>
+
 namespace vts
 {
 
@@ -42,12 +44,19 @@ void decodeImage(const Buffer &in, Buffer &out,
     static const unsigned char jpegSignature[]
         = { 0xFF, 0xD8, 0xFF };
     if (memcmp(in.data(), pngSignature, sizeof(pngSignature)) == 0)
+    {
+        OPTICK_EVENT("decode png");
         decodePng(in, out, width, height, components);
+    }
     else if (memcmp(in.data(), jpegSignature, sizeof(jpegSignature)) == 0)
+    {
+        OPTICK_EVENT("decode jpeg");
         decodeJpeg(in, out, width, height, components);
+    }
     else
     {
         // raw image data - assume square
+        OPTICK_EVENT("decode raw image");
         components = 4;
         width = height = std::sqrt(in.size() / components);
         if (in.size() != width * height * components)

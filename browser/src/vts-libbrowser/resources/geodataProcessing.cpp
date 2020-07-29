@@ -2260,9 +2260,9 @@ if (fnc == #NAME) \
 
 void GeodataTile::decode()
 {
-    OPTICK_EVENT();
-    OPTICK_TAG("name", name.c_str());
     LOG(info2) << "Decoding geodata tile <" << name << ">";
+    OPTICK_EVENT("decode geodata tile");
+    OPTICK_TAG("name", name.c_str());
 
     // this resource is not meant to be downloaded
     assert(!fetch);
@@ -2311,14 +2311,6 @@ void GeodataTile::upload()
         info.gpuMemoryCost += it.gpuMemoryCost;
         info.ramMemoryCost += it.ramMemoryCost;
     }
-}
-
-void Resources::oneGeodata(std::weak_ptr<GeodataTile> w)
-{
-    std::shared_ptr<GeodataTile> r = w.lock();
-    if (!r)
-        return;
-    r->map->resources->decodeProcess(r);
 }
 
 float Resources::priority(const std::weak_ptr<GeodataTile> &w)

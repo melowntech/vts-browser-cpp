@@ -37,33 +37,31 @@ namespace vts
 class VTS_API MapStatistics
 {
 public:
-    MapStatistics();
     std::string toJson() const;
 
-    uint32 resourcesCreated;
-    uint32 resourcesDownloaded;
-    uint32 resourcesDiskLoaded;
-    uint32 resourcesDecoded;
-    uint32 resourcesUploaded;
-    uint32 resourcesFailed;
-    uint32 resourcesReleased;
+    uint32 resourcesCreated = 0;
+    uint32 resourcesDownloaded = 0;
+    uint32 resourcesDiskLoaded = 0;
+    uint32 resourcesDecoded = 0;
+    uint32 resourcesUploaded = 0;
+    uint32 resourcesFailed = 0;
+    uint32 resourcesReleased = 0;
 
-    uint32 resourcesActive;
-    uint32 resourcesDownloading;
-    uint32 resourcesPreparing;
-    uint32 resourcesQueueCacheRead;
-    uint32 resourcesQueueCacheWrite;
-    uint32 resourcesQueueDownload;
-    uint32 resourcesQueueDecode;
-    uint32 resourcesQueueUpload;
-    uint32 resourcesQueueGeodata;
-    uint32 resourcesQueueAtmosphere;
-    uint32 resourcesAccessed;
+    uint32 resourcesActive = 0;
+    uint32 resourcesDownloading = 0;
+    uint32 resourcesPreparing = 0;
+    uint32 resourcesQueueCacheRead = 0;
+    uint32 resourcesQueueCacheWrite = 0;
+    uint32 resourcesQueueDownload = 0;
+    uint32 resourcesQueueDecode = 0;
+    uint32 resourcesQueueUpload = 0;
+    uint32 resourcesQueueAtmosphere = 0;
+    uint32 resourcesAccessed = 0;
 
-    uint32 currentGpuMemUseKB;
-    uint32 currentRamMemUseKB;
+    uint32 currentGpuMemUseKB = 0;
+    uint32 currentRamMemUseKB = 0;
 
-    uint32 renderTicks;
+    uint32 renderTicks = 0;
 };
 
 } // namespace vts

@@ -54,6 +54,7 @@ void Resources::saveCorruptedFile(const std::shared_ptr<Resource> &r)
 {
     if (!map->options.debugSaveCorruptedFiles)
         return;
+    OPTICK_EVENT();
     try
     {
         std::string path = std::string() + "corrupted/" + convertNameToPath(r->name, false);
@@ -181,9 +182,6 @@ void FetchTaskImpl::fetchDone()
 
 void Resources::decodeProcess(const std::shared_ptr<Resource> &r)
 {
-    OPTICK_EVENT();
-    OPTICK_TAG("name", r->name.c_str());
-
     assert(r->state == Resource::State::decodeQueue);
     map->statistics.resourcesDecoded++;
     r->info.gpuMemoryCost = r->info.ramMemoryCost = 0;
@@ -235,9 +233,6 @@ void Resources::oneUpload(UploadData r)
 
 void Resources::uploadProcess(const std::shared_ptr<Resource> &r)
 {
-    OPTICK_EVENT();
-    OPTICK_TAG("name", r->name.c_str());
-
     assert(r->state == Resource::State::uploadQueue);
     map->statistics.resourcesUploaded++;
     try
@@ -312,7 +307,7 @@ void Resources::oneCacheRead(std::weak_ptr<Resource> w)
 
 void Resources::cacheReadProcess(const std::shared_ptr<Resource> &r)
 {
-    OPTICK_EVENT();
+    OPTICK_EVENT("cacheReadProcess");
     assert(r->state == Resource::State::cacheReadQueue);
     if (!r->fetch)
         r->fetch = std::make_shared<FetchTaskImpl>(r);
@@ -413,7 +408,7 @@ void Resources::fetcherProcessorEntry()
 // MAIN THREAD
 ////////////////////////////
 
-Resources::Resources(MapImpl *map) : map(map), queFetching(this), queCacheRead(this), queCacheWrite(this), queDecode(this), queGeodata(this), queAtmosphere(this), queUpload(this)
+Resources::Resources(MapImpl *map) : map(map), queFetching(this), queCacheRead(this), queCacheWrite(this), queDecode(this), queAtmosphere(this), queUpload(this)
 {
     cacheInit();
     queFetching.thr = std::thread(&Resources::fetcherProcessorEntry, this);
@@ -504,6 +499,7 @@ void Resources::removeOld()
     map->statistics.currentGpuMemUseKB = memGpuUse / 1024;
     map->statistics.currentRamMemUseKB = memRamUse / 1024;
     uint64 memUse = memRamUse + memGpuUse;
+    OPTICK_TAG("memUse", memUse);
     // remove unconditionalToRemove
     for (const Res &res : unconditionalToRemove)
     {
@@ -514,6 +510,7 @@ void Resources::removeOld()
     uint64 trs = (uint64)map->options.targetResourcesMemoryKB * 1024;
     if (memUse > trs)
     {
+        OPTICK_EVENT("removing");
         std::sort(resourcesToRemove.begin(), resourcesToRemove.end(),
             [](const Res &a, const Res &b) {
                 return a.a < b.a; // least recently used first
@@ -579,7 +576,6 @@ void Resources::terminateAllQueues()
     queDecode.terminate();
     queUpload.terminate();
     queAtmosphere.terminate();
-    queGeodata.terminate();
     queCacheRead.terminate();
     queFetching.terminate();
 }
@@ -634,16 +630,15 @@ void Resources::renderUpdate()
         map->statistics.resourcesQueueCacheRead = queCacheRead.estimateSize();
         map->statistics.resourcesQueueCacheWrite = queCacheWrite.estimateSize();
         map->statistics.resourcesQueueDecode = queDecode.estimateSize();
-        map->statistics.resourcesQueueGeodata = queGeodata.estimateSize();
         map->statistics.resourcesQueueAtmosphere = queAtmosphere.estimateSize();
         map->statistics.resourcesQueueUpload = queUpload.estimateSize();
     }
 
     // split workload into multiple render frames
-    switch (map->renderTickIndex % 4)
+    switch (map->renderTickIndex % 2)
     {
-    case 1: return checkInitialized();
-    case 3: return removeOld();
+    case 0: return checkInitialized();
+    case 1: return removeOld();
     }
 }
 

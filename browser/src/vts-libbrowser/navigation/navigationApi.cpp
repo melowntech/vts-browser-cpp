@@ -70,14 +70,12 @@ void Navigation::setPoint(const double point[3])
 {
     if (!impl->camera->map->mapconfigAvailable)
     {
-        LOGTHROW(err4, std::logic_error)
-                << "Map is not yet available.";
+        LOGTHROW(err4, std::logic_error) << "Map is not yet available.";
     }
     assert(!std::isnan(point[0]));
     assert(!std::isnan(point[1]));
     assert(!std::isnan(point[2]));
-    if (impl->camera->map->mapconfig->navigationSrsType()
-                   == vtslibs::registry::Srs::Type::geographic)
+    if (impl->camera->map->mapconfig->navigationSrsType() == vtslibs::registry::Srs::Type::geographic)
     {
         assert(point[0] >= -180 && point[0] <= 180);
         assert(point[1] >= -90 && point[1] <= 90);
@@ -110,8 +108,7 @@ void Navigation::setRotation(const double point[3])
 {
     if (!impl->camera->map->mapconfigAvailable)
     {
-        LOGTHROW(err4, std::logic_error)
-                << "Map is not yet available.";
+        LOGTHROW(err4, std::logic_error) << "Map is not yet available.";
     }
     assert(!std::isnan(point[0]));
     assert(!std::isnan(point[1]));
@@ -130,8 +127,7 @@ void Navigation::setAutoRotation(double value)
 {
     if (!impl->camera->map->mapconfigAvailable)
     {
-        LOGTHROW(err4, std::logic_error)
-                << "Map is not yet available.";
+        LOGTHROW(err4, std::logic_error) << "Map is not yet available.";
     }
     impl->autoRotation = value;
     impl->suspendAltitudeChange = true;
@@ -141,8 +137,7 @@ void Navigation::setPosition(const Position &p)
 {
     if (!impl->camera->map->mapconfigAvailable)
     {
-        LOGTHROW(err4, std::logic_error)
-            << "Map is not yet available.";
+        LOGTHROW(err4, std::logic_error) << "Map is not yet available.";
     }
     impl->setPosition(p2p(p));
 }
@@ -160,8 +155,7 @@ void Navigation::setViewExtent(double viewExtent)
 {
     if (!impl->camera->map->mapconfigAvailable)
     {
-        LOGTHROW(err4, std::logic_error)
-                << "Map is not yet available.";
+        LOGTHROW(err4, std::logic_error) << "Map is not yet available.";
     }
     assert(!std::isnan(viewExtent) && viewExtent > 0);
     impl->setManual();
@@ -172,8 +166,7 @@ void Navigation::setFov(double fov)
 {
     if (!impl->camera->map->mapconfigAvailable)
     {
-        LOGTHROW(err4, std::logic_error)
-                << "Map is not yet available.";
+        LOGTHROW(err4, std::logic_error) << "Map is not yet available.";
     }
     assert(fov > 0 && fov < 180);
     impl->setManual();
@@ -184,16 +177,13 @@ void Navigation::setSubjective(bool subjective, bool convert)
 {
     if (!impl->camera->map->mapconfigAvailable)
     {
-        LOGTHROW(err4, std::logic_error)
-                << "Map is not yet available.";
+        LOGTHROW(err4, std::logic_error) << "Map is not yet available.";
     }
     if (subjective == getSubjective())
         return;
     if (convert)
         impl->convertSubjObj();
-    impl->type = subjective
-            ? NavigationImpl::Type::subjective
-            : NavigationImpl::Type::objective;
+    impl->type = subjective ? NavigationImpl::Type::subjective : NavigationImpl::Type::objective;
     impl->setManual();
 }
 
@@ -201,8 +191,7 @@ void Navigation::resetAltitude()
 {
     if (!impl->camera->map->mapconfigAvailable)
     {
-        LOGTHROW(err4, std::logic_error)
-            << "Map is not yet available.";
+        LOGTHROW(err4, std::logic_error) << "Map is not yet available.";
     }
     impl->setManual();
     impl->positionAltitudeReset = 0;
@@ -212,8 +201,7 @@ void Navigation::resetNavigationMode()
 {
     if (!impl->camera->map->mapconfigAvailable)
     {
-        LOGTHROW(err4, std::logic_error)
-            << "Map is not yet available.";
+        LOGTHROW(err4, std::logic_error) << "Map is not yet available.";
     }
     impl->setManual();
     impl->resetNavigationMode();

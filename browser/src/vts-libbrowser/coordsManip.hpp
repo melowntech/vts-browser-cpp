@@ -59,11 +59,9 @@ public:
     vec3 convert(const vec3 &value, const std::string &from, Srs to);
     vec3 convert(const vec3 &value, Srs from, const std::string &to);
 
-    vec3 geoDirect(const vec3 &position, double distance,
-                              double azimuthIn, double &azimuthOut);
+    vec3 geoDirect(const vec3 &position, double distance, double azimuthIn, double &azimuthOut);
     vec3 geoDirect(const vec3 &position, double distance, double azimuthIn);
-    void geoInverse(const vec3 &posA, const vec3 &posB,
-                    double &distance, double &azimuthA, double &azimuthB);
+    void geoInverse(const vec3 &posA, const vec3 &posB, double &distance, double &azimuthA, double &azimuthB);
     double geoAzimuth(const vec3 &a, const vec3 &b);
     double geoDistance(const vec3 &a, const vec3 &b);
     double geoArcDist(const vec3 &a, const vec3 &b);

@@ -81,11 +81,9 @@ void Mapconfig::decode()
         if (map->createOptions.browserOptionsSearchUrls)
         {
             if (bo.isMember("controlSearchUrl"))
-                browserOptions.searchUrl
-                = bo["controlSearchUrl"].asString();
+                browserOptions.searchUrl = bo["controlSearchUrl"].asString();
             if (bo.isMember("controlSearchSrs"))
-                browserOptions.searchSrs
-                = bo["controlSearchSrs"].asString();
+                browserOptions.searchSrs = bo["controlSearchSrs"].asString();
         }
     }
     else
@@ -115,15 +113,11 @@ void Mapconfig::decode()
     referenceDivisionNodeInfos.reserve(referenceFrame.division.nodes.size());
     for (const auto &it : referenceFrame.division.nodes)
     {
-        referenceDivisionNodeInfos.emplace_back(
-            referenceFrame, it.first, true, *this);
+        referenceDivisionNodeInfos.emplace_back(referenceFrame, it.first, true, *this);
     }
 
     // convertor for use in decode thread
-    convertorData = CoordManip::create(
-        *this, browserOptions.searchSrs,
-        map->createOptions.customSrs1,
-        map->createOptions.customSrs2);
+    convertorData = CoordManip::create(*this, browserOptions.searchSrs, map->createOptions.customSrs1, map->createOptions.customSrs2);
 
     // memory use
     info.ramMemoryCost += sizeof(*this);
@@ -152,8 +146,7 @@ BoundInfo *Mapconfig::getBoundInfo(const std::string &id)
         if (bl->external())
         {
             std::string url = convertPath(bl->url, name);
-            std::shared_ptr<ExternalBoundLayer> r
-                    = map->getExternalBoundLayer(url);
+            std::shared_ptr<ExternalBoundLayer> r = map->getExternalBoundLayer(url);
             if (!testAndThrow(r->state, "External bound layer failure."))
                 return nullptr;
             boundInfos[bl->id] = std::make_shared<BoundInfo>(*r, url);
@@ -178,15 +171,13 @@ FreeInfo *Mapconfig::getFreeInfo(const std::string &id)
     if (it != freeInfos.end())
         return it->second.get();
 
-    const vtslibs::registry::FreeLayer *bl
-            = freeLayers.get(id, std::nothrow);
+    const vtslibs::registry::FreeLayer *bl = freeLayers.get(id, std::nothrow);
     if (bl)
     {
         if (bl->external())
         {
             std::string url = convertPath(bl->externalUrl(), name);
-            std::shared_ptr<ExternalFreeLayer> r
-                    = map->getExternalFreeLayer(url);
+            std::shared_ptr<ExternalFreeLayer> r = map->getExternalFreeLayer(url);
             if (!testAndThrow(r->state, "External free layer failure."))
                 return nullptr;
             freeInfos[bl->id] = std::make_shared<FreeInfo>(*r, url);
@@ -237,8 +228,7 @@ void Mapconfig::consolidateView()
     {
         if (resSurf.find(it->first) == resSurf.end())
         {
-            LOG(warn1) << "Removing invalid surface <"
-                       << it->first << "> from current view";
+            LOG(warn1) << "Removing invalid surface <" << it->first << "> from current view";
             it = view.surfaces.erase(it);
         }
         else
@@ -255,8 +245,7 @@ void Mapconfig::consolidateView()
         {
             if (resBound.find(it->id) == resBound.end())
             {
-                LOG(warn1) << "Removing invalid bound layer <"
-                           << it->id << "> from current view";
+                LOG(warn1) << "Removing invalid bound layer <" << it->id << "> from current view";
                 it = s.second.erase(it);
             }
             else

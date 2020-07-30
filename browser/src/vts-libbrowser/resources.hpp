@@ -30,11 +30,14 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include <atomic>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include "../include/vts-browser/buffer.hpp"
 
 #include "../utilities/threadName.hpp"
-#include "../utilities/threadQueue.hpp"
 #include "../validity.hpp"
 
 #include <optick.h>
@@ -87,13 +90,15 @@ protected:
 };
 
 template<class Item, void (Resources::*Process)(Item), float (Resources ::*Priority)(const Item &), int ThreadName>
-class ResourceProcessor
+class ResourceProcessor : private Immovable
 {
 public:
     void push(const Item &item)
     {
         {
             std::lock_guard<std::mutex> lock(mut);
+            if (stop)
+                return;
             q.push_back(item);
         }
         con.notify_one();
@@ -103,17 +108,23 @@ public:
     {
         {
             std::lock_guard<std::mutex> lock(mut);
+            if (stop)
+                return;
             q.push_back(std::move(item));
         }
         con.notify_one();
     }
 
     bool runOne();
-    void runAll();
 
     void terminate()
     {
-        stop = true;
+        {
+            std::lock_guard<std::mutex> lock(mut);
+            stop = true;
+            q.clear();
+        }
+        con.notify_all();
     }
 
     uint32 estimateSize() const
@@ -129,6 +140,7 @@ public:
 
     ~ResourceProcessor()
     {
+        terminate();
         if (thr.joinable())
             thr.join();
     }
@@ -139,7 +151,7 @@ public:
     std::condition_variable con;
     std::thread thr;
     std::atomic<bool> stop{ false };
-    Resources *resources = nullptr;
+    Resources *const resources;
 
     static constexpr const char *ThreadNames[] =
     {
@@ -150,13 +162,7 @@ public:
         "atmosphere",
     };
 
-    void entry()
-    {
-        setThreadName(ThreadNames[ThreadName]);
-        OPTICK_THREAD(ThreadNames[ThreadName]);
-        runAll();
-    }
-
+    void entry();
     Item getBest();
 };
 
@@ -186,7 +192,6 @@ public:
 
     bool tryRemove(std::shared_ptr<Resource> &r);
     void saveCorruptedFile(const std::shared_ptr<Resource> &r);
-    void terminateAllQueues();
 
     void cacheInit();
     void cacheWrite(const CacheData &data);
@@ -214,6 +219,8 @@ public:
     std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
     MapImpl *const map;
     std::atomic<uint32> downloads{ 0 }; // number of active downloads
+    std::atomic<uint32> existing{ 0 }; // number of existing resources
+    std::atomic<bool> renderFinalizeCalled{ false };
 };
 
 template<class Item, void (Resources::*Process)(Item), float (Resources::*Priority)(const Item &), int ThreadName>
@@ -235,8 +242,11 @@ inline bool ResourceProcessor<Item, Process, Priority, ThreadName>::runOne()
 }
 
 template<class Item, void (Resources::*Process)(Item), float (Resources::*Priority)(const Item &), int ThreadName>
-inline void ResourceProcessor<Item, Process, Priority, ThreadName>::runAll()
+inline void ResourceProcessor<Item, Process, Priority, ThreadName>::entry()
 {
+    setThreadName(ThreadNames[ThreadName]);
+    OPTICK_THREAD(ThreadNames[ThreadName]);
+
     while (!stop)
     {
         Item item;

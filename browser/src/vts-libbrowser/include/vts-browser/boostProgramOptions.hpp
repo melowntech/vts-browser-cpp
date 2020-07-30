@@ -33,34 +33,12 @@
 namespace vts
 {
 
-VTS_API void optionsConfigLog(
-        boost::program_options::options_description &desc,
-        std::string section = "log");
-
-VTS_API void optionsConfigMapCreate(
-        boost::program_options::options_description &desc,
-        class MapCreateOptions *opts,
-        std::string section = "init");
-
-VTS_API void optionsConfigMapRuntime(
-        boost::program_options::options_description &desc,
-        class MapRuntimeOptions *opts,
-        std::string section = "map");
-
-VTS_API void optionsConfigCamera(
-        boost::program_options::options_description &desc,
-        class CameraOptions *opts,
-        std::string section = "camera");
-
-VTS_API void optionsConfigNavigation(
-        boost::program_options::options_description &desc,
-        class NavigationOptions *opts,
-        std::string section = "navigation");
-
-VTS_API void optionsConfigFetcherOptions(
-        boost::program_options::options_description &desc,
-        class FetcherOptions *opts,
-        std::string section = "fetcher");
+VTS_API void optionsConfigLog(boost::program_options::options_description &desc, std::string section = "log");
+VTS_API void optionsConfigMapCreate(boost::program_options::options_description &desc, class MapCreateOptions *opts, std::string section = "init");
+VTS_API void optionsConfigMapRuntime(boost::program_options::options_description &desc, class MapRuntimeOptions *opts, std::string section = "map");
+VTS_API void optionsConfigCamera(boost::program_options::options_description &desc, class CameraOptions *opts, std::string section = "camera");
+VTS_API void optionsConfigNavigation(boost::program_options::options_description &desc, class NavigationOptions *opts, std::string section = "navigation");
+VTS_API void optionsConfigFetcherOptions(boost::program_options::options_description &desc, class FetcherOptions *opts, std::string section = "fetcher");
 
 } // namespace vts
 

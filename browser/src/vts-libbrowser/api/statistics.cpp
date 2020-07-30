@@ -41,6 +41,7 @@ std::string MapStatistics::toJson() const
     TJ(resourcesUploaded, asUint);
     TJ(resourcesFailed, asUint);
     TJ(resourcesReleased, asUint);
+    TJ(resourcesExists, asUint);
     TJ(resourcesActive, asUint);
     TJ(resourcesDownloading, asUint);
     TJ(resourcesPreparing, asUint);

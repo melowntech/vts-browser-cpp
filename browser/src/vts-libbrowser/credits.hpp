@@ -45,8 +45,7 @@ public:
         Total_
     };
 
-    boost::optional<vtslibs::registry::CreditId> find(
-            const std::string &name) const;
+    boost::optional<vtslibs::registry::CreditId> find(const std::string &name) const;
     void hit(Scope scope, vtslibs::registry::CreditId id, uint32 lod);
     std::string findId(vtslibs::registry::CreditId id) const;
     void tick(CameraCredits &credits);

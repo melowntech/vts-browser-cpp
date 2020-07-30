@@ -47,8 +47,7 @@ public:
     void decode() override;
     FetchTask::ResourceType resourceType() const override;
 
-    uint8 flags[vtslibs::registry::BoundLayer::rasterMetatileWidth
-        * vtslibs::registry::BoundLayer::rasterMetatileHeight];
+    uint8 flags[vtslibs::registry::BoundLayer::rasterMetatileWidth * vtslibs::registry::BoundLayer::rasterMetatileHeight];
 };
 
 class MetaNode
@@ -76,14 +75,10 @@ public:
     vec3 cornersPhys(uint32 index) const;
 };
 
-Extents2 subExtents(const Extents2 &parentExtents,
-    const TileId &parentId, const TileId &targetId);
+Extents2 subExtents(const Extents2 &parentExtents, const TileId &parentId, const TileId &targetId);
 
-MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
-    const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta);
-MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
-    const std::shared_ptr<CoordManip> &cnv,
-    const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta);
+MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m, const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta);
+MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m, const std::shared_ptr<CoordManip> &cnv, const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta);
 
 class MetaTile : public Resource, public vtslibs::vts::MetaTile
 {

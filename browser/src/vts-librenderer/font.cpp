@@ -110,8 +110,7 @@ uint32 findCustomTablesOffset(const vts::Buffer &buf)
 namespace vts { namespace renderer
 {
 
-Font::Font() : face(nullptr), font(nullptr),
-    textureWidth(0), textureHeight(0), filesCount(0), size(0)
+Font::Font()
 {}
 
 Font::~Font()
@@ -123,8 +122,7 @@ Font::~Font()
     }
 }
 
-void Font::load(ResourceInfo &info, GpuFontSpec &spec,
-    const std::string &debugId)
+void Font::load(ResourceInfo &info, GpuFontSpec &spec, const std::string &debugId)
 {
     this->debugId = debugId;
 
@@ -133,14 +131,10 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec,
 
     {
         std::lock_guard<std::mutex> lock(ftMutex);
-        auto err = FT_New_Memory_Face(ftLibrary,
-            (FT_Byte*)fontData.data(), fontData.size(),
-            0, &face);
+        auto err = FT_New_Memory_Face(ftLibrary, (FT_Byte*)fontData.data(), fontData.size(), 0, &face);
         if (err)
         {
-            throw std::runtime_error(std::string()
-                + "Failed loading the font with FreeType: <"
-                + ftErrToStr(err) + ">");
+            throw std::runtime_error(std::string() + "Failed loading the font with FreeType: <" + ftErrToStr(err) + ">");
         }
     }
 
@@ -209,9 +203,7 @@ void Font::load(ResourceInfo &info, GpuFontSpec &spec,
             glyphs[j].fileIndex = filesCount;
     }
 
-    info.ramMemoryCost += sizeof(*this)
-        + fontData.size()
-        + glyphs.size() * sizeof(Glyph);
+    info.ramMemoryCost += sizeof(*this) + fontData.size() + glyphs.size() * sizeof(Glyph);
 }
 
 void RenderContext::loadFont(ResourceInfo &info, GpuFontSpec &spec,

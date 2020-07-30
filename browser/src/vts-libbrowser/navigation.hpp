@@ -73,8 +73,7 @@ public:
     void resetNavigationMode();
     void convertSubjObj();
     double objectiveDistance();
-    void positionToCamera(vec3 &center, vec3 &dir, vec3 &up,
-        const vec3 &inputRotation, const vec3 &inputPosition);
+    void positionToCamera(vec3 &center, vec3 &dir, vec3 &up, const vec3 &inputRotation, const vec3 &inputPosition);
     bool isNavigationModeValid() const;
     void setManual();
     void setPosition(const vtslibs::registry::Position &position); // set target position

@@ -50,11 +50,9 @@ class BoundMetaTile;
 class BoundInfo : public vtslibs::registry::BoundLayer
 {
 public:
-    BoundInfo(const vtslibs::registry::BoundLayer &bl,
-        const std::string &url);
+    BoundInfo(const vtslibs::registry::BoundLayer &bl, const std::string &url);
 
-    std::shared_ptr<vtslibs::registry::BoundLayer::Availability>
-        availability;
+    std::shared_ptr<vtslibs::registry::BoundLayer::Availability> availability;
     UrlTemplate urlExtTex;
     UrlTemplate urlMeta;
     UrlTemplate urlMask;
@@ -63,8 +61,7 @@ public:
 class FreeInfo : public vtslibs::registry::FreeLayer
 {
 public:
-    FreeInfo(const vtslibs::registry::FreeLayer &fl,
-        const std::string &url);
+    FreeInfo(const vtslibs::registry::FreeLayer &fl, const std::string &url);
 
     std::string url; // external free layer url
 
@@ -79,8 +76,7 @@ public:
 
     BoundParamInfo(const vtslibs::registry::View::BoundLayerParams &params);
     vec4f uvTrans() const;
-    Validity prepare(CameraImpl *impl, TileId tileId, TileId localId,
-        uint32 subMeshIndex, double priority);
+    Validity prepare(CameraImpl *impl, TileId tileId, TileId localId, uint32 subMeshIndex, double priority);
 
     std::shared_ptr<GpuTexture> textureColor;
     std::shared_ptr<GpuTexture> textureMask;

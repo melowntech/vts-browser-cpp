@@ -47,6 +47,7 @@ public:
     uint32 resourcesFailed = 0;
     uint32 resourcesReleased = 0;
 
+    uint32 resourcesExists = 0;
     uint32 resourcesActive = 0;
     uint32 resourcesDownloading = 0;
     uint32 resourcesPreparing = 0;

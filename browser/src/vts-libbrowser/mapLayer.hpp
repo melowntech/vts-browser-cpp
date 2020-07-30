@@ -41,14 +41,10 @@ class SurfaceInfo
 {
 public:
     SurfaceInfo() = default;
-    SurfaceInfo(const vtslibs::vts::SurfaceCommonConfig &surface,
-        const std::string &parentPath);
-    SurfaceInfo(const vtslibs::registry::FreeLayer::MeshTiles &surface,
-        const std::string &parentPath);
-    SurfaceInfo(const vtslibs::registry::FreeLayer::GeodataTiles &surface,
-        const std::string &parentPath);
-    SurfaceInfo(const vtslibs::registry::FreeLayer::Geodata &surface,
-        const std::string &parentPath);
+    SurfaceInfo(const vtslibs::vts::SurfaceCommonConfig &surface, const std::string &parentPath);
+    SurfaceInfo(const vtslibs::registry::FreeLayer::MeshTiles &surface, const std::string &parentPath);
+    SurfaceInfo(const vtslibs::registry::FreeLayer::GeodataTiles &surface, const std::string &parentPath);
+    SurfaceInfo(const vtslibs::registry::FreeLayer::Geodata &surface, const std::string &parentPath);
 
     UrlTemplate urlMeta;
     UrlTemplate urlMesh;
@@ -65,11 +61,8 @@ public:
     void print();
     void colorize();
 
-    void generateVirtual(MapImpl *map,
-        const vtslibs::vts::VirtualSurfaceConfig *virtualSurface);
-    void generateTileset(MapImpl *map,
-        const std::vector<std::string> &vsId,
-        const vtslibs::vts::TilesetReferencesList &dataRaw);
+    void generateVirtual(MapImpl *map, const vtslibs::vts::VirtualSurfaceConfig *virtualSurface);
+    void generateTileset(MapImpl *map, const std::vector<std::string> &vsId, const vtslibs::vts::TilesetReferencesList &dataRaw);
     void generateReal(MapImpl *map);
     void generateFree(MapImpl *map, const FreeInfo &freeLayer);
 
@@ -82,14 +75,12 @@ public:
     // main surface stack
     MapLayer(MapImpl *map);
     // free layer
-    MapLayer(MapImpl *map, const std::string &name,
-        const vtslibs::registry::View::FreeLayerParams &params);
+    MapLayer(MapImpl *map, const std::string &name, const vtslibs::registry::View::FreeLayerParams &params);
 
     bool prerequisitesCheck();
     bool isGeodata() const;
 
-    BoundParamInfo::List boundList(
-        const SurfaceInfo *surface, sint32 surfaceReference) const;
+    BoundParamInfo::List boundList(const SurfaceInfo *surface, sint32 surfaceReference) const;
 
     vtslibs::registry::View::Surfaces boundLayerParams;
 

@@ -48,18 +48,17 @@ public:
 
     Font();
     ~Font();
-    void load(ResourceInfo &info, GpuFontSpec &spec,
-        const std::string &debugId);
+    void load(ResourceInfo &info, GpuFontSpec &spec, const std::string &debugId);
 
     Buffer fontData;
     std::shared_ptr<vts::FontHandle> fontHandle;
     std::vector<Glyph> glyphs;
-    FT_Face face;
-    hb_font_t *font;
-    uint16 textureWidth;
-    uint16 textureHeight;
-    uint16 filesCount;
-    uint8 size;
+    FT_Face face = nullptr;
+    hb_font_t *font = nullptr;
+    uint16 textureWidth = 0;
+    uint16 textureHeight = 0;
+    uint16 filesCount = 0;
+    uint8 size = 0;
 };
 
 } } // namespace vts::renderer

@@ -75,8 +75,7 @@ public:
 
     const mat4 &getConv() const;
 
-    void performCopy(uint32 sourceTexture, uint32 w, uint32 h,
-        const mat4 &storeConv);
+    void performCopy(uint32 sourceTexture, uint32 w, uint32 h, const mat4 &storeConv);
 
     // xy in -1..1
     // returns 0..1 in logarithmic depth
@@ -172,13 +171,11 @@ public:
     bool lodBlendingWithDithering = false;
     bool colorRenderWithAlphaPrev = false;
 
-    RenderViewImpl(Camera *camera, RenderView *api,
-        RenderContextImpl *context);
+    RenderViewImpl(Camera *camera, RenderView *api, RenderContextImpl *context);
 
     void clearGlState();
 
-    UniformBuffer *useDisposableUbo(uint32 bindIndex,
-        void *data, uint32 size);
+    UniformBuffer *useDisposableUbo(uint32 bindIndex, void *data, uint32 size);
     template<class T>
     UniformBuffer *useDisposableUbo(uint32 bindIndex, const T &value)
     { return useDisposableUbo(bindIndex, (void*)&value, sizeof(value)); }
@@ -188,8 +185,7 @@ public:
     void updateFramebuffers();
     void updateAtmosphereBuffer();
     void getWorldPosition(const double screenPos[2], double worldPos[3]);
-    void renderCompass(const double screenPosSize[3],
-        const double mapRotation[3]);
+    void renderCompass(const double screenPosSize[3], const double mapRotation[3]);
 
     void entryInitialize();
     void entrySurfaces();
@@ -197,13 +193,10 @@ public:
     void entryFinalize();
 
     bool collides(const GeodataJob &a, const GeodataJob &b);
-    bool geodataTestVisibility(
-        const float visibility[4],
-        const vec3 &pos, const vec3f &up);
+    bool geodataTestVisibility(const float visibility[4], const vec3 &pos, const vec3f &up);
     bool geodataDepthVisibility(const vec3 &pos, float threshold);
     mat4 depthOffsetCorrection(const std::shared_ptr<GeodataTile> &g) const;
-    void renderGeodataQuad(const GeodataJob &job,
-        const Rect &rect, const vec4f &color);
+    void renderGeodataQuad(const GeodataJob &job, const Rect &rect, const vec4f &color);
     void bindUboView(const std::shared_ptr<GeodataTile> &gg);
     void computeZBufferOffsetValues();
     void bindUboCamera();

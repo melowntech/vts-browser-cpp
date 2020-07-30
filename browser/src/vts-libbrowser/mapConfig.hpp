@@ -47,8 +47,7 @@ class BoundInfo;
 class FreeInfo;
 class CoordManip;
 
-class ExternalBoundLayer : public Resource,
-    public vtslibs::registry::BoundLayer
+class ExternalBoundLayer : public Resource, public vtslibs::registry::BoundLayer
 {
 public:
     ExternalBoundLayer(MapImpl *map, const std::string &name);
@@ -89,10 +88,8 @@ public:
 
     BoundInfo *getBoundInfo(const std::string &id);
     FreeInfo *getFreeInfo(const std::string &id);
-    vtslibs::vts::SurfaceCommonConfig *findGlue(
-        const vtslibs::vts::Glue::Id &id);
-    vtslibs::vts::SurfaceCommonConfig *findSurface(
-        const std::string &id);
+    vtslibs::vts::SurfaceCommonConfig *findGlue(const vtslibs::vts::Glue::Id &id);
+    vtslibs::vts::SurfaceCommonConfig *findSurface(const std::string &id);
 
     BrowserOptions browserOptions;
     std::vector<vtslibs::vts::NodeInfo> referenceDivisionNodeInfos;

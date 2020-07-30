@@ -81,8 +81,7 @@ public:
     boost::container::small_vector<RenderColliderTask, 1> colliders;
 
     TraverseNode();
-    TraverseNode(const MapLayer *layer,
-        TraverseNode *parent, const TileId &id);
+    TraverseNode(const MapLayer *layer, TraverseNode *parent, const TileId &id);
     ~TraverseNode();
     void clearAll();
     void clearRenders();

@@ -103,8 +103,7 @@ public:
     std::vector<TileId> gridLoadRequests;
     std::vector<CurrentDraw> currentDraws;
     std::unordered_map<TraverseNode*, SubtilesMerger> opaqueSubtiles;
-    std::map<std::weak_ptr<MapLayer>, CameraMapLayer,
-            std::owner_less<std::weak_ptr<MapLayer>>> layers;
+    std::map<std::weak_ptr<MapLayer>, CameraMapLayer, std::owner_less<std::weak_ptr<MapLayer>>> layers;
     // *Actual = corresponds to current camera settings
     // *Render, *Culling, updated only when camera is NOT detached
     mat4 viewProjActual;
@@ -124,31 +123,25 @@ public:
 
     CameraImpl(MapImpl *map, Camera *cam);
     void clear();
-    Validity reorderBoundLayers(TileId tileId, TileId localId,
-        uint32 subMeshIndex, std::vector<BoundParamInfo> &boundList,
-        double priority);
+    Validity reorderBoundLayers(TileId tileId, TileId localId, uint32 subMeshIndex, std::vector<BoundParamInfo> &boundList, double priority);
     void touchDraws(TraverseNode *trav);
     bool visibilityTest(TraverseNode *trav);
     bool coarsenessTest(TraverseNode *trav);
     double coarsenessValue(TraverseNode *trav);
     float getTextSize(float size, const std::string &text);
-    void renderText(TraverseNode *trav, float x, float y, const vec4f &color,
-                float size, const std::string &text, bool centerText = true);
+    void renderText(TraverseNode *trav, float x, float y, const vec4f &color, float size, const std::string &text, bool centerText = true);
     void renderNodeBox(TraverseNode *trav, const vec4f &color);
     void renderNode(TraverseNode *trav, TraverseNode *orig);
     void renderNode(TraverseNode *trav);
     void renderNodeCoarser(TraverseNode *trav, TraverseNode *orig);
     void renderNodeCoarser(TraverseNode *trav);
-    void renderNodeDraws(TraverseNode *trav, TraverseNode *orig,
-                            float blendingCoverage);
+    void renderNodeDraws(TraverseNode *trav, TraverseNode *orig, float blendingCoverage);
     DrawSurfaceTask convert(const RenderSurfaceTask &task);
-    DrawSurfaceTask convert(const RenderSurfaceTask &task,
-                            const vec4f &uvClip, float blendingCoverage);
+    DrawSurfaceTask convert(const RenderSurfaceTask &task, const vec4f &uvClip, float blendingCoverage);
     DrawInfographicsTask convert(const RenderInfographicsTask &task);
     DrawColliderTask convert(const RenderColliderTask &task);
     bool generateMonolithicGeodataTrav(TraverseNode *trav);
-    std::shared_ptr<GpuTexture> travInternalTexture(TraverseNode *trav,
-                                                  uint32 subMeshIndex);
+    std::shared_ptr<GpuTexture> travInternalTexture(TraverseNode *trav, uint32 subMeshIndex);
     bool travDetermineMeta(TraverseNode *trav);
     bool travDetermineDraws(TraverseNode *trav);
     bool travDetermineDrawsSurface(TraverseNode *trav);
@@ -164,15 +157,12 @@ public:
     void traverseRender(TraverseNode *trav);
     void gridPreloadRequest(TraverseNode *trav);
     void gridPreloadProcess(TraverseNode *root);
-    void gridPreloadProcess(TraverseNode *trav,
-                            const std::vector<TileId> &requests);
-    void resolveBlending(TraverseNode *root,
-                CameraMapLayer &layer);
+    void gridPreloadProcess(TraverseNode *trav, const std::vector<TileId> &requests);
+    void resolveBlending(TraverseNode *root, CameraMapLayer &layer);
     void sortOpaqueFrontToBack();
     void renderUpdate();
     void suggestedNearFar(double &near_, double &far_);
-    bool getSurfaceOverEllipsoid(double &result, const vec3 &navPos,
-        double sampleSize = -1, bool renderDebug = false);
+    bool getSurfaceOverEllipsoid(double &result, const vec3 &navPos, double sampleSize = -1, bool renderDebug = false);
     double getSurfaceAltitudeSamples();
 };
 

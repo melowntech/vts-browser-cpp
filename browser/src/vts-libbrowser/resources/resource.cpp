@@ -63,6 +63,7 @@ bool FetchTaskImpl::performAvailTest() const
 Resource::Resource(vts::MapImpl *map, const std::string &name) : name(name), map(map), priority(nan1())
 {
     LOG(debug) << "Constructing resource <" << name << "> at <" << this << ">";
+    map->resources->existing++;
 }
 
 Resource::~Resource()
@@ -73,6 +74,7 @@ Resource::~Resource()
         assert(!map->resources->queUpload.stop);
         map->resources->queUpload.push(UploadData(info.userData, 0));
     }
+    map->resources->existing--;
 }
 
 bool Resource::allowDiskCache() const

@@ -44,8 +44,7 @@ class GpuMesh : public Resource
 {
 public:
     GpuMesh(MapImpl *map, const std::string &name);
-    GpuMesh(MapImpl *map, const std::string &name,
-            const vtslibs::vts::SubMesh &m);
+    GpuMesh(MapImpl *map, const std::string &name, const vtslibs::vts::SubMesh &m);
     void decode() override;
     void upload() override;
     bool requiresUpload() override { return true; }
@@ -61,10 +60,8 @@ public:
     void upload() override;
     bool requiresUpload() override { return true; }
     FetchTask::ResourceType resourceType() const override;
-    GpuTextureSpec::FilterMode filterMode
-        = GpuTextureSpec::FilterMode::Linear;
-    GpuTextureSpec::WrapMode wrapMode
-        = GpuTextureSpec::WrapMode::ClampToEdge;
+    GpuTextureSpec::FilterMode filterMode = GpuTextureSpec::FilterMode::Linear;
+    GpuTextureSpec::WrapMode wrapMode = GpuTextureSpec::WrapMode::ClampToEdge;
     uint32 width = 0, height = 0;
 };
 

@@ -55,8 +55,7 @@ VTS_API uint32 gpuTypeSize(GpuTypeEnum type);
 class VTS_API ResourceInfo
 {
 public:
-    // the userData is later on used to reference the corresponding resource
-    //   from inside a DrawTask
+    // the userData is later on used to reference the corresponding resource from inside a DrawTask
     std::shared_ptr<void> userData;
 
     // memory usage in bytes
@@ -82,15 +81,13 @@ public:
     // type of each channel per pixel
     GpuTypeEnum type = GpuTypeEnum::UnsignedByte;
 
-    // enforce texture internal format
-    //   leave zero to deduce the format from type and components
+    // enforce texture internal format, leave zero to deduce the format from type and components
     // the type must still be set appropriately since it defines buffer size
     uint32 internalFormat = 0;
 
     // raw texture data
     // it has (width * height * components * gpuTypeSize(type)) bytes
-    // the rows are in no way aligned to multi-byte boundaries
-    //   (GL_UNPACK_ALIGNMENT = 1)
+    // the rows are in no way aligned to multi-byte boundaries (GL_UNPACK_ALIGNMENT = 1)
     Buffer buffer;
 
     // expected size based on width * height * components * gpuTypeSize(type)
@@ -166,8 +163,7 @@ public:
     GpuTypeEnum indexMode = GpuTypeEnum::UnsignedShort;
 };
 
-// handle that provides the application with access
-//   to individual texture planes
+// handle that provides the application with access to individual texture planes
 class VTS_API FontHandle
 {
 public:

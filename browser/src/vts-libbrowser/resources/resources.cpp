@@ -262,15 +262,34 @@ void Resources::dataUpdate()
 
 void Resources::dataFinalize()
 {
-    //assert(queUpload.stopped());
-    //queUpload.purge();
+    while (!queUpload.q.empty() || existing > 0)
+    {
+        while (!queUpload.q.empty())
+            queUpload.runOne();
+        if (existing > 0)
+        {
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(5ms);
+        }
+    }
 }
 
 void Resources::dataAllRun()
 {
     setThreadName("data");
     OPTICK_THREAD("data");
-    queUpload.runAll();
+
+    while (!renderFinalizeCalled)
+    {
+        {
+            std::unique_lock<std::mutex> lock(queUpload.mut);
+            while (queUpload.q.empty() && !renderFinalizeCalled)
+                queUpload.con.wait(lock);
+        }
+        if (!renderFinalizeCalled)
+            queUpload.runOne();
+    }
+
     dataFinalize();
 }
 
@@ -415,9 +434,7 @@ Resources::Resources(MapImpl *map) : map(map), queFetching(this), queCacheRead(t
 }
 
 Resources::~Resources()
-{
-    terminateAllQueues();
-}
+{}
 
 bool Resources::tryRemove(std::shared_ptr<Resource> &r)
 {
@@ -570,16 +587,6 @@ void Resources::checkInitialized()
     }
 }
 
-void Resources::terminateAllQueues()
-{
-    queCacheWrite.terminate();
-    queDecode.terminate();
-    queUpload.terminate();
-    queAtmosphere.terminate();
-    queCacheRead.terminate();
-    queFetching.terminate();
-}
-
 void Resources::renderFinalize()
 {
     OPTICK_EVENT();
@@ -590,8 +597,16 @@ void Resources::renderFinalize()
     // clear the resources now while all the necessary things are still working
     resources.clear();
 
-    // allow the dataAllRun method to return to the caller
-    terminateAllQueues();
+    // terminate all worker threads (except upload)
+    queCacheRead.terminate();
+    queCacheWrite.terminate();
+    queFetching.terminate();
+    queDecode.terminate();
+    queAtmosphere.terminate();
+
+    // signal the data thread that it should terminate
+    renderFinalizeCalled = true;
+    queUpload.con.notify_one();
 }
 
 void Resources::renderUpdate()
@@ -624,6 +639,7 @@ void Resources::renderUpdate()
             }
         }
 
+        map->statistics.resourcesExists = existing;
         map->statistics.resourcesActive = resources.size();
         map->statistics.resourcesDownloading = downloads;
         map->statistics.resourcesQueueDownload = queFetching.estimateSize();

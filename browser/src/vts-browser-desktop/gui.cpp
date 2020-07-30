@@ -1141,6 +1141,7 @@ public:
                     float ratio2[] = { width * 0.45f, width * 0.45f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio2);
 
+                    S("Exists:", ms.resourcesExists, "");
                     S("Active:", ms.resourcesActive, "");
                     S("Downloaded:", ms.resourcesDownloaded, "");
                     S("Disk loaded:", ms.resourcesDiskLoaded, "");

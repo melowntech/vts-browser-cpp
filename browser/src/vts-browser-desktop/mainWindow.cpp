@@ -98,8 +98,7 @@ MainWindow::MainWindow(struct SDL_Window *window, void *renderContext,
     // load mesh sphere
     {
         meshSphere = std::make_shared<vts::renderer::Mesh>();
-        vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
-                                  "data/meshes/sphere.obj"));
+        vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer("data/meshes/sphere.obj"));
         assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Triangles);
         spec.attributes[0].enable = true;
         spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
@@ -115,8 +114,7 @@ MainWindow::MainWindow(struct SDL_Window *window, void *renderContext,
     // load mesh line
     {
         meshLine = std::make_shared<vts::renderer::Mesh>();
-        vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer(
-                                  "data/meshes/line.obj"));
+        vts::GpuMeshSpec spec(vts::readInternalMemoryBuffer("data/meshes/line.obj"));
         assert(spec.faceMode == vts::GpuMeshSpec::FaceMode::Lines);
         spec.attributes[0].enable = true;
         spec.attributes[0].stride = sizeof(vts::vec3f) + sizeof(vts::vec2f);
@@ -239,8 +237,7 @@ bool MainWindow::processEvents()
             if (map->getMapconfigAvailable())
             {
                 navigation->setRotation({0,270,0});
-                navigation->options().type
-                        = vts::NavigationType::Quick;
+                navigation->options().type = vts::NavigationType::Quick;
                 navigation->resetNavigationMode();
             }
         }
@@ -253,19 +250,15 @@ bool MainWindow::processEvents()
         }
 
         // camera jump to double click
-        if (event.type == SDL_MOUSEBUTTONDOWN
-                && event.button.clicks == 2
-                && event.button.button == SDL_BUTTON_LEFT)
+        if (event.type == SDL_MOUSEBUTTONDOWN && event.button.clicks == 2 && event.button.button == SDL_BUTTON_LEFT)
         {
             vts::vec3 posPhys = getWorldPositionFromCursor();
             if (!std::isnan(posPhys(0)))
             {
                 double posNav[3];
-                map->convert(posPhys.data(), posNav,
-                             vts::Srs::Physical, vts::Srs::Navigation);
+                map->convert(posPhys.data(), posNav, vts::Srs::Physical, vts::Srs::Navigation);
                 navigation->setPoint(posNav);
-                navigation->options().type
-                                = vts::NavigationType::Quick;
+                navigation->options().type = vts::NavigationType::Quick;
             }
         }
 
@@ -276,28 +269,23 @@ bool MainWindow::processEvents()
             if (event.motion.state & SDL_BUTTON(SDL_BUTTON_LEFT))
             {
                 const Uint8 *keys = SDL_GetKeyboardState(nullptr);
-                if (keys[SDL_SCANCODE_LCTRL] || keys[SDL_SCANCODE_RCTRL]
-                    || keys[SDL_SCANCODE_LSHIFT] || keys[SDL_SCANCODE_RSHIFT])
+                if (keys[SDL_SCANCODE_LCTRL] || keys[SDL_SCANCODE_RCTRL] || keys[SDL_SCANCODE_LSHIFT] || keys[SDL_SCANCODE_RSHIFT])
                     mode = 2;
                 else
                     mode = 1;
             }
-            else if ((event.motion.state & SDL_BUTTON(SDL_BUTTON_RIGHT))
-                     || (event.motion.state & SDL_BUTTON(SDL_BUTTON_MIDDLE)))
+            else if ((event.motion.state & SDL_BUTTON(SDL_BUTTON_RIGHT)) || (event.motion.state & SDL_BUTTON(SDL_BUTTON_MIDDLE)))
                 mode = 2;
-            double p[3] = { (double)event.motion.xrel,
-                            (double)event.motion.yrel, 0 };
+            double p[3] = { (double)event.motion.xrel, (double)event.motion.yrel, 0 };
             switch (mode)
             {
             case 1:
                 navigation->pan(p);
-                navigation->options().type
-                    = vts::NavigationType::Quick;
+                navigation->options().type = vts::NavigationType::Quick;
                 break;
             case 2:
                 navigation->rotate(p);
-                navigation->options().type
-                    = vts::NavigationType::Quick;
+                navigation->options().type = vts::NavigationType::Quick;
                 break;
             }
         }
@@ -332,19 +320,15 @@ void MainWindow::run()
     if (!appOptions.initialPosition.empty())
     {
         map->callbacks().mapconfigAvailable = [&](){
-            vts::log(vts::LogLevel::info2,
-                     "Setting initial position");
+            vts::log(vts::LogLevel::info2, "Setting initial position");
             try
             {
-                navigation->setPosition(
-                    vts::Position(appOptions.initialPosition));
-                navigation->options().type
-                        = vts::NavigationType::Instant;
+                navigation->setPosition(vts::Position(appOptions.initialPosition));
+                navigation->options().type = vts::NavigationType::Instant;
             }
             catch (...)
             {
-                vts::log(vts::LogLevel::warn3,
-                         "Failed to set initial position");
+                vts::log(vts::LogLevel::warn3, "Failed to set initial position");
             }
             map->callbacks().mapconfigAvailable = {};
         };
@@ -389,8 +373,7 @@ void MainWindow::run()
             shouldClose = true;
         if (map->statistics().renderTicks % 120 == 0)
         {
-            std::string creditLine = std::string() + "vts-browser-desktop: "
-                    + camera->credits().textFull();
+            std::string creditLine = std::string() + "vts-browser-desktop: " + camera->credits().textFull();
             SDL_SetWindowTitle(window, creditLine.c_str());
         }
 
@@ -404,18 +387,14 @@ void MainWindow::run()
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             break;
         case 2:
-            std::this_thread::sleep_for(std::chrono::milliseconds(
-                std::sin(accumulatedTime * 0.1) < 0 ? 50 : 0));
+            std::this_thread::sleep_for(std::chrono::milliseconds(std::sin(accumulatedTime * 0.1) < 0 ? 50 : 0));
             break;
         }
 
         auto time4 = std::chrono::high_resolution_clock::now();
-        timingMapProcess = std::chrono::duration<double>(
-            time2 - time1).count();
-        timingAppProcess = std::chrono::duration<double>(
-            time3 - time2).count();
-        timingTotalFrame = std::chrono::duration<double>(
-            time4 - lastTime).count();
+        timingMapProcess = std::chrono::duration<double>(time2 - time1).count();
+        timingAppProcess = std::chrono::duration<double>(time3 - time2).count();
+        timingTotalFrame = std::chrono::duration<double>(time4 - lastTime).count();
         lastTime = time4;
         accumulatedTime += timingTotalFrame;
 

@@ -72,16 +72,14 @@ public:
     void decode() override;
 };
 
-class GpuFont : public Resource, public FontHandle
+class GpuFont : public Resource
 {
 public:
     GpuFont(MapImpl *map, const std::string &name);
     void decode() override;
     void upload() override;
     bool requiresUpload() override { return true; }
-    std::shared_ptr<void> requestTexture(uint32 index) override;
     FetchTask::ResourceType resourceType() const override;
-    std::vector<std::shared_ptr<GpuTexture>> texturePlanes;
 };
 
 class MeshPart

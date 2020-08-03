@@ -427,7 +427,7 @@ void Resources::fetcherProcessorEntry()
 // MAIN THREAD
 ////////////////////////////
 
-Resources::Resources(MapImpl *map) : map(map), queFetching(this), queCacheRead(this), queCacheWrite(this), queDecode(this), queAtmosphere(this), queUpload(this)
+Resources::Resources(MapImpl *map) : queFetching(this), queCacheRead(this), queCacheWrite(this), queDecode(this), queAtmosphere(this), queUpload(this), map(map)
 {
     cacheInit();
     queFetching.thr = std::thread(&Resources::fetcherProcessorEntry, this);

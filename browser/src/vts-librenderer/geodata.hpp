@@ -40,12 +40,9 @@ struct Subtext
 {
     std::shared_ptr<Font> font;
     std::shared_ptr<Texture> texture;
-    uint16 fileIndex;
-    uint16 indicesStart;
-    uint16 indicesCount;
-
-    Subtext() : fileIndex(-1), indicesStart(0), indicesCount(0)
-    {}
+    uint16 fileIndex = -1;
+    uint16 indicesStart = 0;
+    uint16 indicesCount = 0;
 };
 
 struct Text
@@ -56,11 +53,8 @@ struct Text
     std::vector<vec4f> coordinates; // x, y, uv.s (+ plane index * 2), uv.t - four vec4f per glyph
     std::vector<Subtext> subtexts;
     Rect collision;
-    vec2f originSize;
-    float size;
-
-    Text() : originSize(nan2().cast<float>()), size(-1)
-    {}
+    vec2f originSize = nan2().cast<float>();
+    float size = -1;
 };
 
 struct Point
@@ -91,8 +85,7 @@ public:
     std::vector<Point> points;
 
     GeodataTile();
-    void load(RenderContextImpl *renderer, ResourceInfo &info,
-        GpuGeodataSpec &specp, const std::string &debugId);
+    void load(RenderContextImpl *renderer, ResourceInfo &info, GpuGeodataSpec &specp, const std::string &debugId);
     void addMemory(ResourceInfo &other);
     uint32 getTotalPoints() const;
     vec3f modelUp(const vec3f &modelPos);
@@ -108,8 +101,7 @@ public:
 };
 
 bool regenerateJobLabelFlat(const RenderViewImpl *rv, GeodataJob &j);
-void preDrawJobLabelFlat(const RenderViewImpl *rv, const GeodataJob &j,
-    std::vector<vec3> &worldPos, float &scale);
+void preDrawJobLabelFlat(const RenderViewImpl *rv, const GeodataJob &j, std::vector<vec3> &worldPos, float &scale);
 vec3 drawJobLabelFlatSingleDirection(const GeodataJob &j);
 
 } } // namespace vts renderer

@@ -61,9 +61,17 @@ class CacheData
 {
 public:
     CacheData() = default;
-    CacheData(CacheData &&) noexcept = default;
     CacheData(FetchTaskImpl *task, bool availFailed = false);
+
+#if defined(__GNUC__) && __GNUC__ < 7
+    // older versions of gcc reject the code with noexcept
+    // the version threshold is an estimate - feel free to suggest exact version
+    CacheData(CacheData &&) = default;
+    CacheData &operator = (CacheData &&) = default;
+#else
+    CacheData(CacheData &&) noexcept = default;
     CacheData &operator = (CacheData &&) noexcept = default;
+#endif
 
     Buffer buffer;
     std::string name;

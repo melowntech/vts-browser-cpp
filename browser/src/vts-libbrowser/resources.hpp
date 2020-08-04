@@ -97,7 +97,7 @@ protected:
     std::shared_ptr<void> destroyData;
 };
 
-template<class Item, void (Resources::*Process)(Item), float (Resources ::*Priority)(const Item &), int ThreadName>
+template<class Item, void (Resources::*Process)(Item), float (Resources::*Priority)(const Item &), int ThreadName>
 class ResourceProcessor : private Immovable
 {
 public:
@@ -160,15 +160,6 @@ public:
     std::thread thr;
     std::atomic<bool> stop{ false };
     Resources *const resources;
-
-    static constexpr const char *ThreadNames[] =
-    {
-        "",
-        "cacheRead",
-        "cacheWrite",
-        "decode",
-        "atmosphere",
-    };
 
     void entry();
     Item getBest();
@@ -252,6 +243,15 @@ inline bool ResourceProcessor<Item, Process, Priority, ThreadName>::runOne()
 template<class Item, void (Resources::*Process)(Item), float (Resources::*Priority)(const Item &), int ThreadName>
 inline void ResourceProcessor<Item, Process, Priority, ThreadName>::entry()
 {
+    constexpr const char *ThreadNames[] =
+    {
+        "",
+        "cacheRead",
+        "cacheWrite",
+        "decode",
+        "atmosphere",
+    };
+
     setThreadName(ThreadNames[ThreadName]);
     OPTICK_THREAD(ThreadNames[ThreadName]);
 

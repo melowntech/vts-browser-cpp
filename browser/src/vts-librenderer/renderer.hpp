@@ -97,6 +97,7 @@ public:
         vec4f uniAtmCoefs; // horizontal exponent, colorGradientExponent
         vec3f uniAtmCameraPosition; // world position of camera (divided by major axis)
         float _dummy; // the AtmBlock may not be smaller than corresponding definition in the shader (WebGL restriction)
+        AtmBlock();
     };
 
     void initializeAtmosphere();

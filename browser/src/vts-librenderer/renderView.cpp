@@ -655,6 +655,11 @@ void RenderViewImpl::entryFinalize()
     clearGlState();
 }
 
+ShaderAtm::AtmBlock::AtmBlock()
+{
+    memset(this, 0, sizeof(*this));
+}
+
 void RenderViewImpl::updateAtmosphereBuffer()
 {
     OPTICK_EVENT();
@@ -705,10 +710,6 @@ void RenderViewImpl::updateAtmosphereBuffer()
             = rawToVec4(body->atmosphere.colorHorizon);
         atmBlock.uniAtmColorZenith
             = rawToVec4(body->atmosphere.colorZenith);
-    }
-    else
-    {
-        memset(&atmBlock, 0, sizeof(atmBlock));
     }
 
     useDisposableUbo(0, atmBlock)->setDebugId("uboAtm");

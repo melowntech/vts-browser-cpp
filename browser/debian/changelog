@@ -1,3 +1,11 @@
+vts-browser (0.23) melown-xenial; urgency=medium
+
+  * geodata street labels
+  * tile diagnostics
+  * performance improvements
+
+ -- Tomas Maly <tomas.maly@melown.com>  Thu, 13 Aug 2020 10:34:20 +0200
+
 vts-browser (0.22) melown-xenial; urgency=medium
 
   * dithering-based lod blending

@@ -114,8 +114,7 @@ void RenderViewImpl::clearGlState()
 UniformBuffer *RenderViewImpl::useDisposableUbo(uint32 bindIndex,
     void *data, uint32 size)
 {
-    UniformBuffer *ubo = size > 256
-        ? uboCacheLarge.get() : uboCacheSmall.get();
+    UniformBuffer *ubo = size > 256 ? uboCacheLarge.get() : uboCacheSmall.get();
     ubo->bind();
     ubo->load(data, size, GL_DYNAMIC_DRAW);
     ubo->bindToIndex(bindIndex);
@@ -224,24 +223,19 @@ void RenderViewImpl::updateFramebuffers()
 {
     OPTICK_EVENT();
 
-    if (options.width != width || options.height != height
-        || options.antialiasingSamples != antialiasingSamplesPrev
-        || options.colorRenderWithAlpha != colorRenderWithAlphaPrev)
+    if (options.width != width || options.height != height || options.antialiasingSamples != antialiasingSamplesPrev || options.colorRenderWithAlpha != colorRenderWithAlphaPrev)
     {
         width = options.width;
         height = options.height;
-        antialiasingSamplesPrev = std::max(std::min(options.antialiasingSamples,
-            maxAntialiasingSamples), 1u);
+        antialiasingSamplesPrev = std::max(std::min(options.antialiasingSamples, maxAntialiasingSamples), 1u);
         colorRenderWithAlphaPrev = options.colorRenderWithAlpha;
 
-        vars.textureTargetType
-            = antialiasingSamplesPrev > 1
-                ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
+        vars.textureTargetType = antialiasingSamplesPrev > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
 
 #ifdef __EMSCRIPTEN__
-        static const bool forceSeparateSampleTextures = true;
+        constexpr bool forceSeparateSampleTextures = true;
 #else
-        static const bool forceSeparateSampleTextures = false;
+        constexpr bool forceSeparateSampleTextures = false;
 #endif
 
         // delete old textures
@@ -260,24 +254,17 @@ void RenderViewImpl::updateFramebuffers()
         glBindTexture(vars.textureTargetType, vars.depthRenderTexId);
         if (GLAD_GL_KHR_debug)
         {
-            glObjectLabel(GL_TEXTURE, vars.depthRenderTexId,
-                -1, "depthRenderTexId");
+            glObjectLabel(GL_TEXTURE, vars.depthRenderTexId, -1, "depthRenderTexId");
         }
         if (antialiasingSamplesPrev > 1)
         {
-            glTexImage2DMultisample(vars.textureTargetType,
-                antialiasingSamplesPrev, GL_DEPTH24_STENCIL8,
-                options.width, options.height, GL_TRUE);
+            glTexImage2DMultisample(vars.textureTargetType, antialiasingSamplesPrev, GL_DEPTH24_STENCIL8, options.width, options.height, GL_TRUE);
         }
         else
         {
-            glTexImage2D(vars.textureTargetType, 0, GL_DEPTH24_STENCIL8,
-                options.width, options.height,
-                0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
-            glTexParameteri(vars.textureTargetType,
-                GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(vars.textureTargetType,
-                GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexImage2D(vars.textureTargetType, 0, GL_DEPTH24_STENCIL8, options.width, options.height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+            glTexParameteri(vars.textureTargetType, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(vars.textureTargetType, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         }
         CHECK_GL("update depth texture for rendering");
 
@@ -289,16 +276,11 @@ void RenderViewImpl::updateFramebuffers()
             glBindTexture(GL_TEXTURE_2D, vars.depthReadTexId);
             if (GLAD_GL_KHR_debug)
             {
-                glObjectLabel(GL_TEXTURE, vars.depthReadTexId,
-                    -1, "depthReadTexId");
+                glObjectLabel(GL_TEXTURE, vars.depthReadTexId, -1, "depthReadTexId");
             }
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8,
-                options.width, options.height,
-                0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                GL_NEAREST);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, options.width, options.height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         }
         else
         {
@@ -308,33 +290,24 @@ void RenderViewImpl::updateFramebuffers()
         CHECK_GL("update depth texture for sampling");
 
         // color texture for rendering
-        const auto colorInternalFormat
-                = colorRenderWithAlphaPrev ? GL_RGBA8 : GL_RGB8;
-        const auto colorTransferFormat
-                = colorRenderWithAlphaPrev ? GL_RGBA : GL_RGB;
+        const auto colorInternalFormat = colorRenderWithAlphaPrev ? GL_RGBA8 : GL_RGB8;
+        const auto colorTransferFormat = colorRenderWithAlphaPrev ? GL_RGBA : GL_RGB;
         glActiveTexture(GL_TEXTURE0 + 7);
         glGenTextures(1, &vars.colorRenderTexId);
         glBindTexture(vars.textureTargetType, vars.colorRenderTexId);
         if (GLAD_GL_KHR_debug)
         {
-            glObjectLabel(GL_TEXTURE, vars.colorRenderTexId,
-                -1, "colorRenderTexId");
+            glObjectLabel(GL_TEXTURE, vars.colorRenderTexId, -1, "colorRenderTexId");
         }
         if (antialiasingSamplesPrev > 1)
         {
-            glTexImage2DMultisample(
-                vars.textureTargetType, antialiasingSamplesPrev,
-                colorInternalFormat, options.width, options.height, GL_TRUE);
+            glTexImage2DMultisample(vars.textureTargetType, antialiasingSamplesPrev, colorInternalFormat, options.width, options.height, GL_TRUE);
         }
         else
         {
-            glTexImage2D(vars.textureTargetType, 0, colorInternalFormat,
-                options.width, options.height,
-                0, colorTransferFormat, GL_UNSIGNED_BYTE, nullptr);
-            glTexParameteri(vars.textureTargetType,
-                GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(vars.textureTargetType,
-                GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexImage2D(vars.textureTargetType, 0, colorInternalFormat, options.width, options.height, 0, colorTransferFormat, GL_UNSIGNED_BYTE, nullptr);
+            glTexParameteri(vars.textureTargetType, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(vars.textureTargetType, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         }
         CHECK_GL("update color texture for rendering");
 
@@ -346,16 +319,11 @@ void RenderViewImpl::updateFramebuffers()
             glBindTexture(GL_TEXTURE_2D, vars.colorReadTexId);
             if (GLAD_GL_KHR_debug)
             {
-                glObjectLabel(GL_TEXTURE, vars.colorReadTexId,
-                    -1, "colorReadTexId");
+                glObjectLabel(GL_TEXTURE, vars.colorReadTexId, -1, "colorReadTexId");
             }
-            glTexImage2D(GL_TEXTURE_2D, 0, colorInternalFormat,
-                options.width, options.height,
-                0, colorTransferFormat, GL_UNSIGNED_BYTE, nullptr);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                GL_NEAREST);
+            glTexImage2D(GL_TEXTURE_2D, 0, colorInternalFormat, options.width, options.height, 0, colorTransferFormat, GL_UNSIGNED_BYTE, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         }
         else
         {
@@ -370,13 +338,10 @@ void RenderViewImpl::updateFramebuffers()
         glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
         if (GLAD_GL_KHR_debug)
         {
-            glObjectLabel(GL_FRAMEBUFFER, vars.frameRenderBufferId,
-                -1, "frameRenderBufferId");
+            glObjectLabel(GL_FRAMEBUFFER, vars.frameRenderBufferId, -1, "frameRenderBufferId");
         }
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-            vars.textureTargetType, vars.depthRenderTexId, 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-            vars.textureTargetType, vars.colorRenderTexId, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, vars.textureTargetType, vars.depthRenderTexId, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, vars.textureTargetType, vars.colorRenderTexId, 0);
         checkGlFramebuffer(GL_FRAMEBUFFER);
 
         // sample frame buffer
@@ -385,13 +350,10 @@ void RenderViewImpl::updateFramebuffers()
         glBindFramebuffer(GL_FRAMEBUFFER, vars.frameReadBufferId);
         if (GLAD_GL_KHR_debug)
         {
-            glObjectLabel(GL_FRAMEBUFFER, vars.frameReadBufferId,
-                -1, "frameReadBufferId");
+            glObjectLabel(GL_FRAMEBUFFER, vars.frameReadBufferId, -1, "frameReadBufferId");
         }
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-            GL_TEXTURE_2D, vars.depthReadTexId, 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D, vars.colorReadTexId, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, vars.depthReadTexId, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, vars.colorReadTexId, 0);
         checkGlFramebuffer(GL_FRAMEBUFFER);
 
         glActiveTexture(GL_TEXTURE0);
@@ -428,8 +390,7 @@ void RenderViewImpl::entryInitialize()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_CULL_FACE);
     glClearColor(0, 0, 0, 0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
-        | GL_STENCIL_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     CHECK_GL("initialized opengl state");
 
     if (proj(0, 0) == 0)
@@ -556,9 +517,7 @@ void RenderViewImpl::entrySurfaces()
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, vars.frameReadBufferId);
         CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
         CHECK_GL_FRAMEBUFFER(GL_DRAW_FRAMEBUFFER);
-        glBlitFramebuffer(0, 0, options.width, options.height,
-            0, 0, options.width, options.height,
-            GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+        glBlitFramebuffer(0, 0, options.width, options.height, 0, 0, options.width, options.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
         glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
         CHECK_GL("copied the depth (resolved multisampling)");
     }
@@ -616,17 +575,14 @@ void RenderViewImpl::entryFinalize()
     OPTICK_EVENT();
 
     // copy the color to output texture
-    if (options.colorToTexture
-        && vars.colorReadTexId != vars.colorRenderTexId)
+    if (options.colorToTexture  && vars.colorReadTexId != vars.colorRenderTexId)
     {
         OPTICK_EVENT("colorToTexture");
         glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, vars.frameReadBufferId);
         CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
         CHECK_GL_FRAMEBUFFER(GL_DRAW_FRAMEBUFFER);
-        glBlitFramebuffer(0, 0, options.width, options.height,
-            0, 0, options.width, options.height,
-            GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        glBlitFramebuffer(0, 0, options.width, options.height, 0, 0, options.width, options.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
         glBindFramebuffer(GL_FRAMEBUFFER, vars.frameRenderBufferId);
         CHECK_GL("copied the color to texture");
     }
@@ -635,19 +591,14 @@ void RenderViewImpl::entryFinalize()
     if (options.colorToTargetFrameBuffer)
     {
         OPTICK_EVENT("colorToTargetFrameBuffer");
-        uint32 w = options.targetViewportW ? options.targetViewportW
-            : options.width;
-        uint32 h = options.targetViewportH ? options.targetViewportH
-            : options.height;
+        uint32 w = options.targetViewportW ? options.targetViewportW : options.width;
+        uint32 h = options.targetViewportH ? options.targetViewportH : options.height;
         bool same = w == options.width && h == options.height;
         glBindFramebuffer(GL_READ_FRAMEBUFFER, vars.frameRenderBufferId);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, options.targetFrameBuffer);
         CHECK_GL_FRAMEBUFFER(GL_READ_FRAMEBUFFER);
         CHECK_GL_FRAMEBUFFER(GL_DRAW_FRAMEBUFFER);
-        glBlitFramebuffer(0, 0, options.width, options.height,
-            options.targetViewportX, options.targetViewportY,
-            options.targetViewportX + w, options.targetViewportY + h,
-            GL_COLOR_BUFFER_BIT, same ? GL_NEAREST : GL_LINEAR);
+        glBlitFramebuffer(0, 0, options.width, options.height, options.targetViewportX, options.targetViewportY, options.targetViewportX + w, options.targetViewportY + h, GL_COLOR_BUFFER_BIT, same ? GL_NEAREST : GL_LINEAR);
         CHECK_GL("copied the color to target frame buffer");
     }
 
@@ -657,7 +608,15 @@ void RenderViewImpl::entryFinalize()
 
 ShaderAtm::AtmBlock::AtmBlock()
 {
+#if __GNUC__ > 8
+    // shut up f* gcc
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
     memset(this, 0, sizeof(*this));
+#pragma GCC diagnostic pop
+#else
+    memset(this, 0, sizeof(*this));
+#endif
 }
 
 void RenderViewImpl::updateAtmosphereBuffer()
@@ -666,9 +625,7 @@ void RenderViewImpl::updateAtmosphereBuffer()
 
     ShaderAtm::AtmBlock atmBlock;
 
-    if (options.renderAtmosphere
-        && !projected
-        && atmosphereDensityTexture)
+    if (options.renderAtmosphere && !projected && atmosphereDensityTexture)
     {
         // bind atmosphere density texture
         {
@@ -678,8 +635,7 @@ void RenderViewImpl::updateAtmosphereBuffer()
         }
 
         double boundaryThickness, horizontalExponent, verticalExponent;
-        atmosphereDerivedAttributes(*body, boundaryThickness,
-            horizontalExponent, verticalExponent);
+        atmosphereDerivedAttributes(*body, boundaryThickness, horizontalExponent, verticalExponent);
 
         // uniParams
         atmBlock.uniAtmSizes =
@@ -706,17 +662,14 @@ void RenderViewImpl::updateAtmosphereBuffer()
         atmBlock.uniAtmViewInv = vi.cast<float>();
 
         // colors
-        atmBlock.uniAtmColorHorizon
-            = rawToVec4(body->atmosphere.colorHorizon);
-        atmBlock.uniAtmColorZenith
-            = rawToVec4(body->atmosphere.colorZenith);
+        atmBlock.uniAtmColorHorizon = rawToVec4(body->atmosphere.colorHorizon);
+        atmBlock.uniAtmColorZenith = rawToVec4(body->atmosphere.colorZenith);
     }
 
     useDisposableUbo(0, atmBlock)->setDebugId("uboAtm");
 }
 
-void RenderViewImpl::getWorldPosition(const double screenPos[2],
-    double worldPos[3])
+void RenderViewImpl::getWorldPosition(const double screenPos[2], double worldPos[3])
 {
     vecToRaw(nan3(), worldPos);
     double x = screenPos[0];
@@ -725,24 +678,18 @@ void RenderViewImpl::getWorldPosition(const double screenPos[2],
     x = x / width * 2 - 1;
     y = y / height * 2 - 1;
     double z = depthBuffer.value(x, y) * 2 - 1;
-    vecToRaw(vec4to3(vec4(viewProjInv
-        * vec4(x, y, z, 1)), true), worldPos);
+    vecToRaw(vec4to3(vec4(viewProjInv * vec4(x, y, z, 1)), true), worldPos);
 }
 
-void RenderViewImpl::renderCompass(const double screenPosSize[3],
-    const double mapRotation[3])
+void RenderViewImpl::renderCompass(const double screenPosSize[3], const double mapRotation[3])
 {
     glEnable(GL_BLEND);
     glActiveTexture(GL_TEXTURE0);
     context->texCompas->bind();
     context->shaderTexture->bind();
-    mat4 p = orthographicMatrix(-1, 1, -1, 1, -1, 1)
-        * scaleMatrix(1.0 / width, 1.0 / height, 1);
-    mat4 v = translationMatrix(screenPosSize[0] * 2 - width,
-        screenPosSize[1] * 2 - height, 0)
-        * scaleMatrix(screenPosSize[2], screenPosSize[2], 1);
-    mat4 m = rotationMatrix(0, mapRotation[1] + 90)
-        * rotationMatrix(2, mapRotation[0]);
+    mat4 p = orthographicMatrix(-1, 1, -1, 1, -1, 1) * scaleMatrix(1.0 / width, 1.0 / height, 1);
+    mat4 v = translationMatrix(screenPosSize[0] * 2 - width, screenPosSize[1] * 2 - height, 0) * scaleMatrix(screenPosSize[2], screenPosSize[2], 1);
+    mat4 m = rotationMatrix(0, mapRotation[1] + 90) * rotationMatrix(2, mapRotation[0]);
     mat4f mvpf = (p * v * m).cast<float>();
     mat3f uvmf = identityMatrix3().cast<float>();
     context->shaderTexture->uniformMat4(0, mvpf.data());

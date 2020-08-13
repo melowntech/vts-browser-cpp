@@ -30,7 +30,7 @@
 
 #include <boost/utility/in_place_factory.hpp>
 #include <GeographicLib/Geodesic.hpp>
-#include <proj_api.h>
+#include "geo/detail/projapi.hpp"
 
 #include <vts-libs/vts/csconvertor.hpp>
 #include <vts-libs/vts/mapconfig.hpp>
@@ -99,12 +99,8 @@ class CoordManipImpl : public CoordManip
 {
 public:
     vtslibs::vts::MapConfig &mapconfig;
-
-    std::unordered_map<std::string,
-        std::unique_ptr<vtslibs::vts::CsConvertor>> convertors;
-
+    std::unordered_map<std::string, std::unique_ptr<vtslibs::vts::CsConvertor>> convertors;
     boost::optional<GeographicLib::Geodesic> geodesic_;
-
     projCtx ctx = nullptr;
 
     CoordManipImpl(
@@ -123,12 +119,10 @@ public:
 
         // create geodesic
         {
-            auto r = geo::ellipsoid(mapconfig.srs(mapconfig
-                .referenceFrame.model.navigationSrs).srsDef);
+            auto r = geo::ellipsoid(mapconfig.srs(mapconfig.referenceFrame.model.navigationSrs).srsDef);
             auto a = r[0];
             auto b = r[2];
-            LOG(info1) << "Creating geodesic manipulator: a=<"
-                       << a << ">, b=<" << b << ">";
+            LOG(info1) << "Creating geodesic manipulator: a=<" << a << ">, b=<" << b << ">";
             geodesic_ = boost::in_place(a, (a - b) / a);
         }
 
@@ -175,27 +169,23 @@ public:
         }
     }
 
-    vtslibs::vts::CsConvertor &convertor(const std::string &a,
-                                         const std::string &b)
+    vtslibs::vts::CsConvertor &convertor(const std::string &a, const std::string &b)
     {
         const std::string key = a + " >>> " + b;
         auto it = convertors.find(key);
         if (it == convertors.end())
         {
-            convertors[key] = std::make_unique<vtslibs::vts::CsConvertor>(
-                a, b, mapconfig, ctx);
+            convertors[key] = std::make_unique<vtslibs::vts::CsConvertor>(a, b, mapconfig, ctx);
             it = convertors.find(key);
         }
         return *it->second;
     }
 
-    vec3 convert(const vec3 &value,
-        const std::string &f, const std::string &t)
+    vec3 convert(const vec3 &value, const std::string &f, const std::string &t)
     {
         const auto &cs = convertor(f, t);
         vec3 res = vecFromUblas<vec3>(cs(vecFromUblas<math::Point3>(value)));
-        //LOG(debug) << "Converted <" << value.transpose() << "><" << f
-        //           << "> to <" << res.transpose() << "><" << t << ">";
+        //LOG(debug) << "Converted <" << value.transpose() << "><" << f << "> to <" << res.transpose() << "><" << t << ">";
         return res;
     }
 };
@@ -208,8 +198,7 @@ std::shared_ptr<CoordManip> CoordManip::create(
     const std::string &customSrs1,
     const std::string &customSrs2)
 {
-    return std::make_shared<CoordManipImpl>(
-        mapconfig, searchSrs, customSrs1, customSrs2);
+    return std::make_shared<CoordManipImpl>(mapconfig, searchSrs, customSrs1, customSrs2);
 }
 
 vec3 CoordManip::navToPhys(const vec3 &value)
@@ -245,30 +234,25 @@ vec3 CoordManip::convert(const vec3 &value, Srs from, const std::string &to)
     return impl->convert(value, impl->srsToProj(from), to);
 }
 
-vec3 CoordManip::geoDirect(const vec3 &position, double distance,
-    double azimuthIn, double &azimuthOut)
+vec3 CoordManip::geoDirect(const vec3 &position, double distance, double azimuthIn, double &azimuthOut)
 {
     CoordManipImpl *impl = (CoordManipImpl *)this;
     vec3 res;
-    impl->geodesic_->Direct(position(1), position(0), azimuthIn,
-        distance, res(1), res(0), azimuthOut);
+    impl->geodesic_->Direct(position(1), position(0), azimuthIn, distance, res(1), res(0), azimuthOut);
     res(2) = position(2);
     return res;
 }
 
-vec3 CoordManip::geoDirect(const vec3 &position, double distance,
-                             double azimuthIn)
+vec3 CoordManip::geoDirect(const vec3 &position, double distance, double azimuthIn)
 {
     double a;
     return geoDirect(position, distance, azimuthIn, a);
 }
 
-void CoordManip::geoInverse(const vec3 &a, const vec3 &b,
-    double &distance, double &azimuthA, double &azimuthB)
+void CoordManip::geoInverse(const vec3 &a, const vec3 &b, double &distance, double &azimuthA, double &azimuthB)
 {
     CoordManipImpl *impl = (CoordManipImpl *)this;
-    impl->geodesic_->Inverse(a(1), a(0), b(1), b(0),
-        distance, azimuthA, azimuthB);
+    impl->geodesic_->Inverse(a(1), a(0), b(1), b(0), distance, azimuthA, azimuthB);
 }
 
 double CoordManip::geoAzimuth(const vec3 &a, const vec3 &b)

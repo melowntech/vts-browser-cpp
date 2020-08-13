@@ -21,7 +21,9 @@ sudo apt install \
     libjsoncpp-dev \
     libsdl2-dev \
     libfreetype6-dev \
-    libharfbuzz-dev
+    libharfbuzz-dev \
+    libcurl4-openssl-dev \
+    libjpeg-dev
 ```
 
 Clone the git repository with all submodules.

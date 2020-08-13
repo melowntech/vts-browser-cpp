@@ -3,15 +3,19 @@ Section: non-free/citationtech
 Priority: extra
 Maintainer: Tomas Maly <tomas.maly@melown.com>
 Build-Depends: debhelper (>= 7.0.50~)
-               , libboost-all-dev (>= 1.49)
+               , libboost-all-dev (>= 1.56)
                , libeigen3-dev (>= 3.1.0-1)
-               , libgdal-dev (>= 2.0)
                , libproj-dev (>= 4.9)
                , libgeographic-dev
                , libjsoncpp-dev
                , libsdl2-dev
+               , nasm
+               , libssl-dev
+               , python-minimal
+               , libfreetype6-dev
+               , libharfbuzz-dev
 Standards-Version: 3.8.4
-Homepage: https://github.com/Melown/vts-browser-cpp
+Homepage: https://github.com/melowntech/vts-browser-cpp
 
 Package: libvts-browser0
 Architecture: any

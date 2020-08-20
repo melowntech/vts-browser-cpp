@@ -120,6 +120,12 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 ->implicit_value(2),
                 "Gui scale multiplier."
             )
+            ("gui.visible",
+                po::value<bool>(&appOptions.guiVisible)
+                ->default_value(appOptions.guiVisible)
+                ->implicit_value(!appOptions.guiVisible),
+                "Gui visibility."
+            )
             ;
 
     po::positional_options_description popts;
@@ -133,23 +139,19 @@ bool programOptions(vts::MapCreateOptions &createOptions,
     vts::optionsConfigFetcherOptions(desc, &fetcherOptions);
 
     po::variables_map vm;
-    po::store(po::command_line_parser(argc, argv).
-          options(desc).positional(popts).run(), vm);
+    po::store(po::command_line_parser(argc, argv).options(desc).positional(popts).run(), vm);
     po::notify(vm);
 
     if (vm.count("help"))
     {
-        std::cout << "Usage: " << argv[0] << " [options] [--]"
-                  << " [urls...]"
-                  << std::endl << desc << std::endl;
+        std::cout << "Usage: " << argv[0] << " [options] [--]" << " [urls...]" << std::endl << desc << std::endl;
         return false;
     }
 
     if (configs.empty())
     {
         MapPaths p;
-        p.mapConfig = "https://cdn.melown.com/mario/store/melown2015/"
-            "map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json";
+        p.mapConfig = "https://cdn.melown.com/mario/store/melown2015/map-config/melown/Melown-Earth-Intergeo-2017/mapConfig.json";
         appOptions.paths.push_back(p);
     }
     else

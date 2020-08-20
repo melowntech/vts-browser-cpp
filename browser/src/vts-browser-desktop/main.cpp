@@ -27,9 +27,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-#define SDL_MAIN_HANDLED
-#include <SDL2/SDL.h>
-
+#include <GLFW/glfw3.h>
 #include <optick.h>
 
 #include "mainWindow.hpp"
@@ -38,66 +36,66 @@
 
 #include <vts-renderer/highPerformanceGpuHint.h>
 
-void initializeSdl(struct SDL_Window *&window,
-    void *&renderContext, void *&dataContext)
+void logGlfwErr()
 {
-    if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
-    {
-        vts::log(vts::LogLevel::err4, SDL_GetError());
-        throw std::runtime_error("Failed to initialize SDL");
-    }
-
-    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
-    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
-        SDL_GL_CONTEXT_PROFILE_CORE);
-#ifndef NDEBUG
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
-#endif
-
-    {
-        window = SDL_CreateWindow("vts-browser-desktop",
-            SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-            800, 600,
-            SDL_WINDOW_MAXIMIZED | SDL_WINDOW_OPENGL
-            | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
-    }
-
-    if (!window)
-    {
-        vts::log(vts::LogLevel::err4, SDL_GetError());
-        throw std::runtime_error("Failed to create window");
-    }
-
-    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
-    dataContext = SDL_GL_CreateContext(window);
-    renderContext = SDL_GL_CreateContext(window);
-
-    if (!dataContext || !renderContext)
-    {
-        vts::log(vts::LogLevel::err4, SDL_GetError());
-        throw std::runtime_error("Failed to create opengl context");
-    }
-
-    SDL_GL_MakeCurrent(window, renderContext);
-    SDL_GL_SetSwapInterval(1);
+    const char *errStr = nullptr;
+    glfwGetError(&errStr);
+    vts::log(vts::LogLevel::err4, errStr);
 }
 
-void finalizeSdl(struct SDL_Window *window,
-    void *renderContext, void *dataContext)
+void initializeGlfw(GLFWwindow *&renderWindow, GLFWwindow *&dataWindow)
 {
-    SDL_GL_DeleteContext(dataContext);
-    SDL_GL_DeleteContext(renderContext);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+    if (glfwInit() != GLFW_TRUE)
+    {
+        logGlfwErr();
+        throw std::runtime_error("Failed to initialize GLFW");
+    }
+
+    {
+        glfwWindowHint(GLFW_VISIBLE, 0);
+        glfwWindowHint(GLFW_RESIZABLE, 1);
+        glfwWindowHint(GLFW_MAXIMIZED, 1);
+        glfwWindowHint(GLFW_RED_BITS, 8);
+        glfwWindowHint(GLFW_GREEN_BITS, 8);
+        glfwWindowHint(GLFW_BLUE_BITS, 8);
+        glfwWindowHint(GLFW_DEPTH_BITS, 0);
+        glfwWindowHint(GLFW_ALPHA_BITS, 0);
+        glfwWindowHint(GLFW_STENCIL_BITS, 0);
+        glfwWindowHint(GLFW_DOUBLEBUFFER, 1);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, 0);
+#ifdef NDEBUG
+        glfwWindowHint(GLFW_CONTEXT_NO_ERROR, 1);
+#else
+        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
+#endif
+        renderWindow = glfwCreateWindow(800, 600, "vts-browser-desktop", nullptr, nullptr);
+    }
+
+    if (!renderWindow)
+    {
+        logGlfwErr();
+        throw std::runtime_error("Failed to create opengl window");
+    }
+
+    dataWindow = glfwCreateWindow(10, 10, "", nullptr, renderWindow);
+    if (!dataWindow)
+    {
+        logGlfwErr();
+        throw std::runtime_error("Failed to create shared opengl context");
+    }
+
+    glfwMakeContextCurrent(renderWindow);
+    glfwSwapInterval(1);
+}
+
+void finalizeGlfw(GLFWwindow *renderWindow, GLFWwindow *dataWindow)
+{
+    glfwDestroyWindow(renderWindow);
+    glfwDestroyWindow(dataWindow);
+    glfwTerminate();
 }
 
 int main(int argc, char *argv[])
@@ -124,46 +122,28 @@ int main(int argc, char *argv[])
         AppOptions appOptions;
         vts::renderer::RenderOptions renderOptions;
         renderOptions.colorToTexture = true;
-        if (!programOptions(createOptions, mapOptions, fetcherOptions,
-                            camOptions, navOptions,
-                            renderOptions, appOptions, argc, argv))
+        if (!programOptions(createOptions, mapOptions, fetcherOptions, camOptions, navOptions, renderOptions, appOptions, argc, argv))
             return 0;
-
-        struct SDL_Window *window = nullptr;
-        void *renderContext = nullptr;
-        void *dataContext = nullptr;
-        initializeSdl(window, renderContext, dataContext);
-        vts::renderer::loadGlFunctions(&SDL_GL_GetProcAddress);
-
-        // dpi
-        {
-            float vdpi = mapOptions.pixelsPerInch;
-            if (SDL_GetDisplayDPI(SDL_GetWindowDisplayIndex(window),
-                nullptr, nullptr, &vdpi) == 0)
-                mapOptions.pixelsPerInch = vdpi;
-            else
-                vts::log(vts::LogLevel::warn3,
-                    "Failed to retrieve monitor DPI");
-        }
+        struct GLFWwindow *renderWindow = nullptr;
+        struct GLFWwindow *dataWindow = nullptr;
+        initializeGlfw(renderWindow, dataWindow);
+        vts::renderer::loadGlFunctions((GLADloadproc)&glfwGetProcAddress);
 
         // vts map and main loop entry
         {
-            vts::Map map(createOptions,
-                vts::Fetcher::create(fetcherOptions));
+            vts::Map map(createOptions, vts::Fetcher::create(fetcherOptions));
             auto camera = map.createCamera();
             auto navigation = camera->createNavigation();
             map.options() = mapOptions;
             camera->options() = camOptions;
             navigation->options() = navOptions;
-            DataThread data(window, dataContext, &map);
-            MainWindow main(window, renderContext,
-                &map, camera.get(), navigation.get(),
-                appOptions, renderOptions);
+            DataThread data(dataWindow, &map);
+            MainWindow main(renderWindow, &map, camera.get(), navigation.get(), appOptions, renderOptions);
             data.start();
             main.run();
         }
 
-        finalizeSdl(window, renderContext, dataContext);
+        finalizeGlfw(renderWindow, dataWindow);
         return 0;
 
 #ifdef NDEBUG

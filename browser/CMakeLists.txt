@@ -79,26 +79,32 @@ elseif(BUILDSYS_IOS)
     message(STATUS "including vts-browser-ios")
     add_subdirectory(src/vts-browser-ios)
 else()
+    # desktop apps (GLFW)
+    find_package(Glfw QUIET)
+    if((TARGET glfw) OR (DEFINED GLFW_LIBRARIES))
+        # desktop application
+        message(STATUS "including vts-browser-desktop")
+        add_subdirectory(src/vts-browser-desktop)
+    else()
+        message(WARNING "GLFW was not found, the desktop application is skipped")
+    endif()
+
     # desktop apps (SDL)
     cmake_policy(SET CMP0004 OLD) # because SDL installed on some systems has improperly configured libraries
     find_package(SDL2 QUIET)
     if((TARGET SDL2) OR (DEFINED SDL2_LIBRARIES))
         include_directories(SYSTEM ${SDL2_INCLUDE_DIR})
 
-        # minimal application
+        # minimal applications
         message(STATUS "including vts-browser-minimal")
         add_subdirectory(src/vts-browser-minimal-c)
         add_subdirectory(src/vts-browser-minimal-cpp)
-
-        # desktop application
-        message(STATUS "including vts-browser-desktop")
-        add_subdirectory(src/vts-browser-desktop)
 
         # two cameras
         message(STATUS "including two-cameras")
         add_subdirectory(src/vts-browser-two-cameras)
     else()
-        message(WARNING "SDL was not found, many example applications will be skipped")
+        message(WARNING "SDL was not found, some example applications are skipped")
     endif()
 
     # desktop apps (Qt)

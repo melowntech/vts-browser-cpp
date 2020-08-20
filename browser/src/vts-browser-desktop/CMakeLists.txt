@@ -3,7 +3,7 @@ add_subdirectory(externals/nuklear)
 
 define_module(BINARY vts-browser-desktop DEPENDS
     vts-browser vts-renderer
-    nuklear glad SDL2 THREADS Boost_PROGRAM_OPTIONS)
+    nuklear glad glfw THREADS Boost_PROGRAM_OPTIONS)
 
 set(SRC_LIST
     dataThread.cpp dataThread.hpp

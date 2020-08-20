@@ -44,8 +44,7 @@ class FetcherOptions;
 class DataThread
 {
 public:
-    DataThread(struct SDL_Window *window, void *dataContext,
-        vts::Map *map);
+    DataThread(struct GLFWwindow *window, vts::Map *map);
     ~DataThread();
 
     void start();
@@ -54,8 +53,7 @@ public:
 private:
     std::thread thr;
     vts::Map *const map;
-    struct SDL_Window *window;
-    void *context;
+    struct GLFWwindow *window;
 };
 
 #endif

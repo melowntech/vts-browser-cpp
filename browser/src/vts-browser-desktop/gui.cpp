@@ -36,11 +36,11 @@
 #include <vts-browser/celestial.hpp>
 #include <vts-browser/position.hpp>
 
-#include <SDL2/SDL.h>
-
 #include "mainWindow.hpp"
 #include "guiSkin.hpp"
 #include "editor.hpp"
+
+#include <GLFW/glfw3.h>
 
 using namespace vts;
 using namespace renderer;
@@ -82,7 +82,7 @@ constexpr const char *FpsSlowdownNames[] = {
 
 void clipboardPaste(nk_handle, struct nk_text_edit *edit)
 {
-    const char *text = SDL_GetClipboardText();
+    const char *text = glfwGetClipboardString(nullptr);
     if (text)
         nk_textedit_paste(edit, text, strlen(text));
 }
@@ -93,7 +93,7 @@ void clipboardCopy(nk_handle, const char *text, int len)
     char buffer[301];
     memcpy(buffer, text, len);
     buffer[len] = 0;
-    SDL_SetClipboardText(buffer);
+    glfwSetClipboardString(nullptr, buffer);
 }
 
 } // namespace
@@ -110,7 +110,7 @@ public:
 
     GuiImpl(MainWindow *window) : window(window)
     {
-        gladLoadGLLoader(&SDL_GL_GetProcAddress);
+        gladLoadGLLoader((GLADloadproc)&glfwGetProcAddress);
 
         searchText[0] = 0;
         searchTextPrev[0] = 0;
@@ -293,103 +293,6 @@ public:
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         glDisable(GL_SCISSOR_TEST);
-    }
-
-    int handleEvent(SDL_Event *evt)
-    {
-        // hide the gui toggle
-        const Uint8* state = SDL_GetKeyboardState(0);
-        if (evt->type == SDL_KEYUP && state[SDL_SCANCODE_LCTRL] && evt->key.keysym.sym == SDLK_g)
-        {
-            hideTheGui = !hideTheGui;
-            return 1;
-        }
-
-        // some code copied from the demos
-        if (evt->type == SDL_KEYUP || evt->type == SDL_KEYDOWN) {
-            /* key events */
-            int down = evt->type == SDL_KEYDOWN;
-            SDL_Keycode sym = evt->key.keysym.sym;
-            if (sym == SDLK_RSHIFT || sym == SDLK_LSHIFT)
-                nk_input_key(&ctx, NK_KEY_SHIFT, down);
-            else if (sym == SDLK_DELETE)
-                nk_input_key(&ctx, NK_KEY_DEL, down);
-            else if (sym == SDLK_RETURN)
-                nk_input_key(&ctx, NK_KEY_ENTER, down);
-            else if (sym == SDLK_TAB)
-                nk_input_key(&ctx, NK_KEY_TAB, down);
-            else if (sym == SDLK_BACKSPACE)
-                nk_input_key(&ctx, NK_KEY_BACKSPACE, down);
-            else if (sym == SDLK_HOME) {
-                nk_input_key(&ctx, NK_KEY_TEXT_START, down);
-                nk_input_key(&ctx, NK_KEY_SCROLL_START, down);
-            } else if (sym == SDLK_END) {
-                nk_input_key(&ctx, NK_KEY_TEXT_END, down);
-                nk_input_key(&ctx, NK_KEY_SCROLL_END, down);
-            } else if (sym == SDLK_PAGEDOWN) {
-                nk_input_key(&ctx, NK_KEY_SCROLL_DOWN, down);
-            } else if (sym == SDLK_PAGEUP) {
-                nk_input_key(&ctx, NK_KEY_SCROLL_UP, down);
-            } else if (sym == SDLK_z)
-                nk_input_key(&ctx, NK_KEY_TEXT_UNDO, down && state[SDL_SCANCODE_LCTRL]);
-            else if (sym == SDLK_r)
-                nk_input_key(&ctx, NK_KEY_TEXT_REDO, down && state[SDL_SCANCODE_LCTRL]);
-            else if (sym == SDLK_c)
-                nk_input_key(&ctx, NK_KEY_COPY, down && state[SDL_SCANCODE_LCTRL]);
-            else if (sym == SDLK_v)
-                nk_input_key(&ctx, NK_KEY_PASTE, down && state[SDL_SCANCODE_LCTRL]);
-            else if (sym == SDLK_x)
-                nk_input_key(&ctx, NK_KEY_CUT, down && state[SDL_SCANCODE_LCTRL]);
-            else if (sym == SDLK_b)
-                nk_input_key(&ctx, NK_KEY_TEXT_LINE_START, down && state[SDL_SCANCODE_LCTRL]);
-            else if (sym == SDLK_e)
-                nk_input_key(&ctx, NK_KEY_TEXT_LINE_END, down && state[SDL_SCANCODE_LCTRL]);
-            else if (sym == SDLK_UP)
-                nk_input_key(&ctx, NK_KEY_UP, down);
-            else if (sym == SDLK_DOWN)
-                nk_input_key(&ctx, NK_KEY_DOWN, down);
-            else if (sym == SDLK_LEFT) {
-                if (state[SDL_SCANCODE_LCTRL])
-                    nk_input_key(&ctx, NK_KEY_TEXT_WORD_LEFT, down);
-                else nk_input_key(&ctx, NK_KEY_LEFT, down);
-            } else if (sym == SDLK_RIGHT) {
-                if (state[SDL_SCANCODE_LCTRL])
-                    nk_input_key(&ctx, NK_KEY_TEXT_WORD_RIGHT, down);
-                else nk_input_key(&ctx, NK_KEY_RIGHT, down);
-            } else return 0;
-            return 1;
-        } else if (evt->type == SDL_MOUSEBUTTONDOWN || evt->type == SDL_MOUSEBUTTONUP) {
-            /* mouse button */
-            int down = evt->type == SDL_MOUSEBUTTONDOWN;
-            const int x = evt->button.x / scale, y = evt->button.y / scale;
-            if (evt->button.button == SDL_BUTTON_LEFT) {
-                if (evt->button.clicks > 1)
-                    nk_input_button(&ctx, NK_BUTTON_DOUBLE, x, y, down);
-                nk_input_button(&ctx, NK_BUTTON_LEFT, x, y, down);
-            } else if (evt->button.button == SDL_BUTTON_MIDDLE)
-                nk_input_button(&ctx, NK_BUTTON_MIDDLE, x, y, down);
-            else if (evt->button.button == SDL_BUTTON_RIGHT)
-                nk_input_button(&ctx, NK_BUTTON_RIGHT, x, y, down);
-            return 1;
-        } else if (evt->type == SDL_MOUSEMOTION) {
-            /* mouse motion */
-            if (ctx.input.mouse.grabbed) {
-                int x = (int)ctx.input.mouse.prev.x, y = (int)ctx.input.mouse.prev.y;
-                nk_input_motion(&ctx, x + evt->motion.xrel / scale, y + evt->motion.yrel / scale);
-            } else nk_input_motion(&ctx, evt->motion.x / scale, evt->motion.y / scale);
-            return 1;
-        } else if (evt->type == SDL_TEXTINPUT) {
-            /* text input */
-            nk_glyph glyph;
-            memcpy(glyph, evt->text.text, NK_UTF_SIZE);
-            nk_input_glyph(&ctx, glyph);
-            return 1;
-        } else if (evt->type == SDL_MOUSEWHEEL) {
-            /* mouse wheel */
-            nk_input_scroll(&ctx,nk_vec2((float)evt->wheel.x,(float)evt->wheel.y));
-            return 1;
-        }
-        return 0;
     }
 
     void prepareOptions()
@@ -1091,7 +994,7 @@ public:
                 {
                     try
                     {
-                        const char *text = SDL_GetClipboardText();
+                        const char *text = glfwGetClipboardString(nullptr);
                         window->navigation->options().type = vts::NavigationType::FlyOver;
                         window->navigation->setPosition(vts::Position(text));
                     }
@@ -1210,8 +1113,7 @@ public:
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 nk_label(&ctx, "Output:", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Copy to clipboard"))
-                    SDL_SetClipboardText(
-                        window->navigation->getPosition().toUrl().c_str());
+                    glfwSetClipboardString(nullptr, window->navigation->getPosition().toUrl().c_str());
             }
 
             // camera
@@ -1807,17 +1709,15 @@ public:
     nk_convert_config config;
     nk_draw_null_texture null;
 
-    vec3 posAutoMotion = {};
+    vec3 posAutoMotion = { 0, 0, 0 };
     double posAutoRotation = 0;
     double viewExtentLimitScaleMin = 0;
     double viewExtentLimitScaleMax = std::numeric_limits<double>::infinity();
-
     int positionSrs = 2;
 
     MainWindow *window = nullptr;
     bool prepareFirst = true;
     bool hideTheGui = false;
-
     double scale = 1;
 
     static constexpr int MaxVertexMemory = 4 * 1024 * 1024;
@@ -1839,14 +1739,57 @@ void MainWindow::Gui::inputBegin()
     nk_input_begin(&impl->ctx);
 }
 
-bool MainWindow::Gui::input(SDL_Event &event)
-{
-    impl->handleEvent(&event);
-    return nk_item_is_any_active(&impl->ctx);
-}
-
 void MainWindow::Gui::inputEnd()
 {
+    auto ctx = &impl->ctx;
+    auto win = impl->window->window;
+
+    nk_input_key(ctx, NK_KEY_DEL, glfwGetKey(win, GLFW_KEY_DELETE) == GLFW_PRESS);
+    nk_input_key(ctx, NK_KEY_ENTER, glfwGetKey(win, GLFW_KEY_ENTER) == GLFW_PRESS);
+    nk_input_key(ctx, NK_KEY_TAB, glfwGetKey(win, GLFW_KEY_TAB) == GLFW_PRESS);
+    nk_input_key(ctx, NK_KEY_BACKSPACE, glfwGetKey(win, GLFW_KEY_BACKSPACE) == GLFW_PRESS);
+    nk_input_key(ctx, NK_KEY_UP, glfwGetKey(win, GLFW_KEY_UP) == GLFW_PRESS);
+    nk_input_key(ctx, NK_KEY_DOWN, glfwGetKey(win, GLFW_KEY_DOWN) == GLFW_PRESS);
+    nk_input_key(ctx, NK_KEY_TEXT_START, glfwGetKey(win, GLFW_KEY_HOME) == GLFW_PRESS);
+    nk_input_key(ctx, NK_KEY_TEXT_END, glfwGetKey(win, GLFW_KEY_END) == GLFW_PRESS);
+    nk_input_key(ctx, NK_KEY_SCROLL_START, glfwGetKey(win, GLFW_KEY_HOME) == GLFW_PRESS);
+    nk_input_key(ctx, NK_KEY_SCROLL_END, glfwGetKey(win, GLFW_KEY_END) == GLFW_PRESS);
+    nk_input_key(ctx, NK_KEY_SCROLL_DOWN, glfwGetKey(win, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS);
+    nk_input_key(ctx, NK_KEY_SCROLL_UP, glfwGetKey(win, GLFW_KEY_PAGE_UP) == GLFW_PRESS);
+    nk_input_key(ctx, NK_KEY_SHIFT, glfwGetKey(win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(win, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS);
+
+    if (glfwGetKey(win, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(win, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS)
+    {
+        nk_input_key(ctx, NK_KEY_COPY, glfwGetKey(win, GLFW_KEY_C) == GLFW_PRESS);
+        nk_input_key(ctx, NK_KEY_PASTE, glfwGetKey(win, GLFW_KEY_V) == GLFW_PRESS);
+        nk_input_key(ctx, NK_KEY_CUT, glfwGetKey(win, GLFW_KEY_X) == GLFW_PRESS);
+        nk_input_key(ctx, NK_KEY_TEXT_UNDO, glfwGetKey(win, GLFW_KEY_Z) == GLFW_PRESS);
+        nk_input_key(ctx, NK_KEY_TEXT_REDO, glfwGetKey(win, GLFW_KEY_R) == GLFW_PRESS);
+        nk_input_key(ctx, NK_KEY_TEXT_WORD_LEFT, glfwGetKey(win, GLFW_KEY_LEFT) == GLFW_PRESS);
+        nk_input_key(ctx, NK_KEY_TEXT_WORD_RIGHT, glfwGetKey(win, GLFW_KEY_RIGHT) == GLFW_PRESS);
+        nk_input_key(ctx, NK_KEY_TEXT_LINE_START, glfwGetKey(win, GLFW_KEY_B) == GLFW_PRESS);
+        nk_input_key(ctx, NK_KEY_TEXT_LINE_END, glfwGetKey(win, GLFW_KEY_E) == GLFW_PRESS);
+    }
+    else
+    {
+        nk_input_key(ctx, NK_KEY_LEFT, glfwGetKey(win, GLFW_KEY_LEFT) == GLFW_PRESS);
+        nk_input_key(ctx, NK_KEY_RIGHT, glfwGetKey(win, GLFW_KEY_RIGHT) == GLFW_PRESS);
+        nk_input_key(ctx, NK_KEY_COPY, 0);
+        nk_input_key(ctx, NK_KEY_PASTE, 0);
+        nk_input_key(ctx, NK_KEY_CUT, 0);
+        nk_input_key(ctx, NK_KEY_SHIFT, 0);
+    }
+
+    double x, y;
+    glfwGetCursorPos(win, &x, &y);
+    x /= impl->scale;
+    y /= impl->scale;
+    nk_input_motion(ctx, (int)x, (int)y);
+    nk_input_button(ctx, NK_BUTTON_LEFT, (int)x, (int)y, glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
+    nk_input_button(ctx, NK_BUTTON_MIDDLE, (int)x, (int)y, glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS);
+    nk_input_button(ctx, NK_BUTTON_RIGHT, (int)x, (int)y, glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS);
+    //nk_input_button(ctx, NK_BUTTON_DOUBLE, (int)glfw.double_click_pos.x, (int)glfw.double_click_pos.y, glfw.is_double_click_down);
+
     nk_input_end(&impl->ctx);
 }
 
@@ -1864,4 +1807,33 @@ void MainWindow::Gui::scale(double scaling)
 {
     impl->scale = scaling;
 }
+
+bool MainWindow::Gui::key_callback(int key, int scancode, int action, int mods)
+{
+    return nk_item_is_any_active(&impl->ctx);
+}
+
+bool MainWindow::Gui::character_callback(unsigned int codepoint)
+{
+    nk_input_unicode(&impl->ctx, codepoint);
+    return nk_item_is_any_active(&impl->ctx);
+}
+
+bool MainWindow::Gui::cursor_position_callback(double xpos, double ypos)
+{
+    return nk_item_is_any_active(&impl->ctx);
+}
+
+bool MainWindow::Gui::mouse_button_callback(int button, int action, int mods)
+{
+    return nk_item_is_any_active(&impl->ctx);
+}
+
+bool MainWindow::Gui::scroll_callback(double xoffset, double yoffset)
+{
+    struct nk_vec2 sc = { (float)xoffset, (float)yoffset };
+    nk_input_scroll(&impl->ctx, sc);
+    return nk_item_is_any_active(&impl->ctx);
+}
+
 

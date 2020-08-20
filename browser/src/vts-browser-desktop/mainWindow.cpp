@@ -39,7 +39,7 @@
 #include <vts-browser/cameraCredits.hpp>
 #include <vts-browser/position.hpp>
 
-#include <SDL2/SDL.h>
+#include <GLFW/glfw3.h>
 #include <optick.h>
 
 #include "mainWindow.hpp"
@@ -57,35 +57,65 @@ struct Initializer
     }
 } initializer;
 
-void windowSwap(SDL_Window *window)
+void windowSwap(GLFWwindow *window)
 {
     OPTICK_EVENT();
-    SDL_GL_SwapWindow(window);
+    glfwSwapBuffers(window);
 }
 
 } // namespace
 
-MainWindow::MainWindow(struct SDL_Window *window, void *renderContext,
-    vts::Map *map, vts::Camera *camera, vts::Navigation *navigation,
-    const AppOptions &appOptions,
-    const vts::renderer::RenderOptions &renderOptions) :
-    appOptions(appOptions),
-    map(map), camera(camera), navigation(navigation),
-    window(window), renderContext(renderContext)
+void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
-    {
-        int major = 0, minor = 0;
-        SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &major);
-        SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minor);
-        std::stringstream s;
-        s << "OpenGL version: " << major << "." << minor;
-        vts::log(vts::LogLevel::info2, s.str());
-    }
+    MainWindow *w = (MainWindow *)glfwGetWindowUserPointer(window);
+    w->key_callback(key, scancode, action, mods);
+}
 
+void character_callback(GLFWwindow *window, unsigned int codepoint)
+{
+    MainWindow *w = (MainWindow *)glfwGetWindowUserPointer(window);
+    w->character_callback(codepoint);
+}
+
+void cursor_position_callback(GLFWwindow *window, double xpos, double ypos)
+{
+    MainWindow *w = (MainWindow *)glfwGetWindowUserPointer(window);
+    w->cursor_position_callback(xpos, ypos);
+    w->lastXPos = xpos;
+    w->lastYPos = ypos;
+}
+
+void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
+{
+    MainWindow *w = (MainWindow *)glfwGetWindowUserPointer(window);
+    w->mouse_button_callback(button, action, mods);
+}
+
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
+{
+    MainWindow *w = (MainWindow *)glfwGetWindowUserPointer(window);
+    w->scroll_callback(xoffset, yoffset);
+}
+
+MainWindow::MainWindow(GLFWwindow *window, vts::Map *map, vts::Camera *camera, vts::Navigation *navigation, const AppOptions &appOptions, const vts::renderer::RenderOptions &renderOptions) : appOptions(appOptions), map(map), camera(camera), navigation(navigation), window(window)
+{
     context.bindLoadFunctions(map);
     view = context.createView(camera);
     view->options() = renderOptions;
 
+    glfwSetWindowUserPointer(window, this);
+    glfwSetKeyCallback(window, &::key_callback);
+    glfwSetCharCallback(window, &::character_callback);
+    glfwSetCursorPosCallback(window, &::cursor_position_callback);
+    glfwSetMouseButtonCallback(window, &::mouse_button_callback);
+    glfwSetScrollCallback(window, &::scroll_callback);
+}
+
+MainWindow::~MainWindow()
+{}
+
+void MainWindow::loadResources()
+{
     // load mesh sphere
     {
         meshSphere = std::make_shared<vts::renderer::Mesh>();
@@ -119,9 +149,6 @@ MainWindow::MainWindow(struct SDL_Window *window, void *renderContext,
     }
 }
 
-MainWindow::~MainWindow()
-{}
-
 void MainWindow::renderFrame()
 {
     OPTICK_EVENT();
@@ -144,7 +171,6 @@ void MainWindow::renderFrame()
     // gui
     {
         OPTICK_EVENT("gui");
-        gui.scale(appOptions.guiScale);
         gui.render(ro.targetViewportW, ro.targetViewportH);
     }
 }
@@ -179,145 +205,188 @@ void MainWindow::prepareMarks()
     }
 }
 
-bool MainWindow::processEvents()
+void MainWindow::key_callback(int key, int scancode, int action, int mods)
 {
-    OPTICK_EVENT();
+    if (gui.key_callback(key, scancode, action, mods))
+        return;
 
-    SDL_Event event;
-    gui.inputBegin();
-    while (SDL_PollEvent(&event))
+    if (action != GLFW_RELEASE)
+        return;
+
+    switch (key)
     {
-        // window closing
-        if (event.type == SDL_QUIT)
+    // fullscreen toggle
+    case GLFW_KEY_F11:
+    {
+        // todo
+    } break;
+
+    // screenshot
+    case GLFW_KEY_P:
+    {
+        makeScreenshot();
+    } break;
+
+    // gui toggle
+    case GLFW_KEY_G:
+    {
+        const bool control = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS;
+        if (control)
+            appOptions.guiVisible = !appOptions.guiVisible;
+    } break;
+
+    // add mark
+    case GLFW_KEY_M:
+    {
+        Mark mark;
+        mark.coord = getWorldPositionFromCursor();
+        if (mark.coord(0) == mark.coord(0))
         {
-            gui.inputEnd();
-            return true;
+            marks.push_back(mark);
+            colorizeMarks();
         }
+    } break;
 
-        // handle gui
-        if (gui.input(event))
-            continue;
-
-        // fullscreen
-        if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_F11)
+    // north-up button
+    case GLFW_KEY_SPACE:
+    {
+        if (map->getMapconfigAvailable())
         {
-            bool c = SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN;
-            SDL_SetWindowFullscreen(window, c ? 0 : SDL_WINDOW_FULLSCREEN);
+            navigation->setRotation({ 0,270,0 });
+            navigation->options().type = vts::NavigationType::Quick;
+            navigation->resetNavigationMode();
         }
+    } break;
+    }
+}
 
-        // screenshot
-        if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_p)
-        {
-            makeScreenshot();
-        }
+void MainWindow::character_callback(unsigned int codepoint)
+{
+    gui.character_callback(codepoint);
+}
 
-        // add mark
-        if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_m)
-        {
-            Mark mark;
-            mark.coord = getWorldPositionFromCursor();
-            if (mark.coord(0) == mark.coord(0))
-            {
-                marks.push_back(mark);
-                colorizeMarks();
-            }
-        }
+void MainWindow::cursor_position_callback(double xpos, double ypos)
+{
+    if (gui.cursor_position_callback(xpos, ypos))
+        return;
 
-        // north-up button
-        if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_SPACE)
-        {
-            if (map->getMapconfigAvailable())
-            {
-                navigation->setRotation({0,270,0});
-                navigation->options().type = vts::NavigationType::Quick;
-                navigation->resetNavigationMode();
-            }
-        }
+    const bool leftButt = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+    const bool midButt = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+    const bool rightButt = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+    const uint32 buttons = (leftButt ? 1 : 0) + (midButt ? 2 : 0) + (rightButt ? 4 : 0);
+    const bool control = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS;
+    const bool shift = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
 
-        // mouse wheel
-        if (event.type == SDL_MOUSEWHEEL)
-        {
-            const Uint8 *keys = SDL_GetKeyboardState(nullptr);
-            if ((keys[SDL_SCANCODE_LCTRL] || keys[SDL_SCANCODE_RCTRL]) && (keys[SDL_SCANCODE_LSHIFT] || keys[SDL_SCANCODE_RSHIFT]))
-            {
-                // gui zoom
-                appOptions.guiScale *= std::pow(1.05, event.wheel.y);
-            }
-            else
-            {
-                // map zoom
-                navigation->zoom(event.wheel.y);
-                navigation->options().type = vts::NavigationType::Quick;
-            }
-        }
+    // camera panning or rotating
+    int mode = 0;
+    if (buttons == 1)
+    {
+        if (control || shift)
+            mode = 2;
+        else
+            mode = 1;
+    }
+    else if (buttons == 2 || buttons == 4)
+        mode = 2;
+    const double p[3] = { (xpos - lastXPos) / contentScale, (ypos - lastYPos) / contentScale, 0 };
+    switch (mode)
+    {
+    case 1:
+        navigation->pan(p);
+        navigation->options().type = vts::NavigationType::Quick;
+        break;
+    case 2:
+        navigation->rotate(p);
+        navigation->options().type = vts::NavigationType::Quick;
+        break;
+    }
+}
 
-        // camera jump to double click
-        if (event.type == SDL_MOUSEBUTTONDOWN && event.button.clicks == 2 && event.button.button == SDL_BUTTON_LEFT)
-        {
-            vts::vec3 posPhys = getWorldPositionFromCursor();
-            if (!std::isnan(posPhys(0)))
-            {
-                double posNav[3];
-                map->convert(posPhys.data(), posNav, vts::Srs::Physical, vts::Srs::Navigation);
-                navigation->setPoint(posNav);
-                navigation->options().type = vts::NavigationType::Quick;
-            }
-        }
+void MainWindow::mouse_button_callback(int button, int action, int mods)
+{
+    if (gui.mouse_button_callback(button, action, mods))
+        return;
 
-        // camera panning or rotating
-        if (event.type == SDL_MOUSEMOTION)
+    if (button != GLFW_MOUSE_BUTTON_LEFT || action != GLFW_PRESS)
+        return;
+
+    // detect double click (quick and dirty)
+    static double lastPressTime = glfwGetTime();
+    const double pressTime = glfwGetTime();
+    const double diff = pressTime - lastPressTime;
+    lastPressTime = pressTime;
+    if (diff > 0.001 && diff < 0.5)
+    {
+        // jump to cursor position
+        vts::vec3 posPhys = getWorldPositionFromCursor();
+        if (!std::isnan(posPhys(0)))
         {
-            int mode = 0;
-            if (event.motion.state & SDL_BUTTON(SDL_BUTTON_LEFT))
-            {
-                const Uint8 *keys = SDL_GetKeyboardState(nullptr);
-                if (keys[SDL_SCANCODE_LCTRL] || keys[SDL_SCANCODE_RCTRL] || keys[SDL_SCANCODE_LSHIFT] || keys[SDL_SCANCODE_RSHIFT])
-                    mode = 2;
-                else
-                    mode = 1;
-            }
-            else if ((event.motion.state & SDL_BUTTON(SDL_BUTTON_RIGHT)) || (event.motion.state & SDL_BUTTON(SDL_BUTTON_MIDDLE)))
-                mode = 2;
-            const double p[3] = { (double)event.motion.xrel, (double)event.motion.yrel, 0 };
-            switch (mode)
-            {
-            case 1:
-                navigation->pan(p);
-                navigation->options().type = vts::NavigationType::Quick;
-                break;
-            case 2:
-                navigation->rotate(p);
-                navigation->options().type = vts::NavigationType::Quick;
-                break;
-            }
+            double posNav[3];
+            map->convert(posPhys.data(), posNav, vts::Srs::Physical, vts::Srs::Navigation);
+            navigation->setPoint(posNav);
+            navigation->options().type = vts::NavigationType::Quick;
         }
     }
+}
+
+void MainWindow::scroll_callback(double xoffset, double yoffset)
+{
+    if (gui.scroll_callback(xoffset, yoffset))
+        return;
+
+    const bool control = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS;
+    const bool shift = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
+    if (control && shift)
+    {
+        // gui zoom
+        appOptions.guiScale *= std::pow(1.05, yoffset);
+    }
+    else
+    {
+        // map zoom
+        navigation->zoom(yoffset);
+        navigation->options().type = vts::NavigationType::Quick;
+    }
+}
+
+void MainWindow::processEvents()
+{
+    OPTICK_EVENT();
+    gui.inputBegin();
+    glfwPollEvents();
     gui.inputEnd();
-    return false;
 }
 
 void MainWindow::updateWindowSize()
 {
+    // update resolution
     vts::renderer::RenderOptions &ro = view->options();
-    SDL_GL_GetDrawableSize(window, (int*)&ro.width, (int*)&ro.height);
+    static_assert(sizeof(int) == sizeof(ro.width), "invalid reinterpret cast");
+    glfwGetFramebufferSize(window, (int*)&ro.width, (int*)&ro.height);
     ro.targetViewportW = ro.width;
     ro.targetViewportH = ro.height;
     ro.width *= appOptions.oversampleRender;
     ro.height *= appOptions.oversampleRender;
     camera->setViewportSize(ro.width, ro.height);
+
+    // update scaling
+    float xscale, yscale;
+    glfwGetWindowContentScale(window, &xscale, &yscale);
+    contentScale = std::max(xscale, yscale);
+    gui.scale(appOptions.guiScale * contentScale);
+    map->options().pixelsPerInch = 96 * contentScale;
+    gui.visible(appOptions.guiVisible);
 }
 
 void MainWindow::run()
 {
     if (appOptions.purgeDiskCache)
         map->purgeDiskCache();
-
-    updateWindowSize();
-
+    loadResources();
     setMapConfigPath(appOptions.paths[0]);
     gui.initialize(this);
-    if (appOptions.screenshotOnFullRender)
-        gui.visible(false);
+    glfwShowWindow(window);
+    updateWindowSize();
 
     if (!appOptions.initialPosition.empty())
     {
@@ -336,10 +405,9 @@ void MainWindow::run()
         };
     }
 
-    bool shouldClose = false;
     auto lastTime = std::chrono::high_resolution_clock::now();
     double accumulatedTime = 0;
-    while (!shouldClose)
+    while (!glfwWindowShouldClose(window))
     {
         OPTICK_FRAME("frame");
         auto time1 = std::chrono::high_resolution_clock::now();
@@ -361,7 +429,7 @@ void MainWindow::run()
         }
 
         auto time2 = std::chrono::high_resolution_clock::now();
-        shouldClose = processEvents();
+        processEvents();
         prepareMarks();
         renderFrame();
         bool renderCompleted = map->getMapRenderComplete();
@@ -369,14 +437,13 @@ void MainWindow::run()
         {
             appOptions.screenshotOnFullRender = false;
             makeScreenshot();
-            gui.visible(true);
         }
         if (appOptions.closeOnFullRender && renderCompleted)
-            shouldClose = true;
+            glfwSetWindowShouldClose(window, true);
         if (map->statistics().renderTicks % 120 == 0)
         {
             std::string creditLine = std::string() + "vts-browser-desktop: " + camera->credits().textFull();
-            SDL_SetWindowTitle(window, creditLine.c_str());
+            glfwSetWindowTitle(window, creditLine.c_str());
         }
 
         auto time3 = std::chrono::high_resolution_clock::now();
@@ -407,7 +474,7 @@ void MainWindow::run()
     // closing the whole app may take some time (waiting on pending downloads)
     //   therefore we hide the window here so that the user
     //   does not get disturbed by it
-    SDL_HideWindow(window);
+    glfwHideWindow(window);
 
     gui.finalize();
     map->renderFinalize();
@@ -427,9 +494,8 @@ vts::vec3 MainWindow::getWorldPositionFromCursor()
 {
     if (!map->getMapconfigAvailable())
         return vts::nan3();
-    int xx, yy;
-    SDL_GetMouseState(&xx, &yy);
-    double screenPos[2] = { (double)xx, (double)yy };
+    double screenPos[2] = {};
+    glfwGetCursorPos(window, &screenPos[0], &screenPos[1]);
     vts::vec3 result;
     view->getWorldPosition(screenPos, result.data());
     return result;

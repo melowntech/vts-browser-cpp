@@ -72,16 +72,21 @@ struct AppOptions
     bool screenshotOnFullRender = false;
     bool closeOnFullRender = false;
     bool purgeDiskCache = false;
+    bool guiVisible = true;
 };
+
+void key_callback(struct GLFWwindow *window, int key, int scancode, int action, int mods);
+void character_callback(struct GLFWwindow *window, unsigned int codepoint);
+void cursor_position_callback(struct GLFWwindow *window, double xpos, double ypos);
+void mouse_button_callback(struct GLFWwindow *window, int button, int action, int mods);
+void scroll_callback(struct GLFWwindow *window, double xoffset, double yoffset);
 
 class MainWindow
 {
 public:
-    MainWindow(struct SDL_Window *window, void *renderContext,
-        vts::Map *map, vts::Camera *camera, vts::Navigation *navigation,
-        const AppOptions &appOptions,
-        const vts::renderer::RenderOptions &renderOptions);
+    MainWindow(struct GLFWwindow *window, vts::Map *map, vts::Camera *camera, vts::Navigation *navigation, const AppOptions &appOptions, const vts::renderer::RenderOptions &renderOptions);
     ~MainWindow();
+    void loadResources();
 
     class Gui
     {
@@ -90,25 +95,34 @@ public:
         void finalize();
         void render(int width, int height);
         void inputBegin();
-        bool input(union SDL_Event &event);
         void inputEnd();
         void visible(bool visible);
         void scale(double scaling);
+
+        bool key_callback(int key, int scancode, int action, int mods);
+        bool character_callback(unsigned int codepoint);
+        bool cursor_position_callback(double xpos, double ypos);
+        bool mouse_button_callback(int button, int action, int mods);
+        bool scroll_callback(double xoffset, double yoffset);
     private:
         std::shared_ptr<class GuiImpl> impl;
     } gui;
 
     void colorizeMarks();
     vts::vec3 getWorldPositionFromCursor();
-
     void run();
     void prepareMarks();
     void renderFrame();
-    bool processEvents();
+    void processEvents();
     void updateWindowSize();
     void makeScreenshot();
-
     void setMapConfigPath(const MapPaths &paths);
+
+    void key_callback(int key, int scancode, int action, int mods);
+    void character_callback(unsigned int codepoint);
+    void cursor_position_callback(double xpos, double ypos);
+    void mouse_button_callback(int button, int action, int mods);
+    void scroll_callback(double xoffset, double yoffset);
 
     AppOptions appOptions;
     vts::renderer::RenderContext context;
@@ -118,14 +132,16 @@ public:
     std::vector<Mark> marks;
     smoothVariable<double, 60> timingMapSmooth;
     smoothVariable<double, 60> timingFrameSmooth;
-    double timingMapProcess;
-    double timingAppProcess;
-    double timingTotalFrame;
-    vts::Map *const map;
-    vts::Camera *const camera;
-    vts::Navigation *const navigation;
-    struct SDL_Window *window;
-    void *renderContext;
+    double timingMapProcess = 0;
+    double timingAppProcess = 0;
+    double timingTotalFrame = 0;
+    vts::Map *const map = nullptr;
+    vts::Camera *const camera = nullptr;
+    vts::Navigation *const navigation = nullptr;
+    struct GLFWwindow *window = nullptr;
+    double lastXPos = 0;
+    double lastYPos = 0;
+    double contentScale = 1;
 };
 
 #endif

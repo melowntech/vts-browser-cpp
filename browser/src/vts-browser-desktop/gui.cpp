@@ -24,16 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <boost/preprocessor/seq.hpp>
-#define GUI_ENUM_IT(R, DATA, ELEM) BOOST_PP_SEQ_ELEM(1, ELEM) ,
-#define UTILITY_GENERATE_ENUM_IO(NAME, PAIRS) \
-static constexpr const char *BOOST_PP_CAT(NAME, Names)[] = { \
-    BOOST_PP_SEQ_FOR_EACH(GUI_ENUM_IT, _, PAIRS) \
-};
-
 #include <cstring>
 #include <set>
 
+#include <vts-browser/enumNames.hpp>
 #include <vts-browser/mapStatistics.hpp>
 #include <vts-browser/cameraStatistics.hpp>
 #include <vts-browser/cameraDraws.hpp>
@@ -54,12 +48,6 @@ using namespace renderer;
 namespace
 {
 
-std::string controlOptionsPath()
-{
-    (void)SrsNames;
-    return "vts-browser-desktop.control-options.json";
-}
-
 constexpr const nk_rune FontUnicodeRanges[] = {
     // 0x0020, 0x007F, // Basic Latin
     // 0x00A0, 0x00FF, // Latin-1 Supplement
@@ -71,14 +59,35 @@ constexpr const nk_rune FontUnicodeRanges[] = {
     0
 };
 
-void clipBoardPaste(nk_handle, struct nk_text_edit *edit)
+constexpr const char *ControlOptionsPath = "vts-browser-desktop.control-options.json";
+
+constexpr const char *LodBlendingModeNames[] = {
+    "off",
+    "basic",
+    "precise",
+};
+
+constexpr const char *GeodataDebugNames[] = {
+    "off",
+    "importance",
+    "rects",
+    "glyphs",
+};
+
+constexpr const char *FpsSlowdownNames[] = {
+    "off",
+    "on",
+    "periodic",
+};
+
+void clipboardPaste(nk_handle, struct nk_text_edit *edit)
 {
     const char *text = SDL_GetClipboardText();
     if (text)
         nk_textedit_paste(edit, text, strlen(text));
 }
 
-void clipBoardCopy(nk_handle, const char *text, int len)
+void clipboardCopy(nk_handle, const char *text, int len)
 {
     assert(len < 300);
     char buffer[301];
@@ -87,29 +96,7 @@ void clipBoardCopy(nk_handle, const char *text, int len)
     SDL_SetClipboardText(buffer);
 }
 
-constexpr const char *lodBlendingModeNames[] = {
-    "off",
-    "basic",
-    "precise",
-};
-
-constexpr const char *geodataDebugNames[] = {
-    "off",
-    "importance",
-    "rects",
-    "glyphs",
-};
-
-constexpr const char *fpsSlowdownNames[] = {
-    "off",
-    "on",
-    "periodic",
-};
-
 } // namespace
-
-Mark::Mark() : open(false)
-{}
 
 class GuiImpl
 {
@@ -121,11 +108,7 @@ public:
         nk_byte col[4];
     };
 
-    GuiImpl(MainWindow *window) :
-        posAutoMotion(0,0,0), posAutoRotation(0),
-        viewExtentLimitScaleMin(0),
-        viewExtentLimitScaleMax(std::numeric_limits<double>::infinity()),
-        positionSrs(2), window(window), prepareFirst(true), hideTheGui(false)
+    GuiImpl(MainWindow *window) : window(window)
     {
         gladLoadGLLoader(&SDL_GL_GetProcAddress);
 
@@ -160,8 +143,8 @@ public:
         nk_init_default(&ctx, &font->handle);
         nk_buffer_init_default(&cmds);
 
-        ctx.clip.paste = &clipBoardPaste;
-        ctx.clip.copy = &clipBoardCopy;
+        ctx.clip.paste = &clipboardPaste;
+        ctx.clip.copy = &clipboardCopy;
         ctx.clip.userdata.ptr = window->window;
 
         static const nk_draw_vertex_layout_element vertex_layout[] =
@@ -233,7 +216,7 @@ public:
         // load control options
         try
         {
-            window->navigation->options().applyJson(readLocalFileBuffer(controlOptionsPath()).str());
+            window->navigation->options().applyJson(readLocalFileBuffer(ControlOptionsPath).str());
         }
         catch(...)
         {
@@ -267,8 +250,8 @@ public:
                     {0.0f, 0.0f,-1.0f, 0.0f},
                     {-1.0f,1.0f, 0.0f, 1.0f},
             };
-            ortho[0][0] /= (GLfloat)width;
-            ortho[1][1] /= (GLfloat)height;
+            ortho[0][0] *= (GLfloat)(scale / width);
+            ortho[1][1] *= (GLfloat)(scale / height);
             glUniformMatrix4fv(shader->uniformLocations[0], 1, GL_FALSE, &ortho[0][0]);
         }
 
@@ -294,10 +277,10 @@ public:
                     continue;
                 glBindTexture(GL_TEXTURE_2D, cmd->texture.id);
                 glScissor(
-                    (GLint)(cmd->clip_rect.x),
-                    (GLint)((height - cmd->clip_rect.y - cmd->clip_rect.h)),
-                    (GLint)(cmd->clip_rect.w),
-                    (GLint)(cmd->clip_rect.h));
+                    (GLint)(cmd->clip_rect.x * scale),
+                    (GLint)(height - (cmd->clip_rect.y + cmd->clip_rect.h) * scale),
+                    (GLint)(cmd->clip_rect.w * scale),
+                    (GLint)(cmd->clip_rect.h * scale));
                 glDrawElements(GL_TRIANGLES, (GLsizei)cmd->elem_count, GL_UNSIGNED_SHORT, offset);
                 offset += cmd->elem_count;
             }
@@ -378,7 +361,7 @@ public:
         } else if (evt->type == SDL_MOUSEBUTTONDOWN || evt->type == SDL_MOUSEBUTTONUP) {
             /* mouse button */
             int down = evt->type == SDL_MOUSEBUTTONDOWN;
-            const int x = evt->button.x, y = evt->button.y;
+            const int x = evt->button.x / scale, y = evt->button.y / scale;
             if (evt->button.button == SDL_BUTTON_LEFT) {
                 if (evt->button.clicks > 1)
                     nk_input_button(&ctx, NK_BUTTON_DOUBLE, x, y, down);
@@ -392,8 +375,8 @@ public:
             /* mouse motion */
             if (ctx.input.mouse.grabbed) {
                 int x = (int)ctx.input.mouse.prev.x, y = (int)ctx.input.mouse.prev.y;
-                nk_input_motion(&ctx, x + evt->motion.xrel, y + evt->motion.yrel);
-            } else nk_input_motion(&ctx, evt->motion.x, evt->motion.y);
+                nk_input_motion(&ctx, x + evt->motion.xrel / scale, y + evt->motion.yrel / scale);
+            } else nk_input_motion(&ctx, evt->motion.x / scale, evt->motion.y / scale);
             return 1;
         } else if (evt->type == SDL_TEXTINPUT) {
             /* text input */
@@ -465,7 +448,7 @@ public:
                 {
                     try
                     {
-                        writeLocalFileBuffer(controlOptionsPath(), Buffer(n.toJson()));
+                        writeLocalFileBuffer(ControlOptionsPath, Buffer(n.toJson()));
                     }
                     catch(...)
                     {
@@ -478,7 +461,7 @@ public:
                 {
                     try
                     {
-                        n.applyJson(readLocalFileBuffer(controlOptionsPath()).str());
+                        n.applyJson(readLocalFileBuffer(ControlOptionsPath).str());
                     }
                     catch(...)
                     {
@@ -683,12 +666,12 @@ public:
 
                     // lodBlending
                     nk_label(&ctx, "Lod blending:", NK_TEXT_LEFT);
-                    if (nk_combo_begin_label(&ctx, lodBlendingModeNames[c.lodBlending], nk_vec2(nk_widget_width(&ctx), 200)))
+                    if (nk_combo_begin_label(&ctx, LodBlendingModeNames[c.lodBlending], nk_vec2(nk_widget_width(&ctx), 200)))
                     {
                         nk_layout_row_dynamic(&ctx, 16, 1);
-                        for (unsigned i = 0; i < sizeof(lodBlendingModeNames) / sizeof(lodBlendingModeNames[0]); i++)
+                        for (unsigned i = 0; i < sizeof(LodBlendingModeNames) / sizeof(LodBlendingModeNames[0]); i++)
                         {
-                            if (nk_combo_item_label(&ctx, lodBlendingModeNames[i], NK_TEXT_LEFT))
+                            if (nk_combo_item_label(&ctx, LodBlendingModeNames[i], NK_TEXT_LEFT))
                                 c.lodBlending = i;
                         }
                         nk_combo_end(&ctx);
@@ -842,12 +825,12 @@ public:
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                     nk_label(&ctx, "FPS slowdown:", NK_TEXT_LEFT);
-                    if (nk_combo_begin_label(&ctx, fpsSlowdownNames[(int)a.simulatedFpsSlowdown], nk_vec2(nk_widget_width(&ctx), 200)))
+                    if (nk_combo_begin_label(&ctx, FpsSlowdownNames[(int)a.simulatedFpsSlowdown], nk_vec2(nk_widget_width(&ctx), 200)))
                     {
                         nk_layout_row_dynamic(&ctx, 16, 1);
-                        for (unsigned i = 0; i < sizeof(fpsSlowdownNames) / sizeof(fpsSlowdownNames[0]); i++)
+                        for (unsigned i = 0; i < sizeof(FpsSlowdownNames) / sizeof(FpsSlowdownNames[0]); i++)
                         {
-                            if (nk_combo_item_label(&ctx, fpsSlowdownNames[i], NK_TEXT_LEFT))
+                            if (nk_combo_item_label(&ctx, FpsSlowdownNames[i], NK_TEXT_LEFT))
                                 a.simulatedFpsSlowdown = i;
                         }
                         nk_combo_end(&ctx);
@@ -860,12 +843,12 @@ public:
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                     nk_label(&ctx, "Geodata:", NK_TEXT_LEFT);
-                    if (nk_combo_begin_label(&ctx, geodataDebugNames[(int)r.debugGeodataMode], nk_vec2(nk_widget_width(&ctx), 200)))
+                    if (nk_combo_begin_label(&ctx, GeodataDebugNames[(int)r.debugGeodataMode], nk_vec2(nk_widget_width(&ctx), 200)))
                     {
                         nk_layout_row_dynamic(&ctx, 16, 1);
-                        for (unsigned i = 0; i < sizeof(geodataDebugNames) / sizeof(geodataDebugNames[0]); i++)
+                        for (unsigned i = 0; i < sizeof(GeodataDebugNames) / sizeof(GeodataDebugNames[0]); i++)
                         {
-                            if (nk_combo_item_label(&ctx, geodataDebugNames[i], NK_TEXT_LEFT))
+                            if (nk_combo_item_label(&ctx, GeodataDebugNames[i], NK_TEXT_LEFT))
                                 r.debugGeodataMode = i;
                         }
                         nk_combo_end(&ctx);
@@ -1131,17 +1114,12 @@ public:
 
             // srs
             {
-                constexpr const char *names[] = {
-                    "Physical",
-                    "Navigation",
-                    "Public",
-                };
                 nk_label(&ctx, "Srs:", NK_TEXT_LEFT);
-                if (nk_combo_begin_label(&ctx, names[positionSrs], nk_vec2(nk_widget_width(&ctx), 200)))
+                if (nk_combo_begin_label(&ctx, SrsNames[positionSrs], nk_vec2(nk_widget_width(&ctx), 200)))
                 {
                     nk_layout_row_dynamic(&ctx, 16, 1);
                     for (int i = 0; i < 3; i++)
-                        if (nk_combo_item_label(&ctx, names[i], NK_TEXT_LEFT))
+                        if (nk_combo_item_label(&ctx, SrsNames[i], NK_TEXT_LEFT))
                             positionSrs = i;
                     nk_combo_end(&ctx);
                 }
@@ -1285,8 +1263,7 @@ public:
         nk_end(&ctx);
     }
 
-    std::string labelWithCounts(const std::string &label,
-                                std::size_t a, std::size_t b)
+    std::string labelWithCounts(const std::string &label, std::size_t a, std::size_t b)
     {
         std::ostringstream ss;
         if (b == 0)
@@ -1296,8 +1273,7 @@ public:
         return ss.str();
     }
 
-    bool prepareViewsBoundLayers(MapView::BoundLayerInfo::List &bl,
-                                    uint32 &bid)
+    bool prepareViewsBoundLayers(MapView::BoundLayerInfo::List &bl, uint32 &bid)
     {
         const std::vector<std::string> boundLayers = window->map->getResourceBoundLayers();
         if (nk_tree_push_id(&ctx, NK_TREE_NODE, labelWithCounts("Bound Layers", bl.size(), boundLayers.size()).c_str(), NK_MINIMIZED, bid++))
@@ -1794,7 +1770,7 @@ public:
         nk_end(&ctx);
     }
 
-    void prepare(int, int)
+    void prepare()
     {
         prepareOptions();
         prepareStatistics();
@@ -1807,15 +1783,15 @@ public:
 
     void render(int width, int height)
     {
-        prepare(width, height);
+        prepare();
         if (!hideTheGui)
             dispatch(width, height);
     }
 
     static constexpr int MaxSearchTextLength = 200;
-    char searchText[MaxSearchTextLength];
-    char searchTextPrev[MaxSearchTextLength];
-    char positionInputText[MaxSearchTextLength];
+    char searchText[MaxSearchTextLength] = {};
+    char searchTextPrev[MaxSearchTextLength] = {};
+    char positionInputText[MaxSearchTextLength] = {};
 
     std::shared_ptr<Texture> fontTexture;
     std::shared_ptr<Texture> skinTexture;
@@ -1826,21 +1802,23 @@ public:
     GuiSkinMedia skinMedia;
     nk_context ctx;
     nk_font_atlas atlas;
-    nk_font *font;
+    nk_font *font = nullptr;
     nk_buffer cmds;
     nk_convert_config config;
     nk_draw_null_texture null;
 
-    vec3 posAutoMotion;
-    double posAutoRotation;
-    double viewExtentLimitScaleMin;
-    double viewExtentLimitScaleMax;
+    vec3 posAutoMotion = {};
+    double posAutoRotation = 0;
+    double viewExtentLimitScaleMin = 0;
+    double viewExtentLimitScaleMax = std::numeric_limits<double>::infinity();
 
-    int positionSrs;
+    int positionSrs = 2;
 
-    MainWindow *window;
-    bool prepareFirst;
-    bool hideTheGui;
+    MainWindow *window = nullptr;
+    bool prepareFirst = true;
+    bool hideTheGui = false;
+
+    double scale = 1;
 
     static constexpr int MaxVertexMemory = 4 * 1024 * 1024;
     static constexpr int MaxElementMemory = 4 * 1024 * 1024;
@@ -1881,3 +1859,9 @@ void MainWindow::Gui::visible(bool visible)
 {
     impl->hideTheGui = !visible;
 }
+
+void MainWindow::Gui::scale(double scaling)
+{
+    impl->scale = scaling;
+}
+

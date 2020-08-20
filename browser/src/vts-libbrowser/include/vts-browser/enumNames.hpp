@@ -24,46 +24,61 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JSON_HPP_sgf56489dh4d69
-#define JSON_HPP_sgf56489dh4d69
+#ifndef ENUMNAMES_HPP_kjhgefs4
+#define ENUMNAMES_HPP_kjhgefs4
 
-#include "vts-libbrowser/include/vts-browser/enumNames.hpp"
-#include <json/json.h>
-#include <sstream>
+#include "foundation.hpp"
 
 namespace vts
 {
 
-// make these functions accessible from vts renderer
-VTS_API Json::Value stringToJson(const std::string &s);
-VTS_API std::string jsonToString(const Json::Value &value);
+#ifndef UTILITY_GENERATE_ENUM_IO
+#include <boost/preprocessor/seq.hpp>
+#define UTILITY_GENERATE_ENUM_IO_IT(R, DATA, ELEM) BOOST_PP_SEQ_ELEM(1, ELEM) ,
+#define UTILITY_GENERATE_ENUM_IO(NAME, PAIRS) \
+static constexpr const char *BOOST_PP_CAT(NAME, Names)[] = { \
+    BOOST_PP_SEQ_FOR_EACH(UTILITY_GENERATE_ENUM_IO_IT, _, PAIRS) \
+};
+#define UNDEF_UTILITY_GENERATE_ENUM_IO
+#endif
 
-// json to enum
-template<class T>
-T jToE(const Json::Value &j)
-{
-    std::string s = j.asString();
-    T e;
-    std::istringstream ss(s);
-    ss >> e;
-    return e;
-}
+UTILITY_GENERATE_ENUM_IO(Srs,
+    ((Physical)("physical"))
+    ((Navigation)("navigation"))
+    ((Public)("public"))
+    ((Search)("search"))
+    ((Custom1)("custom1"))
+    ((Custom2)("custom2"))
+)
 
-// enum to json
-template<class T>
-Json::Value eToJ(T e)
-{
-    std::ostringstream ss;
-    ss << e;
-    std::string s = ss.str();
-    return s;
-}
+UTILITY_GENERATE_ENUM_IO(NavigationType,
+    ((Instant)("instant"))
+    ((Quick)("quick"))
+    ((FlyOver)("flyOver"))
+)
+
+UTILITY_GENERATE_ENUM_IO(NavigationMode,
+    ((Azimuthal)("azimuthal"))
+    ((Free)("free"))
+    ((Dynamic)("dynamic"))
+    ((Seamless)("seamless"))
+)
+
+UTILITY_GENERATE_ENUM_IO(TraverseMode,
+    ((None)("none"))
+    ((Flat)("flat"))
+    ((Stable)("stable"))
+    ((Balanced)("balanced"))
+    ((Hierarchical)("hierarchical"))
+    ((Fixed)("fixed"))
+)
+
+#ifdef UNDEF_UTILITY_GENERATE_ENUM_IO
+#undef UTILITY_GENERATE_ENUM_IO_IT
+#undef UTILITY_GENERATE_ENUM_IO
+#endif
 
 } // namespace vts
 
-#define TJ(NAME, AS) v[#NAME] = NAME ;
-#define AJ(NAME, AS) if (v.isMember(#NAME)) NAME = v[#NAME].AS();
-#define TJE(NAME, TYPE) v[#NAME] = eToJ<TYPE>(NAME);
-#define AJE(NAME, TYPE) if (v.isMember(#NAME)) { NAME = jToE<TYPE>(v[#NAME]); }
-
 #endif
+

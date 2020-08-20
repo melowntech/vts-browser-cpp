@@ -65,15 +65,6 @@ void windowSwap(SDL_Window *window)
 
 } // namespace
 
-AppOptions::AppOptions() :
-    oversampleRender(1),
-    renderCompas(0),
-    simulatedFpsSlowdown(0),
-    screenshotOnFullRender(false),
-    closeOnFullRender(false),
-    purgeDiskCache(false)
-{}
-
 MainWindow::MainWindow(struct SDL_Window *window, void *renderContext,
     vts::Map *map, vts::Camera *camera, vts::Navigation *navigation,
     const AppOptions &appOptions,
@@ -153,6 +144,7 @@ void MainWindow::renderFrame()
     // gui
     {
         OPTICK_EVENT("gui");
+        gui.scale(appOptions.guiScale);
         gui.render(ro.targetViewportW, ro.targetViewportH);
     }
 }
@@ -245,8 +237,18 @@ bool MainWindow::processEvents()
         // mouse wheel
         if (event.type == SDL_MOUSEWHEEL)
         {
-            navigation->zoom(event.wheel.y);
-            navigation->options().type = vts::NavigationType::Quick;
+            const Uint8 *keys = SDL_GetKeyboardState(nullptr);
+            if ((keys[SDL_SCANCODE_LCTRL] || keys[SDL_SCANCODE_RCTRL]) && (keys[SDL_SCANCODE_LSHIFT] || keys[SDL_SCANCODE_RSHIFT]))
+            {
+                // gui zoom
+                appOptions.guiScale *= std::pow(1.05, event.wheel.y);
+            }
+            else
+            {
+                // map zoom
+                navigation->zoom(event.wheel.y);
+                navigation->options().type = vts::NavigationType::Quick;
+            }
         }
 
         // camera jump to double click
@@ -276,7 +278,7 @@ bool MainWindow::processEvents()
             }
             else if ((event.motion.state & SDL_BUTTON(SDL_BUTTON_RIGHT)) || (event.motion.state & SDL_BUTTON(SDL_BUTTON_MIDDLE)))
                 mode = 2;
-            double p[3] = { (double)event.motion.xrel, (double)event.motion.yrel, 0 };
+            const double p[3] = { (double)event.motion.xrel, (double)event.motion.yrel, 0 };
             switch (mode)
             {
             case 1:

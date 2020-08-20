@@ -27,6 +27,7 @@
 #include <boost/algorithm/string.hpp>
 #include <utility/enum-io.hpp>
 
+#include "../include/vts-browser/enumNames.hpp"
 #include "../include/vts-browser/boostProgramOptions.hpp"
 #include "../include/vts-browser/mapOptions.hpp"
 #include "../include/vts-browser/cameraOptions.hpp"

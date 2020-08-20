@@ -53,6 +53,7 @@ set(PUB_HDR_LIST
     include/vts-browser/cameraOptions.hpp
     include/vts-browser/cameraStatistics.hpp
     include/vts-browser/celestial.hpp
+    include/vts-browser/enumNames.hpp
     include/vts-browser/exceptions.hpp
     include/vts-browser/fetcher.hpp
     include/vts-browser/foundation.hpp

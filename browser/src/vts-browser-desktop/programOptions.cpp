@@ -114,6 +114,12 @@ bool programOptions(vts::MapCreateOptions &createOptions,
                 ->implicit_value(2),
                 "Rendering resolution multiplier."
             )
+            ("gui.scale",
+                po::value<double>(&appOptions.guiScale)
+                ->default_value(appOptions.guiScale)
+                ->implicit_value(2),
+                "Gui scale multiplier."
+            )
             ;
 
     po::positional_options_description popts;

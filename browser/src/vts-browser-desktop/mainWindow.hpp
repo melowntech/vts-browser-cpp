@@ -50,11 +50,9 @@ class Map;
 
 struct Mark
 {
-    vts::vec3 coord;
-    vts::vec3f color;
-    int open;
-
-    Mark();
+    vts::vec3 coord = {};
+    vts::vec3f color = {};
+    int open = false;
 };
 
 struct MapPaths
@@ -67,14 +65,13 @@ struct AppOptions
 {
     std::vector<MapPaths> paths;
     std::string initialPosition;
-    uint32 oversampleRender;
-    int renderCompas;
-    int simulatedFpsSlowdown;
-    bool screenshotOnFullRender;
-    bool closeOnFullRender;
-    bool purgeDiskCache;
-
-    AppOptions();
+    double guiScale = 1;
+    uint32 oversampleRender = 1;
+    int renderCompas = 0;
+    int simulatedFpsSlowdown = 0;
+    bool screenshotOnFullRender = false;
+    bool closeOnFullRender = false;
+    bool purgeDiskCache = false;
 };
 
 class MainWindow
@@ -96,6 +93,7 @@ public:
         bool input(union SDL_Event &event);
         void inputEnd();
         void visible(bool visible);
+        void scale(double scaling);
     private:
         std::shared_ptr<class GuiImpl> impl;
     } gui;

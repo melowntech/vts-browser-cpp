@@ -38,9 +38,11 @@
 
 void logGlfwErr()
 {
+#if GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR > 3003
     const char *errStr = nullptr;
     glfwGetError(&errStr);
     vts::log(vts::LogLevel::err4, errStr);
+#endif
 }
 
 void initializeGlfw(GLFWwindow *&renderWindow, GLFWwindow *&dataWindow)

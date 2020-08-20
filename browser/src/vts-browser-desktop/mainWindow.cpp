@@ -371,7 +371,11 @@ void MainWindow::updateWindowSize()
 
     // update scaling
     float xscale, yscale;
+#if GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR > 3003
     glfwGetWindowContentScale(window, &xscale, &yscale);
+#else
+    xscale = yscale = 1;
+#endif
     contentScale = std::max(xscale, yscale);
     gui.scale(appOptions.guiScale * contentScale);
     map->options().pixelsPerInch = 96 * contentScale;

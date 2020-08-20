@@ -23,7 +23,9 @@ sudo apt install \
     libfreetype6-dev \
     libharfbuzz-dev \
     libcurl4-openssl-dev \
-    libjpeg-dev
+    libjpeg-dev \
+    libglfw3-dev \
+    xorg-dev
 ```
 
 Clone the git repository with all submodules.

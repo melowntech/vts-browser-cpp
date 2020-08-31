@@ -160,9 +160,9 @@ void MainWindow::renderFrame()
     if (appOptions.renderCompas)
     {
         OPTICK_EVENT("compas");
-        double size = std::min(ro.width, ro.height) * 0.09;
-        double offset = size * (0.5 + 0.2);
-        double posSize[3] = { offset, offset, size };
+        const double size = std::min(ro.width, ro.height) * 0.09;
+        const double offset = size * (0.5 + 0.2);
+        const double posSize[3] = { offset, offset, size };
         double rot[3];
         navigation->getRotation(rot);
         view->renderCompass(posSize, rot);
@@ -182,9 +182,7 @@ void MainWindow::prepareMarks()
     const Mark *prev = nullptr;
     for (const Mark &m : marks)
     {
-        vts::mat4 mv = view
-                * vts::translationMatrix(m.coord)
-                * vts::scaleMatrix(navigation->getViewExtent() * 0.005);
+        vts::mat4 mv = view * vts::translationMatrix(m.coord) * vts::scaleMatrix(navigation->getViewExtent() * 0.005);
         vts::mat4f mvf = mv.cast<float>();
         vts::DrawInfographicsTask t;
         vts::vec4f c = vts::vec3to4(m.color, 1);
@@ -218,7 +216,18 @@ void MainWindow::key_callback(int key, int scancode, int action, int mods)
     // fullscreen toggle
     case GLFW_KEY_F11:
     {
-        // todo
+        if (glfwGetWindowMonitor(window))
+        {
+            glfwSetWindowMonitor(window, nullptr, 100, 100, 800, 600, GLFW_DONT_CARE);
+            glfwRestoreWindow(window);
+            glfwMaximizeWindow(window);
+        }
+        else
+        {
+            GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+            const GLFWvidmode *mode = glfwGetVideoMode(monitor);
+            glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, GLFW_DONT_CARE);
+        }
     } break;
 
     // screenshot
@@ -240,7 +249,7 @@ void MainWindow::key_callback(int key, int scancode, int action, int mods)
     {
         Mark mark;
         mark.coord = getWorldPositionFromCursor();
-        if (mark.coord(0) == mark.coord(0))
+        if (!std::isnan(mark.coord(0)))
         {
             marks.push_back(mark);
             colorizeMarks();
@@ -318,7 +327,7 @@ void MainWindow::mouse_button_callback(int button, int action, int mods)
     if (diff > 0.001 && diff < 0.5)
     {
         // jump to cursor position
-        vts::vec3 posPhys = getWorldPositionFromCursor();
+        const vts::vec3 posPhys = getWorldPositionFromCursor();
         if (!std::isnan(posPhys(0)))
         {
             double posNav[3];
@@ -414,7 +423,7 @@ void MainWindow::run()
     while (!glfwWindowShouldClose(window))
     {
         OPTICK_FRAME("frame");
-        auto time1 = std::chrono::high_resolution_clock::now();
+        const auto time1 = std::chrono::high_resolution_clock::now();
         try
         {
             updateWindowSize();
@@ -432,11 +441,11 @@ void MainWindow::run()
                 throw;
         }
 
-        auto time2 = std::chrono::high_resolution_clock::now();
+        const auto time2 = std::chrono::high_resolution_clock::now();
         processEvents();
         prepareMarks();
         renderFrame();
-        bool renderCompleted = map->getMapRenderComplete();
+        const bool renderCompleted = map->getMapRenderComplete();
         if (appOptions.screenshotOnFullRender && renderCompleted)
         {
             appOptions.screenshotOnFullRender = false;
@@ -450,7 +459,7 @@ void MainWindow::run()
             glfwSetWindowTitle(window, creditLine.c_str());
         }
 
-        auto time3 = std::chrono::high_resolution_clock::now();
+        const auto time3 = std::chrono::high_resolution_clock::now();
         windowSwap(window);
 
         // simulated fps slowdown
@@ -464,7 +473,7 @@ void MainWindow::run()
             break;
         }
 
-        auto time4 = std::chrono::high_resolution_clock::now();
+        const auto time4 = std::chrono::high_resolution_clock::now();
         timingMapProcess = std::chrono::duration<double>(time2 - time1).count();
         timingAppProcess = std::chrono::duration<double>(time3 - time2).count();
         timingTotalFrame = std::chrono::duration<double>(time4 - lastTime).count();

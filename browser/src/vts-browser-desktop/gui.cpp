@@ -307,13 +307,13 @@ public:
             NavigationOptions &n = window->navigation->options();
             AppOptions &a = window->appOptions;
             renderer::RenderOptions &r = window->view->options();
-            float width = nk_window_get_content_region_size(&ctx).x - 30;
+            const float width = nk_window_get_content_region_size(&ctx).x - 30;
             char buffer[256];
 
             // camera control sensitivity
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Mouse Sensitivity", NK_MINIMIZED))
             {
-                float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
+                const float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
 
                 // sensitivity
@@ -392,7 +392,7 @@ public:
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Navigation", NK_MINIMIZED))
             {
                 {
-                    float ratio[] = { width * 0.4f, width * 0.6f };
+                    const float ratio[] = { width * 0.4f, width * 0.6f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                     // navigation type
@@ -423,7 +423,7 @@ public:
                 }
 
                 {
-                    float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
+                    const float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
 
                     // flyOverSpikinessFactor
@@ -468,7 +468,7 @@ public:
                 }
 
                 {
-                    float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
+                    const float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
 
                     // obstructionPreventionSmoothingDuration
@@ -492,7 +492,7 @@ public:
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Rendering", NK_MINIMIZED))
             {
                 {
-                    float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
+                    const float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
 
                     // traverse mode (surfaces)
@@ -614,7 +614,7 @@ public:
 
                     // maxResourcesMemory
                     nk_label(&ctx, "Target memory:", NK_TEXT_LEFT);
-                    mr.targetResourcesMemoryKB = 1024 * nk_slide_int(&ctx, 0, mr.targetResourcesMemoryKB / 1024, 2048, 32);
+                    mr.targetResourcesMemoryKB = 1024 * nk_slide_int(&ctx, 0, mr.targetResourcesMemoryKB / 1024, 8192, 128);
                     sprintf(buffer, "%3d", mr.targetResourcesMemoryKB / 1024);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
@@ -724,7 +724,7 @@ public:
             {
                 // simulated fps slowdown
                 {
-                    float ratio[] = { width * 0.4f, width * 0.6f };
+                    const float ratio[] = { width * 0.4f, width * 0.6f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                     nk_label(&ctx, "FPS slowdown:", NK_TEXT_LEFT);
@@ -742,7 +742,7 @@ public:
 
                 // geodata debug mode
                 {
-                    float ratio[] = { width * 0.4f, width * 0.6f };
+                    const float ratio[] = { width * 0.4f, width * 0.6f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                     nk_label(&ctx, "Geodata:", NK_TEXT_LEFT);
@@ -840,7 +840,7 @@ public:
             // general
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Timing", NK_MAXIMIZED))
             {
-                float ratio[] = { width * 0.5f, width * 0.5f };
+                const float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                 S("Time map avg:", uint32(window->timingMapSmooth.avg() * 1000), " ms");
@@ -855,7 +855,7 @@ public:
             // resources
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Resources", NK_MAXIMIZED))
             {
-                float ratio[] = { width * 0.5f, width * 0.5f };
+                const float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                 nk_label(&ctx, "Loading:", NK_TEXT_LEFT);
@@ -910,7 +910,7 @@ public:
             // traversed
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Traversed nodes", NK_MINIMIZED))
             {
-                float ratio[] = { width * 0.5f, width * 0.5f };
+                const float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                 for (unsigned i = 0; i < CameraStatistics::MaxLods; i++)
@@ -930,7 +930,7 @@ public:
             // rendered nodes
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Rendered nodes", NK_MINIMIZED))
             {
-                float ratio[] = { width * 0.5f, width * 0.5f };
+                const float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                 for (unsigned i = 0; i < CameraStatistics::MaxLods; i++)
@@ -948,7 +948,7 @@ public:
             // task counts
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Task counts", NK_MINIMIZED))
             {
-                float ratio[] = { width * 0.5f, width * 0.5f };
+                const float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                 const CameraDraws &d = window->camera->draws();
@@ -972,7 +972,7 @@ public:
             flags |= NK_WINDOW_MINIMIZED;
         if (nk_begin(&ctx, "Position", nk_rect(890, 10, 250, 400), flags))
         {
-            float width = nk_window_get_content_region_size(&ctx).x - 30;
+            const float width = nk_window_get_content_region_size(&ctx).x - 30;
 
             // loading?
             if (!window->map->getMapconfigAvailable())
@@ -983,7 +983,7 @@ public:
                 return;
             }
 
-            float ratio[] = { width * 0.4f, width * 0.6f };
+            const float ratio[] = { width * 0.4f, width * 0.6f };
             nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
             char buffer[256];
 
@@ -1008,7 +1008,7 @@ public:
             // subjective position
             {
                 int subj = window->navigation->getSubjective();
-                int prev = subj;
+                const int prev = subj;
                 nk_label(&ctx, "Type:", NK_TEXT_LEFT);
                 nk_checkbox_label(&ctx, "subjective", &subj);
                 if (subj != prev)
@@ -1097,11 +1097,11 @@ public:
 
             // fov
             {
-                float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
+                const float ratio[] = { width * 0.4f, width * 0.45f, width * 0.15f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
                 nk_label(&ctx, "Fov:", NK_TEXT_LEFT);
-                float prev = window->navigation->getFov();
-                float fov = nk_slide_float(&ctx, 10, prev, 100, 1);
+                const float prev = window->navigation->getFov();
+                const float fov = nk_slide_float(&ctx, 1, prev, 100, 1);
                 if (std::abs(fov - prev) > 1e-7)
                     window->navigation->setFov(fov);
                 sprintf(buffer, "%5.1f", fov);
@@ -1119,7 +1119,7 @@ public:
             // camera
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Camera", NK_MINIMIZED))
             {
-                float ratio[] = { width * 0.5f, width * 0.5f };
+                const float ratio[] = { width * 0.5f, width * 0.5f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 const auto &c = window->camera->draws().camera;
                 nk_label(&ctx, "Target Distance:", NK_TEXT_LEFT);
@@ -1146,7 +1146,7 @@ public:
             // auto movement
             if (nk_tree_push(&ctx, NK_TREE_TAB, "Auto", NK_MINIMIZED))
             {
-                float ratio[] = { width * 0.4f, width * 0.6f };
+                const float ratio[] = { width * 0.4f, width * 0.6f };
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
 
                 for (int i = 0; i < 3; i++)
@@ -1194,7 +1194,7 @@ public:
             bool changed = false;
             if (!bl.empty())
             {
-                float ratio[] = { width * 0.7f, width * 0.3f, 20};
+                const float ratio[] = { width * 0.7f, width * 0.3f, 20};
                 nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
                 int idx = 0;
                 for (auto &bn : bl)
@@ -1278,7 +1278,7 @@ public:
             flags |= NK_WINDOW_MINIMIZED;
         if (nk_begin(&ctx, "Views", nk_rect(530, 10, 350, 600), flags))
         {
-            float width = nk_window_get_content_region_size(&ctx).x - 30;
+            const float width = nk_window_get_content_region_size(&ctx).x - 30;
 
             // mapconfig selector
             if (window->appOptions.paths.size() > 1)
@@ -1303,7 +1303,7 @@ public:
 
                 // buttons
                 {
-                    float ratio[] = { width * 0.5f, width * 0.5f };
+                    const float ratio[] = { width * 0.5f, width * 0.5f };
                     nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                     if (nk_button_label(&ctx, "< Prev"))
                     {
@@ -1407,7 +1407,7 @@ public:
                         if (editableGeodata || editableStyle)
                         {
                             {
-                                float ratio[] = { 15, (width - 15) * 0.5f, (width - 15) * 0.5f };
+                                const float ratio[] = { 15, (width - 15) * 0.5f, (width - 15) * 0.5f };
                                 nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
                             }
                             nk_label(&ctx, "", NK_TEXT_LEFT);
@@ -1481,8 +1481,8 @@ public:
         if (nk_begin(&ctx, "Marks", nk_rect(1150, 10, 250, 400), flags))
         {
             std::vector<Mark> &marks = window->marks;
-            float width = nk_window_get_content_region_size(&ctx).x - 15;
-            float ratio[] = { width * 0.6f, width * 0.4f };
+            const float width = nk_window_get_content_region_size(&ctx).x - 15;
+            const float ratio[] = { width * 0.6f, width * 0.4f };
             nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
             char buffer[256];
             Mark *prev = nullptr;
@@ -1567,7 +1567,8 @@ public:
             flags |= NK_WINDOW_MINIMIZED;
         if (nk_begin(&ctx, "Search", nk_rect(1410, 10, 350, 500), flags))
         {
-            float width = nk_window_get_content_region_size(&ctx).x - 30;
+            const float width = nk_window_get_content_region_size(&ctx).x - 30;
+
             if (!window->map->searchable())
             {
                 nk_layout_row(&ctx, NK_STATIC, 20, 1, &width);
@@ -1578,7 +1579,7 @@ public:
 
             // search query
             {
-                float ratio[] = { width * 0.15f, width * 0.85f };
+                const float ratio[] = { width * 0.15f, width * 0.85f };
                 nk_layout_row(&ctx, NK_STATIC, 22, 2, ratio);
                 nk_label(&ctx, "Query:", NK_TEXT_LEFT);
                 int len = strlen(searchText);
@@ -1622,7 +1623,7 @@ public:
             int index = 0;
             for (auto &r : res)
             {
-                float ratio[] = { width * 0.7f, width * 0.18f, width * 0.12f };
+                const float ratio[] = { width * 0.7f, width * 0.18f, width * 0.12f };
                 nk_layout_row(&ctx, NK_STATIC, 18, 3, ratio);
 
                 // title
@@ -1655,15 +1656,13 @@ public:
                 // region
                 if (nk_tree_push_id(&ctx, NK_TREE_NODE, r.region.c_str(), NK_MINIMIZED, index))
                 {
-                    float ratio[] = { width };
+                    const float ratio[] = { width };
                     int len = r.json.length();
                     nk_layout_row(&ctx, NK_STATIC, 300, 1, ratio);
                     nk_edit_string(&ctx, NK_EDIT_DEFAULT //NK_EDIT_READ_ONLY
                         | NK_EDIT_MULTILINE | NK_EDIT_SELECTABLE
                         | NK_EDIT_CLIPBOARD | NK_EDIT_AUTO_SELECT,
                         (char*)r.json.c_str(), &len, len, 0);
-                    //sprintf(buffer, "%.1lf m", r.radius);
-                    //nk_label(&ctx, buffer, NK_TEXT_RIGHT);
                     nk_tree_pop(&ctx);
                 }
                 index++;

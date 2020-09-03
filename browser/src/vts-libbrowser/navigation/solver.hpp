@@ -41,7 +41,7 @@ void solveNavigation(
     double inVerticalChange, // signed
     double inStartViewExtent,
     double inViewExtentChange,
-    const vec3 &inStartRotation,
+    const vec3 &inRotationCurrent,
     const vec3 &inRotationChange,
     double &outViewExtent,
     double &outHorizontalMove,

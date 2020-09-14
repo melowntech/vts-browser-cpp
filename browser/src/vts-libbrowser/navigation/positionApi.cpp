@@ -52,12 +52,8 @@ vtslibs::registry::Position p2p(const Position &p)
     r.orientation = vecToUblas<math::Point3>(rawToVec3(p.orientation));
     r.verticalExtent = p.viewExtent;
     r.verticalFov = p.fov;
-    r.type = p.subjective
-        ? vtslibs::registry::Position::Type::subjective
-        : vtslibs::registry::Position::Type::objective;
-    r.heightMode = p.floatAltitude
-        ? vtslibs::registry::Position::HeightMode::floating
-        : vtslibs::registry::Position::HeightMode::fixed;
+    r.type = p.subjective ? vtslibs::registry::Position::Type::subjective : vtslibs::registry::Position::Type::objective;
+    r.heightMode = p.floatAltitude ? vtslibs::registry::Position::HeightMode::floating : vtslibs::registry::Position::HeightMode::fixed;
     return r;
 }
 
@@ -68,10 +64,8 @@ Position p2p(const vtslibs::registry::Position &p)
     vecToRaw(vecFromUblas<vec3>(p.orientation), r.orientation);
     r.viewExtent = p.verticalExtent;
     r.fov = p.verticalFov;
-    r.subjective = p.type
-        == vtslibs::registry::Position::Type::subjective;
-    r.floatAltitude = p.heightMode
-        == vtslibs::registry::Position::HeightMode::floating;
+    r.subjective = p.type == vtslibs::registry::Position::Type::subjective;
+    r.floatAltitude = p.heightMode == vtslibs::registry::Position::HeightMode::floating;
     return r;
 }
 
@@ -81,8 +75,7 @@ Position::Position(const std::string &position)
     {
         if (position.find("[") == std::string::npos)
         {
-            *this = p2p(boost::lexical_cast<
-                vtslibs::registry::Position>(position));
+            *this = p2p(boost::lexical_cast<vtslibs::registry::Position>(position));
         }
         else
         {
@@ -92,8 +85,7 @@ Position::Position(const std::string &position)
     }
     catch (...)
     {
-        LOGTHROW(err2, std::runtime_error)
-            << "Failed parsing position from string <" << position << ">";
+        LOGTHROW(err2, std::runtime_error) << "Failed parsing position from string <" << position << ">";
     }
 }
 

@@ -106,45 +106,25 @@ void parabola(
 
 // Perceptively Invariant Horizontal Autopilot
 // (piha = freckle in czech)
-void flyOver(
-    const NavigationOptions &navOpts,
-    std::shared_ptr<TemporalNavigationState> &temporalNavigationState,
-    double timeDiff,
-    double inHorizontalDistance,
-    double inVerticalChange,
-    double inStartViewExtent,
-    double inViewExtentChange,
-    const vec3 &inStartRotation,
-    const vec3 &inRotationChange,
-    double &outViewExtent,
-    double &outHorizontalMove,
-    double &outVerticalMove,
-    vec3 &outRotation)
+void flyOver(const NavigationOptions &navOpts, std::shared_ptr<TemporalNavigationState> &temporalNavigationState, double timeDiff, double inHorizontalDistance, double inVerticalChange, double inStartViewExtent, double inViewExtentChange, const vec3 &inStartRotation, const vec3 &inRotationChange, double &outViewExtent, double &outHorizontalMove, double &outVerticalMove, vec3 &outRotation)
 {
     if (!temporalNavigationState)
     {
         // start of the fly over
-        temporalNavigationState
-            = std::make_shared<TemporalNavigationState>();
-        temporalNavigationState->parabolaParameter
-            = navOpts.flyOverSpikinessFactor
-            / (inHorizontalDistance + 1);
+        temporalNavigationState = std::make_shared<TemporalNavigationState>();
+        temporalNavigationState->parabolaParameter = navOpts.flyOverSpikinessFactor / (inHorizontalDistance + 1);
     }
 
     // movement / view extent parameters
     double distance = hypot(inVerticalChange, inHorizontalDistance);
     double dx, dy, dl;
-    parabola(distance, -inViewExtentChange,
-        temporalNavigationState->parabolaParameter,
-        dx, dy, dl);
-    double moveSpeed = inStartViewExtent * timeDiff
-        * navOpts.flyOverMotionChangeFraction;
+    parabola(distance, -inViewExtentChange, temporalNavigationState->parabolaParameter, dx, dy, dl);
+    double moveSpeed = inStartViewExtent * timeDiff * navOpts.flyOverMotionChangeFraction;
 
     // normalization for multiple simultaneous movements
     double moveSteps = dl / moveSpeed;
     double rotationDist = length(inRotationChange);
-    double rotationSteps = rotationDist
-        / (90 * navOpts.flyOverRotationChangeSpeed * timeDiff);
+    double rotationSteps = rotationDist / (90 * navOpts.flyOverRotationChangeSpeed * timeDiff);
     // add some additional steps to simulate slowdown at the end of the fly over
     double totalSteps = hypot(rotationSteps, moveSteps) + 10;
 
@@ -159,16 +139,13 @@ void flyOver(
     outRotation = inStartRotation + inRotationChange / totalSteps;
 }
 
-double inertiaFactor(
-    const NavigationOptions &navOpts,
-    double timeDiff,
-    double inertia)
+double inertiaFactor(const NavigationOptions &navOpts, double timeDiff, double inertia)
 {
     if (!navOpts.fpsCompensation)
         return 1 - inertia;
 
     // the options values are for 60 frames per second
-    static const double nominalFps = 60;
+    constexpr double nominalFps = 60;
 
     return 1 - std::pow(inertia, timeDiff * nominalFps);
 }
@@ -176,39 +153,42 @@ double inertiaFactor(
 } // namespace
 
 void solveNavigation(
-        const NavigationOptions &navOpts,
-        std::shared_ptr<TemporalNavigationState> &temporalNavigationState,
-        double timeDiff,
-        double fov,
-        double inHorizontalDistance,
-        double inVerticalChange,
-        double inViewExtentCurrent,
-        double inViewExtentChange,
-        const vec3 &inRotationCurrent,
-        const vec3 &inRotationChange,
-        double &outViewExtent,
-        double &outHorizontalMove,
-        double &outVerticalMove,
-        vec3 &outRotation)
+    const NavigationOptions &navOpts,
+    std::shared_ptr<TemporalNavigationState> &temporalNavigationState,
+    double timeDiff, // seconds
+    double fov, // degrees
+    double inHorizontalDistance, // unsigned
+    double inVerticalChange, // signed
+    double inViewExtentCurrent,
+    double inViewExtentChange,
+    const vec3 &inRotationCurrent,
+    const vec3 &inRotationChange,
+    double &outViewExtent,
+    double &outHorizontalMove,
+    double &outVerticalMove,
+    vec3 &outRotation
+    )
 {
     assert(timeDiff >= 0);
     assert(inHorizontalDistance >= 0);
     assert(inViewExtentCurrent > 0);
     assert(inViewExtentCurrent + inViewExtentChange > 0);
 
-    if (timeDiff < 1e-7
-        || (inHorizontalDistance < 1e-7
-        && std::abs(inVerticalChange) < 1e-7
-        && std::abs(inViewExtentChange) < 1e-7
-        && vectorAbsSum(inRotationChange) < 1e-7))
+    const auto &handleNoMovement = [&]() -> bool
     {
-        outHorizontalMove = 0;
-        outVerticalMove = 0;
-        outRotation = inRotationCurrent;
-        outViewExtent = inViewExtentCurrent;
-        temporalNavigationState.reset();
-    }
-    else switch (navOpts.type)
+        if (timeDiff < 1e-7 || (inHorizontalDistance < 1e-7 && std::abs(inVerticalChange) < 1e-7 && std::abs(inViewExtentChange) < 1e-7 && vectorAbsSum(inRotationChange) < 1e-7))
+        {
+            outHorizontalMove = 0;
+            outVerticalMove = 0;
+            outRotation = inRotationCurrent;
+            outViewExtent = inViewExtentCurrent;
+            temporalNavigationState.reset();
+            return false;
+        }
+        return true;
+    };
+
+    switch (navOpts.type)
     {
     case NavigationType::Instant:
         outHorizontalMove = inHorizontalDistance;
@@ -218,32 +198,20 @@ void solveNavigation(
         temporalNavigationState.reset();
         break;
     case NavigationType::Quick:
-        outHorizontalMove = inHorizontalDistance
-            * inertiaFactor(navOpts, timeDiff, navOpts.inertiaPan);
-        outVerticalMove = inVerticalChange
-            * inertiaFactor(navOpts, timeDiff, navOpts.inertiaPan);
-        outRotation = inRotationCurrent + inRotationChange
-            * inertiaFactor(navOpts, timeDiff, navOpts.inertiaRotate);
-        outViewExtent = inViewExtentCurrent + inViewExtentChange
-            * inertiaFactor(navOpts, timeDiff, navOpts.inertiaZoom);
-        temporalNavigationState.reset();
+        if (handleNoMovement())
+        {
+            outHorizontalMove = inHorizontalDistance * inertiaFactor(navOpts, timeDiff, navOpts.inertiaPan);
+            outVerticalMove = inVerticalChange * inertiaFactor(navOpts, timeDiff, navOpts.inertiaPan);
+            outRotation = inRotationCurrent + inRotationChange * inertiaFactor(navOpts, timeDiff, navOpts.inertiaRotate);
+            outViewExtent = inViewExtentCurrent + inViewExtentChange * inertiaFactor(navOpts, timeDiff, navOpts.inertiaZoom);
+            temporalNavigationState.reset();
+        }
         break;
     case NavigationType::FlyOver:
-        flyOver(
-            navOpts,
-            temporalNavigationState,
-            timeDiff,
-            inHorizontalDistance,
-            inVerticalChange,
-            inViewExtentCurrent,
-            inViewExtentChange,
-            inRotationCurrent,
-            inRotationChange,
-            outViewExtent,
-            outHorizontalMove,
-            outVerticalMove,
-            outRotation
-        );
+        if (handleNoMovement())
+        {
+            flyOver(navOpts, temporalNavigationState, timeDiff, inHorizontalDistance, inVerticalChange, inViewExtentCurrent, inViewExtentChange, inRotationCurrent, inRotationChange, outViewExtent, outHorizontalMove, outVerticalMove, outRotation);
+        }
         break;
     }
 

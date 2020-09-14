@@ -24,8 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cstdio>
-
 #include <vts-browser/buffer.hpp>
 #include <vts-browser/log.hpp>
 #include <vts-browser/math.hpp>
@@ -35,10 +33,12 @@
 #include "mainWindow.hpp"
 
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 
 void MainWindow::makeScreenshot()
 {
-    vts::renderer::RenderOptions &ro = view->options();
+    glfwSetWindowTitle(window, "saving screenshot");
+    const vts::renderer::RenderOptions &ro = view->options();
     const vts::renderer::RenderVariables &rv = view->variables();
     vts::GpuTextureSpec spec;
     spec.width = ro.width;
@@ -46,9 +46,9 @@ void MainWindow::makeScreenshot()
     spec.components = 3;
     spec.buffer.resize(spec.expectedSize());
     glBindFramebuffer(GL_READ_FRAMEBUFFER, rv.frameReadBufferId);
-    glReadPixels(0, 0, spec.width, spec.height,
-        GL_RGB, GL_UNSIGNED_BYTE, spec.buffer.data());
+    glReadPixels(0, 0, spec.width, spec.height, GL_RGB, GL_UNSIGNED_BYTE, spec.buffer.data());
     spec.verticalFlip();
     vts::Buffer b = spec.encodePng();
     vts::writeLocalFileBuffer("screenshot.png", b);
+    glfwSetWindowTitle(window, "screenshot done");
 }

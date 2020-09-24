@@ -24,8 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef VIEW_HPP_wqfzugsahakwejgr
-#define VIEW_HPP_wqfzugsahakwejgr
+#ifndef MAPVIEW_HPP_wqfzugsahakwejgr
+#define MAPVIEW_HPP_wqfzugsahakwejgr
 
 #include <string>
 #include <vector>
@@ -42,35 +42,32 @@ public:
     class VTS_API BoundLayerInfo
     {
     public:
-        typedef std::vector<BoundLayerInfo> List;
-
         std::string id;
-        double alpha;
-
-        BoundLayerInfo();
-        explicit BoundLayerInfo(const std::string &id);
+        double alpha = 1;
     };
 
     class VTS_API SurfaceInfo
     {
     public:
-        typedef std::map<std::string, SurfaceInfo> Map;
-
-        BoundLayerInfo::List boundLayers;
+        std::vector<BoundLayerInfo> boundLayers;
     };
 
     class VTS_API FreeLayerInfo
     {
     public:
-        typedef std::map<std::string, FreeLayerInfo> Map;
-
-        BoundLayerInfo::List boundLayers;
+        std::vector<BoundLayerInfo> boundLayers;
         std::string styleUrl;
     };
 
     std::string description;
-    SurfaceInfo::Map surfaces;
-    FreeLayerInfo::Map freeLayers;
+    std::map<std::string, SurfaceInfo> surfaces;
+    std::map<std::string, FreeLayerInfo> freeLayers;
+
+
+    MapView() = default;
+    explicit MapView(const std::string &str);
+    std::string toJson() const;
+    std::string toUrl() const;
 };
 
 } // namespace vts

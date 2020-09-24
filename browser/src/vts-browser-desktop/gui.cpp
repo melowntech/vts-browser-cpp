@@ -29,9 +29,9 @@
 
 #include <vts-browser/enumNames.hpp>
 #include <vts-browser/mapStatistics.hpp>
+#include <vts-browser/mapView.hpp>
 #include <vts-browser/cameraStatistics.hpp>
 #include <vts-browser/cameraDraws.hpp>
-#include <vts-browser/view.hpp>
 #include <vts-browser/search.hpp>
 #include <vts-browser/celestial.hpp>
 #include <vts-browser/position.hpp>
@@ -229,6 +229,11 @@ public:
         nk_buffer_free(&cmds);
         nk_font_atlas_clear(&atlas);
         nk_free(&ctx);
+    }
+
+    const char *getClipboard()
+    {
+        return glfwGetClipboardString(window->window);
     }
 
     void dispatch(int width, int height)
@@ -994,7 +999,7 @@ public:
                 {
                     try
                     {
-                        const char *text = glfwGetClipboardString(nullptr);
+                        const char *text = getClipboard();
                         window->navigation->options().type = vts::NavigationType::FlyOver;
                         window->navigation->setPosition(vts::Position(text));
                     }
@@ -1113,7 +1118,7 @@ public:
                 nk_layout_row(&ctx, NK_STATIC, 16, 2, ratio);
                 nk_label(&ctx, "Output:", NK_TEXT_LEFT);
                 if (nk_button_label(&ctx, "Copy to clipboard"))
-                    glfwSetClipboardString(nullptr, window->navigation->getPosition().toUrl().c_str());
+                    glfwSetClipboardString(window->window, window->navigation->getPosition().toUrl().c_str());
             }
 
             // camera
@@ -1175,7 +1180,7 @@ public:
         return ss.str();
     }
 
-    bool prepareViewsBoundLayers(MapView::BoundLayerInfo::List &bl, uint32 &bid)
+    bool prepareViewsBoundLayers(std::vector<MapView::BoundLayerInfo> &bl, uint32 &bid)
     {
         const std::vector<std::string> boundLayers = window->map->getResourceBoundLayers();
         if (nk_tree_push_id(&ctx, NK_TREE_NODE, labelWithCounts("Bound Layers", bl.size(), boundLayers.size()).c_str(), NK_MINIMIZED, bid++))
@@ -1238,7 +1243,9 @@ public:
                 {
                     if (nk_check_label(&ctx, bn.c_str(), 0))
                     {
-                        bl.push_back(MapView::BoundLayerInfo(bn));
+                        MapView::BoundLayerInfo bli;
+                        bli.id = bn;
+                        bl.push_back(bli);
                         return true;
                     }
                 }
@@ -1320,6 +1327,23 @@ public:
                 }
             }
 
+            // add mapconfig
+            {
+                nk_layout_row(&ctx, NK_STATIC, 20, 1, &width);
+                if (nk_button_label(&ctx, "Use mapconfig from clipboard"))
+                {
+                    MapPaths p;
+                    p.mapConfig = getClipboard();
+                    if (!p.mapConfig.empty())
+                    {
+                        window->appOptions.paths.push_back(p);
+                        selectMapconfig(window->appOptions.paths.size() - 1);
+                        nk_end(&ctx);
+                        return;
+                    }
+                }
+            }
+
             // loading?
             if (!window->map->getMapconfigAvailable())
             {
@@ -1330,23 +1354,40 @@ public:
             }
 
             // named view selector
-            std::vector<std::string> names = window->map->getViewNames();
+            const std::vector<std::string> names = window->map->listViews();
             if (names.size() > 1)
             {
                 nk_layout_row(&ctx, NK_STATIC, 20, 1, &width);
-                if (nk_combo_begin_label(&ctx, window->map->getViewCurrent().c_str(), nk_vec2(nk_widget_width(&ctx), 200)))
+                if (nk_combo_begin_label(&ctx, window->map->selectedView().c_str(), nk_vec2(nk_widget_width(&ctx), 200)))
                 {
                     nk_layout_row_dynamic(&ctx, 16, 1);
                     for (int i = 0, e = names.size(); i < e; i++)
                         if (nk_combo_item_label(&ctx, names[i].c_str(), NK_TEXT_LEFT))
-                            window->map->setViewCurrent(names[i]);
+                            window->map->selectView(names[i]);
                     nk_combo_end(&ctx);
                 }
             }
 
             // current view
             bool viewChanged = false;
-            MapView view = window->map->getViewData(window->map->getViewCurrent());
+            MapView view = window->map->getView(window->map->selectedView());
+
+            // input
+            {
+                nk_layout_row(&ctx, NK_STATIC, 20, 1, &width);
+                if (nk_button_label(&ctx, "Use view from clipboard"))
+                {
+                    try
+                    {
+                        view = MapView(getClipboard());
+                        viewChanged = true;
+                    }
+                    catch (...)
+                    {
+                        // do nothing
+                    }
+                }
+            }
 
             // surfaces
             const std::vector<std::string> surfaces = window->map->getResourceSurfaces();
@@ -1406,10 +1447,8 @@ public:
                         }
                         if (editableGeodata || editableStyle)
                         {
-                            {
-                                const float ratio[] = { 15, (width - 15) * 0.5f, (width - 15) * 0.5f };
-                                nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
-                            }
+                            const float ratio[] = { 15, (width - 15) * 0.5f, (width - 15) * 0.5f };
+                            nk_layout_row(&ctx, NK_STATIC, 16, 3, ratio);
                             nk_label(&ctx, "", NK_TEXT_LEFT);
                             if (editableStyle)
                             {
@@ -1464,8 +1503,15 @@ public:
 
             if (viewChanged)
             {
-                window->map->setViewData("", view);
-                window->map->setViewCurrent("");
+                window->map->setView("", view);
+                window->map->selectView("");
+            }
+
+            // output
+            {
+                nk_layout_row(&ctx, NK_STATIC, 16, 1, &width);
+                if (nk_button_label(&ctx, "Copy view to clipboard"))
+                    glfwSetClipboardString(window->window, view.toUrl().c_str());
             }
         }
 

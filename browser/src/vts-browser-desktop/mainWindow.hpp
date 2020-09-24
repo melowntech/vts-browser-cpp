@@ -65,6 +65,7 @@ struct AppOptions
 {
     std::vector<MapPaths> paths;
     std::string initialPosition;
+    std::string initialView;
     double guiScale = 1;
     uint32 oversampleRender = 1;
     int renderCompas = 0;

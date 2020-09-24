@@ -60,73 +60,76 @@ bool programOptions(vts::MapCreateOptions &createOptions,
 
     po::options_description desc("Options");
     desc.add_options()
-            ("help", "Show this help.")
-            ("url",
-                po::value<std::vector<std::string>>(&configs)->composing(),
-                "Mapconfig URL(s).\n"
-                "Format: <config>[|<auth>]"
-            )
-            ("auth,a",
-                po::value<std::string>(&auth),
-                "Authentication url fallback."
-            )
-            ("position,p",
-                po::value<std::string>(&appOptions.initialPosition),
-                "Override initial position for the first map.\n"
-                "Uses url format, eg.:\n"
-                "obj,long,lat,fix,height,pitch,yaw,roll,extent,fov"
-            )
-            ("purgeCache",
-                po::value<bool>(&appOptions.purgeDiskCache)
-                ->default_value(appOptions.purgeDiskCache)
-                ->implicit_value(!appOptions.purgeDiskCache),
-                "Purge the disk cache during initialization."
-            )
-            ("screenshotWhenComplete",
-                po::value<bool>(&appOptions.screenshotOnFullRender)
-                ->default_value(appOptions.screenshotOnFullRender)
-                ->implicit_value(!appOptions.screenshotOnFullRender),
-                "Save screenshot when it finishes "
-                "rendering the whole image."
-            )
-            ("closeWhenComplete",
-                po::value<bool>(&appOptions.closeOnFullRender)
-                ->default_value(appOptions.closeOnFullRender)
-                ->implicit_value(!appOptions.closeOnFullRender),
-                "Quit the application when it finishes "
-                "rendering the whole image."
-            )
-            ("render.atmosphere",
-                po::value<bool>(&renderOptions.renderAtmosphere)
-                ->default_value(renderOptions.renderAtmosphere)
-                ->implicit_value(!renderOptions.renderAtmosphere),
-                "Render atmosphere."
-            )
-            ("render.antialiasing",
-                po::value<uint32>(&renderOptions.antialiasingSamples)
-                ->default_value(renderOptions.antialiasingSamples)
-                ->implicit_value(16),
-                "Antialiasing samples."
-            )
-            ("render.oversample",
-                po::value<uint32>(&appOptions.oversampleRender)
-                ->default_value(appOptions.oversampleRender)
-                ->implicit_value(2),
-                "Rendering resolution multiplier."
-            )
-            ("gui.scale",
-                po::value<double>(&appOptions.guiScale)
-                ->default_value(appOptions.guiScale)
-                ->implicit_value(2),
-                "Gui scale multiplier."
-            )
-            ("gui.visible",
-                po::value<bool>(&appOptions.guiVisible)
-                ->default_value(appOptions.guiVisible)
-                ->implicit_value(!appOptions.guiVisible),
-                "Gui visibility."
-            )
-            ;
+        ("help", "Show this help.")
+        ("url",
+            po::value<std::vector<std::string>>(&configs)->composing(),
+            "Mapconfig URL(s).\n"
+            "Format: <config>[|<auth>]"
+        )
+        ("auth",
+            po::value<std::string>(&auth),
+            "Authentication url fallback."
+        )
+        ("position,p",
+            po::value<std::string>(&appOptions.initialPosition),
+            "Override initial position for the first map.\n"
+            "Uses url format, eg.:\n"
+            "obj,long,lat,fix,height,pitch,yaw,roll,extent,fov"
+        )
+        ("view,v",
+            po::value<std::string>(&appOptions.initialView),
+            "Override initial view for the first map.\n"
+            "Uses url format."
+        )
+        ("purgeCache",
+            po::value<bool>(&appOptions.purgeDiskCache)
+            ->default_value(appOptions.purgeDiskCache)
+            ->implicit_value(!appOptions.purgeDiskCache),
+            "Purge the disk cache during initialization."
+        )
+        ("screenshotWhenComplete",
+            po::value<bool>(&appOptions.screenshotOnFullRender)
+            ->default_value(appOptions.screenshotOnFullRender)
+            ->implicit_value(!appOptions.screenshotOnFullRender),
+            "Save screenshot when it finishes rendering."
+        )
+        ("closeWhenComplete",
+            po::value<bool>(&appOptions.closeOnFullRender)
+            ->default_value(appOptions.closeOnFullRender)
+            ->implicit_value(!appOptions.closeOnFullRender),
+            "Quit the application when it finishes rendering."
+        )
+        ("render.atmosphere",
+            po::value<bool>(&renderOptions.renderAtmosphere)
+            ->default_value(renderOptions.renderAtmosphere)
+            ->implicit_value(!renderOptions.renderAtmosphere),
+            "Render atmosphere."
+        )
+        ("render.antialiasing",
+            po::value<uint32>(&renderOptions.antialiasingSamples)
+            ->default_value(renderOptions.antialiasingSamples)
+            ->implicit_value(16),
+            "Antialiasing samples count."
+        )
+        ("render.oversample",
+            po::value<uint32>(&appOptions.oversampleRender)
+            ->default_value(appOptions.oversampleRender)
+            ->implicit_value(2),
+            "Rendering resolution multiplier."
+        )
+        ("gui.scale",
+            po::value<double>(&appOptions.guiScale)
+            ->default_value(appOptions.guiScale)
+            ->implicit_value(2),
+            "Gui scale multiplier."
+        )
+        ("gui.visible",
+            po::value<bool>(&appOptions.guiVisible)
+            ->default_value(appOptions.guiVisible)
+            ->implicit_value(!appOptions.guiVisible),
+            "Gui visibility."
+        )
+        ;
 
     po::positional_options_description popts;
     popts.add("url", -1);

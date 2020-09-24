@@ -63,6 +63,7 @@ set(PUB_HDR_LIST
     include/vts-browser/mapCallbacks.hpp
     include/vts-browser/mapOptions.hpp
     include/vts-browser/mapStatistics.hpp
+    include/vts-browser/mapView.hpp
     include/vts-browser/math.hpp
     include/vts-browser/navigation.hpp
     include/vts-browser/navigationOptions.hpp
@@ -70,7 +71,6 @@ set(PUB_HDR_LIST
     include/vts-browser/position.hpp
     include/vts-browser/resources.hpp
     include/vts-browser/search.hpp
-    include/vts-browser/view.hpp
     # C API
     include/vts-browser/callbacks.h
     include/vts-browser/camera.h

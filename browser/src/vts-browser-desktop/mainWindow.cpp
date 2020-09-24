@@ -35,6 +35,7 @@
 #include <vts-browser/celestial.hpp>
 #include <vts-browser/mapCallbacks.hpp>
 #include <vts-browser/mapStatistics.hpp>
+#include <vts-browser/mapView.hpp>
 #include <vts-browser/cameraDraws.hpp>
 #include <vts-browser/cameraCredits.hpp>
 #include <vts-browser/position.hpp>
@@ -401,9 +402,22 @@ void MainWindow::run()
     glfwShowWindow(window);
     updateWindowSize();
 
-    if (!appOptions.initialPosition.empty())
-    {
-        map->callbacks().mapconfigAvailable = [&](){
+    map->callbacks().mapconfigAvailable = [&](){
+        if (!appOptions.initialView.empty())
+        {
+            vts::log(vts::LogLevel::info2, "Setting initial view");
+            try
+            {
+                map->setView("", vts::MapView(appOptions.initialView));
+                map->selectView("");
+            }
+            catch (...)
+            {
+                vts::log(vts::LogLevel::warn3, "Failed to set initial view");
+            }
+        }
+        if (!appOptions.initialPosition.empty())
+        {
             vts::log(vts::LogLevel::info2, "Setting initial position");
             try
             {
@@ -414,9 +428,9 @@ void MainWindow::run()
             {
                 vts::log(vts::LogLevel::warn3, "Failed to set initial position");
             }
-            map->callbacks().mapconfigAvailable = {};
-        };
-    }
+        }
+        map->callbacks().mapconfigAvailable = {};
+    };
 
     auto lastTime = std::chrono::high_resolution_clock::now();
     double accumulatedTime = 0;

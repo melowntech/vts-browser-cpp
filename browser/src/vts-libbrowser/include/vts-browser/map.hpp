@@ -136,14 +136,12 @@ public:
     void setResourceFreeLayerStyle(const std::string &name, const std::string &value);
 
     // view manipulation
-    std::vector<std::string> getViewNames() const;
-    std::string getViewCurrent() const;
-    std::string getViewJson(const std::string &name) const;
-    MapView getViewData(const std::string &name) const;
-    void setViewCurrent(const std::string &name);
-    void setViewJson(const std::string &name, const std::string &view);
-    void setViewData(const std::string &name, const MapView &view);
+    std::vector<std::string> listViews() const;
+    std::string selectedView() const;
+    void selectView(const std::string &name);
     void removeView(const std::string &name);
+    MapView getView(const std::string &name) const;
+    void setView(const std::string &name, const MapView &view);
 
     // searching
     bool searchable() const;

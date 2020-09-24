@@ -44,6 +44,7 @@
 #include "../include/vts-browser/mapCallbacks.hpp"
 #include "../include/vts-browser/mapOptions.hpp"
 #include "../include/vts-browser/mapStatistics.hpp"
+#include "../include/vts-browser/mapView.hpp"
 #include "../include/vts-browser/math.h"
 #include "../include/vts-browser/math.hpp"
 #include "../include/vts-browser/navigation.h"
@@ -55,7 +56,6 @@
 #include "../include/vts-browser/resources.hpp"
 #include "../include/vts-browser/search.h"
 #include "../include/vts-browser/search.hpp"
-#include "../include/vts-browser/view.hpp"
 #include "../include/vts-browser/internalMemory.h"
 
 #include "../utilities/json.hpp"
@@ -301,8 +301,7 @@ vtsHMap vtsMapCreate(const char *createOptions, vtsHFetcher fetcher)
 {
     C_BEGIN
     vtsHMap r = new vtsCMap();
-    r->p = std::make_shared<vts::Map>(vts::MapCreateOptions(createOptions),
-                           fetcher ? fetcher->p : vts::Fetcher::create({}));
+    r->p = std::make_shared<vts::Map>(vts::MapCreateOptions(createOptions), fetcher ? fetcher->p : vts::Fetcher::create({}));
     return r;
     C_END
     return nullptr;
@@ -330,8 +329,7 @@ void *vtsMapGetCustomData(vtsHMap map)
     return nullptr;
 }
 
-void vtsMapSetConfigPaths(vtsHMap map, const char *mapconfigPath,
-                          const char *authPath)
+void vtsMapSetConfigPaths(vtsHMap map, const char *mapconfigPath, const char *authPath)
 {
     C_BEGIN
     map->p->setMapconfigPath(mapconfigPath, authPath);
@@ -453,9 +451,7 @@ void vtsMapSetOptions(vtsHMap map, const char *options)
     C_END
 }
 
-void vtsMapConvert(vtsHMap map,
-    const double pointFrom[3], double pointTo[3],
-    uint32 srsFrom, uint32 SrsTo)
+void vtsMapConvert(vtsHMap map, const double pointFrom[3], double pointTo[3], uint32 srsFrom, uint32 SrsTo)
 {
     C_BEGIN
     map->p->convert(pointFrom, pointTo, (vts::Srs)srsFrom, (vts::Srs)SrsTo);
@@ -485,16 +481,14 @@ void vtsCameraDestroy(vtsHCamera cam)
 
 // camera
 
-void vtsCameraSetViewportSize(vtsHCamera cam,
-    uint32 width, uint32 height)
+void vtsCameraSetViewportSize(vtsHCamera cam, uint32 width, uint32 height)
 {
     C_BEGIN
     cam->p->setViewportSize(width, height);
     C_END
 }
 
-void vtsCameraSetView(vtsHCamera cam, const double eye[3],
-    const double target[3], const double up[3])
+void vtsCameraSetView(vtsHCamera cam, const double eye[3], const double target[3], const double up[3])
 {
     C_BEGIN
     cam->p->setView(eye, target, up);
@@ -508,8 +502,7 @@ void vtsCameraSetViewMatrix(vtsHCamera cam, const double view[16])
     C_END
 }
 
-void vtsCameraSetProj(vtsHCamera cam, double fovyDegs,
-    double near_, double far_)
+void vtsCameraSetProj(vtsHCamera cam, double fovyDegs, double near_, double far_)
 {
     C_BEGIN
     cam->p->setProj(fovyDegs, near_, far_);
@@ -523,16 +516,14 @@ void vtsCameraSetProjMatrix(vtsHCamera cam, const double proj[16])
     C_END
 }
 
-void vtsCameraGetViewportSize(vtsHCamera cam,
-    uint32 *width, uint32 *height)
+void vtsCameraGetViewportSize(vtsHCamera cam, uint32 *width, uint32 *height)
 {
     C_BEGIN
     cam->p->getViewportSize(*width, *height);
     C_END
 }
 
-void vtsCameraGetView(vtsHCamera cam, double eye[3],
-    double target[3], double up[3])
+void vtsCameraGetView(vtsHCamera cam, double eye[3], double target[3], double up[3])
 {
     C_BEGIN
     cam->p->getView(eye, target, up);
@@ -553,8 +544,7 @@ void vtsCameraGetProjMatrix(vtsHCamera cam, double proj[16])
     C_END
 }
 
-void vtsCameraSuggestedNearFar(vtsHCamera cam,
-    double *near_, double *far_)
+void vtsCameraSuggestedNearFar(vtsHCamera cam, double *near_, double *far_)
 {
     C_BEGIN
     cam->p->suggestedNearFar(*near_, *far_);
@@ -625,8 +615,7 @@ void vtsCameraSetOptions(vtsHCamera cam, const char *options)
 // DRAWS
 ////////////////////////////////////////////////////////////////////////////
 
-void vtsDrawsOpaqueGroup(vtsHCamera cam,
-    void **group, uint32 *count)
+void vtsDrawsOpaqueGroup(vtsHCamera cam, void **group, uint32 *count)
 {
     C_BEGIN
     *group = cam->p->draws().opaque.data();
@@ -634,8 +623,7 @@ void vtsDrawsOpaqueGroup(vtsHCamera cam,
     C_END
 }
 
-void vtsDrawsTransparentGroup(vtsHCamera cam,
-    void **group, uint32 *count)
+void vtsDrawsTransparentGroup(vtsHCamera cam, void **group, uint32 *count)
 {
     C_BEGIN
     *group = cam->p->draws().transparent.data();
@@ -644,8 +632,7 @@ void vtsDrawsTransparentGroup(vtsHCamera cam,
 }
 
 /*
-void vtsDrawsGeodataGroup(vtsHCamera cam,
-    void **group, uint32 *count)
+void vtsDrawsGeodataGroup(vtsHCamera cam, void **group, uint32 *count)
 {
     C_BEGIN
     *group = cam->p->draws().geodata.data();
@@ -654,8 +641,7 @@ void vtsDrawsGeodataGroup(vtsHCamera cam,
 }
 */
 
-void vtsDrawsCollidersGroup(vtsHCamera cam,
-    void **group, uint32 *count)
+void vtsDrawsCollidersGroup(vtsHCamera cam, void **group, uint32 *count)
 {
     C_BEGIN
     *group = cam->p->draws().colliders.data();
@@ -663,9 +649,7 @@ void vtsDrawsCollidersGroup(vtsHCamera cam,
     C_END
 }
 
-void vtsDrawsSurfaceTask(void *group, uint32 index,
-    void **mesh, void **texColor, void **texMask,
-    vtsCDrawSurfaceBase **baseStruct)
+void vtsDrawsSurfaceTask(void *group, uint32 index, void **mesh, void **texColor, void **texMask, vtsCDrawSurfaceBase **baseStruct)
 {
     C_BEGIN
     vts::DrawSurfaceTask *t = (vts::DrawSurfaceTask *)group + index;
@@ -676,9 +660,7 @@ void vtsDrawsSurfaceTask(void *group, uint32 index,
     C_END
 }
 
-void vtsDrawsColliderTask(void *group, uint32 index,
-    void **mesh,
-    vtsCDrawColliderBase **baseStruct)
+void vtsDrawsColliderTask(void *group, uint32 index, void **mesh, vtsCDrawColliderBase **baseStruct)
 {
     C_BEGIN
     vts::DrawColliderTask *t = (vts::DrawColliderTask *)group + index;
@@ -763,8 +745,7 @@ void vtsNavigationResetNavigationMode(vtsHNavigation nav)
 
 // setters
 
-void vtsNavigationSetSubjective(vtsHNavigation nav, bool subjective,
-                                 bool convert)
+void vtsNavigationSetSubjective(vtsHNavigation nav, bool subjective, bool convert)
 {
     C_BEGIN
     nav->p->setSubjective(subjective, convert);
@@ -806,8 +787,7 @@ void vtsNavigationSetAutoRotation(vtsHNavigation nav, double value)
     C_END
 }
 
-void vtsNavigationSetPosition(vtsHNavigation nav,
-    vtsHPosition position)
+void vtsNavigationSetPosition(vtsHNavigation nav, vtsHPosition position)
 {
     C_BEGIN
     nav->p->setPosition(*(vts::Position*)position);
@@ -862,8 +842,7 @@ double vtsNavigationGetAutoRotation(vtsHNavigation nav)
     return 0.0;
 }
 
-void vtsNavigationGetPosition(vtsHNavigation nav,
-    vtsHPosition position)
+void vtsNavigationGetPosition(vtsHNavigation nav, vtsHPosition position)
 {
     C_BEGIN
     *position = nav->p->getPosition();
@@ -935,8 +914,7 @@ uint32 vtsGpuTypeSize(uint32 type)
     return 0;
 }
 
-void vtsResourceSetUserData(vtsHResource resource, void *data,
-                            vtsResourceDeleterCallbackType deleter)
+void vtsResourceSetUserData(vtsHResource resource, void *data, vtsResourceDeleterCallbackType deleter)
 {
     struct Callback
     {
@@ -953,8 +931,7 @@ void vtsResourceSetUserData(vtsHResource resource, void *data,
     C_END
 }
 
-void vtsResourceSetMemoryCost(vtsHResource resource,
-                              uint32 ramMem, uint32 gpuMem)
+void vtsResourceSetMemoryCost(vtsHResource resource, uint32 ramMem, uint32 gpuMem)
 {
     C_BEGIN
     resource->r->ramMemoryCost = ramMem;
@@ -970,8 +947,7 @@ const char *vtsResourceGetId(vtsHResource resource)
     return nullptr;
 }
 
-void vtsTextureGetResolution(vtsHResource resource,
-        uint32 *width, uint32 *height, uint32 *components)
+void vtsTextureGetResolution(vtsHResource resource, uint32 *width, uint32 *height, uint32 *components)
 {
     C_BEGIN
     *width = resource->ptr.t->width;
@@ -1029,8 +1005,7 @@ uint32 vtsMeshGetFaceMode(vtsHResource resource)
     return 0;
 }
 
-void vtsMeshGetVertices(vtsHResource resource,
-        void **data, uint32 *size, uint32 *count)
+void vtsMeshGetVertices(vtsHResource resource, void **data, uint32 *size, uint32 *count)
 {
     C_BEGIN
     *data = resource->ptr.m->vertices.data();
@@ -1039,8 +1014,7 @@ void vtsMeshGetVertices(vtsHResource resource,
     C_END
 }
 
-void vtsMeshGetIndices(vtsHResource resource,
-        void **data, uint32 *size, uint32 *count)
+void vtsMeshGetIndices(vtsHResource resource, void **data, uint32 *size, uint32 *count)
 {
     C_BEGIN
     *data = resource->ptr.m->indices.data();
@@ -1049,9 +1023,7 @@ void vtsMeshGetIndices(vtsHResource resource,
     C_END
 }
 
-void vtsMeshGetAttribute(vtsHResource resource, uint32 index,
-        uint32 *offset, uint32 *stride, uint32 *components,
-        uint32 *type, bool *enable, bool *normalized)
+void vtsMeshGetAttribute(vtsHResource resource, uint32 index, uint32 *offset, uint32 *stride, uint32 *components, uint32 *type, bool *enable, bool *normalized)
 {
     C_BEGIN
     if (index >= resource->ptr.m->attributes.size())
@@ -1065,8 +1037,7 @@ void vtsMeshGetAttribute(vtsHResource resource, uint32 index,
     }
     else
     {
-        const vts::GpuMeshSpec::VertexAttribute &a
-            = resource->ptr.m->attributes[index];
+        const vts::GpuMeshSpec::VertexAttribute &a = resource->ptr.m->attributes[index];
         *offset = a.offset;
         *stride = a.stride;
         *components = a.components;
@@ -1096,13 +1067,11 @@ struct StateCallback
 
 } // namespace
 
-void vtsCallbacksLoadTexture(vtsHMap map,
-                vtsResourceCallbackType callback)
+void vtsCallbacksLoadTexture(vtsHMap map, vtsResourceCallbackType callback)
 {
     struct Callback
     {
-        void operator()(vts::ResourceInfo &r, vts::GpuTextureSpec &t,
-            const std::string &id)
+        void operator()(vts::ResourceInfo &r, vts::GpuTextureSpec &t, const std::string &id)
         {
             vtsCResource rc(id);
             rc.r = &r;
@@ -1120,13 +1089,11 @@ void vtsCallbacksLoadTexture(vtsHMap map,
     C_END
 }
 
-void vtsCallbacksLoadMesh(vtsHMap map,
-                vtsResourceCallbackType callback)
+void vtsCallbacksLoadMesh(vtsHMap map, vtsResourceCallbackType callback)
 {
     struct Callback
     {
-        void operator()(vts::ResourceInfo &r, vts::GpuMeshSpec &m,
-            const std::string &id)
+        void operator()(vts::ResourceInfo &r, vts::GpuMeshSpec &m, const std::string &id)
         {
             vtsCResource rc(id);
             rc.r = &r;
@@ -1144,8 +1111,7 @@ void vtsCallbacksLoadMesh(vtsHMap map,
     C_END
 }
 
-void vtsCallbacksMapconfigAvailable(vtsHMap map,
-                vtsMapCallbackType callback)
+void vtsCallbacksMapconfigAvailable(vtsHMap map, vtsMapCallbackType callback)
 {
     C_BEGIN
     StateCallback c;
@@ -1155,8 +1121,7 @@ void vtsCallbacksMapconfigAvailable(vtsHMap map,
     C_END
 }
 
-void vtsCallbacksMapconfigReady(vtsHMap map,
-                vtsMapCallbackType callback)
+void vtsCallbacksMapconfigReady(vtsHMap map, vtsMapCallbackType callback)
 {
     C_BEGIN
     StateCallback c;
@@ -1236,9 +1201,7 @@ void vtsCelestialAtmosphere(vtsHMap map, float colors[8], double params[5])
     C_END
 }
 
-void vtsCelestialAtmosphereDerivedAttributes(vtsHMap map,
-    double *boundaryThickness,
-    double *horizontalExponent, double *verticalExponent)
+void vtsCelestialAtmosphereDerivedAttributes(vtsHMap map, double *boundaryThickness, double *horizontalExponent, double *verticalExponent)
 {
     C_BEGIN
     const auto &a = map->p->celestialBody();
@@ -1296,8 +1259,7 @@ vtsHSearch vtsMapSearch(vtsHMap map, const char *query)
     return nullptr;
 }
 
-vtsHSearch vtsMapSearchAt(vtsHMap map, const char *query,
-                          const double point[3])
+vtsHSearch vtsMapSearchAt(vtsHMap map, const char *query, const double point[3])
 {
     C_BEGIN
     vtsHSearch r = new vtsCSearch();
@@ -1340,8 +1302,7 @@ const char *vtsSearchGetResultData(vtsHSearch search, uint32 index)
     return nullptr;
 }
 
-void vtsSearchUpdateDistances(vtsHSearch search,
-                const double point[3])
+void vtsSearchUpdateDistances(vtsHSearch search, const double point[3])
 {
     C_BEGIN
     search->p->updateDistances(point);
@@ -1352,24 +1313,21 @@ void vtsSearchUpdateDistances(vtsHSearch search,
 // MATH
 ////////////////////////////////////////////////////////////////////////////
 
-void vtsMathMul44x44(double result[16], const double l[16],
-    const double r[16])
+void vtsMathMul44x44(double result[16], const double l[16], const double r[16])
 {
     C_BEGIN
     vts::matToRaw(vts::mat4(vts::rawToMat4(l) * vts::rawToMat4(r)), result);
     C_END
 }
 
-void vtsMathMul33x33(double result[9], const double l[9],
-    const double r[9])
+void vtsMathMul33x33(double result[9], const double l[9], const double r[9])
 {
     C_BEGIN
     vts::matToRaw(vts::mat3(vts::rawToMat3(l) * vts::rawToMat3(r)), result);
     C_END
 }
 
-void vtsMathMul44x4(double result[4], const double l[16],
-    const double r[4])
+void vtsMathMul44x4(double result[4], const double l[16], const double r[4])
 {
     C_BEGIN
     vts::vecToRaw(vts::vec4(vts::rawToMat4(l) * vts::rawToVec4(r)), result);
@@ -1406,8 +1364,7 @@ void vtsInternalMemoryRead(const char *name,
     void **data, uint32 *size)
 {
     C_BEGIN
-    vts::detail::readInternalMemoryData(name,
-        *(const unsigned char**)data, *size);
+    vts::detail::readInternalMemoryData(name, *(const unsigned char**)data, *size);
     C_END
 }
 

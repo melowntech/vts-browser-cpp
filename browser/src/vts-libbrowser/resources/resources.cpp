@@ -348,8 +348,7 @@ void Resources::cacheReadProcess(const std::shared_ptr<Resource> &r)
     }
     else if (startsWith(r->name, "data:"))
     {
-        readDataUrl(r->name, r->fetch->reply.content,
-            r->fetch->reply.contentType);
+        readDataUrl(r->name, r->fetch->reply.content, r->fetch->reply.contentType);
         r->fetch->reply.code = 200;
         r->state = Resource::State::decodeQueue;
         queDecode.push(r);
@@ -368,10 +367,10 @@ void Resources::cacheReadProcess(const std::shared_ptr<Resource> &r)
         r->state = Resource::State::decodeQueue;
         queDecode.push(r);
     }
-    else if (startsWith(r->name, "generate://"))
+    else if (startsWith(r->name, "atmdensity://"))
     {
-        // will be handled elsewhere
-        r->state = Resource::State::errorRetry;
+        r->state = Resource::State::atmosphereQueue;
+        queAtmosphere.push(r);
     }
     else
     {
@@ -438,7 +437,7 @@ Resources::~Resources()
 
 bool Resources::tryRemove(std::shared_ptr<Resource> &r)
 {
-    std::string name = r->name;
+    const std::string name = r->name;
     assert(resources.count(name) == 1);
     {
         // release the pointer if we are the last one holding it
@@ -452,8 +451,7 @@ bool Resources::tryRemove(std::shared_ptr<Resource> &r)
         }
         catch (...)
         {
-            LOGTHROW(fatal, std::logic_error)
-                << "Exception in destructor";
+            LOGTHROW(fatal, std::logic_error) << "Exception in destructor";
         }
 #endif // NDEBUG
         r = w.lock();
@@ -547,13 +545,13 @@ void Resources::removeOld()
 void Resources::checkInitialized()
 {
     OPTICK_EVENT();
-    std::time_t current = std::time(nullptr);
+    const std::time_t current = std::time(nullptr);
 
     for (const auto &it : resources)
     {
         const std::shared_ptr<Resource> &r = it.second;
         if (r->lastAccessTick + 3 < map->renderTickIndex)
-            continue; // skip resources that were not accessed last tick
+            continue; // skip resources that were not accessed last few tick
         switch ((Resource::State)r->state)
         {
         case Resource::State::errorRetry:
@@ -566,8 +564,7 @@ void Resources::checkInitialized()
             }
             if (r->retryTime == -1)
             {
-                r->retryTime = (1 << r->retryNumber)
-                    * map->options.fetchFirstRetryTimeOffset + current;
+                r->retryTime = (1u << r->retryNumber) * map->options.fetchFirstRetryTimeOffset + current;
                 LOGR(r->retryNumber < 2 ? dbglog::warn1 : dbglog::warn2) << "Resource <" << r->name << "> may retry in " << (r->retryTime - current) << " seconds";
                 break;
             }
@@ -616,8 +613,7 @@ void Resources::renderUpdate()
     {
         OPTICK_EVENT("statistics");
 
-        // resourcesPreparing is used to determine mapRenderComplete
-        //   and must be updated every frame
+        // resourcesPreparing is used to determine mapRenderComplete and must be updated every frame
         map->statistics.resourcesPreparing = 0;
         for (const auto &it : resources)
         {

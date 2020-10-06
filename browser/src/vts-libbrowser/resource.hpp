@@ -51,6 +51,7 @@ public:
         fetchQueue,
         fetching,
         decodeQueue,
+        atmosphereQueue,
         uploadQueue,
         ready,
         errorFatal,

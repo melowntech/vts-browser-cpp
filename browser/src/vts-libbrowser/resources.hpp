@@ -55,7 +55,6 @@ class SearchTask;
 class SearchTaskImpl;
 class FetchTaskImpl;
 class GeodataTile;
-class GpuAtmosphereDensityTexture;
 
 class CacheData
 {
@@ -199,12 +198,11 @@ public:
     void oneCacheRead(std::weak_ptr<Resource> r);
     void oneFetch(std::weak_ptr<Resource> r);
     void oneDecode(std::weak_ptr<Resource> r);
-    void oneAtmosphere(std::weak_ptr<GpuAtmosphereDensityTexture> r);
+    void oneAtmosphere(std::weak_ptr<Resource> r);
     void oneCacheWrite(CacheData r);
     void oneUpload(UploadData r);
     float priority(const std::weak_ptr<Resource> &r);
     float priority(const std::weak_ptr<GeodataTile> &r);
-    float priority(const std::weak_ptr<GpuAtmosphereDensityTexture> &r);
     float priority(const CacheData &) { return 0; };
     float priority(const UploadData &) { return 0; };
 
@@ -212,7 +210,7 @@ public:
     ResourceProcessor<std::weak_ptr<Resource>, &Resources::oneCacheRead, &Resources::priority, 1> queCacheRead;
     ResourceProcessor<CacheData, &Resources::oneCacheWrite, &Resources::priority, 2> queCacheWrite;
     ResourceProcessor<std::weak_ptr<Resource>, &Resources::oneDecode, &Resources::priority, 3> queDecode;
-    ResourceProcessor<std::weak_ptr<GpuAtmosphereDensityTexture>, &Resources::oneAtmosphere, &Resources::priority, 4> queAtmosphere;
+    ResourceProcessor<std::weak_ptr<Resource>, &Resources::oneAtmosphere, &Resources::priority, 4> queAtmosphere;
     ResourceProcessor<UploadData, &Resources::oneUpload, &Resources::priority, 0> queUpload;
 
     std::unordered_map<std::string, std::shared_ptr<Resource>> resources;

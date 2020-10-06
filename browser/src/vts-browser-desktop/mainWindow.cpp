@@ -408,8 +408,20 @@ void MainWindow::run()
             vts::log(vts::LogLevel::info2, "Setting initial view");
             try
             {
-                map->setView("", vts::MapView(appOptions.initialView));
-                map->selectView("");
+                bool selected = false;
+                for (const std::string &n : map->listViews())
+                {
+                    if (n == appOptions.initialView)
+                    {
+                        map->selectView(appOptions.initialView);
+                        selected = true;
+                    }
+                }
+                if (!selected)
+                {
+                    map->setView("", vts::MapView(appOptions.initialView));
+                    map->selectView("");
+                }
             }
             catch (...)
             {

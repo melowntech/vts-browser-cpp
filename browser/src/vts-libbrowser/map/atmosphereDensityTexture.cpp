@@ -74,10 +74,7 @@ void gray3ToRgb(GpuTextureSpec &spec)
 {
     if (spec.components != 1)
     {
-        LOGTHROW(err2, std::runtime_error)
-            << "Atmosphere density texture"
-            " has <" << spec.components << "> components,"
-            " but grayscale is expected.";
+        LOGTHROW(err2, std::runtime_error) << "Atmosphere density texture has <" << spec.components << "> components, but grayscale is expected.";
     }
     spec.components = 3;
     spec.height /= 3;
@@ -120,9 +117,11 @@ void GpuAtmosphereDensityTexture::decode()
     decodeData = std::static_pointer_cast<void>(spec);
 }
 
-void Resources::oneAtmosphere(std::weak_ptr<GpuAtmosphereDensityTexture> w)
+void Resources::oneAtmosphere(std::weak_ptr<Resource> w1)
 {
-    std::shared_ptr<GpuAtmosphereDensityTexture> r = w.lock();
+    std::shared_ptr<Resource> w2 = w1.lock();
+    assert(!w2 || std::dynamic_pointer_cast<GpuAtmosphereDensityTexture>(w2));
+    std::shared_ptr<GpuAtmosphereDensityTexture> r = std::static_pointer_cast<GpuAtmosphereDensityTexture>(w2);
     if (!r)
         return;
     try
@@ -134,14 +133,6 @@ void Resources::oneAtmosphere(std::weak_ptr<GpuAtmosphereDensityTexture> w)
         r->map->statistics.resourcesFailed++;
         r->state = Resource::State::errorFatal;
     }
-}
-
-float Resources::priority(const std::weak_ptr<GpuAtmosphereDensityTexture> &w)
-{
-    std::shared_ptr<GpuAtmosphereDensityTexture> r = w.lock();
-    if (r)
-        return r->priority;
-    return inf1();
 }
 
 } // namespace vts

@@ -156,6 +156,9 @@ std::ostream &operator << (std::ostream &stream, Resource::State state)
         case Resource::State::decodeQueue:
             stream << "decodeQueue";
             break;
+        case Resource::State::atmosphereQueue:
+            stream << "atmosphereQueue";
+            break;
         case Resource::State::uploadQueue:
             stream << "uploadQueue";
             break;

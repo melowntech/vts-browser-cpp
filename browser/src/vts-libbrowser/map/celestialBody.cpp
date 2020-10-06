@@ -133,7 +133,7 @@ void Mapconfig::initializeCelestialBody()
             name = convertPath(name, map->mapconfigPath);
         }
         else
-            name = "generate://atmdensity-" + name;
+            name = "atmdensity://atmdensity-" + name;
         atmosphereDensityTextureName = name;
     }
 }

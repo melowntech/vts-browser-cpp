@@ -296,6 +296,7 @@ bool testAndThrow(Resource::State state, const std::string &message)
     case Resource::State::fetchQueue:
     case Resource::State::fetching:
     case Resource::State::decodeQueue:
+    case Resource::State::atmosphereQueue:
     case Resource::State::uploadQueue:
     case Resource::State::errorRetry:
         return false;

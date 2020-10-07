@@ -624,12 +624,13 @@ void Resources::renderUpdate()
             case Resource::State::fetchQueue:
             case Resource::State::fetching:
             case Resource::State::decodeQueue:
+            case Resource::State::atmosphereQueue:
             case Resource::State::uploadQueue:
+            case Resource::State::errorRetry:
                 map->statistics.resourcesPreparing++;
                 break;
             case Resource::State::ready:
             case Resource::State::errorFatal:
-            case Resource::State::errorRetry:
             case Resource::State::availFail:
                 break;
             }

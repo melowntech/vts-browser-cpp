@@ -182,7 +182,7 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
     {
         for (vec3 &c : cornersPhys)
             c = nan3();
-        LOG(warn2) << "Tile <" << id << "> does not have neither extents nor geomExtents";
+        LOG(warn1) << "Tile <" << id << "> does not have neither extents nor geomExtents";
     }
 
     // obb

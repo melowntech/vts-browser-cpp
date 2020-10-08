@@ -38,9 +38,7 @@ namespace vts
 using vtslibs::registry::View;
 using vtslibs::registry::BoundLayer;
 
-BoundInfo::BoundInfo(const vtslibs::registry::BoundLayer &bl,
-                                const std::string &url)
-    : BoundLayer(bl)
+BoundInfo::BoundInfo(const vtslibs::registry::BoundLayer &bl, const std::string &url) : BoundLayer(bl)
 {
     urlExtTex.parse(convertPath(this->url, url));
     if (metaUrl)
@@ -51,31 +49,25 @@ BoundInfo::BoundInfo(const vtslibs::registry::BoundLayer &bl,
     if (bl.availability)
     {
         availability = std::make_shared<
-        vtslibs::registry::BoundLayer::Availability>(
-            *bl.availability);
+        vtslibs::registry::BoundLayer::Availability>(*bl.availability);
     }
 }
 
-BoundParamInfo::BoundParamInfo(const View::BoundLayerParams &params)
-    : View::BoundLayerParams(params)
+BoundParamInfo::BoundParamInfo(const View::BoundLayerParams &params) : View::BoundLayerParams(params)
 {}
 
 vec4f BoundParamInfo::uvTrans() const
 {
     if (depth == 0)
         return vec4f(1, 1, 0, 0);
-    double scale = 1.0 / (1 << depth);
-    double tx = scale * (orig.localId.x
-                         - ((orig.localId.x >> depth) << depth));
-    double ty = scale * (orig.localId.y
-                         - ((orig.localId.y >> depth) << depth));
+    double scale = 1.0 / (1u << depth);
+    double tx = scale * (orig.localId.x - ((orig.localId.x >> depth) << depth));
+    double ty = scale * (orig.localId.y - ((orig.localId.y >> depth) << depth));
     ty = 1 - scale - ty;
     return vec4f(scale, scale, tx, ty);
 }
 
-Validity BoundParamInfo::prepare(CameraImpl *impl,
-    TileId tileId, TileId localId,
-    uint32 subMeshIndex, double priority)
+Validity BoundParamInfo::prepare(CameraImpl *impl, TileId tileId, TileId localId, uint32 subMeshIndex, double priority)
 {
     bound = impl->map->mapconfig->getBoundInfo(id);
     if (!bound)
@@ -101,8 +93,7 @@ Validity BoundParamInfo::prepare(CameraImpl *impl,
 
     while (true)
     {
-        assert(tileId.lod - depth >= bound->lodRange.min
-            && tileId.lod - depth <= bound->lodRange.max);
+        assert(tileId.lod - depth >= bound->lodRange.min && tileId.lod - depth <= bound->lodRange.max);
         switch (prepareDepth(impl, priority))
         {
         case Validity::Indeterminate:
@@ -141,7 +132,7 @@ Validity BoundParamInfo::prepareDepth(CameraImpl *impl, double priority)
         v.tileId.y &= ~255;
         v.localId.x &= ~255;
         v.localId.y &= ~255;
-        std::string boundName = bound->urlMeta(v);
+        const std::string boundName = bound->urlMeta(v);
         boundMetaTile = impl->map->getBoundMetaTile(boundName);
         boundMetaTile->updatePriority(priority);
         switch (impl->map->getResourceValidity(boundMetaTile))
@@ -153,13 +144,10 @@ Validity BoundParamInfo::prepareDepth(CameraImpl *impl, double priority)
         case Validity::Valid:
             break;
         }
-        uint8 f = boundMetaTile->flags[(vars.tileId.y & 255) * 256
-                + (vars.tileId.x & 255)];
-        if ((f & BoundLayer::MetaFlags::available)
-                != BoundLayer::MetaFlags::available)
+        const uint8 f = boundMetaTile->flags[(vars.tileId.y & 255) * 256 + (vars.tileId.x & 255)];
+        if ((f & BoundLayer::MetaFlags::available) != BoundLayer::MetaFlags::available)
             return Validity::Invalid;
-        watertight = (f & BoundLayer::MetaFlags::watertight)
-                == BoundLayer::MetaFlags::watertight;
+        watertight = (f & BoundLayer::MetaFlags::watertight) == BoundLayer::MetaFlags::watertight;
     }
 
     transparent = bound->isTransparent || (!!alpha && *alpha < 1);
@@ -196,9 +184,7 @@ Validity BoundParamInfo::prepareDepth(CameraImpl *impl, double priority)
     return Validity::Valid;
 }
 
-Validity CameraImpl::reorderBoundLayers(TileId tileId, TileId localId,
-    uint32 subMeshIndex, std::vector<BoundParamInfo> &boundList,
-    double priority)
+Validity CameraImpl::reorderBoundLayers(TileId tileId, TileId localId, uint32 subMeshIndex, std::vector<BoundParamInfo> &boundList, double priority)
 {
     std::reverse(boundList.begin(), boundList.end());
     auto it = boundList.begin();

@@ -42,16 +42,14 @@ double CameraImpl::travDistance(TraverseNode *trav, const vec3 pointPhys)
 {
     // checking the distance in node srs may be more accurate,
     //   but the resulting distance is in different units
-    return aabbPointDist(pointPhys, trav->meta->aabbPhys[0],
-            trav->meta->aabbPhys[1]);
+    return aabbPointDist(pointPhys, trav->meta->aabbPhys[0], trav->meta->aabbPhys[1]);
 }
 
 void CameraImpl::updateNodePriority(TraverseNode *trav)
 {
     if (trav->meta)
     {
-        trav->priority = (float)(1e6
-            / (travDistance(trav, focusPosPhys) + 1));
+        trav->priority = (float)(1e6 / (travDistance(trav, focusPosPhys) + 1));
     }
     else if (trav->parent)
         trav->priority = trav->parent->priority;
@@ -59,12 +57,10 @@ void CameraImpl::updateNodePriority(TraverseNode *trav)
         trav->priority = 0;
 }
 
-std::shared_ptr<GpuTexture> CameraImpl::travInternalTexture(
-    TraverseNode *trav, uint32 subMeshIndex)
+std::shared_ptr<GpuTexture> CameraImpl::travInternalTexture(TraverseNode *trav, uint32 subMeshIndex)
 {
     UrlTemplate::Vars vars(trav->id, trav->meta->localId, subMeshIndex);
-    std::shared_ptr<GpuTexture> res = map->getTexture(
-                trav->surface->urlIntTex(vars));
+    std::shared_ptr<GpuTexture> res = map->getTexture(trav->surface->urlIntTex(vars));
     map->touchResource(res);
     res->updatePriority(trav->priority);
     return res;
@@ -75,23 +71,17 @@ bool CameraImpl::generateMonolithicGeodataTrav(TraverseNode *trav)
     assert(!!trav->layer->freeLayer);
     assert(!!trav->layer->freeLayerParams);
 
-    const vtslibs::registry::FreeLayer::Geodata &g
-        = boost::get<vtslibs::registry::FreeLayer::Geodata>(
-            trav->layer->freeLayer->definition);
+    const vtslibs::registry::FreeLayer::Geodata &g = boost::get<vtslibs::registry::FreeLayer::Geodata>(trav->layer->freeLayer->definition);
 
     vtslibs::vts::MetaNode node;
     if (g.extents.ll != g.extents.ur)
     {
-        vec3 el = vecFromUblas<vec3>
-            (map->mapconfig->referenceFrame.division.extents.ll);
-        vec3 eu = vecFromUblas<vec3>
-            (map->mapconfig->referenceFrame.division.extents.ur);
+        vec3 el = vecFromUblas<vec3>(map->mapconfig->referenceFrame.division.extents.ll);
+        vec3 eu = vecFromUblas<vec3>(map->mapconfig->referenceFrame.division.extents.ur);
         vec3 ed = eu - el;
         ed = vec3(1 / ed[0], 1 / ed[1], 1 / ed[2]);
-        node.extents.ll = vecToUblas<math::Point3>(
-            (vecFromUblas<vec3>(g.extents.ll) - el).cwiseProduct(ed));
-        node.extents.ur = vecToUblas<math::Point3>(
-            (vecFromUblas<vec3>(g.extents.ur) - el).cwiseProduct(ed));
+        node.extents.ll = vecToUblas<math::Point3>((vecFromUblas<vec3>(g.extents.ll) - el).cwiseProduct(ed));
+        node.extents.ur = vecToUblas<math::Point3>((vecFromUblas<vec3>(g.extents.ur) - el).cwiseProduct(ed));
     }
     else
     {
@@ -100,8 +90,7 @@ bool CameraImpl::generateMonolithicGeodataTrav(TraverseNode *trav)
     node.displaySize = g.displaySize;
     node.update(vtslibs::vts::MetaNode::Flag::applyDisplaySize);
 
-    trav->meta = std::make_shared<const MetaNode>(
-        generateMetaNode(map->mapconfig, trav->id, node));
+    trav->meta = std::make_shared<const MetaNode>(generateMetaNode(map->mapconfig, trav->id, node));
     trav->surface = &trav->layer->surfaceStack.surfaces[0];
     updateNodePriority(trav);
     return true;
@@ -120,9 +109,7 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
     statistics.currentNodeMetaUpdates++;
 
     // handle non-tiled geodata
-    if (trav->layer->freeLayer
-            && trav->layer->freeLayer->type
-                == vtslibs::registry::FreeLayer::Type::geodata)
+    if (trav->layer->freeLayer && trav->layer->freeLayer->type == vtslibs::registry::FreeLayer::Type::geodata)
         return generateMonolithicGeodataTrav(trav);
 
     // retrieve metatile resource handles
@@ -135,19 +122,16 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
         {
             if (trav->parent)
             {
-                const std::shared_ptr<MetaTile> &p
-                    = trav->parent->metaTiles[i];
+                const std::shared_ptr<MetaTile> &p = trav->parent->metaTiles[i];
                 if (!p)
                     continue;
                 TileId pid = vtslibs::vts::parent(nodeId);
                 uint32 idx = (nodeId.x % 2) + (nodeId.y % 2) * 2;
                 const vtslibs::vts::MetaNode &node = p->get(pid);
-                if ((node.flags()
-                    & (vtslibs::vts::MetaNode::Flag::ulChild << idx)) == 0)
+                if ((node.flags() & (vtslibs::vts::MetaNode::Flag::ulChild << idx)) == 0)
                     continue;
             }
-            trav->metaTiles[i] = map->getMetaTile(
-                trav->layer->surfaceStack.surfaces[i].urlMeta(tileIdVars));
+            trav->metaTiles[i] = map->getMetaTile(trav->layer->surfaceStack.surfaces[i].urlMeta(tileIdVars));
         }
     }
 
@@ -184,21 +168,17 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
         const vtslibs::vts::MetaNode &n = m->get(nodeId);
         for (uint32 j = 0; j < 4; j++)
         {
-            childsAvailable[j] = childsAvailable[j] || (n.childFlags()
-                        & (vtslibs::vts::MetaNode::Flag::ulChild << j));
+            childsAvailable[j] = childsAvailable[j] || (n.childFlags() & (vtslibs::vts::MetaNode::Flag::ulChild << j));
         }
-        if (topmost || n.alien()
-                != trav->layer->surfaceStack.surfaces[i].alien)
+        if (topmost || n.alien() != trav->layer->surfaceStack.surfaces[i].alien)
             continue;
         if (n.geometry())
         {
             chosen = m;
             if (trav->layer->tilesetStack)
             {
-                assert(n.sourceReference > 0 && n.sourceReference
-                       <= trav->layer->tilesetStack->surfaces.size());
-                topmost = &trav->layer->tilesetStack
-                        ->surfaces[n.sourceReference];
+                assert(n.sourceReference > 0 && n.sourceReference <= trav->layer->tilesetStack->surfaces.size());
+                topmost = &trav->layer->tilesetStack->surfaces[n.sourceReference];
             }
             else
                 topmost = &trav->layer->surfaceStack.surfaces[i];
@@ -222,8 +202,7 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
     trav->meta = chosen->getNode(nodeId);
 
     // prepare children
-    if (childsAvailable[0] || childsAvailable[1]
-        || childsAvailable[2] || childsAvailable[3])
+    if (childsAvailable[0] || childsAvailable[1] || childsAvailable[2] || childsAvailable[3])
     {
         vtslibs::vts::Children childs = vtslibs::vts::children(nodeId);
         trav->childs.ptr = std::make_unique<TraverseChildsArray>();
@@ -231,8 +210,7 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
         {
             if (childsAvailable[i])
             {
-                trav->childs.ptr->arr.emplace_back(
-                    trav->layer, trav, childs[i]);
+                trav->childs.ptr->arr.emplace_back(trav->layer, trav, childs[i]);
             }
         }
     }
@@ -283,8 +261,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
     // aggregate mesh
     std::shared_ptr<MeshAggregate> meshAgg;
     {
-        const std::string name = trav->surface->urlMesh(
-            UrlTemplate::Vars(nodeId, trav->meta->localId));
+        const std::string name = trav->surface->urlMesh(UrlTemplate::Vars(nodeId, trav->meta->localId));
         meshAgg = map->getMeshAggregate(name);
         trav->resources.push_back(meshAgg);
     }
@@ -306,8 +283,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
     decltype(trav->opaque) newOpaque;
     decltype(trav->transparent) newTransparent;
     decltype(trav->credits) newCredits;
-    for (uint32 subMeshIndex = 0, e = meshAgg->submeshes.size();
-         subMeshIndex != e; subMeshIndex++)
+    for (uint32 subMeshIndex = 0, e = meshAgg->submeshes.size(); subMeshIndex != e; subMeshIndex++)
     {
         const MeshPart &part = meshAgg->submeshes[subMeshIndex];
         std::shared_ptr<GpuMesh> mesh = part.renderable;
@@ -315,16 +291,11 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
         // external bound textures
         if (part.externalUv)
         {
-            BoundParamInfo::List bls = trav->layer->boundList(
-                        trav->surface, part.surfaceReference);
+            BoundParamInfo::List bls = trav->layer->boundList(trav->surface, part.surfaceReference);
             if (part.textureLayer)
-            {
-                bls.push_back(BoundParamInfo(
-                    vtslibs::registry::View::BoundLayerParams(
-                    map->mapconfig->boundLayers.get(part.textureLayer).id)));
-            }
-            Validity validity = reorderBoundLayers(trav->id,
-                trav->meta->localId, subMeshIndex, bls, trav->priority);
+                bls.push_back(BoundParamInfo(vtslibs::registry::View::BoundLayerParams(map->mapconfig->boundLayers.get(part.textureLayer).id)));
+            const Validity validity = reorderBoundLayers(trav->id, trav->meta->localId, subMeshIndex, bls, trav->priority);
+
             for (const BoundParamInfo &it : bls)
             {
                 if (it.boundMetaTile)
@@ -334,6 +305,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
                 if (it.textureMask)
                     trav->resources.push_back(it.textureMask);
             }
+
             switch (validity)
             {
             case Validity::Indeterminate:
@@ -344,14 +316,20 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
             case Validity::Valid:
                 break;
             }
+
+            bool anyOpaqueLayer = false;
+            for (const BoundParamInfo &b : bls)
+                if (!b.transparent && !b.textureMask)
+                    anyOpaqueLayer = true;
+
             bool allTransparent = true;
-            for (BoundParamInfo &b : bls)
+            for (const BoundParamInfo &b : bls)
             {
                 // credits
                 {
                     const BoundInfo *l = b.bound;
                     assert(l);
-                    for (auto &it : l->credits)
+                    for (const auto &it : l->credits)
                     {
                         auto c = map->credits->find(it.first);
                         if (c)
@@ -370,14 +348,26 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
                 task.externalUv = true;
                 task.boundLayerId = b.id;
 
-                if (b.transparent || task.textureMask)
+                bool renderTransparent = b.transparent;
+                if (!renderTransparent && b.textureMask)
+                {
+                    // layers with texture mask should be rendered as transparencies, which ensures consistent ordering
+                    // however, there has to be at least one opaque layer to ensure that depth buffer is written
+                    if (anyOpaqueLayer)
+                        renderTransparent = true;
+                    else
+                        anyOpaqueLayer = true;
+                }
+
+                if (renderTransparent)
                     newTransparent.push_back(task);
                 else
                     newOpaque.push_back(task);
+
                 allTransparent = allTransparent && b.transparent;
             }
             if (!allTransparent)
-                continue;
+                continue; // skip internal texture
         }
 
         // internal texture
@@ -410,8 +400,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
         std::swap(trav->transparent, newTransparent);
 
         // colliders
-        for (uint32 subMeshIndex = 0, e = meshAgg->submeshes.size();
-            subMeshIndex != e; subMeshIndex++)
+        for (uint32 subMeshIndex = 0, e = meshAgg->submeshes.size(); subMeshIndex != e; subMeshIndex++)
         {
             const MeshPart &part = meshAgg->submeshes[subMeshIndex];
             std::shared_ptr<GpuMesh> mesh = part.renderable;
@@ -422,8 +411,7 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
         }
 
         // credits
-        trav->credits.insert(trav->credits.end(),
-                             newCredits.begin(), newCredits.end());
+        trav->credits.insert(trav->credits.end(), newCredits.begin(), newCredits.end());
 
         // discard temporary
         trav->resources.shrink_to_fit();
@@ -439,27 +427,21 @@ bool CameraImpl::travDetermineDrawsGeodata(TraverseNode *trav)
     assert(trav->resources.empty());
 
     const TileId nodeId = trav->id;
-    const std::string geoName = trav->surface->urlGeodata(
-            UrlTemplate::Vars(nodeId, trav->meta->localId));
+    const std::string geoName = trav->surface->urlGeodata(UrlTemplate::Vars(nodeId, trav->meta->localId));
 
     auto style = map->getActualGeoStyle(trav->layer->freeLayerName);
-    auto features = map->getActualGeoFeatures(
-                trav->layer->freeLayerName, geoName, trav->priority);
-    if (style.first == Validity::Invalid
-            || features.first == Validity::Invalid)
+    auto features = map->getActualGeoFeatures(trav->layer->freeLayerName, geoName, trav->priority);
+    if (style.first == Validity::Invalid || features.first == Validity::Invalid)
     {
         trav->surface = nullptr;
         return false;
     }
-    if (style.first == Validity::Indeterminate
-            || features.first == Validity::Indeterminate)
+    if (style.first == Validity::Indeterminate || features.first == Validity::Indeterminate)
         return false;
 
     std::shared_ptr<GeodataTile> geo = map->getGeodata(geoName + "#tile");
     geo->updatePriority(trav->priority);
-    geo->update(style.second, features.second,
-        map->mapconfig->browserOptions.value,
-        trav->meta->aabbPhys, trav->id);
+    geo->update(style.second, features.second, map->mapconfig->browserOptions.value, trav->meta->aabbPhys, trav->id);
     switch (map->getResourceValidity(geo))
     {
     case Validity::Invalid:
@@ -491,8 +473,7 @@ bool CameraImpl::travInit(TraverseNode *trav)
     // statistics
     {
         statistics.metaNodesTraversedTotal++;
-        statistics.metaNodesTraversedPerLod[std::min<uint32>(
-            trav->id.lod, CameraStatistics::MaxLods-1)]++;
+        statistics.metaNodesTraversedPerLod[std::min<uint32>(trav->id.lod, CameraStatistics::MaxLods-1)]++;
     }
 
     // update trav
@@ -708,8 +689,7 @@ void CameraImpl::travModeFixed(TraverseNode *trav)
     if (travDistance(trav, focusPosPhys) > options.fixedTraversalDistance)
         return;
 
-    if (trav->id.lod >= options.fixedTraversalLod
-        || trav->childs.empty())
+    if (trav->id.lod >= options.fixedTraversalLod || trav->childs.empty())
     {
         if (travDetermineDraws(trav))
             renderNode(trav);
@@ -722,8 +702,7 @@ void CameraImpl::travModeFixed(TraverseNode *trav)
 
 void CameraImpl::traverseRender(TraverseNode *trav)
 {
-    switch (trav->layer->isGeodata() ? options.traverseModeGeodata
-                                     : options.traverseModeSurfaces)
+    switch (trav->layer->isGeodata() ? options.traverseModeGeodata : options.traverseModeSurfaces)
     {
     case TraverseMode::None:
         break;

@@ -72,6 +72,7 @@ class Cache
 {
 public:
     Cache(const MapCreateOptions &options) :
+        root(options.cachePath),
         disabled(!options.diskCache),
         hashes(options.hashCachePaths)
     {
@@ -244,8 +245,8 @@ public:
     }
 
     std::string root;
-    bool disabled;
-    bool hashes;
+    const bool disabled;
+    const bool hashes;
 };
 
 void Resources::cacheInit()

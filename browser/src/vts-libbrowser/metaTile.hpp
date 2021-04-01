@@ -77,8 +77,8 @@ public:
 
 Extents2 subExtents(const Extents2 &parentExtents, const TileId &parentId, const TileId &targetId);
 
-MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m, const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta);
 MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m, const std::shared_ptr<CoordManip> &cnv, const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta);
+MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m, const std::shared_ptr<CoordManip> &cnv, const vtslibs::vts::TileId &id, const vtslibs::registry::FreeLayer::Geodata &geo);
 
 class MetaTile : public Resource, public vtslibs::vts::MetaTile
 {

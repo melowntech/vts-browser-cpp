@@ -48,9 +48,7 @@ double CameraImpl::travDistance(TraverseNode *trav, const vec3 pointPhys)
 void CameraImpl::updateNodePriority(TraverseNode *trav)
 {
     if (trav->meta)
-    {
         trav->priority = (float)(1e6 / (travDistance(trav, focusPosPhys) + 1));
-    }
     else if (trav->parent)
         trav->priority = trav->parent->priority;
     else
@@ -70,27 +68,8 @@ bool CameraImpl::generateMonolithicGeodataTrav(TraverseNode *trav)
 {
     assert(!!trav->layer->freeLayer);
     assert(!!trav->layer->freeLayerParams);
-
     const vtslibs::registry::FreeLayer::Geodata &g = boost::get<vtslibs::registry::FreeLayer::Geodata>(trav->layer->freeLayer->definition);
-
-    vtslibs::vts::MetaNode node;
-    if (g.extents.ll != g.extents.ur)
-    {
-        vec3 el = vecFromUblas<vec3>(map->mapconfig->referenceFrame.division.extents.ll);
-        vec3 eu = vecFromUblas<vec3>(map->mapconfig->referenceFrame.division.extents.ur);
-        vec3 ed = eu - el;
-        ed = vec3(1 / ed[0], 1 / ed[1], 1 / ed[2]);
-        node.extents.ll = vecToUblas<math::Point3>((vecFromUblas<vec3>(g.extents.ll) - el).cwiseProduct(ed));
-        node.extents.ur = vecToUblas<math::Point3>((vecFromUblas<vec3>(g.extents.ur) - el).cwiseProduct(ed));
-    }
-    else
-    {
-        node.extents = map->mapconfig->referenceFrame.division.extents;
-    }
-    node.displaySize = g.displaySize;
-    node.update(vtslibs::vts::MetaNode::Flag::applyDisplaySize);
-
-    trav->meta = std::make_shared<const MetaNode>(generateMetaNode(map->mapconfig, trav->id, node));
+    trav->meta = std::make_shared<const MetaNode>(generateMetaNode(map->mapconfig, map->convertor, trav->id, g));
     trav->surface = &trav->layer->surfaceStack.surfaces[0];
     updateNodePriority(trav);
     return true;
@@ -167,9 +146,7 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
             continue;
         const vtslibs::vts::MetaNode &n = m->get(nodeId);
         for (uint32 j = 0; j < 4; j++)
-        {
             childsAvailable[j] = childsAvailable[j] || (n.childFlags() & (vtslibs::vts::MetaNode::Flag::ulChild << j));
-        }
         if (topmost || n.alien() != trav->layer->surfaceStack.surfaces[i].alien)
             continue;
         if (n.geometry())
@@ -207,12 +184,8 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
         vtslibs::vts::Children childs = vtslibs::vts::children(nodeId);
         trav->childs.ptr = std::make_unique<TraverseChildsArray>();
         for (uint32 i = 0; i < 4; i++)
-        {
             if (childsAvailable[i])
-            {
                 trav->childs.ptr->arr.emplace_back(trav->layer, trav, childs[i]);
-            }
-        }
     }
 
     // update priority
@@ -252,10 +225,8 @@ bool CameraImpl::travDetermineDrawsSurface(TraverseNode *trav)
     for (const auto &it : trav->resources)
         map->touchResource(it);
     for (const auto &it : trav->resources)
-    {
         if (map->getResourceValidity(it) == Validity::Indeterminate)
             return false;
-    }
     trav->resources.clear();
 
     // aggregate mesh

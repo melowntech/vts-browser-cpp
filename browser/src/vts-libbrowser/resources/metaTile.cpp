@@ -70,15 +70,12 @@ vec3 MetaNode::cornersPhys(uint32 index) const
     return lowerUpperCombine(index).cwiseProduct(aabbPhys[1] - aabbPhys[0]) + aabbPhys[0];
 }
 
-MetaTile::MetaTile(vts::MapImpl *map, const std::string &name) :
-    Resource(map, name),
-    vtslibs::vts::MetaTile(vtslibs::vts::TileId(), 0)
+MetaTile::MetaTile(vts::MapImpl *map, const std::string &name) : Resource(map, name), vtslibs::vts::MetaTile(vtslibs::vts::TileId(), 0)
 {
     mapconfig = map->mapconfig;
 }
 
-Extents2 subExtents(const Extents2 &parentExtents,
-    const TileId& parentId, const TileId &targetId)
+Extents2 subExtents(const Extents2 &parentExtents, const TileId& parentId, const TileId &targetId)
 {
     const TileId lid(vtslibs::vts::local(parentId.lod, targetId));
     const std::size_t tc(vtslibs::vts::tileCount(lid.lod));
@@ -91,47 +88,94 @@ Extents2 subExtents(const Extents2 &parentExtents,
         parentExtents.ur(1) - lid.y * ts.height);
 }
 
-MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
-    const TileId &id, const vtslibs::vts::MetaNode &meta)
+void generateMetaNodeInit(MetaNode &node, std::string &srs, const std::shared_ptr<Mapconfig> &m, const vtslibs::vts::TileId &id)
 {
-    return generateMetaNode(m, m->map->convertor, id, meta);
+    TileId t = id;
+    while (true)
+    {
+        bool found = false;
+        for (const auto &d : m->referenceDivisionNodeInfos)
+        {
+            if (d.nodeId() != t)
+                continue;
+            node.tileId = id;
+            node.localId = vtslibs::vts::local(d.nodeId().lod, id);
+            node.extents = subExtents(d.extents(), d.nodeId(), id);
+            srs = d.node().srs;
+            found = true;
+        }
+        if (found)
+            break;
+        assert(t.lod > 0);
+        t = vtslibs::vts::parent(t);
+    }
+    assert(node.tileId == id);
 }
 
-MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
-    const std::shared_ptr<CoordManip> &cnv,
-    const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta)
+void generateMetaNodeBoxes(MetaNode &node, const std::array<vec3, 8> &cornersPhys)
 {
-    const bool projected = m->navigationSrsType() == vtslibs::registry::Srs::Type::projected;
-
-    MetaNode node;
-    std::string srs;
+    // obb
+    if (!std::isnan(cornersPhys[0][0]) && node.tileId.lod > 4)
     {
-        TileId t = id;
-        while (true)
+        vec3 center = vec3(0, 0, 0);
+        for (uint32 i = 0; i < 8; i++)
+            center += cornersPhys[i];
+        center /= 8;
+
+        const auto &cp = cornersPhys;
+        vec3 f = cp[2] + cp[3] + cp[6] + cp[7] - cp[0] - cp[1] - cp[5] - cp[4];
+        vec3 u = cp[4] + cp[5] + cp[6] + cp[7] - cp[0] - cp[1] - cp[2] - cp[3];
+        mat4 t = lookAt(center, center + f, u);
+
+        MetaNode::Obb obb;
+        obb.rotInv = t.inverse();
+        obb.points[0] = inf3();
+        obb.points[1] = -inf3();
+
+        for (uint32 i = 0; i < 8; i++)
         {
-            bool found = false;
-            for (const auto &d : m->referenceDivisionNodeInfos)
-            {
-                if (d.nodeId() != t)
-                    continue;
-                node.tileId = id;
-                node.localId = vtslibs::vts::local(d.nodeId().lod, id);
-                node.extents = subExtents(d.extents(), d.nodeId(), id);
-                srs = d.node().srs;
-                found = true;
-            }
-            if (found)
-                break;
-            assert(t.lod > 0);
-            t = vtslibs::vts::parent(t);
+            vec3 p = vec4to3(vec4(t * vec3to4(cornersPhys[i], 1)), false);
+            obb.points[0] = min(obb.points[0], p);
+            obb.points[1] = max(obb.points[1], p);
         }
-        assert(node.tileId == id);
+
+        node.obb = obb;
     }
 
+    // aabb
+    if (!std::isnan(cornersPhys[0][0]) && node.tileId.lod > 2)
+    {
+        node.aabbPhys[0] = node.aabbPhys[1] = cornersPhys[0];
+        for (const vec3 &it : cornersPhys)
+        {
+            node.aabbPhys[0] = min(node.aabbPhys[0], it);
+            node.aabbPhys[1] = max(node.aabbPhys[1], it);
+        }
+    }
+}
+
+void generateMetaNodeApplyDisplaySize(MetaNode &node, int displaySize)
+{
+    if (node.aabbPhys[1][0] != inf1())
+    {
+        const vec3 s = node.aabbPhys[1] - node.aabbPhys[0];
+        const double m = std::max(s[0], std::max(s[1], s[2]));
+        node.texelSize = m / displaySize;
+    }
+}
+
+MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m, const std::shared_ptr<CoordManip> &cnv, const vtslibs::vts::TileId &id, const vtslibs::vts::MetaNode &meta)
+{
+    MetaNode node;
+    std::string srs;
+    generateMetaNodeInit(node, srs, m, id);
+
     // corners
-    vec3 cornersPhys[8]; // oriented trapezoid bounding box corners
+    std::array<vec3, 8> cornersPhys; // oriented trapezoid bounding box corners
     if (!vtslibs::vts::empty(meta.geomExtents) && !srs.empty())
     {
+        const bool projected = m->navigationSrsType() == vtslibs::registry::Srs::Type::projected;
+
         vec2 fl = vecFromUblas<vec2>(node.extents.ll);
         vec2 fu = vecFromUblas<vec2>(node.extents.ur);
         vec3 el = vec2to3(fl, double(meta.geomExtents.z.min));
@@ -164,65 +208,14 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
             node.diskHalfAngle = std::acos(dot(node.diskNormalPhys, vc.normalized()));
         }
     }
-    else if (meta.extents.ll != meta.extents.ur)
-    {
-        vec3 fl = vecFromUblas<vec3>(meta.extents.ll);
-        vec3 fu = vecFromUblas<vec3>(meta.extents.ur);
-        vec3 fd = fu - fl;
-        vec3 el = vecFromUblas<vec3>(m->referenceFrame.division.extents.ll);
-        vec3 eu = vecFromUblas<vec3>(m->referenceFrame.division.extents.ur);
-        vec3 ed = eu - el;
-        for (uint32 i = 0; i < 8; i++)
-        {
-            vec3 f = lowerUpperCombine(i).cwiseProduct(fd) + fl;
-            cornersPhys[i] = f.cwiseProduct(ed) + el;
-        }
-    }
     else
     {
         for (vec3 &c : cornersPhys)
             c = nan3();
-        LOG(warn1) << "Tile <" << id << "> does not have neither extents nor geomExtents";
+        LOG(warn1) << "Tile <" << id << "> has empty geomExtents or no srs";
     }
 
-    // obb
-    if (!std::isnan(cornersPhys[0][0]) && id.lod > 4)
-    {
-        vec3 center = vec3(0,0,0);
-        for (uint32 i = 0; i < 8; i++)
-            center += cornersPhys[i];
-        center /= 8;
-
-        const auto &cp = cornersPhys;
-        vec3 f = cp[2] + cp[3] + cp[6] + cp[7] - cp[0] - cp[1] - cp[5] - cp[4];
-        vec3 u = cp[4] + cp[5] + cp[6] + cp[7] - cp[0] - cp[1] - cp[2] - cp[3];
-        mat4 t = lookAt(center, center + f, u);
-
-        MetaNode::Obb obb;
-        obb.rotInv = t.inverse();
-        obb.points[0] = inf3();
-        obb.points[1] = -inf3();
-
-        for (uint32 i = 0; i < 8; i++)
-        {
-            vec3 p = vec4to3(vec4(t * vec3to4(cornersPhys[i], 1)), false);
-            obb.points[0] = min(obb.points[0], p);
-            obb.points[1] = max(obb.points[1], p);
-        }
-
-        node.obb = obb;
-    }
-
-    // aabb
-    if (!std::isnan(cornersPhys[0][0]) && id.lod > 2)
-    {
-        node.aabbPhys[0] = node.aabbPhys[1] = cornersPhys[0];
-        for (const vec3 &it : cornersPhys)
-        {
-            node.aabbPhys[0] = min(node.aabbPhys[0], it);
-            node.aabbPhys[1] = max(node.aabbPhys[1], it);
-        }
-    }
+    generateMetaNodeBoxes(node, cornersPhys);
 
     // surrogate
     if (vtslibs::vts::GeomExtents::validSurrogate(meta.geomExtents.surrogate))
@@ -235,19 +228,54 @@ MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m,
     }
 
     // texelSize
-    if (node.aabbPhys[1][0] != inf1())
+    if (meta.flags() & vtslibs::vts::MetaNode::Flag::applyTexelSize)
     {
-        if (meta.flags() & vtslibs::vts::MetaNode::Flag::applyTexelSize)
-        {
+        if (node.aabbPhys[1][0] != inf1())
             node.texelSize = meta.texelSize;
-        }
-        else if (meta.flags() & vtslibs::vts::MetaNode::Flag::applyDisplaySize)
-        {
-            vec3 s = node.aabbPhys[1] - node.aabbPhys[0];
-            double m = std::max(s[0], std::max(s[1], s[2]));
-            node.texelSize = m / meta.displaySize;
-        }
     }
+    else if (meta.flags() & vtslibs::vts::MetaNode::Flag::applyDisplaySize)
+    {
+        generateMetaNodeApplyDisplaySize(node, meta.displaySize);
+    }
+
+    return node;
+}
+
+MetaNode generateMetaNode(const std::shared_ptr<Mapconfig> &m, const std::shared_ptr<CoordManip> &cnv, const vtslibs::vts::TileId &id, const vtslibs::registry::FreeLayer::Geodata &geo)
+{
+    MetaNode node;
+    std::string srs;
+    generateMetaNodeInit(node, srs, m, id);
+
+    std::array<vec3, 8> cornersPhys; // oriented trapezoid bounding box corners
+    math::Extents3 extents;
+    if (geo.extents.ll != geo.extents.ur)
+    {
+        const vec3 el = vecFromUblas<vec3>(m->referenceFrame.division.extents.ll);
+        const vec3 eu = vecFromUblas<vec3>(m->referenceFrame.division.extents.ur);
+        vec3 ed = eu - el;
+        ed = vec3(1 / ed[0], 1 / ed[1], 1 / ed[2]);
+        extents.ll = vecToUblas<math::Point3>((vecFromUblas<vec3>(geo.extents.ll) - el).cwiseProduct(ed));
+        extents.ur = vecToUblas<math::Point3>((vecFromUblas<vec3>(geo.extents.ur) - el).cwiseProduct(ed));
+    }
+    else
+    {
+        extents = m->referenceFrame.division.extents;
+    }
+    const vec3 fl = vecFromUblas<vec3>(extents.ll);
+    const vec3 fu = vecFromUblas<vec3>(extents.ur);
+    const vec3 fd = fu - fl;
+    const vec3 el = vecFromUblas<vec3>(m->referenceFrame.division.extents.ll);
+    const vec3 eu = vecFromUblas<vec3>(m->referenceFrame.division.extents.ur);
+    const vec3 ed = eu - el;
+    for (uint32 i = 0; i < 8; i++)
+    {
+        vec3 f = lowerUpperCombine(i).cwiseProduct(fd) + fl;
+        cornersPhys[i] = f.cwiseProduct(ed) + el;
+    }
+
+    generateMetaNodeBoxes(node, cornersPhys);
+    generateMetaNodeApplyDisplaySize(node, geo.displaySize);
 
     return node;
 }

@@ -56,12 +56,14 @@ void ContextOptions::applyJson(const std::string &json)
 {
     Json::Value v = stringToJson(json);
     AJ(callGlFinishAfterUploadingData, asBool);
+    AJ(enforceUsingMipMaps, asBool);
 }
 
 std::string ContextOptions::toJson() const
 {
     Json::Value v;
     TJ(callGlFinishAfterUploadingData, asBool);
+    TJ(enforceUsingMipMaps, asBool);
     return jsonToString(v);
 }
 

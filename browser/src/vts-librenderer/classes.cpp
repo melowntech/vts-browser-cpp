@@ -426,6 +426,25 @@ GpuTextureSpec::FilterMode magFilter(
     }
 }
 
+void enforceUsingMipMaps(GpuTextureSpec::FilterMode &filterMode)
+{
+    switch (filterMode)
+    {
+    case GpuTextureSpec::FilterMode::Nearest:
+    case GpuTextureSpec::FilterMode::NearestMipmapNearest:
+    case GpuTextureSpec::FilterMode::LinearMipmapNearest:
+        filterMode = GpuTextureSpec::FilterMode::LinearMipmapNearest;
+        break;
+    case GpuTextureSpec::FilterMode::Linear:
+    case GpuTextureSpec::FilterMode::LinearMipmapLinear:
+    case GpuTextureSpec::FilterMode::NearestMipmapLinear:
+        filterMode = GpuTextureSpec::FilterMode::LinearMipmapLinear;
+        break;
+    default:
+        throw std::invalid_argument("invalid texture filter mode");
+    }
+}
+
 bool gpuTypeInteger(GpuTypeEnum type)
 {
     switch (type)
@@ -511,6 +530,9 @@ void RenderContext::loadTexture(ResourceInfo &info, GpuTextureSpec &spec,
     const std::string &debugId)
 {
     OPTICK_EVENT();
+
+    if (impl->options.enforceUsingMipMaps)
+        enforceUsingMipMaps(spec.filterMode);
 
     auto r = std::make_shared<Texture>();
     r->load(info, spec, debugId);

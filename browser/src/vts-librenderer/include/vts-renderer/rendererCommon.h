@@ -44,6 +44,10 @@ typedef struct vtsCContextOptionsBase
     //   thread/context can lead to pointless and significant performance
     //   degradation and can therefore be changed here
     bool callGlFinishAfterUploadingData;
+
+    // enforce using mipmaps on all textures
+    // this is useful when using targetPixelRatioSurfaces far from its default
+    bool enforceUsingMipMaps;
 } vtsCContextOptionsBase;
 
 // options provided from the application (you set these)

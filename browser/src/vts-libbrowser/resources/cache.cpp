@@ -80,7 +80,7 @@ public:
         {
 #ifdef __EMSCRIPTEN__
             LOGTHROW(err4, std::logic_error)
-                << "Disk Cache is not awailable in WASM";
+                << "Disk Cache is not available in WASM";
 #else
             if (root.empty())
             {

@@ -52,6 +52,9 @@ public:
     // this is useful to include shadow casters outside camera frustum
     double cullingOffsetDistance = 0;
 
+    double minSuggestedNearClipPlaneDistance = 10;
+    double maxSuggestedNearClipPlaneDistance = 1e100;
+
     // duration of lod blending in seconds
     double lodBlendingDuration = 1;
 

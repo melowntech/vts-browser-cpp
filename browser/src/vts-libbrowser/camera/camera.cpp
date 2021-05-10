@@ -987,7 +987,6 @@ void computeNearFar(double &near_, double &far_, double altitude,
     {
         double f = std::pow(a / (2 * major), 1.1);
         near_ = interpolate(10.0, major, f);
-        near_ = std::max(10.0, near_);
         far_ = std::sqrt(std::max(0.0, l * l - major * major)) + 0.1 * major;
     }
 }
@@ -1004,6 +1003,9 @@ void CameraImpl::suggestedNearFar(double &near_, double &far_)
         == vtslibs::registry::Srs::Type::projected;
     computeNearFar(near_, far_, altitude, map->body,
         projected, eye, target - eye);
+    assert(options.minSuggestedNearClipPlaneDistance > 0);
+    assert(options.minSuggestedNearClipPlaneDistance <= options.maxSuggestedNearClipPlaneDistance);
+    near_ = std::max(options.minSuggestedNearClipPlaneDistance, std::min(options.maxSuggestedNearClipPlaneDistance, near_));
 }
 
 void CameraImpl::sortOpaqueFrontToBack()

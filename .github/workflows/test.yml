@@ -18,7 +18,6 @@ jobs:
 
     - name: Install packages
       run: |
-        sudo apt-get update
         sudo apt-get install -y nasm libssl-dev python3 libboost-all-dev libeigen3-dev libproj-dev libgeographic-dev libjsoncpp-dev libsdl2-dev libfreetype6-dev libharfbuzz-dev libcurl4-gnutls-dev qt5-default libglfw3-dev xorg-dev
 
     - name: Configure

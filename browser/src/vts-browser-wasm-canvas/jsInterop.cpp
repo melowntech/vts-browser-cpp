@@ -113,7 +113,7 @@ void setViewPresetImpl(const char *preset)
     FreeAtExit freeAtExit{preset};
     if (!map || !map->getMapconfigAvailable())
         return;
-    map->setViewCurrent(preset);
+    map->selectView(preset);
 }
 
 void setPositionImpl(const char *pos, int flyOver)

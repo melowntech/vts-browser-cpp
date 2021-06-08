@@ -101,8 +101,8 @@ void updateStatisticsHtml()
 void mapconfAvailable()
 {
     std::stringstream ss;
-    std::string current = map->getViewCurrent();
-    for (const std::string &s : map->getViewNames())
+    std::string current = map->selectedView();
+    for (const std::string &s : map->listViews())
     {
         ss << "<option";
         if (s == current)

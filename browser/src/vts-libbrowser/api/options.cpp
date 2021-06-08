@@ -37,10 +37,8 @@ namespace vts
 
 MapCreateOptions::MapCreateOptions() :
     clientId("vts-browser-cpp-undefined"),
-    geodataFontFallback(
-        "//cdn.melown.com/libs/vtsjs/fonts/noto-basic/1.0.0/noto.fnt"),
-    searchUrlFallback("https://cdn.melown.com/vtsapi/geocode"
-                      "/v3.0/{lat}/{long}/{value}"),
+    geodataFontFallback("//cdn.melown.com/libs/vtsjs/fonts/noto-basic/1.0.0/noto.fnt"),
+    searchUrlFallback("https://cdn.melown.com/vtsapi/geocode/v3.0/{lat}/{long}/{value}"),
     searchSrsFallback("+proj=longlat +datum=WGS84 +nodefs"),
 #ifdef VTS_EMBEDDED
     diskCache(false)
@@ -49,8 +47,7 @@ MapCreateOptions::MapCreateOptions() :
 #endif // VTS_EMBEDDED
 {}
 
-MapCreateOptions::MapCreateOptions(const std::string &json)
-    : MapCreateOptions()
+MapCreateOptions::MapCreateOptions(const std::string &json) : MapCreateOptions()
 {
     if (!json.empty())
         applyJson(json);
@@ -89,13 +86,10 @@ std::string MapCreateOptions::toJson() const
     return jsonToString(v);
 }
 
-MapRuntimeOptions::MapRuntimeOptions() :
-    language(detectLanguage()),
-    measurementUnitsSystem(detectMeasurementSystem())
+MapRuntimeOptions::MapRuntimeOptions() : language(detectLanguage()), measurementUnitsSystem(detectMeasurementSystem())
 {}
 
-MapRuntimeOptions::MapRuntimeOptions(const std::string &json)
-    : MapRuntimeOptions()
+MapRuntimeOptions::MapRuntimeOptions(const std::string &json) : MapRuntimeOptions()
 {
     if (!json.empty())
         applyJson(json);
@@ -147,8 +141,7 @@ std::string MapRuntimeOptions::toJson() const
 CameraOptions::CameraOptions()
 {}
 
-CameraOptions::CameraOptions(const std::string &json)
-    : CameraOptions()
+CameraOptions::CameraOptions(const std::string &json) : CameraOptions()
 {
     if (!json.empty())
         applyJson(json);
@@ -160,6 +153,8 @@ void CameraOptions::applyJson(const std::string &json)
     AJ(targetPixelRatioSurfaces, asDouble);
     AJ(targetPixelRatioGeodata, asDouble);
     AJ(cullingOffsetDistance, asDouble);
+    AJ(minSuggestedNearClipPlaneDistance, asDouble);
+    AJ(maxSuggestedNearClipPlaneDistance, asDouble);
     AJ(lodBlendingDuration, asDouble);
     AJ(samplesForAltitudeLodSelection, asDouble);
     AJ(fixedTraversalDistance, asDouble);
@@ -194,6 +189,8 @@ std::string CameraOptions::toJson() const
     TJ(targetPixelRatioSurfaces, asDouble);
     TJ(targetPixelRatioGeodata, asDouble);
     TJ(cullingOffsetDistance, asDouble);
+    TJ(minSuggestedNearClipPlaneDistance, asDouble);
+    TJ(maxSuggestedNearClipPlaneDistance, asDouble);
     TJ(lodBlendingDuration, asDouble);
     TJ(samplesForAltitudeLodSelection, asDouble);
     TJ(fixedTraversalDistance, asDouble);
@@ -226,8 +223,7 @@ std::string CameraOptions::toJson() const
 NavigationOptions::NavigationOptions()
 {}
 
-NavigationOptions::NavigationOptions(const std::string &json)
-    : NavigationOptions()
+NavigationOptions::NavigationOptions(const std::string &json) : NavigationOptions()
 {
     if (!json.empty())
         applyJson(json);
@@ -303,8 +299,7 @@ std::string NavigationOptions::toJson() const
 FetcherOptions::FetcherOptions()
 {}
 
-FetcherOptions::FetcherOptions(const std::string &json)
-    : FetcherOptions()
+FetcherOptions::FetcherOptions(const std::string &json) : FetcherOptions()
 {
     if (!json.empty())
         applyJson(json);

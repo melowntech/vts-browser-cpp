@@ -202,6 +202,14 @@ void optionsConfigCamera(
         po::value<uint32>(&opts->balancedGridNeighborsDistance),
         "Distance to neighbors for grids for use with balanced traversal.")
 
+    ((section + "minSuggestedNearClipPlaneDistance").c_str(),
+        po::value<double>(&opts->minSuggestedNearClipPlaneDistance),
+        "Lower limit for automatic near clip plane distance.")
+
+    ((section + "maxSuggestedNearClipPlaneDistance").c_str(),
+        po::value<double>(&opts->maxSuggestedNearClipPlaneDistance),
+        "Upper limit for automatic near clip plane distance.")
+
     FILE_OPTIONS;
 }
 

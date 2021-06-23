@@ -170,9 +170,9 @@ void CameraImpl::gridPreloadProcess(TraverseNode *trav,
             childRequests[childIndex(myId, t)].push_back(t);
     }
 
-    for (auto &c : trav->childs)
-        gridPreloadProcess(&c, childRequests[
-            childIndex(myId, c.id)]);
+    for (const auto &c : trav->childs)
+        gridPreloadProcess(c.get(), childRequests[
+            childIndex(myId, c->id)]);
 }
 
 } // namespace vts

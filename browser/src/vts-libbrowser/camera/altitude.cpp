@@ -177,21 +177,21 @@ TraverseNode *findTravSds(CameraImpl *camera, TraverseNode *where,
     for (auto &ci : where->childs)
     {
         // avoid computing new extents if we already have them
-        if (ci.meta)
+        if (ci->meta)
         {
-            if (!math::inside(ci.meta->extents, ublasSds))
+            if (!math::inside(ci->meta->extents, ublasSds))
                 continue;
         }
         else
         {
             const Extents2 ce = subExtents(
-                where->meta->extents, where->id, ci.id);
+                where->meta->extents, where->id, ci->id);
             if (!math::inside(ce, ublasSds))
                 continue;
         }
-        if (!camera->travInit(&ci))
+        if (!camera->travInit(ci.get()))
             continue;
-        return findTravSds(camera, &ci, pointSds, maxLod);
+        return findTravSds(camera, ci.get(), pointSds, maxLod);
     }
     return where;
 }

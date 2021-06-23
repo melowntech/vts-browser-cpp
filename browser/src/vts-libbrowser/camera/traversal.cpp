@@ -138,7 +138,8 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
     // find topmost nonempty surface
     const SurfaceInfo *topmost = nullptr;
     std::shared_ptr<MetaTile> chosen;
-    bool childsAvailable[4] = {false, false, false, false};
+    boost::container::small_vector<bool, 8> childsAvailable;
+    childsAvailable.resize(4, false);
     for (uint32 i = 0, e = trav->metaTiles.size(); i != e; i++)
     {
         const auto &m = trav->metaTiles[i];
@@ -179,13 +180,16 @@ bool CameraImpl::travDetermineMeta(TraverseNode *trav)
     trav->meta = chosen->getNode(nodeId);
 
     // prepare children
-    if (childsAvailable[0] || childsAvailable[1] || childsAvailable[2] || childsAvailable[3])
+    uint32 countChildAvailable = 0;
+    for (bool it : childsAvailable)
+        countChildAvailable += it ? 1 : 0;
+    if (countChildAvailable)
     {
         vtslibs::vts::Children childs = vtslibs::vts::children(nodeId);
-        trav->childs.ptr = std::make_unique<TraverseChildsArray>();
-        for (uint32 i = 0; i < 4; i++)
+        trav->childs.reserve(countChildAvailable);
+        for (uint32 i = 0; i < countChildAvailable; i++)
             if (childsAvailable[i])
-                trav->childs.ptr->arr.emplace_back(trav->layer, trav, childs[i]);
+                trav->childs.push_back(std::make_unique<TraverseNode>(trav->layer, trav, childs[i]));
     }
 
     // update priority
@@ -491,17 +495,17 @@ void CameraImpl::travModeHierarchical(TraverseNode *trav, bool loadOnly)
     bool ok = true;
     for (auto &t : trav->childs)
     {
-        if (!t.meta)
+        if (!t->meta)
         {
             ok = false;
             continue;
         }
-        if (t.surface && !t.determined)
+        if (t->surface && !t->determined)
             ok = false;
     }
 
-    for (auto &t : trav->childs)
-        travModeHierarchical(&t, !ok);
+    for (const auto &t : trav->childs)
+        travModeHierarchical(t.get(), !ok);
 
     if (!ok && trav->determined)
         renderNode(trav);
@@ -522,8 +526,8 @@ void CameraImpl::travModeFlat(TraverseNode *trav)
         return;
     }
 
-    for (auto &t : trav->childs)
-        travModeFlat(&t);
+    for (const auto &t : trav->childs)
+        travModeFlat(t.get());
 }
 
 // mode == 0 -> default
@@ -553,8 +557,8 @@ bool CameraImpl::travModeStable(TraverseNode *trav, int mode)
             touchDraws(trav);
             renderNode(trav);
         }
-        else for (auto &t : trav->childs)
-            travModeStable(&t, 2);
+        else for (const auto &t : trav->childs)
+            travModeStable(t.get(), 2);
         return true;
     }
 
@@ -568,16 +572,16 @@ bool CameraImpl::travModeStable(TraverseNode *trav, int mode)
         }
         if (trav->determined)
             renderNode(trav);
-        else for (auto &t : trav->childs)
-            travModeStable(&t, 2);
+        else for (const auto &t : trav->childs)
+            travModeStable(t.get(), 2);
         return true;
     }
 
     if (mode == 0 && trav->determined)
     {
         bool ok = true;
-        for (auto &t : trav->childs)
-            ok = travModeStable(&t, 1) && ok;
+        for (const auto &t : trav->childs)
+            ok = travModeStable(t.get(), 1) && ok;
         if (!ok)
         {
             touchDraws(trav);
@@ -588,8 +592,8 @@ bool CameraImpl::travModeStable(TraverseNode *trav, int mode)
 
     {
         bool ok = true;
-        for (auto &t : trav->childs)
-            ok = travModeStable(&t, mode) && ok;
+        for (const auto &t : trav->childs)
+            ok = travModeStable(t.get(), mode) && ok;
         return ok;
     }
 }
@@ -634,9 +638,9 @@ bool CameraImpl::travModeBalanced(TraverseNode *trav, bool renderOnly)
     Array<bool, 4> oks;
     oks.resize(trav->childs.size());
     uint32 i = 0, okc = 0;
-    for (auto &it : trav->childs)
+    for (const auto &it : trav->childs)
     {
-        bool ok = travModeBalanced(&it, renderOnly);
+        bool ok = travModeBalanced(it.get(), renderOnly);
         oks[i++] = ok;
         if (ok)
             okc++;
@@ -644,10 +648,10 @@ bool CameraImpl::travModeBalanced(TraverseNode *trav, bool renderOnly)
     if (okc == 0 && renderOnly)
         return false;
     i = 0;
-    for (auto &it : trav->childs)
+    for (const auto &it : trav->childs)
     {
         if (!oks[i++])
-            renderNodeCoarser(&it);
+            renderNodeCoarser(it.get());
     }
     return true;
 }
@@ -667,8 +671,8 @@ void CameraImpl::travModeFixed(TraverseNode *trav)
         return;
     }
 
-    for (auto &t : trav->childs)
-        travModeFixed(&t);
+    for (const auto &t : trav->childs)
+        travModeFixed(t.get());
 }
 
 void CameraImpl::traverseRender(TraverseNode *trav)

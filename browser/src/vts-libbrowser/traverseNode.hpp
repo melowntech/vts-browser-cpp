@@ -43,21 +43,11 @@ class Resource;
 class MeshAggregate;
 class GeodataTile;
 
-struct TraverseChildsContainer
-{
-    std::unique_ptr<struct TraverseChildsArray> ptr;
-
-    TraverseNode *begin();
-    TraverseNode *end();
-    bool empty() const;
-    uint32 size() const;
-};
-
 class TraverseNode : private Immovable
 {
 public:
     // traversal
-    TraverseChildsContainer childs;
+    boost::container::small_vector<std::unique_ptr<TraverseNode>, 4> childs;
     const MapLayer *const layer = nullptr;
     TraverseNode *const parent = nullptr;
     const TileId id;
@@ -88,39 +78,6 @@ public:
     bool rendersReady() const;
     bool rendersEmpty() const;
 };
-
-struct TraverseChildsArray
-{
-    Array<TraverseNode, 4> arr;
-};
-
-inline TraverseNode *TraverseChildsContainer::begin()
-{
-    if (ptr)
-        return &ptr->arr[0];
-    return nullptr;
-}
-
-inline TraverseNode *TraverseChildsContainer::end()
-{
-    if (ptr)
-        return &ptr->arr[0] + ptr->arr.size();
-    return nullptr;
-}
-
-inline bool TraverseChildsContainer::empty() const
-{
-    if (ptr)
-        return ptr->arr.empty();
-    return true;
-}
-
-inline uint32 TraverseChildsContainer::size() const
-{
-    if (ptr)
-        return ptr->arr.size();
-    return 0;
-}
 
 TraverseNode *findTravById(TraverseNode *trav, const TileId &what);
 

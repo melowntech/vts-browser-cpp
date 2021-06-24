@@ -58,7 +58,6 @@ public:
     std::shared_ptr<Texture> atmosphereDensityTexture;
     double elapsedTime;
     bool projected;
-    bool lodBlendingWithDithering;
 
 private:
     Map *map;

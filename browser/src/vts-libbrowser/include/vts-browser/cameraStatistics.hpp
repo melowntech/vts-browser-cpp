@@ -39,14 +39,13 @@ class VTS_API CameraStatistics
 public:
     std::string toJson() const;
 
-    static constexpr uint32 MaxLods = 25;
+    static constexpr uint32 MaxLods = 24;
     uint32 nodesRenderedTotal = 0;
     uint32 nodesRenderedPerLod[MaxLods] = {};
     uint32 metaNodesTraversedTotal = 0;
     uint32 metaNodesTraversedPerLod[MaxLods] = {};
     uint32 currentNodeMetaUpdates = 0;
     uint32 currentNodeDrawsUpdates = 0;
-    uint32 currentGridNodes = 0;
 };
 
 } // namespace vts

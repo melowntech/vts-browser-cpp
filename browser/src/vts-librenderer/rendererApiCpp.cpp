@@ -157,7 +157,6 @@ std::shared_ptr<RenderView> RenderContext::createView(Camera *cam)
 RenderDraws::RenderDraws()
     : elapsedTime(nan1()),
       projected(false),
-      lodBlendingWithDithering(false),
       map(nullptr)
 {}
 
@@ -173,8 +172,6 @@ void RenderDraws::swap(Camera *cam)
     std::swap(draws, cam->draws());
     body = map->celestialBody();
     projected = map->getMapProjected();
-    lodBlendingWithDithering
-        = !cam->options().lodBlendingTransparent;
     atmosphereDensityTexture
         = std::static_pointer_cast<Texture>(
                 map->atmosphereDensityTexture());
@@ -222,8 +219,6 @@ void RenderView::renderInitialize(RenderDraws *draws)
         impl->draws = &draws->draws;
         impl->body = &draws->body;
         impl->projected = draws->projected;
-        impl->lodBlendingWithDithering
-                = draws->lodBlendingWithDithering;
         impl->atmosphereDensityTexture
                 = draws->atmosphereDensityTexture.get();
         impl->elapsedTime = draws->elapsedTime;
@@ -233,8 +228,6 @@ void RenderView::renderInitialize(RenderDraws *draws)
         impl->draws = &impl->camera->draws();
         impl->body = &impl->camera->map()->celestialBody();
         impl->projected = impl->camera->map()->getMapProjected();
-        impl->lodBlendingWithDithering
-            = !impl->camera->options().lodBlendingTransparent;
         impl->atmosphereDensityTexture
             = (Texture*)impl->camera->map()->atmosphereDensityTexture().get();
         impl->elapsedTime = impl->camera->map()->lastRenderUpdateElapsedTime();

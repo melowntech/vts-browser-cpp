@@ -37,10 +37,8 @@ typedef struct vtsCDrawSurfaceBase
 {
     float mv[16];
     float uvTrans[4]; // scale-x, scale-y, offset-x, offset-y
-    float uvClip[4];
     float color[4]; // alpha is transparency
     float center[3];
-    float blendingCoverage;
     bool externalUv;
 } vtsCDrawSurfaceBase;
 

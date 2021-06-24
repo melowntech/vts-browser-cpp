@@ -180,7 +180,6 @@ void optionsConfigCamera(
         "none\n"
         "flat\n"
         "stable\n"
-        "balanced\n"
         "hierarchical\n"
         "fixed")
 
@@ -190,17 +189,8 @@ void optionsConfigCamera(
         "none\n"
         "flat\n"
         "stable\n"
-        "balanced\n"
         "hierarchical\n"
         "fixed")
-
-    ((section + "balancedGridLodOffset").c_str(),
-        po::value<uint32>(&opts->balancedGridLodOffset),
-        "Coarser lod offset for grids for use with balanced traversal.")
-
-    ((section + "balancedGridNeighborsDistance").c_str(),
-        po::value<uint32>(&opts->balancedGridNeighborsDistance),
-        "Distance to neighbors for grids for use with balanced traversal.")
 
     ((section + "minSuggestedNearClipPlaneDistance").c_str(),
         po::value<double>(&opts->minSuggestedNearClipPlaneDistance),

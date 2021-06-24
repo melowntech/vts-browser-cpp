@@ -125,8 +125,6 @@ struct GeodataJob
 extern uint32 maxAntialiasingSamples;
 extern float maxAnisotropySamples;
 
-void enableClipDistance(bool enable);
-
 struct UboCache
 {
     std::vector<std::unique_ptr<UniformBuffer>> data;
@@ -169,7 +167,6 @@ public:
     uint32 antialiasingSamplesPrev = 0;
     uint32 frameIndex = 0;
     bool projected = false;
-    bool lodBlendingWithDithering = false;
     bool colorRenderWithAlphaPrev = false;
 
     RenderViewImpl(Camera *camera, RenderView *api, RenderContextImpl *context);

@@ -540,22 +540,6 @@ public:
                     sprintf(buffer, "%3.1f", c.targetPixelRatioGeodata);
                     nk_label(&ctx, buffer, NK_TEXT_RIGHT);
 
-                    // balanced grids
-                    if (c.traverseModeSurfaces == TraverseMode::Balanced || c.traverseModeGeodata == TraverseMode::Balanced)
-                    {
-                        // balancedGridLodOffset
-                        nk_label(&ctx, "Grid offset:", NK_TEXT_LEFT);
-                        c.balancedGridLodOffset = nk_slide_int(&ctx, -1, c.balancedGridLodOffset, 10, 1);
-                        sprintf(buffer, "%d", c.balancedGridLodOffset);
-                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-
-                        // balancedGridNeighborsDistance
-                        nk_label(&ctx, "Grid neighbors:", NK_TEXT_LEFT);
-                        c.balancedGridNeighborsDistance = nk_slide_int(&ctx, 0, c.balancedGridNeighborsDistance, 3, 1);
-                        sprintf(buffer, "%d", c.balancedGridNeighborsDistance);
-                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                    }
-
                     // fixed traversal
                     if (c.traverseModeSurfaces == TraverseMode::Fixed || c.traverseModeGeodata == TraverseMode::Fixed)
                     {
@@ -570,34 +554,6 @@ public:
                         c.fixedTraversalDistance = nk_slide_float(&ctx, 100, c.fixedTraversalDistance, 10000, 100);
                         sprintf(buffer, "%5.0f", c.fixedTraversalDistance);
                         nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-                    }
-
-                    // lodBlending
-                    nk_label(&ctx, "Lod blending:", NK_TEXT_LEFT);
-                    if (nk_combo_begin_label(&ctx, LodBlendingModeNames[c.lodBlending], nk_vec2(nk_widget_width(&ctx), 200)))
-                    {
-                        nk_layout_row_dynamic(&ctx, 16, 1);
-                        for (unsigned i = 0; i < sizeof(LodBlendingModeNames) / sizeof(LodBlendingModeNames[0]); i++)
-                        {
-                            if (nk_combo_item_label(&ctx, LodBlendingModeNames[i], NK_TEXT_LEFT))
-                                c.lodBlending = i;
-                        }
-                        nk_combo_end(&ctx);
-                    }
-                    nk_label(&ctx, "", NK_TEXT_RIGHT);
-
-                    if (c.lodBlending)
-                    {
-                        // lodBlendingDuration
-                        nk_label(&ctx, "Blend duration:", NK_TEXT_LEFT);
-                        c.lodBlendingDuration = nk_slide_float(&ctx, 0, c.lodBlendingDuration, 30, 0.05);
-                        sprintf(buffer, "%5.2f", c.lodBlendingDuration);
-                        nk_label(&ctx, buffer, NK_TEXT_RIGHT);
-
-                        // lodBlendingTransparent
-                        nk_label(&ctx, "Blend mode:", NK_TEXT_LEFT);
-                        c.lodBlendingTransparent = nk_check_label(&ctx, c.lodBlendingTransparent ? "transparent" : "dithering", c.lodBlendingTransparent);
-                        nk_label(&ctx, "", NK_TEXT_RIGHT);
                     }
 
                     // cullingOffsetDistance
@@ -650,9 +606,6 @@ public:
 
                 // render tile boxes
                 c.debugRenderTileBoxes = nk_check_label(&ctx, "Tile boxes", c.debugRenderTileBoxes);
-
-                // render subtile boxes
-                c.debugRenderSubtileBoxes = nk_check_label(&ctx, "Subtile boxes", c.debugRenderSubtileBoxes);
 
                 // render surrogates
                 c.debugRenderSurrogates = nk_check_label(&ctx, "Surrogates", c.debugRenderSurrogates);
@@ -927,7 +880,6 @@ public:
                 }
 
                 S("Total:", cs.metaNodesTraversedTotal, "");
-                S("Grid nodes:", cs.currentGridNodes, "");
 
                 nk_tree_pop(&ctx);
             }

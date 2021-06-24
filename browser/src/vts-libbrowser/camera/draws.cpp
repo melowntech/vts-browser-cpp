@@ -36,8 +36,6 @@ DrawSurfaceTask::DrawSurfaceTask()
     memset((vtsCDrawSurfaceBase*)this, 0,
         sizeof(vtsCDrawSurfaceBase));
     color[3] = 1;
-    blendingCoverage = 1;
-    vecToRaw(vec4f(-1, -1, 2, 2), uvClip);
 }
 
 DrawGeodataTask::DrawGeodataTask()
@@ -128,19 +126,9 @@ DrawSurfaceTask CameraImpl::convert(const RenderSurfaceTask &task)
     if (task.textureMask)
         result.texMask = task.textureMask->getUserData();
     vecToRaw(task.uvTrans, result.uvTrans);
-    vecToRaw(vec4f(0, 0, 1, 1), result.uvClip);
     vec3f c = vec4to3(vec4(task.model * vec4(0, 0, 0, 1))).cast<float>();
     vecToRaw(c, result.center);
     result.externalUv = task.externalUv;
-    return result;
-}
-
-DrawSurfaceTask CameraImpl::convert(const RenderSurfaceTask &task,
-    const vec4f &uvClip, float blendingCoverage)
-{
-    DrawSurfaceTask result = convert(task);
-    vecToRaw(uvClip, result.uvClip);
-    result.blendingCoverage = blendingCoverage; // may be nan
     return result;
 }
 

@@ -35,22 +35,6 @@
 namespace vts { namespace renderer
 {
 
-void enableClipDistance(bool enable)
-{
-#ifndef VTSR_NO_CLIP
-    if (enable)
-    {
-        for (int i = 0; i < 4; i++)
-            glEnable(GL_CLIP_DISTANCE0 + i);
-    }
-    else
-    {
-        for (int i = 0; i < 4; i++)
-            glDisable(GL_CLIP_DISTANCE0 + i);
-    }
-#endif
-}
-
 UboCache::UboCache() : current(0), last(0), prev(0)
 {
     // initialize the buffer
@@ -133,7 +117,6 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t, bool wireframeSlow)
         mat4f p;
         mat4f mv;
         vec4f uvTrans; // scale-x, scale-y, offset-x, offset-y
-        vec4f uvClip;
         vec4f color;
         vec4si32 flags; // mask, monochromatic, flat shading, uv source, lodBlendingWithDithering, ..., blendingCoverage, frameIndex
     } data;
@@ -141,7 +124,6 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t, bool wireframeSlow)
     data.p = proj.cast<float>();
     data.mv = rawToMat4(t.mv);
     data.uvTrans = rawToVec4(t.uvTrans);
-    data.uvClip = rawToVec4(t.uvClip);
     data.color = rawToVec4(t.color);
     data.flags = vec4si32(0, 0, 0, frameIndex);
     sint32 &flags = data.flags[0];
@@ -153,16 +135,6 @@ void RenderViewImpl::drawSurface(const DrawSurfaceTask &t, bool wireframeSlow)
         flags |= 1 << 2;
     if (t.externalUv)
         flags |= 1 << 3;
-    if (!std::isnan(t.blendingCoverage))
-    {
-        if (lodBlendingWithDithering)
-        {
-            data.flags[2] = t.blendingCoverage * 1000;
-            flags |= 1 << 4;
-        }
-        else
-            data.color[3] *= t.blendingCoverage;
-    }
 
     useDisposableUbo(1, data)->setDebugId("UboSurface");
 
@@ -419,10 +391,8 @@ void RenderViewImpl::entrySurfaces()
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
         context->shaderSurface->bind();
-        enableClipDistance(true);
         for (const DrawSurfaceTask &t : draws->opaque)
             drawSurface(t);
-        enableClipDistance(false);
         CHECK_GL("rendered opaque");
     }
 
@@ -463,10 +433,8 @@ void RenderViewImpl::entrySurfaces()
         glPolygonOffset(0, -10);
         glDepthMask(GL_FALSE);
         context->shaderSurface->bind();
-        enableClipDistance(true);
         for (const DrawSurfaceTask &t : draws->transparent)
             drawSurface(t);
-        enableClipDistance(false);
         glDepthMask(GL_TRUE);
         glDisable(GL_POLYGON_OFFSET_FILL);
         glPolygonOffset(0, 0);
@@ -486,7 +454,6 @@ void RenderViewImpl::entrySurfaces()
 #endif
 #endif
         context->shaderSurface->bind();
-        enableClipDistance(true);
         for (const DrawSurfaceTask &it : draws->opaque)
         {
             DrawSurfaceTask t(it);
@@ -497,7 +464,6 @@ void RenderViewImpl::entrySurfaces()
             drawSurface(t);
 #endif
         }
-        enableClipDistance(false);
 #ifndef __EMSCRIPTEN__
 #ifndef VTSR_OPENGLES
         glDisable(GL_POLYGON_OFFSET_LINE);

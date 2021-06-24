@@ -69,7 +69,6 @@ std::string CameraStatistics::toJson() const
     TJ(metaNodesTraversedTotal, asUInt);
     TJ(currentNodeMetaUpdates, asUInt);
     TJ(currentNodeDrawsUpdates, asUInt);
-    TJ(currentGridNodes, asUInt);
     return jsonToString(v);
 }
 

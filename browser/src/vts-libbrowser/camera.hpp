@@ -40,8 +40,6 @@
 #include "include/vts-browser/cameraStatistics.hpp"
 #include "include/vts-browser/math.hpp"
 
-#include "subtileMerger.hpp"
-
 namespace vts
 {
 
@@ -64,32 +62,6 @@ class BoundParamInfo;
 
 using TileId = vtslibs::registry::ReferenceFrame::Division::Node::Id;
 
-class CurrentDraw
-{
-public:
-    TraverseNode *trav = nullptr;
-    TraverseNode *orig = nullptr;
-
-    CurrentDraw(TraverseNode *trav, TraverseNode *orig);
-};
-
-class OldDraw
-{
-public:
-    TileId trav;
-    TileId orig;
-    double age = 0;
-
-    OldDraw(const CurrentDraw &current);
-    OldDraw(const TileId &id);
-};
-
-class CameraMapLayer
-{
-public:
-    std::vector<OldDraw> blendDraws;
-};
-
 class CameraImpl : private Immovable
 {
 public:
@@ -100,10 +72,6 @@ public:
     CameraDraws draws;
     CameraOptions options;
     CameraStatistics statistics;
-    std::vector<TileId> gridLoadRequests;
-    std::vector<CurrentDraw> currentDraws;
-    std::unordered_map<TraverseNode*, SubtilesMerger> opaqueSubtiles;
-    std::map<std::weak_ptr<MapLayer>, CameraMapLayer, std::owner_less<std::weak_ptr<MapLayer>>> layers;
     // *Actual = corresponds to current camera settings
     // *Render, *Culling, updated only when camera is NOT detached
     mat4 viewProjActual;
@@ -131,13 +99,8 @@ public:
     float getTextSize(float size, const std::string &text);
     void renderText(TraverseNode *trav, float x, float y, const vec4f &color, float size, const std::string &text, bool centerText = true);
     void renderNodeBox(TraverseNode *trav, const vec4f &color);
-    void renderNode(TraverseNode *trav, TraverseNode *orig);
     void renderNode(TraverseNode *trav);
-    void renderNodeCoarser(TraverseNode *trav, TraverseNode *orig);
-    void renderNodeCoarser(TraverseNode *trav);
-    void renderNodeDraws(TraverseNode *trav, TraverseNode *orig, float blendingCoverage);
     DrawSurfaceTask convert(const RenderSurfaceTask &task);
-    DrawSurfaceTask convert(const RenderSurfaceTask &task, const vec4f &uvClip, float blendingCoverage);
     DrawInfographicsTask convert(const RenderInfographicsTask &task);
     DrawColliderTask convert(const RenderColliderTask &task);
     bool generateMonolithicGeodataTrav(TraverseNode *trav);
@@ -152,13 +115,8 @@ public:
     void travModeHierarchical(TraverseNode *trav, bool loadOnly);
     void travModeFlat(TraverseNode *trav);
     bool travModeStable(TraverseNode *trav, int mode);
-    bool travModeBalanced(TraverseNode *trav, bool renderOnly);
     void travModeFixed(TraverseNode *trav);
     void traverseRender(TraverseNode *trav);
-    void gridPreloadRequest(TraverseNode *trav);
-    void gridPreloadProcess(TraverseNode *root);
-    void gridPreloadProcess(TraverseNode *trav, const std::vector<TileId> &requests);
-    void resolveBlending(TraverseNode *root, CameraMapLayer &layer);
     void sortOpaqueFrontToBack();
     void renderUpdate();
     void suggestedNearFar(double &near_, double &far_);

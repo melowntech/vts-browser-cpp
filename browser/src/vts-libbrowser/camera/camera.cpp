@@ -43,18 +43,6 @@
 namespace vts
 {
 
-CurrentDraw::CurrentDraw(TraverseNode *trav, TraverseNode *orig) :
-    trav(trav), orig(orig)
-{}
-
-OldDraw::OldDraw(const CurrentDraw &current) :
-    trav(current.trav->id),
-    orig(current.orig->id)
-{}
-
-OldDraw::OldDraw(const TileId &id) : trav(id), orig(id)
-{}
-
 CameraImpl::CameraImpl(MapImpl *map, Camera *cam) :
     map(map), camera(cam),
     viewProjActual(identityMatrix4()),
@@ -89,19 +77,6 @@ void CameraImpl::clear()
         statistics.nodesRenderedTotal = 0;
         statistics.currentNodeMetaUpdates = 0;
         statistics.currentNodeDrawsUpdates = 0;
-        statistics.currentGridNodes = 0;
-    }
-
-    // clear unused camera map layers
-    {
-        auto it = layers.begin();
-        while (it != layers.end())
-        {
-            if (!it->first.lock())
-                it = layers.erase(it);
-            else
-                it++;
-        }
     }
 }
 
@@ -374,16 +349,15 @@ void CameraImpl::renderNodeBox(TraverseNode *trav, const vec4f &color)
     draws.infographics.emplace_back(convert(task));
 }
 
-void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
+void CameraImpl::renderNode(TraverseNode *trav)
 {
-    assert(trav && orig);
+    assert(trav);
     assert(trav->meta);
     assert(trav->surface);
     assert(trav->determined);
     assert(trav->rendersReady());
 
     trav->lastRenderTime = map->renderTickIndex;
-    orig->lastRenderTime = map->renderTickIndex;
     if (trav->rendersEmpty())
         return;
 
@@ -397,22 +371,15 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
         map->credits->hit(trav->layer->creditScope, it,
             trav->meta->localId.lod);
 
-    bool isSubNode = trav != orig;
-
     // surfaces
-    if (options.lodBlending)
-        currentDraws.emplace_back(trav, orig);
-    else
-        renderNodeDraws(trav, orig, nan1());
-
-    // geodata & colliders
-    if (!isSubNode)
-    {
-        for (const auto &it : trav->geodata)
-            draws.geodata.emplace_back(it);
-        for (const RenderColliderTask &r : trav->colliders)
-            draws.colliders.emplace_back(convert(r));
-    }
+    for (const RenderSurfaceTask &r : trav->opaque)
+        draws.opaque.emplace_back(convert(r));
+    for (const RenderSurfaceTask &r : trav->transparent)
+        draws.transparent.emplace_back(convert(r));
+    for (const auto &it : trav->geodata)
+        draws.geodata.emplace_back(it);
+    for (const RenderColliderTask &r : trav->colliders)
+        draws.colliders.emplace_back(convert(r));
 
     // surrogate
     if (options.debugRenderSurrogates && trav->meta->surrogatePhys)
@@ -447,9 +414,7 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     }
 
     // tile box
-    if (!options.debugRenderTileDiagnostics
-        && (options.debugRenderTileBoxes
-            || (options.debugRenderSubtileBoxes && isSubNode)))
+    if (!options.debugRenderTileDiagnostics && options.debugRenderTileBoxes)
     {
         vec4f color = vec4f(1, 1, 1, 1);
         if (trav->layer->freeLayer)
@@ -470,21 +435,11 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
                 break;
             }
         }
-
-        if (options.debugRenderTileBoxes && !isSubNode)
-            renderNodeBox(trav, color);
-
-        if (options.debugRenderSubtileBoxes && isSubNode && orig->meta)
-        {
-            for (int i = 0; i < 3; i++)
-                color[i] *= 0.5;
-            renderNodeBox(orig, color);
-        }
+        renderNodeBox(trav, color);
     }
 
     // tile options
-    if (!(options.debugRenderTileGeodataOnly && !trav->layer->isGeodata())
-        && options.debugRenderTileDiagnostics && !isSubNode)
+    if (!(options.debugRenderTileGeodataOnly && !trav->layer->isGeodata()) && options.debugRenderTileDiagnostics)
     {
         renderNodeBox(trav, vec4f(0, 0, 1, 1));
 
@@ -615,241 +570,6 @@ void CameraImpl::renderNode(TraverseNode *trav, TraverseNode *orig)
     }
 }
 
-void CameraImpl::renderNode(TraverseNode *trav)
-{
-    renderNode(trav, trav);
-}
-
-namespace
-{
-
-bool findNodeCoarser(TraverseNode *&trav, TraverseNode *orig)
-{
-    if (!trav->parent)
-        return false;
-    trav = trav->parent;
-    if (trav->determined)
-    {
-        assert(trav->rendersReady());
-        return true;
-    }
-    else
-        return findNodeCoarser(trav, orig);
-}
-
-} // namespace
-
-void CameraImpl::renderNodeCoarser(TraverseNode *trav, TraverseNode *orig)
-{
-    if (findNodeCoarser(trav, orig))
-        renderNode(trav, orig);
-}
-
-void CameraImpl::renderNodeCoarser(TraverseNode *trav)
-{
-    renderNodeCoarser(trav, trav);
-}
-
-namespace
-{
-
-void updateRangeToHalf(float &a, float &b, int which)
-{
-    a *= 0.5;
-    b *= 0.5;
-    if (which)
-    {
-        a += 0.5;
-        b += 0.5;
-    }
-}
-
-} // namespace
-
-void CameraImpl::renderNodeDraws(TraverseNode *trav,
-    TraverseNode *orig, float blendingCoverage)
-{
-    assert(trav && orig);
-    assert(trav->meta);
-    assert(trav->surface);
-    assert(trav->determined);
-    assert(trav->rendersReady());
-
-    trav->lastRenderTime = map->renderTickIndex;
-    orig->lastRenderTime = map->renderTickIndex;
-    if (trav->rendersEmpty())
-        return;
-
-    vec4f uvClip;
-    if (trav == orig)
-        uvClip = vec4f(-1, -1, 2, 2);
-    else
-    {
-        assert(trav->id.lod < orig->id.lod);
-        uvClip = vec4f(0, 0, 1, 1);
-        TraverseNode *t = orig;
-        while (t != trav)
-        {
-            float *arr = uvClip.data();
-            updateRangeToHalf(arr[0], arr[2], t->id.x % 2);
-            updateRangeToHalf(arr[1], arr[3], 1 - (t->id.y % 2));
-            t = t->parent;
-        }
-    }
-
-    if (trav != orig && std::isnan(blendingCoverage))
-    {
-        // some neighboring subtiles may be merged together
-        //   this will reduce gpu overhead on rasterization
-        opaqueSubtiles[trav].subtiles.emplace_back(orig, uvClip);
-    }
-    else if (options.lodBlendingTransparent
-        && !std::isnan(blendingCoverage))
-    {
-        // if lod blending is considered transparent
-        //   move blending draws into transparent group
-        for (const RenderSurfaceTask &r : trav->opaque)
-            draws.transparent.emplace_back(convert(r, uvClip,
-                blendingCoverage));
-    }
-    else
-    {
-        // if lod blending uses dithering
-        //   move blending draws into opaque group
-        // fully opaque draws (no blending) remain in opaque group
-        for (const RenderSurfaceTask &r : trav->opaque)
-            draws.opaque.emplace_back(convert(r, uvClip,
-                blendingCoverage));
-    }
-
-    // transparent draws always remain in transparent group
-    //   irrespective of any blending
-    for (const RenderSurfaceTask &r : trav->transparent)
-        draws.transparent.emplace_back(convert(r, uvClip,
-            blendingCoverage));
-}
-
-namespace
-{
-
-double timeToBlendingCoverage(double age, double duration)
-{
-    /*
-      opacity
-        1|   +---+    
-         |  /|   |\   
-         | / |   | \  
-         |/  |   |  \ 
-        0+---+---+---+
-         0  0.5  1  1.5 normalized age
-    */
-
-    assert(age <= duration * 3 / 2);
-    if (age < duration / 2)
-        return double(age) / (duration / 2);
-    if (age > duration)
-        return 1 - double(age - duration) / (duration / 2);
-    return nan1(); // full opacity is signaled by nan
-}
-
-struct OldHash
-{
-    size_t operator() (const OldDraw &d) const
-    {
-        std::hash<TileId> h;
-        return (h(d.orig) << 1) ^ h(d.trav);
-    }
-};
-
-} // namespace
-
-bool operator == (const OldDraw &l, const OldDraw &r)
-{
-    return l.orig == r.orig && l.trav == r.trav;
-}
-
-void CameraImpl::resolveBlending(TraverseNode *root,
-                        CameraMapLayer &layer)
-{
-    if (options.lodBlending == 0)
-        return;
-    OPTICK_EVENT();
-
-    // update blendDraws age and remove old
-    {
-        double elapsed = map->lastElapsedFrameTime;
-        double duration = options.lodBlendingDuration * 3 / 2;
-        auto &old = layer.blendDraws;
-        old.erase(std::remove_if(old.begin(), old.end(),
-            [&](OldDraw &b) {
-                b.age += elapsed;
-                return b.age > duration;
-        }), old.end());
-    }
-
-    // apply current draws
-    {
-        double halfDuration = options.lodBlendingDuration / 2;
-        std::unordered_set<OldDraw, OldHash> currentSet(currentDraws.begin(),
-            currentDraws.end());
-        for (auto &b : layer.blendDraws)
-        {
-            auto it = currentSet.find(b);
-            if (it != currentSet.end())
-            {
-                // prevent the draw from disappearing
-                b.age = std::min(b.age, halfDuration);
-                // prevent the draw from adding to blendDraws
-                currentSet.erase(it);
-            }
-        }
-        // add new currentDraws to blendDraws
-        for (auto &c : currentSet)
-            layer.blendDraws.emplace_back(c);
-        currentDraws.clear();
-    }
-
-    // detect appearing draws that have nothing to blend with
-    if (options.lodBlending >= 2)
-    {
-        double halfDuration = options.lodBlendingDuration / 2;
-        double duration = options.lodBlendingDuration;
-        std::unordered_set<TileId> opaqueTiles;
-        for (auto &b : layer.blendDraws)
-            if (b.age >= halfDuration && b.age <= duration)
-                opaqueTiles.insert(b.orig);
-        for (auto &b : layer.blendDraws)
-        {
-            if (b.age >= halfDuration)
-                continue; // this draw has already fully appeared
-            bool ok = false;
-            TileId id = b.orig;
-            while (id.lod > 0)
-            {
-                if (opaqueTiles.count(id))
-                {
-                    ok = true;
-                    break;
-                }
-                id = vtslibs::vts::parent(id);
-            }
-            if (!ok)
-                b.age = halfDuration; // skip the appearing phase
-        }
-    }
-
-    // render blend draws
-    for (auto &b : layer.blendDraws)
-    {
-        TraverseNode *trav = findTravById(root, b.trav);
-        TraverseNode *orig = findTravById(trav, b.orig);
-        if (!orig || !trav->determined)
-            continue;
-        renderNodeDraws(trav, orig,
-            timeToBlendingCoverage(b.age, options.lodBlendingDuration));
-    }
-}
-
 void CameraImpl::renderUpdate()
 {
     OPTICK_EVENT();
@@ -948,14 +668,6 @@ void CameraImpl::renderUpdate()
             OPTICK_EVENT("traversal");
             traverseRender(it->traverseRoot.get());
         }
-        resolveBlending(it->traverseRoot.get(), layers[it]);
-        {
-            OPTICK_EVENT("subtileMerging");
-            for (auto &os : opaqueSubtiles)
-                os.second.resolve(os.first, this);
-            opaqueSubtiles.clear();
-        }
-        gridPreloadProcess(it->traverseRoot.get());
     }
     sortOpaqueFrontToBack();
 

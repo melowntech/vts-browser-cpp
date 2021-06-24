@@ -68,7 +68,6 @@ UTILITY_GENERATE_ENUM_IO(TraverseMode,
     ((None)("none"))
     ((Flat)("flat"))
     ((Stable)("stable"))
-    ((Balanced)("balanced"))
     ((Hierarchical)("hierarchical"))
     ((Fixed)("fixed"))
 )

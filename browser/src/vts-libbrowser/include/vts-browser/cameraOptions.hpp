@@ -55,9 +55,6 @@ public:
     double minSuggestedNearClipPlaneDistance = 10;
     double maxSuggestedNearClipPlaneDistance = 1e100;
 
-    // duration of lod blending in seconds
-    double lodBlendingDuration = 1;
-
     // number of virtual samples to fit the view-extent
     // it is used to determine lod index at which to retrieve
     //   the altitude used to correct camera position
@@ -70,34 +67,13 @@ public:
     // desired lod used with fixed traversal mode
     uint32 fixedTraversalLod = 15;
 
-    // coarser lod offset for grids for use with balanced traversal
-    // -1 to disable grids entirely
-    uint32 balancedGridLodOffset = 5;
-
-    // distance to neighbors for grids for use with balanced traversal
-    // 0: no neighbors
-    // 1: one ring of neighbors (8 total)
-    // 2: two rings (24 total)
-    // etc.
-    uint32 balancedGridNeighborsDistance = 1;
-
-    // enable blending lods to prevent lod popping
-    // 0: disable
-    // 1: enable, simple
-    // 2: enable, detect draws near edges
-    uint32 lodBlending = 2;
-
-    TraverseMode traverseModeSurfaces = TraverseMode::Balanced;
+    TraverseMode traverseModeSurfaces = TraverseMode::Stable;
     TraverseMode traverseModeGeodata = TraverseMode::Stable;
-
-    // move opaque blending draws into transparent group
-    bool lodBlendingTransparent = false;
 
     bool debugDetachedCamera = false;
     bool debugRenderSurrogates = false;
     bool debugRenderMeshBoxes = false;
     bool debugRenderTileBoxes = false;
-    bool debugRenderSubtileBoxes = false;
 
     bool debugRenderTileDiagnostics = false;
     bool debugRenderTileGeodataOnly = false;

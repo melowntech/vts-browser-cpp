@@ -594,64 +594,6 @@ bool CameraImpl::travModeStable(TraverseNode *trav, int mode)
     }
 }
 
-bool CameraImpl::travModeBalanced(TraverseNode *trav, bool renderOnly)
-{
-    if (renderOnly)
-    {
-        if (!trav->meta)
-            return false;
-        trav->lastAccessTime = map->renderTickIndex;
-    }
-    else
-    {
-        if (!travInit(trav))
-            return false;
-    }
-
-    if (!visibilityTest(trav))
-        return true;
-
-    if (renderOnly)
-    {
-        if (trav->determined)
-        {
-            touchDraws(trav);
-            renderNode(trav);
-            return true;
-        }
-    }
-    else if (coarsenessTest(trav) || trav->childs.empty())
-    {
-        gridPreloadRequest(trav);
-        if (travDetermineDraws(trav))
-        {
-            renderNode(trav);
-            return true;
-        }
-        renderOnly = true;
-    }
-
-    Array<bool, 4> oks;
-    oks.resize(trav->childs.size());
-    uint32 i = 0, okc = 0;
-    for (auto &it : trav->childs)
-    {
-        bool ok = travModeBalanced(&it, renderOnly);
-        oks[i++] = ok;
-        if (ok)
-            okc++;
-    }
-    if (okc == 0 && renderOnly)
-        return false;
-    i = 0;
-    for (auto &it : trav->childs)
-    {
-        if (!oks[i++])
-            renderNodeCoarser(&it);
-    }
-    return true;
-}
-
 void CameraImpl::travModeFixed(TraverseNode *trav)
 {
     if (!travInit(trav))
@@ -682,9 +624,6 @@ void CameraImpl::traverseRender(TraverseNode *trav)
         break;
     case TraverseMode::Stable:
         travModeStable(trav, 0);
-        break;
-    case TraverseMode::Balanced:
-        travModeBalanced(trav, false);
         break;
     case TraverseMode::Hierarchical:
         travModeHierarchical(trav, false);

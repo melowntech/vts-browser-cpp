@@ -103,7 +103,6 @@ set(SRC_LIST
     camera/camera.cpp
     camera/cameraApi.cpp
     camera/draws.cpp
-    camera/grids.cpp
     camera/traversal.cpp
     camera/traverseNode.cpp
     image/image.cpp
@@ -175,7 +174,6 @@ set(SRC_LIST
     resource.hpp
     resources.hpp
     searchTask.hpp
-    subtileMerger.hpp
     tilesetMapping.hpp
     traverseNode.hpp
     validity.hpp

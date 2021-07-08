@@ -45,7 +45,7 @@ TraverseNode::~TraverseNode()
 
 void TraverseNode::clearAll()
 {
-    childs.ptr.reset();
+    childs.clear();
     metaTiles.clear();
     meta.reset();
     surface = nullptr;

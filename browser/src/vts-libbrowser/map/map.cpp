@@ -275,8 +275,8 @@ void MapImpl::traverseClearing(TraverseNode *trav)
         assert(!trav->determined);
     }
 
-    for (auto &it : trav->childs)
-        traverseClearing(&it);
+    for (const auto &it : trav->childs)
+        traverseClearing(it.get());
 }
 
 TileId MapImpl::roundId(TileId nodeId)
@@ -330,9 +330,9 @@ TraverseNode *findTravById(TraverseNode *trav, const TileId &what)
     {
         TileId t = vtslibs::vts::parent(what, what.lod - (trav->id.lod + 1));
         TraverseNode *c = nullptr;
-        for (auto &it : trav->childs)
-            if (it.id == t)
-                c = &it;
+        for (const auto &it : trav->childs)
+            if (it->id == t)
+                c = it.get();
         if (!c)
             return nullptr;
         trav = c;

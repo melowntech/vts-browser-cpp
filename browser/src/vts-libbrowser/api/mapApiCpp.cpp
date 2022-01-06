@@ -521,7 +521,7 @@ bool Map::searchable() const
 
 std::shared_ptr<SearchTask> Map::search(const std::string &query)
 {
-    return search(query, impl->mapconfig->position.position.data().begin());
+    return search(query, &impl->mapconfig->position.position.data()[0]);
 }
 
 std::shared_ptr<SearchTask> Map::search(const std::string &query, const double point[3])
